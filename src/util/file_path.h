@@ -20,7 +20,6 @@ public:
     bool has_parent_path() const;
     FilePath parent_path() const;
 
-    std::wstring WideForNativeApi() const;
     std::string string() const;
 
 private:

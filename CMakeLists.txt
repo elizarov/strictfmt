@@ -7,7 +7,32 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
 find_package(Python3 COMPONENTS Interpreter)
-find_package(unofficial-tree-sitter CONFIG REQUIRED)
+find_package(unofficial-tree-sitter CONFIG QUIET)
+if(TARGET unofficial::tree-sitter::tree-sitter)
+    set(strictfmt_tree_sitter_target unofficial::tree-sitter::tree-sitter)
+else()
+    find_package(PkgConfig QUIET)
+    if(PkgConfig_FOUND)
+        pkg_check_modules(TREE_SITTER QUIET IMPORTED_TARGET tree-sitter)
+    endif()
+    if(TARGET PkgConfig::TREE_SITTER)
+        set(strictfmt_tree_sitter_target PkgConfig::TREE_SITTER)
+    else()
+        include(FetchContent)
+        FetchContent_Declare(strictfmt_tree_sitter_core
+            URL https://github.com/tree-sitter/tree-sitter/archive/refs/tags/v0.20.6.tar.gz
+            URL_HASH SHA256=4d37eaef8a402a385998ff9aca3e1043b4a3bba899bceeff27a7178e1165b9de
+        )
+        FetchContent_Populate(strictfmt_tree_sitter_core)
+        add_library(strictfmt_tree_sitter_runtime STATIC
+            "${strictfmt_tree_sitter_core_SOURCE_DIR}/lib/src/lib.c"
+        )
+        target_include_directories(strictfmt_tree_sitter_runtime PUBLIC
+            "${strictfmt_tree_sitter_core_SOURCE_DIR}/lib/include"
+        )
+        set(strictfmt_tree_sitter_target strictfmt_tree_sitter_runtime)
+    endif()
+endif()
 
 enable_testing()
 
@@ -37,7 +62,6 @@ add_library(strictfmt_util STATIC
     src/tools/impl/tools_progress.cpp
     src/util/file_path.cpp
     src/util/strings.cpp
-    src/util/text_encoding.cpp
 )
 target_include_directories(strictfmt_util PUBLIC
     "${CMAKE_CURRENT_SOURCE_DIR}/src"
@@ -56,7 +80,7 @@ target_include_directories(strictfmt_tree_sitter_cpp_grammar
         "${CMAKE_CURRENT_SOURCE_DIR}/vendor/tree-sitter/tree-sitter-cpp/include"
 )
 target_link_libraries(strictfmt_tree_sitter_cpp_grammar PUBLIC
-    unofficial::tree-sitter::tree-sitter
+    ${strictfmt_tree_sitter_target}
 )
 if(MSVC)
     target_compile_options(strictfmt_tree_sitter_cpp_grammar PRIVATE /w)
@@ -81,6 +105,7 @@ target_include_directories(strictfmt_core PUBLIC
 target_link_libraries(strictfmt_core PUBLIC
     strictfmt_util
     strictfmt_tree_sitter_cpp_grammar
+    ${strictfmt_tree_sitter_target}
 )
 strictfmt_apply_common_options(strictfmt_core)
 add_library(strictfmt::core ALIAS strictfmt_core)

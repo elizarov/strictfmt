@@ -19,7 +19,6 @@ struct ToolFileDiscoveryResult {
     int skippedFiles = 0;
 };
 
-std::string ExecutablePath();
 std::string AbsolutePath(std::string_view path);
 std::string RelativePath(std::string_view path, std::string_view root);
 std::string NormalizeSeparators(std::string value);

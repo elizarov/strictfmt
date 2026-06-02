@@ -1,16 +1,14 @@
 #include "util/file_path.h"
 
-#include <windows.h>
-
-#include <cstdio>
+#include <filesystem>
+#include <fstream>
+#include <iterator>
+#include <system_error>
 #include <utility>
-
-#include "util/text_encoding.h"
 
 namespace {
 
-constexpr char kReadBinaryMode[] = "rb";
-constexpr char kWriteBinaryMode[] = "wb";
+namespace fs = std::filesystem;
 
 bool IsSeparator(char ch) {
     return ch == '\\' || ch == '/';
@@ -45,6 +43,14 @@ std::string TrimTrailingSeparators(std::string path) {
     return path;
 }
 
+fs::path NativePath(std::string_view path) {
+    return fs::path(std::string(path));
+}
+
+std::string PathText(const fs::path& path) {
+    return path.generic_string();
+}
+
 }  // namespace
 
 FilePath::FilePath(const char* path) : path_(path != nullptr ? path : "") {}
@@ -62,7 +68,7 @@ bool FilePath::empty() const {
 }
 
 bool FilePath::IsAbsolute() const {
-    return RootLength(path_) > 0 && (IsSeparator(path_[0]) || path_.size() >= 3);
+    return NativePath(path_).is_absolute();
 }
 
 bool FilePath::is_absolute() const {
@@ -78,27 +84,18 @@ bool FilePath::has_parent_path() const {
 }
 
 FilePath FilePath::ParentPath() const {
-    std::string trimmed = TrimTrailingSeparators(path_);
-    const size_t rootLength = RootLength(trimmed);
-    if (trimmed.size() <= rootLength) {
+    if (path_.empty()) {
         return {};
     }
-    const size_t separator = trimmed.find_last_of("\\/");
-    if (separator == std::string::npos) {
-        return {};
+    fs::path parent = NativePath(TrimTrailingSeparators(path_)).parent_path();
+    if (parent.empty()) {
+        return FilePath{};
     }
-    if (separator < rootLength) {
-        return FilePath(trimmed.substr(0, rootLength));
-    }
-    return FilePath(trimmed.substr(0, separator));
+    return FilePath(PathText(parent));
 }
 
 FilePath FilePath::parent_path() const {
     return ParentPath();
-}
-
-std::wstring FilePath::WideForNativeApi() const {
-    return WideFromText(path_);
 }
 
 std::string FilePath::string() const {
@@ -112,14 +109,7 @@ FilePath JoinPath(const FilePath& base, const FilePath& child) {
     if (child.Empty()) {
         return base;
     }
-    const std::string baseText = base.string();
-    const std::string childText = child.string();
-    std::string joined = baseText;
-    if (!IsSeparator(joined.back())) {
-        joined.push_back('\\');
-    }
-    joined += childText;
-    return FilePath(std::move(joined));
+    return FilePath(PathText(NativePath(base.string()) / NativePath(child.string())));
 }
 
 FilePath JoinPath(const FilePath& base, const char* child) {
@@ -135,81 +125,69 @@ FilePath operator/(const FilePath& base, const char* child) {
 }
 
 FilePath CurrentDirectoryPath() {
-    DWORD length = GetCurrentDirectoryA(0, nullptr);
-    if (length == 0) {
+    std::error_code error;
+    const fs::path path = fs::current_path(error);
+    if (error) {
         return {};
     }
-    std::string path(length, '\0');
-    const DWORD written = GetCurrentDirectoryA(length, path.data());
-    if (written == 0 || written >= length) {
-        return {};
-    }
-    path.resize(written);
-    return FilePath(path);
+    return FilePath(PathText(path));
 }
 
 FilePath TempDirectoryPath() {
-    DWORD length = GetTempPathA(0, nullptr);
-    if (length == 0) {
+    std::error_code error;
+    const fs::path path = fs::temp_directory_path(error);
+    if (error) {
         return {};
     }
-    std::string path(length, '\0');
-    const DWORD written = GetTempPathA(length, path.data());
-    if (written == 0 || written >= length) {
-        return {};
-    }
-    path.resize(written);
-    return FilePath(path);
+    return FilePath(PathText(path));
 }
 
 bool FileExists(const FilePath& path) {
     if (path.Empty()) {
         return false;
     }
-    const DWORD attributes = GetFileAttributesA(path.string().c_str());
-    return attributes != INVALID_FILE_ATTRIBUTES && (attributes & FILE_ATTRIBUTE_DIRECTORY) == 0;
+    std::error_code error;
+    return fs::is_regular_file(NativePath(path.string()), error);
 }
 
 bool RemoveFileIfExists(const FilePath& path) {
     if (path.Empty()) {
         return false;
     }
-    if (DeleteFileA(path.string().c_str())) {
+    std::error_code error;
+    if (fs::remove(NativePath(path.string()), error)) {
         return true;
     }
-    return GetLastError() == ERROR_FILE_NOT_FOUND || GetLastError() == ERROR_PATH_NOT_FOUND;
+    if (!error) {
+        return true;
+    }
+    std::error_code existsError;
+    return !fs::exists(NativePath(path.string()), existsError) && !existsError;
 }
 
 std::optional<std::string> ReadFileBinary(const FilePath& path) {
-    FILE* file = nullptr;
-    if (fopen_s(&file, path.string().c_str(), kReadBinaryMode) != 0 || file == nullptr) {
+    std::ifstream file(NativePath(path.string()), std::ios::binary);
+    if (!file) {
         return std::nullopt;
     }
-    if (fseek(file, 0, SEEK_END) != 0) {
-        fclose(file);
+    file.seekg(0, std::ios::end);
+    const std::streampos length = file.tellg();
+    if (length < std::streampos{}) {
         return std::nullopt;
     }
-    const long length = ftell(file);
-    if (length < 0) {
-        fclose(file);
-        return std::nullopt;
-    }
-    rewind(file);
+    file.seekg(0, std::ios::beg);
     std::string content(static_cast<size_t>(length), '\0');
-    if (!content.empty() && fread(content.data(), 1, content.size(), file) != content.size()) {
-        fclose(file);
+    if (!content.empty() && !file.read(content.data(), static_cast<std::streamsize>(content.size()))) {
         return std::nullopt;
     }
-    fclose(file);
     return content;
 }
 
 bool WriteFileBinary(const FilePath& path, std::string_view text) {
-    FILE* file = nullptr;
-    if (fopen_s(&file, path.string().c_str(), kWriteBinaryMode) != 0 || file == nullptr) {
+    std::ofstream file(NativePath(path.string()), std::ios::binary);
+    if (!file) {
         return false;
     }
-    const bool ok = text.empty() || fwrite(text.data(), 1, text.size(), file) == text.size();
-    fclose(file);
-    return ok;
+    file.write(text.data(), static_cast<std::streamsize>(text.size()));
+    return file.good();
 }

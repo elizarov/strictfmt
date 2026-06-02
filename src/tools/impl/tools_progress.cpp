@@ -1,7 +1,6 @@
 #include "tools/impl/tools_progress.h"
 
 #include <cmath>
-#include <io.h>
 
 std::string FormatToolElapsed(std::chrono::steady_clock::duration elapsed) {
     const double seconds = std::chrono::duration<double>(elapsed).count();
@@ -15,7 +14,8 @@ std::string FormatToolElapsed(std::chrono::steady_clock::duration elapsed) {
 }
 
 bool IsToolOutputTerminal(FILE* output) {
-    return output != nullptr && _isatty(_fileno(output)) != 0;
+    (void)output;
+    return false;
 }
 
 ToolFileProgress::ToolFileProgress(

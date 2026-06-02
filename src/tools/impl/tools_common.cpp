@@ -1,14 +1,16 @@
 #include "tools/impl/tools_common.h"
 
-#include <windows.h>
-
 #include <algorithm>
 #include <cstdio>
+#include <filesystem>
+#include <system_error>
 
 #include "util/file_path.h"
 #include "util/strings.h"
 
 namespace {
+
+namespace fs = std::filesystem;
 
 bool IsSeparator(char ch) {
     return ch == '\\' || ch == '/';
@@ -30,41 +32,29 @@ std::string TrimTrailingSeparators(std::string value) {
     return value;
 }
 
-bool CreateDirectoryTree(std::string_view path) {
-    if (path.empty() || DirectoryExists(path)) {
-        return true;
-    }
-    const std::string parent = FilePath(path).ParentPath().string();
-    if (!parent.empty() && parent != path && !CreateDirectoryTree(parent)) {
-        return false;
-    }
-    if (CreateDirectoryA(std::string(path).c_str(), nullptr)) {
-        return true;
-    }
-    const DWORD error = GetLastError();
-    return error == ERROR_ALREADY_EXISTS;
+fs::path NativePath(std::string_view path) {
+    return fs::path(std::string(path));
+}
+
+std::string PathText(const fs::path& path) {
+    return path.generic_string();
 }
 
 void RecursiveFilesInto(std::string_view root, std::vector<std::string>& files) {
-    const std::string pattern = (FilePath(root) / "*").string();
-    WIN32_FIND_DATAA data{};
-    HANDLE find = FindFirstFileA(pattern.c_str(), &data);
-    if (find == INVALID_HANDLE_VALUE) {
+    std::error_code error;
+    fs::directory_iterator iterator(NativePath(root), fs::directory_options::skip_permission_denied, error);
+    if (error) {
         return;
     }
-    do {
-        const std::string name = data.cFileName;
-        if (name == "." || name == "..") {
-            continue;
-        }
-        const std::string path = (FilePath(root) / name).string();
-        if ((data.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) != 0) {
+    for (const fs::directory_entry& entry : iterator) {
+        const std::string path = PathText(entry.path());
+        if (entry.is_directory(error)) {
             RecursiveFilesInto(path, files);
-        } else {
+        } else if (!error) {
             files.push_back(AbsolutePath(path));
         }
-    } while (FindNextFileA(find, &data));
-    FindClose(find);
+        error.clear();
+    }
 }
 
 bool DiscoverRecursiveToolFilesInto(
@@ -73,41 +63,33 @@ bool DiscoverRecursiveToolFilesInto(
     ToolFileDiscoveryResult& result,
     std::string& error
 ) {
-    const std::string pattern = (FilePath(root) / "*").string();
-    WIN32_FIND_DATAA data{};
-    HANDLE find = FindFirstFileA(pattern.c_str(), &data);
-    if (find == INVALID_HANDLE_VALUE) {
+    std::error_code entryError;
+    fs::directory_iterator iterator(NativePath(root), fs::directory_options::skip_permission_denied, entryError);
+    if (entryError) {
         return true;
     }
-    do {
-        const std::string name = data.cFileName;
-        if (name == "." || name == "..") {
-            continue;
-        }
-        const std::string path = AbsolutePath((FilePath(root) / name).string());
-        if ((data.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) != 0) {
+    for (const fs::directory_entry& entry : iterator) {
+        std::error_code typeError;
+        const std::string path = AbsolutePath(PathText(entry.path()));
+        if (entry.is_directory(typeError)) {
             if (!filter.ShouldVisitDirectory(path, error)) {
                 if (!error.empty()) {
-                    FindClose(find);
                     return false;
                 }
                 continue;
             }
             if (!DiscoverRecursiveToolFilesInto(path, filter, result, error)) {
-                FindClose(find);
                 return false;
             }
-        } else if (filter.ShouldIncludeFile(path, error)) {
+        } else if (!typeError && filter.ShouldIncludeFile(path, error)) {
             result.files.push_back(path);
         } else {
             if (!error.empty()) {
-                FindClose(find);
                 return false;
             }
             ++result.skippedFiles;
         }
-    } while (FindNextFileA(find, &data));
-    FindClose(find);
+    }
     return true;
 }
 
@@ -119,29 +101,13 @@ bool ToolFileDiscoveryFilter::ShouldVisitDirectory(std::string_view path, std::s
     return true;
 }
 
-std::string ExecutablePath() {
-    std::string path(MAX_PATH, '\0');
-    DWORD length = GetModuleFileNameA(nullptr, path.data(), static_cast<DWORD>(path.size()));
-    while (length == path.size()) {
-        path.resize(path.size() * 2);
-        length = GetModuleFileNameA(nullptr, path.data(), static_cast<DWORD>(path.size()));
-    }
-    path.resize(length);
-    return AbsolutePath(path);
-}
-
 std::string AbsolutePath(std::string_view path) {
-    DWORD length = GetFullPathNameA(std::string(path).c_str(), 0, nullptr, nullptr);
-    if (length == 0) {
+    std::error_code error;
+    const fs::path absolute = fs::absolute(NativePath(path), error);
+    if (error) {
         return NormalizeSeparators(std::string(path));
     }
-    std::string absolute(length, '\0');
-    const DWORD written = GetFullPathNameA(std::string(path).c_str(), length, absolute.data(), nullptr);
-    if (written == 0 || written >= length) {
-        return NormalizeSeparators(std::string(path));
-    }
-    absolute.resize(written);
-    return NormalizeSeparators(absolute);
+    return NormalizeSeparators(PathText(absolute.lexically_normal()));
 }
 
 std::string RelativePath(std::string_view path, std::string_view root) {
@@ -186,24 +152,26 @@ std::string RemoveExtension(std::string_view path) {
 }
 
 bool DirectoryExists(std::string_view path) {
-    const DWORD attributes = GetFileAttributesA(std::string(path).c_str());
-    return attributes != INVALID_FILE_ATTRIBUTES && (attributes & FILE_ATTRIBUTE_DIRECTORY) != 0;
+    std::error_code error;
+    return fs::is_directory(NativePath(path), error);
 }
 
 bool EnsureParentDirectory(std::string_view path) {
     const std::string parent = FilePath(path).ParentPath().string();
-    return parent.empty() || CreateDirectoryTree(parent);
+    if (parent.empty()) {
+        return true;
+    }
+    std::error_code error;
+    return fs::create_directories(NativePath(parent), error) || (!error && DirectoryExists(parent));
 }
 
 std::optional<std::uint64_t> LastWriteTime(std::string_view path) {
-    WIN32_FILE_ATTRIBUTE_DATA data{};
-    if (!GetFileAttributesExA(std::string(path).c_str(), GetFileExInfoStandard, &data)) {
+    std::error_code error;
+    const fs::file_time_type writeTime = fs::last_write_time(NativePath(path), error);
+    if (error) {
         return std::nullopt;
     }
-    ULARGE_INTEGER value{};
-    value.LowPart = data.ftLastWriteTime.dwLowDateTime;
-    value.HighPart = data.ftLastWriteTime.dwHighDateTime;
-    return value.QuadPart;
+    return static_cast<std::uint64_t>(writeTime.time_since_epoch().count());
 }
 
 std::vector<std::string> RecursiveFiles(std::string_view root) {
