@@ -135,7 +135,7 @@ void PrintFormatSummary(
     if (parseErrorCount > 0) {
         std::fprintf(
             output,
-            " %d file%s parsed with tree-sitter errors.",
+            " %d file%s parsed with errors.",
             parseErrorCount,
             parseErrorCount == 1 ? "" : "s"
         );
@@ -305,7 +305,7 @@ int RunFormat(int argc, char** argv) {
         if (parseErrorCount > 0) {
             std::fprintf(
                 summary,
-                " (%d file%s parsed with tree-sitter errors)",
+                " (%d file%s parsed with errors)",
                 parseErrorCount,
                 parseErrorCount == 1 ? "" : "s"
             );

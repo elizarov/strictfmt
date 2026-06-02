@@ -30,7 +30,7 @@ FormatModel ParseFormatModel(std::string_view text) {
     if (parser == nullptr) {
         FormatModel model;
         model.sourceText = std::move(sourceText);
-        model.parse.error = "tree-sitter parser setup failed";
+        model.parse.error = "parser setup failed";
         return model;
     }
     ts_parser_reset(parser);
@@ -39,7 +39,7 @@ FormatModel ParseFormatModel(std::string_view text) {
     if (tree == nullptr) {
         FormatModel model;
         model.sourceText = std::move(sourceText);
-        model.parse.error = "tree-sitter parse setup failed";
+        model.parse.error = "parse setup failed";
         return model;
     }
     const TSNode root = ts_tree_root_node(tree);

@@ -1022,7 +1022,7 @@ ParseResult ParseFailure(TSNode root) {
         std::string(ts_node_type(problem.node));
     ParseResult parse;
     parse.ok = false;
-    parse.error = "tree-sitter parse failed at " +
+    parse.error = "parse failed at " +
         std::to_string(static_cast<int>(point.row) + 1) +
         ":" +
         std::to_string(static_cast<int>(point.column) + 1) +
