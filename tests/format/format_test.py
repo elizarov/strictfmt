@@ -24,6 +24,7 @@ IFDEF_OUTPUT_FIXTURE = Path("src") / "format_ifdef_output.cpp"
 ERROR_INPUT_FIXTURE = Path("src") / "format_error_input.cpp"
 ERROR_OUTPUT_FIXTURE = Path("src") / "format_error_output.txt"
 USERVER_FORMAT_CONFIG = TEST_ROOT / ".cpp-format-userver"
+DEFAULT_FORMAT_CONFIG = TEST_ROOT / ".cpp-format"
 
 
 def native_format(
@@ -60,6 +61,10 @@ def write_empty_ignore(root: Path) -> None:
     (root / ".cpp-format-ignore").write_text("", encoding="utf-8")
 
 
+def copy_default_config(root: Path) -> None:
+    shutil.copyfile(DEFAULT_FORMAT_CONFIG, root / ".cpp-format")
+
+
 @contextmanager
 def copied_fixtures(*paths: Path):
     build_dir = TEST_TEMP_ROOT
@@ -67,6 +72,7 @@ def copied_fixtures(*paths: Path):
 
     with tempfile.TemporaryDirectory(prefix="format_fixtures_", dir=build_dir) as temp_dir:
         root = Path(temp_dir)
+        copy_default_config(root)
         write_empty_ignore(root)
         copies = {}
         for path in paths:
@@ -269,6 +275,7 @@ class FormatCommandTests(unittest.TestCase):
 
         with tempfile.TemporaryDirectory(prefix="format_files_", dir=build_dir) as temp_dir:
             root = Path(temp_dir)
+            copy_default_config(root)
             write_empty_ignore(root)
             source = root / OUTPUT_FIXTURE.name
             shutil.copyfile(TEST_ROOT / OUTPUT_FIXTURE, source)

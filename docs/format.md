@@ -753,7 +753,7 @@ Token spelling is preserved even when the parser grammar treats multiple spellin
 - `strictfmt::cli` exposes the same CLI implementation through `RunStrictfmtCli(argc, argv)` for embedding in host tools. Wrapper scripts own their own mode selection and changed or staged file-list preparation.
 - `src\tools\format_cli.cpp` owns formatter command orchestration, `src\tools\format.cpp` owns source-text formatting, and the internal `src\tools\impl\format_*` formatter modules own parser setup, model definitions, tree-sitter model builder helpers, preprocessor model helpers, and pretty printing.
 - `format_model_dump` owns ad hoc formatter model debugging. It takes one source file path and writes YAML to stdout with each `SyntaxNode` represented by `kind`, plus `text` only when node text is non-empty and `children` only when child nodes exist; text values up to 60 bytes are YAML-quoted, and longer text values are emitted as their byte length.
-- `.cpp-format`, `tests/format/.cpp-format-userver`, and `.cpp-format-ignore` own the formatter configuration data described in [Formatter Configuration](#formatter-configuration).
+- `.cpp-format`, `tests/format/.cpp-format`, `tests/format/.cpp-format-userver`, and `.cpp-format-ignore` own the formatter configuration data described in [Formatter Configuration](#formatter-configuration).
 - `vendor\tree-sitter\` owns vendored tree-sitter grammar inputs and generated parser sources.
 - `tools\regenerate_tree_sitter_grammar.py` owns parser regeneration.
 
@@ -765,7 +765,7 @@ Regenerate parser outputs only after editing vendored grammar source or parser m
 python tools\regenerate_tree_sitter_grammar.py
 ```
 
-The regeneration tool writes `macro_config.js` from `.cpp-format` and `tests/format/.cpp-format-userver`, runs the pinned tree-sitter CLI, and updates generated files under `vendor\tree-sitter\tree-sitter-cpp\src\`. Pass `--tree-sitter-cli <path>` to use an existing CLI. Otherwise it downloads the pinned Windows CLI under `build\`.
+The regeneration tool writes `macro_config.js` from `tests/format/.cpp-format` and `tests/format/.cpp-format-userver`, runs the pinned tree-sitter CLI, and updates generated files under `vendor\tree-sitter\tree-sitter-cpp\src\`. Pass `--tree-sitter-cli <path>` to use an existing CLI. Otherwise it downloads the pinned Windows CLI under `build\`.
 
 ## Formatter Configuration
 
@@ -839,7 +839,7 @@ build
 
 ### Macro Categories
 
-`MacroCategories.StatementLikeParameters` is read from the active `.cpp-format` at formatting time. The remaining categories below are parser inputs: `tools\regenerate_tree_sitter_grammar.py` reads `.cpp-format` and `tests/format/.cpp-format-userver`, writes `vendor\tree-sitter\tree-sitter-cpp\macro_config.js`, and bakes the configured names into the generated parser. After changing parser macro categories, regenerate the parser and rebuild tools.
+`MacroCategories.StatementLikeParameters` is read from the active `.cpp-format` at formatting time. The remaining categories below are parser inputs: `tools\regenerate_tree_sitter_grammar.py` reads `tests/format/.cpp-format` and `tests/format/.cpp-format-userver`, writes `vendor\tree-sitter\tree-sitter-cpp\macro_config.js`, and bakes the configured names into the generated parser. After changing parser macro categories, regenerate the parser and rebuild tools.
 
 Parser category entries must be C/C++ identifiers. Add a trailing `*` to an entry when the grammar role applies to every identifier with that prefix, such as `ATTRIBUTE*`; no other glob syntax is supported.
 

@@ -157,7 +157,7 @@ def load_macro_category_sources(config_paths: list[Path], repo_root: Path) -> li
 
 def write_macro_config(output_path: Path, sources: list[tuple[str, dict[str, list[str]]]]) -> None:
     lines = [
-        "// Generated from .cpp-format and tests/format/.cpp-format-userver by",
+        "// Generated from tests/format/.cpp-format and tests/format/.cpp-format-userver by",
         "// tools/regenerate_tree_sitter_grammar.py.",
         "module.exports = {",
         "  macro_categories: {",
@@ -236,7 +236,7 @@ def main() -> int:
     cpp_grammar_dir = vendor_root / "tree-sitter-cpp"
     c_grammar_dir = vendor_root / "tree-sitter-c"
     config_paths = [
-        repo_root / ".cpp-format",
+        repo_root / "tests" / "format" / ".cpp-format",
         repo_root / "tests" / "format" / ".cpp-format-userver",
     ]
     macro_config_path = cpp_grammar_dir / "macro_config.js"
