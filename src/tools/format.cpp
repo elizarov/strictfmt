@@ -55,7 +55,7 @@ SourceFormatResult FormatSourceText(std::string_view text, const FormatterConfig
     SourceFormatResult result;
     if (!model.parse.ok) {
         result.ok = false;
-        result.error = model.parse.error.empty() ? "tree-sitter parser setup failed" : model.parse.error;
+        result.error = model.parse.error.empty() ? "parser setup failed" : model.parse.error;
         return result;
     }
     result.formatted = FormatModelText(config, model, sourcePath);

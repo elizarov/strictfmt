@@ -117,8 +117,7 @@ int RunFormatModelDump(int argc, char** argv) {
 
     FormatModel model = ParseFormatModel(*text);
     if (!model.parse.ok) {
-        const std::string error =
-            model.parse.error.empty() ? std::string("tree-sitter parser setup failed") : model.parse.error;
+        const std::string error = model.parse.error.empty() ? std::string("parser setup failed") : model.parse.error;
         std::fprintf(stderr, "format_model_dump: parse failed: %s\n", error.c_str());
         return 1;
     }

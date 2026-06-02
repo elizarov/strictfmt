@@ -97,7 +97,7 @@ class FormatCommandTests(unittest.TestCase):
             result = native_format("--style=file", str(fixtures[INPUT_FIXTURE]))
 
         self.assertEqual(0, result.returncode, msg=f"stdout:\n{result.stdout}\n\nstderr:\n{result.stderr}")
-        self.assertNotIn("tree-sitter parse failed", result.stderr)
+        self.assertNotIn("parse failed", result.stderr)
 
     def test_userver_stdin_formats_to_expected_output(self) -> None:
         result = native_format(
@@ -115,7 +115,7 @@ class FormatCommandTests(unittest.TestCase):
             result = native_format(f"--style={USERVER_FORMAT_CONFIG}", str(fixtures[USERVER_INPUT_FIXTURE]))
 
         self.assertEqual(0, result.returncode, msg=f"stdout:\n{result.stdout}\n\nstderr:\n{result.stderr}")
-        self.assertNotIn("tree-sitter parse failed", result.stderr)
+        self.assertNotIn("parse failed", result.stderr)
 
     def test_ifdef_stdin_formats_to_expected_output(self) -> None:
         result = native_format(
@@ -133,7 +133,7 @@ class FormatCommandTests(unittest.TestCase):
             result = native_format(f"--style={USERVER_FORMAT_CONFIG}", str(fixtures[IFDEF_INPUT_FIXTURE]))
 
         self.assertEqual(0, result.returncode, msg=f"stdout:\n{result.stdout}\n\nstderr:\n{result.stderr}")
-        self.assertNotIn("tree-sitter parse failed", result.stderr)
+        self.assertNotIn("parse failed", result.stderr)
 
     def test_error_stdin_reports_expected_preprocessor_errors(self) -> None:
         result = native_format(
@@ -607,7 +607,8 @@ class FormatCommandTests(unittest.TestCase):
 
         self.assertEqual(1, result.returncode, msg=f"stdout:\n{result.stdout}\n\nstderr:\n{result.stderr}")
         self.assertEqual("", result.stdout)
-        self.assertIn("tree-sitter parse failed", result.stderr)
+        self.assertIn("parse failed", result.stderr)
+        self.assertNotIn("tree-sitter", result.stderr)
 
     def test_parse_error_does_not_write_in_place_batch(self) -> None:
         build_dir = TEST_TEMP_ROOT
@@ -626,7 +627,9 @@ class FormatCommandTests(unittest.TestCase):
 
             self.assertEqual(1, result.returncode, msg=f"stdout:\n{result.stdout}\n\nstderr:\n{result.stderr}")
             self.assertEqual("int main(){return 1;}\n", valid.read_text(encoding="utf-8").replace("\r\n", "\n"))
-            self.assertIn("tree-sitter parse failed", result.stderr)
+            self.assertIn("parse failed", result.stderr)
+            self.assertNotIn("tree-sitter", result.stderr)
+            self.assertIn("parsed with errors", result.stdout)
 
     def test_explicit_style_file_and_upward_discovery(self) -> None:
         build_dir = TEST_TEMP_ROOT
