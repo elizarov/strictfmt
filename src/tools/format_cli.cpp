@@ -166,7 +166,12 @@ int RunFormat(int argc, char** argv) {
     const std::string currentDirectory = AbsolutePath(CurrentDirectoryPath().string());
     FILE* summary = SummaryStream(options);
 
-    if (options.files.empty() && !options.fileListProvided && !options.recursiveInputProvided) {
+    if (!options.readStdin && options.files.empty() && !options.fileListProvided && !options.recursiveInputProvided) {
+        PrintFormatUsage(stdout);
+        return 0;
+    }
+
+    if (options.readStdin) {
         std::string error;
         const FormatterConfig* config = styleCache.ConfigForPath(currentDirectory, error);
         if (config == nullptr) {

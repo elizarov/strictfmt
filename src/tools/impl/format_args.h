@@ -16,6 +16,7 @@ struct FormatOptions {
     FormatMode mode = FormatMode::Stdout;
     bool verbose = false;
     bool help = false;
+    bool readStdin = false;
     bool fileListProvided = false;
     bool recursiveInputProvided = false;
     size_t concurrency = 0;
