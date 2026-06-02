@@ -86,7 +86,7 @@ class FormatCommandTests(unittest.TestCase):
     maxDiff = None
 
     def test_stdin_formats_to_expected_output(self) -> None:
-        result = native_format("--style=file", cwd=TEST_ROOT, input_text=read_fixture(INPUT_FIXTURE))
+        result = native_format("--stdin", cwd=TEST_ROOT, input_text=read_fixture(INPUT_FIXTURE))
 
         self.assertEqual(0, result.returncode, msg=f"stdout:\n{result.stdout}\n\nstderr:\n{result.stderr}")
         self.assertEqual(read_fixture(OUTPUT_FIXTURE), result.stdout)
@@ -94,13 +94,14 @@ class FormatCommandTests(unittest.TestCase):
 
     def test_golden_input_parses_without_errors(self) -> None:
         with copied_fixtures(INPUT_FIXTURE) as fixtures:
-            result = native_format("--style=file", str(fixtures[INPUT_FIXTURE]))
+            result = native_format(str(fixtures[INPUT_FIXTURE]))
 
         self.assertEqual(0, result.returncode, msg=f"stdout:\n{result.stdout}\n\nstderr:\n{result.stderr}")
         self.assertNotIn("parse failed", result.stderr)
 
     def test_userver_stdin_formats_to_expected_output(self) -> None:
         result = native_format(
+            "--stdin",
             f"--style={USERVER_FORMAT_CONFIG}",
             cwd=TEST_ROOT,
             input_text=read_fixture(USERVER_INPUT_FIXTURE),
@@ -119,6 +120,7 @@ class FormatCommandTests(unittest.TestCase):
 
     def test_ifdef_stdin_formats_to_expected_output(self) -> None:
         result = native_format(
+            "--stdin",
             f"--style={USERVER_FORMAT_CONFIG}",
             cwd=TEST_ROOT,
             input_text=read_fixture(IFDEF_INPUT_FIXTURE),
@@ -137,6 +139,7 @@ class FormatCommandTests(unittest.TestCase):
 
     def test_error_stdin_reports_expected_preprocessor_errors(self) -> None:
         result = native_format(
+            "--stdin",
             f"--style={USERVER_FORMAT_CONFIG}",
             cwd=TEST_ROOT,
             input_text=read_fixture(ERROR_INPUT_FIXTURE),
@@ -176,7 +179,7 @@ class FormatCommandTests(unittest.TestCase):
             ]
             for text in cases:
                 with self.subTest(text=text.splitlines()[0]):
-                    result = native_format(f"--style={config}", input_text=text)
+                    result = native_format("--stdin", f"--style={config}", input_text=text)
 
                     self.assertEqual(0, result.returncode, msg=f"stdout:\n{result.stdout}\n\nstderr:\n{result.stderr}")
                     self.assertEqual(text, result.stdout)
@@ -238,14 +241,14 @@ class FormatCommandTests(unittest.TestCase):
             ]
             for name, input_text, expected in cases:
                 with self.subTest(name=name):
-                    result = native_format(f"--style={config}", input_text=input_text)
+                    result = native_format("--stdin", f"--style={config}", input_text=input_text)
 
                     self.assertEqual(0, result.returncode, msg=f"stdout:\n{result.stdout}\n\nstderr:\n{result.stderr}")
                     self.assertEqual(expected, result.stdout)
 
     def test_file_argument_formats_to_stdout(self) -> None:
         with copied_fixtures(OUTPUT_FIXTURE) as fixtures:
-            result = native_format("--style=file", str(fixtures[OUTPUT_FIXTURE]))
+            result = native_format(str(fixtures[OUTPUT_FIXTURE]))
 
         self.assertEqual(0, result.returncode, msg=f"stdout:\n{result.stdout}\n\nstderr:\n{result.stderr}")
         self.assertEqual(read_fixture(OUTPUT_FIXTURE), result.stdout)
@@ -256,7 +259,7 @@ class FormatCommandTests(unittest.TestCase):
 
     def test_dry_run_accepts_idempotent_file_and_rejects_unformatted_file(self) -> None:
         with copied_fixtures(INPUT_FIXTURE, OUTPUT_FIXTURE) as fixtures:
-            ok_result = native_format("--style=file", "--dry-run", str(fixtures[OUTPUT_FIXTURE]))
+            ok_result = native_format("--dry-run", str(fixtures[OUTPUT_FIXTURE]))
 
             self.assertEqual(0, ok_result.returncode, msg=f"stdout:\n{ok_result.stdout}\n\nstderr:\n{ok_result.stderr}")
             self.assertRegex(
@@ -264,7 +267,7 @@ class FormatCommandTests(unittest.TestCase):
                 r"Checked 1 file in (?:\d+ms|\d+\.\d{3}s)\.\s*$",
             )
 
-            bad_result = native_format("--style=file", "--dry-run", str(fixtures[INPUT_FIXTURE]))
+            bad_result = native_format("--dry-run", str(fixtures[INPUT_FIXTURE]))
 
             self.assertEqual(1, bad_result.returncode, msg=f"stdout:\n{bad_result.stdout}\n\nstderr:\n{bad_result.stderr}")
             self.assertIn("Formatting is required for 1 file", bad_result.stdout)
@@ -282,7 +285,7 @@ class FormatCommandTests(unittest.TestCase):
             file_list = root / "files.txt"
             file_list.write_text(f"{source}\n\n", encoding="utf-8")
 
-            result = native_format("--style=file", "--dry-run", "--concurrency", "1", "--files", str(file_list))
+            result = native_format("--dry-run", "--concurrency", "1", "--files", str(file_list))
 
             self.assertEqual(0, result.returncode, msg=f"stdout:\n{result.stdout}\n\nstderr:\n{result.stderr}")
             self.assertRegex(result.stdout, r"Checked 1 file in (?:\d+ms|\d+\.\d{3}s)\.\s*$")
@@ -319,7 +322,7 @@ class FormatCommandTests(unittest.TestCase):
             ignored.mkdir()
             (ignored / "ignored.cpp").write_text("int ignored(){return 1;}\n", encoding="utf-8")
 
-            result = native_format("--style=file", "--dry-run", "-r", ".", cwd=root)
+            result = native_format("--dry-run", "-r", ".", cwd=root)
 
             self.assertEqual(0, result.returncode, msg=f"stdout:\n{result.stdout}\n\nstderr:\n{result.stderr}")
             self.assertRegex(result.stdout, r"Checked 13 files in (?:\d+ms|\d+\.\d{3}s)\.\s*$")
@@ -339,7 +342,7 @@ class FormatCommandTests(unittest.TestCase):
             file_list = root / "files.txt"
             file_list.write_text(f"{second}\n{first}\n", encoding="utf-8")
 
-            result = native_format("--style=file", "--concurrency", "1", "--files", str(file_list), cwd=root)
+            result = native_format("--concurrency", "1", "--files", str(file_list), cwd=root)
 
             self.assertEqual(0, result.returncode, msg=f"stdout:\n{result.stdout}\n\nstderr:\n{result.stderr}")
             self.assertEqual(
@@ -364,7 +367,7 @@ class FormatCommandTests(unittest.TestCase):
             source = root / "sample.cpp"
             source.write_text("int main(){return 1;}\n", encoding="utf-8")
 
-            result = native_format("--style=file", "-i", str(source), cwd=root)
+            result = native_format("-i", str(source), cwd=root)
 
             self.assertEqual(0, result.returncode, msg=f"stdout:\n{result.stdout}\n\nstderr:\n{result.stderr}")
             self.assertEqual("int main() {\n    return 1;\n}\n", source.read_text(encoding="utf-8").replace("\r\n", "\n"))
@@ -372,7 +375,7 @@ class FormatCommandTests(unittest.TestCase):
 
     def test_declarator_reference_tokens_include_managed_cpp(self) -> None:
         result = native_format(
-            "--style=file",
+            "--stdin",
             input_text="void f(Object ^ handle,Object % tracking,int && moved,int * pointer){}\n",
         )
 
@@ -384,7 +387,7 @@ class FormatCommandTests(unittest.TestCase):
 
     def test_trailing_comma_normalization(self) -> None:
         result = native_format(
-            "--style=file",
+            "--stdin",
             input_text=(
                 "enum E { A, B };\n"
                 "enum F { C, D, };\n"
@@ -412,7 +415,7 @@ class FormatCommandTests(unittest.TestCase):
 
     def test_final_undef_does_not_emit_trailing_empty_line(self) -> None:
         result = native_format(
-            "--style=file",
+            "--stdin",
             input_text=(
                 "#define VALUE 1\n"
                 "int value;\n"
@@ -432,7 +435,7 @@ class FormatCommandTests(unittest.TestCase):
 
     def test_win32_boolean_macros_preserve_spelling(self) -> None:
         result = native_format(
-            "--style=file",
+            "--stdin",
             input_text=(
                 "int false_value=FALSE;\n"
                 "int true_value=TRUE;\n"
@@ -452,7 +455,7 @@ class FormatCommandTests(unittest.TestCase):
 
     def test_macro_decltype_argument_is_preserved(self) -> None:
         result = native_format(
-            "--style=file",
+            "--stdin",
             input_text=(
                 "#define CASEDASH_LOAD_OPTIONAL(function, name) \\\n"
                 "function=reinterpret_cast<decltype(function)>(GetProcAddress(module_,name))\n"
@@ -468,7 +471,7 @@ class FormatCommandTests(unittest.TestCase):
 
     def test_compact_empty_brace_ternary_colon_keeps_space(self) -> None:
         result = native_format(
-            "--style=file",
+            "--stdin",
             input_text=(
                 "auto snapshot=preferred?TreeViewportSnapshot{}:CaptureTreeViewportSnapshot();\n"
                 "auto text=empty?std::string{}:value;\n"
@@ -484,7 +487,7 @@ class FormatCommandTests(unittest.TestCase):
 
     def test_compact_initializer_braces_stay_tight_in_split_context(self) -> None:
         result = native_format(
-            "--style=file",
+            "--stdin",
             input_text=(
                 "const auto matchesDrag = [&](const LayoutEditOverlayOwner& owner) {\n"
                 "return owner.childIndex==drag.currentIndex&&\n"
@@ -513,7 +516,7 @@ class FormatCommandTests(unittest.TestCase):
 
     def test_control_body_brace_normalization(self) -> None:
         result = native_format(
-            "--style=file",
+            "--stdin",
             input_text=(
                 "void f(int* values,int count){\n"
                 "if(count) values[0]+=1;\n"
@@ -579,7 +582,7 @@ class FormatCommandTests(unittest.TestCase):
             "   return {};\n"
             "}\n"
         )
-        result = native_format("--style=file", input_text=input_text)
+        result = native_format("--stdin", input_text=input_text)
 
         self.assertEqual(0, result.returncode, msg=f"stdout:\n{result.stdout}\n\nstderr:\n{result.stderr}")
         self.assertEqual(
@@ -603,7 +606,7 @@ class FormatCommandTests(unittest.TestCase):
         )
 
     def test_parse_error_rejects_stdout_formatting(self) -> None:
-        result = native_format("--style=file", input_text="int main( { return 1; }\n")
+        result = native_format("--stdin", input_text="int main( { return 1; }\n")
 
         self.assertEqual(1, result.returncode, msg=f"stdout:\n{result.stdout}\n\nstderr:\n{result.stderr}")
         self.assertEqual("", result.stdout)
@@ -623,7 +626,7 @@ class FormatCommandTests(unittest.TestCase):
             valid.write_text("int main(){return 1;}\n", encoding="utf-8")
             invalid.write_text("int main( { return 1; }\n", encoding="utf-8")
 
-            result = native_format("--style=file", "-i", str(valid), str(invalid), cwd=root)
+            result = native_format("-i", str(valid), str(invalid), cwd=root)
 
             self.assertEqual(1, result.returncode, msg=f"stdout:\n{result.stdout}\n\nstderr:\n{result.stderr}")
             self.assertEqual("int main(){return 1;}\n", valid.read_text(encoding="utf-8").replace("\r\n", "\n"))
@@ -671,6 +674,15 @@ class FormatCommandTests(unittest.TestCase):
             self.assertIn("Checked 0 files", result.stdout)
             self.assertIn("Skipped 1 ignored file", result.stdout)
 
+    def test_no_input_prints_help_instead_of_reading_stdin(self) -> None:
+        result = native_format()
+
+        self.assertEqual(0, result.returncode, msg=f"stdout:\n{result.stdout}\n\nstderr:\n{result.stderr}")
+        self.assertEqual("", result.stderr)
+        self.assertIn("Usage:", result.stdout)
+        self.assertIn("strictfmt --stdin [options]", result.stdout)
+        self.assertIn("--style=<config-file>", result.stdout)
+
     def test_wrapper_rejects_current_unformatted_fixture(self) -> None:
         if FORMAT_CMD is None or not FORMAT_CMD.exists():
             self.skipTest("CaseDash format.cmd is not configured")
@@ -683,6 +695,9 @@ class FormatCommandTests(unittest.TestCase):
             ("-i",),
             ("-i", "--dry-run", str(TEST_ROOT / OUTPUT_FIXTURE)),
             ("--style",),
+            ("--style=file",),
+            ("--style=file:.cpp-format",),
+            ("-style=.cpp-format",),
             ("--files",),
             ("--files=",),
             ("-r",),
@@ -690,6 +705,8 @@ class FormatCommandTests(unittest.TestCase):
             ("--concurrency",),
             ("--concurrency", "0"),
             ("--concurrency", "nope"),
+            ("--stdin", "-i"),
+            ("--stdin", str(TEST_ROOT / OUTPUT_FIXTURE)),
             ("--unknown",),
         ]
 
