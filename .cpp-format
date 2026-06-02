@@ -1,0 +1,87 @@
+# See docs/format.md for details
+---
+ColumnLimit: 120
+IndentWidth: 4
+TabWidth: 4
+
+IncludeCategories:
+  - Regex: '^<(winsock2|ws2tcpip)\.h>$'
+    Priority: 1
+  - Regex: '^<windows\.h>$'
+    Priority: 2
+  - Regex: '^<.*>$'
+    Priority: 3
+  - Regex: '^"vendor/.*"$'
+    Priority: 4
+  - Regex: '^".*"$'
+    Priority: 5
+MainIncludeChar: Quote
+IncludeIsMainRegex: '(Test)?$'
+
+MacroCategories:
+  CallingConvention:
+    - CALLBACK
+    - WINAPI
+  StatementLikeParameters:
+    - X
+  MacroFunctionDefinitions:
+    - TEST
+    - TEST_F
+    - TEST_P
+    - TYPED_TEST
+    - TYPED_TEST_P
+    - MATCHER
+    - MATCHER_P*
+  MacroFunctionDefinitionsWithTrailingParameters:
+    - BENCHMARK_DEFINE_F
+    - BENCHMARK_DEFINE_TEMPLATE_F
+  CallExpressionWithTypeArgumentsMacros:
+    - BENCHMARK_TEMPLATE
+  TopLevelCallStatements:
+    - BENCHMARK*
+    - ENUM_STRING_DECLARE
+  MethodDeclarationMacros:
+    - MOCK_METHOD
+  StatementExceptionCallMacros:
+    - EXPECT_THROW
+    - EXPECT_THROW_MSG
+    - ASSERT_THROW
+  StatementArgumentCallMacros:
+    - EXPECT_NO_THROW
+  TypeSpecifierMacroCalls:
+    - STACK_OF
+
+StreamShift:
+  ConfigurationMethods:
+    - std::boolalpha
+    - std::noboolalpha
+    - std::showbase
+    - std::noshowbase
+    - std::showpoint
+    - std::noshowpoint
+    - std::showpos
+    - std::noshowpos
+    - std::skipws
+    - std::noskipws
+    - std::uppercase
+    - std::nouppercase
+    - std::unitbuf
+    - std::nounitbuf
+    - std::internal
+    - std::left
+    - std::right
+    - std::dec
+    - std::hex
+    - std::oct
+    - std::fixed
+    - std::scientific
+    - std::hexfloat
+    - std::defaultfloat
+    - std::setbase
+    - std::setfill
+    - std::setprecision
+    - std::setw
+    - std::resetiosflags
+    - std::setiosflags
+    - std::emit_on_flush
+    - std::noemit_on_flush
