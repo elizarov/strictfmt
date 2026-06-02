@@ -23,3 +23,31 @@ The script writes all generated files under `build_windows\`:
 - `build_windows\lib\` contains static libraries and other archive outputs.
 - `build_windows\pdb\` contains generated debug symbol files when the compiler
   produces them.
+
+The build directory is ignored by Git.
+
+## Unix
+
+The Unix build uses CMake with the Clang C and C++ toolchain. It supports Linux
+and macOS, and expects `cmake`, `make`, and a Clang toolchain to be installed
+and available on `PATH`.
+
+From the repository root:
+
+```sh
+scripts/build_unix.sh
+```
+
+The script uses `CC` and `CXX` from the shell when they are already configured.
+Otherwise it selects `clang`/`clang++`, or a matching versioned pair such as
+`clang-17`/`clang++-17`. It does not install packages or configure the toolchain
+environment.
+
+The script writes all generated files under an OS-specific build directory:
+
+- `build_linux/strictfmt` on Linux.
+- `build_macos/strictfmt` on macOS.
+- `build_<osname>/cmake/` contains the CMake build tree.
+- `build_<osname>/lib/` contains static libraries and other library outputs.
+
+The build directories are ignored by Git.
