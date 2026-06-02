@@ -23,5 +23,3 @@ The script writes all generated files under `build_windows\`:
 - `build_windows\lib\` contains static libraries and other archive outputs.
 - `build_windows\pdb\` contains generated debug symbol files when the compiler
   produces them.
-
-The build directory is ignored by Git.
