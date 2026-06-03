@@ -57,6 +57,10 @@ def read_fixture(path: Path) -> str:
     return (TEST_ROOT / path).read_text(encoding="utf-8")
 
 
+def fixture_loc(path: Path) -> str:
+    return f"{len(read_fixture(path).splitlines()):,}"
+
+
 def write_empty_ignore(root: Path) -> None:
     (root / ".cpp-format-ignore").write_text("", encoding="utf-8")
 
@@ -257,7 +261,7 @@ class FormatCommandTests(unittest.TestCase):
         self.assertEqual(read_fixture(OUTPUT_FIXTURE), result.stdout)
         self.assertRegex(
             result.stderr,
-            r"Formatted 1 file in (?:\d+ms|\d+\.\d{3}s)\.\s*$",
+            rf"Formatted 1 file, {fixture_loc(OUTPUT_FIXTURE)} LOC in (?:\d+ms|\d+\.\d{{3}}s)\.\s*$",
         )
 
     def test_dry_run_accepts_idempotent_file_and_rejects_unformatted_file(self) -> None:
@@ -267,13 +271,17 @@ class FormatCommandTests(unittest.TestCase):
             self.assertEqual(0, ok_result.returncode, msg=f"stdout:\n{ok_result.stdout}\n\nstderr:\n{ok_result.stderr}")
             self.assertRegex(
                 ok_result.stdout,
-                r"Checked 1 file in (?:\d+ms|\d+\.\d{3}s)\.\s*$",
+                rf"Checked 1 file, {fixture_loc(OUTPUT_FIXTURE)} LOC in (?:\d+ms|\d+\.\d{{3}}s)\.\s*$",
             )
 
             bad_result = native_format("--dry-run", str(fixtures[INPUT_FIXTURE]))
 
             self.assertEqual(1, bad_result.returncode, msg=f"stdout:\n{bad_result.stdout}\n\nstderr:\n{bad_result.stderr}")
             self.assertIn("Formatting is required for 1 file", bad_result.stdout)
+            self.assertRegex(
+                bad_result.stdout,
+                rf"Checked 1 file, {fixture_loc(INPUT_FIXTURE)} LOC in (?:\d+ms|\d+\.\d{{3}}s)\.\s*$",
+            )
 
     def test_files_option_reads_newline_file_list(self) -> None:
         build_dir = TEST_TEMP_ROOT
@@ -291,7 +299,10 @@ class FormatCommandTests(unittest.TestCase):
             result = native_format("--dry-run", "--concurrency", "1", "--files", str(file_list))
 
             self.assertEqual(0, result.returncode, msg=f"stdout:\n{result.stdout}\n\nstderr:\n{result.stderr}")
-            self.assertRegex(result.stdout, r"Checked 1 file in (?:\d+ms|\d+\.\d{3}s)\.\s*$")
+            self.assertRegex(
+                result.stdout,
+                rf"Checked 1 file, {fixture_loc(OUTPUT_FIXTURE)} LOC in (?:\d+ms|\d+\.\d{{3}}s)\.\s*$",
+            )
 
     def test_recursive_option_discovers_cpp_and_headers(self) -> None:
         build_dir = TEST_TEMP_ROOT
@@ -328,7 +339,7 @@ class FormatCommandTests(unittest.TestCase):
             result = native_format("--dry-run", "-r", ".", cwd=root)
 
             self.assertEqual(0, result.returncode, msg=f"stdout:\n{result.stdout}\n\nstderr:\n{result.stderr}")
-            self.assertRegex(result.stdout, r"Checked 13 files in (?:\d+ms|\d+\.\d{3}s)\.\s*$")
+            self.assertRegex(result.stdout, r"Checked 13 files, 13 LOC in (?:\d+ms|\d+\.\d{3}s)\.\s*$")
 
     def test_concurrency_one_preserves_file_list_output_order(self) -> None:
         build_dir = TEST_TEMP_ROOT
@@ -357,7 +368,7 @@ class FormatCommandTests(unittest.TestCase):
                 "}\n",
                 result.stdout,
             )
-            self.assertRegex(result.stderr, r"Formatted 2 files in (?:\d+ms|\d+\.\d{3}s)\.\s*$")
+            self.assertRegex(result.stderr, r"Formatted 2 files, 2 LOC in (?:\d+ms|\d+\.\d{3}s)\.\s*$")
 
     def test_in_place_formats_file(self) -> None:
         build_dir = TEST_TEMP_ROOT
@@ -374,7 +385,7 @@ class FormatCommandTests(unittest.TestCase):
 
             self.assertEqual(0, result.returncode, msg=f"stdout:\n{result.stdout}\n\nstderr:\n{result.stderr}")
             self.assertEqual("int main() {\n    return 1;\n}\n", source.read_text(encoding="utf-8").replace("\r\n", "\n"))
-            self.assertIn("Formatted 1 file", result.stdout)
+            self.assertIn("Formatted 1 file, 1 LOC", result.stdout)
 
     def test_declarator_reference_tokens_include_managed_cpp(self) -> None:
         result = native_format(
@@ -674,7 +685,7 @@ class FormatCommandTests(unittest.TestCase):
             result = native_format("--dry-run", str(source), cwd=root)
 
             self.assertEqual(0, result.returncode, msg=f"stdout:\n{result.stdout}\n\nstderr:\n{result.stderr}")
-            self.assertIn("Checked 0 files", result.stdout)
+            self.assertIn("Checked 0 files, 0 LOC", result.stdout)
             self.assertIn("Skipped 1 ignored file", result.stdout)
 
     def test_no_input_prints_help_instead_of_reading_stdin(self) -> None:

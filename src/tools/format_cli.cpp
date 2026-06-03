@@ -29,6 +29,7 @@ struct ResolvedFileFormat {
 
 struct CompletedFileFormat {
     PendingFileFormat pending;
+    int lineCount = 0;
     bool hasPending = false;
     bool readFailed = false;
 };
@@ -85,6 +86,24 @@ std::string CompletedFileText(int completedCount, size_t totalCount) {
     return text;
 }
 
+int CountSourceLines(std::string_view text) {
+    int lines = 0;
+    size_t index = 0;
+    while (index < text.size()) {
+        if (text[index] == '\r' || text[index] == '\n') {
+            ++lines;
+            if (text[index] == '\r' && index + 1 < text.size() && text[index + 1] == '\n') {
+                ++index;
+            }
+        }
+        ++index;
+    }
+    if (!text.empty() && text.back() != '\r' && text.back() != '\n') {
+        ++lines;
+    }
+    return lines;
+}
+
 bool IsFormatRecursiveInput(std::string_view path) {
     const std::string suffix = ToLower(Extension(path));
     static const std::vector<std::string> supportedSuffixes =
@@ -116,14 +135,16 @@ void PrintFormatSummary(
     int changedCount,
     int ignoredCount,
     int parseErrorCount,
+    int lineCount,
     std::chrono::steady_clock::time_point start
 ) {
     const std::string completedFiles = CompletedFileText(processedCount, totalCount);
     std::fprintf(
         output,
-        "%s %s in %s.",
+        "%s %s, %s LOC in %s.",
         verb,
         completedFiles.c_str(),
+        FormatCount(lineCount).c_str(),
         FormatToolElapsed(std::chrono::steady_clock::now() - start).c_str()
     );
     if (changedCount > 0) {
@@ -133,12 +154,7 @@ void PrintFormatSummary(
         std::fprintf(output, " Skipped %d ignored file%s.", ignoredCount, ignoredCount == 1 ? "" : "s");
     }
     if (parseErrorCount > 0) {
-        std::fprintf(
-            output,
-            " %d file%s parsed with errors.",
-            parseErrorCount,
-            parseErrorCount == 1 ? "" : "s"
-        );
+        std::fprintf(output, " %d file%s parsed with errors.", parseErrorCount, parseErrorCount == 1 ? "" : "s");
     }
     std::fprintf(output, "\n");
 }
@@ -208,6 +224,7 @@ int RunFormat(int argc, char** argv) {
     int changedCount = 0;
     int ignoredCount = 0;
     int processedCount = 0;
+    int lineCount = 0;
     std::vector<PendingFileFormat> pendingResults;
     std::vector<ResolvedFileFormat> work;
     std::vector<std::string> files = options.files;
@@ -258,6 +275,7 @@ int RunFormat(int argc, char** argv) {
             result.pending.result.ok = false;
         } else {
             result.hasPending = true;
+            result.lineCount = CountSourceLines(*text);
             result.pending.result = FormatSourceText(*text, *item.config, item.file);
         }
         completed[index] = std::move(result);
@@ -274,6 +292,7 @@ int RunFormat(int argc, char** argv) {
             continue;
         }
         ++processedCount;
+        lineCount += completedFormat.lineCount;
         SourceFormatResult& result = completedFormat.pending.result;
         if (!result.ok) {
             PrintSourceError(stderr, file, result.error);
@@ -308,12 +327,7 @@ int RunFormat(int argc, char** argv) {
             std::fprintf(summary, "Formatting is required for %d file%s", changedCount, changedCount == 1 ? "" : "s");
         }
         if (parseErrorCount > 0) {
-            std::fprintf(
-                summary,
-                " (%d file%s parsed with errors)",
-                parseErrorCount,
-                parseErrorCount == 1 ? "" : "s"
-            );
+            std::fprintf(summary, " (%d file%s parsed with errors)", parseErrorCount, parseErrorCount == 1 ? "" : "s");
         }
         if (ignoredCount > 0) {
             std::fprintf(summary, ". Skipped %d ignored file%s", ignoredCount, ignoredCount == 1 ? "" : "s");
@@ -321,8 +335,9 @@ int RunFormat(int argc, char** argv) {
         const std::string completedFiles = CompletedFileText(processedCount, work.size());
         std::fprintf(
             summary,
-            ". Checked %s in %s.\n",
+            ". Checked %s, %s LOC in %s.\n",
             completedFiles.c_str(),
+            FormatCount(lineCount).c_str(),
             FormatToolElapsed(std::chrono::steady_clock::now() - start).c_str()
         );
         return 1;
@@ -336,6 +351,7 @@ int RunFormat(int argc, char** argv) {
         options.mode == FormatMode::DryRun ? changedCount : 0,
         ignoredCount,
         parseErrorCount,
+        lineCount,
         start
     );
     return 0;
