@@ -1,18 +1,6 @@
 # Source Formatting
 
-strictfmt is a strict, rule-based source formatter. No heuristics. No bikeshedding.
-
 This document specifies the source layout produced by `strictfmt`.
-
-The formatter owns whitespace, line breaks, indentation, wrapping, include ordering, trailing-comma normalization, and control-brace normalization. Source line breaks are not style input. Comments and allowed blank-line separators are grouping input.
-
-## Main Tenets
-
-- Never use vertical alignment.
-- Keep formatter-owned chains and lists compact or split item-by-item.
-- Use no heuristics or weights; use only the general line-break optimization rule.
-- Use indentation changes as visual group borders.
-- Use one indentation size for every indentation change.
 
 ## Spacing Rules
 
