@@ -15,6 +15,7 @@ TEST_TEMP_ROOT = Path(os.environ.get("STRICTFMT_TEST_TEMP_ROOT", STRICTFMT_ROOT 
 FORMAT_EXE = Path(os.environ.get("STRICTFMT_EXE", STRICTFMT_ROOT / "build" / "strictfmt.exe")).resolve()
 FORMAT_CMD_TEXT = os.environ.get("CASEDASH_FORMAT_CMD")
 FORMAT_CMD = Path(FORMAT_CMD_TEXT).resolve() if FORMAT_CMD_TEXT else None
+PLATFORM_LINE_ENDING = os.linesep.encode("ascii")
 INPUT_FIXTURE = Path("src") / "format_test_input.cpp"
 OUTPUT_FIXTURE = Path("src") / "format_test_output.cpp"
 USERVER_INPUT_FIXTURE = Path("src") / "format_userver_input.cpp"
@@ -37,6 +38,18 @@ def native_format(
         check=False,
         capture_output=True,
         text=True,
+    )
+
+
+def native_format_bytes(
+    *args: str, cwd: Path = STRICTFMT_ROOT, input_bytes: bytes | None = None
+) -> subprocess.CompletedProcess[bytes]:
+    return subprocess.run(
+        [str(FORMAT_EXE), *args],
+        cwd=cwd,
+        input=input_bytes,
+        check=False,
+        capture_output=True,
     )
 
 
@@ -63,6 +76,10 @@ def fixture_loc(path: Path) -> str:
 
 def write_empty_ignore(root: Path) -> None:
     (root / ".cpp-format-ignore").write_text("", encoding="utf-8")
+
+
+def join_lines(lines: list[bytes], line_ending: bytes) -> bytes:
+    return line_ending.join(lines) + line_ending
 
 
 def copy_default_config(root: Path) -> None:
@@ -386,6 +403,50 @@ class FormatCommandTests(unittest.TestCase):
             self.assertEqual(0, result.returncode, msg=f"stdout:\n{result.stdout}\n\nstderr:\n{result.stderr}")
             self.assertEqual("int main() {\n    return 1;\n}\n", source.read_text(encoding="utf-8").replace("\r\n", "\n"))
             self.assertIn("Formatted 1 file, 1 LOC", result.stdout)
+
+    def test_in_place_preserves_unambiguous_line_endings(self) -> None:
+        build_dir = TEST_TEMP_ROOT
+        build_dir.mkdir(exist_ok=True)
+
+        with tempfile.TemporaryDirectory(prefix="format_line_endings_", dir=build_dir) as temp_dir:
+            root = Path(temp_dir)
+            shutil.copyfile(STRICTFMT_ROOT / ".cpp-format", root / ".cpp-format")
+            write_empty_ignore(root)
+            input_lines = [b"int main(){", b"return 1;", b"}"]
+            expected_lines = [b"int main() {", b"    return 1;", b"}"]
+            cases = [
+                ("lf", b"\n"),
+                ("crlf", b"\r\n"),
+                ("cr", b"\r"),
+            ]
+            for name, line_ending in cases:
+                with self.subTest(name=name):
+                    source = root / f"sample_{name}.cpp"
+                    source.write_bytes(join_lines(input_lines, line_ending))
+
+                    result = native_format_bytes("-i", str(source), cwd=root)
+
+                    self.assertEqual(0, result.returncode, msg=f"stdout:\n{result.stdout!r}\n\nstderr:\n{result.stderr!r}")
+                    self.assertEqual(join_lines(expected_lines, line_ending), source.read_bytes())
+
+    def test_in_place_normalizes_mixed_line_endings_to_platform_default(self) -> None:
+        build_dir = TEST_TEMP_ROOT
+        build_dir.mkdir(exist_ok=True)
+
+        with tempfile.TemporaryDirectory(prefix="format_mixed_line_endings_", dir=build_dir) as temp_dir:
+            root = Path(temp_dir)
+            shutil.copyfile(STRICTFMT_ROOT / ".cpp-format", root / ".cpp-format")
+            write_empty_ignore(root)
+            source = root / "sample.cpp"
+            source.write_bytes(b"int main() {\r\n    return 1;\n}\r\n")
+
+            result = native_format_bytes("-i", str(source), cwd=root)
+
+            self.assertEqual(0, result.returncode, msg=f"stdout:\n{result.stdout!r}\n\nstderr:\n{result.stderr!r}")
+            self.assertEqual(
+                join_lines([b"int main() {", b"    return 1;", b"}"], PLATFORM_LINE_ENDING),
+                source.read_bytes(),
+            )
 
     def test_declarator_reference_tokens_include_managed_cpp(self) -> None:
         result = native_format(

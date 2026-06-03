@@ -1,6 +1,5 @@
 #include "tools/format.h"
 
-#include <algorithm>
 #include <string_view>
 
 #include "tools/impl/format_model.h"
@@ -9,43 +8,80 @@
 
 namespace {
 
-size_t AdvanceNewline(std::string_view text, size_t index) {
-    if (index < text.size() && text[index] == '\r' && index + 1 < text.size() && text[index + 1] == '\n') {
-        return index + 2;
-    }
-    return std::min(index + 1, text.size());
+enum class LineEndingKind {
+    Lf,
+    CrLf,
+    Cr,
+};
+
+std::string_view PlatformLineEnding() {
+#ifdef _WIN32
+    return "\r\n";
+#else
+    return "\n";
+#endif
 }
 
-bool IsNewlineByte(char ch) {
-    return ch == '\r' || ch == '\n';
+std::string_view LineEndingText(LineEndingKind kind) {
+    switch (kind) {
+        case LineEndingKind::Lf:
+            return "\n";
+        case LineEndingKind::CrLf:
+            return "\r\n";
+        case LineEndingKind::Cr:
+            return "\r";
+    }
+    return PlatformLineEnding();
 }
 
-bool TextMatchesFormattedOutput(std::string_view source, std::string_view formatted) {
-    size_t sourceIndex = 0;
-    size_t formattedIndex = 0;
-    while (sourceIndex < source.size() || formattedIndex < formatted.size()) {
-        if (sourceIndex >= source.size() || formattedIndex >= formatted.size()) {
-            return false;
-        }
-        char sourceChar = source[sourceIndex];
-        char formattedChar = formatted[formattedIndex];
-        if (IsNewlineByte(sourceChar)) {
-            sourceChar = '\n';
-            sourceIndex = AdvanceNewline(source, sourceIndex);
-        } else {
-            ++sourceIndex;
-        }
-        if (IsNewlineByte(formattedChar)) {
-            formattedChar = '\n';
-            formattedIndex = AdvanceNewline(formatted, formattedIndex);
-        } else {
-            ++formattedIndex;
-        }
-        if (sourceChar != formattedChar) {
-            return false;
+std::string_view SourceOutputLineEnding(std::string_view text) {
+    bool seenLf = false;
+    bool seenCrLf = false;
+    bool seenCr = false;
+    for (size_t index = 0; index < text.size(); ++index) {
+        const char ch = text[index];
+        if (ch == '\r') {
+            if (index + 1 < text.size() && text[index + 1] == '\n') {
+                seenCrLf = true;
+                ++index;
+            } else {
+                seenCr = true;
+            }
+        } else if (ch == '\n') {
+            seenLf = true;
         }
     }
-    return true;
+
+    const int styleCount = (seenLf ? 1 : 0) + (seenCrLf ? 1 : 0) + (seenCr ? 1 : 0);
+    if (styleCount != 1) {
+        return PlatformLineEnding();
+    }
+    if (seenCrLf) {
+        return LineEndingText(LineEndingKind::CrLf);
+    }
+    if (seenCr) {
+        return LineEndingText(LineEndingKind::Cr);
+    }
+    return LineEndingText(LineEndingKind::Lf);
+}
+
+std::string WithLineEndings(std::string_view text, std::string_view lineEnding) {
+    std::string result;
+    result.reserve(lineEnding.size() == 1 ? text.size() : text.size() + text.size() / 24);
+    for (size_t index = 0; index < text.size(); ++index) {
+        const char ch = text[index];
+        if (ch == '\r') {
+            if (index + 1 < text.size() && text[index + 1] == '\n') {
+                ++index;
+            }
+            result.append(lineEnding);
+        } else if (ch == '\n') {
+            result.append(lineEnding);
+        } else {
+            result.push_back(ch);
+        }
+    }
+    return result;
 }
 
 }  // namespace
@@ -58,7 +94,7 @@ SourceFormatResult FormatSourceText(std::string_view text, const FormatterConfig
         result.error = model.parse.error.empty() ? "parser setup failed" : model.parse.error;
         return result;
     }
-    result.formatted = FormatModelText(config, model, sourcePath);
-    result.changed = model.sourceText != nullptr && !TextMatchesFormattedOutput(*model.sourceText, result.formatted);
+    result.formatted = WithLineEndings(FormatModelText(config, model, sourcePath), SourceOutputLineEnding(*model.sourceText));
+    result.changed = model.sourceText != nullptr && *model.sourceText != result.formatted;
     return result;
 }
