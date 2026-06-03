@@ -5,15 +5,7 @@ IndentWidth: 4
 TabWidth: 4
 
 IncludeCategories:
-  - Regex: '^<(winsock2|ws2tcpip)\.h>$'
-    Priority: 1
-  - Regex: '^<windows\.h>$'
-    Priority: 2
   - Regex: '^<.*>$'
-    Priority: 3
-  - Regex: '^"vendor/.*"$'
-    Priority: 4
+    Priority: 1
   - Regex: '^".*"$'
-    Priority: 5
-MainIncludeChar: Quote
-IncludeIsMainRegex: '(Test)?$'
+    Priority: 2
