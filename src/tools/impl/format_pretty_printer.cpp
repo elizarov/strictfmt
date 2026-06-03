@@ -116,8 +116,25 @@ bool IsStructuredConditionalPreprocessorNode(const SyntaxNode& node) {
     ) && !IsPreprocessorNode(node);
 }
 
+bool IsSourceLineBreak(char ch) {
+    return ch == '\r' || ch == '\n';
+}
+
+size_t FindSourceLineBreak(std::string_view text, size_t start = 0) {
+    for (size_t index = start; index < text.size(); ++index) {
+        if (IsSourceLineBreak(text[index])) {
+            return index;
+        }
+    }
+    return std::string_view::npos;
+}
+
+bool ContainsSourceLineBreak(std::string_view text) {
+    return FindSourceLineBreak(text) != std::string_view::npos;
+}
+
 std::string_view FirstSourceLine(std::string_view text) {
-    const size_t end = text.find_first_of("\r\n");
+    const size_t end = FindSourceLineBreak(text);
     return end == std::string_view::npos ? text : text.substr(0, end);
 }
 
@@ -131,7 +148,7 @@ bool LineEndsWithContinuation(std::string_view line) {
 std::string_view ContinuedPreprocessorHeader(std::string_view text) {
     size_t lineStart = 0;
     while (lineStart < text.size()) {
-        const size_t lineEnd = text.find_first_of("\r\n", lineStart);
+        const size_t lineEnd = FindSourceLineBreak(text, lineStart);
         if (lineEnd == std::string_view::npos) {
             return text;
         }
@@ -148,7 +165,7 @@ std::string_view ContinuedPreprocessorHeader(std::string_view text) {
 }
 
 bool IsPreprocHeaderSeparator(const SyntaxNode& node) {
-    return node.kind == SyntaxNodeKind::FreeToken && node.text.find_first_of("\r\n") != std::string_view::npos;
+    return node.kind == SyntaxNodeKind::FreeToken && ContainsSourceLineBreak(node.text);
 }
 
 bool IsPreprocIfdefHeaderChild(const SyntaxNode& node, size_t index) {
@@ -194,7 +211,7 @@ std::string_view PreprocEndifLine(const SyntaxNode& node) {
 }
 
 bool IsRawStatementToken(const PrintToken& token) {
-    if (token.kind != PrintTokenKind::Free || token.text.find_first_of("\r\n") != std::string_view::npos) {
+    if (token.kind != PrintTokenKind::Free || ContainsSourceLineBreak(token.text)) {
         return false;
     }
     const SyntaxNodeKind parent = token.parentKind;
@@ -630,7 +647,7 @@ void AppendTokens(
 }
 
 bool IsNewline(char ch) {
-    return ch == '\r' || ch == '\n';
+    return IsSourceLineBreak(ch);
 }
 
 std::string CollapseSourceWhitespace(std::string_view text) {
@@ -2195,7 +2212,7 @@ private:
     }
 
     void PrintPreprocessor(const PrintToken& token, const PrintToken* next) {
-        const bool hasLineBreak = token.text.find_first_of("\r\n") != std::string_view::npos;
+        const bool hasLineBreak = ContainsSourceLineBreak(token.text);
         const std::string line = hasLineBreak ? PreservePreprocessorLines(token.text) :
             NormalizeTrailingLineCommentSpacing(CollapseSourceWhitespace(token.text));
         const bool isInclude = StartsWith(line, "#include");
