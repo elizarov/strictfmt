@@ -13,6 +13,7 @@ TEST_ROOT = Path(__file__).resolve().parent
 STRICTFMT_ROOT = Path(os.environ.get("STRICTFMT_PROJECT_ROOT", TEST_ROOT.parents[1])).resolve()
 TEST_TEMP_ROOT = Path(os.environ.get("STRICTFMT_TEST_TEMP_ROOT", STRICTFMT_ROOT / "build")).resolve()
 FORMAT_EXE = Path(os.environ.get("STRICTFMT_EXE", STRICTFMT_ROOT / "build" / "strictfmt.exe")).resolve()
+FORMAT_EXE_ARGS = os.environ.get("STRICTFMT_EXE_ARGS", "").split()
 FORMAT_CMD_TEXT = os.environ.get("CASEDASH_FORMAT_CMD")
 FORMAT_CMD = Path(FORMAT_CMD_TEXT).resolve() if FORMAT_CMD_TEXT else None
 PLATFORM_LINE_ENDING = os.linesep.encode("ascii")
@@ -33,7 +34,7 @@ def native_format(
     *args: str, cwd: Path = STRICTFMT_ROOT, input_text: str | None = None
 ) -> subprocess.CompletedProcess[str]:
     return subprocess.run(
-        [str(FORMAT_EXE), *args],
+        [str(FORMAT_EXE), *FORMAT_EXE_ARGS, *args],
         cwd=cwd,
         input=input_text,
         check=False,
@@ -46,7 +47,7 @@ def native_format_bytes(
     *args: str, cwd: Path = STRICTFMT_ROOT, input_bytes: bytes | None = None
 ) -> subprocess.CompletedProcess[bytes]:
     return subprocess.run(
-        [str(FORMAT_EXE), *args],
+        [str(FORMAT_EXE), *FORMAT_EXE_ARGS, *args],
         cwd=cwd,
         input=input_bytes,
         check=False,
