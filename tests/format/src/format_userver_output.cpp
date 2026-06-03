@@ -1,9 +1,9 @@
 #pragma once
 
-// Golden fixture for userver formatting without conditional preprocessing.
-// Keep userver examples that do not use #if/#ifdef/#ifndef here. Conditional preprocessor
-// examples come only from userver and live in format_ifdef_input.cpp and format_ifdef_output.cpp,
-// without "userver" in the file names; place future userver examples by that boundary.
+// Golden fixture for userver formatting.
+// Keep conditional preprocessor examples that patch whole declarations, statements, fields, methods,
+// macros, or includes in format_ifdef_input.cpp and format_ifdef_output.cpp.
+// The guarded extern "C" wrapper stays here because it is a namespace-like file-scope grouping form.
 // Mirrors userver .clang-format include setting: IncludeBlocks: Preserve.
 
 #include <userver/utils/assert.hpp>
@@ -65,6 +65,16 @@ BENCHMARK_DEFINE_TEMPLATE_F(FormatterBenchmark, Value)(benchmark::State& state) 
 BENCHMARK_DEFINE_F(FormatterBenchmark, Inline)(benchmark::State& state) {
     UseBenchmarkState(state);
 }
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+int FormatUserverExternCValue(int input);
+
+#ifdef __cplusplus
+}
+#endif
 
 namespace format_userver_fixture {
 

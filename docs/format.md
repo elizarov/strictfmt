@@ -443,6 +443,20 @@ public:
 }
 ```
 
+`extern "C"` linkage blocks follow the same indentation rule as namespace declarations. The linkage block does not consume an extra indent level, so declarations inside it stay at the enclosing declaration indentation. The conditional C++ guard form keeps the directives and linkage braces at column zero.
+
+```cpp
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+int RuntimeEntryPoint(int value);
+
+#ifdef __cplusplus
+}
+#endif
+```
+
 ## Declaration And Control Headers
 
 Function and method declarations use list layout for parameters.
