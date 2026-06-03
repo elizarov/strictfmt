@@ -1,4 +1,6 @@
 .git
-build
+build_linux
+build_macos
+build_windows
 tests/format/src
 vendor
