@@ -178,6 +178,44 @@ bool CompactEmptyDelimitedText(std::string_view text) {
     return text == "()" || text == "[]" || text == "<>" || text == "{}";
 }
 
+bool CommentConsumesLineTail(std::string_view source, uint32_t commentStart, uint32_t commentEnd) {
+    if (commentStart + 1 >= source.size()) {
+        return true;
+    }
+    if (source[commentStart] == '/' && source[commentStart + 1] == '/') {
+        return true;
+    }
+    for (size_t index = commentEnd; index < source.size(); ++index) {
+        const char ch = source[index];
+        if (ch == '\r' || ch == '\n') {
+            return true;
+        }
+        if (ch != ' ' && ch != '\t') {
+            return false;
+        }
+    }
+    return true;
+}
+
+bool IsBlockComment(std::string_view source, uint32_t commentStart) {
+    return commentStart + 1 < source.size() && source[commentStart] == '/' && source[commentStart + 1] == '*';
+}
+
+bool KeepsBlockCommentInlineInParent(SyntaxNodeKind kind) {
+    switch (kind) {
+        case SyntaxNodeKind::ArgumentList:
+        case SyntaxNodeKind::InitializerList:
+        case SyntaxNodeKind::FieldInitializerList:
+        case SyntaxNodeKind::ParameterList:
+        case SyntaxNodeKind::SubscriptArgumentList:
+        case SyntaxNodeKind::TemplateArgumentList:
+        case SyntaxNodeKind::TemplateParameterList:
+            return true;
+        default:
+            return false;
+    }
+}
+
 std::optional<size_t> PreviousNonTriviaChildIndex(const SyntaxChildList& children, size_t before) {
     while (before > 0) {
         --before;
@@ -509,7 +547,8 @@ inline void AppendTsNode(
     std::string_view source,
     SyntaxNode& parent,
     TsNodeSyntax syntax,
-    bool isTrailingComment
+    bool isTrailingComment,
+    bool isInlineBlockComment
 ) {
     if (syntax.wrapperRole == SyntaxWrapperRole::Flatten) {
         AppendTsChildren(model, tsNode, source, parent, ts_node_child_count(tsNode));
@@ -518,6 +557,8 @@ inline void AppendTsNode(
     SyntaxNode* childNode = BuildNode(model, tsNode, source, &parent, syntax);
     if (isTrailingComment && childNode->kind == SyntaxNodeKind::Comment) {
         childNode->kind = SyntaxNodeKind::TrailingComment;
+    } else if (isInlineBlockComment && childNode->kind == SyntaxNodeKind::Comment) {
+        childNode->kind = SyntaxNodeKind::FreeToken;
     }
     parent.children.push_back(childNode);
 }
@@ -543,9 +584,14 @@ inline void AppendTsChild(
     )) {
         AppendChild(parent, MakeBlankLine(model));
     }
+    const bool isComment = childSyntax.kind == SyntaxNodeKind::Comment;
+    const bool isBlock = isComment && IsBlockComment(source, childStart);
+    const bool consumesLineTail = !isComment || CommentConsumesLineTail(source, childStart, childEnd);
+    const bool keepBlockInline = isBlock && KeepsBlockCommentInlineInParent(parent.kind);
     const bool isTrailingComment =
-        childSyntax.kind == SyntaxNodeKind::Comment && hasPreviousSibling && previousEndRow == childStartRow;
-    AppendTsNode(model, child, source, parent, childSyntax, isTrailingComment);
+        isComment && !keepBlockInline && hasPreviousSibling && previousEndRow == childStartRow && consumesLineTail;
+    const bool isInlineBlockComment = isBlock && (keepBlockInline || !consumesLineTail);
+    AppendTsNode(model, child, source, parent, childSyntax, isTrailingComment, isInlineBlockComment);
     previousEnd = childEnd;
     previousEndRow = childEndRow;
     previousEndColumn = childEndColumn;

@@ -140,6 +140,7 @@ IncludeText ParseIncludeText(std::string_view text) {
         line.push_back(' ');
         line.append(suffix);
     }
+    line = NormalizeTrailingLineCommentSpacing(line);
     return {.line = std::move(line), .target = std::string(target)};
 }
 

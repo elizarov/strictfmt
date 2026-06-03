@@ -121,6 +121,32 @@ std::string_view FirstSourceLine(std::string_view text) {
     return end == std::string_view::npos ? text : text.substr(0, end);
 }
 
+bool LineEndsWithContinuation(std::string_view line) {
+    while (!line.empty() && (line.back() == ' ' || line.back() == '\t')) {
+        line.remove_suffix(1);
+    }
+    return !line.empty() && line.back() == '\\';
+}
+
+std::string_view ContinuedPreprocessorHeader(std::string_view text) {
+    size_t lineStart = 0;
+    while (lineStart < text.size()) {
+        const size_t lineEnd = text.find_first_of("\r\n", lineStart);
+        if (lineEnd == std::string_view::npos) {
+            return text;
+        }
+        const std::string_view line = text.substr(lineStart, lineEnd - lineStart);
+        if (!LineEndsWithContinuation(line)) {
+            return text.substr(0, lineEnd);
+        }
+        lineStart = lineEnd + 1;
+        if (text[lineEnd] == '\r' && lineStart < text.size() && text[lineStart] == '\n') {
+            ++lineStart;
+        }
+    }
+    return text;
+}
+
 bool IsPreprocHeaderSeparator(const SyntaxNode& node) {
     return node.kind == SyntaxNodeKind::FreeToken && node.text.find_first_of("\r\n") != std::string_view::npos;
 }
@@ -156,6 +182,13 @@ bool IsPreprocEndifToken(const SyntaxNode& node) {
         (line == "#endif" || StartsWith(line, "#endif ") || StartsWith(line, "#endif\t"));
 }
 
+bool IsCommentAlreadyInPreprocessorHeader(const SyntaxNode& parent, const SyntaxNode& child) {
+    if (child.kind != SyntaxNodeKind::Comment && child.kind != SyntaxNodeKind::TrailingComment) {
+        return false;
+    }
+    return FirstSourceLine(parent.text).find(child.text) != std::string_view::npos;
+}
+
 std::string_view PreprocEndifLine(const SyntaxNode& node) {
     return TrimSourceLine(FirstSourceLine(node.text));
 }
@@ -168,6 +201,7 @@ bool IsRawStatementToken(const PrintToken& token) {
     return (
         parent == SyntaxNodeKind::TranslationUnit ||
         parent == SyntaxNodeKind::DeclarationList ||
+        parent == SyntaxNodeKind::FieldDeclarationList ||
         parent == SyntaxNodeKind::CompoundStatement
     ) && EndsWith(TrimSourceLine(token.text), ";");
 }
@@ -199,26 +233,95 @@ bool PreservesBlankLineToken(SyntaxNodeKind parentKind) {
         parentKind == SyntaxNodeKind::PreprocIfdef;
 }
 
+bool IsListOpenToken(SyntaxNodeKind kind) {
+    return kind == SyntaxNodeKind::LeftParen ||
+        kind == SyntaxNodeKind::LeftBracket ||
+        kind == SyntaxNodeKind::LeftBrace ||
+        kind == SyntaxNodeKind::Less;
+}
+
+SyntaxNodeKind MatchingListCloseToken(SyntaxNodeKind kind) {
+    switch (kind) {
+        case SyntaxNodeKind::LeftParen:
+            return SyntaxNodeKind::RightParen;
+        case SyntaxNodeKind::LeftBracket:
+            return SyntaxNodeKind::RightBracket;
+        case SyntaxNodeKind::LeftBrace:
+            return SyntaxNodeKind::RightBrace;
+        case SyntaxNodeKind::Less:
+            return SyntaxNodeKind::Greater;
+        default:
+            return SyntaxNodeKind::Unknown;
+    }
+}
+
+bool HasDirectKnownChild(const SyntaxNode& node, SyntaxNodeKind kind) {
+    for (const SyntaxNode* child : node.children) {
+        if (child != nullptr && child->kind == kind) {
+            return true;
+        }
+    }
+    return false;
+}
+
+bool HasDirectListDelimiterPair(const SyntaxNode& node) {
+    for (const SyntaxNode* child : node.children) {
+        if (child == nullptr || !IsListOpenToken(child->kind)) {
+            continue;
+        }
+        const SyntaxNodeKind close = MatchingListCloseToken(child->kind);
+        if (close != SyntaxNodeKind::Unknown && HasDirectKnownChild(node, close)) {
+            return true;
+        }
+    }
+    return false;
+}
+
+bool HasDirectDelimiterPair(const SyntaxNode& node, SyntaxNodeKind openKind) {
+    return HasDirectKnownChild(node, openKind) && HasDirectKnownChild(node, MatchingListCloseToken(openKind));
+}
+
+bool HasDirectListPrefix(const SyntaxNode& node) {
+    return HasDirectKnownChild(node, SyntaxNodeKind::Colon);
+}
+
+bool IsSeparatedListContainer(const SyntaxNode& node) {
+    if (HasDirectKnownChild(node, SyntaxNodeKind::Comma)) {
+        return HasDirectListDelimiterPair(node) || HasDirectListPrefix(node);
+    }
+    return HasDirectKnownChild(node, SyntaxNodeKind::Semicolon) &&
+        HasDirectDelimiterPair(node, SyntaxNodeKind::LeftParen);
+}
+
+bool HasDirectCommentChild(const SyntaxNode& node) {
+    for (const SyntaxNode* child : node.children) {
+        if (child != nullptr && (
+            child->kind == SyntaxNodeKind::Comment || child->kind == SyntaxNodeKind::TrailingComment
+        )) {
+            return true;
+        }
+    }
+    return false;
+}
+
+bool HasSeparatedListAncestor(const SyntaxNode* node) {
+    for (
+        const SyntaxNode* cursor = node == nullptr ? nullptr : node->parent;
+        cursor != nullptr;
+        cursor = cursor->parent
+    ) {
+        if (IsSeparatedListContainer(*cursor)) {
+            return true;
+        }
+    }
+    return false;
+}
+
 bool KeepsListCommentInBreakModel(const PrintToken& token) {
     if (!IsCommentToken(token.kind)) {
         return false;
     }
-    // Keep list comments in the same optimization segment so they can force all comma breaks together.
-    switch (token.parentKind) {
-        case SyntaxNodeKind::InitializerList:
-        case SyntaxNodeKind::FieldInitializerList:
-        case SyntaxNodeKind::BaseClassClause:
-        case SyntaxNodeKind::ParameterList:
-        case SyntaxNodeKind::ArgumentList:
-        case SyntaxNodeKind::SubscriptArgumentList:
-        case SyntaxNodeKind::TemplateParameterList:
-        case SyntaxNodeKind::TemplateArgumentList:
-        case SyntaxNodeKind::LambdaCaptureSpecifier:
-        case SyntaxNodeKind::PreprocParams:
-            return true;
-        default:
-            return false;
-    }
+    return HasSeparatedListAncestor(token.node);
 }
 
 void AppendPreprocessorPrintToken(
@@ -340,7 +443,7 @@ void AppendTokens(
     if (IsStructuredConditionalPreprocessorNode(node)) {
         AppendPreprocessorPrintToken(
             node,
-            TrimSourceLine(FirstSourceLine(node.text)),
+            ContinuedPreprocessorHeader(node.text),
             parentKind,
             grandParentKind,
             childInTemplateDeclaration,
@@ -378,6 +481,9 @@ void AppendTokens(
                     macroValueElement,
                     tokens
                 );
+                continue;
+            }
+            if (IsCommentAlreadyInPreprocessorHeader(node, *child)) {
                 continue;
             }
             if (nodeKind == SyntaxNodeKind::PreprocIfdef && IsPreprocIfdefHeaderChild(*child, index)) {
@@ -588,6 +694,26 @@ std::string PreserveSourceLines(std::string_view text) {
     }
     while (!result.empty() && result.back() == '\n') {
         result.pop_back();
+    }
+    return result;
+}
+
+std::string PreservePreprocessorLines(std::string_view text) {
+    const std::string normalized = PreserveSourceLines(text);
+    std::string result;
+    size_t start = 0;
+    while (start <= normalized.size()) {
+        const size_t end = normalized.find('\n', start);
+        const std::string_view line = end == std::string::npos ? std::string_view(normalized).substr(start) :
+            std::string_view(normalized).substr(start, end - start);
+        if (!result.empty()) {
+            result.push_back('\n');
+        }
+        result.append(NormalizeTrailingLineCommentSpacing(line));
+        if (end == std::string::npos) {
+            break;
+        }
+        start = end + 1;
     }
     return result;
 }
@@ -1226,6 +1352,7 @@ private:
                 output_.push_back(' ');
             }
             Write(FormatTokenText(printToken));
+            NewLine(false);
             return;
         }
         if (token.spaceBefore && !suppressSpace && !atLineStart_) {
@@ -1789,7 +1916,6 @@ private:
         if (!closeIndex || !lambdaCloseIndex || *lambdaCloseIndex >= *closeIndex) {
             return std::nullopt;
         }
-
         FormatBreakToken virtualClose{&(*activeTokens_)[*closeIndex], false, true};
         const int baseIndentLevel = pendingIndentLevel_.value_or(indentLevel_);
         bool hasCommaAfterLambda = false;
@@ -1809,7 +1935,7 @@ private:
             .breakContext = {
                 .virtualDelimiterOpen = listOpen,
                 .virtualDelimiterClose = virtualClose,
-                .forceSplitVirtualDelimiter = hasCommaAfterLambda
+                .forceSplitVirtualDelimiter = hasCommaAfterLambda || HasDirectCommentChild(*list)
             },
             .deferredContext = {
                 .list = list,
@@ -1847,8 +1973,11 @@ private:
         if (RoleForBrace(token) != BraceRole::Block) {
             return false;
         }
-        if (afterClose == nullptr || afterClose->kind != PrintTokenKind::Known) {
+        if (afterClose == nullptr) {
             return false;
+        }
+        if (afterClose->kind != PrintTokenKind::Known) {
+            return true;
         }
         const bool closesLambdaArgument = token.parentKind == SyntaxNodeKind::CompoundStatement &&
             token.grandParentKind == SyntaxNodeKind::LambdaExpression &&
@@ -1920,7 +2049,8 @@ private:
             previous->inMacroValue &&
             previous->macroValueElement != nullptr &&
             current.macroValueElement != nullptr &&
-            previous->macroValueElement != current.macroValueElement;
+            previous->macroValueElement != current.macroValueElement &&
+            FormatTokenNeedsSpace(previous, current);
     }
 
     void PrepareMacroBoundary(const PrintToken* previous, const PrintToken& current) {
@@ -2000,7 +2130,7 @@ private:
             if (CanAttachToPreviousPreprocessorLine(token, rawPrevious)) {
                 ReopenLastOutputLine();
             }
-            PrintComment(token);
+            PrintComment(token, next);
             return;
         }
         if (token.kind == PrintTokenKind::Preprocessor) {
@@ -2023,23 +2153,28 @@ private:
                 NewLine();
             }
             Write(CollapseSourceWhitespace(token.text));
-            NewLine();
+            if (!(rawNext != nullptr && rawNext->kind == PrintTokenKind::TrailingComment)) {
+                NewLine();
+            }
             return;
         }
         BufferToken(token);
     }
 
-    void PrintComment(const PrintToken& token) {
-        if (lineHasText_) {
+    void PrintComment(const PrintToken& token, const PrintToken* next) {
+        if (token.kind == PrintTokenKind::TrailingComment && lineHasText_) {
             Space();
             output_.push_back(' ');
             ++currentColumn_;
             Write(token.text);
-            NewLine();
+            NewLine(ShouldContinueMacroLine(token, next));
             return;
         }
+        if (lineHasText_) {
+            NewLine(ShouldContinueMacroLine(token, next));
+        }
         Write(token.text);
-        NewLine();
+        NewLine(ShouldContinueMacroLine(token, next));
     }
 
     void PrintIncludeRun(const PrintToken& token, const PrintToken* next) {
@@ -2061,9 +2196,8 @@ private:
 
     void PrintPreprocessor(const PrintToken& token, const PrintToken* next) {
         const bool hasLineBreak = token.text.find_first_of("\r\n") != std::string_view::npos;
-        const std::string line = hasLineBreak ?
-            FormatOpeningIncludeBlocksText(config_, PreserveSourceLines(token.text), sourcePath_) :
-            CollapseSourceWhitespace(token.text);
+        const std::string line = hasLineBreak ? PreservePreprocessorLines(token.text) :
+            NormalizeTrailingLineCommentSpacing(CollapseSourceWhitespace(token.text));
         const bool isInclude = StartsWith(line, "#include");
         if (token.structuredPreprocessor || isInclude) {
             if (lineHasText_) {
