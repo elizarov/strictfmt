@@ -36,6 +36,14 @@ endif()
 
 enable_testing()
 
+option(STRICTFMT_BUILD_STANDALONE "Build the standalone strictfmt executable." ON)
+set(STRICTFMT_FORMAT_TEST_EXE "" CACHE STRING
+    "Executable used by strictfmt format tests. Defaults to the standalone strictfmt target."
+)
+set(STRICTFMT_FORMAT_TEST_EXE_ARGS "" CACHE STRING
+    "Fixed arguments passed after STRICTFMT_FORMAT_TEST_EXE and before strictfmt test arguments."
+)
+
 function(strictfmt_apply_common_options target)
     target_compile_definitions(${target} PUBLIC
         NOMINMAX
@@ -126,22 +134,34 @@ target_link_libraries(strictfmt_cli PUBLIC
 strictfmt_apply_common_options(strictfmt_cli)
 add_library(strictfmt::cli ALIAS strictfmt_cli)
 
-add_executable(strictfmt
-    src/strictfmt_main.cpp
-)
-target_link_libraries(strictfmt PRIVATE
-    strictfmt_cli
-)
-strictfmt_apply_common_options(strictfmt)
-if(MSVC)
-    target_link_options(strictfmt PRIVATE
-        /STACK:16777216
+if(STRICTFMT_BUILD_STANDALONE)
+    add_executable(strictfmt
+        src/strictfmt_main.cpp
     )
+    target_link_libraries(strictfmt PRIVATE
+        strictfmt_cli
+    )
+    strictfmt_apply_common_options(strictfmt)
+    if(MSVC)
+        target_link_options(strictfmt PRIVATE
+            /STACK:16777216
+        )
+    endif()
 endif()
 
 if(Python3_FOUND)
+    set(strictfmt_format_test_exe "${STRICTFMT_FORMAT_TEST_EXE}")
+    set(strictfmt_format_test_depends)
+    if(strictfmt_format_test_exe STREQUAL "")
+        if(NOT TARGET strictfmt)
+            message(FATAL_ERROR "STRICTFMT_FORMAT_TEST_EXE must be set when STRICTFMT_BUILD_STANDALONE is OFF.")
+        endif()
+        set(strictfmt_format_test_exe "$<TARGET_FILE:strictfmt>")
+        list(APPEND strictfmt_format_test_depends strictfmt)
+    endif()
     set(strictfmt_format_test_env
-        "STRICTFMT_EXE=$<TARGET_FILE:strictfmt>"
+        "STRICTFMT_EXE=${strictfmt_format_test_exe}"
+        "STRICTFMT_EXE_ARGS=${STRICTFMT_FORMAT_TEST_EXE_ARGS}"
         "STRICTFMT_PROJECT_ROOT=${CMAKE_CURRENT_SOURCE_DIR}"
         "STRICTFMT_TEST_TEMP_ROOT=${CMAKE_BINARY_DIR}/strictfmt-tests"
     )
@@ -158,7 +178,9 @@ if(Python3_FOUND)
             ${CMAKE_COMMAND} -E env ${strictfmt_format_test_env}
             "${Python3_EXECUTABLE}"
             "${CMAKE_CURRENT_SOURCE_DIR}/tests/format/format_test.py"
-        DEPENDS strictfmt
         VERBATIM
     )
+    if(strictfmt_format_test_depends)
+        add_dependencies(strictfmt_tests ${strictfmt_format_test_depends})
+    endif()
 endif()

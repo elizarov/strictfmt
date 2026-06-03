@@ -26,6 +26,12 @@ The script writes all generated files under `build_windows\`:
 
 The build directory is ignored by Git.
 
+Embedding hosts can set `STRICTFMT_BUILD_STANDALONE=OFF` to import the strictfmt
+libraries without creating the standalone formatter target. Formatter tests can
+still be reused by setting `STRICTFMT_FORMAT_TEST_EXE` to the host executable and
+`STRICTFMT_FORMAT_TEST_EXE_ARGS` to fixed arguments that precede the normal
+strictfmt test arguments.
+
 ## Unix
 
 The Unix build uses CMake with the Clang C and C++ toolchain. It supports Linux
