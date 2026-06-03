@@ -77,6 +77,7 @@ Without those parentheses, `a < b > (c)` is parsed as the template call `a<b>(c)
 ## Line Hygiene
 
 - Remove trailing whitespace from every line.
+- Preserve LF, CRLF, or CR line endings when the source uses one style. For mixed line endings, use the current platform default.
 - Use 4 spaces per indent level. Do not emit tabs.
 - Preserve comments in source order. A trailing comment stays trailing only when it was trailing in source. A standalone comment stays standalone.
 - Preserve one source blank line when it separates already closed declarations or statements at the same structural level. Collapse multiple blank lines to one.

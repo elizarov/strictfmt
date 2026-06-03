@@ -6,6 +6,11 @@
 #include <string_view>
 #include <vector>
 
+#ifdef _WIN32
+#include <fcntl.h>
+#include <io.h>
+#endif
+
 #include "tools/format.h"
 #include "tools/impl/format_args.h"
 #include "tools/impl/format_config.h"
@@ -34,17 +39,12 @@ struct CompletedFileFormat {
     bool readFailed = false;
 };
 
-std::string ToFileLineEndings(std::string_view text) {
-    std::string result;
-    result.reserve(text.size() + text.size() / 24);
-    for (char ch : text) {
-        if (ch == '\n') {
-            result += "\r\n";
-        } else {
-            result.push_back(ch);
-        }
-    }
-    return result;
+void SetBinaryMode(FILE* file) {
+#ifdef _WIN32
+    _setmode(_fileno(file), _O_BINARY);
+#else
+    (void)file;
+#endif
 }
 
 std::string ReadStdinText() {
@@ -194,6 +194,7 @@ int RunFormat(int argc, char** argv) {
             std::fprintf(stderr, "%s\n", error.c_str());
             return 2;
         }
+        SetBinaryMode(stdin);
         SourceFormatResult result = FormatSourceText(ReadStdinText(), *config, "<stdin>");
         if (!result.ok) {
             PrintSourceError(stderr, "<stdin>", result.error);
@@ -208,6 +209,7 @@ int RunFormat(int argc, char** argv) {
             return 1;
         }
         if (options.mode == FormatMode::Stdout) {
+            SetBinaryMode(stdout);
             std::fwrite(result.formatted.data(), 1, result.formatted.size(), stdout);
         }
         std::fprintf(
@@ -311,9 +313,10 @@ int RunFormat(int argc, char** argv) {
     if (!failed) {
         for (const PendingFileFormat& pending : pendingResults) {
             if (options.mode == FormatMode::Stdout) {
+                SetBinaryMode(stdout);
                 std::fwrite(pending.result.formatted.data(), 1, pending.result.formatted.size(), stdout);
             } else if (options.mode == FormatMode::InPlace && pending.result.changed) {
-                if (!WriteFileBinary(pending.file, ToFileLineEndings(pending.result.formatted))) {
+                if (!WriteFileBinary(pending.file, pending.result.formatted)) {
                     std::fprintf(stderr, "Failed to write %s\n", pending.file.c_str());
                     failed = true;
                 }
