@@ -16,6 +16,7 @@ FORMAT_EXE = Path(os.environ.get("STRICTFMT_EXE", STRICTFMT_ROOT / "build" / "st
 FORMAT_CMD_TEXT = os.environ.get("CASEDASH_FORMAT_CMD")
 FORMAT_CMD = Path(FORMAT_CMD_TEXT).resolve() if FORMAT_CMD_TEXT else None
 PLATFORM_LINE_ENDING = os.linesep.encode("ascii")
+PRETTY_PRINTER_SOURCE = STRICTFMT_ROOT / "src" / "tools" / "impl" / "format_pretty_printer.cpp"
 INPUT_FIXTURE = Path("src") / "format_test_input.cpp"
 OUTPUT_FIXTURE = Path("src") / "format_test_output.cpp"
 USERVER_INPUT_FIXTURE = Path("src") / "format_userver_input.cpp"
@@ -447,6 +448,11 @@ class FormatCommandTests(unittest.TestCase):
                 join_lines([b"int main() {", b"    return 1;", b"}"], PLATFORM_LINE_ENDING),
                 source.read_bytes(),
             )
+
+    def test_pretty_printer_does_not_hard_code_crlf_line_break_searches(self) -> None:
+        pretty_printer = PRETTY_PRINTER_SOURCE.read_text(encoding="utf-8")
+
+        self.assertNotIn('"\\r\\n"', pretty_printer)
 
     def test_declarator_reference_tokens_include_managed_cpp(self) -> None:
         result = native_format(
