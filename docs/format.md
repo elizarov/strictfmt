@@ -787,10 +787,13 @@ Configuration is intentionally narrow and does not expose style policy knobs. Br
 
 When `--style` is omitted, `strictfmt` searches upward from each formatted file for `.cpp-format`. For `--stdin`, discovery starts at the current working directory. `--style <path>` uses the provided config path for every input. Formatting file paths are still checked against the nearest `.cpp-format-ignore` found by walking upward from each formatted file.
 
+`Inherit: Parent` makes a `.cpp-format` file inherit from the next `.cpp-format` found by searching upward from the config file's parent directory. Explicit `--style <path>` configs use the same parent search rooted at the explicit config file. If no parent config exists, inheritance starts from built-in defaults. Local scalar keys override inherited scalar keys. Local list keys replace inherited lists. Nested maps, such as `MacroCategories` and `StreamShift`, inherit by category, and a local category replaces only that inherited category.
+
 The `.cpp-format` file uses the formatter's YAML-like subset: blank lines, `---`, `...`, and comments are ignored; comments start with `#` outside single or double quotes; scalars may be unquoted, single quoted, or double quoted; lists use indented `- value` entries. Unknown keys are ignored by the native formatter and are not consumed by parser regeneration.
 
 Supported top-level keys:
 
+- `Inherit`: optional `Parent`, enabling parent `.cpp-format` inheritance.
 - `ColumnLimit`: integer target column for formatter-owned wrapping. The default is `120`.
 - `IndentWidth`: integer spaces per indentation level. The default is `4`.
 - `TabWidth`: integer tab display width. The default is `4`.
@@ -804,6 +807,7 @@ Example:
 
 ```yaml
 ---
+Inherit: Parent
 ColumnLimit: 120
 IndentWidth: 4
 TabWidth: 4

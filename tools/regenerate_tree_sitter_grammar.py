@@ -90,9 +90,17 @@ def unquote_scalar(value: str) -> str:
     return value
 
 
-def load_macro_category_section(config_path: Path) -> dict[str, list[str]]:
+def split_key_value(line: str) -> tuple[str, str]:
+    key, separator, value = line.partition(":")
+    if not separator:
+        return "", ""
+    return key.strip(), value.strip()
+
+
+def load_macro_category_section(config_path: Path) -> tuple[bool, dict[str, list[str]]]:
     lines = config_path.read_text(encoding="utf-8").splitlines()
     macro_categories: dict[str, list[str]] = {}
+    inherit_parent = False
     in_macro_section = False
     current_key: str | None = None
     for raw_line in lines:
@@ -101,7 +109,12 @@ def load_macro_category_section(config_path: Path) -> dict[str, list[str]]:
             continue
         indent = len(raw_line) - len(raw_line.lstrip(" "))
         if indent == 0:
-            in_macro_section = line == "MacroCategories:"
+            key, value = split_key_value(line)
+            if key == "Inherit":
+                if unquote_scalar(value) != "Parent":
+                    fail(f"{config_path} Inherit must be Parent")
+                inherit_parent = True
+            in_macro_section = key == "MacroCategories" and not value
             current_key = None
             continue
         if not in_macro_section:
@@ -111,7 +124,44 @@ def load_macro_category_section(config_path: Path) -> dict[str, list[str]]:
             macro_categories.setdefault(current_key, [])
         elif indent >= 4 and current_key is not None and line.startswith("- "):
             macro_categories[current_key].append(unquote_scalar(line[2:]))
-    return macro_categories
+    return inherit_parent, macro_categories
+
+
+def find_parent_config(config_path: Path) -> Path | None:
+    config_directory = config_path.resolve().parent
+    directory = config_directory.parent
+    if directory == config_directory:
+        return None
+    while True:
+        candidate = directory / ".cpp-format"
+        if candidate.exists():
+            return candidate
+        if directory == directory.parent:
+            return None
+        directory = directory.parent
+
+
+def load_effective_macro_category_section(
+    config_path: Path,
+    loading_stack: list[Path] | None = None,
+) -> dict[str, list[str]]:
+    resolved_path = config_path.resolve()
+    if loading_stack is None:
+        loading_stack = []
+    if resolved_path in loading_stack:
+        fail(f"{config_path} formatter config inheritance cycle")
+    loading_stack.append(resolved_path)
+
+    inherit_parent, macro_categories = load_macro_category_section(resolved_path)
+    effective_categories: dict[str, list[str]] = {}
+    if inherit_parent:
+        parent_config = find_parent_config(resolved_path)
+        if parent_config is not None:
+            effective_categories.update(load_effective_macro_category_section(parent_config, loading_stack))
+    effective_categories.update(macro_categories)
+
+    loading_stack.pop()
+    return effective_categories
 
 
 def clean_macro_category_names(config_path: Path, config_key: str, names: list[str]) -> list[str]:
@@ -131,7 +181,7 @@ def clean_macro_category_names(config_path: Path, config_key: str, names: list[s
 
 
 def load_macro_categories(config_path: Path) -> dict[str, list[str]]:
-    macro_categories = load_macro_category_section(config_path)
+    macro_categories = load_effective_macro_category_section(config_path)
     if not macro_categories:
         fail(f"{config_path} MacroCategories must be present")
 
