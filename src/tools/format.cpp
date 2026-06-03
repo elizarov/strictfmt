@@ -94,7 +94,8 @@ SourceFormatResult FormatSourceText(std::string_view text, const FormatterConfig
         result.error = model.parse.error.empty() ? "parser setup failed" : model.parse.error;
         return result;
     }
-    result.formatted = WithLineEndings(FormatModelText(config, model, sourcePath), SourceOutputLineEnding(*model.sourceText));
+    result.formatted =
+        WithLineEndings(FormatModelText(config, model, sourcePath), SourceOutputLineEnding(*model.sourceText));
     result.changed = model.sourceText != nullptr && *model.sourceText != result.formatted;
     return result;
 }
