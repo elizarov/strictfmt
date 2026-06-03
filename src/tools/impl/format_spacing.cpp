@@ -25,6 +25,61 @@ bool IsBinaryContext(const PrintToken& token) {
         token.parentKind == SyntaxNodeKind::ConditionalExpression;
 }
 
+bool IsTemplateDelimiterContext(const PrintToken& token) {
+    return token.parentKind == SyntaxNodeKind::TemplateArgumentList ||
+        token.parentKind == SyntaxNodeKind::TemplateParameterList ||
+        token.grandParentKind == SyntaxNodeKind::TemplateArgumentList ||
+        token.grandParentKind == SyntaxNodeKind::TemplateParameterList;
+}
+
+bool IsOperatorSpellingContext(const PrintToken& token) {
+    return token.parentKind == SyntaxNodeKind::OperatorName ||
+        token.parentKind == SyntaxNodeKind::OperatorCast ||
+        token.grandParentKind == SyntaxNodeKind::OperatorName ||
+        token.grandParentKind == SyntaxNodeKind::OperatorCast;
+}
+
+bool IsBinaryOperatorSpacingContext(const PrintToken& token) {
+    if (
+        token.kind != PrintTokenKind::Known ||
+        !SyntaxNodeKindHasClass(token.syntaxKind, TokenClass::BinaryOperator) ||
+        IsUnaryContext(token) ||
+        IsTemplateDelimiterContext(token) ||
+        IsOperatorSpellingContext(token)
+    ) {
+        return false;
+    }
+    if (
+        token.syntaxKind == SyntaxNodeKind::Less ||
+        token.syntaxKind == SyntaxNodeKind::Greater ||
+        token.syntaxKind == SyntaxNodeKind::Star ||
+        token.syntaxKind == SyntaxNodeKind::Ampersand
+    ) {
+        return IsBinaryContext(token);
+    }
+    return true;
+}
+
+bool IsUserDefinedLiteralSuffix(const PrintToken& previous, const PrintToken& current) {
+    return previous.syntaxKind == SyntaxNodeKind::NumberLiteral &&
+        current.kind == PrintTokenKind::Free &&
+        !current.text.empty() && (
+            (current.text.front() >= 'A' && current.text.front() <= 'Z') ||
+            (current.text.front() >= 'a' && current.text.front() <= 'z') ||
+            current.text.front() == '_'
+        );
+}
+
+bool KeywordOperatorNeedsSpaceAfter(const PrintToken& previous, const PrintToken& current) {
+    if (previous.syntaxKind != SyntaxNodeKind::KeywordOperator) {
+        return false;
+    }
+    return previous.parentKind == SyntaxNodeKind::OperatorCast ||
+        current.parentKind == SyntaxNodeKind::OperatorCast ||
+        current.syntaxKind == SyntaxNodeKind::KeywordNew ||
+        current.syntaxKind == SyntaxNodeKind::KeywordDelete;
+}
+
 bool IsParenthesizedDeclarator(SyntaxNodeKind kind) {
     return SyntaxNodeKindHasClass(kind, TokenClass::ParenthesizedDeclarator);
 }
@@ -66,6 +121,10 @@ bool IsAttributeOpenToken(const PrintToken& token) {
 
 bool IsFunctionSuffixMacro(const PrintToken& token) {
     return token.syntaxKind == SyntaxNodeKind::FunctionSuffixMacro;
+}
+
+bool IsInlineBlockCommentToken(const PrintToken& token) {
+    return token.kind == PrintTokenKind::Free && token.text.size() >= 4 && token.text.substr(0, 2) == "/*";
 }
 
 bool IsTemplateArgumentExpressionOperator(const PrintToken& token) {
@@ -207,6 +266,22 @@ bool FormatTokenNeedsSpace(const PrintToken* previous, const PrintToken& current
     if (IsStringLike(*previous) && IsStringLike(current)) {
         return true;
     }
+    if (IsUserDefinedLiteralSuffix(*previous, current)) {
+        return false;
+    }
+    if (IsInlineBlockCommentToken(current)) {
+        const SyntaxNodeKind previousSyntax =
+            previous->kind == PrintTokenKind::Known ? previous->syntaxKind : SyntaxNodeKind::Unknown;
+        return previousSyntax != SyntaxNodeKind::LeftParen &&
+            previousSyntax != SyntaxNodeKind::LeftBracket &&
+            previousSyntax != SyntaxNodeKind::LeftBrace;
+    }
+    if (IsInlineBlockCommentToken(*previous) && IsWordLike(current)) {
+        return true;
+    }
+    if (current.kind == PrintTokenKind::Free && !current.text.empty() && current.text.front() == '=') {
+        return true;
+    }
     if (IsAttributeCloseToken(*previous)) {
         return true;
     }
@@ -223,6 +298,12 @@ bool FormatTokenNeedsSpace(const PrintToken* previous, const PrintToken& current
         return true;
     }
     if (IsCompactEmptyBraceToken(*previous) && current.kind == PrintTokenKind::Known) {
+        if (
+            SyntaxNodeKindHasClass(current.syntaxKind, TokenClass::AssignmentOperator) ||
+            IsBinaryOperatorSpacingContext(current)
+        ) {
+            return true;
+        }
         if (current.parentKind == SyntaxNodeKind::ConditionalExpression && (
             current.syntaxKind == SyntaxNodeKind::Question || current.syntaxKind == SyntaxNodeKind::Colon
         )) {
@@ -291,7 +372,7 @@ bool FormatTokenNeedsSpace(const PrintToken* previous, const PrintToken& current
         return false;
     }
     if (prev == SyntaxNodeKind::KeywordOperator && cur != SyntaxNodeKind::LeftParen) {
-        return false;
+        return KeywordOperatorNeedsSpaceAfter(*previous, current);
     }
     if (prev == SyntaxNodeKind::KeywordVirtual && cur == SyntaxNodeKind::Tilde) {
         return true;
@@ -322,6 +403,13 @@ bool FormatTokenNeedsSpace(const PrintToken* previous, const PrintToken& current
             previous->parentKind == SyntaxNodeKind::OperatorName || previous->parentKind == SyntaxNodeKind::OperatorCast
         ) {
             return false;
+        }
+        if (prev == SyntaxNodeKind::KeywordConstexpr && (
+            previous->parentKind == SyntaxNodeKind::IfStatement ||
+            current.parentKind == SyntaxNodeKind::ConditionClause ||
+            current.grandParentKind == SyntaxNodeKind::IfStatement
+        )) {
+            return true;
         }
         if (previous->kind == PrintTokenKind::Known && (
             SyntaxNodeKindHasClass(prev, TokenClass::AssignmentOperator) ||
@@ -431,12 +519,12 @@ bool FormatTokenNeedsSpace(const PrintToken* previous, const PrintToken& current
         return true;
     }
     if (current.kind == PrintTokenKind::Known && (SyntaxNodeKindHasClass(cur, TokenClass::AssignmentOperator) || (
-        SyntaxNodeKindHasClass(cur, TokenClass::BinaryOperator) && IsBinaryContext(current)
+        SyntaxNodeKindHasClass(cur, TokenClass::BinaryOperator) && IsBinaryOperatorSpacingContext(current)
     ))) {
         return true;
     }
     if (previous->kind == PrintTokenKind::Known && (SyntaxNodeKindHasClass(prev, TokenClass::AssignmentOperator) || (
-        SyntaxNodeKindHasClass(prev, TokenClass::BinaryOperator) && IsBinaryContext(*previous)
+        SyntaxNodeKindHasClass(prev, TokenClass::BinaryOperator) && IsBinaryOperatorSpacingContext(*previous)
     ))) {
         return true;
     }

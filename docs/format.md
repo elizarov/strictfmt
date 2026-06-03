@@ -15,6 +15,7 @@ This document specifies the source layout produced by `strictfmt`.
 - Keep declaration modifiers compact and separate them from the modified type with one space, e.g. `alignas(8) int`.
 - Separate a declaration type from its declarator with one space, e.g. `int value`.
 - Put no space between a string or character literal prefix and the literal, e.g. `L"text"`.
+- Put no space between a numeric literal and its user-defined literal suffix, e.g. `100ms`.
 - Put no padding before braced initializer braces, e.g. `std::string{}`.
 - Put one space after commas and no space before commas, e.g. `a, b`.
 - Put one space after non-empty `for` header semicolons. Put no space before semicolons. Keep `for (;;)` compact, e.g. `for (int i = 0; i < n; ++i)`.
@@ -22,6 +23,7 @@ This document specifies the source layout produced by `strictfmt`.
 - Put no spaces around unary operators, e.g. `!ok`.
 - Bind type declarator symbols to the type, e.g. `int* value`.
 - Treat `operator` plus a following symbolic operator as one function name, e.g. `operator==(`.
+- Put one space after `operator` for conversion, allocation, and deallocation operators, e.g. `operator bool(` and `operator new(`.
 - Treat destructor `~` plus the following type name as one function name, e.g. `~Widget(`.
 - Put no space between a C-style cast and the expression it prefixes, e.g. `(void)value`.
 - Put spaces around range-for and constructor-initializer colons, e.g. `for (auto item : items)`.

@@ -242,6 +242,43 @@ bool Contains(std::string_view value, std::string_view needle) {
     return value.find(needle) != std::string_view::npos;
 }
 
+std::string NormalizeTrailingLineCommentSpacing(std::string_view line) {
+    bool inString = false;
+    bool inChar = false;
+    for (size_t index = 0; index + 1 < line.size(); ++index) {
+        const char ch = line[index];
+        const char next = line[index + 1];
+        if (ch == '\\' && (inString || inChar)) {
+            ++index;
+            continue;
+        }
+        if (ch == '"' && !inChar) {
+            inString = !inString;
+            continue;
+        }
+        if (ch == '\'' && !inString) {
+            inChar = !inChar;
+            continue;
+        }
+        if (inString || inChar || ch != '/' || next != '/') {
+            continue;
+        }
+
+        std::string_view before = line.substr(0, index);
+        while (!before.empty() && (before.back() == ' ' || before.back() == '\t')) {
+            before.remove_suffix(1);
+        }
+        if (before.empty()) {
+            return std::string(line);
+        }
+        std::string result(before);
+        result.append("  ");
+        result.append(line.substr(index));
+        return result;
+    }
+    return std::string(line);
+}
+
 std::vector<std::string> SplitLines(std::string_view text) {
     std::vector<std::string> lines;
     size_t start = 0;

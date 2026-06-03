@@ -6,6 +6,7 @@
 #include <windows.h>
 
 #include <algorithm>
+#include <chrono>  // formatter spacing regression include
 #include <string>
 #include <string_view>
 #include <vector>
@@ -20,6 +21,9 @@
     ((firstValue) + (secondValue) + (thirdValue) + (firstValue) + (secondValue) + (thirdValue))
 #define FORMAT_FIXTURE_SHORT_MACRO(value) (value)
 #define FORMAT_FIXTURE_MUCH_LONGER_MACRO(value) (value)
+#define FORMAT_FIXTURE_DECLARE_OPTION(name, type) \
+    void \
+    name(type)
 #define FORMAT_FIXTURE_LOAD_OPTIONAL(function, name) \
     function = reinterpret_cast<decltype(function)>(GetProcAddress(module_, name))
 #define FORMAT_FIXTURE_ITEMS(X) \
@@ -29,6 +33,12 @@
 #define FORMAT_FIXTURE_ENUM_ITEMS(X) \
     X(First, "first") \
     X(Second, "second")
+#define FORMAT_FIXTURE_COMMENT_CONTINUATION(callback) \
+    callback(); \
+    /* cold testing path: */ \
+    callback();
+#define FORMAT_FIXTURE_FILEPATH \
+    FORMAT_NAMESPACE::logging::impl::CutFilePath(__builtin_FILE())
 #define ENUM_STRING_DECLARE(EnumType, ItemsMacro) \
     enum class EnumType { \
         ItemsMacro(ENUM_STRING_DECLARE_ENUMERATOR) \
@@ -628,14 +638,6 @@ void RegisterStaticTextAnchor(
     std::optional<LayoutEditParameter>,
     LayoutEditTargetOutline
 ) override {}
-
-void RegisterSubscriptListComment() {
-    value = matrix[
-        firstReallyLongIndexForFormatterGenerality,  // selected row
-        secondReallyLongIndexForFormatterGenerality,
-        thirdReallyLongIndexForFormatterGenerality
-    ];
-}
 
 struct NetworkFooterWidgetConfig {
     int bottomGap{};  // config_meta: policy=non_negative_int
@@ -1889,24 +1891,18 @@ void AllocateBitmapPixels() {
     std::vector<DisplayPlacementMenuBitmapPixel> pixels((kBitmapSize * kBitmapSize));
 }
 
-class BaseClassSpacingRoot {};
-
-class BaseClassSpacingPublic : public BaseClassSpacingRoot {};
-
-class BaseClassSpacingPrivate : private BaseClassSpacingRoot {};
-
-class BaseClassSpacingProtected : protected BaseClassSpacingRoot {};
-
-class BaseClassListCommentRootA {};
-
-class BaseClassListCommentRootB {};
-
-class BaseClassListCommentRootC {};
-
 class BaseClassListCommentDerived :
     public BaseClassListCommentRootA,  // primary
     public BaseClassListCommentRootB,
     public BaseClassListCommentRootC {};
+
+void RegisterSubscriptListComment() {
+    value = matrix[
+        firstReallyLongIndexForFormatterGenerality,  // selected row
+        secondReallyLongIndexForFormatterGenerality,
+        thirdReallyLongIndexForFormatterGenerality
+    ];
+}
 
 bool AttachedOpenChainKeepsFollowingOperator(const PrintToken* previous, KnownToken prev, const PrintToken& current) {
     if (
@@ -2043,6 +2039,55 @@ void DelimiterBoundaryCoalescingGenerality() {
             fourthAngleArgumentValueNameForCoalescing
         >
     > angleBoundaryValue;
+}
+
+struct FormatterOperatorSpacingRegression {
+    explicit operator bool() const;
+    operator std::shared_ptr<const T>();
+    void* operator new(std::size_t);
+};
+
+struct FormatterPureVirtualRegression {
+    virtual ~FormatterPureVirtualRegression() = 0;
+};
+
+struct FormatterMacroTrailingCommentRegression {
+    FORMAT_FIXTURE_DECLARE_OPTION(set_ssh_key_function, void*);  // TODO curl_sshkeycallback?
+};
+
+struct FormatterEmptyBlockBreakRegression {
+    FormatterEmptyBlockBreakRegression() {}
+    int value;
+};
+
+template <typename T>
+void FormatterSuspiciousDiffRegressionCases() {
+    auto duration = 100ms;
+    auto negativeDuration = -50ms;
+    if constexpr (FormatterCondition<T>) {
+        Use(duration);
+    } else if constexpr (FormatterOtherCondition<T>) {
+        Use(negativeDuration);
+    }
+    Call(1 /*count*/, "x" /*name*/);
+    auto lambda = [] {
+        // starts
+        Work();
+    };
+    auto binary = T{} + i;
+    auto fold = (spans.size() + ...);
+    void* allocated = ::operator new(4);
+    StartFormattingCallbacks(
+        ready,
+        [this](const std::string& consumer_tag) { Use(consumer_tag); },
+        // message callback
+        [this](const FormatterMessage& message, uint64_t delivery_tag, bool) {
+            if (!stopped_) {
+                OnMessage(message, delivery_tag);
+            }
+        },
+        start_deadline
+    );
 }
 
 }

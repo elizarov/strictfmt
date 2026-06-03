@@ -229,6 +229,8 @@ constexpr auto kSyntaxKindMappings = std::to_array<SyntaxKindMapping>({
     Tree(SyntaxNodeKind::MsCallModifier, "ms_call_modifier", Bit(TokenClass::WholeNodeAsFreeToken)),
     Tree(SyntaxNodeKind::MsDeclspecModifier, "ms_declspec_modifier", Bit(TokenClass::WholeNodeAsFreeToken)),
     Tree(SyntaxNodeKind::FunctionSuffixMacro, "function_suffix_macro", Bit(TokenClass::WholeNodeAsFreeToken)),
+    Tree(SyntaxNodeKind::FreeToken, "pure_virtual_clause", Bit(TokenClass::WholeNodeAsFreeToken)),
+    Tree(SyntaxNodeKind::FreeToken, "virtual_specifier", Bit(TokenClass::WholeNodeAsFreeToken)),
     Tree(SyntaxNodeKind::Identifier, "macro_initializer", Bit(TokenClass::WholeNodeAsFreeToken)),
     Tree(SyntaxNodeKind::ConcatenatedString, "concatenated_string", Bit(TokenClass::StringLike)),
     Tree(SyntaxNodeKind::StringLiteral, "suffixed_string_literal", kStringLikeClasses),
@@ -517,14 +519,8 @@ const SymbolInfoTable& SyntaxInfoBySymbol() {
             "template_type",
             "type_descriptor"
         };
-        constexpr std::string_view wholeTokenNames[] = {
-            "null",
-            "placeholder_type_specifier",
-            "primitive_type",
-            "storage_class_specifier",
-            "type_qualifier",
-            "virtual_specifier"
-        };
+        constexpr std::string_view wholeTokenNames[] =
+            {"null", "placeholder_type_specifier", "primitive_type", "storage_class_specifier", "type_qualifier"};
         constexpr std::string_view wholeAtomNames[] = {
             "dependent_field_identifier",
             "dependent_identifier",
@@ -1119,6 +1115,9 @@ bool SyntaxNodeKindHasClass(SyntaxNodeKind kind, TokenClass tokenClass) {
 
 bool LambdaBodyAllowsCompactSingleStatementForm(const SyntaxNode& node, SyntaxNodeKind parentKind) {
     if (node.kind != SyntaxNodeKind::CompoundStatement || parentKind != SyntaxNodeKind::LambdaExpression) {
+        return false;
+    }
+    if (NodeOrDescendantHasClass(node, TokenClass::Comment)) {
         return false;
     }
     const SyntaxNode* statement = OnlyContentChild(node);

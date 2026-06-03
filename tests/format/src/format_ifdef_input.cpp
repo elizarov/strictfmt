@@ -112,6 +112,17 @@ constexpr int kConditionalDeclaration = 1;
 constexpr int kConditionalDeclaration = 0;
 #endif
 
+void FormatterPreprocessorContinuationRegression(const char* base_file) {
+#if defined(FORMAT_PREFIX_PATH_BASE) || defined(FORMAT_SOURCE_PATH_BASE) || \
+    defined(FORMAT_BUILD_PATH_BASE)
+base_file = base_file + PathBaseSize(base_file);
+#endif
+}
+
+#ifdef ENONET // No ENONET in Mac OS
+int formatterPreprocessorCommentSpacing;
+#endif // ENONET
+
 }  // namespace format_userver_fixture
 
 #endif  // FORMAT_IFDEF_FIXTURE_HPP
