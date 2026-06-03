@@ -669,6 +669,68 @@ class FormatCommandTests(unittest.TestCase):
             self.assertEqual(1, explicit.returncode, msg=f"stdout:\n{explicit.stdout}\n\nstderr:\n{explicit.stderr}")
             self.assertIn("Formatting is required", explicit.stdout)
 
+    def test_style_file_inherits_parent_config_and_overrides_lists(self) -> None:
+        build_dir = TEST_TEMP_ROOT
+        build_dir.mkdir(exist_ok=True)
+
+        with tempfile.TemporaryDirectory(prefix="format_style_inherit_", dir=build_dir) as temp_dir:
+            root = Path(temp_dir)
+            nested = root / "a" / "b"
+            nested.mkdir(parents=True)
+            write_empty_ignore(root)
+            (root / ".cpp-format").write_text(
+                "---\n"
+                "IndentWidth: 2\n"
+                "IncludeCategories:\n"
+                "  - Regex: '^<.*>$'\n"
+                "    Priority: 1\n"
+                "  - Regex: '^\".*\"$'\n"
+                "    Priority: 2\n",
+                encoding="utf-8",
+            )
+            source = nested / "sample.cpp"
+            source.write_text('#include "b.h"\n#include <a>\n\nint main(){return 1;}\n', encoding="utf-8")
+
+            (nested / ".cpp-format").write_text("---\nInherit: Parent\nColumnLimit: 80\n", encoding="utf-8")
+            inherited = native_format(str(source), cwd=nested)
+
+            self.assertEqual(0, inherited.returncode, msg=f"stdout:\n{inherited.stdout}\n\nstderr:\n{inherited.stderr}")
+            self.assertEqual(
+                '#include <a>\n'
+                "\n"
+                '#include "b.h"\n'
+                "\n"
+                "int main() {\n"
+                "  return 1;\n"
+                "}\n",
+                inherited.stdout,
+            )
+
+            (nested / ".cpp-format").write_text(
+                "---\n"
+                "Inherit: Parent\n"
+                "IndentWidth: 4\n"
+                "IncludeCategories:\n"
+                "  - Regex: '^\".*\"$'\n"
+                "    Priority: 1\n"
+                "  - Regex: '^<.*>$'\n"
+                "    Priority: 2\n",
+                encoding="utf-8",
+            )
+            overridden = native_format("--style", str(nested / ".cpp-format"), str(source), cwd=root)
+
+            self.assertEqual(0, overridden.returncode, msg=f"stdout:\n{overridden.stdout}\n\nstderr:\n{overridden.stderr}")
+            self.assertEqual(
+                '#include "b.h"\n'
+                "\n"
+                "#include <a>\n"
+                "\n"
+                "int main() {\n"
+                "    return 1;\n"
+                "}\n",
+                overridden.stdout,
+            )
+
     def test_ignore_file_skips_simple_directory_entries(self) -> None:
         build_dir = TEST_TEMP_ROOT
         build_dir.mkdir(exist_ok=True)

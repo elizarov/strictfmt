@@ -3,6 +3,7 @@
 #include <algorithm>
 #include <cstdio>
 #include <stdexcept>
+#include <utility>
 
 #include "tools/impl/tools_common.h"
 #include "util/file_path.h"
@@ -13,6 +14,18 @@ namespace {
 struct ConfigLine {
     int indent = 0;
     std::string text;
+};
+
+struct FormatterConfigPatch {
+    bool inheritParent = false;
+    std::optional<int> columnLimit;
+    std::optional<int> indentWidth;
+    std::optional<int> tabWidth;
+    std::optional<std::string> mainIncludeRegex;
+    std::optional<bool> mainIncludeQuote;
+    std::optional<std::vector<std::string>> statementLikeMacroParameters;
+    std::optional<std::vector<std::string>> streamShiftConfigurationMethods;
+    std::optional<std::vector<IncludeGroup>> includeGroups;
 };
 
 int CountIndent(std::string_view line) {
@@ -111,7 +124,7 @@ std::vector<std::string>
     return values;
 }
 
-void ParseIncludeCategories(const std::vector<ConfigLine>& lines, size_t& index, FormatterConfig& config) {
+void ParseIncludeCategories(const std::vector<ConfigLine>& lines, size_t& index, FormatterConfigPatch& patch) {
     std::vector<IncludeGroup> groups;
     const int parentIndent = lines[index].indent;
     for (++index; index < lines.size(); ++index) {
@@ -157,10 +170,10 @@ void ParseIncludeCategories(const std::vector<ConfigLine>& lines, size_t& index,
     std::sort(groups.begin(), groups.end(), [](const IncludeGroup& left, const IncludeGroup& right) {
         return left.priority < right.priority;
     });
-    config.includeGroups = std::move(groups);
+    patch.includeGroups = std::move(groups);
 }
 
-void ParseMacroCategories(const std::vector<ConfigLine>& lines, size_t& index, FormatterConfig& config) {
+void ParseMacroCategories(const std::vector<ConfigLine>& lines, size_t& index, FormatterConfigPatch& patch) {
     const int parentIndent = lines[index].indent;
     for (++index; index < lines.size(); ++index) {
         const ConfigLine& line = lines[index];
@@ -170,12 +183,12 @@ void ParseMacroCategories(const std::vector<ConfigLine>& lines, size_t& index, F
         }
         const auto [key, value] = SplitKeyValue(line.text);
         if (key == "StatementLikeParameters" && value.empty()) {
-            config.statementLikeMacroParameters = ParseIndentedStringList(lines, index, line.indent);
+            patch.statementLikeMacroParameters = ParseIndentedStringList(lines, index, line.indent);
         }
     }
 }
 
-void ParseStreamShift(const std::vector<ConfigLine>& lines, size_t& index, FormatterConfig& config) {
+void ParseStreamShift(const std::vector<ConfigLine>& lines, size_t& index, FormatterConfigPatch& patch) {
     const int parentIndent = lines[index].indent;
     for (++index; index < lines.size(); ++index) {
         const ConfigLine& line = lines[index];
@@ -185,13 +198,13 @@ void ParseStreamShift(const std::vector<ConfigLine>& lines, size_t& index, Forma
         }
         const auto [key, value] = SplitKeyValue(line.text);
         if (key == "ConfigurationMethods" && value.empty()) {
-            config.streamShiftConfigurationMethods = ParseIndentedStringList(lines, index, line.indent);
+            patch.streamShiftConfigurationMethods = ParseIndentedStringList(lines, index, line.indent);
         }
     }
 }
 
-FormatterConfig ParseFormatterConfig(std::string_view text) {
-    FormatterConfig config;
+FormatterConfigPatch ParseFormatterConfigPatch(std::string_view text) {
+    FormatterConfigPatch patch;
     const std::vector<ConfigLine> lines = ReadConfigLines(text);
     for (size_t index = 0; index < lines.size(); ++index) {
         const ConfigLine& line = lines[index];
@@ -199,23 +212,56 @@ FormatterConfig ParseFormatterConfig(std::string_view text) {
             continue;
         }
         const auto [key, value] = SplitKeyValue(line.text);
-        if (key == "ColumnLimit") {
-            config.columnLimit = ParseInt(value, key);
+        if (key == "Inherit") {
+            if (UnquoteScalar(value) != "Parent") {
+                throw std::runtime_error("Inherit must be Parent");
+            }
+            patch.inheritParent = true;
+        } else if (key == "ColumnLimit") {
+            patch.columnLimit = ParseInt(value, key);
         } else if (key == "IndentWidth") {
-            config.indentWidth = ParseInt(value, key);
+            patch.indentWidth = ParseInt(value, key);
         } else if (key == "TabWidth") {
-            config.tabWidth = ParseInt(value, key);
+            patch.tabWidth = ParseInt(value, key);
         } else if (key == "MainIncludeChar") {
-            config.mainIncludeQuote = UnquoteScalar(value) == "Quote";
+            patch.mainIncludeQuote = UnquoteScalar(value) == "Quote";
         } else if (key == "IncludeIsMainRegex") {
-            config.mainIncludeRegex = UnquoteScalar(value);
+            patch.mainIncludeRegex = UnquoteScalar(value);
         } else if (key == "IncludeCategories" && value.empty()) {
-            ParseIncludeCategories(lines, index, config);
+            ParseIncludeCategories(lines, index, patch);
         } else if (key == "MacroCategories" && value.empty()) {
-            ParseMacroCategories(lines, index, config);
+            ParseMacroCategories(lines, index, patch);
         } else if (key == "StreamShift" && value.empty()) {
-            ParseStreamShift(lines, index, config);
+            ParseStreamShift(lines, index, patch);
         }
+    }
+    return patch;
+}
+
+FormatterConfig ApplyConfigPatch(FormatterConfig config, FormatterConfigPatch patch) {
+    if (patch.columnLimit.has_value()) {
+        config.columnLimit = *patch.columnLimit;
+    }
+    if (patch.indentWidth.has_value()) {
+        config.indentWidth = *patch.indentWidth;
+    }
+    if (patch.tabWidth.has_value()) {
+        config.tabWidth = *patch.tabWidth;
+    }
+    if (patch.mainIncludeRegex.has_value()) {
+        config.mainIncludeRegex = std::move(*patch.mainIncludeRegex);
+    }
+    if (patch.mainIncludeQuote.has_value()) {
+        config.mainIncludeQuote = *patch.mainIncludeQuote;
+    }
+    if (patch.statementLikeMacroParameters.has_value()) {
+        config.statementLikeMacroParameters = std::move(*patch.statementLikeMacroParameters);
+    }
+    if (patch.streamShiftConfigurationMethods.has_value()) {
+        config.streamShiftConfigurationMethods = std::move(*patch.streamShiftConfigurationMethods);
+    }
+    if (patch.includeGroups.has_value()) {
+        config.includeGroups = std::move(*patch.includeGroups);
     }
     return config;
 }
@@ -244,18 +290,62 @@ std::optional<std::string> FindUpwards(std::string_view startDirectory, std::str
     return std::nullopt;
 }
 
-std::optional<FormatterConfig> LoadConfigFile(std::string_view path, std::string& error) {
-    const std::optional<std::string> text = ReadFileBinary(path);
+std::optional<std::string> FindParentConfig(std::string_view configPath) {
+    const std::string configDirectory = FilePath(AbsolutePath(configPath)).ParentPath().string();
+    const std::string parentDirectory = FilePath(configDirectory).ParentPath().string();
+    if (parentDirectory.empty() || NormalizePathKey(parentDirectory) == NormalizePathKey(configDirectory)) {
+        return std::nullopt;
+    }
+    return FindUpwards(parentDirectory, ".cpp-format");
+}
+
+std::optional<FormatterConfig>
+    LoadConfigFile(std::string_view path, std::string& error, std::vector<std::string>& loadingStack)
+{
+    const std::string absolutePath = AbsolutePath(path);
+    const std::string pathKey = NormalizePathKey(absolutePath);
+    if (std::find(loadingStack.begin(), loadingStack.end(), pathKey) != loadingStack.end()) {
+        error = "formatter config inheritance cycle at " + absolutePath;
+        return std::nullopt;
+    }
+
+    loadingStack.push_back(pathKey);
+    const std::optional<std::string> text = ReadFileBinary(absolutePath);
     if (!text.has_value()) {
-        error = "could not read formatter config: " + std::string(path);
+        error = "could not read formatter config: " + absolutePath;
+        loadingStack.pop_back();
         return std::nullopt;
     }
+    FormatterConfigPatch patch;
     try {
-        return ParseFormatterConfig(*text);
+        patch = ParseFormatterConfigPatch(*text);
     } catch (const std::exception& exception) {
-        error = "invalid formatter config " + std::string(path) + ": " + exception.what();
+        error = "invalid formatter config " + absolutePath + ": " + exception.what();
+        loadingStack.pop_back();
         return std::nullopt;
     }
+
+    FormatterConfig config;
+    if (patch.inheritParent) {
+        const std::optional<std::string> parentConfigPath = FindParentConfig(absolutePath);
+        if (parentConfigPath.has_value()) {
+            std::optional<FormatterConfig> parentConfig = LoadConfigFile(*parentConfigPath, error, loadingStack);
+            if (!parentConfig.has_value()) {
+                loadingStack.pop_back();
+                return std::nullopt;
+            }
+            config = std::move(*parentConfig);
+        }
+    }
+
+    config = ApplyConfigPatch(std::move(config), std::move(patch));
+    loadingStack.pop_back();
+    return config;
+}
+
+std::optional<FormatterConfig> LoadConfigFile(std::string_view path, std::string& error) {
+    std::vector<std::string> loadingStack;
+    return LoadConfigFile(path, error, loadingStack);
 }
 
 FormatterIgnoreFile ParseIgnoreFile(std::string_view path, std::string_view text) {
