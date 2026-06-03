@@ -102,7 +102,8 @@ class FormatCommandTests(unittest.TestCase):
     def test_userver_stdin_formats_to_expected_output(self) -> None:
         result = native_format(
             "--stdin",
-            f"--style={USERVER_FORMAT_CONFIG}",
+            "--style",
+            str(USERVER_FORMAT_CONFIG),
             cwd=TEST_ROOT,
             input_text=read_fixture(USERVER_INPUT_FIXTURE),
         )
@@ -113,7 +114,7 @@ class FormatCommandTests(unittest.TestCase):
 
     def test_userver_golden_input_parses_without_errors(self) -> None:
         with copied_fixtures(USERVER_INPUT_FIXTURE) as fixtures:
-            result = native_format(f"--style={USERVER_FORMAT_CONFIG}", str(fixtures[USERVER_INPUT_FIXTURE]))
+            result = native_format("--style", str(USERVER_FORMAT_CONFIG), str(fixtures[USERVER_INPUT_FIXTURE]))
 
         self.assertEqual(0, result.returncode, msg=f"stdout:\n{result.stdout}\n\nstderr:\n{result.stderr}")
         self.assertNotIn("parse failed", result.stderr)
@@ -121,7 +122,8 @@ class FormatCommandTests(unittest.TestCase):
     def test_ifdef_stdin_formats_to_expected_output(self) -> None:
         result = native_format(
             "--stdin",
-            f"--style={USERVER_FORMAT_CONFIG}",
+            "--style",
+            str(USERVER_FORMAT_CONFIG),
             cwd=TEST_ROOT,
             input_text=read_fixture(IFDEF_INPUT_FIXTURE),
         )
@@ -132,7 +134,7 @@ class FormatCommandTests(unittest.TestCase):
 
     def test_ifdef_golden_input_parses_without_errors(self) -> None:
         with copied_fixtures(IFDEF_INPUT_FIXTURE) as fixtures:
-            result = native_format(f"--style={USERVER_FORMAT_CONFIG}", str(fixtures[IFDEF_INPUT_FIXTURE]))
+            result = native_format("--style", str(USERVER_FORMAT_CONFIG), str(fixtures[IFDEF_INPUT_FIXTURE]))
 
         self.assertEqual(0, result.returncode, msg=f"stdout:\n{result.stdout}\n\nstderr:\n{result.stderr}")
         self.assertNotIn("parse failed", result.stderr)
@@ -140,7 +142,8 @@ class FormatCommandTests(unittest.TestCase):
     def test_error_stdin_reports_expected_preprocessor_errors(self) -> None:
         result = native_format(
             "--stdin",
-            f"--style={USERVER_FORMAT_CONFIG}",
+            "--style",
+            str(USERVER_FORMAT_CONFIG),
             cwd=TEST_ROOT,
             input_text=read_fixture(ERROR_INPUT_FIXTURE),
         )
@@ -179,7 +182,7 @@ class FormatCommandTests(unittest.TestCase):
             ]
             for text in cases:
                 with self.subTest(text=text.splitlines()[0]):
-                    result = native_format("--stdin", f"--style={config}", input_text=text)
+                    result = native_format("--stdin", "--style", str(config), input_text=text)
 
                     self.assertEqual(0, result.returncode, msg=f"stdout:\n{result.stdout}\n\nstderr:\n{result.stderr}")
                     self.assertEqual(text, result.stdout)
@@ -241,7 +244,7 @@ class FormatCommandTests(unittest.TestCase):
             ]
             for name, input_text, expected in cases:
                 with self.subTest(name=name):
-                    result = native_format("--stdin", f"--style={config}", input_text=input_text)
+                    result = native_format("--stdin", "--style", str(config), input_text=input_text)
 
                     self.assertEqual(0, result.returncode, msg=f"stdout:\n{result.stdout}\n\nstderr:\n{result.stderr}")
                     self.assertEqual(expected, result.stdout)
@@ -648,7 +651,7 @@ class FormatCommandTests(unittest.TestCase):
             source.write_text("int main(){return 1;}\n", encoding="utf-8")
 
             discovered = native_format("--dry-run", str(source), cwd=nested)
-            explicit = native_format(f"--style={root / '.cpp-format'}", "--dry-run", str(source), cwd=nested)
+            explicit = native_format("--style", str(root / ".cpp-format"), "--dry-run", str(source), cwd=nested)
 
             self.assertEqual(1, discovered.returncode, msg=f"stdout:\n{discovered.stdout}\n\nstderr:\n{discovered.stderr}")
             self.assertIn("Formatting is required", discovered.stdout)
@@ -681,7 +684,7 @@ class FormatCommandTests(unittest.TestCase):
         self.assertEqual("", result.stderr)
         self.assertIn("Usage:", result.stdout)
         self.assertIn("strictfmt --stdin [options]", result.stdout)
-        self.assertIn("--style=<config-file>", result.stdout)
+        self.assertIn("--style <config-file>", result.stdout)
 
     def test_wrapper_rejects_current_unformatted_fixture(self) -> None:
         if FORMAT_CMD is None or not FORMAT_CMD.exists():
@@ -695,13 +698,8 @@ class FormatCommandTests(unittest.TestCase):
             ("-i",),
             ("-i", "--dry-run", str(TEST_ROOT / OUTPUT_FIXTURE)),
             ("--style",),
-            ("--style=file",),
-            ("--style=file:.cpp-format",),
-            ("-style=.cpp-format",),
             ("--files",),
-            ("--files=",),
             ("-r",),
-            ("-r=",),
             ("--concurrency",),
             ("--concurrency", "0"),
             ("--concurrency", "nope"),

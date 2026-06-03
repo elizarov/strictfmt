@@ -11,12 +11,12 @@ namespace {
 
 std::optional<std::string> ParseStyleValue(std::string_view value, std::string& error) {
     if (value == "file") {
-        error = "--style=file is not supported; pass --style=<config-file> or omit --style for upward discovery";
+        error = "--style file is not supported; pass --style <config-file> or omit --style for upward discovery";
         return std::string{};
     }
     constexpr std::string_view filePrefix = "file:";
     if (StartsWith(value, filePrefix)) {
-        error = "--style=file:<path> is not supported; pass --style=<config-file>";
+        error = "--style file:<path> is not supported; pass --style <config-file>";
         return std::string{};
     }
     if (value.empty()) {
@@ -78,24 +78,12 @@ std::optional<FormatOptions> ParseFormatArgs(int argc, char** argv, std::string&
             if (!AppendRecursiveRoot(argv[++index], options, error)) {
                 return std::nullopt;
             }
-        } else if (StartsWith(arg, "--recursive=")) {
-            if (!AppendRecursiveRoot(std::string_view(arg).substr(12), options, error)) {
-                return std::nullopt;
-            }
-        } else if (StartsWith(arg, "-r=")) {
-            if (!AppendRecursiveRoot(std::string_view(arg).substr(3), options, error)) {
-                return std::nullopt;
-            }
         } else if (arg == "--concurrency") {
             if (index + 1 >= argc) {
                 error = "--concurrency requires a value";
                 return std::nullopt;
             }
             if (!ParseToolConcurrency(argv[++index], options.concurrency, error)) {
-                return std::nullopt;
-            }
-        } else if (StartsWith(arg, "--concurrency=")) {
-            if (!ParseToolConcurrency(std::string_view(arg).substr(14), options.concurrency, error)) {
                 return std::nullopt;
             }
         } else if (arg == "--files") {
@@ -106,26 +94,16 @@ std::optional<FormatOptions> ParseFormatArgs(int argc, char** argv, std::string&
             if (!AppendFilesFromList(argv[++index], options, error)) {
                 return std::nullopt;
             }
-        } else if (StartsWith(arg, "--files=")) {
-            if (!AppendFilesFromList(std::string_view(arg).substr(8), options, error)) {
-                return std::nullopt;
-            }
-        } else if (StartsWith(arg, "-files=")) {
-            if (!AppendFilesFromList(std::string_view(arg).substr(7), options, error)) {
-                return std::nullopt;
-            }
         } else if (arg == "--style") {
-            error = "--style requires the --style=<config-file> form";
-            return std::nullopt;
-        } else if (StartsWith(arg, "--style=")) {
-            std::optional<std::string> parsed = ParseStyleValue(std::string_view(arg).substr(8), error);
+            if (index + 1 >= argc) {
+                error = "--style requires a value";
+                return std::nullopt;
+            }
+            std::optional<std::string> parsed = ParseStyleValue(argv[++index], error);
             if (!error.empty()) {
                 return std::nullopt;
             }
             options.explicitStylePath = std::move(parsed);
-        } else if (StartsWith(arg, "-style=")) {
-            error = "unknown argument " + arg;
-            return std::nullopt;
         } else if (!arg.empty() && arg[0] == '-') {
             error = "unknown argument " + arg;
             return std::nullopt;
@@ -159,25 +137,46 @@ void PrintFormatUsage(FILE* output) {
     std::fprintf(output, "  strictfmt --stdin [options]\n");
     std::fprintf(output, "\n");
     std::fprintf(output, "Inputs:\n");
-    std::fprintf(output, "  file...                 Format the listed source files and write formatted text to stdout.\n");
-    std::fprintf(output, "  --stdin                 Read one source file from stdin and write formatted text to stdout.\n");
+    std::fprintf(
+        output,
+        "  file...                 Format the listed source files and write formatted text to stdout.\n"
+    );
+    std::fprintf(
+        output,
+        "  --stdin                 Read one source file from stdin and write formatted text to stdout.\n"
+    );
     std::fprintf(output, "  -r, --recursive <path>  Recursively format supported C/C++ files under a directory.\n");
-    std::fprintf(output, "  --recursive=<path>      Same as --recursive <path>.\n");
     std::fprintf(output, "  --files <path>          Read input file paths from a newline-delimited file list.\n");
-    std::fprintf(output, "  --files=<path>          Same as --files <path>.\n");
     std::fprintf(output, "\n");
     std::fprintf(output, "Modes:\n");
-    std::fprintf(output, "  -i                      Rewrite files in place. Requires file, --files, or --recursive input.\n");
-    std::fprintf(output, "  -n, --dry-run           Check formatting and return 1 when formatting changes are needed.\n");
-    std::fprintf(output, "                          Without -i or --dry-run, file inputs and --stdin write formatted text to stdout.\n");
+    std::fprintf(
+        output,
+        "  -i                      Rewrite files in place. Requires file, --files, or --recursive input.\n"
+    );
+    std::fprintf(
+        output,
+        "  -n, --dry-run           Check formatting and return 1 when formatting changes are needed.\n"
+    );
+    std::fprintf(
+        output,
+        "                          Without -i or --dry-run, file inputs and --stdin write formatted text to stdout.\n"
+    );
     std::fprintf(output, "\n");
     std::fprintf(output, "Configuration:\n");
-    std::fprintf(output, "  --style=<config-file>   Use this .cpp-format file for every input.\n");
-    std::fprintf(output, "                          When omitted, strictfmt searches upward from each input for .cpp-format.\n");
+    std::fprintf(output, "  --style <config-file>   Use this .cpp-format file for every input.\n");
+    std::fprintf(
+        output,
+        "                          When omitted, strictfmt searches upward from each input for .cpp-format.\n"
+    );
     std::fprintf(output, "\n");
     std::fprintf(output, "Other options:\n");
-    std::fprintf(output, "  --concurrency <n>       Limit worker threads for file formatting. Defaults to hardware concurrency.\n");
-    std::fprintf(output, "  --concurrency=<n>       Same as --concurrency <n>.\n");
-    std::fprintf(output, "  -v, --verbose           Reserved for verbose progress output. Final summaries are always printed.\n");
+    std::fprintf(
+        output,
+        "  --concurrency <n>       Limit worker threads for file formatting. Defaults to hardware concurrency.\n"
+    );
+    std::fprintf(
+        output,
+        "  -v, --verbose           Reserved for verbose progress output. Final summaries are always printed.\n"
+    );
     std::fprintf(output, "  -h, --help              Print this help text.\n");
 }
