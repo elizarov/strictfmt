@@ -2,12 +2,6 @@
 // tools/regenerate_tree_sitter_grammar.py.
 module.exports = {
   macro_categories: {
-    calling_convention: [
-      // tests/format/.cpp-format
-      "CALLBACK",
-      "WINAPI",
-      // tests/format/.cpp-format-userver
-    ],
     raw_macro_function_definition: [
       // tests/format/.cpp-format
       // tests/format/.cpp-format-userver
@@ -33,8 +27,14 @@ module.exports = {
       "USERVER*",
       "UTILS*",
     ],
-    function_prefix: [
+    bare_identifier_macro: [
       // tests/format/.cpp-format
+      "CALLBACK",
+      "WINAPI",
+      "EXPECT_THROW",
+      "EXPECT_THROW_MSG",
+      "ASSERT_THROW",
+      "EXPECT_NO_THROW",
       // tests/format/.cpp-format-userver
       "USERVER_IMPL_NODEBUG",
       "USERVER_IMPL_NODEBUG_INLINE_FUNC",
@@ -44,8 +44,19 @@ module.exports = {
       "USERVER_IMPL_PROTECT_DWCAS_ATTR",
       "ATTRIBUTE*",
       "FORMAT_USERVER*",
+      "USERVER_NAMESPACE_BEGIN",
+      "USERVER_NAMESPACE_END",
+      "CURL_FORMAT_USERVER_NAMESPACE",
+      "CURL_8_13_NAMESPACE",
+      "CURL_SSLVERSION_NAMESPACE",
+      "UEXPECT_THROW",
+      "UEXPECT_THROW_MSG",
+      "UASSERT_THROW",
+      "UASSERT_THROW_MSG",
+      "UEXPECT_NO_THROW",
+      "UASSERT_NO_THROW",
     ],
-    macro_function_definition: [
+    call_syntax_macro: [
       // tests/format/.cpp-format
       "TEST",
       "TEST_F",
@@ -54,6 +65,10 @@ module.exports = {
       "TYPED_TEST_P",
       "MATCHER",
       "MATCHER_P*",
+      "BENCHMARK*",
+      "ENUM_STRING_DECLARE",
+      "MOCK_METHOD",
+      "STACK_OF",
       // tests/format/.cpp-format-userver
       "UTEST_F_DEATH",
       "TYPED_UTEST",
@@ -67,76 +82,12 @@ module.exports = {
       "UTEST_F",
       "UTEST_P",
       "UTEST",
-    ],
-    macro_function_definition_with_trailing_parameters: [
-      // tests/format/.cpp-format
-      "BENCHMARK_DEFINE_F",
-      "BENCHMARK_DEFINE_TEMPLATE_F",
-      // tests/format/.cpp-format-userver
       "BENCHMARK_F",
-    ],
-    call_expression_with_type_arguments_macro: [
-      // tests/format/.cpp-format
-      "BENCHMARK_TEMPLATE",
-      // tests/format/.cpp-format-userver
-    ],
-    top_level_call_statement: [
-      // tests/format/.cpp-format
-      "BENCHMARK*",
-      "ENUM_STRING_DECLARE",
-      // tests/format/.cpp-format-userver
       "INSTANTIATE*",
+      "RET_NAME",
       "REGISTER_TYPED*",
       "TYPED*",
       "USERVER_DEFINE_STRUCT_SUBSET*",
-    ],
-    method_declaration_macro: [
-      // tests/format/.cpp-format
-      "MOCK_METHOD",
-      // tests/format/.cpp-format-userver
-    ],
-    statement_exception_call_macro: [
-      // tests/format/.cpp-format
-      "EXPECT_THROW",
-      "EXPECT_THROW_MSG",
-      "ASSERT_THROW",
-      // tests/format/.cpp-format-userver
-      "UEXPECT_THROW",
-      "UEXPECT_THROW_MSG",
-      "UASSERT_THROW",
-      "UASSERT_THROW_MSG",
-    ],
-    statement_argument_call_macro: [
-      // tests/format/.cpp-format
-      "EXPECT_NO_THROW",
-      // tests/format/.cpp-format-userver
-      "UEXPECT_NO_THROW",
-      "UASSERT_NO_THROW",
-    ],
-    name_macro_call: [
-      // tests/format/.cpp-format
-      // tests/format/.cpp-format-userver
-      "RET_NAME",
-      "TYPED_TEST_SUITE_P",
-      "TYPED_UTEST_SUITE_P",
-    ],
-    qualified_identifier_prefix_macro: [
-      // tests/format/.cpp-format
-      // tests/format/.cpp-format-userver
-      "CURL_FORMAT_USERVER_NAMESPACE",
-      "CURL_8_13_NAMESPACE",
-      "CURL_SSLVERSION_NAMESPACE",
-    ],
-    top_level_item_macro: [
-      // tests/format/.cpp-format
-      // tests/format/.cpp-format-userver
-      "USERVER_NAMESPACE_BEGIN",
-      "USERVER_NAMESPACE_END",
-    ],
-    type_specifier_macro_call: [
-      // tests/format/.cpp-format
-      "STACK_OF",
-      // tests/format/.cpp-format-userver
     ],
   },
 };

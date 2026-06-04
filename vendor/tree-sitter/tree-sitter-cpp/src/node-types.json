@@ -212,10 +212,6 @@
         "named": true
       },
       {
-        "type": "call_expression_with_type_arguments",
-        "named": true
-      },
-      {
         "type": "cast_expression",
         "named": true
       },
@@ -913,10 +909,6 @@
         {
           "type": "system_lib_string",
           "named": true
-        },
-        {
-          "type": "type_descriptor",
-          "named": true
         }
       ]
     }
@@ -1426,32 +1418,6 @@
           },
           {
             "type": "primitive_type",
-            "named": true
-          }
-        ]
-      }
-    }
-  },
-  {
-    "type": "call_expression_with_type_arguments",
-    "named": true,
-    "fields": {
-      "arguments": {
-        "multiple": false,
-        "required": true,
-        "types": [
-          {
-            "type": "argument_list",
-            "named": true
-          }
-        ]
-      },
-      "function": {
-        "multiple": false,
-        "required": true,
-        "types": [
-          {
-            "type": "identifier",
             "named": true
           }
         ]
@@ -4169,6 +4135,11 @@
     }
   },
   {
+    "type": "function_prefix_macro",
+    "named": true,
+    "fields": {}
+  },
+  {
     "type": "gcnew_expression",
     "named": true,
     "fields": {
@@ -4488,6 +4459,11 @@
         }
       ]
     }
+  },
+  {
+    "type": "identifier",
+    "named": true,
+    "fields": {}
   },
   {
     "type": "if_statement",
@@ -8878,10 +8854,6 @@
             "named": true
           },
           {
-            "type": "call_expression_with_type_arguments",
-            "named": true
-          },
-          {
             "type": "cast_expression",
             "named": true
           },
@@ -9226,10 +9198,6 @@
             "named": true
           },
           {
-            "type": "call_expression_with_type_arguments",
-            "named": true
-          },
-          {
             "type": "cast_expression",
             "named": true
           },
@@ -9442,10 +9410,6 @@
         },
         {
           "type": "call_expression",
-          "named": true
-        },
-        {
-          "type": "call_expression_with_type_arguments",
           "named": true
         },
         {
@@ -9956,6 +9920,11 @@
         }
       ]
     }
+  },
+  {
+    "type": "top_level_item_macro",
+    "named": true,
+    "fields": {}
   },
   {
     "type": "trailing_return_type",
@@ -10955,10 +10924,6 @@
     "named": false
   },
   {
-    "type": "CALLBACK",
-    "named": false
-  },
-  {
     "type": "L\"",
     "named": false
   },
@@ -10988,10 +10953,6 @@
   },
   {
     "type": "UR\"",
-    "named": false
-  },
-  {
-    "type": "WINAPI",
     "named": false
   },
   {
@@ -11355,10 +11316,6 @@
     "named": true
   },
   {
-    "type": "function_prefix_macro",
-    "named": true
-  },
-  {
     "type": "function_suffix_macro",
     "named": true
   },
@@ -11369,10 +11326,6 @@
   {
     "type": "goto",
     "named": false
-  },
-  {
-    "type": "identifier",
-    "named": true
   },
   {
     "type": "if",
@@ -11688,10 +11641,6 @@
   },
   {
     "type": "top_level_call_statement",
-    "named": true
-  },
-  {
-    "type": "top_level_item_macro",
     "named": true
   },
   {

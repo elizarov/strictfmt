@@ -11,9 +11,6 @@ MainIncludeChar: Quote
 IncludeIsMainRegex: '(Test)?$'
 
 MacroCategories:
-  CallingConvention:
-    - CALLBACK
-    - WINAPI
   StatementLikeParameters:
     - X
   RawMacroFunctionDefinitions:
@@ -38,7 +35,9 @@ MacroCategories:
     - UINVARIANT*
     - USERVER*
     - UTILS*
-  FunctionPrefixes:
+  BareIdentifierMacros:
+    - CALLBACK
+    - WINAPI
     - USERVER_IMPL_NODEBUG
     - USERVER_IMPL_NODEBUG_INLINE_FUNC
     - USERVER_IMPL_FORCE_INLINE
@@ -47,7 +46,18 @@ MacroCategories:
     - USERVER_IMPL_PROTECT_DWCAS_ATTR
     - ATTRIBUTE*
     - FORMAT_USERVER*
-  MacroFunctionDefinitions:
+    - USERVER_NAMESPACE_BEGIN
+    - USERVER_NAMESPACE_END
+    - CURL_FORMAT_USERVER_NAMESPACE
+    - CURL_8_13_NAMESPACE
+    - CURL_SSLVERSION_NAMESPACE
+    - UEXPECT_THROW
+    - UEXPECT_THROW_MSG
+    - UASSERT_THROW
+    - UASSERT_THROW_MSG
+    - UEXPECT_NO_THROW
+    - UASSERT_NO_THROW
+  CallSyntaxMacros:
     - UTEST_F_DEATH
     - TYPED_UTEST
     - TYPED_UTEST_P_MT
@@ -60,33 +70,12 @@ MacroCategories:
     - UTEST_F
     - UTEST_P
     - UTEST
-  MacroFunctionDefinitionsWithTrailingParameters:
     - BENCHMARK_F
-  TopLevelCallStatements:
     - INSTANTIATE*
+    - RET_NAME
     - REGISTER_TYPED*
     - TYPED*
     - USERVER_DEFINE_STRUCT_SUBSET*
-  TopLevelItemMacros:
-    - USERVER_NAMESPACE_BEGIN
-    - USERVER_NAMESPACE_END
-  StatementExceptionCallMacros:
-    - UEXPECT_THROW
-    - UEXPECT_THROW_MSG
-    - UASSERT_THROW
-    - UASSERT_THROW_MSG
-  StatementArgumentCallMacros:
-    - UEXPECT_NO_THROW
-    - UASSERT_NO_THROW
-  NameMacroCalls:
-    - RET_NAME
-    - TYPED_TEST_SUITE_P
-    - TYPED_UTEST_SUITE_P
-  QualifiedIdentifierPrefixMacros:
-    - CURL_FORMAT_USERVER_NAMESPACE
-    - CURL_8_13_NAMESPACE
-    - CURL_SSLVERSION_NAMESPACE
-
 StreamShift:
   ConfigurationMethods:
     - std::boolalpha

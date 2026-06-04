@@ -697,7 +697,7 @@ Do not patch declaration modifiers directly into the declaration:
 int FormatUserverExternAttribute();
 ```
 
-Prefer a conditionally defined modifier macro and use that macro in the declaration. Configure the macro under the grammar role it plays, such as `FunctionPrefixes` for function declaration modifiers.
+Prefer a conditionally defined modifier macro and use that macro in the declaration. Configure the macro as `BareIdentifierMacros` so the declaration grammar can consume it as a modifier token.
 
 ```cpp
 #ifndef FORMAT_USERVER_CLANG
@@ -812,10 +812,12 @@ MainIncludeChar: Quote
 IncludeIsMainRegex: '(Test)?$'
 
 MacroCategories:
-  CallingConvention:
+  BareIdentifierMacros:
     - CALLBACK
   StatementLikeParameters:
     - X
+  CallSyntaxMacros:
+    - TEST
 
 StreamShift:
   ConfigurationMethods:
@@ -852,14 +854,6 @@ build
 
 Parser category entries must be C/C++ identifiers. Add a trailing `*` to an entry when the grammar role applies to every identifier with that prefix, such as `ATTRIBUTE*`; no other glob syntax is supported.
 
-#### CallingConvention
-
-`CallingConvention` names tokens that behave like calling-convention modifiers in function declarations. This lets Win32-style declarations keep the modifier in the declaration grammar instead of treating it as an ordinary identifier.
-
-```cpp
-LRESULT CALLBACK WindowProc(HWND hwnd, UINT message, WPARAM wparam, LPARAM lparam);
-```
-
 #### StatementLikeParameters
 
 `StatementLikeParameters` names function-like macro parameters whose invocations inside a macro replacement list are statement-like items. The formatter emits one invocation per continuation line.
@@ -878,9 +872,15 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT message, WPARAM wparam, LPARAM lpara
 #define UTEST_F(test_suite_name, test_name) IMPL_UTEST_TEST_F(test_suite_name, test_name, 1, false)
 ```
 
-#### FunctionPrefixes
+#### BareIdentifierMacros
 
-`FunctionPrefixes` names macro identifiers that act as declaration modifiers before a function, constructor, or related declaration header. Use trailing `*` entries for attribute families such as userver's `ATTRIBUTE_*` macros.
+`BareIdentifierMacros` names macro identifiers that the grammar consumes as bare tokens in non-call positions or as assertion-style statement-call names. This category owns calling-convention modifiers, declaration-prefix modifiers, complete declaration-level items, qualified-identifier prefixes, and statement-call macros whose argument is parsed as a statement without its trailing semicolon. Use trailing `*` entries for families such as userver's `ATTRIBUTE_*` macros.
+
+Calling-convention and declaration-prefix examples:
+
+```cpp
+LRESULT CALLBACK WindowProc(HWND hwnd, UINT message, WPARAM wparam, LPARAM lparam);
+```
 
 ```cpp
 USERVER_IMPL_NODEBUG_INLINE_FUNC static Value DoSerialize(const T& value);
@@ -890,9 +890,50 @@ USERVER_IMPL_NODEBUG_INLINE_FUNC static Value DoSerialize(const T& value);
 ATTRIBUTE_NO_SANITIZE_UNDEFINED std::size_t LeastGreaterEqualIndex(const BoundsBlock& block, float value);
 ```
 
-#### MacroFunctionDefinitions
+Complete declaration-level item and qualified-identifier-prefix examples:
 
-`MacroFunctionDefinitions` names macro invocations that form a function-definition-like construct: macro name, argument list, and compound statement body. Use trailing `*` entries for numbered variants such as GoogleTest matcher macros.
+```cpp
+USERVER_NAMESPACE_BEGIN
+namespace utils {
+}  // namespace utils
+USERVER_NAMESPACE_END
+```
+
+```cpp
+#if LIBCURL_VERSION_NUM >= 0x080d00
+#define CURL_8_13_NAMESPACE native::
+#else
+#define CURL_8_13_NAMESPACE
+#endif
+
+enum class NetrcOption {
+    optional = CURL_8_13_NAMESPACE CURL_NETRC_OPTIONAL,
+    required = CURL_8_13_NAMESPACE CURL_NETRC_REQUIRED,
+};
+```
+
+Statement-call examples:
+
+```cpp
+UEXPECT_THROW(
+    [[maybe_unused]] const auto bytes_read =
+        source.ReadSome(kVeryLongBufferNameForFormatterFixture, kVeryLongDeadlineNameForFormatterFixture),
+    IoTimeout
+);
+```
+
+```cpp
+UEXPECT_NO_THROW({
+    const auto stream = Client().ReadMany(request);
+    EXPECT_TRUE(stream);
+});
+```
+
+#### CallSyntaxMacros
+
+`CallSyntaxMacros` names macro identifiers whose supported grammar roles start with a macro-style call. This category owns macro function definitions, macro function definitions with trailing C++ parameter lists, top-level free-token call statements with optional chained `->` tails, simple name macro calls, class-field method declaration macros, and type-specifier macro calls.
+
+Function-definition-like examples:
 
 ```cpp
 TEST(ConfigParser, ParsesMetricsSectionEntries) {
@@ -907,45 +948,12 @@ MATCHER_P(BsonMatcher, expected, "Bson matcher") {
 ```
 
 ```cpp
-UTEST_F_DEATH(SQLiteSavepointsDeathTest, UseAfterReleaseDeathTest) {
-    ExpectDeath();
-}
-```
-
-```cpp
-TYPED_UTEST(Future, Empty) {
-    engine::Future<TypeParam> future;
-    EXPECT_FALSE(future.valid());
-}
-```
-
-#### MacroFunctionDefinitionsWithTrailingParameters
-
-`MacroFunctionDefinitionsWithTrailingParameters` names macro function definitions that have a macro argument list followed by a C++ parameter list before the body.
-
-```cpp
 BENCHMARK_DEFINE_F(FormatterBenchmark, Inline)(benchmark::State& state) {
     UseBenchmarkState(state);
 }
 ```
 
-```cpp
-BENCHMARK_F(PgConnection, BoolRoundtrip)(benchmark::State& state) {
-    RunStandalone(state);
-}
-```
-
-#### CallExpressionWithTypeArgumentsMacros
-
-`CallExpressionWithTypeArgumentsMacros` names call-expression macros whose argument list may contain type descriptors as well as expressions.
-
-```cpp
-BENCHMARK_TEMPLATE(FormatterBenchmark, std::string)->Range(1, 8);
-```
-
-#### TopLevelCallStatements
-
-`TopLevelCallStatements` names top-level macro call statements that do not parse as ordinary C++ declarations or expressions. Calls may also have a chained `->` tail. Use a trailing `*` entry when a family such as benchmark registration macros shares one prefix. The parser treats the whole statement as one free token.
+Top-level free-token call examples:
 
 ```cpp
 BENCHMARK_CAPTURE(FormatterBenchmark, Mode, kValue)->Arg(2)->Arg(4);
@@ -968,84 +976,15 @@ USERVER_DEFINE_STRUCT_SUBSET(SmolDependencies, Dependencies, a, c, d);
 USERVER_DEFINE_STRUCT_SUBSET_REF(SmolDependenciesRef, Dependencies, a, c, d);
 ```
 
-#### MethodDeclarationMacros
-
-`MethodDeclarationMacros` names field-declaration macros that carry a return type, method name, parameter list, and qualifier list.
+Specific structured call examples:
 
 ```cpp
 MOCK_METHOD(void, SetValue, (std::string_view key, std::string&& value), (override));
 ```
 
-#### StatementExceptionCallMacros
-
-`StatementExceptionCallMacros` names assertion-style calls whose first argument is parsed as a statement without its trailing semicolon and whose next argument is an exception type. The statement argument uses normal statement formatting inside the macro call, while the surrounding macro parentheses and comma-separated arguments keep the usual call-wrapping discipline. A statement sequence keeps semicolons between inner statements; the final statement omits the semicolon before the exception argument.
-
-```cpp
-UEXPECT_THROW(
-    [[maybe_unused]] const auto bytes_read =
-        source.ReadSome(kVeryLongBufferNameForFormatterFixture, kVeryLongDeadlineNameForFormatterFixture),
-    IoTimeout
-);
-```
-
-#### StatementArgumentCallMacros
-
-`StatementArgumentCallMacros` names assertion-style calls whose argument is parsed as a statement without its trailing semicolon and has no exception-type argument. When the argument is a compound statement, the closing brace stays attached to the macro call close.
-
-```cpp
-UEXPECT_NO_THROW({
-    const auto stream = Client().ReadMany(request);
-    EXPECT_TRUE(stream);
-});
-```
-
-#### NameMacroCalls
-
-`NameMacroCalls` names macro calls that take an identifier-like name and may appear where a normal expression statement would not parse cleanly.
-
 ```cpp
 RET_NAME(kNullValue)
 ```
-
-```cpp
-TYPED_UTEST_SUITE_P(FormatterTypedFixture);
-```
-
-```cpp
-TYPED_TEST_SUITE_P(FormatterTypedFixture);
-```
-
-#### QualifiedIdentifierPrefixMacros
-
-`QualifiedIdentifierPrefixMacros` names macros that can appear before an identifier where the expression grammar expects a qualified-identifier-like name. This covers namespace-selection macros that expand to an optional namespace qualifier.
-
-```cpp
-#if LIBCURL_VERSION_NUM >= 0x080d00
-#define CURL_8_13_NAMESPACE native::
-#else
-#define CURL_8_13_NAMESPACE
-#endif
-
-enum class NetrcOption {
-    optional = CURL_8_13_NAMESPACE CURL_NETRC_OPTIONAL,
-    required = CURL_8_13_NAMESPACE CURL_NETRC_REQUIRED,
-};
-```
-
-#### TopLevelItemMacros
-
-`TopLevelItemMacros` names complete macro identifiers that can stand as declaration-level items at file, namespace, or block scope. This covers paired namespace-marker macros without baking their project-specific names or suffixes into the grammar.
-
-```cpp
-USERVER_NAMESPACE_BEGIN
-namespace utils {
-}  // namespace utils
-USERVER_NAMESPACE_END
-```
-
-#### TypeSpecifierMacroCalls
-
-`TypeSpecifierMacroCalls` names macro calls that act as type specifiers.
 
 ```cpp
 using CertStack = STACK_OF(X509);
