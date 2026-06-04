@@ -240,6 +240,8 @@ constexpr auto kSyntaxKindMappings = std::to_array<SyntaxKindMapping>({
     Tree(SyntaxNodeKind::CharacterLiteral, "char_literal", kStringLikeClasses),
     Tree(SyntaxNodeKind::NumberLiteral, "number_literal", kNumberLiteralClasses),
     Tree(SyntaxNodeKind::Identifier, "identifier"),
+    Tree(SyntaxNodeKind::Identifier, "bare_macro_identifier"),
+    Tree(SyntaxNodeKind::Identifier, "call_syntax_macro_identifier"),
     Tree(SyntaxNodeKind::Identifier, "field_identifier"),
     Tree(SyntaxNodeKind::Identifier, "namespace_identifier"),
     Tree(SyntaxNodeKind::Identifier, "type_identifier"),

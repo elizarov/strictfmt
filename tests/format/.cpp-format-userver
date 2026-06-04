@@ -1,6 +1,6 @@
 # Mirrors $(userver)/.cpp-format style for userver golden fixtures.
 # Keep style fields in sync with the formatter config used by the adjacent userver checkout.
-# Userver-specific MacroCategories entries below are parser grammar inputs.
+# Userver-specific MacroCategories entries below are runtime scanner inputs.
 # No IncludeCategories entry: mirrors userver .clang-format IncludeBlocks: Preserve behavior.
 ---
 ColumnLimit: 120
@@ -29,6 +29,7 @@ MacroCategories:
     - UTEST*
     - UPROTO*
     - LOG*
+    - PGCW_LOG*
     - RET*
     - UASSERT*
     - UEXPECT*
@@ -57,7 +58,17 @@ MacroCategories:
     - UASSERT_THROW_MSG
     - UEXPECT_NO_THROW
     - UASSERT_NO_THROW
+    - EXPECT_THROW
+    - EXPECT_THROW_MSG
+    - ASSERT_THROW
+    - EXPECT_NO_THROW
+    - ASSERT_NO_THROW
   CallSyntaxMacros:
+    - TEST
+    - TEST_F
+    - TEST_P
+    - TYPED_TEST
+    - TYPED_TEST_P
     - UTEST_F_DEATH
     - TYPED_UTEST
     - TYPED_UTEST_P_MT
@@ -70,8 +81,12 @@ MacroCategories:
     - UTEST_F
     - UTEST_P
     - UTEST
-    - BENCHMARK_F
+    - BENCHMARK*
+    - MOCK_METHOD
+    - MATCHER
+    - MATCHER_P*
     - INSTANTIATE*
+    - STACK_OF
     - RET_NAME
     - REGISTER_TYPED*
     - TYPED*

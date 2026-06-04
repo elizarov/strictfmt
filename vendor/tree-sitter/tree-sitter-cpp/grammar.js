@@ -10,33 +10,6 @@
 // @ts-check
 
 const C = require('tree-sitter-c/grammar');
-const MACRO_CONFIG = require('./macro_config');
-
-function macroCategoryNames(category) {
-  return MACRO_CONFIG.macro_categories[category] ?? [];
-}
-
-function macroChoice(category, fallback = []) {
-  const names = [...fallback, ...macroCategoryNames(category)];
-  return names.length === 1 ? names[0] : choice(...names);
-}
-
-function escapeRegex(value) {
-  return value.replace(/[\\^$.*+?()[\]{}|]/g, '\\$&');
-}
-
-function regexUnion(parts) {
-  const presentParts = parts.filter(Boolean);
-  return presentParts.length === 0 ? '(?!)' : `(?:${presentParts.join('|')})`;
-}
-
-function macroCategoryPattern(category) {
-  const names = macroCategoryNames(category);
-  const patterns = names.map(name => (
-    name.endsWith('*') ? `${escapeRegex(name.slice(0, -1))}[A-Za-z0-9_]*` : escapeRegex(name)
-  ));
-  return names.length === 0 ? '' : regexUnion(patterns);
-}
 
 const PREC = Object.assign(C.PREC, {
   LAMBDA: 18,
@@ -76,63 +49,19 @@ const ASSIGNMENT_OPERATORS = [
   'xor_eq',
 ];
 
-const CONDITIONAL_MACRO_FUNCTION_PATTERN = regexUnion([
-  macroCategoryPattern('call_syntax_macro'),
-]);
-const MACRO_FUNCTION_DEFINITION_PATTERN = regexUnion([
-  macroCategoryPattern('call_syntax_macro'),
-]);
-const RAW_MACRO_FUNCTION_DEFINITION_PATTERN = regexUnion([
-  macroCategoryPattern('raw_macro_function_definition'),
-]);
-const CALLING_CONVENTION_MACRO_PATTERN = regexUnion([
-  macroCategoryPattern('bare_identifier_macro'),
-]);
-const FUNCTION_PREFIX_MACRO_PATTERN = regexUnion([
-  macroCategoryPattern('bare_identifier_macro'),
-]);
-const STATEMENT_CALL_MACRO_PATTERN = regexUnion([
-  macroCategoryPattern('bare_identifier_macro'),
-]);
-const NAME_MACRO_CALL_PATTERN = regexUnion([
-  macroCategoryPattern('call_syntax_macro'),
-]);
-const QUALIFIED_IDENTIFIER_PREFIX_MACRO_PATTERN = regexUnion([
-  macroCategoryPattern('bare_identifier_macro'),
-]);
-const TOP_LEVEL_ITEM_MACRO_PATTERN = regexUnion([
-  macroCategoryPattern('bare_identifier_macro'),
-]);
-const MACRO_FUNCTION_DEFINITION_WITH_TRAILING_PARAMETERS_PATTERN = regexUnion([
-  macroCategoryPattern('call_syntax_macro'),
-]);
-const TOP_LEVEL_CALL_STATEMENT_PATTERN = regexUnion([
-  macroCategoryPattern('call_syntax_macro'),
-]);
-const TOP_LEVEL_CALL_ARGUMENT_ATOM_PATTERN = String.raw`[^()]`;
-const TOP_LEVEL_CALL_ARGUMENTS_DEPTH_1_PATTERN =
-  String.raw`\((?:${TOP_LEVEL_CALL_ARGUMENT_ATOM_PATTERN})*\)`;
-const TOP_LEVEL_CALL_ARGUMENTS_DEPTH_2_PATTERN =
-  String.raw`\((?:${TOP_LEVEL_CALL_ARGUMENT_ATOM_PATTERN}|${TOP_LEVEL_CALL_ARGUMENTS_DEPTH_1_PATTERN})*\)`;
-const TOP_LEVEL_CALL_ARGUMENTS_DEPTH_3_PATTERN =
-  String.raw`\((?:${TOP_LEVEL_CALL_ARGUMENT_ATOM_PATTERN}|${TOP_LEVEL_CALL_ARGUMENTS_DEPTH_2_PATTERN})*\)`;
-const TOP_LEVEL_CALL_ARGUMENTS_DEPTH_4_PATTERN =
-  String.raw`\((?:${TOP_LEVEL_CALL_ARGUMENT_ATOM_PATTERN}|${TOP_LEVEL_CALL_ARGUMENTS_DEPTH_3_PATTERN})*\)`;
-const TOP_LEVEL_CALL_ARGUMENTS_PATTERN =
-  String.raw`\((?:${TOP_LEVEL_CALL_ARGUMENT_ATOM_PATTERN}|${TOP_LEVEL_CALL_ARGUMENTS_DEPTH_4_PATTERN})*\)`;
-const METHOD_DECLARATION_MACRO_PATTERN = regexUnion([
-  macroCategoryPattern('call_syntax_macro'),
-]);
-const TYPE_SPECIFIER_MACRO_CALL_PATTERN = regexUnion([
-  macroCategoryPattern('call_syntax_macro'),
-]);
-
 module.exports = grammar(C, {
   name: 'cpp',
 
   externals: $ => [
     $.raw_string_delimiter,
     $.raw_string_content,
+    $.raw_macro_function_definition,
+    $.bare_macro_identifier,
+    $.call_syntax_macro_identifier,
+    $.top_level_call_statement,
+    $.conditional_macro_function_header,
+    $.name_macro_call,
+    $.type_specifier_macro_call,
   ],
 
   conflicts: $ => [
@@ -201,26 +130,13 @@ module.exports = grammar(C, {
     [$.template_type, $.template_method, $.dependent_field_identifier],
     [$._function_declaration_declarator, $._function_attributes_start],
     [$.argument_list, $.preproc_prefixed_expression],
-    [$._statement_exception_call_macro_identifier, $._statement_argument_call_macro_identifier],
-    [$._macro_function_definition_with_trailing_parameters_identifier, $._macro_function_definition_identifier],
     [$.top_level_item_macro, $.function_prefix_macro],
-    [
-      $.top_level_item_macro,
-      $.function_prefix_macro,
-      $._statement_exception_call_macro_identifier,
-      $._statement_argument_call_macro_identifier,
-    ],
     [$.top_level_item_macro, $.function_prefix_macro, $.calling_convention_macro],
-    [$.top_level_item_macro, $.function_prefix_macro, $._qualified_identifier_prefix_macro, $.calling_convention_macro],
-    [$.function_prefix_macro, $._qualified_identifier_prefix_macro],
+    [$.top_level_item_macro, $.function_prefix_macro, $.calling_convention_macro, $.macro_qualified_identifier],
     [$.function_prefix_macro, $.calling_convention_macro],
-    [$.calling_convention_macro, $._qualified_identifier_prefix_macro],
-    [$.function_prefix_macro, $.calling_convention_macro, $._qualified_identifier_prefix_macro],
-    [
-      $.calling_convention_macro,
-      $._statement_exception_call_macro_identifier,
-      $._statement_argument_call_macro_identifier,
-    ],
+    [$.calling_convention_macro, $.macro_qualified_identifier],
+    [$.function_prefix_macro, $.macro_qualified_identifier],
+    [$.function_prefix_macro, $.calling_convention_macro, $.macro_qualified_identifier],
   ],
 
   inline: ($, original) => original.concat([
@@ -257,7 +173,7 @@ module.exports = grammar(C, {
       $.alias_declaration,
       $.top_level_item_macro,
       $.macro_function_definition_with_trailing_parameters,
-      $.top_level_call_statement,
+      prec(1, $.top_level_call_statement),
       $.top_level_operator_macro_call,
       $.name_macro_call,
       $.static_assert_declaration,
@@ -294,7 +210,7 @@ module.exports = grammar(C, {
       $.alias_declaration,
       $.top_level_item_macro,
       $.macro_function_definition_with_trailing_parameters,
-      $.top_level_call_statement,
+      prec(1, $.top_level_call_statement),
       $.top_level_operator_macro_call,
       $.name_macro_call,
       $.static_assert_declaration,
@@ -355,11 +271,6 @@ module.exports = grammar(C, {
     preproc_def: ($, original) => withStructuredMacroReplacementList($, original),
     preproc_function_def: ($, original) => withStructuredMacroReplacementList($, original),
 
-    raw_macro_function_definition: _ => token(prec(
-      2,
-      new RegExp(String.raw`#[ \t]*define[ \t]+${RAW_MACRO_FUNCTION_DEFINITION_PATTERN}\([^\n]*\)(?:[^\n]*\\\r?\n)*[^\n]*`),
-    )),
-
     raw_macro_definition: _ => token(prec(
       2,
       /#[ \t]*define[ \t]+[A-Za-z_]\w*[ \t]+__attribute__[ \t]*\(\([^\n]*\)\)[^\n]*/,
@@ -393,37 +304,22 @@ module.exports = grammar(C, {
 
     macro_arrow_chain: _ => token(prec(1, /(?:->[A-Za-z_]\w*\([^()\n]*\))+/)),
 
-    top_level_item_macro: _ => token(prec(
-      1,
-      new RegExp(TOP_LEVEL_ITEM_MACRO_PATTERN),
-    )),
+    top_level_item_macro: $ => $.bare_macro_identifier,
 
     macro_function_definition: $ => prec(1, seq(
-      field('name', alias($._macro_function_definition_identifier, $.identifier)),
+      field('name', $.call_syntax_macro_identifier),
       field('arguments', $.argument_list),
       field('body', $.compound_statement),
     )),
 
     macro_function_definition_with_trailing_parameters: $ => prec(1, seq(
-      field('function', alias($._macro_function_definition_with_trailing_parameters_identifier, $.identifier)),
+      field('function', $.call_syntax_macro_identifier),
       field('arguments', $.argument_list),
       field('declarator', $.parameter_list),
       field('body', $.compound_statement),
     )),
 
-    _macro_function_definition_with_trailing_parameters_identifier: _ => token(prec(
-      1,
-      new RegExp(MACRO_FUNCTION_DEFINITION_WITH_TRAILING_PARAMETERS_PATTERN),
-    )),
-
-    top_level_call_statement: _ => token(prec(
-      1,
-      new RegExp(`${TOP_LEVEL_CALL_STATEMENT_PATTERN}${TOP_LEVEL_CALL_ARGUMENTS_PATTERN}(?:[ \\t]+[A-Z][A-Z0-9]*(?:_[A-Z0-9]+)+)?(?:[ \\t]*->[^\\n;]*)*(?:\\r?\\n[ \\t]*->[^\\n;]*)*;`),
-    )),
-
     top_level_operator_macro_call: _ => token(prec(1, /[A-Z][A-Z0-9_]*\((?:==|!=|<=|>=|<=>|<|>)\)/)),
-
-    name_macro_call: _ => token(prec(1, new RegExp(`${NAME_MACRO_CALL_PATTERN}\\([A-Za-z_]\\w*\\);?`))),
 
     conditional_macro_function_definition: $ => prec(1, seq(
       field('declarator', $.conditional_macro_function_header),
@@ -434,16 +330,6 @@ module.exports = grammar(C, {
       repeat($._block_item),
       '}',
     ),
-
-    conditional_macro_function_header: _ => token(prec(
-      1,
-      new RegExp(String.raw`#[ \t]*if[^\n]*\r?\n(?:[ \t]*\/\/[^\n]*\r?\n)*[ \t]*${CONDITIONAL_MACRO_FUNCTION_PATTERN}[^\n]*\{[^\n]*\r?\n#[ \t]*else[^\n]*\r?\n(?:[ \t]*\/\/[^\n]*\r?\n)*[ \t]*${CONDITIONAL_MACRO_FUNCTION_PATTERN}[^\n]*\{[^\n]*\r?\n#[ \t]*endif`),
-    )),
-
-    _macro_function_definition_identifier: _ => token(prec(
-      1,
-      new RegExp(MACRO_FUNCTION_DEFINITION_PATTERN),
-    )),
 
     macro_enum_declaration: $ => seq(
       alias($.macro_enum_specifier, $.enum_specifier),
@@ -532,8 +418,6 @@ module.exports = grammar(C, {
 
     type_descriptor: (_, original) => prec.right(original),
 
-    type_specifier_macro_call: _ => token(prec(1, new RegExp(`${TYPE_SPECIFIER_MACRO_CALL_PATTERN}\\([A-Za-z_]\\w*\\)`))),
-
     // When used in a trailing return type, these specifiers can now occur immediately before
     // a compound statement. This introduces a shift/reduce conflict that needs to be resolved
     // with an associativity.
@@ -615,20 +499,14 @@ module.exports = grammar(C, {
       'virtual',
     ),
 
-    function_prefix_macro: _ => token(prec(
-      1,
-      new RegExp(FUNCTION_PREFIX_MACRO_PATTERN),
-    )),
+    function_prefix_macro: $ => $.bare_macro_identifier,
 
     ms_call_modifier: ($, original) => choice(
       original,
       $.calling_convention_macro,
     ),
 
-    calling_convention_macro: _ => token(prec(
-      1,
-      new RegExp(CALLING_CONVENTION_MACRO_PATTERN),
-    )),
+    calling_convention_macro: $ => $.bare_macro_identifier,
 
     explicit_function_specifier: $ => choice(
       'explicit',
@@ -933,7 +811,7 @@ module.exports = grammar(C, {
     using_operator_pack_declaration: _ => token(prec(1, /using[ \t]+[A-Za-z_]\w*::operator\(\)\.\.\.;/)),
 
     macro_method_declaration: $ => seq(
-      field('function', alias($._method_declaration_macro_identifier, $.identifier)),
+      field('function', $.call_syntax_macro_identifier),
       '(',
       field('return_type', $._declaration_specifiers),
       ',',
@@ -946,8 +824,6 @@ module.exports = grammar(C, {
       ';',
     ),
 
-    _method_declaration_macro_identifier: _ => token(prec(1, new RegExp(METHOD_DECLARATION_MACRO_PATTERN))),
-
     macro_method_parameter_list: _ => token(prec(1, /\((?:[^()\r\n]|\r?\n[ \t]*|\([^()\r\n]*\))*\)/)),
 
     macro_method_qualifier_list: $ => seq(
@@ -955,6 +831,7 @@ module.exports = grammar(C, {
       commaSep(choice(
         $.type_qualifier,
         $.virtual_specifier,
+        $.noexcept,
         $.identifier,
       )),
       ')',
@@ -1434,6 +1311,7 @@ module.exports = grammar(C, {
     // Statements
 
     _top_level_statement: ($, original) => choice(
+      $.top_level_call_statement,
       original,
       $.co_return_statement,
       $.co_yield_statement,
@@ -1443,7 +1321,13 @@ module.exports = grammar(C, {
       $.throw_statement,
     ),
 
+    _top_level_expression_statement: ($, original) => choice(
+      $.top_level_call_statement,
+      original,
+    ),
+
     _non_case_statement: ($, original) => choice(
+      $.top_level_call_statement,
       $.preproc_guarded_assignment_statement,
       $.preproc_selected_braced_if_else_statement,
       $.preproc_selected_if_statement,
@@ -1658,18 +1542,13 @@ module.exports = grammar(C, {
     )),
 
     macro_statement_exception_call: $ => prec(PREC.CALL, seq(
-      field('function', alias($._statement_exception_call_macro_identifier, $.identifier)),
+      field('function', $.bare_macro_identifier),
       '(',
       field('argument', $.macro_call_statement_argument),
       ',',
       field('exception', $.macro_exception_type),
       optional(seq(',', field('message', $.expression))),
       ')',
-    )),
-
-    _statement_exception_call_macro_identifier: _ => token(prec(
-      1,
-      new RegExp(STATEMENT_CALL_MACRO_PATTERN),
     )),
 
     macro_exception_type: $ => choice(
@@ -1679,13 +1558,11 @@ module.exports = grammar(C, {
     ),
 
     macro_statement_argument_call: $ => prec(PREC.CALL, seq(
-      field('function', alias($._statement_argument_call_macro_identifier, $.identifier)),
+      field('function', $.bare_macro_identifier),
       '(',
       field('argument', $.macro_call_statement_argument),
       ')',
     )),
-
-    _statement_argument_call_macro_identifier: _ => token(prec(1, new RegExp(STATEMENT_CALL_MACRO_PATTERN))),
 
     macro_call_statement_argument: $ => choice(
       $.macro_statement_sequence_argument,
@@ -1724,11 +1601,9 @@ module.exports = grammar(C, {
     macro_expression_without_semicolon: $ => $.expression,
 
     macro_qualified_identifier: $ => seq(
-      alias($._qualified_identifier_prefix_macro, $.identifier),
+      $.bare_macro_identifier,
       $.identifier,
     ),
-
-    _qualified_identifier_prefix_macro: _ => token(prec(1, new RegExp(QUALIFIED_IDENTIFIER_PREFIX_MACRO_PATTERN))),
 
     typeid_expression: $ => prec(PREC.CALL, seq(
       'typeid',

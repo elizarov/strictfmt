@@ -611,7 +611,7 @@ Macro replacement lists that form declaration fragments are recursively formatte
 
 Configured statement-like macro parameters are emitted one invocation per continuation line.
 
-Macro category roles and parser regeneration ownership are described in [Formatter Configuration](#formatter-configuration).
+Macro category roles and runtime scanner ownership are described in [Formatter Configuration](#formatter-configuration).
 
 ```cpp
 #define CASEDASH_METRIC_DISPLAY_STYLE_ITEMS(X) \
@@ -764,13 +764,13 @@ Token spelling is preserved even when the parser grammar treats multiple spellin
 
 The formatter uses tree-sitter core from vcpkg and the vendored C++ grammar under `vendor\tree-sitter\tree-sitter-cpp\`. The C grammar under `vendor\tree-sitter\tree-sitter-c\` is kept for provenance and regeneration.
 
-Regenerate parser outputs only after editing vendored grammar source or parser macro categories:
+Regenerate parser outputs only after editing vendored grammar source:
 
 ```bat
 python tools\regenerate_tree_sitter_grammar.py
 ```
 
-The regeneration tool writes `macro_config.js` from `tests/format/.cpp-format` and `tests/format/.cpp-format-userver`, runs the pinned tree-sitter CLI, and updates generated files under `vendor\tree-sitter\tree-sitter-cpp\src\`. Pass `--tree-sitter-cli <path>` to use an existing CLI. Otherwise it downloads the pinned Windows CLI under `build\`.
+The regeneration tool runs the pinned tree-sitter CLI and updates generated files under `vendor\tree-sitter\tree-sitter-cpp\src\`. Pass `--tree-sitter-cli <path>` to use an existing CLI. Otherwise it downloads the pinned Windows CLI under `build\`. Macro category entries in `.cpp-format` are runtime scanner inputs and do not require parser regeneration.
 
 ## Formatter Configuration
 
@@ -780,7 +780,7 @@ When `--style` is omitted, `strictfmt` searches upward from each formatted file 
 
 `Inherit: Parent` makes a `.cpp-format` file inherit from the next `.cpp-format` found by searching upward from the config file's parent directory. Explicit `--style <path>` configs use the same parent search rooted at the explicit config file. If no parent config exists, inheritance starts from built-in defaults. Local scalar keys override inherited scalar keys. Local list keys replace inherited lists. Nested maps, such as `MacroCategories` and `StreamShift`, inherit by category, and a local category replaces only that inherited category.
 
-The `.cpp-format` file uses the formatter's YAML-like subset: blank lines, `---`, `...`, and comments are ignored; comments start with `#` outside single or double quotes; scalars may be unquoted, single quoted, or double quoted; lists use indented `- value` entries. Unknown keys are ignored by the native formatter and are not consumed by parser regeneration.
+The `.cpp-format` file uses the formatter's YAML-like subset: blank lines, `---`, `...`, and comments are ignored; comments start with `#` outside single or double quotes; scalars may be unquoted, single quoted, or double quoted; lists use indented `- value` entries. Unknown keys are ignored by the native formatter.
 
 Supported top-level keys:
 
@@ -791,7 +791,7 @@ Supported top-level keys:
 - `IncludeCategories`: optional ordered list of include groups. Each entry requires `Regex`, and may set `Priority`; priorities sort ascending and default to list order. Regexes match the normalized include target with delimiters, such as `'<vector>'` or `'"util/path.h"'`.
 - `MainIncludeChar`: `Quote` makes the main include detection consider quoted includes.
 - `IncludeIsMainRegex`: regex suffix appended to the current source file stem for main-include detection. The default is `(Test)?$`, so `widget.cpp` treats `"widget.h"` and `"widgetTest.h"` as main include candidates.
-- `MacroCategories`: macro and macro-like parser roles. Runtime formatting reads `StatementLikeParameters`; parser roles are consumed by grammar regeneration.
+- `MacroCategories`: macro and macro-like runtime roles. The formatter reads `StatementLikeParameters`, and the custom tree-sitter scanner reads parser-role categories from the active config while parsing.
 - `StreamShift`: stream insertion/extraction configuration.
 
 Example:
@@ -850,9 +850,9 @@ build
 
 ### Macro Categories
 
-`MacroCategories.StatementLikeParameters` is read from the active `.cpp-format` at formatting time. The remaining categories below are parser inputs: `tools\regenerate_tree_sitter_grammar.py` reads `tests/format/.cpp-format` and `tests/format/.cpp-format-userver`, writes `vendor\tree-sitter\tree-sitter-cpp\macro_config.js`, and bakes the configured names into the generated parser. After changing parser macro categories, regenerate the parser and rebuild tools.
+All `MacroCategories` entries are read from the active `.cpp-format` at formatting time. `StatementLikeParameters` affects macro replacement-list formatting. The remaining categories are runtime parser inputs: the custom tree-sitter scanner classifies identifiers into the fixed grammar token roles only when the active config contains the identifier or a matching trailing-`*` prefix. Changing these category entries requires rerunning the formatter with the new config, but does not require parser regeneration.
 
-Parser category entries must be C/C++ identifiers. Add a trailing `*` to an entry when the grammar role applies to every identifier with that prefix, such as `ATTRIBUTE*`; no other glob syntax is supported.
+Macro category entries must be C/C++ identifiers. Add a trailing `*` to an entry when the role applies to every identifier with that prefix, such as `ATTRIBUTE*`; no other glob syntax is supported.
 
 #### StatementLikeParameters
 

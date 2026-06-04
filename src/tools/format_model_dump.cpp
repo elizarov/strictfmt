@@ -5,6 +5,7 @@
 #include <string>
 #include <string_view>
 
+#include "tools/impl/format_config.h"
 #include "tools/impl/format_model.h"
 #include "tools/impl/format_model_parse.h"
 #include "tools/impl/tools_common.h"
@@ -115,7 +116,15 @@ int RunFormatModelDump(int argc, char** argv) {
         return 1;
     }
 
-    FormatModel model = ParseFormatModel(*text);
+    FormatStyleCache styleCache(std::nullopt);
+    std::string configError;
+    const FormatterConfig* config = styleCache.ConfigForPath(path, configError);
+    if (config == nullptr) {
+        std::fprintf(stderr, "format_model_dump: %s\n", configError.c_str());
+        return 1;
+    }
+
+    FormatModel model = ParseFormatModel(*text, *config);
     if (!model.parse.ok) {
         const std::string error = model.parse.error.empty() ? std::string("parser setup failed") : model.parse.error;
         std::fprintf(stderr, "format_model_dump: parse failed: %s\n", error.c_str());

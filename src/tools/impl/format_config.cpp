@@ -3,6 +3,7 @@
 #include <algorithm>
 #include <cstdio>
 #include <stdexcept>
+#include <string_view>
 #include <utility>
 
 #include "tools/impl/tools_common.h"
@@ -23,6 +24,9 @@ struct FormatterConfigPatch {
     std::optional<int> tabWidth;
     std::optional<std::string> mainIncludeRegex;
     std::optional<bool> mainIncludeQuote;
+    std::optional<std::vector<std::string>> rawMacroFunctionDefinitions;
+    std::optional<std::vector<std::string>> bareIdentifierMacros;
+    std::optional<std::vector<std::string>> callSyntaxMacros;
     std::optional<std::vector<std::string>> statementLikeMacroParameters;
     std::optional<std::vector<std::string>> streamShiftConfigurationMethods;
     std::optional<std::vector<IncludeGroup>> includeGroups;
@@ -124,6 +128,44 @@ std::vector<std::string>
     return values;
 }
 
+bool IsMacroNameStart(char ch) {
+    return ch == '_' || (ch >= 'A' && ch <= 'Z') || (ch >= 'a' && ch <= 'z');
+}
+
+bool IsMacroNameContinue(char ch) {
+    return IsMacroNameStart(ch) || (ch >= '0' && ch <= '9');
+}
+
+void ValidateMacroCategoryEntries(std::string_view configKey, const std::vector<std::string>& entries) {
+    std::vector<std::string> sortedEntries = entries;
+    std::sort(sortedEntries.begin(), sortedEntries.end());
+    const auto duplicate = std::adjacent_find(sortedEntries.begin(), sortedEntries.end());
+    if (duplicate != sortedEntries.end()) {
+        throw std::runtime_error("MacroCategories." + std::string(configKey) + " entry is duplicated: " + *duplicate);
+    }
+
+    for (const std::string& entry : entries) {
+        std::string_view name = entry;
+        if (!name.empty() && name.back() == '*') {
+            name.remove_suffix(1);
+        }
+        if (name.empty() || !IsMacroNameStart(name.front())) {
+            throw std::runtime_error(
+                "MacroCategories." + std::string(configKey) +
+                " entries must be C/C++ macro names or trailing-* macro prefixes"
+            );
+        }
+        for (const char ch : name) {
+            if (!IsMacroNameContinue(ch)) {
+                throw std::runtime_error(
+                    "MacroCategories." + std::string(configKey) +
+                    " entries must be C/C++ macro names or trailing-* macro prefixes"
+                );
+            }
+        }
+    }
+}
+
 void ParseIncludeCategories(const std::vector<ConfigLine>& lines, size_t& index, FormatterConfigPatch& patch) {
     std::vector<IncludeGroup> groups;
     const int parentIndent = lines[index].indent;
@@ -182,7 +224,16 @@ void ParseMacroCategories(const std::vector<ConfigLine>& lines, size_t& index, F
             break;
         }
         const auto [key, value] = SplitKeyValue(line.text);
-        if (key == "StatementLikeParameters" && value.empty()) {
+        if (key == "RawMacroFunctionDefinitions" && value.empty()) {
+            patch.rawMacroFunctionDefinitions = ParseIndentedStringList(lines, index, line.indent);
+            ValidateMacroCategoryEntries(key, *patch.rawMacroFunctionDefinitions);
+        } else if (key == "BareIdentifierMacros" && value.empty()) {
+            patch.bareIdentifierMacros = ParseIndentedStringList(lines, index, line.indent);
+            ValidateMacroCategoryEntries(key, *patch.bareIdentifierMacros);
+        } else if (key == "CallSyntaxMacros" && value.empty()) {
+            patch.callSyntaxMacros = ParseIndentedStringList(lines, index, line.indent);
+            ValidateMacroCategoryEntries(key, *patch.callSyntaxMacros);
+        } else if (key == "StatementLikeParameters" && value.empty()) {
             patch.statementLikeMacroParameters = ParseIndentedStringList(lines, index, line.indent);
         }
     }
@@ -253,6 +304,15 @@ FormatterConfig ApplyConfigPatch(FormatterConfig config, FormatterConfigPatch pa
     }
     if (patch.mainIncludeQuote.has_value()) {
         config.mainIncludeQuote = *patch.mainIncludeQuote;
+    }
+    if (patch.rawMacroFunctionDefinitions.has_value()) {
+        config.rawMacroFunctionDefinitions = std::move(*patch.rawMacroFunctionDefinitions);
+    }
+    if (patch.bareIdentifierMacros.has_value()) {
+        config.bareIdentifierMacros = std::move(*patch.bareIdentifierMacros);
+    }
+    if (patch.callSyntaxMacros.has_value()) {
+        config.callSyntaxMacros = std::move(*patch.callSyntaxMacros);
     }
     if (patch.statementLikeMacroParameters.has_value()) {
         config.statementLikeMacroParameters = std::move(*patch.statementLikeMacroParameters);
