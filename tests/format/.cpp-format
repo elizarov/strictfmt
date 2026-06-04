@@ -19,12 +19,16 @@ MainIncludeChar: Quote
 IncludeIsMainRegex: '(Test)?$'
 
 MacroCategories:
-  CallingConvention:
+  BareIdentifierMacros:
     - CALLBACK
     - WINAPI
+    - EXPECT_THROW
+    - EXPECT_THROW_MSG
+    - ASSERT_THROW
+    - EXPECT_NO_THROW
   StatementLikeParameters:
     - X
-  MacroFunctionDefinitions:
+  CallSyntaxMacros:
     - TEST
     - TEST_F
     - TEST_P
@@ -32,25 +36,10 @@ MacroCategories:
     - TYPED_TEST_P
     - MATCHER
     - MATCHER_P*
-  MacroFunctionDefinitionsWithTrailingParameters:
-    - BENCHMARK_DEFINE_F
-    - BENCHMARK_DEFINE_TEMPLATE_F
-  CallExpressionWithTypeArgumentsMacros:
-    - BENCHMARK_TEMPLATE
-  TopLevelCallStatements:
     - BENCHMARK*
     - ENUM_STRING_DECLARE
-  MethodDeclarationMacros:
     - MOCK_METHOD
-  StatementExceptionCallMacros:
-    - EXPECT_THROW
-    - EXPECT_THROW_MSG
-    - ASSERT_THROW
-  StatementArgumentCallMacros:
-    - EXPECT_NO_THROW
-  TypeSpecifierMacroCalls:
     - STACK_OF
-
 StreamShift:
   ConfigurationMethods:
     - std::boolalpha

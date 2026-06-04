@@ -77,40 +77,37 @@ const ASSIGNMENT_OPERATORS = [
 ];
 
 const CONDITIONAL_MACRO_FUNCTION_PATTERN = regexUnion([
-  macroCategoryPattern('macro_function_definition'),
+  macroCategoryPattern('call_syntax_macro'),
 ]);
 const MACRO_FUNCTION_DEFINITION_PATTERN = regexUnion([
-  macroCategoryPattern('macro_function_definition'),
+  macroCategoryPattern('call_syntax_macro'),
 ]);
 const RAW_MACRO_FUNCTION_DEFINITION_PATTERN = regexUnion([
   macroCategoryPattern('raw_macro_function_definition'),
 ]);
+const CALLING_CONVENTION_MACRO_PATTERN = regexUnion([
+  macroCategoryPattern('bare_identifier_macro'),
+]);
 const FUNCTION_PREFIX_MACRO_PATTERN = regexUnion([
-  macroCategoryPattern('function_prefix'),
+  macroCategoryPattern('bare_identifier_macro'),
 ]);
-const STATEMENT_ARGUMENT_CALL_MACRO_PATTERN = regexUnion([
-  macroCategoryPattern('statement_argument_call_macro'),
-]);
-const STATEMENT_EXCEPTION_CALL_MACRO_PATTERN = regexUnion([
-  macroCategoryPattern('statement_exception_call_macro'),
+const STATEMENT_CALL_MACRO_PATTERN = regexUnion([
+  macroCategoryPattern('bare_identifier_macro'),
 ]);
 const NAME_MACRO_CALL_PATTERN = regexUnion([
-  macroCategoryPattern('name_macro_call'),
+  macroCategoryPattern('call_syntax_macro'),
 ]);
 const QUALIFIED_IDENTIFIER_PREFIX_MACRO_PATTERN = regexUnion([
-  macroCategoryPattern('qualified_identifier_prefix_macro'),
+  macroCategoryPattern('bare_identifier_macro'),
 ]);
 const TOP_LEVEL_ITEM_MACRO_PATTERN = regexUnion([
-  macroCategoryPattern('top_level_item_macro'),
+  macroCategoryPattern('bare_identifier_macro'),
 ]);
 const MACRO_FUNCTION_DEFINITION_WITH_TRAILING_PARAMETERS_PATTERN = regexUnion([
-  macroCategoryPattern('macro_function_definition_with_trailing_parameters'),
-]);
-const CALL_EXPRESSION_WITH_TYPE_ARGUMENTS_MACRO_PATTERN = regexUnion([
-  macroCategoryPattern('call_expression_with_type_arguments_macro'),
+  macroCategoryPattern('call_syntax_macro'),
 ]);
 const TOP_LEVEL_CALL_STATEMENT_PATTERN = regexUnion([
-  macroCategoryPattern('top_level_call_statement'),
+  macroCategoryPattern('call_syntax_macro'),
 ]);
 const TOP_LEVEL_CALL_ARGUMENT_ATOM_PATTERN = String.raw`[^()]`;
 const TOP_LEVEL_CALL_ARGUMENTS_DEPTH_1_PATTERN =
@@ -124,10 +121,10 @@ const TOP_LEVEL_CALL_ARGUMENTS_DEPTH_4_PATTERN =
 const TOP_LEVEL_CALL_ARGUMENTS_PATTERN =
   String.raw`\((?:${TOP_LEVEL_CALL_ARGUMENT_ATOM_PATTERN}|${TOP_LEVEL_CALL_ARGUMENTS_DEPTH_4_PATTERN})*\)`;
 const METHOD_DECLARATION_MACRO_PATTERN = regexUnion([
-  macroCategoryPattern('method_declaration_macro'),
+  macroCategoryPattern('call_syntax_macro'),
 ]);
 const TYPE_SPECIFIER_MACRO_CALL_PATTERN = regexUnion([
-  macroCategoryPattern('type_specifier_macro_call'),
+  macroCategoryPattern('call_syntax_macro'),
 ]);
 
 module.exports = grammar(C, {
@@ -204,6 +201,26 @@ module.exports = grammar(C, {
     [$.template_type, $.template_method, $.dependent_field_identifier],
     [$._function_declaration_declarator, $._function_attributes_start],
     [$.argument_list, $.preproc_prefixed_expression],
+    [$._statement_exception_call_macro_identifier, $._statement_argument_call_macro_identifier],
+    [$._macro_function_definition_with_trailing_parameters_identifier, $._macro_function_definition_identifier],
+    [$.top_level_item_macro, $.function_prefix_macro],
+    [
+      $.top_level_item_macro,
+      $.function_prefix_macro,
+      $._statement_exception_call_macro_identifier,
+      $._statement_argument_call_macro_identifier,
+    ],
+    [$.top_level_item_macro, $.function_prefix_macro, $.calling_convention_macro],
+    [$.top_level_item_macro, $.function_prefix_macro, $._qualified_identifier_prefix_macro, $.calling_convention_macro],
+    [$.function_prefix_macro, $._qualified_identifier_prefix_macro],
+    [$.function_prefix_macro, $.calling_convention_macro],
+    [$.calling_convention_macro, $._qualified_identifier_prefix_macro],
+    [$.function_prefix_macro, $.calling_convention_macro, $._qualified_identifier_prefix_macro],
+    [
+      $.calling_convention_macro,
+      $._statement_exception_call_macro_identifier,
+      $._statement_argument_call_macro_identifier,
+    ],
   ],
 
   inline: ($, original) => original.concat([
@@ -608,7 +625,10 @@ module.exports = grammar(C, {
       $.calling_convention_macro,
     ),
 
-    calling_convention_macro: _ => macroChoice('calling_convention'),
+    calling_convention_macro: _ => token(prec(
+      1,
+      new RegExp(CALLING_CONVENTION_MACRO_PATTERN),
+    )),
 
     explicit_function_specifier: $ => choice(
       'explicit',
@@ -1616,7 +1636,6 @@ module.exports = grammar(C, {
       $.co_await_expression,
       $.requires_expression,
       $.requires_clause,
-      $.call_expression_with_type_arguments,
       $.macro_qualified_identifier,
       $.suffixed_string_literal,
       $.template_function,
@@ -1650,7 +1669,7 @@ module.exports = grammar(C, {
 
     _statement_exception_call_macro_identifier: _ => token(prec(
       1,
-      new RegExp(STATEMENT_EXCEPTION_CALL_MACRO_PATTERN),
+      new RegExp(STATEMENT_CALL_MACRO_PATTERN),
     )),
 
     macro_exception_type: $ => choice(
@@ -1666,7 +1685,7 @@ module.exports = grammar(C, {
       ')',
     )),
 
-    _statement_argument_call_macro_identifier: _ => token(prec(1, new RegExp(STATEMENT_ARGUMENT_CALL_MACRO_PATTERN))),
+    _statement_argument_call_macro_identifier: _ => token(prec(1, new RegExp(STATEMENT_CALL_MACRO_PATTERN))),
 
     macro_call_statement_argument: $ => choice(
       $.macro_statement_sequence_argument,
@@ -1710,22 +1729,6 @@ module.exports = grammar(C, {
     ),
 
     _qualified_identifier_prefix_macro: _ => token(prec(1, new RegExp(QUALIFIED_IDENTIFIER_PREFIX_MACRO_PATTERN))),
-
-    call_expression_with_type_arguments: $ => prec(PREC.CALL, seq(
-      field('function', alias($._call_expression_with_type_arguments_macro_identifier, $.identifier)),
-      field('arguments', alias($.argument_list_with_type_arguments, $.argument_list)),
-    )),
-
-    _call_expression_with_type_arguments_macro_identifier: _ => token(prec(
-      1,
-      new RegExp(CALL_EXPRESSION_WITH_TYPE_ARGUMENTS_MACRO_PATTERN),
-    )),
-
-    argument_list_with_type_arguments: $ => seq(
-      '(',
-      commaSep1(choice($.expression, $.type_descriptor)),
-      ')',
-    ),
 
     typeid_expression: $ => prec(PREC.CALL, seq(
       'typeid',

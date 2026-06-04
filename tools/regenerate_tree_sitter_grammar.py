@@ -26,37 +26,15 @@ TREE_SITTER_CLI_SHA512 = (
     "627AFC4B0BCDEFD4E40C8A36"
 )
 MACRO_CATEGORY_ORDER = (
-    "calling_convention",
     "raw_macro_function_definition",
-    "function_prefix",
-    "macro_function_definition",
-    "macro_function_definition_with_trailing_parameters",
-    "call_expression_with_type_arguments_macro",
-    "top_level_call_statement",
-    "method_declaration_macro",
-    "statement_exception_call_macro",
-    "statement_argument_call_macro",
-    "name_macro_call",
-    "qualified_identifier_prefix_macro",
-    "top_level_item_macro",
-    "type_specifier_macro_call",
+    "bare_identifier_macro",
+    "call_syntax_macro",
 )
-REQUIRED_MACRO_CATEGORIES = ("calling_convention",)
+REQUIRED_MACRO_CATEGORIES = ()
 FORMAT_CATEGORY_KEYS = {
-    "calling_convention": "CallingConvention",
     "raw_macro_function_definition": "RawMacroFunctionDefinitions",
-    "function_prefix": "FunctionPrefixes",
-    "macro_function_definition": "MacroFunctionDefinitions",
-    "macro_function_definition_with_trailing_parameters": "MacroFunctionDefinitionsWithTrailingParameters",
-    "call_expression_with_type_arguments_macro": "CallExpressionWithTypeArgumentsMacros",
-    "top_level_call_statement": "TopLevelCallStatements",
-    "method_declaration_macro": "MethodDeclarationMacros",
-    "statement_exception_call_macro": "StatementExceptionCallMacros",
-    "statement_argument_call_macro": "StatementArgumentCallMacros",
-    "name_macro_call": "NameMacroCalls",
-    "qualified_identifier_prefix_macro": "QualifiedIdentifierPrefixMacros",
-    "top_level_item_macro": "TopLevelItemMacros",
-    "type_specifier_macro_call": "TypeSpecifierMacroCalls",
+    "bare_identifier_macro": "BareIdentifierMacros",
+    "call_syntax_macro": "CallSyntaxMacros",
 }
 MACRO_CATEGORY_ENTRY_PATTERN = re.compile(r"^[A-Za-z_][A-Za-z0-9_]*\*?$")
 
