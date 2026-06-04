@@ -87,7 +87,7 @@ std::string WithLineEndings(std::string_view text, std::string_view lineEnding) 
 }  // namespace
 
 SourceFormatResult FormatSourceText(std::string_view text, const FormatterConfig& config, std::string_view sourcePath) {
-    FormatModel model = ParseFormatModel(text);
+    FormatModel model = ParseFormatModel(text, config);
     SourceFormatResult result;
     if (!model.parse.ok) {
         result.ok = false;

@@ -6,9 +6,7 @@ from __future__ import annotations
 import argparse
 import gzip
 import hashlib
-import json
 import os
-import re
 import shutil
 import subprocess
 import sys
@@ -25,188 +23,11 @@ TREE_SITTER_CLI_SHA512 = (
     "4CEFF1C79CF8491B1099CBC401AC4F2B85BAC45716C8C4B24C3EDA35A38C01E4996000CAF86979323E3F6352B2BF61CE2904C971"
     "627AFC4B0BCDEFD4E40C8A36"
 )
-MACRO_CATEGORY_ORDER = (
-    "raw_macro_function_definition",
-    "bare_identifier_macro",
-    "call_syntax_macro",
-)
-REQUIRED_MACRO_CATEGORIES = ()
-FORMAT_CATEGORY_KEYS = {
-    "raw_macro_function_definition": "RawMacroFunctionDefinitions",
-    "bare_identifier_macro": "BareIdentifierMacros",
-    "call_syntax_macro": "CallSyntaxMacros",
-}
-MACRO_CATEGORY_ENTRY_PATTERN = re.compile(r"^[A-Za-z_][A-Za-z0-9_]*\*?$")
 
 
 def fail(message: str) -> None:
     print(message, file=sys.stderr)
     raise SystemExit(1)
-
-
-def strip_yaml_comment(line: str) -> str:
-    in_single_quote = False
-    in_double_quote = False
-    result: list[str] = []
-    for char in line:
-        if char == "'" and not in_double_quote:
-            in_single_quote = not in_single_quote
-        elif char == '"' and not in_single_quote:
-            in_double_quote = not in_double_quote
-        elif char == "#" and not in_single_quote and not in_double_quote:
-            break
-        result.append(char)
-    return "".join(result).strip()
-
-
-def unquote_scalar(value: str) -> str:
-    value = value.strip()
-    if len(value) >= 2 and value[0] == "'" and value[-1] == "'":
-        return value[1:-1].replace("''", "'")
-    if len(value) >= 2 and value[0] == '"' and value[-1] == '"':
-        return value[1:-1]
-    return value
-
-
-def split_key_value(line: str) -> tuple[str, str]:
-    key, separator, value = line.partition(":")
-    if not separator:
-        return "", ""
-    return key.strip(), value.strip()
-
-
-def load_macro_category_section(config_path: Path) -> tuple[bool, dict[str, list[str]]]:
-    lines = config_path.read_text(encoding="utf-8").splitlines()
-    macro_categories: dict[str, list[str]] = {}
-    inherit_parent = False
-    in_macro_section = False
-    current_key: str | None = None
-    for raw_line in lines:
-        line = strip_yaml_comment(raw_line)
-        if not line or line in {"---", "..."}:
-            continue
-        indent = len(raw_line) - len(raw_line.lstrip(" "))
-        if indent == 0:
-            key, value = split_key_value(line)
-            if key == "Inherit":
-                if unquote_scalar(value) != "Parent":
-                    fail(f"{config_path} Inherit must be Parent")
-                inherit_parent = True
-            in_macro_section = key == "MacroCategories" and not value
-            current_key = None
-            continue
-        if not in_macro_section:
-            continue
-        if indent == 2 and line.endswith(":"):
-            current_key = line[:-1].strip()
-            macro_categories.setdefault(current_key, [])
-        elif indent >= 4 and current_key is not None and line.startswith("- "):
-            macro_categories[current_key].append(unquote_scalar(line[2:]))
-    return inherit_parent, macro_categories
-
-
-def find_parent_config(config_path: Path) -> Path | None:
-    config_directory = config_path.resolve().parent
-    directory = config_directory.parent
-    if directory == config_directory:
-        return None
-    while True:
-        candidate = directory / ".cpp-format"
-        if candidate.exists():
-            return candidate
-        if directory == directory.parent:
-            return None
-        directory = directory.parent
-
-
-def load_effective_macro_category_section(
-    config_path: Path,
-    loading_stack: list[Path] | None = None,
-) -> dict[str, list[str]]:
-    resolved_path = config_path.resolve()
-    if loading_stack is None:
-        loading_stack = []
-    if resolved_path in loading_stack:
-        fail(f"{config_path} formatter config inheritance cycle")
-    loading_stack.append(resolved_path)
-
-    inherit_parent, macro_categories = load_macro_category_section(resolved_path)
-    effective_categories: dict[str, list[str]] = {}
-    if inherit_parent:
-        parent_config = find_parent_config(resolved_path)
-        if parent_config is not None:
-            effective_categories.update(load_effective_macro_category_section(parent_config, loading_stack))
-    effective_categories.update(macro_categories)
-
-    loading_stack.pop()
-    return effective_categories
-
-
-def clean_macro_category_names(config_path: Path, config_key: str, names: list[str]) -> list[str]:
-    seen = set()
-    clean_names: list[str] = []
-    for name in names:
-        if not MACRO_CATEGORY_ENTRY_PATTERN.match(name):
-            fail(
-                f"{config_path} MacroCategories.{config_key} entry must be a C/C++ macro name "
-                f"or a trailing-* macro prefix: {name!r}"
-            )
-        if name in seen:
-            fail(f"{config_path} MacroCategories.{config_key} entry is duplicated: {name}")
-        seen.add(name)
-        clean_names.append(name)
-    return clean_names
-
-
-def load_macro_categories(config_path: Path) -> dict[str, list[str]]:
-    macro_categories = load_effective_macro_category_section(config_path)
-    if not macro_categories:
-        fail(f"{config_path} MacroCategories must be present")
-
-    categories: dict[str, list[str]] = {}
-    for category in MACRO_CATEGORY_ORDER:
-        config_key = FORMAT_CATEGORY_KEYS[category]
-        names = macro_categories.get(config_key, [])
-        if category in REQUIRED_MACRO_CATEGORIES and not names:
-            fail(f"{config_path} MacroCategories.{config_key} must be a non-empty array")
-        clean_names = clean_macro_category_names(config_path, config_key, names)
-        categories[category] = clean_names
-    return categories
-
-
-def load_macro_category_sources(config_paths: list[Path], repo_root: Path) -> list[tuple[str, dict[str, list[str]]]]:
-    sources: list[tuple[str, dict[str, list[str]]]] = []
-    for config_path in config_paths:
-        categories = load_macro_categories(config_path)
-        source_name = config_path.relative_to(repo_root).as_posix()
-        sources.append((source_name, categories))
-    return sources
-
-
-def write_macro_config(output_path: Path, sources: list[tuple[str, dict[str, list[str]]]]) -> None:
-    lines = [
-        "// Generated from tests/format/.cpp-format and tests/format/.cpp-format-userver by",
-        "// tools/regenerate_tree_sitter_grammar.py.",
-        "module.exports = {",
-        "  macro_categories: {",
-    ]
-    for category in MACRO_CATEGORY_ORDER:
-        lines.append(f"    {category}: [")
-        seen_names: set[str] = set()
-        for source_name, categories in sources:
-            lines.append(f"      // {source_name}")
-            for name in categories[category]:
-                if name in seen_names:
-                    continue
-                seen_names.add(name)
-                lines.append(f"      {json.dumps(name)},")
-        lines.append("    ],")
-    lines.extend([
-        "  },",
-        "};",
-        "",
-    ])
-    output_path.write_text("\n".join(lines), encoding="utf-8")
 
 
 def ensure_tree_sitter_cli(repo_root: Path, tree_sitter_cli: str | None) -> Path:
@@ -263,18 +84,11 @@ def main() -> int:
     vendor_root = repo_root / "vendor" / "tree-sitter"
     cpp_grammar_dir = vendor_root / "tree-sitter-cpp"
     c_grammar_dir = vendor_root / "tree-sitter-c"
-    config_paths = [
-        repo_root / "tests" / "format" / ".cpp-format",
-        repo_root / "tests" / "format" / ".cpp-format-userver",
-    ]
-    macro_config_path = cpp_grammar_dir / "macro_config.js"
 
-    for required_path in (cpp_grammar_dir / "grammar.js", c_grammar_dir / "grammar.js", *config_paths):
+    for required_path in (cpp_grammar_dir / "grammar.js", c_grammar_dir / "grammar.js"):
         if not required_path.exists():
             fail(f"Missing required grammar regeneration input: {required_path}")
 
-    sources = load_macro_category_sources(config_paths, repo_root)
-    write_macro_config(macro_config_path, sources)
     tree_sitter_cli = ensure_tree_sitter_cli(repo_root, args.tree_sitter_cli)
     run_tree_sitter_generate(cpp_grammar_dir, vendor_root, tree_sitter_cli)
     print(f"Regenerated tree-sitter C++ grammar outputs under {cpp_grammar_dir}")

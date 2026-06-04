@@ -1,4 +1,4 @@
-# Default strictfmt golden-fixture style with parser macro fixtures.
+# Default strictfmt golden-fixture style with runtime macro fixtures.
 ---
 ColumnLimit: 120
 IndentWidth: 4

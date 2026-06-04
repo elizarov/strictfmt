@@ -155,8 +155,12 @@
           "name": "macro_function_definition_with_trailing_parameters"
         },
         {
-          "type": "SYMBOL",
-          "name": "top_level_call_statement"
+          "type": "PREC",
+          "value": 1,
+          "content": {
+            "type": "SYMBOL",
+            "name": "top_level_call_statement"
+          }
         },
         {
           "type": "SYMBOL",
@@ -359,8 +363,12 @@
           "name": "macro_function_definition_with_trailing_parameters"
         },
         {
-          "type": "SYMBOL",
-          "name": "top_level_call_statement"
+          "type": "PREC",
+          "value": 1,
+          "content": {
+            "type": "SYMBOL",
+            "name": "top_level_call_statement"
+          }
         },
         {
           "type": "SYMBOL",
@@ -6609,6 +6617,10 @@
       "members": [
         {
           "type": "SYMBOL",
+          "name": "top_level_call_statement"
+        },
+        {
+          "type": "SYMBOL",
           "name": "preproc_guarded_assignment_statement"
         },
         {
@@ -6713,6 +6725,10 @@
     "_top_level_statement": {
       "type": "CHOICE",
       "members": [
+        {
+          "type": "SYMBOL",
+          "name": "top_level_call_statement"
+        },
         {
           "type": "CHOICE",
           "members": [
@@ -6836,23 +6852,32 @@
       ]
     },
     "_top_level_expression_statement": {
-      "type": "SEQ",
+      "type": "CHOICE",
       "members": [
         {
-          "type": "CHOICE",
-          "members": [
-            {
-              "type": "SYMBOL",
-              "name": "_expression_not_binary"
-            },
-            {
-              "type": "BLANK"
-            }
-          ]
+          "type": "SYMBOL",
+          "name": "top_level_call_statement"
         },
         {
-          "type": "STRING",
-          "value": ";"
+          "type": "SEQ",
+          "members": [
+            {
+              "type": "CHOICE",
+              "members": [
+                {
+                  "type": "SYMBOL",
+                  "name": "_expression_not_binary"
+                },
+                {
+                  "type": "BLANK"
+                }
+              ]
+            },
+            {
+              "type": "STRING",
+              "value": ";"
+            }
+          ]
         }
       ]
     },
@@ -12058,17 +12083,6 @@
         }
       ]
     },
-    "raw_macro_function_definition": {
-      "type": "TOKEN",
-      "content": {
-        "type": "PREC",
-        "value": 2,
-        "content": {
-          "type": "PATTERN",
-          "value": "#[ \\t]*define[ \\t]+(?:(?:IMPL_UTEST_ASSERT_NO_THROW|IMPL_UTEST_ASSERT_THROW|IMPL_UTEST_ANY_BEGIN|IMPL_UTEST_ANY_END|IMPL_UTEST_HIDE_USER_FIXTURE_BY_TEST_LAUNCHER|IMPL_UTEST_HIDE_USER_FIXTURE_BY_TEST_LAUNCHER_TYPED|IMPL_UTEST_MAKE_USER_FIXTURE_ALIAS_TYPED|IMPL_UTEST_TEST|IMPL_UTEST_TYPED_ANY_BEGIN|IMPL_UTEST_TYPED_ANY_END|TYPED_UTEST[A-Za-z0-9_]*|INSTANTIATE_UTEST[A-Za-z0-9_]*|UTEST[A-Za-z0-9_]*|UPROTO[A-Za-z0-9_]*|LOG[A-Za-z0-9_]*|RET[A-Za-z0-9_]*|UASSERT[A-Za-z0-9_]*|UEXPECT[A-Za-z0-9_]*|UINVARIANT[A-Za-z0-9_]*|USERVER[A-Za-z0-9_]*|UTILS[A-Za-z0-9_]*))\\([^\\n]*\\)(?:[^\\n]*\\\\\\r?\\n)*[^\\n]*"
-        }
-      }
-    },
     "raw_macro_definition": {
       "type": "TOKEN",
       "content": {
@@ -12213,15 +12227,8 @@
       }
     },
     "top_level_item_macro": {
-      "type": "TOKEN",
-      "content": {
-        "type": "PREC",
-        "value": 1,
-        "content": {
-          "type": "PATTERN",
-          "value": "(?:(?:CALLBACK|WINAPI|EXPECT_THROW|EXPECT_THROW_MSG|ASSERT_THROW|EXPECT_NO_THROW|USERVER_IMPL_NODEBUG|USERVER_IMPL_NODEBUG_INLINE_FUNC|USERVER_IMPL_FORCE_INLINE|USERVER_IMPL_DISABLE_ASAN|USERVER_IMPL_ALWAYS_INLINE_SIMD|USERVER_IMPL_PROTECT_DWCAS_ATTR|ATTRIBUTE[A-Za-z0-9_]*|FORMAT_USERVER[A-Za-z0-9_]*|USERVER_NAMESPACE_BEGIN|USERVER_NAMESPACE_END|CURL_FORMAT_USERVER_NAMESPACE|CURL_8_13_NAMESPACE|CURL_SSLVERSION_NAMESPACE|UEXPECT_THROW|UEXPECT_THROW_MSG|UASSERT_THROW|UASSERT_THROW_MSG|UEXPECT_NO_THROW|UASSERT_NO_THROW))"
-        }
-      }
+      "type": "SYMBOL",
+      "name": "bare_macro_identifier"
     },
     "macro_function_definition": {
       "type": "PREC",
@@ -12233,13 +12240,8 @@
             "type": "FIELD",
             "name": "name",
             "content": {
-              "type": "ALIAS",
-              "content": {
-                "type": "SYMBOL",
-                "name": "_macro_function_definition_identifier"
-              },
-              "named": true,
-              "value": "identifier"
+              "type": "SYMBOL",
+              "name": "call_syntax_macro_identifier"
             }
           },
           {
@@ -12271,13 +12273,8 @@
             "type": "FIELD",
             "name": "function",
             "content": {
-              "type": "ALIAS",
-              "content": {
-                "type": "SYMBOL",
-                "name": "_macro_function_definition_with_trailing_parameters_identifier"
-              },
-              "named": true,
-              "value": "identifier"
+              "type": "SYMBOL",
+              "name": "call_syntax_macro_identifier"
             }
           },
           {
@@ -12307,28 +12304,6 @@
         ]
       }
     },
-    "_macro_function_definition_with_trailing_parameters_identifier": {
-      "type": "TOKEN",
-      "content": {
-        "type": "PREC",
-        "value": 1,
-        "content": {
-          "type": "PATTERN",
-          "value": "(?:(?:TEST|TEST_F|TEST_P|TYPED_TEST|TYPED_TEST_P|MATCHER|MATCHER_P[A-Za-z0-9_]*|BENCHMARK[A-Za-z0-9_]*|ENUM_STRING_DECLARE|MOCK_METHOD|STACK_OF|UTEST_F_DEATH|TYPED_UTEST|TYPED_UTEST_P_MT|TYPED_UTEST_MT|TYPED_UTEST_P|UTEST_F_MT|UTEST_P_MT|UTEST_MT|UTEST_DEATH|UTEST_F|UTEST_P|UTEST|BENCHMARK_F|INSTANTIATE[A-Za-z0-9_]*|RET_NAME|REGISTER_TYPED[A-Za-z0-9_]*|TYPED[A-Za-z0-9_]*|USERVER_DEFINE_STRUCT_SUBSET[A-Za-z0-9_]*))"
-        }
-      }
-    },
-    "top_level_call_statement": {
-      "type": "TOKEN",
-      "content": {
-        "type": "PREC",
-        "value": 1,
-        "content": {
-          "type": "PATTERN",
-          "value": "(?:(?:TEST|TEST_F|TEST_P|TYPED_TEST|TYPED_TEST_P|MATCHER|MATCHER_P[A-Za-z0-9_]*|BENCHMARK[A-Za-z0-9_]*|ENUM_STRING_DECLARE|MOCK_METHOD|STACK_OF|UTEST_F_DEATH|TYPED_UTEST|TYPED_UTEST_P_MT|TYPED_UTEST_MT|TYPED_UTEST_P|UTEST_F_MT|UTEST_P_MT|UTEST_MT|UTEST_DEATH|UTEST_F|UTEST_P|UTEST|BENCHMARK_F|INSTANTIATE[A-Za-z0-9_]*|RET_NAME|REGISTER_TYPED[A-Za-z0-9_]*|TYPED[A-Za-z0-9_]*|USERVER_DEFINE_STRUCT_SUBSET[A-Za-z0-9_]*))\\((?:[^()]|\\((?:[^()]|\\((?:[^()]|\\((?:[^()]|\\((?:[^()])*\\))*\\))*\\))*\\))*\\)(?:[ \\t]+[A-Z][A-Z0-9]*(?:_[A-Z0-9]+)+)?(?:[ \\t]*->[^\\n;]*)*(?:\\r?\\n[ \\t]*->[^\\n;]*)*;"
-        }
-      }
-    },
     "top_level_operator_macro_call": {
       "type": "TOKEN",
       "content": {
@@ -12337,17 +12312,6 @@
         "content": {
           "type": "PATTERN",
           "value": "[A-Z][A-Z0-9_]*\\((?:==|!=|<=|>=|<=>|<|>)\\)"
-        }
-      }
-    },
-    "name_macro_call": {
-      "type": "TOKEN",
-      "content": {
-        "type": "PREC",
-        "value": 1,
-        "content": {
-          "type": "PATTERN",
-          "value": "(?:(?:TEST|TEST_F|TEST_P|TYPED_TEST|TYPED_TEST_P|MATCHER|MATCHER_P[A-Za-z0-9_]*|BENCHMARK[A-Za-z0-9_]*|ENUM_STRING_DECLARE|MOCK_METHOD|STACK_OF|UTEST_F_DEATH|TYPED_UTEST|TYPED_UTEST_P_MT|TYPED_UTEST_MT|TYPED_UTEST_P|UTEST_F_MT|UTEST_P_MT|UTEST_MT|UTEST_DEATH|UTEST_F|UTEST_P|UTEST|BENCHMARK_F|INSTANTIATE[A-Za-z0-9_]*|RET_NAME|REGISTER_TYPED[A-Za-z0-9_]*|TYPED[A-Za-z0-9_]*|USERVER_DEFINE_STRUCT_SUBSET[A-Za-z0-9_]*))\\([A-Za-z_]\\w*\\);?"
         }
       }
     },
@@ -12396,28 +12360,6 @@
           "value": "}"
         }
       ]
-    },
-    "conditional_macro_function_header": {
-      "type": "TOKEN",
-      "content": {
-        "type": "PREC",
-        "value": 1,
-        "content": {
-          "type": "PATTERN",
-          "value": "#[ \\t]*if[^\\n]*\\r?\\n(?:[ \\t]*\\/\\/[^\\n]*\\r?\\n)*[ \\t]*(?:(?:TEST|TEST_F|TEST_P|TYPED_TEST|TYPED_TEST_P|MATCHER|MATCHER_P[A-Za-z0-9_]*|BENCHMARK[A-Za-z0-9_]*|ENUM_STRING_DECLARE|MOCK_METHOD|STACK_OF|UTEST_F_DEATH|TYPED_UTEST|TYPED_UTEST_P_MT|TYPED_UTEST_MT|TYPED_UTEST_P|UTEST_F_MT|UTEST_P_MT|UTEST_MT|UTEST_DEATH|UTEST_F|UTEST_P|UTEST|BENCHMARK_F|INSTANTIATE[A-Za-z0-9_]*|RET_NAME|REGISTER_TYPED[A-Za-z0-9_]*|TYPED[A-Za-z0-9_]*|USERVER_DEFINE_STRUCT_SUBSET[A-Za-z0-9_]*))[^\\n]*\\{[^\\n]*\\r?\\n#[ \\t]*else[^\\n]*\\r?\\n(?:[ \\t]*\\/\\/[^\\n]*\\r?\\n)*[ \\t]*(?:(?:TEST|TEST_F|TEST_P|TYPED_TEST|TYPED_TEST_P|MATCHER|MATCHER_P[A-Za-z0-9_]*|BENCHMARK[A-Za-z0-9_]*|ENUM_STRING_DECLARE|MOCK_METHOD|STACK_OF|UTEST_F_DEATH|TYPED_UTEST|TYPED_UTEST_P_MT|TYPED_UTEST_MT|TYPED_UTEST_P|UTEST_F_MT|UTEST_P_MT|UTEST_MT|UTEST_DEATH|UTEST_F|UTEST_P|UTEST|BENCHMARK_F|INSTANTIATE[A-Za-z0-9_]*|RET_NAME|REGISTER_TYPED[A-Za-z0-9_]*|TYPED[A-Za-z0-9_]*|USERVER_DEFINE_STRUCT_SUBSET[A-Za-z0-9_]*))[^\\n]*\\{[^\\n]*\\r?\\n#[ \\t]*endif"
-        }
-      }
-    },
-    "_macro_function_definition_identifier": {
-      "type": "TOKEN",
-      "content": {
-        "type": "PREC",
-        "value": 1,
-        "content": {
-          "type": "PATTERN",
-          "value": "(?:(?:TEST|TEST_F|TEST_P|TYPED_TEST|TYPED_TEST_P|MATCHER|MATCHER_P[A-Za-z0-9_]*|BENCHMARK[A-Za-z0-9_]*|ENUM_STRING_DECLARE|MOCK_METHOD|STACK_OF|UTEST_F_DEATH|TYPED_UTEST|TYPED_UTEST_P_MT|TYPED_UTEST_MT|TYPED_UTEST_P|UTEST_F_MT|UTEST_P_MT|UTEST_MT|UTEST_DEATH|UTEST_F|UTEST_P|UTEST|BENCHMARK_F|INSTANTIATE[A-Za-z0-9_]*|RET_NAME|REGISTER_TYPED[A-Za-z0-9_]*|TYPED[A-Za-z0-9_]*|USERVER_DEFINE_STRUCT_SUBSET[A-Za-z0-9_]*))"
-        }
-      }
     },
     "macro_enum_declaration": {
       "type": "SEQ",
@@ -12817,17 +12759,6 @@
         }
       }
     },
-    "type_specifier_macro_call": {
-      "type": "TOKEN",
-      "content": {
-        "type": "PREC",
-        "value": 1,
-        "content": {
-          "type": "PATTERN",
-          "value": "(?:(?:TEST|TEST_F|TEST_P|TYPED_TEST|TYPED_TEST_P|MATCHER|MATCHER_P[A-Za-z0-9_]*|BENCHMARK[A-Za-z0-9_]*|ENUM_STRING_DECLARE|MOCK_METHOD|STACK_OF|UTEST_F_DEATH|TYPED_UTEST|TYPED_UTEST_P_MT|TYPED_UTEST_MT|TYPED_UTEST_P|UTEST_F_MT|UTEST_P_MT|UTEST_MT|UTEST_DEATH|UTEST_F|UTEST_P|UTEST|BENCHMARK_F|INSTANTIATE[A-Za-z0-9_]*|RET_NAME|REGISTER_TYPED[A-Za-z0-9_]*|TYPED[A-Za-z0-9_]*|USERVER_DEFINE_STRUCT_SUBSET[A-Za-z0-9_]*))\\([A-Za-z_]\\w*\\)"
-        }
-      }
-    },
     "_class_declaration": {
       "type": "SEQ",
       "members": [
@@ -13027,26 +12958,12 @@
       ]
     },
     "function_prefix_macro": {
-      "type": "TOKEN",
-      "content": {
-        "type": "PREC",
-        "value": 1,
-        "content": {
-          "type": "PATTERN",
-          "value": "(?:(?:CALLBACK|WINAPI|EXPECT_THROW|EXPECT_THROW_MSG|ASSERT_THROW|EXPECT_NO_THROW|USERVER_IMPL_NODEBUG|USERVER_IMPL_NODEBUG_INLINE_FUNC|USERVER_IMPL_FORCE_INLINE|USERVER_IMPL_DISABLE_ASAN|USERVER_IMPL_ALWAYS_INLINE_SIMD|USERVER_IMPL_PROTECT_DWCAS_ATTR|ATTRIBUTE[A-Za-z0-9_]*|FORMAT_USERVER[A-Za-z0-9_]*|USERVER_NAMESPACE_BEGIN|USERVER_NAMESPACE_END|CURL_FORMAT_USERVER_NAMESPACE|CURL_8_13_NAMESPACE|CURL_SSLVERSION_NAMESPACE|UEXPECT_THROW|UEXPECT_THROW_MSG|UASSERT_THROW|UASSERT_THROW_MSG|UEXPECT_NO_THROW|UASSERT_NO_THROW))"
-        }
-      }
+      "type": "SYMBOL",
+      "name": "bare_macro_identifier"
     },
     "calling_convention_macro": {
-      "type": "TOKEN",
-      "content": {
-        "type": "PREC",
-        "value": 1,
-        "content": {
-          "type": "PATTERN",
-          "value": "(?:(?:CALLBACK|WINAPI|EXPECT_THROW|EXPECT_THROW_MSG|ASSERT_THROW|EXPECT_NO_THROW|USERVER_IMPL_NODEBUG|USERVER_IMPL_NODEBUG_INLINE_FUNC|USERVER_IMPL_FORCE_INLINE|USERVER_IMPL_DISABLE_ASAN|USERVER_IMPL_ALWAYS_INLINE_SIMD|USERVER_IMPL_PROTECT_DWCAS_ATTR|ATTRIBUTE[A-Za-z0-9_]*|FORMAT_USERVER[A-Za-z0-9_]*|USERVER_NAMESPACE_BEGIN|USERVER_NAMESPACE_END|CURL_FORMAT_USERVER_NAMESPACE|CURL_8_13_NAMESPACE|CURL_SSLVERSION_NAMESPACE|UEXPECT_THROW|UEXPECT_THROW_MSG|UASSERT_THROW|UASSERT_THROW_MSG|UEXPECT_NO_THROW|UASSERT_NO_THROW))"
-        }
-      }
+      "type": "SYMBOL",
+      "name": "bare_macro_identifier"
     },
     "explicit_function_specifier": {
       "type": "CHOICE",
@@ -14292,13 +14209,8 @@
           "type": "FIELD",
           "name": "function",
           "content": {
-            "type": "ALIAS",
-            "content": {
-              "type": "SYMBOL",
-              "name": "_method_declaration_macro_identifier"
-            },
-            "named": true,
-            "value": "identifier"
+            "type": "SYMBOL",
+            "name": "call_syntax_macro_identifier"
           }
         },
         {
@@ -14359,17 +14271,6 @@
         }
       ]
     },
-    "_method_declaration_macro_identifier": {
-      "type": "TOKEN",
-      "content": {
-        "type": "PREC",
-        "value": 1,
-        "content": {
-          "type": "PATTERN",
-          "value": "(?:(?:TEST|TEST_F|TEST_P|TYPED_TEST|TYPED_TEST_P|MATCHER|MATCHER_P[A-Za-z0-9_]*|BENCHMARK[A-Za-z0-9_]*|ENUM_STRING_DECLARE|MOCK_METHOD|STACK_OF|UTEST_F_DEATH|TYPED_UTEST|TYPED_UTEST_P_MT|TYPED_UTEST_MT|TYPED_UTEST_P|UTEST_F_MT|UTEST_P_MT|UTEST_MT|UTEST_DEATH|UTEST_F|UTEST_P|UTEST|BENCHMARK_F|INSTANTIATE[A-Za-z0-9_]*|RET_NAME|REGISTER_TYPED[A-Za-z0-9_]*|TYPED[A-Za-z0-9_]*|USERVER_DEFINE_STRUCT_SUBSET[A-Za-z0-9_]*))"
-        }
-      }
-    },
     "macro_method_parameter_list": {
       "type": "TOKEN",
       "content": {
@@ -14407,6 +14308,10 @@
                     },
                     {
                       "type": "SYMBOL",
+                      "name": "noexcept"
+                    },
+                    {
+                      "type": "SYMBOL",
                       "name": "identifier"
                     }
                   ]
@@ -14430,6 +14335,10 @@
                           {
                             "type": "SYMBOL",
                             "name": "virtual_specifier"
+                          },
+                          {
+                            "type": "SYMBOL",
+                            "name": "noexcept"
                           },
                           {
                             "type": "SYMBOL",
@@ -17728,13 +17637,8 @@
             "type": "FIELD",
             "name": "function",
             "content": {
-              "type": "ALIAS",
-              "content": {
-                "type": "SYMBOL",
-                "name": "_statement_exception_call_macro_identifier"
-              },
-              "named": true,
-              "value": "identifier"
+              "type": "SYMBOL",
+              "name": "bare_macro_identifier"
             }
           },
           {
@@ -17793,17 +17697,6 @@
         ]
       }
     },
-    "_statement_exception_call_macro_identifier": {
-      "type": "TOKEN",
-      "content": {
-        "type": "PREC",
-        "value": 1,
-        "content": {
-          "type": "PATTERN",
-          "value": "(?:(?:CALLBACK|WINAPI|EXPECT_THROW|EXPECT_THROW_MSG|ASSERT_THROW|EXPECT_NO_THROW|USERVER_IMPL_NODEBUG|USERVER_IMPL_NODEBUG_INLINE_FUNC|USERVER_IMPL_FORCE_INLINE|USERVER_IMPL_DISABLE_ASAN|USERVER_IMPL_ALWAYS_INLINE_SIMD|USERVER_IMPL_PROTECT_DWCAS_ATTR|ATTRIBUTE[A-Za-z0-9_]*|FORMAT_USERVER[A-Za-z0-9_]*|USERVER_NAMESPACE_BEGIN|USERVER_NAMESPACE_END|CURL_FORMAT_USERVER_NAMESPACE|CURL_8_13_NAMESPACE|CURL_SSLVERSION_NAMESPACE|UEXPECT_THROW|UEXPECT_THROW_MSG|UASSERT_THROW|UASSERT_THROW_MSG|UEXPECT_NO_THROW|UASSERT_NO_THROW))"
-        }
-      }
-    },
     "macro_exception_type": {
       "type": "CHOICE",
       "members": [
@@ -17831,13 +17724,8 @@
             "type": "FIELD",
             "name": "function",
             "content": {
-              "type": "ALIAS",
-              "content": {
-                "type": "SYMBOL",
-                "name": "_statement_argument_call_macro_identifier"
-              },
-              "named": true,
-              "value": "identifier"
+              "type": "SYMBOL",
+              "name": "bare_macro_identifier"
             }
           },
           {
@@ -17857,17 +17745,6 @@
             "value": ")"
           }
         ]
-      }
-    },
-    "_statement_argument_call_macro_identifier": {
-      "type": "TOKEN",
-      "content": {
-        "type": "PREC",
-        "value": 1,
-        "content": {
-          "type": "PATTERN",
-          "value": "(?:(?:CALLBACK|WINAPI|EXPECT_THROW|EXPECT_THROW_MSG|ASSERT_THROW|EXPECT_NO_THROW|USERVER_IMPL_NODEBUG|USERVER_IMPL_NODEBUG_INLINE_FUNC|USERVER_IMPL_FORCE_INLINE|USERVER_IMPL_DISABLE_ASAN|USERVER_IMPL_ALWAYS_INLINE_SIMD|USERVER_IMPL_PROTECT_DWCAS_ATTR|ATTRIBUTE[A-Za-z0-9_]*|FORMAT_USERVER[A-Za-z0-9_]*|USERVER_NAMESPACE_BEGIN|USERVER_NAMESPACE_END|CURL_FORMAT_USERVER_NAMESPACE|CURL_8_13_NAMESPACE|CURL_SSLVERSION_NAMESPACE|UEXPECT_THROW|UEXPECT_THROW_MSG|UASSERT_THROW|UASSERT_THROW_MSG|UEXPECT_NO_THROW|UASSERT_NO_THROW))"
-        }
       }
     },
     "macro_call_statement_argument": {
@@ -18030,30 +17907,14 @@
       "type": "SEQ",
       "members": [
         {
-          "type": "ALIAS",
-          "content": {
-            "type": "SYMBOL",
-            "name": "_qualified_identifier_prefix_macro"
-          },
-          "named": true,
-          "value": "identifier"
+          "type": "SYMBOL",
+          "name": "bare_macro_identifier"
         },
         {
           "type": "SYMBOL",
           "name": "identifier"
         }
       ]
-    },
-    "_qualified_identifier_prefix_macro": {
-      "type": "TOKEN",
-      "content": {
-        "type": "PREC",
-        "value": 1,
-        "content": {
-          "type": "PATTERN",
-          "value": "(?:(?:CALLBACK|WINAPI|EXPECT_THROW|EXPECT_THROW_MSG|ASSERT_THROW|EXPECT_NO_THROW|USERVER_IMPL_NODEBUG|USERVER_IMPL_NODEBUG_INLINE_FUNC|USERVER_IMPL_FORCE_INLINE|USERVER_IMPL_DISABLE_ASAN|USERVER_IMPL_ALWAYS_INLINE_SIMD|USERVER_IMPL_PROTECT_DWCAS_ATTR|ATTRIBUTE[A-Za-z0-9_]*|FORMAT_USERVER[A-Za-z0-9_]*|USERVER_NAMESPACE_BEGIN|USERVER_NAMESPACE_END|CURL_FORMAT_USERVER_NAMESPACE|CURL_8_13_NAMESPACE|CURL_SSLVERSION_NAMESPACE|UEXPECT_THROW|UEXPECT_THROW_MSG|UASSERT_THROW|UASSERT_THROW_MSG|UEXPECT_NO_THROW|UASSERT_NO_THROW))"
-        }
-      }
     },
     "typeid_expression": {
       "type": "PREC",
@@ -21542,37 +21403,19 @@
       "preproc_prefixed_expression"
     ],
     [
-      "_statement_exception_call_macro_identifier",
-      "_statement_argument_call_macro_identifier"
-    ],
-    [
-      "_macro_function_definition_with_trailing_parameters_identifier",
-      "_macro_function_definition_identifier"
-    ],
-    [
       "top_level_item_macro",
       "function_prefix_macro"
     ],
     [
       "top_level_item_macro",
       "function_prefix_macro",
-      "_statement_exception_call_macro_identifier",
-      "_statement_argument_call_macro_identifier"
-    ],
-    [
-      "top_level_item_macro",
-      "function_prefix_macro",
       "calling_convention_macro"
     ],
     [
       "top_level_item_macro",
       "function_prefix_macro",
-      "_qualified_identifier_prefix_macro",
-      "calling_convention_macro"
-    ],
-    [
-      "function_prefix_macro",
-      "_qualified_identifier_prefix_macro"
+      "calling_convention_macro",
+      "macro_qualified_identifier"
     ],
     [
       "function_prefix_macro",
@@ -21580,17 +21423,16 @@
     ],
     [
       "calling_convention_macro",
-      "_qualified_identifier_prefix_macro"
+      "macro_qualified_identifier"
+    ],
+    [
+      "function_prefix_macro",
+      "macro_qualified_identifier"
     ],
     [
       "function_prefix_macro",
       "calling_convention_macro",
-      "_qualified_identifier_prefix_macro"
-    ],
-    [
-      "calling_convention_macro",
-      "_statement_exception_call_macro_identifier",
-      "_statement_argument_call_macro_identifier"
+      "macro_qualified_identifier"
     ]
   ],
   "precedences": [
@@ -21623,6 +21465,34 @@
     {
       "type": "SYMBOL",
       "name": "raw_string_content"
+    },
+    {
+      "type": "SYMBOL",
+      "name": "raw_macro_function_definition"
+    },
+    {
+      "type": "SYMBOL",
+      "name": "bare_macro_identifier"
+    },
+    {
+      "type": "SYMBOL",
+      "name": "call_syntax_macro_identifier"
+    },
+    {
+      "type": "SYMBOL",
+      "name": "top_level_call_statement"
+    },
+    {
+      "type": "SYMBOL",
+      "name": "conditional_macro_function_header"
+    },
+    {
+      "type": "SYMBOL",
+      "name": "name_macro_call"
+    },
+    {
+      "type": "SYMBOL",
+      "name": "type_specifier_macro_call"
     }
   ],
   "inline": [

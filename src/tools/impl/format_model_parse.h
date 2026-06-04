@@ -4,4 +4,6 @@
 
 #include "tools/impl/format_model.h"
 
-FormatModel ParseFormatModel(std::string_view text);
+struct FormatterConfig;
+
+FormatModel ParseFormatModel(std::string_view text, const FormatterConfig& config);
