@@ -609,8 +609,6 @@ Macro continuation backslashes, spaces before continuation backslashes, and cont
 
 Macro replacement lists that form declaration fragments are recursively formatted before continuation backslashes are added.
 
-Configured statement-like macro parameters are emitted one invocation per continuation line.
-
 Macro category roles and runtime scanner ownership are described in [Formatter Configuration](#formatter-configuration).
 
 ```cpp
@@ -791,7 +789,7 @@ Supported top-level keys:
 - `IncludeCategories`: optional ordered list of include groups. Each entry requires `Regex`, and may set `Priority`; priorities sort ascending and default to list order. Regexes match the normalized include target with delimiters, such as `'<vector>'` or `'"util/path.h"'`.
 - `MainIncludeChar`: `Quote` makes the main include detection consider quoted includes.
 - `IncludeIsMainRegex`: regex suffix appended to the current source file stem for main-include detection. The default is `(Test)?$`, so `widget.cpp` treats `"widget.h"` and `"widgetTest.h"` as main include candidates.
-- `MacroCategories`: macro and macro-like runtime roles. The formatter reads `StatementLikeParameters`, and the custom tree-sitter scanner reads parser-role categories from the active config while parsing.
+- `MacroCategories`: macro and macro-like runtime parser roles. The custom tree-sitter scanner reads these categories from the active config while parsing.
 - `StreamShift`: stream insertion/extraction configuration.
 
 Example:
@@ -814,8 +812,6 @@ IncludeIsMainRegex: '(Test)?$'
 MacroCategories:
   BareIdentifierMacros:
     - CALLBACK
-  StatementLikeParameters:
-    - X
   CallSyntaxMacros:
     - TEST
 
@@ -850,23 +846,13 @@ build
 
 ### Macro Categories
 
-All `MacroCategories` entries are read from the active `.cpp-format` at formatting time. `StatementLikeParameters` affects macro replacement-list formatting. The remaining categories are runtime parser inputs: the custom tree-sitter scanner classifies identifiers into the fixed grammar token roles only when the active config contains the identifier or a matching trailing-`*` prefix. Changing these category entries requires rerunning the formatter with the new config, but does not require parser regeneration.
+All `MacroCategories` entries are read from the active `.cpp-format` at formatting time. These categories are runtime parser inputs: the custom tree-sitter scanner classifies identifiers into the fixed grammar token roles only when the active config contains the identifier or a matching trailing-`*` prefix. Changing these category entries requires rerunning the formatter with the new config, but does not require parser regeneration.
 
 Macro category entries must be C/C++ identifiers. Add a trailing `*` to an entry when the role applies to every identifier with that prefix, such as `ATTRIBUTE*`; no other glob syntax is supported.
 
-#### StatementLikeParameters
-
-`StatementLikeParameters` names function-like macro parameters whose invocations inside a macro replacement list are statement-like items. The formatter emits one invocation per continuation line.
-
-```cpp
-#define CASEDASH_METRIC_DISPLAY_STYLE_ITEMS(X) \
-    X(Scalar, "scalar") \
-    X(Percent, "percent")
-```
-
 #### RawMacroFunctionDefinitions
 
-`RawMacroFunctionDefinitions` names `#define` function-like macro identifiers that should be parsed as one raw preprocessor function definition. Use trailing `*` entries for macro families whose replacement lists are implementation DSLs rather than normal C++ fragments.
+`RawMacroFunctionDefinitions` names `#define` function-like macro identifiers that should be parsed as one raw preprocessor function definition. Use it for macro families whose replacement lists as not normal C++ fragments.
 
 ```cpp
 #define UTEST_F(test_suite_name, test_name) IMPL_UTEST_TEST_F(test_suite_name, test_name, 1, false)
@@ -874,7 +860,7 @@ Macro category entries must be C/C++ identifiers. Add a trailing `*` to an entry
 
 #### BareIdentifierMacros
 
-`BareIdentifierMacros` names macro identifiers that the grammar consumes as bare tokens in non-call positions or as assertion-style statement-call names. This category owns calling-convention modifiers, declaration-prefix modifiers, complete declaration-level items, qualified-identifier prefixes, and statement-call macros whose argument is parsed as a statement without its trailing semicolon. Use trailing `*` entries for families such as userver's `ATTRIBUTE_*` macros.
+`BareIdentifierMacros` names macro identifiers that the grammar consumes as bare tokens in non-call positions or as assertion-style statement-call names. This category owns calling-convention modifiers, declaration-prefix modifiers, complete declaration-level items, qualified-identifier prefixes, and statement-call macros whose argument is parsed as a statement without its trailing semicolon.
 
 Calling-convention and declaration-prefix examples:
 

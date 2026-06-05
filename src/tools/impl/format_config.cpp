@@ -27,7 +27,6 @@ struct FormatterConfigPatch {
     std::optional<std::vector<std::string>> rawMacroFunctionDefinitions;
     std::optional<std::vector<std::string>> bareIdentifierMacros;
     std::optional<std::vector<std::string>> callSyntaxMacros;
-    std::optional<std::vector<std::string>> statementLikeMacroParameters;
     std::optional<std::vector<std::string>> streamShiftConfigurationMethods;
     std::optional<std::vector<IncludeGroup>> includeGroups;
 };
@@ -233,8 +232,6 @@ void ParseMacroCategories(const std::vector<ConfigLine>& lines, size_t& index, F
         } else if (key == "CallSyntaxMacros" && value.empty()) {
             patch.callSyntaxMacros = ParseIndentedStringList(lines, index, line.indent);
             ValidateMacroCategoryEntries(key, *patch.callSyntaxMacros);
-        } else if (key == "StatementLikeParameters" && value.empty()) {
-            patch.statementLikeMacroParameters = ParseIndentedStringList(lines, index, line.indent);
         }
     }
 }
@@ -313,9 +310,6 @@ FormatterConfig ApplyConfigPatch(FormatterConfig config, FormatterConfigPatch pa
     }
     if (patch.callSyntaxMacros.has_value()) {
         config.callSyntaxMacros = std::move(*patch.callSyntaxMacros);
-    }
-    if (patch.statementLikeMacroParameters.has_value()) {
-        config.statementLikeMacroParameters = std::move(*patch.statementLikeMacroParameters);
     }
     if (patch.streamShiftConfigurationMethods.has_value()) {
         config.streamShiftConfigurationMethods = std::move(*patch.streamShiftConfigurationMethods);
