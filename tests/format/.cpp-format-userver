@@ -1,6 +1,6 @@
-# Mirrors $(userver)/.cpp-format style for userver golden fixtures.
-# Keep style fields in sync with the formatter config used by the adjacent userver checkout.
-# Userver-specific MacroCategories entries below are runtime scanner inputs.
+# Userver golden-fixture style.
+# Keep non-macro style fields in sync with the adjacent userver checkout.
+# MacroCategories below are the fixture-specific runtime scanner inputs.
 # No IncludeCategories entry: mirrors userver .clang-format IncludeBlocks: Preserve behavior.
 ---
 ColumnLimit: 120
@@ -11,86 +11,34 @@ MainIncludeChar: Quote
 IncludeIsMainRegex: '(Test)?$'
 
 MacroCategories:
-  StatementLikeParameters:
-    - X
   RawMacroFunctionDefinitions:
-    - IMPL_UTEST_ASSERT_NO_THROW
-    - IMPL_UTEST_ASSERT_THROW
-    - IMPL_UTEST_ANY_BEGIN
-    - IMPL_UTEST_ANY_END
-    - IMPL_UTEST_HIDE_USER_FIXTURE_BY_TEST_LAUNCHER
-    - IMPL_UTEST_HIDE_USER_FIXTURE_BY_TEST_LAUNCHER_TYPED
-    - IMPL_UTEST_MAKE_USER_FIXTURE_ALIAS_TYPED
-    - IMPL_UTEST_TEST
-    - IMPL_UTEST_TYPED_ANY_BEGIN
-    - IMPL_UTEST_TYPED_ANY_END
-    - TYPED_UTEST*
-    - INSTANTIATE_UTEST*
-    - UTEST*
-    - UPROTO*
-    - LOG*
-    - PGCW_LOG*
-    - RET*
-    - UASSERT*
-    - UEXPECT*
-    - UINVARIANT*
-    - USERVER*
-    - UTILS*
+    - LOG_FORMAT_USERVER_LIMITED
   BareIdentifierMacros:
-    - CALLBACK
-    - WINAPI
     - USERVER_IMPL_NODEBUG
-    - USERVER_IMPL_NODEBUG_INLINE_FUNC
     - USERVER_IMPL_FORCE_INLINE
-    - USERVER_IMPL_DISABLE_ASAN
-    - USERVER_IMPL_ALWAYS_INLINE_SIMD
-    - USERVER_IMPL_PROTECT_DWCAS_ATTR
-    - ATTRIBUTE*
-    - FORMAT_USERVER*
-    - USERVER_NAMESPACE_BEGIN
-    - USERVER_NAMESPACE_END
+    - ATTRIBUTE_NO_SANITIZE_UNDEFINED
+    - FORMAT_USERVER_ALWAYS_INLINE_SIMD
+    - FORMAT_USERVER_NODEBUG_FUNC
+    - FORMAT_USERVER_PROTECTED_ATTR
     - CURL_FORMAT_USERVER_NAMESPACE
-    - CURL_8_13_NAMESPACE
-    - CURL_SSLVERSION_NAMESPACE
     - UEXPECT_THROW
-    - UEXPECT_THROW_MSG
-    - UASSERT_THROW
-    - UASSERT_THROW_MSG
     - UEXPECT_NO_THROW
-    - UASSERT_NO_THROW
     - EXPECT_THROW
-    - EXPECT_THROW_MSG
     - ASSERT_THROW
-    - EXPECT_NO_THROW
-    - ASSERT_NO_THROW
   CallSyntaxMacros:
-    - TEST
-    - TEST_F
-    - TEST_P
-    - TYPED_TEST
-    - TYPED_TEST_P
-    - UTEST_F_DEATH
-    - TYPED_UTEST
-    - TYPED_UTEST_P_MT
-    - TYPED_UTEST_MT
-    - TYPED_UTEST_P
-    - UTEST_F_MT
-    - UTEST_P_MT
     - UTEST_MT
     - UTEST_DEATH
-    - UTEST_F
-    - UTEST_P
-    - UTEST
-    - BENCHMARK*
+    - BENCHMARK_CAPTURE
+    - BENCHMARK_DEFINE_F
+    - BENCHMARK_DEFINE_TEMPLATE_F
+    - BENCHMARK_INSTANTIATE_TEMPLATE_F
+    - BENCHMARK_TEMPLATE
     - MOCK_METHOD
-    - MATCHER
-    - MATCHER_P*
-    - INSTANTIATE*
-    - STACK_OF
-    - RET_NAME
-    - REGISTER_TYPED*
-    - TYPED*
-    - USERVER_DEFINE_STRUCT_SUBSET*
+    - INSTANTIATE_UTEST_SUITE_P
+    - TYPED_UTEST_MT
+    - TYPED_UTEST_P_MT
+    - TYPED_UTEST_SUITE_P
+
 StreamShift:
   ConfigurationMethods:
     - std::boolalpha
