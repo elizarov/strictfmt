@@ -852,31 +852,35 @@ Macro category entries must be C/C++ identifiers. Add a trailing `*` to an entry
 
 #### RawMacroFunctionDefinitions
 
-`RawMacroFunctionDefinitions` names `#define` function-like macro identifiers that should be parsed as one raw preprocessor function definition. Use it for macro families whose replacement lists as not normal C++ fragments.
+`RawMacroFunctionDefinitions` names `#define` function-like macro identifiers that should be parsed as one raw preprocessor function definition. Use it for macro families whose replacement lists are not normal C++ fragments.
+
+Raw replacement-list definition: the macro body is a declaration-fragment DSL that should remain one raw preprocessor definition.
 
 ```cpp
-#define UTEST_F(test_suite_name, test_name) IMPL_UTEST_TEST_F(test_suite_name, test_name, 1, false)
+#define UPROTO_ONEOF_HEADER(oneof_type)                                                   \
+private:                                                                                  \
+    enum { kCounterStart = __COUNTER__ + 1 }; /* An inline constant would violate odr. */ \
+public:                                                                                   \
+    using Base::Base;
 ```
 
 #### BareIdentifierMacros
 
 `BareIdentifierMacros` names macro identifiers that the grammar consumes as bare tokens in non-call positions or as assertion-style statement-call names. This category owns calling-convention modifiers, declaration-prefix modifiers, complete declaration-level items, qualified-identifier prefixes, and statement-call macros whose argument is parsed as a statement without its trailing semicolon.
 
-Calling-convention and declaration-prefix examples:
+Calling-convention modifier: the macro appears in a declarator where a platform calling-convention token is expected.
 
 ```cpp
-LRESULT CALLBACK WindowProc(HWND hwnd, UINT message, WPARAM wparam, LPARAM lparam);
+typedef PDH_STATUS (WINAPI* PdhAddEnglishCounterAFn)(PDH_HQUERY, LPCSTR, DWORD_PTR, PDH_HCOUNTER*);
 ```
+
+Declaration-prefix modifier: the macro appears before a declaration as an attribute, inline, or sanitizer-control token.
 
 ```cpp
-USERVER_IMPL_NODEBUG_INLINE_FUNC static Value DoSerialize(const T& value);
+ATTRIBUTE_NO_SANITIZE_UNDEFINED std::size_t AttributePrefixedFunction(const BoundsBlock& block, float value) noexcept;
 ```
 
-```cpp
-ATTRIBUTE_NO_SANITIZE_UNDEFINED std::size_t LeastGreaterEqualIndex(const BoundsBlock& block, float value);
-```
-
-Complete declaration-level item and qualified-identifier-prefix examples:
+Complete declaration-level item: the macro stands as a full top-level declaration item, such as namespace wrappers.
 
 ```cpp
 USERVER_NAMESPACE_BEGIN
@@ -885,53 +889,33 @@ namespace utils {
 USERVER_NAMESPACE_END
 ```
 
-```cpp
-#if LIBCURL_VERSION_NUM >= 0x080d00
-#define CURL_8_13_NAMESPACE native::
-#else
-#define CURL_8_13_NAMESPACE
-#endif
+Qualified-identifier prefix: the macro supplies an optional namespace qualifier before an identifier.
 
-enum class NetrcOption {
-    optional = CURL_8_13_NAMESPACE CURL_NETRC_OPTIONAL,
-    required = CURL_8_13_NAMESPACE CURL_NETRC_REQUIRED,
+```cpp
+enum netrc_t {
+    netrc_optional = CURL_8_13_NAMESPACE CURL_NETRC_OPTIONAL,
 };
 ```
 
-Statement-call examples:
+Statement-call macro: the macro parses its first argument as a declaration or expression statement.
 
 ```cpp
-UEXPECT_THROW(
-    [[maybe_unused]] const auto bytes_read =
-        source.ReadSome(kVeryLongBufferNameForFormatterFixture, kVeryLongDeadlineNameForFormatterFixture),
-    IoTimeout
-);
-```
-
-```cpp
-UEXPECT_NO_THROW({
-    const auto stream = Client().ReadMany(request);
-    EXPECT_TRUE(stream);
-});
+UEXPECT_THROW([[maybe_unused]] auto bytes_read = source.ReadSome(kBuffer, kDeadline), IoTimeout);
 ```
 
 #### CallSyntaxMacros
 
 `CallSyntaxMacros` names macro identifiers whose supported grammar roles start with a macro-style call. This category owns macro function definitions, macro function definitions with trailing C++ parameter lists, top-level free-token call statements with optional chained `->` tails, simple name macro calls, class-field method declaration macros, and type-specifier macro calls.
 
-Function-definition-like examples:
+Macro function definition: the macro call header is followed by a compound statement body.
 
 ```cpp
-TEST(ConfigParser, ParsesMetricsSectionEntries) {
-    ExpectMetricsSection();
+UTEST_MT(FormatterMacroFixture, KeepsThreads, 2) {
+    RunThreadedTest();
 }
 ```
 
-```cpp
-MATCHER_P(BsonMatcher, expected, "Bson matcher") {
-    return ExplainBsonMatch(arg, expected, result_listener);
-}
-```
+Macro function definition with trailing C++ parameters: the macro call is followed by a normal parameter list before the body.
 
 ```cpp
 BENCHMARK_DEFINE_F(FormatterBenchmark, Inline)(benchmark::State& state) {
@@ -939,38 +923,25 @@ BENCHMARK_DEFINE_F(FormatterBenchmark, Inline)(benchmark::State& state) {
 }
 ```
 
-Top-level free-token call examples:
+Top-level free-token call statement: the whole call and optional `->` chain are formatted as one statement.
 
 ```cpp
-BENCHMARK_CAPTURE(FormatterBenchmark, Mode, kValue)->Arg(2)->Arg(4);
+BENCHMARK_TEMPLATE(RecentPeriodOfPercentilesAccountBenchmark, DefaultClock)->ThreadRange(1, 16);
 ```
 
-```cpp
-ENUM_STRING_DECLARE(MetricDisplayStyle, CASEDASH_METRIC_DISPLAY_STYLE_ITEMS);
-```
-
-```cpp
-INSTANTIATE_UTEST_SUITE_P(/* no prefix */, FormatterMacroFixture, testing::Values(true));
-```
-
-```cpp
-REGISTER_TYPED_TEST_SUITE_P(FormatsGetAtPathValueBuilder, One, NonObjectElemOnPath);
-```
-
-```cpp
-USERVER_DEFINE_STRUCT_SUBSET(SmolDependencies, Dependencies, a, c, d);
-USERVER_DEFINE_STRUCT_SUBSET_REF(SmolDependenciesRef, Dependencies, a, c, d);
-```
-
-Specific structured call examples:
-
-```cpp
-MOCK_METHOD(void, SetValue, (std::string_view key, std::string&& value), (override));
-```
+Simple name macro call: the call has a single identifier argument and is treated as one standalone macro item.
 
 ```cpp
 RET_NAME(kNullValue)
 ```
+
+Class member declaration macro: the macro call expands to a method declaration inside class scope.
+
+```cpp
+MOCK_METHOD(void, SetValue, (std::string_view, std::string&&), (override));
+```
+
+Type-specifier macro call: the macro call appears where a type specifier is expected.
 
 ```cpp
 using CertStack = STACK_OF(X509);
