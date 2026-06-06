@@ -2,7 +2,8 @@
 
 // Golden fixture for userver formatting.
 // Keep conditional preprocessor examples that patch whole declarations, statements, fields, methods,
-// macros, or includes in format_ifdef_input.cpp and format_ifdef_output.cpp.
+// macros, includes, or comma-separated list items in format_ifdef_input.cpp and
+// format_ifdef_output.cpp.
 // The guarded extern "C" wrapper stays here because it is a namespace-like file-scope grouping form.
 // Mirrors userver .clang-format include setting: IncludeBlocks: Preserve.
 

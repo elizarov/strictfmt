@@ -16,15 +16,6 @@ extern "C" {
 int FormatUserverExternAttribute();
 }
 
-constexpr utils::StringLiteral kFormatUserverPrefixes[] = {
-#ifdef FORMAT_USERVER_PREFIX
-    FORMAT_USERVER_STRINGIZE(FORMAT_USERVER_PREFIX),
-#endif
-#ifdef FORMAT_USERVER_SOURCE_PREFIX
-    FORMAT_USERVER_STRINGIZE(FORMAT_USERVER_SOURCE_PREFIX),
-#endif
-};
-
 template <typename T>
 concept FormatUserverConvertible =
     requires(T& value) { FormatUserverConvert(value); } &&
@@ -108,15 +99,7 @@ bool ConditionalWholeCondition(int error_code) {
     return false;
 }
 
-void ConditionalArgumentFragment() {
-    Use(
-#ifdef FORMAT_USERVER_FAST_ARGUMENT
-        FastArgument(),
-#else
-        SlowArgument(),
-#endif
-        "argument label"
-    );
+void ConditionalArgumentExpressionFragment() {
     Open(
 #ifdef FORMAT_USERVER_FLAG_A
         kFlagA |
@@ -146,20 +129,6 @@ void PreprocessorSelectedInitializer(DescriptorPool* descriptor_pool, std::strin
         descriptor_pool->FindFileByName(std::string{file_name});
 #endif
     Use(file_desc);
-}
-
-auto PreprocessorSelectedListItem() {
-    return TimestampToJsonFailureTestParam{
-        TimestampMessageData{0, kMaxTimestampNanos + 1},
-        PrintErrorCode::kInvalidValue,
-        "field1",
-        {},
-#if FORMAT_USERVER_PROTOBUF_GE_6033000
-        false
-#else
-        true
-#endif
-    };
 }
 
 void PreprocessorEndedConsequence(Status status, Handle& handle, Handle next_handle) {

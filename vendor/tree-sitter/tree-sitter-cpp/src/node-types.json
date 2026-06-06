@@ -6261,6 +6261,14 @@
           "named": true
         },
         {
+          "type": "preproc_if",
+          "named": true
+        },
+        {
+          "type": "preproc_ifdef",
+          "named": true
+        },
+        {
           "type": "variadic_parameter_declaration",
           "named": true
         }
@@ -6744,6 +6752,18 @@
           "named": true
         },
         {
+          "type": "optional_parameter_declaration",
+          "named": true
+        },
+        {
+          "type": "optional_type_parameter_declaration",
+          "named": true
+        },
+        {
+          "type": "parameter_declaration",
+          "named": true
+        },
+        {
           "type": "preproc_call",
           "named": true
         },
@@ -6828,6 +6848,10 @@
           "named": true
         },
         {
+          "type": "template_template_parameter_declaration",
+          "named": true
+        },
+        {
           "type": "top_level_item_macro",
           "named": true
         },
@@ -6840,6 +6864,10 @@
           "named": true
         },
         {
+          "type": "type_parameter_declaration",
+          "named": true
+        },
+        {
           "type": "type_specifier",
           "named": true
         },
@@ -6849,6 +6877,14 @@
         },
         {
           "type": "using_operator_pack_declaration",
+          "named": true
+        },
+        {
+          "type": "variadic_parameter_declaration",
+          "named": true
+        },
+        {
+          "type": "variadic_type_parameter_declaration",
           "named": true
         }
       ]
@@ -6988,6 +7024,18 @@
           "named": true
         },
         {
+          "type": "optional_parameter_declaration",
+          "named": true
+        },
+        {
+          "type": "optional_type_parameter_declaration",
+          "named": true
+        },
+        {
+          "type": "parameter_declaration",
+          "named": true
+        },
+        {
           "type": "preproc_call",
           "named": true
         },
@@ -7072,6 +7120,10 @@
           "named": true
         },
         {
+          "type": "template_template_parameter_declaration",
+          "named": true
+        },
+        {
           "type": "top_level_item_macro",
           "named": true
         },
@@ -7084,6 +7136,10 @@
           "named": true
         },
         {
+          "type": "type_parameter_declaration",
+          "named": true
+        },
+        {
           "type": "type_specifier",
           "named": true
         },
@@ -7093,6 +7149,14 @@
         },
         {
           "type": "using_operator_pack_declaration",
+          "named": true
+        },
+        {
+          "type": "variadic_parameter_declaration",
+          "named": true
+        },
+        {
+          "type": "variadic_type_parameter_declaration",
           "named": true
         }
       ]
@@ -7203,6 +7267,18 @@
           "named": true
         },
         {
+          "type": "optional_parameter_declaration",
+          "named": true
+        },
+        {
+          "type": "optional_type_parameter_declaration",
+          "named": true
+        },
+        {
+          "type": "parameter_declaration",
+          "named": true
+        },
+        {
           "type": "preproc_call",
           "named": true
         },
@@ -7287,6 +7363,10 @@
           "named": true
         },
         {
+          "type": "template_template_parameter_declaration",
+          "named": true
+        },
+        {
           "type": "top_level_item_macro",
           "named": true
         },
@@ -7299,6 +7379,10 @@
           "named": true
         },
         {
+          "type": "type_parameter_declaration",
+          "named": true
+        },
+        {
           "type": "type_specifier",
           "named": true
         },
@@ -7308,6 +7392,14 @@
         },
         {
           "type": "using_operator_pack_declaration",
+          "named": true
+        },
+        {
+          "type": "variadic_parameter_declaration",
+          "named": true
+        },
+        {
+          "type": "variadic_type_parameter_declaration",
           "named": true
         }
       ]
@@ -7527,6 +7619,18 @@
           "named": true
         },
         {
+          "type": "optional_parameter_declaration",
+          "named": true
+        },
+        {
+          "type": "optional_type_parameter_declaration",
+          "named": true
+        },
+        {
+          "type": "parameter_declaration",
+          "named": true
+        },
+        {
           "type": "preproc_call",
           "named": true
         },
@@ -7611,6 +7715,10 @@
           "named": true
         },
         {
+          "type": "template_template_parameter_declaration",
+          "named": true
+        },
+        {
           "type": "top_level_item_macro",
           "named": true
         },
@@ -7623,6 +7731,10 @@
           "named": true
         },
         {
+          "type": "type_parameter_declaration",
+          "named": true
+        },
+        {
           "type": "type_specifier",
           "named": true
         },
@@ -7632,6 +7744,14 @@
         },
         {
           "type": "using_operator_pack_declaration",
+          "named": true
+        },
+        {
+          "type": "variadic_parameter_declaration",
+          "named": true
+        },
+        {
+          "type": "variadic_type_parameter_declaration",
           "named": true
         }
       ]
@@ -7771,6 +7891,18 @@
           "named": true
         },
         {
+          "type": "optional_parameter_declaration",
+          "named": true
+        },
+        {
+          "type": "optional_type_parameter_declaration",
+          "named": true
+        },
+        {
+          "type": "parameter_declaration",
+          "named": true
+        },
+        {
           "type": "preproc_call",
           "named": true
         },
@@ -7855,6 +7987,10 @@
           "named": true
         },
         {
+          "type": "template_template_parameter_declaration",
+          "named": true
+        },
+        {
           "type": "top_level_item_macro",
           "named": true
         },
@@ -7867,6 +8003,10 @@
           "named": true
         },
         {
+          "type": "type_parameter_declaration",
+          "named": true
+        },
+        {
           "type": "type_specifier",
           "named": true
         },
@@ -7876,6 +8016,14 @@
         },
         {
           "type": "using_operator_pack_declaration",
+          "named": true
+        },
+        {
+          "type": "variadic_parameter_declaration",
+          "named": true
+        },
+        {
+          "type": "variadic_type_parameter_declaration",
           "named": true
         }
       ]
@@ -9802,6 +9950,14 @@
         },
         {
           "type": "parameter_declaration",
+          "named": true
+        },
+        {
+          "type": "preproc_if",
+          "named": true
+        },
+        {
+          "type": "preproc_ifdef",
           "named": true
         },
         {

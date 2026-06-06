@@ -103,6 +103,18 @@ module.exports = grammar(C, {
     [$.expression, $.structured_binding_declarator, $._lambda_capture_identifier],
     [$.structured_binding_declarator, $._lambda_capture_identifier],
     [$.parameter_list, $.argument_list],
+    [$.parameter_list],
+    [$.template_parameter_list],
+    [$.requires_parameter_list],
+    [$.parameter_declaration, $.variadic_parameter_declaration],
+    [$.parameter_declaration, $.optional_parameter_declaration],
+    [$.parameter_declaration],
+    [$.variadic_declarator],
+    [$.variadic_type_parameter_declaration],
+    [$.attributed_declarator, $.parameter_declaration],
+    [$._class_name, $.type_parameter_declaration, $._scope_resolution],
+    [$.type_specifier, $.type_parameter_declaration, $._scope_resolution],
+    [$._function_attributes_start, $._function_attributes_end],
     [$.type_specifier, $.call_expression],
     [$._declaration_specifiers, $._constructor_specifiers],
     [$._binary_fold_operator, $._fold_operator],
@@ -356,6 +368,23 @@ module.exports = grammar(C, {
       optional(','),
       '}',
     ),
+
+    ...preprocIf('_in_parameter_list', $ => seq(choice(
+      $.parameter_declaration,
+      $.optional_parameter_declaration,
+      $.variadic_parameter_declaration,
+      '...',
+    ), optional(',')), -1),
+
+    ...preprocIf('_in_template_parameter_list', $ => seq(choice(
+      $.parameter_declaration,
+      $.optional_parameter_declaration,
+      $.type_parameter_declaration,
+      $.variadic_parameter_declaration,
+      $.variadic_type_parameter_declaration,
+      $.optional_type_parameter_declaration,
+      $.template_template_parameter_declaration,
+    ), optional(',')), -1),
 
     macro_template_declaration: $ => seq(
       'template',
@@ -615,7 +644,7 @@ module.exports = grammar(C, {
 
     template_parameter_list: $ => seq(
       '<',
-      commaSep(choice(
+      commaSepWithPreproc($, choice(
         $.parameter_declaration,
         $.optional_parameter_declaration,
         $.type_parameter_declaration,
@@ -623,7 +652,7 @@ module.exports = grammar(C, {
         $.variadic_type_parameter_declaration,
         $.optional_type_parameter_declaration,
         $.template_template_parameter_declaration,
-      )),
+      ), '_in_template_parameter_list'),
       alias(token(prec(1, '>')), '>'),
     ),
 
@@ -662,12 +691,12 @@ module.exports = grammar(C, {
 
     parameter_list: $ => seq(
       '(',
-      commaSep(choice(
+      commaSepWithPreproc($, choice(
         $.parameter_declaration,
         $.optional_parameter_declaration,
         $.variadic_parameter_declaration,
         '...',
-      )),
+      ), '_in_parameter_list'),
       ')',
     ),
 
@@ -1537,8 +1566,8 @@ module.exports = grammar(C, {
     ),
 
     preproc_initializer_expression: _ => token(prec(
-      1,
-      /#[ \t]*(?:if|ifdef|ifndef)[^\n]*\r?\n[ \t]*(?:true|false|[-+]?\d+|[A-Za-z_]\w*(?:::\w+)*(?:\([^\r\n]*\))?)[ \t]*,?[ \t]*(?:\/\/[^\n]*)?\r?\n(?:#[ \t]*else[^\n]*\r?\n[ \t]*(?:true|false|[-+]?\d+|[A-Za-z_]\w*(?:::\w+)*(?:\([^\r\n]*\))?)[ \t]*,?[ \t]*(?:\/\/[^\n]*)?\r?\n)?#[ \t]*endif(?:\r?\n#[ \t]*(?:if|ifdef|ifndef)[^\n]*\r?\n[ \t]*(?:true|false|[-+]?\d+|[A-Za-z_]\w*(?:::\w+)*(?:\([^\r\n]*\))?)[ \t]*,?[ \t]*(?:\/\/[^\n]*)?\r?\n(?:#[ \t]*else[^\n]*\r?\n[ \t]*(?:true|false|[-+]?\d+|[A-Za-z_]\w*(?:::\w+)*(?:\([^\r\n]*\))?)[ \t]*,?[ \t]*(?:\/\/[^\n]*)?\r?\n)?#[ \t]*endif)*/,
+      0,
+      /#[ \t]*(?:if|ifdef|ifndef)[^\n]*\r?\n[ \t]*(?:true|false|[-+]?\d+|"(?:[^"\\]|\\.)*"|[A-Za-z_]\w*(?:::\w+)*(?:\([^\r\n]*\))?)[ \t]*,?[ \t]*(?:\/\/[^\n]*)?\r?\n(?:#[ \t]*else[^\n]*\r?\n[ \t]*(?:true|false|[-+]?\d+|"(?:[^"\\]|\\.)*"|[A-Za-z_]\w*(?:::\w+)*(?:\([^\r\n]*\))?)[ \t]*,?[ \t]*(?:\/\/[^\n]*)?\r?\n)?#[ \t]*endif(?:\r?\n#[ \t]*(?:if|ifdef|ifndef)[^\n]*\r?\n[ \t]*(?:true|false|[-+]?\d+|"(?:[^"\\]|\\.)*"|[A-Za-z_]\w*(?:::\w+)*(?:\([^\r\n]*\))?)[ \t]*,?[ \t]*(?:\/\/[^\n]*)?\r?\n(?:#[ \t]*else[^\n]*\r?\n[ \t]*(?:true|false|[-+]?\d+|"(?:[^"\\]|\\.)*"|[A-Za-z_]\w*(?:::\w+)*(?:\([^\r\n]*\))?)[ \t]*,?[ \t]*(?:\/\/[^\n]*)?\r?\n)?#[ \t]*endif)*/,
     )),
 
     macro_statement_exception_call: $ => prec(PREC.CALL, seq(
@@ -1779,11 +1808,11 @@ module.exports = grammar(C, {
 
     requires_parameter_list: $ => seq(
       '(',
-      commaSep(choice(
+      commaSepWithPreproc($, choice(
         $.parameter_declaration,
         $.optional_parameter_declaration,
         $.variadic_parameter_declaration,
-      )),
+      ), '_in_parameter_list'),
       ')',
     ),
 
@@ -2241,6 +2270,13 @@ function commaSep(rule) {
   return optional(commaSep1(rule));
 }
 
+function commaSepWithPreproc($, rule, suffix) {
+  return choice(
+    commaSep(rule),
+    commaSep1WithRequiredPreproc($, rule, suffix),
+  );
+}
+
 /**
  * Creates a rule to match one or more of the rules separated by a comma
  *
@@ -2250,6 +2286,71 @@ function commaSep(rule) {
  */
 function commaSep1(rule) {
   return seq(rule, repeat(seq(',', rule)));
+}
+
+function commaSep1WithRequiredPreproc($, rule, suffix) {
+  return seq(
+    repeat(seq(rule, ',')),
+    preprocListItem($, suffix),
+    repeat(choice(seq(rule, ','), preprocListItem($, suffix))),
+    optional(rule),
+  );
+}
+
+function preprocListItem($, suffix) {
+  return choice(
+    alias($['preproc_if' + suffix], $.preproc_if),
+    alias($['preproc_ifdef' + suffix], $.preproc_ifdef),
+  );
+}
+
+function preprocIf(suffix, content, precedence = 0) {
+  function alternativeBlock($) {
+    return choice(
+      alias($['preproc_else' + suffix], $.preproc_else),
+      alias($['preproc_elif' + suffix], $.preproc_elif),
+      alias($['preproc_elifdef' + suffix], $.preproc_elifdef),
+    );
+  }
+
+  return {
+    ['preproc_if' + suffix]: $ => prec(precedence, seq(
+      preprocessor('if'),
+      field('condition', $._preproc_expression),
+      '\n',
+      repeat(content($)),
+      field('alternative', optional(alternativeBlock($))),
+      preprocessor('endif'),
+    )),
+
+    ['preproc_ifdef' + suffix]: $ => prec(precedence, seq(
+      choice(preprocessor('ifdef'), preprocessor('ifndef')),
+      field('name', $.identifier),
+      repeat(content($)),
+      field('alternative', optional(alternativeBlock($))),
+      preprocessor('endif'),
+    )),
+
+    ['preproc_else' + suffix]: $ => prec(precedence, seq(
+      preprocessor('else'),
+      repeat(content($)),
+    )),
+
+    ['preproc_elif' + suffix]: $ => prec(precedence, seq(
+      preprocessor('elif'),
+      field('condition', $._preproc_expression),
+      '\n',
+      repeat(content($)),
+      field('alternative', optional(alternativeBlock($))),
+    )),
+
+    ['preproc_elifdef' + suffix]: $ => prec(precedence, seq(
+      choice(preprocessor('elifdef'), preprocessor('elifndef')),
+      field('name', $.identifier),
+      repeat(content($)),
+      field('alternative', optional(alternativeBlock($))),
+    )),
+  };
 }
 
 function preprocessor(command) {
