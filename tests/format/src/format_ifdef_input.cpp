@@ -4,8 +4,9 @@
 // Golden fixture for allowed conditional preprocessor formatting.
 // This project forbids ifdefs, and these examples come only from userver, so the fixture
 // is named format_ifdef_* rather than format_userver_ifdef_*. Keep future userver examples
-// that patch whole declarations, statements, fields, methods, macros, or includes here.
-// Keep conditional fragments inside expressions or declarations in format_error_input.cpp.
+// that patch whole declarations, statements, fields, methods, macros, includes, or
+// comma-separated list items here. Keep conditional fragments inside expressions or
+// declarations in format_error_input.cpp.
 
 #include <userver/utils/assert.hpp>
 #include <algorithm>
@@ -88,6 +89,87 @@ const std::string expected = "libcpp";
 const std::string expected = "stdlib";
 #endif
 Use(expected);
+}
+
+constexpr utils::StringLiteral kFormatUserverPrefixes[] = {
+#ifdef FORMAT_USERVER_PREFIX
+    FORMAT_USERVER_STRINGIZE(FORMAT_USERVER_PREFIX),
+#endif
+#ifdef FORMAT_USERVER_SOURCE_PREFIX
+    FORMAT_USERVER_STRINGIZE(FORMAT_USERVER_SOURCE_PREFIX),
+#endif
+};
+
+void ConditionalParameters(
+int first,
+#ifdef FORMAT_USERVER_EXTRA_PARAMETER
+std::string_view label,
+#endif
+int last);
+
+template <
+typename Value,
+#if FORMAT_USERVER_EXTRA_TEMPLATE_PARAMETER
+typename Allocator,
+#endif
+typename Result>
+struct ConditionalTemplateParameters {};
+
+int ConditionalSubscript(int (&matrix)[2][2], int row) {
+return matrix[
+#if FORMAT_USERVER_SECOND_ROW
+1
+#else
+row
+#endif
+][0];
+}
+
+enum class ConditionalEnum {
+kOne,
+#if FORMAT_USERVER_EXTRA_ENUM
+kTwo,
+#endif
+kThree,
+};
+
+std::vector<std::string> ConditionalBracedListItems() {
+std::vector<std::string> list{
+"one",
+"two",
+#if MORE
+"three",
+#endif
+#if EVEN_MORE
+"four"
+#endif
+};
+return list;
+}
+
+void ConditionalArgumentFragment() {
+Use(
+#ifdef FORMAT_USERVER_FAST_ARGUMENT
+FastArgument(),
+#else
+SlowArgument(),
+#endif
+"argument label"
+);
+}
+
+auto PreprocessorSelectedListItem() {
+return TimestampToJsonFailureTestParam{
+TimestampMessageData{0, kMaxTimestampNanos + 1},
+PrintErrorCode::kInvalidValue,
+"field1",
+{},
+#if FORMAT_USERVER_PROTOBUF_GE_6033000
+false
+#else
+true
+#endif
+};
 }
 
 namespace include_after_comment {

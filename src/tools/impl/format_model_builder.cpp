@@ -716,10 +716,43 @@ bool IsAllowedPreprocessorContainer(SyntaxNodeKind kind) {
         kind == SyntaxNodeKind::CompoundStatement ||
         kind == SyntaxNodeKind::FieldDeclarationList ||
         kind == SyntaxNodeKind::EnumeratorList ||
+        kind == SyntaxNodeKind::ArgumentList ||
+        kind == SyntaxNodeKind::InitializerList ||
+        kind == SyntaxNodeKind::ParameterList ||
+        kind == SyntaxNodeKind::SubscriptArgumentList ||
+        kind == SyntaxNodeKind::TemplateParameterList ||
         kind == SyntaxNodeKind::PreprocIf ||
         kind == SyntaxNodeKind::PreprocIfdef ||
         kind == SyntaxNodeKind::PreprocElse ||
         kind == SyntaxNodeKind::PreprocElif;
+}
+
+bool IsAllowedListPreprocessorContainer(SyntaxNodeKind kind) {
+    return kind == SyntaxNodeKind::ArgumentList ||
+        kind == SyntaxNodeKind::EnumeratorList ||
+        kind == SyntaxNodeKind::InitializerList ||
+        kind == SyntaxNodeKind::ParameterList ||
+        kind == SyntaxNodeKind::SubscriptArgumentList ||
+        kind == SyntaxNodeKind::TemplateParameterList;
+}
+
+bool IsListAtomicConditionalNode(std::string_view treeType) {
+    return treeType == "preproc_argument_fragment" ||
+        treeType == "preproc_initializer_expression" ||
+        treeType == "preproc_string_literal_fragment";
+}
+
+bool HasAllowedListPreprocessorAncestor(TSNode node) {
+    for (TSNode parent = ts_node_parent(node); !ts_node_is_null(parent); parent = ts_node_parent(parent)) {
+        const SyntaxNodeKind parentKind = GetTsNodeSyntax(parent).kind;
+        if (IsAllowedListPreprocessorContainer(parentKind)) {
+            return true;
+        }
+        if (parentKind == SyntaxNodeKind::BaseClassClause || parentKind == SyntaxNodeKind::FieldInitializerList) {
+            return false;
+        }
+    }
+    return false;
 }
 
 bool IsConditionalPreprocessorKind(SyntaxNodeKind kind) {
@@ -735,7 +768,26 @@ bool IsAllowedAtomicConditionalNode(std::string_view treeType) {
         treeType == "conditional_extern_c_close";
 }
 
-bool IsForbiddenPreprocessorPlacement(TsNodeSyntax syntax, SyntaxNodeKind parentKind, std::string_view treeType) {
+bool PreviousSourceAllowsWholePreprocessorItem(TSNode node, const std::string& source) {
+    size_t cursor = ts_node_start_byte(node);
+    while (cursor > 0) {
+        --cursor;
+        const char ch = source[cursor];
+        if (ch == ' ' || ch == '\t' || ch == '\r' || ch == '\n') {
+            continue;
+        }
+        return ch == ';' || ch == '}';
+    }
+    return true;
+}
+
+bool IsForbiddenPreprocessorPlacement(
+    TSNode node,
+    const std::string& source,
+    TsNodeSyntax syntax,
+    SyntaxNodeKind parentKind,
+    std::string_view treeType
+) {
     if (syntax.kind == SyntaxNodeKind::PreprocInclude) {
         return parentKind != SyntaxNodeKind::Unknown && !IsAllowedPreprocessorContainer(parentKind);
     }
@@ -743,6 +795,15 @@ bool IsForbiddenPreprocessorPlacement(TsNodeSyntax syntax, SyntaxNodeKind parent
         return false;
     }
     if (TsNodeSyntaxHasClass(syntax, TokenClass::AtomicPreprocessor)) {
+        if (IsListAtomicConditionalNode(treeType) && HasAllowedListPreprocessorAncestor(node)) {
+            return false;
+        }
+        if (
+            treeType == "declaration_suffix_preproc_ifdef" &&
+            PreviousSourceAllowsWholePreprocessorItem(node, source)
+        ) {
+            return false;
+        }
         return !IsAllowedAtomicConditionalNode(treeType);
     }
     if (parentKind == SyntaxNodeKind::Unknown) {
@@ -761,7 +822,8 @@ void CollectPreprocessorPlacementErrors(
     const std::string_view treeType = ts_node_type(node);
     const std::string directiveLine = PreprocessorDirectiveLine(node, source);
     if (
-        IsCheckedPreprocessorDirective(directiveLine) && IsForbiddenPreprocessorPlacement(syntax, parentKind, treeType)
+        IsCheckedPreprocessorDirective(directiveLine) &&
+        IsForbiddenPreprocessorPlacement(node, source, syntax, parentKind, treeType)
     ) {
         errors.push_back({ts_node_start_point(node), directiveLine});
     }

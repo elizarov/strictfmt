@@ -107,6 +107,10 @@ bool IsConditionalBranchSeparatorLine(std::string_view line) {
     return StartsWith(line, "#elif") || StartsWith(line, "#else") || StartsWith(line, "#endif");
 }
 
+bool IsConditionalOpenLine(std::string_view line) {
+    return StartsWith(line, "#if");
+}
+
 bool IsStructuredConditionalPreprocessorNode(const SyntaxNode& node) {
     return (
         node.kind == SyntaxNodeKind::PreprocIf ||
@@ -735,6 +739,96 @@ std::string PreservePreprocessorLines(std::string_view text) {
     return result;
 }
 
+size_t FindLineCommentStart(std::string_view line) {
+    bool inString = false;
+    bool inChar = false;
+    for (size_t index = 0; index + 1 < line.size(); ++index) {
+        const char ch = line[index];
+        const char next = line[index + 1];
+        if (ch == '\\' && (inString || inChar)) {
+            ++index;
+            continue;
+        }
+        if (ch == '"' && !inChar) {
+            inString = !inString;
+            continue;
+        }
+        if (ch == '\'' && !inString) {
+            inChar = !inChar;
+            continue;
+        }
+        if (!inString && !inChar && ch == '/' && next == '/') {
+            return index;
+        }
+    }
+    return std::string_view::npos;
+}
+
+std::string RemoveTrailingListComma(std::string_view line) {
+    const size_t commentStart = FindLineCommentStart(line);
+    const size_t codeEnd = commentStart == std::string_view::npos ? line.size() : commentStart;
+    size_t trimmedCodeEnd = codeEnd;
+    while (trimmedCodeEnd > 0 && (line[trimmedCodeEnd - 1] == ' ' || line[trimmedCodeEnd - 1] == '\t')) {
+        --trimmedCodeEnd;
+    }
+    if (trimmedCodeEnd == 0 || line[trimmedCodeEnd - 1] != ',') {
+        return std::string(line);
+    }
+
+    std::string result;
+    result.reserve(line.size() - 1);
+    result.append(line.substr(0, trimmedCodeEnd - 1));
+    if (commentStart != std::string_view::npos) {
+        result.append("  ");
+        result.append(line.substr(commentStart));
+    }
+    return result;
+}
+
+std::string FormatListPreprocessorLines(std::string_view text, int itemIndent, int indentWidth, bool finalListItem) {
+    const std::string normalized = PreserveSourceLines(text);
+    std::vector<std::string> lines;
+    size_t start = 0;
+    while (start <= normalized.size()) {
+        const size_t end = normalized.find('\n', start);
+        const std::string_view rawLine = end == std::string::npos ? std::string_view(normalized).substr(start) :
+            std::string_view(normalized).substr(start, end - start);
+        lines.push_back(NormalizeTrailingLineCommentSpacing(TrimSourceLine(rawLine)));
+        if (end == std::string::npos) {
+            break;
+        }
+        start = end + 1;
+    }
+
+    if (finalListItem) {
+        size_t finalConditionalStart = lines.size();
+        for (size_t index = lines.size(); index > 0; --index) {
+            if (IsConditionalOpenLine(lines[index - 1])) {
+                finalConditionalStart = index - 1;
+                break;
+            }
+        }
+        const size_t firstLineToNormalize = finalConditionalStart == lines.size() ? 0 : finalConditionalStart + 1;
+        for (size_t index = firstLineToNormalize; index < lines.size(); ++index) {
+            if (!lines[index].empty() && lines[index].front() != '#') {
+                lines[index] = RemoveTrailingListComma(lines[index]);
+            }
+        }
+    }
+
+    std::string result;
+    for (const std::string& line : lines) {
+        if (!result.empty()) {
+            result.push_back('\n');
+        }
+        if (!line.empty() && line.front() != '#') {
+            result.append(static_cast<size_t>(std::max(0, itemIndent) * indentWidth), ' ');
+        }
+        result.append(line);
+    }
+    return result;
+}
+
 void AnnotateMacroValueWidths(std::vector<PrintToken>& tokens) {
     for (size_t index = 0; index < tokens.size(); ++index) {
         if (!tokens[index].inMacroValue || tokens[index].macroValueRemainingWidth != 0) {
@@ -768,6 +862,18 @@ struct DeferredSplitListContext {
 struct LambdaSplitListPlan {
     FormatBreakModelContext breakContext;
     DeferredSplitListContext deferredContext;
+};
+
+struct PreprocessorSplitListContext {
+    const SyntaxNode* list = nullptr;
+    const SyntaxNode* closeToken = nullptr;
+    int itemIndent = 0;
+    int closeIndent = 0;
+};
+
+struct PreprocessorSplitListPlan {
+    FormatBreakModelContext breakContext;
+    PreprocessorSplitListContext deferredContext;
 };
 
 class Printer {
@@ -825,6 +931,7 @@ private:
     std::vector<BraceFrame> braceStack_;
     std::vector<int> activeCaseBodySwitchDepths_;
     std::vector<DeferredSplitListContext> deferredSplitListContexts_;
+    std::vector<PreprocessorSplitListContext> preprocessorSplitListContexts_;
     std::vector<int> conditionalMacroFunctionIndents_;
     std::optional<int> pendingIndentRestoreAfterFlush_;
 
@@ -964,6 +1071,64 @@ private:
         return nullptr;
     }
 
+    static bool IsPreprocessorSplitListKind(SyntaxNodeKind kind) {
+        return kind == SyntaxNodeKind::ArgumentList ||
+            kind == SyntaxNodeKind::InitializerList ||
+            kind == SyntaxNodeKind::ParameterList ||
+            kind == SyntaxNodeKind::SubscriptArgumentList ||
+            kind == SyntaxNodeKind::TemplateParameterList;
+    }
+
+    static bool IsConditionalPreprocessorTreeKind(SyntaxNodeKind kind) {
+        return kind == SyntaxNodeKind::PreprocIf ||
+            kind == SyntaxNodeKind::PreprocIfdef ||
+            kind == SyntaxNodeKind::PreprocElse ||
+            kind == SyntaxNodeKind::PreprocElif;
+    }
+
+    static bool StartsPreprocessorSplitList(const PrintToken& token) {
+        return token.kind == PrintTokenKind::Preprocessor &&
+            (token.syntaxKind == SyntaxNodeKind::PreprocIf || token.syntaxKind == SyntaxNodeKind::PreprocIfdef);
+    }
+
+    static const SyntaxNode* NearestPreprocessorSplitListAncestor(const PrintToken& token) {
+        for (const SyntaxNode* cursor = token.node; cursor != nullptr; cursor = cursor->parent) {
+            if (IsPreprocessorSplitListKind(cursor->kind)) {
+                return cursor;
+            }
+        }
+        return nullptr;
+    }
+
+    static bool NodeOrDescendantHasConditionalPreprocessor(const SyntaxNode& node) {
+        if (
+            node.kind == SyntaxNodeKind::PreprocIf ||
+            node.kind == SyntaxNodeKind::PreprocIfdef ||
+            node.kind == SyntaxNodeKind::PreprocElse ||
+            node.kind == SyntaxNodeKind::PreprocElif
+        ) {
+            return true;
+        }
+        for (const SyntaxNode* child : node.children) {
+            if (child != nullptr && NodeOrDescendantHasConditionalPreprocessor(*child)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    static const SyntaxNode* ImmediateConditionalPreprocessorListParent(const PrintToken& token) {
+        const SyntaxNode* parent = token.node == nullptr ? nullptr : token.node->parent;
+        if (
+            parent == nullptr ||
+            !IsPreprocessorSplitListKind(parent->kind) ||
+            !NodeOrDescendantHasConditionalPreprocessor(*parent)
+        ) {
+            return nullptr;
+        }
+        return parent;
+    }
+
     bool AppendCompactWidthToken(
         const PrintToken& token,
         int& width,
@@ -1057,6 +1222,39 @@ private:
         }
         for (size_t index = begin; index < activeTokens_->size(); ++index) {
             if ((*activeTokens_)[index].node == node) {
+                return index;
+            }
+        }
+        return std::nullopt;
+    }
+
+    const SyntaxNode* FindPendingOpeningDelimiterFor(const SyntaxNode* list) const {
+        for (auto token = pendingTokens_.rbegin(); token != pendingTokens_.rend(); ++token) {
+            if (
+                token->kind == PrintTokenKind::Known &&
+                IsOpeningDelimiterToken(token->syntaxKind) &&
+                SyntaxPathContains(*token, list)
+            ) {
+                return token->node;
+            }
+        }
+        return nullptr;
+    }
+
+    std::optional<size_t> FindFutureClosingDelimiterFor(const SyntaxNode* list, SyntaxNodeKind openKind) const {
+        if (activeTokens_ == nullptr) {
+            return std::nullopt;
+        }
+        const SyntaxNodeKind closeKind = MatchingClosingDelimiterToken(openKind);
+        if (closeKind == SyntaxNodeKind::Unknown) {
+            return std::nullopt;
+        }
+        for (size_t index = currentTokenIndex_ + 1; index < activeTokens_->size(); ++index) {
+            const PrintToken& candidate = (*activeTokens_)[index];
+            if (candidate.kind == PrintTokenKind::Known && candidate.syntaxKind == closeKind && SyntaxPathContains(
+                candidate,
+                list
+            )) {
                 return index;
             }
         }
@@ -1964,6 +2162,48 @@ private:
         };
     }
 
+    std::optional<PreprocessorSplitListPlan> BuildPreprocessorSplitListPlan(const PrintToken& token) const {
+        if (activeTokens_ == nullptr || token.node == nullptr || !StartsPreprocessorSplitList(token)) {
+            return std::nullopt;
+        }
+        const SyntaxNode* list = NearestPreprocessorSplitListAncestor(token);
+        if (list == nullptr) {
+            return std::nullopt;
+        }
+        const SyntaxNode* listOpen = DirectOpeningDelimiterChild(*list);
+        const SyntaxNode* pendingOpen = FindPendingOpeningDelimiterFor(list);
+        if (pendingOpen != nullptr) {
+            listOpen = pendingOpen;
+        }
+        if (listOpen == nullptr) {
+            return std::nullopt;
+        }
+        const SyntaxNode* listClose = DirectMatchingClosingDelimiterChild(*list, listOpen);
+        std::optional<size_t> closeIndex = FindTokenIndex(listClose, currentTokenIndex_ + 1);
+        if (!closeIndex) {
+            closeIndex = FindFutureClosingDelimiterFor(list, listOpen->kind);
+        }
+        if (!closeIndex) {
+            return std::nullopt;
+        }
+        listClose = (*activeTokens_)[*closeIndex].node;
+        FormatBreakToken virtualClose{&(*activeTokens_)[*closeIndex], false, true};
+        const int itemIndentLevel = pendingIndentLevel_.value_or(indentLevel_ + 1);
+        return PreprocessorSplitListPlan{
+            .breakContext = {
+                .virtualDelimiterOpen = listOpen,
+                .virtualDelimiterClose = virtualClose,
+                .forceSplitVirtualDelimiter = true
+            },
+            .deferredContext = {
+                .list = list,
+                .closeToken = listClose,
+                .itemIndent = itemIndentLevel,
+                .closeIndent = std::max(0, itemIndentLevel - 1)
+            }
+        };
+    }
+
     bool InEnumBody() const {
         return !braceStack_.empty() && braceStack_.back().role == BraceRole::Enum;
     }
@@ -2009,6 +2249,124 @@ private:
 
     DeferredSplitListContext* ActiveDeferredSplitListContext() {
         return deferredSplitListContexts_.empty() ? nullptr : &deferredSplitListContexts_.back();
+    }
+
+    PreprocessorSplitListContext* ActivePreprocessorSplitListContextFor(const PrintToken& token) {
+        for (
+            auto context = preprocessorSplitListContexts_.rbegin();
+            context != preprocessorSplitListContexts_.rend();
+            ++context
+        ) {
+            if (SyntaxPathContains(token, context->list)) {
+                return &*context;
+            }
+        }
+        return nullptr;
+    }
+
+    static bool IsPreprocessorSplitListComma(const PrintToken& token, const PreprocessorSplitListContext& context) {
+        if (token.kind != PrintTokenKind::Known || token.syntaxKind != SyntaxNodeKind::Comma || token.node == nullptr) {
+            return false;
+        }
+        if (token.node->parent == context.list) {
+            return true;
+        }
+        return token.node->parent != nullptr &&
+            IsConditionalPreprocessorTreeKind(token.node->parent->kind) &&
+            SyntaxPathContains(token, context.list);
+    }
+
+    bool IsFinalPreprocessorSplitListItem(const PrintToken& token) const {
+        if (activeTokens_ == nullptr || token.node == nullptr) {
+            return false;
+        }
+        const SyntaxNode* list = NearestPreprocessorSplitListAncestor(token);
+        const SyntaxNode* open = list == nullptr ? nullptr : DirectOpeningDelimiterChild(*list);
+        const SyntaxNode* close = list == nullptr ? nullptr : DirectMatchingClosingDelimiterChild(*list, open);
+        if (close == nullptr) {
+            return false;
+        }
+
+        for (size_t index = currentTokenIndex_ + 1; index < activeTokens_->size(); ++index) {
+            const PrintToken& candidate = (*activeTokens_)[index];
+            if (candidate.kind == PrintTokenKind::BlankLine || IsCommentToken(candidate.kind)) {
+                continue;
+            }
+            if (!SyntaxPathContains(candidate, list)) {
+                continue;
+            }
+            return candidate.kind == PrintTokenKind::Known && candidate.node == close;
+        }
+        return false;
+    }
+
+    bool TryPrintPreprocessorSplitListComma(const PrintToken& token) {
+        PreprocessorSplitListContext* context = ActivePreprocessorSplitListContextFor(token);
+        if (context == nullptr || !IsPreprocessorSplitListComma(token, *context)) {
+            return false;
+        }
+        BufferToken(token);
+        FlushPendingTokens();
+        NewLineWithIndent(context->itemIndent);
+        return true;
+    }
+
+    bool TryPrintPreprocessorSplitListClose(const PrintToken& token) {
+        PreprocessorSplitListContext* context = ActivePreprocessorSplitListContextFor(token);
+        if (context == nullptr || token.kind != PrintTokenKind::Known || context->closeToken != token.node) {
+            return false;
+        }
+        if (HasBufferedLineText()) {
+            FlushPendingTokens();
+        }
+        NewLineWithIndent(context->closeIndent);
+        BufferToken(token);
+        preprocessorSplitListContexts_.pop_back();
+        return true;
+    }
+
+    bool TryPrintConditionalPreprocessorListOpen(const PrintToken& token) {
+        if (
+            token.kind != PrintTokenKind::Known ||
+            !IsOpeningDelimiterToken(token.syntaxKind) ||
+            ImmediateConditionalPreprocessorListParent(token) == nullptr
+        ) {
+            return false;
+        }
+        BufferToken(token);
+        FlushPendingTokens();
+        NewLineWithIndent(CurrentLineIndentLevel() + 1);
+        return true;
+    }
+
+    bool TryPrintConditionalPreprocessorListComma(const PrintToken& token) {
+        if (
+            token.kind != PrintTokenKind::Known ||
+            token.syntaxKind != SyntaxNodeKind::Comma ||
+            ImmediateConditionalPreprocessorListParent(token) == nullptr
+        ) {
+            return false;
+        }
+        BufferToken(token);
+        FlushPendingTokens();
+        NewLineWithIndent(CurrentLineIndentLevel());
+        return true;
+    }
+
+    bool TryPrintConditionalPreprocessorListClose(const PrintToken& token) {
+        if (
+            token.kind != PrintTokenKind::Known ||
+            MatchingClosingDelimiterToken(token.syntaxKind) != SyntaxNodeKind::Unknown ||
+            ImmediateConditionalPreprocessorListParent(token) == nullptr
+        ) {
+            return false;
+        }
+        if (HasBufferedLineText()) {
+            FlushPendingTokens();
+        }
+        NewLineWithIndent(indentLevel_);
+        BufferToken(token);
+        return true;
     }
 
     void MarkDeferredSplitLambdaClosed(const PrintToken& token) {
@@ -2216,15 +2574,42 @@ private:
         const std::string line = hasLineBreak ? PreservePreprocessorLines(token.text) :
             NormalizeTrailingLineCommentSpacing(CollapseSourceWhitespace(token.text));
         const bool isInclude = StartsWith(line, "#include");
-        if (token.structuredPreprocessor || isInclude) {
+        const bool listConditional =
+            StartsPreprocessorSplitList(token) && NearestPreprocessorSplitListAncestor(token) != nullptr;
+        if (token.structuredPreprocessor || isInclude || listConditional) {
+            PreprocessorSplitListContext* splitContext = ActivePreprocessorSplitListContextFor(token);
+            const std::optional<PreprocessorSplitListPlan> splitListPlan =
+                splitContext == nullptr ? BuildPreprocessorSplitListPlan(token) : std::nullopt;
+            std::optional<int> listItemIndent;
+            if (splitListPlan) {
+                FlushPendingTokens(splitListPlan->breakContext);
+                preprocessorSplitListContexts_.push_back(splitListPlan->deferredContext);
+                splitContext = &preprocessorSplitListContexts_.back();
+            } else if (splitContext != nullptr && HasBufferedLineText()) {
+                FlushPendingTokens();
+            } else if (token.structuredPreprocessor && HasBufferedLineText()) {
+                FlushPendingTokens();
+            }
+            if (splitContext != nullptr) {
+                listItemIndent = splitContext->itemIndent;
+            } else if (listConditional) {
+                listItemIndent = pendingIndentLevel_.value_or(indentLevel_ + 1);
+            }
             if (lineHasText_) {
                 NewLine();
             }
-            output_.append(line);
-            AdvanceCurrentColumn(line);
+            const std::string outputLine = listConditional && !token.structuredPreprocessor && listItemIndent ?
+                FormatListPreprocessorLines(token.text, *listItemIndent, indentWidth_, IsFinalPreprocessorSplitListItem(
+                    token
+                )) : line;
+            output_.append(outputLine);
+            AdvanceCurrentColumn(outputLine);
             lineHasText_ = true;
             atLineStart_ = false;
             NewLine();
+            if (listItemIndent) {
+                pendingIndentLevel_ = *listItemIndent;
+            }
             return;
         }
         const bool conditionalMacroFunctionHeader = IsConditionalMacroFunctionHeader(token);
@@ -2267,10 +2652,26 @@ private:
     ) {
         switch (token.syntaxKind) {
             case SyntaxNodeKind::LeftParen:
+                if (TryPrintConditionalPreprocessorListOpen(token)) {
+                    ++parenDepth_;
+                    return;
+                }
                 BufferToken(token);
                 ++parenDepth_;
                 return;
             case SyntaxNodeKind::RightParen:
+                if (TryPrintPreprocessorSplitListClose(token)) {
+                    if (parenDepth_ > 0) {
+                        --parenDepth_;
+                    }
+                    return;
+                }
+                if (TryPrintConditionalPreprocessorListClose(token)) {
+                    if (parenDepth_ > 0) {
+                        --parenDepth_;
+                    }
+                    return;
+                }
                 if (TryPrintDeferredSplitListClose(token)) {
                     if (parenDepth_ > 0) {
                         --parenDepth_;
@@ -2289,10 +2690,26 @@ private:
                 }
                 return;
             case SyntaxNodeKind::LeftBracket:
+                if (TryPrintConditionalPreprocessorListOpen(token)) {
+                    ++bracketDepth_;
+                    return;
+                }
                 BufferToken(token);
                 ++bracketDepth_;
                 return;
             case SyntaxNodeKind::RightBracket:
+                if (TryPrintPreprocessorSplitListClose(token)) {
+                    if (bracketDepth_ > 0) {
+                        --bracketDepth_;
+                    }
+                    return;
+                }
+                if (TryPrintConditionalPreprocessorListClose(token)) {
+                    if (bracketDepth_ > 0) {
+                        --bracketDepth_;
+                    }
+                    return;
+                }
                 if (TryPrintDeferredSplitListClose(token)) {
                     if (bracketDepth_ > 0) {
                         --bracketDepth_;
@@ -2304,7 +2721,19 @@ private:
                     --bracketDepth_;
                 }
                 return;
+            case SyntaxNodeKind::Less:
+                if (TryPrintConditionalPreprocessorListOpen(token)) {
+                    return;
+                }
+                BufferToken(token);
+                return;
             case SyntaxNodeKind::Greater:
+                if (TryPrintPreprocessorSplitListClose(token)) {
+                    return;
+                }
+                if (TryPrintConditionalPreprocessorListClose(token)) {
+                    return;
+                }
                 BufferToken(token);
                 if (token.parentKind == SyntaxNodeKind::TemplateParameterList && token.inTemplateDeclaration && !(
                     next != nullptr &&
@@ -2316,9 +2745,18 @@ private:
                 }
                 return;
             case SyntaxNodeKind::LeftBrace:
+                if (TryPrintConditionalPreprocessorListOpen(token)) {
+                    return;
+                }
                 PrintLeftBrace(token, previous, rawNext);
                 return;
             case SyntaxNodeKind::RightBrace:
+                if (TryPrintPreprocessorSplitListClose(token)) {
+                    return;
+                }
+                if (TryPrintConditionalPreprocessorListClose(token)) {
+                    return;
+                }
                 if (TryPrintDeferredSplitListClose(token)) {
                     return;
                 }
@@ -2334,6 +2772,12 @@ private:
                 }
                 return;
             case SyntaxNodeKind::Comma:
+                if (TryPrintConditionalPreprocessorListComma(token)) {
+                    return;
+                }
+                if (TryPrintPreprocessorSplitListComma(token)) {
+                    return;
+                }
                 if (TryPrintDeferredSplitListComma(token)) {
                     return;
                 }
