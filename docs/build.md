@@ -10,19 +10,21 @@ Prompt, or call the matching `vcvars64.bat` from your Visual Studio installation
 Then run the build script from the repository root:
 
 ```bat
-scripts\build_windows.cmd
+scripts\build.cmd
 ```
 
 The build script intentionally does not configure Visual Studio itself, so it can
 fail fast when run from an unconfigured shell.
 
-The script writes all generated files under `build_windows\`:
+The script writes the final executable directly under `build\` and all generated
+Windows state under `build\windows\`:
 
-- `build_windows\strictfmt.exe` is the built executable.
-- `build_windows\cmake\` contains the CMake build tree.
-- `build_windows\lib\` contains static libraries and other archive outputs.
-- `build_windows\pdb\` contains generated debug symbol files when the compiler
+- `build\strictfmt.exe` is the built executable.
+- `build\windows\cmake\` contains the CMake build tree.
+- `build\windows\lib\` contains static libraries and other archive outputs.
+- `build\windows\pdb\` contains generated debug symbol files when the compiler
   produces them.
+- `build\windows\tests\` contains formatter test temporary files.
 
 The build directory is ignored by Git.
 
@@ -41,7 +43,7 @@ and available on `PATH`.
 From the repository root:
 
 ```sh
-scripts/build_unix.sh
+scripts/build.sh
 ```
 
 The script uses `CC` and `CXX` from the shell when they are already configured.
@@ -49,11 +51,16 @@ Otherwise it selects `clang`/`clang++`, or a matching versioned pair such as
 `clang-17`/`clang++-17`. It does not install packages or configure the toolchain
 environment.
 
-The script writes all generated files under an OS-specific build directory:
+The script writes the final executable directly under `build/` and all generated
+Unix state under an OS-specific subdirectory:
 
-- `build_linux/strictfmt` on Linux.
-- `build_macos/strictfmt` on macOS.
-- `build_<osname>/cmake/` contains the CMake build tree.
-- `build_<osname>/lib/` contains static libraries and other library outputs.
+- `build/strictfmt` is the built executable.
+- `build/linux/cmake/` or `build/macos/cmake/` contains the CMake build tree.
+- `build/linux/lib/` or `build/macos/lib/` contains static libraries and other
+  library outputs.
+- `build/linux/tests/` or `build/macos/tests/` contains formatter test temporary
+  files.
 
-The build directories are ignored by Git.
+The build directory is ignored by Git. Windows and Linux builds can coexist in
+the same checkout because their generated state lives under separate
+`build/windows/` and `build/linux/` subdirectories.

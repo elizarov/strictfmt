@@ -17,8 +17,9 @@ case "$(uname -s)" in
         ;;
 esac
 
-build_root="$repo_root/build_$os_name"
-cmake_build_dir="$build_root/cmake"
+build_root="$repo_root/build"
+build_temp_dir="$build_root/$os_name"
+cmake_build_dir="$build_temp_dir/cmake"
 
 require_tool() {
     if ! command -v "$1" >/dev/null 2>&1; then
@@ -62,13 +63,14 @@ require_tool make
 require_tool "$CC"
 require_tool "$CXX"
 
-mkdir -p "$build_root"
+mkdir -p "$build_temp_dir"
 
 cmake -S "$repo_root" -B "$cmake_build_dir" -G "Unix Makefiles" \
     -DCMAKE_BUILD_TYPE=Release \
     -DCMAKE_RUNTIME_OUTPUT_DIRECTORY="$build_root" \
-    -DCMAKE_ARCHIVE_OUTPUT_DIRECTORY="$build_root/lib" \
-    -DCMAKE_LIBRARY_OUTPUT_DIRECTORY="$build_root/lib"
+    -DCMAKE_ARCHIVE_OUTPUT_DIRECTORY="$build_temp_dir/lib" \
+    -DCMAKE_LIBRARY_OUTPUT_DIRECTORY="$build_temp_dir/lib" \
+    -DSTRICTFMT_TEST_TEMP_ROOT="$build_temp_dir/tests"
 
 cmake --build "$cmake_build_dir" --target strictfmt
 

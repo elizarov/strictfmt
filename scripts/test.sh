@@ -17,7 +17,7 @@ case "$(uname -s)" in
         ;;
 esac
 
-cmake_build_dir="$repo_root/build_$os_name/cmake"
+cmake_build_dir="$repo_root/build/$os_name/cmake"
 
-"$script_dir/build_unix.sh"
+"$script_dir/build.sh"
 cmake --build "$cmake_build_dir" --target strictfmt_tests
