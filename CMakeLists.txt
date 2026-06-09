@@ -43,6 +43,9 @@ set(STRICTFMT_FORMAT_TEST_EXE "" CACHE STRING
 set(STRICTFMT_FORMAT_TEST_EXE_ARGS "" CACHE STRING
     "Fixed arguments passed after STRICTFMT_FORMAT_TEST_EXE and before strictfmt test arguments."
 )
+set(STRICTFMT_TEST_TEMP_ROOT "${CMAKE_BINARY_DIR}/strictfmt-tests" CACHE PATH
+    "Directory used by strictfmt format tests for temporary files."
+)
 
 function(strictfmt_apply_common_options target)
     target_compile_definitions(${target} PUBLIC
@@ -163,7 +166,7 @@ if(Python3_FOUND)
         "STRICTFMT_EXE=${strictfmt_format_test_exe}"
         "STRICTFMT_EXE_ARGS=${STRICTFMT_FORMAT_TEST_EXE_ARGS}"
         "STRICTFMT_PROJECT_ROOT=${CMAKE_CURRENT_SOURCE_DIR}"
-        "STRICTFMT_TEST_TEMP_ROOT=${CMAKE_BINARY_DIR}/strictfmt-tests"
+        "STRICTFMT_TEST_TEMP_ROOT=${STRICTFMT_TEST_TEMP_ROOT}"
     )
     add_test(NAME StrictfmtFormatTests
         COMMAND

@@ -1,6 +1,3 @@
 build/
-build_windows/
-build_linux/
-build_macos/
 __pycache__/
 *.pyc
