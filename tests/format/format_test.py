@@ -18,6 +18,22 @@ FORMAT_CMD_TEXT = os.environ.get("CASEDASH_FORMAT_CMD")
 FORMAT_CMD = Path(FORMAT_CMD_TEXT).resolve() if FORMAT_CMD_TEXT else None
 PLATFORM_LINE_ENDING = os.linesep.encode("ascii")
 PRETTY_PRINTER_SOURCE = STRICTFMT_ROOT / "src" / "tools" / "impl" / "format_pretty_printer.cpp"
+USERVER_SUBMODULE_ROOT = STRICTFMT_ROOT / "external" / "userver"
+SOURCE_SUFFIXES = {
+    ".c",
+    ".cc",
+    ".cpp",
+    ".cxx",
+    ".c++",
+    ".h",
+    ".hh",
+    ".hpp",
+    ".hxx",
+    ".h++",
+    ".ipp",
+    ".inl",
+    ".tpp",
+}
 INPUT_FIXTURE = Path("src") / "format_test_input.cpp"
 OUTPUT_FIXTURE = Path("src") / "format_test_output.cpp"
 USERVER_INPUT_FIXTURE = Path("src") / "format_userver_input.cpp"
@@ -86,6 +102,50 @@ def join_lines(lines: list[bytes], line_ending: bytes) -> bytes:
 
 def copy_default_config(root: Path) -> None:
     shutil.copyfile(DEFAULT_FORMAT_CONFIG, root / ".cpp-format")
+
+
+def load_ignore_entries(root: Path) -> list[str]:
+    ignore_file = root / ".cpp-format-ignore"
+    if not ignore_file.exists():
+        return []
+
+    entries = []
+    for line in ignore_file.read_text(encoding="utf-8").splitlines():
+        entry = line.split("#", maxsplit=1)[0].replace("\\", "/").strip()
+        while entry.startswith("./"):
+            entry = entry[2:]
+        entry = entry.rstrip("/")
+        if entry:
+            entries.append(entry.lower())
+    return entries
+
+
+def is_ignored_path(relative_path: Path, ignore_entries: list[str]) -> bool:
+    normalized = relative_path.as_posix().lower()
+    parts = normalized.split("/")
+    for entry in ignore_entries:
+        if "/" in entry:
+            if normalized == entry or normalized.startswith(f"{entry}/"):
+                return True
+        elif entry in parts:
+            return True
+    return False
+
+
+def discover_source_files(root: Path) -> list[Path]:
+    ignore_entries = load_ignore_entries(root)
+    sources = []
+    for path in root.rglob("*"):
+        if not path.is_file() or path.suffix.lower() not in SOURCE_SUFFIXES:
+            continue
+        relative = path.relative_to(root)
+        if not is_ignored_path(relative, ignore_entries):
+            sources.append(relative)
+    return sorted(sources)
+
+
+def read_files(root: Path, paths: list[Path]) -> dict[Path, bytes]:
+    return {path: (root / path).read_bytes() for path in paths}
 
 
 @contextmanager
@@ -360,6 +420,46 @@ class FormatCommandTests(unittest.TestCase):
             self.assertEqual(0, result.returncode, msg=f"stdout:\n{result.stdout}\n\nstderr:\n{result.stderr}")
             self.assertRegex(result.stdout, r"Checked 13 files, 13 LOC in (?:\d+ms|\d+\.\d{3}s)\.\s*$")
 
+    def test_userver_submodule_sources_parse_and_format_idempotently(self) -> None:
+        if not (USERVER_SUBMODULE_ROOT / ".cpp-format").exists():
+            self.skipTest("external/userver submodule is not initialized")
+
+        source_files = discover_source_files(USERVER_SUBMODULE_ROOT)
+        self.assertGreater(len(source_files), 0)
+
+        build_dir = TEST_TEMP_ROOT
+        build_dir.mkdir(exist_ok=True)
+
+        with tempfile.TemporaryDirectory(prefix="userver_format_", dir=build_dir) as temp_dir:
+            root = Path(temp_dir)
+            shutil.copyfile(USERVER_SUBMODULE_ROOT / ".cpp-format", root / ".cpp-format")
+            shutil.copyfile(USERVER_SUBMODULE_ROOT / ".cpp-format-ignore", root / ".cpp-format-ignore")
+            for relative in source_files:
+                copied = root / relative
+                copied.parent.mkdir(parents=True, exist_ok=True)
+                shutil.copyfile(USERVER_SUBMODULE_ROOT / relative, copied)
+
+            first_result = native_format("-i", "-r", ".", cwd=root)
+
+            self.assertEqual(
+                0,
+                first_result.returncode,
+                msg=f"stdout:\n{first_result.stdout}\n\nstderr:\n{first_result.stderr}",
+            )
+
+            after_first_pass = read_files(root, source_files)
+            second_result = native_format("-i", "-r", ".", cwd=root)
+
+            self.assertEqual(
+                0,
+                second_result.returncode,
+                msg=f"stdout:\n{second_result.stdout}\n\nstderr:\n{second_result.stderr}",
+            )
+            after_second_pass = read_files(root, source_files)
+            for relative in source_files:
+                if after_first_pass[relative] != after_second_pass[relative]:
+                    self.fail(f"{relative} changed on the second formatter pass")
+
     def test_concurrency_one_preserves_file_list_output_order(self) -> None:
         build_dir = TEST_TEMP_ROOT
         build_dir.mkdir(exist_ok=True)
@@ -550,6 +650,37 @@ class FormatCommandTests(unittest.TestCase):
             "    function = reinterpret_cast<decltype(function)>(GetProcAddress(module_, name))\n",
             result.stdout,
         )
+
+    def test_invalid_formatted_candidate_keeps_original_source(self) -> None:
+        build_dir = TEST_TEMP_ROOT
+        build_dir.mkdir(exist_ok=True)
+
+        with tempfile.TemporaryDirectory(prefix="format_reparse_guard_", dir=build_dir) as temp_dir:
+            config = Path(temp_dir) / ".cpp-format"
+            config.write_text(
+                "---\n"
+                "ColumnLimit: 120\n"
+                "IndentWidth: 4\n"
+                "TabWidth: 4\n"
+                "MacroCategories:\n"
+                "  CallSyntaxMacros:\n"
+                "    - BENCHMARK\n",
+                encoding="utf-8",
+            )
+            source = "BENCHMARK(Foo)\n    ->Args({1, 2});\n"
+
+            result = native_format("--stdin", "--style", str(config), input_text=source)
+
+            self.assertEqual(0, result.returncode, msg=f"stdout:\n{result.stdout}\n\nstderr:\n{result.stderr}")
+            self.assertEqual(source, result.stdout)
+
+            second_result = native_format("--dry-run", "--stdin", "--style", str(config), input_text=result.stdout)
+
+            self.assertEqual(
+                0,
+                second_result.returncode,
+                msg=f"stdout:\n{second_result.stdout}\n\nstderr:\n{second_result.stderr}",
+            )
 
     def test_compact_empty_brace_ternary_colon_keeps_space(self) -> None:
         result = native_format(

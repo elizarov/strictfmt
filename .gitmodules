@@ -1,0 +1,4 @@
+[submodule "external/userver"]
+	path = external/userver
+	url = https://github.com/elizarov/userver.git
+	branch = strictfmt
