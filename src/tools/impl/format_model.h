@@ -289,6 +289,7 @@ enum class TokenClass : std::uint64_t {
     IncludeDirective = 1ull << 23,
     Comment = 1ull << 24,
     Trivia = 1ull << 25,
+    DeclarationModifierPreprocessor = 1ull << 26,
 };
 
 enum class SyntaxWrapperRole : std::uint8_t {

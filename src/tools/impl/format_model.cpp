@@ -44,9 +44,13 @@ constexpr std::uint64_t kNumberLiteralClasses = Bit(TokenClass::Literal) | Bit(T
 constexpr std::uint64_t kCommentClasses = Bit(TokenClass::Comment) | Bit(TokenClass::Trivia);
 constexpr std::uint64_t kAtomicPreprocessorClasses =
     Bit(TokenClass::AtomicPreprocessor) | Bit(TokenClass::WholeNodeAsFreeToken);
+constexpr std::uint64_t kDeclarationModifierPreprocessorClasses =
+    kAtomicPreprocessorClasses | Bit(TokenClass::DeclarationModifierPreprocessor);
 constexpr std::uint64_t kChainBinaryClasses = Bit(TokenClass::BinaryOperator) | Bit(TokenClass::ChainOperator);
 constexpr std::uint64_t kSymbolLocalClasses =
-    Bit(TokenClass::WholeNodeAsFreeToken) | Bit(TokenClass::AtomicPreprocessor);
+    Bit(TokenClass::WholeNodeAsFreeToken) |
+    Bit(TokenClass::AtomicPreprocessor) |
+    Bit(TokenClass::DeclarationModifierPreprocessor);
 
 constexpr auto kSyntaxKindMappings = std::to_array<SyntaxKindMapping>({
     Kind(SyntaxNodeKind::Tree, Bit(TokenClass::Tree)),
@@ -141,8 +145,8 @@ constexpr auto kSyntaxKindMappings = std::to_array<SyntaxKindMapping>({
     Tree(SyntaxNodeKind::PreprocIf, "preproc_selected_braced_if_else_statement", kAtomicPreprocessorClasses),
     Tree(SyntaxNodeKind::PreprocIf, "preproc_selected_if_header", kAtomicPreprocessorClasses),
     Tree(SyntaxNodeKind::PreprocIf, "preproc_endif_fragment", kAtomicPreprocessorClasses),
-    Tree(SyntaxNodeKind::PreprocIf, "standalone_qualifier_preproc_if", kAtomicPreprocessorClasses),
-    Tree(SyntaxNodeKind::PreprocIf, "standalone_attribute_preproc_if", kAtomicPreprocessorClasses),
+    Tree(SyntaxNodeKind::PreprocIf, "standalone_qualifier_preproc_if", kDeclarationModifierPreprocessorClasses),
+    Tree(SyntaxNodeKind::PreprocIf, "standalone_attribute_preproc_if", kDeclarationModifierPreprocessorClasses),
     Tree(SyntaxNodeKind::PreprocIf, "conditional_macro_function_header", kAtomicPreprocessorClasses),
     Tree(SyntaxNodeKind::PreprocIfdef, "declaration_suffix_preproc_ifdef", kAtomicPreprocessorClasses),
     Tree(SyntaxNodeKind::PreprocIfdef, "preproc_define_ifdef", kAtomicPreprocessorClasses),

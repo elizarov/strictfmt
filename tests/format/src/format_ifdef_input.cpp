@@ -5,8 +5,8 @@
 // This project forbids ifdefs, and these examples come only from userver, so the fixture
 // is named format_ifdef_* rather than format_userver_ifdef_*. Keep future userver examples
 // that patch whole declarations, statements, fields, methods, macros, includes, or
-// comma-separated list items here. Keep conditional fragments inside expressions or
-// declarations in format_error_input.cpp.
+// comma-separated list items here. Keep conditional fragments inside expressions,
+// statement headers, or declaration suffixes in format_error_input.cpp.
 
 #include <userver/utils/assert.hpp>
 #include <algorithm>
@@ -193,6 +193,48 @@ constexpr int kConditionalDeclaration = 1;
 #else
 constexpr int kConditionalDeclaration = 0;
 #endif
+
+extern "C" {
+#ifndef FORMAT_USERVER_CLANG
+[[gnu::visibility("default")]] [[gnu::externally_visible]]
+#endif
+int FormatUserverExternAttribute();
+}
+
+void ConditionalLocalConstQualifier() {
+#if FORMAT_USERVER_OPENSSL_HAS_CONST_SIGNATURE
+const
+#endif
+    ASN1_BIT_STRING* signature = nullptr;
+    UseSignature(signature);
+}
+
+class ConditionalStringLiteral : public utils::zstring_view {
+public:
+#if defined(__clang__) && __clang_major__ < 18
+    // clang-16 and below lose (optimize out) the pointer to `literal` with consteval. Clang-18 is know to work
+    constexpr
+#else
+    consteval
+#endif
+        ConditionalStringLiteral(const char* literal) noexcept
+        : zstring_view{literal} {
+        // data()[size()] == '\0' is guaranteed by std::string_view that calls std::strlen(literal)
+    }
+};
+
+class ConditionalQueryNameLiteral : public utils::zstring_view {
+public:
+#if defined(__clang__) && __clang_major__ < 18
+// clang-16 and below lose (optimize out) the pointer to `literal` with consteval. Clang-18 is know to work
+constexpr
+#else
+consteval
+#endif
+ConditionalQueryNameLiteral(const char* literal) noexcept
+: zstring_view{literal} {
+}
+};
 
 void FormatterPreprocessorContinuationRegression(const char* base_file) {
 #if defined(FORMAT_PREFIX_PATH_BASE) || defined(FORMAT_SOURCE_PATH_BASE) || \

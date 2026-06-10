@@ -9,13 +9,6 @@ void ExpressionFragment() {
         ARES_OPT_LOOKUPS;
 }
 
-extern "C" {
-#ifndef FORMAT_USERVER_CLANG
-[[gnu::visibility("default")]] [[gnu::externally_visible]]
-#endif
-int FormatUserverExternAttribute();
-}
-
 template <typename T>
 concept FormatUserverConvertible =
     requires(T& value) { FormatUserverConvert(value); } &&
@@ -32,14 +25,6 @@ extern int* ConditionalDeclarationSuffix(void)
     FORMAT_USERVER_THROW
 #endif
     ;
-
-void ConditionalLocalConstQualifier() {
-#if FORMAT_USERVER_OPENSSL_HAS_CONST_SIGNATURE
-const
-#endif
-    ASN1_BIT_STRING* signature = nullptr;
-    UseSignature(signature);
-}
 
 bool ConditionalLogicalFragment(int error_code) {
     if (error_code == kWouldBlock
@@ -149,21 +134,6 @@ const char* ConditionalStringLiteral() {
 #endif
         "suffix";
 }
-
-class PreprocessorSpecifierFixture {
-public:
-#if FORMAT_USERVER_USE_CONSTEXPR
-    // Older compilers keep this path constexpr.
-    constexpr
-#else
-    consteval
-#endif
-        PreprocessorSpecifierFixture(const char* value) noexcept
-        : value{value} {}
-
-private:
-    const char* value;
-};
 
 void IncludeExpressionFragment() {
     int value =
