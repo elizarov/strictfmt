@@ -683,13 +683,12 @@ Conditional right-hand sides after `=` are accepted for variable declarations, a
 
 ```cpp
 template <typename T>
-concept IsFromCharsConvertible =
+concept IsFromCharsCorrectlySupported =
 #if defined(_GLIBCXX_RELEASE) && _GLIBCXX_RELEASE < 13
-    requires(T& v) { std::from_chars(std::declval<const char*>(), std::declval<const char*>(), v); } &&
     // libstdc++ before 13.1 parse long double incorrectly
     !std::same_as<T, long double>;
 #else
-    requires(T& v) { std::from_chars(std::declval<const char*>(), std::declval<const char*>(), v); };
+    true;
 #endif
 
 void SelectStatus(Status& status) {
