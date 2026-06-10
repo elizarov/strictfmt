@@ -5,8 +5,9 @@
 // This project forbids ifdefs, and these examples come only from userver, so the fixture
 // is named format_ifdef_* rather than format_userver_ifdef_*. Keep future userver examples
 // that patch whole declarations, statements, fields, methods, macros, includes, or
-// comma-separated list items here. Keep conditional fragments inside expressions,
-// statement headers, or declaration suffixes in format_error_input.cpp.
+// comma-separated list items here. Conditional right-hand sides after equals signs are
+// accepted when each branch ends with a semicolon. Keep other conditional fragments inside
+// expressions, statement headers, or declaration suffixes in format_error_input.cpp.
 
 #include <userver/utils/assert.hpp>
 #include <algorithm>
@@ -196,6 +197,42 @@ struct ConditionalMembers {
 constexpr int kConditionalDeclaration = 1;
 #else
 constexpr int kConditionalDeclaration = 0;
+#endif
+
+void PreprocessorSelectedInitializer(DescriptorPool* descriptor_pool, std::string_view file_name) {
+    const Descriptor* file_desc =
+#if FORMAT_USERVER_PROTOBUF_GE_4022000
+        descriptor_pool->FindFileByName(file_name);
+#else
+        descriptor_pool->FindFileByName(std::string{file_name});
+#endif
+    Use(file_desc);
+}
+
+void PreprocessorSelectedAssignment(Status& status) {
+    status =
+#if FORMAT_USERVER_HAS_STATUS_FACTORY
+        MakeStatus();
+#else
+        Status{};
+#endif
+}
+
+using ConditionalAlias =
+#if FORMAT_USERVER_HAS_STRING_VIEW
+    std::string_view;
+#else
+    std::string;
+#endif
+
+template <typename T>
+concept ConditionalRhsConcept =
+#if defined(_GLIBCXX_RELEASE) && _GLIBCXX_RELEASE < 13
+    requires(T& v) { std::from_chars(std::declval<const char*>(), std::declval<const char*>(), v); } &&
+    // libstdc++ before 13.1 parse long double incorrectly
+    !std::same_as<T, long double>;
+#else
+    requires(T& v) { std::from_chars(std::declval<const char*>(), std::declval<const char*>(), v); };
 #endif
 
 extern "C" {

@@ -46,11 +46,14 @@ constexpr std::uint64_t kAtomicPreprocessorClasses =
     Bit(TokenClass::AtomicPreprocessor) | Bit(TokenClass::WholeNodeAsFreeToken);
 constexpr std::uint64_t kDeclarationModifierPreprocessorClasses =
     kAtomicPreprocessorClasses | Bit(TokenClass::DeclarationModifierPreprocessor);
+constexpr std::uint64_t kConditionalRhsPreprocessorClasses =
+    kAtomicPreprocessorClasses | Bit(TokenClass::ConditionalRhsPreprocessor);
 constexpr std::uint64_t kChainBinaryClasses = Bit(TokenClass::BinaryOperator) | Bit(TokenClass::ChainOperator);
 constexpr std::uint64_t kSymbolLocalClasses =
     Bit(TokenClass::WholeNodeAsFreeToken) |
     Bit(TokenClass::AtomicPreprocessor) |
-    Bit(TokenClass::DeclarationModifierPreprocessor);
+    Bit(TokenClass::DeclarationModifierPreprocessor) |
+    Bit(TokenClass::ConditionalRhsPreprocessor);
 
 constexpr auto kSyntaxKindMappings = std::to_array<SyntaxKindMapping>({
     Kind(SyntaxNodeKind::Tree, Bit(TokenClass::Tree)),
@@ -106,6 +109,9 @@ constexpr auto kSyntaxKindMappings = std::to_array<SyntaxKindMapping>({
         TokenClass::FlatLogicalHeader
     )),
     Tree(SyntaxNodeKind::InitStatement, "init_statement"),
+    Tree(SyntaxNodeKind::PreprocAssignmentStatement, "preproc_assignment_statement", Bit(
+        TokenClass::WholeNodeAsFreeToken
+    )),
     Tree(SyntaxNodeKind::PreprocCall, "preproc_call", kAtomicPreprocessorClasses),
     Tree(SyntaxNodeKind::PreprocDef, "preproc_def", Bit(TokenClass::MacroDefinition)),
     Tree(SyntaxNodeKind::PreprocFunctionDef, "preproc_function_def", Bit(TokenClass::MacroDefinition)),
@@ -161,7 +167,7 @@ constexpr auto kSyntaxKindMappings = std::to_array<SyntaxKindMapping>({
     Tree(SyntaxNodeKind::PreprocIf, "preproc_bitwise_expression_fragment", kAtomicPreprocessorClasses),
     Tree(SyntaxNodeKind::PreprocIf, "preproc_logical_tail_expression_fragment", kAtomicPreprocessorClasses),
     Tree(SyntaxNodeKind::PreprocIf, "preproc_condition_expression", kAtomicPreprocessorClasses),
-    Tree(SyntaxNodeKind::PreprocIf, "preproc_semicolon_initializer", kAtomicPreprocessorClasses),
+    Tree(SyntaxNodeKind::PreprocIf, "preproc_semicolon_initializer", kConditionalRhsPreprocessorClasses),
     Tree(SyntaxNodeKind::PreprocIf, "preproc_initializer_expression", kAtomicPreprocessorClasses),
     Tree(SyntaxNodeKind::PreprocIf, "preproc_template_argument_fragment", kAtomicPreprocessorClasses),
     Tree(SyntaxNodeKind::PreprocIf, "preproc_field_initializer_fragment", kAtomicPreprocessorClasses),
@@ -722,6 +728,8 @@ std::string_view SyntaxNodeKindName(SyntaxNodeKind kind) {
             return "ConditionClause";
         case SyntaxNodeKind::InitStatement:
             return "InitStatement";
+        case SyntaxNodeKind::PreprocAssignmentStatement:
+            return "PreprocAssignmentStatement";
         case SyntaxNodeKind::PreprocCall:
             return "PreprocCall";
         case SyntaxNodeKind::PreprocDef:

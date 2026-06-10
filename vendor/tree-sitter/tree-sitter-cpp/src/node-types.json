@@ -454,6 +454,10 @@
         "named": true
       },
       {
+        "type": "preproc_assignment_statement",
+        "named": true
+      },
+      {
         "type": "preproc_guarded_assignment_statement",
         "named": true
       },
@@ -821,6 +825,10 @@
         "multiple": false,
         "required": true,
         "types": [
+          {
+            "type": "preproc_semicolon_initializer",
+            "named": true
+          },
           {
             "type": "type_descriptor",
             "named": true
@@ -1523,6 +1531,10 @@
           "named": true
         },
         {
+          "type": "preproc_assignment_statement",
+          "named": true
+        },
+        {
           "type": "preproc_guarded_assignment_statement",
           "named": true
         },
@@ -2098,6 +2110,10 @@
       "types": [
         {
           "type": "expression",
+          "named": true
+        },
+        {
+          "type": "preproc_semicolon_initializer",
           "named": true
         }
       ]
@@ -5715,6 +5731,10 @@
         },
         {
           "type": "preproc_using",
+          "named": true
+        },
+        {
+          "type": "preproc_value_declaration",
           "named": true
         },
         {
@@ -10296,6 +10316,10 @@
           "named": true
         },
         {
+          "type": "preproc_value_declaration",
+          "named": true
+        },
+        {
           "type": "raw_macro_definition",
           "named": true
         },
@@ -11626,6 +11650,10 @@
   },
   {
     "type": "preproc_arg",
+    "named": true
+  },
+  {
+    "type": "preproc_assignment_statement",
     "named": true
   },
   {

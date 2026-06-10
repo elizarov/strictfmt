@@ -679,6 +679,29 @@ public:
 };
 ```
 
+Conditional right-hand sides after `=` are accepted for variable declarations, assignment statements, alias declarations, and concept definitions. The formatter always breaks after the `=`, keeps directive lines at column zero, and formats branch contents with one continuation indent relative to the line that contains the `=`. Each branch body supplies its own terminating semicolon, so there is no extra semicolon after `#endif`.
+
+```cpp
+template <typename T>
+concept IsFromCharsConvertible =
+#if defined(_GLIBCXX_RELEASE) && _GLIBCXX_RELEASE < 13
+    requires(T& v) { std::from_chars(std::declval<const char*>(), std::declval<const char*>(), v); } &&
+    // libstdc++ before 13.1 parse long double incorrectly
+    !std::same_as<T, long double>;
+#else
+    requires(T& v) { std::from_chars(std::declval<const char*>(), std::declval<const char*>(), v); };
+#endif
+
+void SelectStatus(Status& status) {
+    status =
+#if USE_FACTORY
+        MakeStatus();
+#else
+        Status{};
+#endif
+}
+```
+
 Local `#include` directives follow the same boundary rule: they may stand where the surrounding grammar accepts a complete declaration, statement, member declaration, enum entry, or directive, but not inside another expression or declaration. The include directive line stays at column zero.
 
 ```cpp
@@ -688,7 +711,7 @@ void RegisterGeneratedMetrics() {
 }
 ```
 
-Conditional directives are rejected below the complete-item, declaration-prefix modifier, or list-item boundary, such as inside an expression or statement header. The formatter reports every offending `#if`, `#ifdef`, `#ifndef`, or `#include` line as `unsupported preprocessor placement`.
+Conditional directives are rejected below the complete-item, declaration-prefix modifier, conditional-right-hand-side, or list-item boundary, such as inside an expression or statement header. The formatter reports every offending `#if`, `#ifdef`, `#ifndef`, or `#include` line as `unsupported preprocessor placement`.
 
 Do not patch one operand into an expression:
 
