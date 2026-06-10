@@ -83,6 +83,7 @@ constexpr auto kSyntaxKindMappings = std::to_array<SyntaxKindMapping>({
     Tree(SyntaxNodeKind::DeclarationList, "declaration_list", Bit(TokenClass::CompoundBlock)),
     Tree(SyntaxNodeKind::DeclarationList, "namespace_declaration_list", Bit(TokenClass::CompoundBlock)),
     Tree(SyntaxNodeKind::NamespaceDefinition, "namespace_definition"),
+    Tree(SyntaxNodeKind::LinkageSpecification, "linkage_specification"),
     Tree(SyntaxNodeKind::EnumSpecifier, "enum_specifier", Bit(TokenClass::MacroDeclarationFragment)),
     Tree(SyntaxNodeKind::ClassSpecifier, "class_specifier", Bit(TokenClass::MacroDeclarationFragment)),
     Tree(SyntaxNodeKind::StructSpecifier, "struct_specifier", Bit(TokenClass::MacroDeclarationFragment)),
@@ -691,6 +692,8 @@ std::string_view SyntaxNodeKindName(SyntaxNodeKind kind) {
             return "DeclarationList";
         case SyntaxNodeKind::NamespaceDefinition:
             return "NamespaceDefinition";
+        case SyntaxNodeKind::LinkageSpecification:
+            return "LinkageSpecification";
         case SyntaxNodeKind::EnumSpecifier:
             return "EnumSpecifier";
         case SyntaxNodeKind::ClassSpecifier:

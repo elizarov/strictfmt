@@ -44,6 +44,7 @@ enum class SyntaxNodeKind : std::uint16_t {
     FieldInitializer,
     DeclarationList,
     NamespaceDefinition,
+    LinkageSpecification,
     EnumSpecifier,
     ClassSpecifier,
     StructSpecifier,
