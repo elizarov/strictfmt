@@ -7,7 +7,6 @@
 <stdin>: unsupported preprocessor placement at 63:1: #if FORMAT_USERVER_NEW_MONGO
 <stdin>: unsupported preprocessor placement at 76:1: #if FORMAT_USERVER_USE_WOULD_BLOCK
 <stdin>: unsupported preprocessor placement at 100:1: #ifndef FORMAT_USERVER_ARCADIA
-<stdin>: unsupported preprocessor placement at 111:1: #if FORMAT_USERVER_PROTOBUF_GE_4022000
-<stdin>: unsupported preprocessor placement at 120:1: #if FORMAT_USERVER_HAS_PIPELINING
-<stdin>: unsupported preprocessor placement at 130:1: #if FORMAT_USERVER_USE_UTC
-<stdin>: unsupported preprocessor placement at 140:1: #include "format_userver_value.inc"
+<stdin>: unsupported preprocessor placement at 110:1: #if FORMAT_USERVER_HAS_PIPELINING
+<stdin>: unsupported preprocessor placement at 120:1: #if FORMAT_USERVER_USE_UTC
+<stdin>: unsupported preprocessor placement at 130:1: #include "format_userver_value.inc"

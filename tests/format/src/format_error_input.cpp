@@ -106,16 +106,6 @@ FAIL()
     << "failed to trigger failures";
 }
 
-void PreprocessorSelectedInitializer(DescriptorPool* descriptor_pool, std::string_view file_name) {
-    const Descriptor* file_desc =
-#if FORMAT_USERVER_PROTOBUF_GE_4022000
-        descriptor_pool->FindFileByName(file_name);
-#else
-        descriptor_pool->FindFileByName(std::string{file_name});
-#endif
-    Use(file_desc);
-}
-
 void PreprocessorEndedConsequence(Status status, Handle& handle, Handle next_handle) {
 #if FORMAT_USERVER_HAS_PIPELINING
 if (status == Status::kSync) {

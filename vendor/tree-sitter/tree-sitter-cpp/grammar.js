@@ -49,6 +49,8 @@ const ASSIGNMENT_OPERATORS = [
   'xor_eq',
 ];
 
+const PREPROC_SEMICOLON_RHS = /#[ \t]*(?:if|ifdef|ifndef)[^\n]*\r?\n(?:[ \t]*(?:(?:\/\/[^\n]*)|(?:[^#\r\n][^\r\n]*))\r?\n)*?[ \t]*[^#\r\n][^\r\n]*;[ \t]*(?:\/\/[^\n]*)?\r?\n(?:#[ \t]*(?:elif|else)[^\n]*\r?\n(?:[ \t]*(?:(?:\/\/[^\n]*)|(?:[^#\r\n][^\r\n]*))\r?\n)*?[ \t]*[^#\r\n][^\r\n]*;[ \t]*(?:\/\/[^\n]*)?\r?\n)*#[ \t]*endif/;
+
 module.exports = grammar(C, {
   name: 'cpp',
 
@@ -167,6 +169,7 @@ module.exports = grammar(C, {
       $.raw_macro_definition,
       $.deleted_operator_declaration,
       $.preproc_hashhash_function_def,
+      $.preproc_value_declaration,
       $.preproc_nested_define_ifdef,
       $.preproc_define_elif_chain,
       $.preproc_define_namespace_if,
@@ -755,7 +758,7 @@ module.exports = grammar(C, {
 
     preproc_semicolon_initializer: _ => token(prec(
       1,
-      /#[ \t]*(?:if|ifdef|ifndef)[^\n]*\r?\n[ \t]*(?:[^#\r\n][^\n;]*;[ \t]*(?:\/\/[^\n]*)?\r?\n)+(?:#[ \t]*else[^\n]*\r?\n[ \t]*(?:[^#\r\n][^\n;]*;[ \t]*(?:\/\/[^\n]*)?\r?\n)+)?#[ \t]*endif/,
+      PREPROC_SEMICOLON_RHS,
     )),
 
     macro_initializer: _ => token(prec(1, /[A-Z][A-Z0-9_]*(?:\([^\n]*\))?/)),
@@ -1313,8 +1316,10 @@ module.exports = grammar(C, {
       repeat($.attribute_declaration),
       optional($.function_prefix_macro),
       '=',
-      field('type', $.type_descriptor),
-      ';',
+      choice(
+        seq(field('type', $.type_descriptor), ';'),
+        field('type', $.preproc_semicolon_initializer),
+      ),
     ),
 
     static_assert_declaration: $ => seq(
@@ -1333,8 +1338,10 @@ module.exports = grammar(C, {
       'concept',
       field('name', $.identifier),
       '=',
-      $.expression,
-      ';',
+      choice(
+        seq($.expression, ';'),
+        $.preproc_semicolon_initializer,
+      ),
     ),
 
     // Statements
@@ -1357,6 +1364,7 @@ module.exports = grammar(C, {
 
     _non_case_statement: ($, original) => choice(
       $.top_level_call_statement,
+      $.preproc_assignment_statement,
       $.preproc_guarded_assignment_statement,
       $.preproc_selected_braced_if_else_statement,
       $.preproc_selected_if_statement,
@@ -1380,6 +1388,11 @@ module.exports = grammar(C, {
     preproc_guarded_assignment_statement: _ => token(prec(
       1,
       /#[ \t]*if[^\n]*\r?\n(?:[^\n]*\r?\n){1,8}#[ \t]*endif[ \t]*\r?\n[ \t]*[A-Za-z_]\w*[ \t]*=[^\n;]*;/,
+    )),
+
+    preproc_assignment_statement: _ => token(prec(
+      1,
+      /[A-Za-z_][^=\n;]*=[ \t]*(?:\r?\n)?#[ \t]*(?:if|ifdef|ifndef)[^\n]*\r?\n(?:[ \t]*(?:(?:\/\/[^\n]*)|(?:[^#\r\n][^\r\n]*))\r?\n)*?[ \t]*[^#\r\n][^\r\n]*;[ \t]*(?:\/\/[^\n]*)?\r?\n(?:#[ \t]*(?:elif|else)[^\n]*\r?\n(?:[ \t]*(?:(?:\/\/[^\n]*)|(?:[^#\r\n][^\r\n]*))\r?\n)*?[ \t]*[^#\r\n][^\r\n]*;[ \t]*(?:\/\/[^\n]*)?\r?\n)*#[ \t]*endif/,
     )),
 
     preproc_selected_if_statement: $ => prec.right(seq(

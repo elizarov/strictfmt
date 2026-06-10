@@ -19,7 +19,7 @@ enum class BraceRole {
     Compact,
     Block,
     Enum,
-    Namespace,
+    NamespaceLike,
     CaseBlock,
 };
 
@@ -63,11 +63,20 @@ BraceRole RoleForBraceParent(SyntaxNodeKind parentKind) {
     }
 }
 
-bool IsNamespaceLikeDeclarationList(const PrintToken& token) {
-    return token.parentKind == SyntaxNodeKind::DeclarationList && (
-        token.grandParentKind == SyntaxNodeKind::NamespaceDefinition ||
-        token.grandParentKind == SyntaxNodeKind::LinkageSpecification
-    );
+bool IsNamespaceDefinitionDeclarationList(const PrintToken& token) {
+    return token.parentKind == SyntaxNodeKind::DeclarationList &&
+        token.grandParentKind == SyntaxNodeKind::NamespaceDefinition;
+}
+
+bool IsLinkageSpecificationDeclarationList(const PrintToken& token) {
+    return token.parentKind == SyntaxNodeKind::DeclarationList &&
+        token.grandParentKind == SyntaxNodeKind::LinkageSpecification;
+}
+
+bool IsNamespaceLikeBrace(const PrintToken& token) {
+    return token.parentKind == SyntaxNodeKind::LinkageSpecification ||
+        IsNamespaceDefinitionDeclarationList(token) ||
+        IsLinkageSpecificationDeclarationList(token);
 }
 
 BraceRole RoleForBrace(const PrintToken& token) {
@@ -78,8 +87,8 @@ BraceRole RoleForBrace(const PrintToken& token) {
     ) {
         return BraceRole::Compact;
     }
-    if (token.parentKind == SyntaxNodeKind::LinkageSpecification || IsNamespaceLikeDeclarationList(token)) {
-        return BraceRole::Namespace;
+    if (IsNamespaceLikeBrace(token)) {
+        return BraceRole::NamespaceLike;
     }
     return RoleForBraceParent(token.parentKind);
 }
@@ -99,6 +108,11 @@ bool IsConditionalMacroFunctionHeader(const PrintToken& token) {
 bool IsDeclarationModifierPreprocessorToken(const PrintToken& token) {
     return token.node != nullptr &&
         (token.node->classes & static_cast<std::uint64_t>(TokenClass::DeclarationModifierPreprocessor)) != 0;
+}
+
+bool IsConditionalRhsPreprocessorToken(const PrintToken& token) {
+    return token.node != nullptr &&
+        (token.node->classes & static_cast<std::uint64_t>(TokenClass::ConditionalRhsPreprocessor)) != 0;
 }
 
 bool IsStandalonePreprocessorBranchToken(const SyntaxNode& node, SyntaxNodeKind parentKind) {
@@ -859,6 +873,44 @@ std::string FormatDeclarationModifierPreprocessorLines(std::string_view text, in
         }
         start = end + 1;
     }
+    return result;
+}
+
+std::string FormatConditionalRhsPreprocessorLines(std::string_view text, int continuationIndent, int indentWidth) {
+    const std::string normalized = PreserveSourceLines(text);
+    std::string result;
+    size_t start = 0;
+    while (start <= normalized.size()) {
+        const size_t end = normalized.find('\n', start);
+        const std::string_view rawLine = end == std::string::npos ? std::string_view(normalized).substr(start) :
+            std::string_view(normalized).substr(start, end - start);
+        const std::string line = NormalizeTrailingLineCommentSpacing(TrimSourceLine(rawLine));
+        if (!result.empty()) {
+            result.push_back('\n');
+        }
+        if (!line.empty() && line.front() != '#') {
+            result.append(static_cast<size_t>(std::max(0, continuationIndent) * indentWidth), ' ');
+        }
+        result.append(line);
+        if (end == std::string::npos) {
+            break;
+        }
+        start = end + 1;
+    }
+    return result;
+}
+
+std::string FormatConditionalAssignmentPrefix(std::string_view text) {
+    const size_t equals = text.rfind('=');
+    if (equals == std::string_view::npos) {
+        return NormalizeTrailingLineCommentSpacing(CollapseSourceWhitespace(TrimSourceLine(text)));
+    }
+    std::string_view left = text.substr(0, equals);
+    while (!left.empty() && (left.back() == ' ' || left.back() == '\t' || left.back() == '\r' || left.back() == '\n')) {
+        left.remove_suffix(1);
+    }
+    std::string result = CollapseSourceWhitespace(TrimSourceLine(left));
+    result += " =";
     return result;
 }
 
@@ -2551,6 +2603,14 @@ private:
             PrintIncludeRun(token, next);
             return;
         }
+        if (
+            token.kind == PrintTokenKind::Free &&
+            token.syntaxKind == SyntaxNodeKind::PreprocAssignmentStatement
+        ) {
+            FlushPendingTokens();
+            PrintPreprocessorAssignmentStatement(token);
+            return;
+        }
         if (token.kind == PrintTokenKind::Known) {
             PrintKnown(token, previous, next, rawNext);
             return;
@@ -2567,6 +2627,32 @@ private:
             return;
         }
         BufferToken(token);
+    }
+
+    void PrintPreprocessorAssignmentStatement(const PrintToken& token) {
+        if (lineHasText_) {
+            NewLine();
+        }
+        const std::string normalized = PreserveSourceLines(token.text);
+        const size_t conditionalStart = normalized.find('#');
+        if (conditionalStart == std::string::npos) {
+            Write(NormalizeTrailingLineCommentSpacing(CollapseSourceWhitespace(TrimSourceLine(normalized))));
+            NewLine();
+            return;
+        }
+        Write(FormatConditionalAssignmentPrefix(std::string_view(normalized).substr(0, conditionalStart)));
+        const int continuationIndent = CurrentLineIndentLevel() + 1;
+        NewLine();
+        const std::string outputLine = FormatConditionalRhsPreprocessorLines(
+            std::string_view(normalized).substr(conditionalStart),
+            continuationIndent,
+            indentWidth_
+        );
+        output_.append(outputLine);
+        AdvanceCurrentColumn(outputLine);
+        lineHasText_ = true;
+        atLineStart_ = false;
+        NewLine();
     }
 
     void PrintComment(const PrintToken& token, const PrintToken* next) {
@@ -2609,6 +2695,23 @@ private:
         const bool isInclude = StartsWith(line, "#include");
         const bool listConditional =
             StartsPreprocessorSplitList(token) && NearestPreprocessorSplitListAncestor(token) != nullptr;
+        if (IsConditionalRhsPreprocessorToken(token)) {
+            if (HasBufferedLineText()) {
+                FlushPendingTokens();
+            }
+            const int continuationIndent = (lineHasText_ ? CurrentLineIndentLevel() : indentLevel_) + 1;
+            if (lineHasText_) {
+                NewLine();
+            }
+            const std::string outputLine =
+                FormatConditionalRhsPreprocessorLines(token.text, continuationIndent, indentWidth_);
+            output_.append(outputLine);
+            AdvanceCurrentColumn(outputLine);
+            lineHasText_ = true;
+            atLineStart_ = false;
+            NewLine();
+            return;
+        }
         if (IsDeclarationModifierPreprocessorToken(token)) {
             if (HasBufferedLineText()) {
                 FlushPendingTokens();
@@ -2964,9 +3067,9 @@ private:
         if (role == BraceRole::Block || role == BraceRole::Enum) {
             indentLevel_ = std::max(indentLevel_, openLineIndent) + 1;
             NewLine(ShouldContinueMacroLine(token, rawNext));
-        } else if (role == BraceRole::Namespace || role == BraceRole::CaseBlock) {
+        } else if (role == BraceRole::NamespaceLike || role == BraceRole::CaseBlock) {
             NewLine(ShouldContinueMacroLine(token, rawNext));
-            if (role == BraceRole::Namespace) {
+            if (role == BraceRole::NamespaceLike) {
                 BlankLine();
             }
         }
@@ -3013,7 +3116,7 @@ private:
             closeIndent = braceStack_.back().closeIndent;
             braceStack_.pop_back();
         }
-        if (role == BraceRole::Namespace) {
+        if (role == BraceRole::NamespaceLike) {
             if (lineHasText_) {
                 NewLine(token.inMacroValue);
             }

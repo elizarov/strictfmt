@@ -36,6 +36,10 @@
         },
         {
           "type": "SYMBOL",
+          "name": "preproc_value_declaration"
+        },
+        {
+          "type": "SYMBOL",
           "name": "preproc_nested_define_ifdef"
         },
         {
@@ -6774,6 +6778,10 @@
         {
           "type": "SYMBOL",
           "name": "top_level_call_statement"
+        },
+        {
+          "type": "SYMBOL",
+          "name": "preproc_assignment_statement"
         },
         {
           "type": "SYMBOL",
@@ -15650,7 +15658,7 @@
         "value": 1,
         "content": {
           "type": "PATTERN",
-          "value": "#[ \\t]*(?:if|ifdef|ifndef)[^\\n]*\\r?\\n[ \\t]*(?:[^#\\r\\n][^\\n;]*;[ \\t]*(?:\\/\\/[^\\n]*)?\\r?\\n)+(?:#[ \\t]*else[^\\n]*\\r?\\n[ \\t]*(?:[^#\\r\\n][^\\n;]*;[ \\t]*(?:\\/\\/[^\\n]*)?\\r?\\n)+)?#[ \\t]*endif"
+          "value": "#[ \\t]*(?:if|ifdef|ifndef)[^\\n]*\\r?\\n(?:[ \\t]*(?:(?:\\/\\/[^\\n]*)|(?:[^#\\r\\n][^\\r\\n]*))\\r?\\n)*?[ \\t]*[^#\\r\\n][^\\r\\n]*;[ \\t]*(?:\\/\\/[^\\n]*)?\\r?\\n(?:#[ \\t]*(?:elif|else)[^\\n]*\\r?\\n(?:[ \\t]*(?:(?:\\/\\/[^\\n]*)|(?:[^#\\r\\n][^\\r\\n]*))\\r?\\n)*?[ \\t]*[^#\\r\\n][^\\r\\n]*;[ \\t]*(?:\\/\\/[^\\n]*)?\\r?\\n)*#[ \\t]*endif"
         }
       }
     },
@@ -18605,16 +18613,34 @@
           "value": "="
         },
         {
-          "type": "FIELD",
-          "name": "type",
-          "content": {
-            "type": "SYMBOL",
-            "name": "type_descriptor"
-          }
-        },
-        {
-          "type": "STRING",
-          "value": ";"
+          "type": "CHOICE",
+          "members": [
+            {
+              "type": "SEQ",
+              "members": [
+                {
+                  "type": "FIELD",
+                  "name": "type",
+                  "content": {
+                    "type": "SYMBOL",
+                    "name": "type_descriptor"
+                  }
+                },
+                {
+                  "type": "STRING",
+                  "value": ";"
+                }
+              ]
+            },
+            {
+              "type": "FIELD",
+              "name": "type",
+              "content": {
+                "type": "SYMBOL",
+                "name": "preproc_semicolon_initializer"
+              }
+            }
+          ]
         }
       ]
     },
@@ -18692,12 +18718,26 @@
           "value": "="
         },
         {
-          "type": "SYMBOL",
-          "name": "expression"
-        },
-        {
-          "type": "STRING",
-          "value": ";"
+          "type": "CHOICE",
+          "members": [
+            {
+              "type": "SEQ",
+              "members": [
+                {
+                  "type": "SYMBOL",
+                  "name": "expression"
+                },
+                {
+                  "type": "STRING",
+                  "value": ";"
+                }
+              ]
+            },
+            {
+              "type": "SYMBOL",
+              "name": "preproc_semicolon_initializer"
+            }
+          ]
         }
       ]
     },
@@ -18720,6 +18760,17 @@
         "content": {
           "type": "PATTERN",
           "value": "#[ \\t]*if[^\\n]*\\r?\\n(?:[^\\n]*\\r?\\n){1,8}#[ \\t]*endif[ \\t]*\\r?\\n[ \\t]*[A-Za-z_]\\w*[ \\t]*=[^\\n;]*;"
+        }
+      }
+    },
+    "preproc_assignment_statement": {
+      "type": "TOKEN",
+      "content": {
+        "type": "PREC",
+        "value": 1,
+        "content": {
+          "type": "PATTERN",
+          "value": "[A-Za-z_][^=\\n;]*=[ \\t]*(?:\\r?\\n)?#[ \\t]*(?:if|ifdef|ifndef)[^\\n]*\\r?\\n(?:[ \\t]*(?:(?:\\/\\/[^\\n]*)|(?:[^#\\r\\n][^\\r\\n]*))\\r?\\n)*?[ \\t]*[^#\\r\\n][^\\r\\n]*;[ \\t]*(?:\\/\\/[^\\n]*)?\\r?\\n(?:#[ \\t]*(?:elif|else)[^\\n]*\\r?\\n(?:[ \\t]*(?:(?:\\/\\/[^\\n]*)|(?:[^#\\r\\n][^\\r\\n]*))\\r?\\n)*?[ \\t]*[^#\\r\\n][^\\r\\n]*;[ \\t]*(?:\\/\\/[^\\n]*)?\\r?\\n)*#[ \\t]*endif"
         }
       }
     },

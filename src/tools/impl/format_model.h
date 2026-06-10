@@ -59,6 +59,7 @@ enum class SyntaxNodeKind : std::uint16_t {
     CaseStatement,
     ConditionClause,
     InitStatement,
+    PreprocAssignmentStatement,
     PreprocCall,
     PreprocDef,
     PreprocFunctionDef,
@@ -291,6 +292,7 @@ enum class TokenClass : std::uint64_t {
     Comment = 1ull << 24,
     Trivia = 1ull << 25,
     DeclarationModifierPreprocessor = 1ull << 26,
+    ConditionalRhsPreprocessor = 1ull << 27,
 };
 
 enum class SyntaxWrapperRole : std::uint8_t {
