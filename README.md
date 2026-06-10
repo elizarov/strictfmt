@@ -6,7 +6,7 @@ A strict, rule-based source formatter. No heuristics. No bikeshedding.
 
 - Fast, so that you can run it on every commit. 
 - Owns whitespace, line breaks, indentation, wrapping, trailing-comma normalization, and control-brace normalization.
-- Preserves source tokens, comments, and file line-ending style.
+- Preserves source tokens, comments, file line-ending style, and supported conditional compilation structure.
 
 ## Main Tenets
 

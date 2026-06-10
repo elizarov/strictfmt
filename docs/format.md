@@ -620,7 +620,7 @@ Macro category roles and runtime scanner ownership are described in [Formatter C
 
 ## Conditional Compilation And Local Includes
 
-Conditional compilation is accepted when each branch contributes complete grammar items at the surrounding level: complete declarations, complete statements, field or method declarations, enum entries, macro definitions, includes, or similar syntax that already has a mandatory structural line break. The conditional directive lines stay at column zero, and the guarded code keeps the indentation it would have at that source location.
+Conditional compilation is accepted when each branch contributes complete grammar items at the surrounding level: complete declarations, complete statements, field or method declarations, enum entries, macro definitions, includes, or similar syntax that already has a mandatory structural line break. Conditional declaration-prefix modifiers are also accepted for standalone modifiers and for attributes that precede a declaration. The conditional directive lines stay at column zero, and the guarded code keeps the indentation it would have at that source location.
 
 Conditional compilation may also patch complete items in comma-separated lists. This is accepted for function arguments, braced initializer items, subscript items, declaration parameters, template parameters, and enum entries. A conditional in one of these lists makes the guarded item use split-list indentation: directive lines stay at column zero, and branch items are indented as list items. Conditional list items use the same comma normalization as ordinary list items, so final items lose trailing commas except in enum bodies.
 
@@ -663,6 +663,22 @@ std::vector<std::string> list{
 
 Conditional compilation is not accepted in base-class lists or constructor initializer lists. Those lists do not have a stable trailing-comma form in the supported style, so patching items there remains an unsupported preprocessor placement.
 
+Conditional declaration-prefix modifiers format as a forced break before the rest of the declaration. The directive lines stay at column zero, while comments, attributes, and modifier lines inside the conditional use the indentation of the declaration that follows.
+
+```cpp
+class StringLiteral : public zstring_view {
+public:
+#if defined(__clang__) && __clang_major__ < 18
+    // clang-16 and below lose the pointer to `literal` with consteval.
+    constexpr
+#else
+    consteval
+#endif
+    StringLiteral(const char* literal) noexcept
+        : zstring_view{literal} {}
+};
+```
+
 Local `#include` directives follow the same boundary rule: they may stand where the surrounding grammar accepts a complete declaration, statement, member declaration, enum entry, or directive, but not inside another expression or declaration. The include directive line stays at column zero.
 
 ```cpp
@@ -672,7 +688,7 @@ void RegisterGeneratedMetrics() {
 }
 ```
 
-Conditional directives are rejected below the complete-item or list-item boundary, such as inside an expression, declaration, or statement header. The formatter reports every offending `#if`, `#ifdef`, `#ifndef`, or `#include` line as `unsupported preprocessor placement`.
+Conditional directives are rejected below the complete-item, declaration-prefix modifier, or list-item boundary, such as inside an expression or statement header. The formatter reports every offending `#if`, `#ifdef`, `#ifndef`, or `#include` line as `unsupported preprocessor placement`.
 
 Do not patch one operand into an expression:
 
@@ -701,27 +717,6 @@ constexpr int kOptmask =
     ARES_OPT_DOMAINS |
     kAresOptSockStateCbCompat |
     ARES_OPT_LOOKUPS;
-```
-
-Do not patch declaration modifiers directly into the declaration:
-
-```cpp
-#ifndef FORMAT_USERVER_CLANG
-[[gnu::visibility("default")]] [[gnu::externally_visible]]
-#endif
-int FormatUserverExternAttribute();
-```
-
-Prefer a conditionally defined modifier macro and use that macro in the declaration. Configure the macro as `BareIdentifierMacros` so the declaration grammar can consume it as a modifier token.
-
-```cpp
-#ifndef FORMAT_USERVER_CLANG
-#define FORMAT_USERVER_EXTERN_ATTRIBUTES [[gnu::visibility("default")]] [[gnu::externally_visible]]
-#else
-#define FORMAT_USERVER_EXTERN_ATTRIBUTES
-#endif
-
-FORMAT_USERVER_EXTERN_ATTRIBUTES int FormatUserverExternAttribute();
 ```
 
 ## Include Sorting

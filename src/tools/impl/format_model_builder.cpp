@@ -795,6 +795,9 @@ bool IsForbiddenPreprocessorPlacement(
         return false;
     }
     if (TsNodeSyntaxHasClass(syntax, TokenClass::AtomicPreprocessor)) {
+        if (TsNodeSyntaxHasClass(syntax, TokenClass::DeclarationModifierPreprocessor)) {
+            return false;
+        }
         if (IsListAtomicConditionalNode(treeType) && HasAllowedListPreprocessorAncestor(node)) {
             return false;
         }

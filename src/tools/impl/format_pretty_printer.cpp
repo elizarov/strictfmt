@@ -92,6 +92,11 @@ bool IsConditionalMacroFunctionHeader(const PrintToken& token) {
     return token.syntaxKind == SyntaxNodeKind::PreprocIf && token.parentKind == SyntaxNodeKind::FunctionDefinition;
 }
 
+bool IsDeclarationModifierPreprocessorToken(const PrintToken& token) {
+    return token.node != nullptr &&
+        (token.node->classes & static_cast<std::uint64_t>(TokenClass::DeclarationModifierPreprocessor)) != 0;
+}
+
 bool IsStandalonePreprocessorBranchToken(const SyntaxNode& node, SyntaxNodeKind parentKind) {
     return parentKind == SyntaxNodeKind::PreprocElse && node.kind == SyntaxNodeKind::FreeToken && node.text == "#else";
 }
@@ -825,6 +830,30 @@ std::string FormatListPreprocessorLines(std::string_view text, int itemIndent, i
             result.append(static_cast<size_t>(std::max(0, itemIndent) * indentWidth), ' ');
         }
         result.append(line);
+    }
+    return result;
+}
+
+std::string FormatDeclarationModifierPreprocessorLines(std::string_view text, int declarationIndent, int indentWidth) {
+    const std::string normalized = PreserveSourceLines(text);
+    std::string result;
+    size_t start = 0;
+    while (start <= normalized.size()) {
+        const size_t end = normalized.find('\n', start);
+        const std::string_view rawLine = end == std::string::npos ? std::string_view(normalized).substr(start) :
+            std::string_view(normalized).substr(start, end - start);
+        const std::string line = NormalizeTrailingLineCommentSpacing(TrimSourceLine(rawLine));
+        if (!result.empty()) {
+            result.push_back('\n');
+        }
+        if (!line.empty() && line.front() != '#') {
+            result.append(static_cast<size_t>(std::max(0, declarationIndent) * indentWidth), ' ');
+        }
+        result.append(line);
+        if (end == std::string::npos) {
+            break;
+        }
+        start = end + 1;
     }
     return result;
 }
@@ -2576,6 +2605,24 @@ private:
         const bool isInclude = StartsWith(line, "#include");
         const bool listConditional =
             StartsPreprocessorSplitList(token) && NearestPreprocessorSplitListAncestor(token) != nullptr;
+        if (IsDeclarationModifierPreprocessorToken(token)) {
+            if (HasBufferedLineText()) {
+                FlushPendingTokens();
+            }
+            if (lineHasText_) {
+                NewLine();
+            }
+            const int declarationIndent = pendingIndentLevel_.value_or(indentLevel_);
+            const std::string outputLine =
+                FormatDeclarationModifierPreprocessorLines(token.text, declarationIndent, indentWidth_);
+            output_.append(outputLine);
+            AdvanceCurrentColumn(outputLine);
+            lineHasText_ = true;
+            atLineStart_ = false;
+            NewLine();
+            pendingIndentLevel_ = declarationIndent;
+            return;
+        }
         if (token.structuredPreprocessor || isInclude || listConditional) {
             PreprocessorSplitListContext* splitContext = ActivePreprocessorSplitListContextFor(token);
             const std::optional<PreprocessorSplitListPlan> splitListPlan =
