@@ -63,6 +63,13 @@ BraceRole RoleForBraceParent(SyntaxNodeKind parentKind) {
     }
 }
 
+bool IsNamespaceLikeDeclarationList(const PrintToken& token) {
+    return token.parentKind == SyntaxNodeKind::DeclarationList && (
+        token.grandParentKind == SyntaxNodeKind::NamespaceDefinition ||
+        token.grandParentKind == SyntaxNodeKind::LinkageSpecification
+    );
+}
+
 BraceRole RoleForBrace(const PrintToken& token) {
     if (
         token.inSingleStatementLambdaBody &&
@@ -71,10 +78,7 @@ BraceRole RoleForBrace(const PrintToken& token) {
     ) {
         return BraceRole::Compact;
     }
-    if (
-        token.parentKind == SyntaxNodeKind::DeclarationList &&
-        token.grandParentKind == SyntaxNodeKind::NamespaceDefinition
-    ) {
+    if (token.parentKind == SyntaxNodeKind::LinkageSpecification || IsNamespaceLikeDeclarationList(token)) {
         return BraceRole::Namespace;
     }
     return RoleForBraceParent(token.parentKind);

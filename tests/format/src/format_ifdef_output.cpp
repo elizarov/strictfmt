@@ -199,10 +199,12 @@ constexpr int kConditionalDeclaration = 0;
 #endif
 
 extern "C" {
+
 #ifndef FORMAT_USERVER_CLANG
-    [[gnu::visibility("default")]] [[gnu::externally_visible]]
+[[gnu::visibility("default")]] [[gnu::externally_visible]]
 #endif
-    int FormatUserverExternAttribute();
+int FormatUserverExternAttribute();
+
 }
 
 void ConditionalLocalConstQualifier() {
