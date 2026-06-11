@@ -146,9 +146,8 @@ void QualifiedTemplateCompoundLiteral(Token token, Writer& writer) {
 }
 
 auto BracedLambdaCapture(std::vector<int> inputs, CaptureSettings settings) {
-    return [inputs{std::move(inputs)}, settings{std::move(settings)}]() mutable {
-        return inputs.size() + settings.count;
-    };
+    return
+        [inputs{std::move(inputs)}, settings{std::move(settings)}]() mutable { return inputs.size() + settings.count; };
 }
 
 FORMAT_USERVER_NODEBUG_FUNC inline decltype(auto) PrefixedInlineFunction(Function&& function) {

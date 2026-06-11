@@ -106,6 +106,25 @@ FAIL()
     << "failed to trigger failures";
 }
 
+void ConditionalMemberContinuation() {
+#if FORMAT_USERVER_HAS_STATUS_FACTORY
+MakeStatus()
+#else
+MakeFallbackStatus()
+#endif
+    .WithMessage("failed");
+}
+
+void ConditionalArithmeticContinuation() {
+value =
+#if FORMAT_USERVER_HAS_FAST_VALUE
+    FastValue()
+#else
+    SlowValue()
+#endif
+    + suffix;
+}
+
 void PreprocessorEndedConsequence(Status status, Handle& handle, Handle next_handle) {
 #if FORMAT_USERVER_HAS_PIPELINING
 if (status == Status::kSync) {

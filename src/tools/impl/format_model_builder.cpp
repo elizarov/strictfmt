@@ -738,13 +738,6 @@ bool IsAllowedListPreprocessorContainer(SyntaxNodeKind kind) {
         kind == SyntaxNodeKind::TemplateParameterList;
 }
 
-bool IsListAtomicConditionalNode(std::string_view treeType) {
-    return treeType == "preproc_argument_fragment" ||
-        treeType == "preproc_initializer_expression" ||
-        treeType == "preproc_template_argument_fragment" ||
-        treeType == "preproc_string_literal_fragment";
-}
-
 bool HasAllowedListPreprocessorAncestor(TSNode node) {
     for (TSNode parent = ts_node_parent(node); !ts_node_is_null(parent); parent = ts_node_parent(parent)) {
         const SyntaxNodeKind parentKind = GetTsNodeSyntax(parent).kind;
@@ -804,7 +797,11 @@ bool IsForbiddenPreprocessorPlacement(
         if (TsNodeSyntaxHasClass(syntax, TokenClass::ConditionalRhsPreprocessor)) {
             return false;
         }
-        if (IsListAtomicConditionalNode(treeType) && HasAllowedListPreprocessorAncestor(node)) {
+        if (
+            HasAllowedListPreprocessorAncestor(node) &&
+            !TsNodeSyntaxHasClass(syntax, TokenClass::DeclarationModifierPreprocessor) &&
+            !TsNodeSyntaxHasClass(syntax, TokenClass::ConditionalRhsPreprocessor)
+        ) {
             return false;
         }
         if (
@@ -856,6 +853,51 @@ bool IsEndifDirectiveLine(std::string_view line) {
 
 bool IsIgnorablePreprocessorTailLine(std::string_view line) {
     return line.empty() || StartsWith(line, "//") || StartsWith(line, "/*") || StartsWith(line, "*");
+}
+
+bool IsExpressionContinuationLine(std::string_view line) {
+    static constexpr std::string_view kContinuationPrefixes[] = {
+        "::",
+        "->*",
+        ".*",
+        "->",
+        ".",
+        "<<=",
+        ">>=",
+        "<<",
+        ">>",
+        "<=>",
+        "<=",
+        ">=",
+        "==",
+        "!=",
+        "&&",
+        "||",
+        "+=",
+        "-=",
+        "*=",
+        "/=",
+        "%=",
+        "^=",
+        "&=",
+        "|=",
+        "+",
+        "-",
+        "*",
+        "/",
+        "%",
+        "^",
+        "&",
+        "|",
+        "=",
+        "?"
+    };
+    for (const std::string_view prefix : kContinuationPrefixes) {
+        if (StartsWith(line, prefix)) {
+            return true;
+        }
+    }
+    return false;
 }
 
 bool PreviousLineAllowsWholePreprocessorItem(std::string_view line) {
@@ -949,7 +991,7 @@ void CollectConditionalTailPlacementErrors(const std::string& source, std::vecto
                 pendingClosedDirective.reset();
             }
         } else if (!IsIgnorablePreprocessorTailLine(trimmed)) {
-            if (pendingClosedDirective.has_value() && StartsWith(trimmed, "<<")) {
+            if (pendingClosedDirective.has_value() && IsExpressionContinuationLine(trimmed)) {
                 errors.push_back(*pendingClosedDirective);
             }
             pendingClosedDirective.reset();

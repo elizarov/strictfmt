@@ -441,26 +441,31 @@ private:
         return true;
     }
 
-    static bool ContainsBodyHeader(const FormatBreakNode& node) {
+    static bool EndsWithBodyHeader(const FormatBreakNode& node) {
         if (node.kind == FormatBreakNodeKind::BodyHeader) {
             return true;
         }
-        for (const FormatBreakNode* child : node.children) {
-            if (child && ContainsBodyHeader(*child)) {
-                return true;
-            }
+        if (node.kind != FormatBreakNodeKind::Sequence || node.children.empty()) {
+            return false;
         }
-        for (const FormatBreakListItem& item : node.items) {
-            if (item.node && ContainsBodyHeader(*item.node)) {
-                return true;
-            }
+        const FormatBreakNode* tail = node.children.back();
+        return tail != nullptr && EndsWithBodyHeader(*tail);
+    }
+
+    static bool ContainsSyntaxKind(const SyntaxNode& node, SyntaxNodeKind kind) {
+        if (node.kind == kind) {
+            return true;
         }
-        for (const FormatBreakNode* operand : node.operands) {
-            if (operand && ContainsBodyHeader(*operand)) {
-                return true;
-            }
-        }
-        return false;
+        return std::any_of(node.children.begin(), node.children.end(), [kind](const SyntaxNode* child) {
+            return child != nullptr && ContainsSyntaxKind(*child, kind);
+        });
+    }
+
+    static bool ContainsFunctionPointerDeclarator(const SyntaxNode& node) {
+        return ContainsSyntaxKind(node, SyntaxNodeKind::PointerDeclarator) ||
+            ContainsSyntaxKind(node, SyntaxNodeKind::AbstractPointerDeclarator) ||
+            ContainsSyntaxKind(node, SyntaxNodeKind::ParenthesizedDeclarator) ||
+            ContainsSyntaxKind(node, SyntaxNodeKind::AbstractParenthesizedDeclarator);
     }
 
     static void MarkBodyHeaderSplitAtParentIndentWhenLineStarts(FormatBreakNode& node) {
@@ -506,35 +511,31 @@ private:
         return false;
     }
 
-    static bool ContainsDelimitedNode(const FormatBreakNode& node) {
-        if (node.kind == FormatBreakNodeKind::Delimited) {
-            return true;
-        }
-        for (const FormatBreakNode* child : node.children) {
-            if (child && ContainsDelimitedNode(*child)) {
-                return true;
-            }
-        }
-        for (const FormatBreakListItem& item : node.items) {
-            if (item.node && ContainsDelimitedNode(*item.node)) {
-                return true;
-            }
-        }
-        for (const FormatBreakNode* operand : node.operands) {
-            if (operand && ContainsDelimitedNode(*operand)) {
-                return true;
-            }
-        }
-        return false;
-    }
-
-    static bool IsDirectForceSplitAdjacentStringsInitializer(const FormatBreakNode& node) {
-        return ContainsForceSplitAdjacentStrings(node) && !ContainsDelimitedNode(node);
+    static bool IsSemanticDelimitedParent(SyntaxNodeKind kind) {
+        return kind == SyntaxNodeKind::ArgumentList ||
+            kind == SyntaxNodeKind::ParameterList ||
+            kind == SyntaxNodeKind::SubscriptArgumentList ||
+            kind == SyntaxNodeKind::TemplateArgumentList ||
+            kind == SyntaxNodeKind::TemplateParameterList ||
+            kind == SyntaxNodeKind::InitializerList ||
+            kind == SyntaxNodeKind::FieldInitializerList ||
+            kind == SyntaxNodeKind::ConditionClause ||
+            kind == SyntaxNodeKind::ParenthesizedDeclarator ||
+            kind == SyntaxNodeKind::AbstractParenthesizedDeclarator;
     }
 
     static void MarkForceSplitAdjacentStringsFlat(FormatBreakNode& node) {
         if (node.kind == FormatBreakNodeKind::AdjacentStrings && node.forceSplit) {
             node.flatSplitIndent = true;
+        }
+        if (node.kind == FormatBreakNodeKind::Delimited && !node.children.empty()) {
+            const FormatBreakNode* open = node.children.front();
+            if (open != nullptr && open->kind == FormatBreakNodeKind::Token) {
+                const PrintToken& token = FormatBreakTokenValue(open->token);
+                if (IsSemanticDelimitedParent(token.parentKind) || IsSemanticDelimitedParent(token.grandParentKind)) {
+                    return;
+                }
+            }
         }
         for (FormatBreakNode* child : node.children) {
             if (child) {
@@ -551,6 +552,22 @@ private:
                 MarkForceSplitAdjacentStringsFlat(*operand);
             }
         }
+    }
+
+    static bool IsEmptyCompoundStatement(const SyntaxNode& node) {
+        if (node.kind != SyntaxNodeKind::CompoundStatement) {
+            return false;
+        }
+        for (const SyntaxNode* child : node.children) {
+            if (
+                child != nullptr &&
+                child->kind != SyntaxNodeKind::LeftBrace &&
+                child->kind != SyntaxNodeKind::RightBrace
+            ) {
+                return false;
+            }
+        }
+        return true;
     }
 
     void GroupAdjacentStrings(FormatBreakNode& sequence, int depth) {
@@ -631,6 +648,46 @@ private:
         return chain;
     }
 
+    FormatBreakNode* BuildFunctionPointerDeclaratorDeclaration(const SyntaxNode& node, int depth) {
+        std::optional<size_t> declaratorIndex;
+        for (size_t index = 0; index < node.children.size(); ++index) {
+            const SyntaxNode* child = node.children[index];
+            if (
+                child != nullptr &&
+                child->kind == SyntaxNodeKind::FunctionDeclarator &&
+                ContainsFunctionPointerDeclarator(*child)
+            ) {
+                declaratorIndex = index;
+                break;
+            }
+        }
+        if (!declaratorIndex || *declaratorIndex == 0 || !ContainsSelected(*node.children[*declaratorIndex])) {
+            return nullptr;
+        }
+
+        FormatBreakNode* returnType = BuildSequenceFromChildren(node.children, 0, *declaratorIndex, depth + 1);
+        FormatBreakNode* declarator =
+            BuildSequenceFromChildren(node.children, *declaratorIndex, *declaratorIndex + 1, depth + 1);
+        if (!returnType || !declarator) {
+            return nullptr;
+        }
+
+        auto signature = MakeNode(FormatBreakNodeKind::FunctionSignature, depth);
+        signature->functionSignaturePrefersOuterSplit = true;
+        std::array<FormatBreakNode*, 3> signatureChildren{returnType, declarator, nullptr};
+        size_t signatureChildCount = 2;
+        if (*declaratorIndex + 1 < node.children.size()) {
+            FormatBreakNode* tail =
+                BuildSequenceFromChildren(node.children, *declaratorIndex + 1, node.children.size(), depth + 1);
+            if (tail) {
+                signatureChildren[signatureChildCount++] = tail;
+            }
+        }
+        signature->children =
+            StoreNodePointers(std::span<FormatBreakNode* const>{signatureChildren.data(), signatureChildCount});
+        return signature;
+    }
+
     FormatBreakNode* BuildSyntaxNode(const SyntaxNode& node, int depth) {
         if (!ContainsSelected(node)) {
             return nullptr;
@@ -647,7 +704,22 @@ private:
             }
         }
         if (IsDeclarationNodeKind(node.kind)) {
+            if (auto declaration = BuildFunctionPointerDeclaratorDeclaration(node, depth)) {
+                return declaration;
+            }
+        }
+        if (IsDeclarationNodeKind(node.kind)) {
             if (auto declaration = BuildDirectInitializedDeclaration(node, depth)) {
+                return declaration;
+            }
+        }
+        if (node.kind == SyntaxNodeKind::ReturnStatement || node.kind == SyntaxNodeKind::CoReturnStatement) {
+            if (auto statement = BuildKeywordValueStatement(node, depth)) {
+                return statement;
+            }
+        }
+        if (node.kind == SyntaxNodeKind::TemplateDeclaration) {
+            if (auto declaration = BuildTemplateDeclaration(node, depth)) {
                 return declaration;
             }
         }
@@ -659,6 +731,11 @@ private:
         if (node.kind == SyntaxNodeKind::Declaration || node.kind == SyntaxNodeKind::FunctionDefinition) {
             if (auto signature = BuildFunctionSignature(node, depth)) {
                 return signature;
+            }
+        }
+        if (node.kind == SyntaxNodeKind::FunctionDefinition) {
+            if (auto header = BuildInitializerListBodyHeader(node, depth)) {
+                return header;
             }
         }
         if (node.kind == SyntaxNodeKind::LambdaExpression) {
@@ -692,6 +769,259 @@ private:
         return BuildSequenceFromChildren(node.children, 0, node.children.size(), depth);
     }
 
+    FormatBreakNode* BuildKeywordValueStatement(const SyntaxNode& node, int depth) {
+        std::optional<size_t> valueIndex;
+        std::optional<size_t> semicolonIndex;
+        for (size_t index = 0; index < node.children.size(); ++index) {
+            const SyntaxNode* child = node.children[index];
+            if (child == nullptr) {
+                continue;
+            }
+            if (child->kind == SyntaxNodeKind::Semicolon) {
+                semicolonIndex = index;
+                break;
+            }
+            if (
+                valueIndex == std::nullopt &&
+                index > 0 &&
+                ContainsSelected(*child) &&
+                child->kind != SyntaxNodeKind::Comment &&
+                child->kind != SyntaxNodeKind::TrailingComment
+            ) {
+                valueIndex = index;
+            }
+        }
+        if (!valueIndex || !semicolonIndex || *valueIndex >= *semicolonIndex) {
+            return nullptr;
+        }
+
+        FormatBreakNode* prefix = BuildSequenceFromChildren(node.children, 0, *valueIndex, depth + 1);
+        FormatBreakNode* value = BuildSequenceFromChildren(node.children, *valueIndex, *semicolonIndex, depth + 1);
+        FormatBreakNode* suffix =
+            BuildSequenceFromChildren(node.children, *semicolonIndex, node.children.size(), depth + 1);
+        if (prefix == nullptr || value == nullptr || suffix == nullptr) {
+            return nullptr;
+        }
+
+        auto chain = MakeNode(FormatBreakNodeKind::Chain, depth + 1);
+        chain->operands = StoreNodePointers({prefix, value});
+        chain->operators = StoreTokens({{}});
+        MarkForceSplitAdjacentStringsFlat(*value);
+        if (EndsWithBodyHeader(*value)) {
+            chain->splitTrailingBodyHeaderAtParentIndent = true;
+            MarkBodyHeaderSplitAtParentIndentWhenLineStarts(*value);
+        }
+
+        auto sequence = MakeNode(FormatBreakNodeKind::Sequence, depth);
+        sequence->children = StoreNodePointers({chain, suffix});
+        return sequence;
+    }
+
+    bool HasSelectedBefore(const SyntaxNode& node, size_t end) const {
+        for (size_t index = 0; index < end && index < node.children.size(); ++index) {
+            if (node.children[index] != nullptr && ContainsSelected(*node.children[index])) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    FormatBreakNode*
+        BuildTemplatePrefix(const ConstSyntaxChildList& templateHeadChildren, const SyntaxNode* requiresNode, int depth)
+    {
+        FormatBreakNode* templateHead = BuildSequenceFromPointers(templateHeadChildren, depth + 1);
+        if (templateHead == nullptr || requiresNode == nullptr) {
+            return templateHead;
+        }
+
+        FormatBreakNode* requiresClause = BuildSyntaxNode(*requiresNode, depth + 1);
+        if (requiresClause == nullptr) {
+            return nullptr;
+        }
+
+        auto prefix = MakeNode(FormatBreakNodeKind::Chain, depth);
+        prefix->operands = StoreNodePointers({templateHead, requiresClause});
+        prefix->operators = StoreTokens({{}});
+        prefix->chainPrefersSplitWhenCompactBreaks = true;
+        return prefix;
+    }
+
+    FormatBreakNode* BuildDetachedTemplateDeclaration(
+        FormatBreakNode* prefix,
+        FormatBreakNode* declaration,
+        int depth
+    ) {
+        if (prefix == nullptr || declaration == nullptr) {
+            return nullptr;
+        }
+        auto result = MakeNode(FormatBreakNodeKind::BodyHeader, depth);
+        result->bodyHeaderRequiresDetachedBody = true;
+        result->bodyHeaderDetachBodyAfterExpandedHeader = true;
+        result->children = StoreNodePointers({prefix, declaration});
+        return result;
+    }
+
+    FormatBreakNode* BuildTemplateDeclaration(const SyntaxNode& node, int depth) {
+        std::optional<size_t> parametersIndex;
+        for (size_t index = 0; index < node.children.size(); ++index) {
+            if (node.children[index] && node.children[index]->kind == SyntaxNodeKind::TemplateParameterList) {
+                parametersIndex = index;
+                break;
+            }
+        }
+        if (!parametersIndex || *parametersIndex + 1 >= node.children.size()) {
+            return nullptr;
+        }
+
+        ConstSyntaxChildList templateHeadChildren;
+        templateHeadChildren.reserve(*parametersIndex + 1);
+        for (size_t index = 0; index <= *parametersIndex; ++index) {
+            templateHeadChildren.push_back(node.children[index]);
+        }
+
+        size_t declarationIndex = *parametersIndex + 1;
+        const SyntaxNode* requiresNode = nullptr;
+        if (
+            declarationIndex < node.children.size() &&
+            node.children[declarationIndex] != nullptr &&
+            node.children[declarationIndex]->kind == SyntaxNodeKind::RequiresClause
+        ) {
+            requiresNode = node.children[declarationIndex];
+            ++declarationIndex;
+        }
+        if (declarationIndex >= node.children.size()) {
+            return nullptr;
+        }
+
+        FormatBreakNode* declaration = nullptr;
+        const SyntaxNode* introduced = node.children[declarationIndex];
+        if (introduced != nullptr) {
+            std::optional<size_t> introducedRequiresIndex;
+            for (size_t index = 0; index < introduced->children.size(); ++index) {
+                if (
+                    introduced->children[index] != nullptr &&
+                    introduced->children[index]->kind == SyntaxNodeKind::RequiresClause
+                ) {
+                    introducedRequiresIndex = index;
+                    break;
+                }
+            }
+            if (introducedRequiresIndex && !HasSelectedBefore(*introduced, *introducedRequiresIndex)) {
+                requiresNode = introduced->children[*introducedRequiresIndex];
+                ConstSyntaxChildList declarationChildren;
+                declarationChildren.reserve(
+                    introduced->children.size() - *introducedRequiresIndex - 1 + node.children.size() - declarationIndex
+                );
+                for (size_t index = *introducedRequiresIndex + 1; index < introduced->children.size(); ++index) {
+                    declarationChildren.push_back(introduced->children[index]);
+                }
+                for (size_t index = declarationIndex + 1; index < node.children.size(); ++index) {
+                    declarationChildren.push_back(node.children[index]);
+                }
+                declaration = BuildSequenceFromPointers(declarationChildren, depth + 1);
+            }
+        }
+        if (declaration == nullptr) {
+            declaration = BuildSequenceFromChildren(node.children, declarationIndex, node.children.size(), depth + 1);
+        }
+
+        FormatBreakNode* prefix = BuildTemplatePrefix(templateHeadChildren, requiresNode, depth + 1);
+        return BuildDetachedTemplateDeclaration(prefix, declaration, depth);
+    }
+
+    FormatBreakNode* BuildAdjacentTemplateDeclaration(
+        const ::SyntaxChildList& children,
+        size_t index,
+        size_t end,
+        int depth,
+        size_t& after
+    ) {
+        const SyntaxNode* templateNode = children[index];
+        if (templateNode == nullptr || templateNode->kind != SyntaxNodeKind::TemplateDeclaration) {
+            return nullptr;
+        }
+
+        std::optional<size_t> parametersIndex;
+        for (size_t childIndex = 0; childIndex < templateNode->children.size(); ++childIndex) {
+            if (
+                templateNode->children[childIndex] != nullptr &&
+                templateNode->children[childIndex]->kind == SyntaxNodeKind::TemplateParameterList
+            ) {
+                parametersIndex = childIndex;
+                break;
+            }
+        }
+        if (!parametersIndex) {
+            return nullptr;
+        }
+
+        ConstSyntaxChildList templateHeadChildren;
+        templateHeadChildren.reserve(*parametersIndex + 1);
+        for (size_t childIndex = 0; childIndex <= *parametersIndex; ++childIndex) {
+            templateHeadChildren.push_back(templateNode->children[childIndex]);
+        }
+
+        size_t templateTail = *parametersIndex + 1;
+        const SyntaxNode* requiresNode = nullptr;
+        if (
+            templateTail < templateNode->children.size() &&
+            templateNode->children[templateTail] != nullptr &&
+            templateNode->children[templateTail]->kind == SyntaxNodeKind::RequiresClause
+        ) {
+            requiresNode = templateNode->children[templateTail];
+            ++templateTail;
+        }
+        if (templateTail < templateNode->children.size()) {
+            return nullptr;
+        }
+
+        size_t declarationIndex = index + 1;
+        while (declarationIndex < end && (
+            children[declarationIndex] == nullptr ||
+            !ContainsSelected(*children[declarationIndex])
+        )) {
+            ++declarationIndex;
+        }
+        if (declarationIndex >= end) {
+            return nullptr;
+        }
+
+        FormatBreakNode* declaration = nullptr;
+        const SyntaxNode* introduced = children[declarationIndex];
+        if (introduced != nullptr) {
+            std::optional<size_t> introducedRequiresIndex;
+            for (size_t childIndex = 0; childIndex < introduced->children.size(); ++childIndex) {
+                if (
+                    introduced->children[childIndex] != nullptr &&
+                    introduced->children[childIndex]->kind == SyntaxNodeKind::RequiresClause
+                ) {
+                    introducedRequiresIndex = childIndex;
+                    break;
+                }
+            }
+            if (introducedRequiresIndex && !HasSelectedBefore(*introduced, *introducedRequiresIndex)) {
+                requiresNode = introduced->children[*introducedRequiresIndex];
+                ConstSyntaxChildList declarationChildren;
+                declarationChildren.reserve(introduced->children.size() - *introducedRequiresIndex - 1);
+                for (
+                    size_t childIndex = *introducedRequiresIndex + 1;
+                    childIndex < introduced->children.size();
+                    ++childIndex
+                ) {
+                    declarationChildren.push_back(introduced->children[childIndex]);
+                }
+                declaration = BuildSequenceFromPointers(declarationChildren, depth + 1);
+            }
+        }
+        if (declaration == nullptr && introduced != nullptr) {
+            declaration = BuildSyntaxNode(*introduced, depth + 1);
+        }
+
+        FormatBreakNode* prefix = BuildTemplatePrefix(templateHeadChildren, requiresNode, depth + 1);
+        after = declarationIndex + 1;
+        return BuildDetachedTemplateDeclaration(prefix, declaration, depth);
+    }
+
     FormatBreakNode* BuildBodyHeader(const SyntaxNode& node, int depth) {
         std::optional<size_t> bodyIndex;
         for (size_t index = 0; index < node.children.size(); ++index) {
@@ -712,9 +1042,36 @@ private:
         auto result = MakeNode(FormatBreakNodeKind::BodyHeader, depth);
         result->bodyHeaderSingleStatementBody =
             LambdaBodyAllowsCompactSingleStatementForm(*node.children[*bodyIndex], node.kind);
-        const SyntaxNode* parent = node.parent;
-        result->bodyHeaderSplitAtParentIndentWhenLineStarts = parent != nullptr &&
-            (parent->kind == SyntaxNodeKind::AssignmentExpression || parent->kind == SyntaxNodeKind::InitDeclarator);
+        result->children = StoreNodePointers({header, body});
+        return result;
+    }
+
+    FormatBreakNode* BuildInitializerListBodyHeader(const SyntaxNode& node, int depth) {
+        std::optional<size_t> bodyIndex;
+        bool hasInitializerList = false;
+        for (size_t index = 0; index < node.children.size(); ++index) {
+            const SyntaxNode* child = node.children[index];
+            if (child == nullptr) {
+                continue;
+            }
+            if (child->kind == SyntaxNodeKind::CompoundStatement) {
+                bodyIndex = index;
+                break;
+            }
+            hasInitializerList = hasInitializerList || child->kind == SyntaxNodeKind::FieldInitializerList;
+        }
+        if (!bodyIndex || *bodyIndex == 0 || !hasInitializerList || !ContainsSelected(*node.children[*bodyIndex])) {
+            return nullptr;
+        }
+
+        FormatBreakNode* header = BuildSequenceFromChildren(node.children, 0, *bodyIndex, depth + 1);
+        FormatBreakNode* body = BuildSequenceFromChildren(node.children, *bodyIndex, node.children.size(), depth + 1);
+        if (!header || !body) {
+            return nullptr;
+        }
+
+        auto result = MakeNode(FormatBreakNodeKind::BodyHeader, depth);
+        result->bodyHeaderDetachBodyAfterExpandedHeader = !IsEmptyCompoundStatement(*node.children[*bodyIndex]);
         result->children = StoreNodePointers({header, body});
         return result;
     }
@@ -817,6 +1174,13 @@ private:
         FormatBreakNode* left = BuildSequenceFromChildren(node.children, 0, *declaratorIndex, depth + 1);
         FormatBreakNode* right =
             BuildSequenceFromChildren(node.children, *declaratorIndex, node.children.size(), depth + 1);
+        if (right != nullptr) {
+            MarkForceSplitAdjacentStringsFlat(*right);
+            if (EndsWithBodyHeader(*right)) {
+                chain->splitTrailingBodyHeaderAtParentIndent = true;
+                MarkBodyHeaderSplitAtParentIndentWhenLineStarts(*right);
+            }
+        }
         chain->operands = StoreNodePointers({left, right});
         chain->operators = StoreTokens({{}});
         return chain;
@@ -862,16 +1226,15 @@ private:
         FormatBreakNode* left = BuildSequenceFromPointers(leftChildren, depth + 1);
         FormatBreakNode* right =
             BuildSequenceFromChildren(declarator.children, *operatorIndex + 1, declarator.children.size(), depth + 1);
+        if (right != nullptr) {
+            MarkForceSplitAdjacentStringsFlat(*right);
+            if (EndsWithBodyHeader(*right)) {
+                chain->splitTrailingBodyHeaderAtParentIndent = true;
+                MarkBodyHeaderSplitAtParentIndentWhenLineStarts(*right);
+            }
+        }
         chain->operands = StoreNodePointers({left, right});
         chain->operators = StoreTokens({*op});
-        chain->splitTrailingBodyHeaderAtParentIndent = right != nullptr && ContainsBodyHeader(*right);
-        if (right != nullptr && chain->splitTrailingBodyHeaderAtParentIndent) {
-            MarkBodyHeaderSplitAtParentIndentWhenLineStarts(*right);
-        }
-        if (right != nullptr && IsDirectForceSplitAdjacentStringsInitializer(*right)) {
-            MarkForceSplitAdjacentStringsFlat(*right);
-        }
-
         std::vector<FormatBreakNode*> tailChildren;
         tailChildren.reserve(node.children.size() - *declaratorIndex - 1);
         for (size_t index = *declaratorIndex + 1; index < node.children.size(); ++index) {
@@ -919,6 +1282,14 @@ private:
         for (size_t index = begin; index < end;) {
             if (!children[index] || !ContainsSelected(*children[index])) {
                 ++index;
+                continue;
+            }
+            size_t afterTemplate = index;
+            if (FormatBreakNode* templated =
+                BuildAdjacentTemplateDeclaration(children, index, end, depth + 1, afterTemplate))
+            {
+                builtChildren.push_back(templated);
+                index = afterTemplate;
                 continue;
             }
             size_t afterDelimited = index;
@@ -1062,6 +1433,11 @@ private:
             operands.reserve(2);
             operators.reserve(1);
             AppendBinaryChain(node, operatorKind, operands, operators, depth);
+            for (size_t index = 1; index < operands.size(); ++index) {
+                if (operands[index] != nullptr) {
+                    MarkForceSplitAdjacentStringsFlat(*operands[index]);
+                }
+            }
             chain->operands = StoreNodePointers(operands);
             chain->operators = StoreTokens(operators);
             return chain;
@@ -1070,18 +1446,15 @@ private:
         FormatBreakNode* left = BuildSequenceFromChildren(node.children, 0, *opIndex, depth + 1);
         FormatBreakNode* right =
             BuildSequenceFromChildren(node.children, *opIndex + 1, node.children.size(), depth + 1);
+        if (right != nullptr) {
+            MarkForceSplitAdjacentStringsFlat(*right);
+            if (EndsWithBodyHeader(*right)) {
+                chain->splitTrailingBodyHeaderAtParentIndent = true;
+                MarkBodyHeaderSplitAtParentIndentWhenLineStarts(*right);
+            }
+        }
         chain->operands = StoreNodePointers({left, right});
         chain->operators = StoreTokens({*token});
-        chain->splitTrailingBodyHeaderAtParentIndent =
-            IsAssignmentOperatorForNode(*token) && right != nullptr && ContainsBodyHeader(*right);
-        if (right != nullptr && chain->splitTrailingBodyHeaderAtParentIndent) {
-            MarkBodyHeaderSplitAtParentIndentWhenLineStarts(*right);
-        }
-        if (IsAssignmentOperatorForNode(*token) && right != nullptr && IsDirectForceSplitAdjacentStringsInitializer(
-            *right
-        )) {
-            MarkForceSplitAdjacentStringsFlat(*right);
-        }
         return chain;
     }
 
@@ -1140,6 +1513,11 @@ private:
         operands.reserve(3);
         operators.reserve(2);
         AppendConditionalChain(node, operands, operators, depth);
+        for (size_t index = 1; index < operands.size(); ++index) {
+            if (operands[index] != nullptr) {
+                MarkForceSplitAdjacentStringsFlat(*operands[index]);
+            }
+        }
         chain->operands = StoreNodePointers(operands);
         chain->operators = StoreTokens(operators);
         return chain;

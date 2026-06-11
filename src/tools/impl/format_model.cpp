@@ -105,6 +105,8 @@ constexpr auto kSyntaxKindMappings = std::to_array<SyntaxKindMapping>({
         TokenClass::FlatLogicalHeader
     )),
     Tree(SyntaxNodeKind::CaseStatement, "case_statement"),
+    Tree(SyntaxNodeKind::ReturnStatement, "return_statement"),
+    Tree(SyntaxNodeKind::CoReturnStatement, "co_return_statement"),
     Tree(SyntaxNodeKind::ConditionClause, "condition_clause", Bit(TokenClass::ControlHeader) | Bit(
         TokenClass::FlatLogicalHeader
     )),
@@ -137,6 +139,7 @@ constexpr auto kSyntaxKindMappings = std::to_array<SyntaxKindMapping>({
     Tree(SyntaxNodeKind::PreprocArg, "macro_arrow_chain", Bit(TokenClass::WholeNodeAsFreeToken)),
     Tree(SyntaxNodeKind::FunctionDefinition, "macro_function_definition_with_trailing_parameters"),
     Tree(SyntaxNodeKind::FreeToken, "top_level_call_statement", Bit(TokenClass::WholeNodeAsFreeToken)),
+    Tree(SyntaxNodeKind::FreeToken, "top_level_macro_call_statement", Bit(TokenClass::WholeNodeAsFreeToken)),
     Tree(SyntaxNodeKind::FreeToken, "top_level_operator_macro_call", Bit(TokenClass::WholeNodeAsFreeToken)),
     Tree(SyntaxNodeKind::FreeToken, "name_macro_call", Bit(TokenClass::WholeNodeAsFreeToken)),
     Tree(SyntaxNodeKind::FreeToken, "function_pointer_type_descriptor", Bit(TokenClass::WholeNodeAsFreeToken)),
@@ -168,7 +171,7 @@ constexpr auto kSyntaxKindMappings = std::to_array<SyntaxKindMapping>({
     Tree(SyntaxNodeKind::PreprocIf, "preproc_logical_tail_expression_fragment", kAtomicPreprocessorClasses),
     Tree(SyntaxNodeKind::PreprocIf, "preproc_condition_expression", kAtomicPreprocessorClasses),
     Tree(SyntaxNodeKind::PreprocIf, "preproc_semicolon_initializer", kConditionalRhsPreprocessorClasses),
-    Tree(SyntaxNodeKind::PreprocIf, "preproc_initializer_expression", kAtomicPreprocessorClasses),
+    Tree(SyntaxNodeKind::PreprocIf, "preproc_expression_item_fragment", kAtomicPreprocessorClasses),
     Tree(SyntaxNodeKind::PreprocIf, "preproc_template_argument_fragment", kAtomicPreprocessorClasses),
     Tree(SyntaxNodeKind::PreprocIf, "preproc_field_initializer_fragment", kAtomicPreprocessorClasses),
     Tree(SyntaxNodeKind::PreprocIf, "preproc_string_literal_fragment", kAtomicPreprocessorClasses),
@@ -724,6 +727,10 @@ std::string_view SyntaxNodeKindName(SyntaxNodeKind kind) {
             return "SwitchStatement";
         case SyntaxNodeKind::CaseStatement:
             return "CaseStatement";
+        case SyntaxNodeKind::ReturnStatement:
+            return "ReturnStatement";
+        case SyntaxNodeKind::CoReturnStatement:
+            return "CoReturnStatement";
         case SyntaxNodeKind::ConditionClause:
             return "ConditionClause";
         case SyntaxNodeKind::InitStatement:

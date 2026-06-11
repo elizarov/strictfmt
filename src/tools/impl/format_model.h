@@ -57,6 +57,8 @@ enum class SyntaxNodeKind : std::uint16_t {
     DoStatement,
     SwitchStatement,
     CaseStatement,
+    ReturnStatement,
+    CoReturnStatement,
     ConditionClause,
     InitStatement,
     PreprocAssignmentStatement,

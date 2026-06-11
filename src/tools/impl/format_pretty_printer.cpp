@@ -1249,52 +1249,6 @@ private:
         return true;
     }
 
-    bool CanKeepRequiresClauseOnTemplateLine(const PrintToken& token) const {
-        const SyntaxNode* requiresClause = NearestAncestor(token, SyntaxNodeKind::RequiresClause);
-        if (requiresClause == nullptr || activeTokens_ == nullptr) {
-            return true;
-        }
-
-        int width = 0;
-        bool hasText = lineHasText_;
-        const PrintToken* previous = nullptr;
-        bool previousStringLike = false;
-        for (const PrintToken& pending : pendingTokens_) {
-            if (!AppendCompactWidthToken(pending, width, hasText, previous, previousStringLike)) {
-                return false;
-            }
-        }
-        for (size_t index = currentTokenIndex_; index < activeTokens_->size(); ++index) {
-            const PrintToken& candidate = (*activeTokens_)[index];
-            if (!SyntaxPathContains(candidate, requiresClause)) {
-                if (index > currentTokenIndex_) {
-                    break;
-                }
-                continue;
-            }
-            if (!AppendCompactWidthToken(candidate, width, hasText, previous, previousStringLike)) {
-                return false;
-            }
-        }
-        return CurrentColumn() + width <= config_.columnLimit;
-    }
-
-    bool CanKeepConstructorBodyBraceWithInitializerList(const PrintToken& token) const {
-        int width = 0;
-        bool hasText = lineHasText_;
-        const PrintToken* previous = nullptr;
-        bool previousStringLike = false;
-        for (const PrintToken& pending : pendingTokens_) {
-            if (!AppendCompactWidthToken(pending, width, hasText, previous, previousStringLike, true)) {
-                return false;
-            }
-        }
-        if (!AppendCompactWidthToken(token, width, hasText, previous, previousStringLike, true)) {
-            return false;
-        }
-        return CurrentColumn() + width <= config_.columnLimit;
-    }
-
     static bool IsAccessLabel(const PrintToken& token, const PrintToken* next) {
         return IsAccessKeyword(token) &&
             next != nullptr &&
@@ -1606,12 +1560,15 @@ private:
     static bool IsSplitChoice(FormatBreakChoice choice) {
         return choice == FormatBreakChoice::Split ||
             choice == FormatBreakChoice::BodyHeaderSplitAtParentIndent ||
+            choice == FormatBreakChoice::BodyHeaderDetachedBody ||
             choice == FormatBreakChoice::SplitAttachedOpen ||
             choice == FormatBreakChoice::SplitDelimiterStack;
     }
 
     static bool IsBodyHeaderSplitChoice(FormatBreakChoice choice) {
-        return choice == FormatBreakChoice::Split || choice == FormatBreakChoice::BodyHeaderSplitAtParentIndent;
+        return choice == FormatBreakChoice::Split ||
+            choice == FormatBreakChoice::BodyHeaderSplitAtParentIndent ||
+            choice == FormatBreakChoice::BodyHeaderDetachedBody;
     }
 
     bool UsesNonCompactChoice(const FormatBreakNode& node, const FormatBreakSolution& solution) const {
@@ -1720,6 +1677,12 @@ private:
             !HasBlankLineBeforeItem(node, index + 1);
     }
 
+    static bool HasRealSeparators(const FormatBreakNode& node) {
+        return std::any_of(node.items.begin(), node.items.end(), [](const FormatBreakListItem& item) {
+            return FormatBreakTokenKind(item.separator) == PrintTokenKind::Known;
+        });
+    }
+
     struct DelimiterStackEmitView {
         std::vector<const FormatBreakNode*> delimiters;
         const FormatBreakNode* leaf = nullptr;
@@ -1731,44 +1694,75 @@ private:
         int indentLevel = 0;
     };
 
-    static bool HasRealSeparators(const FormatBreakNode& node) {
-        return std::any_of(node.items.begin(), node.items.end(), [](const FormatBreakListItem& item) {
-            return FormatBreakTokenKind(item.separator) == PrintTokenKind::Known;
-        });
+    static bool IsSemanticDelimitedParent(SyntaxNodeKind kind) {
+        return kind == SyntaxNodeKind::ArgumentList ||
+            kind == SyntaxNodeKind::ParameterList ||
+            kind == SyntaxNodeKind::SubscriptArgumentList ||
+            kind == SyntaxNodeKind::TemplateArgumentList ||
+            kind == SyntaxNodeKind::TemplateParameterList ||
+            kind == SyntaxNodeKind::InitializerList ||
+            kind == SyntaxNodeKind::FieldInitializerList ||
+            kind == SyntaxNodeKind::ConditionClause ||
+            kind == SyntaxNodeKind::ParenthesizedDeclarator ||
+            kind == SyntaxNodeKind::AbstractParenthesizedDeclarator;
     }
 
-    static bool HasTrailingComment(const FormatBreakNode& node, size_t index) {
-        return index < node.items.size() && IsCommentToken(FormatBreakTokenKind(node.items[index].trailingComment));
+    static bool IsTransparentSingleItemDelimiter(const FormatBreakNode& node) {
+        if (
+            node.forceSplit ||
+            node.delimiterKind != FormatBreakDelimiterKind::Paren ||
+            node.children.size() < 2 ||
+            node.items.size() != 1 ||
+            HasRealSeparators(node) ||
+            HasTrailingComment(node, 0) ||
+            HasBlankLineBeforeItem(node, 0) ||
+            node.items.front().node == nullptr
+        ) {
+            return false;
+        }
+        const FormatBreakNode* open = node.children[0];
+        if (open == nullptr || open->kind != FormatBreakNodeKind::Token) {
+            return false;
+        }
+        const PrintToken& token = FormatBreakTokenValue(open->token);
+        return !IsSemanticDelimitedParent(token.parentKind) && !IsSemanticDelimitedParent(token.grandParentKind);
     }
 
-    static bool HasBlankLineBeforeItem(const FormatBreakNode& node, size_t index) {
-        return index < node.items.size() && node.items[index].blankLineBefore;
+    static const FormatBreakNode* SingleChildSequenceNode(const FormatBreakNode& node) {
+        if (node.kind != FormatBreakNodeKind::Sequence || node.children.size() != 1) {
+            return nullptr;
+        }
+        return node.children.front();
     }
 
-    static bool IsDelimiterStackItem(const FormatBreakNode& node) {
-        return node.kind == FormatBreakNodeKind::Delimited && node.items.size() == 1 && !HasRealSeparators(node);
+    static const FormatBreakNode* TransparentStackChild(const FormatBreakNode& node) {
+        if (!IsTransparentSingleItemDelimiter(node)) {
+            return nullptr;
+        }
+        const FormatBreakNode* item = node.items.front().node;
+        while (item != nullptr) {
+            if (IsTransparentSingleItemDelimiter(*item)) {
+                return item;
+            }
+            item = SingleChildSequenceNode(*item);
+        }
+        return nullptr;
     }
 
     static std::optional<DelimiterStackEmitView> CollectDelimiterStack(const FormatBreakNode& node) {
-        if (!IsDelimiterStackItem(node) || node.children.size() < 2 || node.forceSplit) {
+        if (!IsTransparentSingleItemDelimiter(node) || TransparentStackChild(node) == nullptr) {
             return std::nullopt;
         }
         DelimiterStackEmitView stack;
         const FormatBreakNode* current = &node;
         while (current != nullptr) {
             stack.delimiters.push_back(current);
-            const FormatBreakNode* item = current->items.front().node;
-            if (
-                item == nullptr ||
-                !IsDelimiterStackItem(*item) ||
-                item->delimiterKind != node.delimiterKind ||
-                item->children.size() < 2 ||
-                item->forceSplit
-            ) {
-                stack.leaf = item;
+            const FormatBreakNode* child = TransparentStackChild(*current);
+            if (child == nullptr) {
+                stack.leaf = current->items.front().node;
                 break;
             }
-            current = item;
+            current = child;
         }
         return stack.leaf != nullptr && stack.delimiters.size() > 1 ? std::optional(stack) : std::nullopt;
     }
@@ -1820,6 +1814,14 @@ private:
         }
     }
 
+    static bool HasTrailingComment(const FormatBreakNode& node, size_t index) {
+        return index < node.items.size() && IsCommentToken(FormatBreakTokenKind(node.items[index].trailingComment));
+    }
+
+    static bool HasBlankLineBeforeItem(const FormatBreakNode& node, size_t index) {
+        return index < node.items.size() && node.items[index].blankLineBefore;
+    }
+
     void EmitDelimitedNode(const FormatBreakNode& node, const FormatBreakSolution& solution, int baseIndent) {
         const FormatBreakChoice choice = ChoiceFor(solution, node.id);
         if (choice == FormatBreakChoice::SplitDelimiterStack) {
@@ -1868,10 +1870,11 @@ private:
                 continue;
             } else {
                 const bool hasNextItem = index + 1 < node.items.size();
-                BreakListLine(
-                    hasNextItem ? baseIndent + 1 : baseIndent,
-                    hasNextItem && HasBlankLineBeforeItem(node, index + 1)
-                );
+                if (hasNextItem) {
+                    BreakListLine(baseIndent + 1, HasBlankLineBeforeItem(node, index + 1));
+                } else {
+                    BreakListLine(baseIndent, false);
+                }
             }
         }
         EmitBreakNode(*node.children[1], solution, baseIndent);
@@ -1985,6 +1988,12 @@ private:
 
     void EmitBodyHeaderNode(const FormatBreakNode& node, const FormatBreakSolution& solution, int baseIndent) {
         const FormatBreakChoice choice = ChoiceFor(solution, node.id);
+        if (node.bodyHeaderRequiresDetachedBody && node.children.size() >= 2) {
+            EmitBreakNode(*node.children[0], solution, baseIndent);
+            NewLineWithIndent(baseIndent);
+            EmitBreakNode(*node.children[1], solution, baseIndent);
+            return;
+        }
         if (!IsBodyHeaderSplitChoice(choice) || node.children.size() < 2) {
             for (const FormatBreakNode* child : node.children) {
                 EmitBreakNode(*child, solution, baseIndent);
@@ -1994,7 +2003,10 @@ private:
         EmitBreakNode(*node.children[0], solution, baseIndent);
         const int bodyIndent =
             choice == FormatBreakChoice::BodyHeaderSplitAtParentIndent ? std::max(0, baseIndent - 1) : baseIndent;
-        if (choice == FormatBreakChoice::BodyHeaderSplitAtParentIndent) {
+        if (
+            choice == FormatBreakChoice::BodyHeaderSplitAtParentIndent ||
+            choice == FormatBreakChoice::BodyHeaderDetachedBody
+        ) {
             NewLineWithIndent(bodyIndent);
         }
         EmitBreakNode(*node.children[1], solution, bodyIndent);
@@ -2623,7 +2635,7 @@ private:
             }
             Write(CollapseSourceWhitespace(token.text));
             if (!(rawNext != nullptr && rawNext->kind == PrintTokenKind::TrailingComment)) {
-                NewLine();
+                NewLine(ShouldContinueMacroLine(token, next));
             }
             return;
         }
@@ -2837,9 +2849,7 @@ private:
                 if (parenDepth_ > 0) {
                     --parenDepth_;
                 }
-                if (token.inRequiresClause && token.inTemplateDeclaration && !(
-                    next != nullptr && next->inRequiresClause
-                )) {
+                if (token.parentKind == SyntaxNodeKind::RequiresClause && token.inTemplateDeclaration) {
                     FlushPendingTokens();
                     NewLine(ShouldContinueMacroLine(token, next));
                 }
@@ -2977,22 +2987,7 @@ private:
                     WriteWithIndentOffset(FormatTokenText(token), -1);
                     return;
                 }
-                if (
-                    token.syntaxKind == SyntaxNodeKind::KeywordRequires &&
-                    token.inTemplateDeclaration &&
-                    HasBufferedLineText() &&
-                    !CanKeepRequiresClauseOnTemplateLine(token)
-                ) {
-                    FlushPendingTokens();
-                    NewLineWithIndent(indentLevel_ + 1);
-                }
                 BufferToken(token);
-                if (token.inRequiresClause && token.inTemplateDeclaration && !(
-                    next != nullptr && next->inRequiresClause
-                )) {
-                    FlushPendingTokens();
-                    NewLine(ShouldContinueMacroLine(token, next));
-                }
                 return;
         }
     }
@@ -3006,20 +3001,6 @@ private:
             previous->syntaxKind == SyntaxNodeKind::Colon &&
             previous->parentKind == SyntaxNodeKind::CaseStatement;
         const BraceRole role = isCaseBlock ? BraceRole::CaseBlock : RoleForBrace(token);
-        const bool followsConstructorInitializer = previous != nullptr && (
-            previous->parentKind == SyntaxNodeKind::FieldInitializerList ||
-            previous->grandParentKind == SyntaxNodeKind::FieldInitializer
-        );
-        if (
-            !isEmptyBracePair &&
-            role == BraceRole::Block &&
-            followsConstructorInitializer &&
-            HasBufferedLineText() &&
-            !CanKeepConstructorBodyBraceWithInitializerList(token)
-        ) {
-            FlushPendingTokens();
-            NewLine(ShouldContinueMacroLine(token, rawNext));
-        }
         if (role == BraceRole::CaseBlock && lineHasText_) {
             Space();
         }
