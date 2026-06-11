@@ -720,6 +720,7 @@ bool IsAllowedPreprocessorContainer(SyntaxNodeKind kind) {
         kind == SyntaxNodeKind::InitializerList ||
         kind == SyntaxNodeKind::ParameterList ||
         kind == SyntaxNodeKind::SubscriptArgumentList ||
+        kind == SyntaxNodeKind::TemplateArgumentList ||
         kind == SyntaxNodeKind::TemplateParameterList ||
         kind == SyntaxNodeKind::PreprocIf ||
         kind == SyntaxNodeKind::PreprocIfdef ||
@@ -733,12 +734,14 @@ bool IsAllowedListPreprocessorContainer(SyntaxNodeKind kind) {
         kind == SyntaxNodeKind::InitializerList ||
         kind == SyntaxNodeKind::ParameterList ||
         kind == SyntaxNodeKind::SubscriptArgumentList ||
+        kind == SyntaxNodeKind::TemplateArgumentList ||
         kind == SyntaxNodeKind::TemplateParameterList;
 }
 
 bool IsListAtomicConditionalNode(std::string_view treeType) {
     return treeType == "preproc_argument_fragment" ||
         treeType == "preproc_initializer_expression" ||
+        treeType == "preproc_template_argument_fragment" ||
         treeType == "preproc_string_literal_fragment";
 }
 

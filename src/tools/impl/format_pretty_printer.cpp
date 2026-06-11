@@ -1161,6 +1161,7 @@ private:
             kind == SyntaxNodeKind::InitializerList ||
             kind == SyntaxNodeKind::ParameterList ||
             kind == SyntaxNodeKind::SubscriptArgumentList ||
+            kind == SyntaxNodeKind::TemplateArgumentList ||
             kind == SyntaxNodeKind::TemplateParameterList;
     }
 
