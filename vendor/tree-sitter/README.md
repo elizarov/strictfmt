@@ -7,10 +7,10 @@ This directory vendors the grammar sources and generated parser files used by `s
 - Runtime bindings, prebuilt native packages, WASM packages, and `node_modules` are not vendored.
 - Each vendored grammar retains its upstream MIT license in its `LICENSE` file.
 
-Normal builds compile `tree-sitter-cpp\src\parser.c` and `tree-sitter-cpp\src\scanner.c` directly. To regenerate generated grammar outputs after changing `grammar.js`, run:
+Normal builds compile `tree-sitter-cpp/src/parser.c` and `tree-sitter-cpp/src/scanner.c` directly. To regenerate generated grammar outputs after changing `grammar.js`, run:
 
-```powershell
-python tools\regenerate_tree_sitter_grammar.py
+```sh
+python tools/regenerate_tree_sitter_grammar.py
 ```
 
-The regeneration tool downloads the pinned Windows tree-sitter CLI under `build\` when no `--tree-sitter-cli` path is provided. Formatter `MacroCategories` are runtime scanner inputs and do not affect parser generation.
+The regeneration tool downloads the pinned host tree-sitter CLI under `build/` when no `--tree-sitter-cli` path is provided.
