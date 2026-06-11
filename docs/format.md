@@ -612,7 +612,7 @@ Macro replacement lists that form declaration fragments are recursively formatte
 Macro category roles and runtime scanner ownership are described in [Formatter Configuration](#formatter-configuration).
 
 ```cpp
-#define CASEDASH_METRIC_DISPLAY_STYLE_ITEMS(X) \
+#define STRICTFMT_METRIC_DISPLAY_STYLE_ITEMS(X) \
     X(Scalar, "scalar") \
     X(Percent, "percent") \
     X(Memory, "memory")

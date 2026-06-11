@@ -34,6 +34,9 @@ still be reused by setting `STRICTFMT_FORMAT_TEST_EXE` to the host executable an
 `STRICTFMT_FORMAT_TEST_EXE_ARGS` to fixed arguments that precede the normal
 strictfmt test arguments.
 
+Windows wrapper compatibility coverage is skipped unless `STRICTFMT_FORMAT_CMD`
+points to the wrapper command file under test.
+
 ## Unix
 
 The Unix build uses CMake with the Clang C and C++ toolchain. It supports Linux
