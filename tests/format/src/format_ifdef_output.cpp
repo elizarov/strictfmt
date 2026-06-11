@@ -121,6 +121,21 @@ template <
     typename Result
 > struct ConditionalTemplateParameters {};
 
+using ConditionalTemplateArgumentChoice = boost::intrusive::link_mode<
+#ifdef FORMAT_USERVER_NORMAL_LINK
+    boost::intrusive::normal_link
+#else
+    boost::intrusive::safe_link
+#endif
+>;
+
+using ConditionalTemplateArgumentList = ::testing::Types<
+#ifdef FORMAT_USERVER_HAS_FAST_ENCODER
+    FastEncoder,
+#endif
+    SlowEncoder
+>;
+
 int ConditionalSubscript(int (&matrix)[2][2], int row) {
     return matrix[
 #if FORMAT_USERVER_SECOND_ROW
