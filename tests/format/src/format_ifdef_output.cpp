@@ -168,6 +168,23 @@ std::vector<std::string> ConditionalBracedListItems() {
     return list;
 }
 
+std::vector<Row> ConditionalGenericBracedListItems() {
+    std::vector<Row> rows{
+#if USE_GENERATED_ROW
+        Row{MakeKey(first + second), BuildValue(config, path)},
+#endif
+        Row{FallbackKey(), 0}
+    };
+    return rows;
+}
+
+using ConditionalNestedTemplateArgumentList = ::testing::Types<
+#if FORMAT_USERVER_HAS_ARRAY_ENCODER
+    std::array<int, 4>,
+#endif
+    std::string
+>;
+
 void ConditionalArgumentFragment() {
     Use(
 #ifdef FORMAT_USERVER_FAST_ARGUMENT

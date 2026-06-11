@@ -189,6 +189,7 @@ module.exports = grammar(C, {
       $.top_level_item_macro,
       $.macro_function_definition_with_trailing_parameters,
       prec(1, $.top_level_call_statement),
+      $.top_level_macro_call_statement,
       $.top_level_operator_macro_call,
       $.name_macro_call,
       $.static_assert_declaration,
@@ -226,6 +227,7 @@ module.exports = grammar(C, {
       $.top_level_item_macro,
       $.macro_function_definition_with_trailing_parameters,
       prec(1, $.top_level_call_statement),
+      $.top_level_macro_call_statement,
       $.top_level_operator_macro_call,
       $.name_macro_call,
       $.static_assert_declaration,
@@ -335,6 +337,8 @@ module.exports = grammar(C, {
     )),
 
     top_level_operator_macro_call: _ => token(prec(1, /[A-Z][A-Z0-9_]*\((?:==|!=|<=|>=|<=>|<|>)\)/)),
+
+    top_level_macro_call_statement: _ => token(prec(2, /[A-Z][A-Z0-9_]*\([^;\n]*\);/)),
 
     conditional_macro_function_definition: $ => prec(1, seq(
       field('declarator', $.conditional_macro_function_header),
@@ -1187,7 +1191,7 @@ module.exports = grammar(C, {
 
     preproc_template_argument_fragment: _ => token(prec(
       1,
-      /#[ \t]*(?:if|ifdef|ifndef)[^\n]*\r?\n[ \t]*[A-Za-z_:][A-Za-z0-9_:<>]*[ \t]*,[ \t]*(?:\/\/[^\n]*)?\r?\n#[ \t]*endif(?:\r?\n#[ \t]*(?:if|ifdef|ifndef)[^\n]*\r?\n[ \t]*[A-Za-z_:][A-Za-z0-9_:<>]*[ \t]*,[ \t]*(?:\/\/[^\n]*)?\r?\n#[ \t]*endif)*/,
+      /#[ \t]*(?:if|ifdef|ifndef)[^\n]*\r?\n(?:[ \t]*[^#\r\n][^\n]*\r?\n)+(?:#[ \t]*else[^\n]*\r?\n(?:[ \t]*[^#\r\n][^\n]*\r?\n)+)?#[ \t]*endif(?:\r?\n#[ \t]*(?:if|ifdef|ifndef)[^\n]*\r?\n(?:[ \t]*[^#\r\n][^\n]*\r?\n)+(?:#[ \t]*else[^\n]*\r?\n(?:[ \t]*[^#\r\n][^\n]*\r?\n)+)?#[ \t]*endif)*/,
     )),
 
     _template_argument_expression: $ => choice(
@@ -1553,7 +1557,7 @@ module.exports = grammar(C, {
     // Expressions
 
     _expression_not_binary: ($, original) => choice(
-      $.preproc_initializer_expression,
+      $.preproc_expression_item_fragment,
       original,
       $.macro_statement_exception_call,
       $.macro_statement_argument_call,
@@ -1578,10 +1582,24 @@ module.exports = grammar(C, {
       $.fold_expression,
     ),
 
-    preproc_initializer_expression: _ => token(prec(
+    preproc_expression_item_fragment: _ => token(prec(
       0,
-      /#[ \t]*(?:if|ifdef|ifndef)[^\n]*\r?\n[ \t]*(?:true|false|[-+]?\d+|"(?:[^"\\]|\\.)*"|[A-Za-z_]\w*(?:::\w+)*(?:\([^\r\n]*\))?)[ \t]*,?[ \t]*(?:\/\/[^\n]*)?\r?\n(?:#[ \t]*else[^\n]*\r?\n[ \t]*(?:true|false|[-+]?\d+|"(?:[^"\\]|\\.)*"|[A-Za-z_]\w*(?:::\w+)*(?:\([^\r\n]*\))?)[ \t]*,?[ \t]*(?:\/\/[^\n]*)?\r?\n)?#[ \t]*endif(?:\r?\n#[ \t]*(?:if|ifdef|ifndef)[^\n]*\r?\n[ \t]*(?:true|false|[-+]?\d+|"(?:[^"\\]|\\.)*"|[A-Za-z_]\w*(?:::\w+)*(?:\([^\r\n]*\))?)[ \t]*,?[ \t]*(?:\/\/[^\n]*)?\r?\n(?:#[ \t]*else[^\n]*\r?\n[ \t]*(?:true|false|[-+]?\d+|"(?:[^"\\]|\\.)*"|[A-Za-z_]\w*(?:::\w+)*(?:\([^\r\n]*\))?)[ \t]*,?[ \t]*(?:\/\/[^\n]*)?\r?\n)?#[ \t]*endif)*/,
+      /#[ \t]*(?:if|ifdef|ifndef)[^\n]*\r?\n(?:[ \t]*[^#;\r\n][^;\n]*\r?\n)+(?:#[ \t]*else[^\n]*\r?\n(?:[ \t]*[^#;\r\n][^;\n]*\r?\n)+)?#[ \t]*endif(?:\r?\n#[ \t]*(?:if|ifdef|ifndef)[^\n]*\r?\n(?:[ \t]*[^#;\r\n][^;\n]*\r?\n)+(?:#[ \t]*else[^\n]*\r?\n(?:[ \t]*[^#;\r\n][^;\n]*\r?\n)+)?#[ \t]*endif)*/,
     )),
+
+    initializer_list: ($, original) => choice(
+      original,
+      prec(1, seq(
+        '{',
+        seq($.preproc_expression_item_fragment, commaSep(choice(
+          $.initializer_pair,
+          $.expression,
+          $.initializer_list,
+        ))),
+        optional(','),
+        '}',
+      )),
+    ),
 
     macro_statement_exception_call: $ => prec(PREC.CALL, seq(
       field('function', $.bare_macro_identifier),

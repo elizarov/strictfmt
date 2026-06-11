@@ -502,7 +502,10 @@ using ZesDriver = void*;
 using ZesInitFn = ZeResult (__cdecl*)(std::uint32_t);
 using SlowPathCompilerCallModifierSpacingReproducer =
     VeryLongLevelZeroResultTypeName (__cdecl*)(std::uint32_t, std::uint32_t, std::uint32_t, std::uint32_t);
-typedef PDH_STATUS (WINAPI* PdhAddEnglishCounterAFn)(PDH_HQUERY, LPCSTR, DWORD_PTR, PDH_HCOUNTER*);
+typedef PDH_STATUS (*PdhAddEnglishCounterAFn)(PDH_HQUERY, LPCSTR, DWORD_PTR, PDH_HCOUNTER*);
+typedef VeryLongReturnTypeNameForFunctionPointerGenerality (
+    *VeryLongTypedefCallbackNameForFunctionPointerGenerality
+)(const Config& config, std::string_view name, RuntimeConfigDynamicItemVisitor visitor);
 using DumpValues = std::vector<std::pair<std::string, std::string>>;
 using LayoutEditParameter = ::LayoutEditParameter;
 using TextLayoutResult = ::TextLayoutResult;
@@ -1560,6 +1563,29 @@ void AssignedSingleStatementLambdaContext() {
         [](int value) { return value + 1; };
 }
 
+auto ReturnedLambdaWithSplitOwner() {
+    return [](
+        const ExtremelyLongEventNameForLambdaReturnGeneralization& event,
+        const ExtremelyLongContextNameForLambdaReturnGeneralization& context
+    ) {
+        Handle(event, context);
+        Finish(event, context);
+    };
+}
+
+const char* ReturnForcedAdjacentString() {
+    return
+        "first line\n"
+        "second line";
+}
+
+void CallForcedAdjacentString() {
+    Log(
+        "first line\n"
+            "second line"
+    );
+}
+
 void SnapGaugeWidth() {
     const bool snapped = layout_snap_solver::FindNearestSnapWeight(
         kCurrentGaugeWeight,
@@ -1969,12 +1995,11 @@ int DelimiterStackThresholdGenerality(
 
 int DelimiterStackOverflowLineIsolation(int y) {
     // Anti-heuristic: one overflowing leaf line must not license delimiter overflow elsewhere.
-    int value = ((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((
-        ((((((
+    int value =
+        ((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((((
             VeryLongUnbreakableIdentifierXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX +
             y
-        ))))))
-    ))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))));
+        ))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))));
     return value;
 }
 

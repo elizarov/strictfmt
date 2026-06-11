@@ -144,6 +144,8 @@ For any broken delimiter stack:
 - The opening line ends with an opener or opener sequence, so the body break is immediately after an opener.
 - If the opening line starts with an opener or opener sequence after indentation, the whole line contains only openers.
 - The closing line starts with all closers for the stack combined. Syntax that belongs after the stack, such as `;`, `,`, another closer, or the next opener in a list boundary, may follow those closers.
+- For every delimiter pair that selects broken layout, its closer starts a closing delimiter line. A closer for a broken pair must not be attached to body text; placements like `value)` are forbidden for that broken pair.
+- Transparent single-item parentheses do not have separate placement rules. Each parenthesis pair independently selects compact or broken layout. A pair may stay compact only when the expression it encloses has no selected breaks. If the enclosed expression breaks, that pair is broken and follows the same opener and closer placement rules as any other broken delimiter group.
 
 This allows wrapper and nested delimiter groups to share indentation:
 
@@ -289,10 +291,9 @@ int total = first + second + BuildValue(
 - Stream-shift chains split before `<<` or `>>`.
 - A stream-shift chain may split once between the receiver and a compact shifted tail.
 - If the compact shifted tail does not fit, each continued shift segment starts a continuation line.
-- Configured stream methods bind to the following shifted value; no `<<` or `>>` break is taken between a configured manipulator run and that value.
+- Configured stream methods bind to the following shifted value; no `<<` or `>>` break is taken between a configured manipulator sequence and that value.
 - Adjacent string literals are an implicit concatenation chain.
-- When a call argument string sequence stays split, the first literal uses expression indentation and later fragments use one additional indent.
-- When a forced multi-line string-fragment sequence is the direct initializer in an assignment or declaration, the assignment breaks first and all fragments align at the assignment continuation indentation.
+- When a forced multi-line string-fragment sequence stays split, it follows the same indentation rule as other chains. In single-value contexts, such as after `=`, after `return`, or inside one plain parenthesis group, fragments align at the expression indentation. In multi-element contexts, such as call argument lists, declaration parameter lists, subscript argument lists, template argument lists, and initializer lists, continued fragments use one continuation indentation level so the string chain stays visually separate from neighboring elements.
 - Line-fragment strings ending with escaped `\n` or `\r\n` stay physically split.
 - A boundary such as `"\xB0" "C"` stays token-separated to preserve escape parsing, but it may remain on one physical line when the adjacent-literal chain fits.
 - Ternary chains are flat chains.
@@ -323,6 +324,7 @@ int ratio = (
 - A plain non-call parenthesis group adds only body indentation.
 - Lists and formatter-owned chain parts inside that group keep their elements at that body level.
 - Nested ordinary binary operators still introduce continuation indentation.
+- Transparent single-item parenthesis pairs are considered independently. A pair may stay compact only when the expression it encloses has no selected breaks. If the enclosed expression breaks, that pair is broken and follows ordinary delimiter placement.
 - Unary operators and declarator `*` or `&` are token facts, not chain break points.
 - An end-of-line comment attached to one chain part forces the chain into split form.
 
@@ -341,7 +343,7 @@ The optimizer treats the column limit as bounded input and caches each subproble
 
 Delimiter-group legality is defined by indent economy. The legality rules restrict candidate layouts without forcing a local break choice; the optimizer chooses among the legal compact, split, and indent-economy layouts.
 
-Function signatures may break after the complete return type before breaking inside the return type. The function name is indented one continuation level. Split parameters may keep the return type and function name together when that line fits. Functions and lambdas deliberately share one callable-header model. Function definitions whose return-type prefix is split away from the function name start the body `{` on its own line at declaration indentation. Assigned lambdas whose assignment prefix is split away from the lambda header expose both attached and declaration-indented body-header layouts to the optimizer. A callable whose only header continuation is a split parameter list must keep `) {` together.
+Function signatures may break after the complete return type before breaking inside the return type. The function name is indented one continuation level. Split parameters may keep the return type and function name together when that line fits. Functions and lambdas deliberately share one callable-header model. Function definitions whose return-type prefix is split away from the function name start the body `{` on its own line at declaration indentation. Lambda body headers whose header itself splits keep the body opener attached as `) {`; when only the owner prefix splits away and the lambda header remains compact, the body opener may start at owner indentation.
 
 ```cpp
 std::vector<std::string>
@@ -376,7 +378,7 @@ render(
 
 Do not split inside empty delimiter pairs, function-pointer declarator groups, parenthesized callees, compiler declaration prefix groups, `__declspec` groups, operator function names, or template-angle tokens that are not template argument lists.
 
-Function-pointer aliases keep a space between the return type and a compact `(*)` declarator. Long aliases may break at that return-type/declarator space before breaking inside the function-pointer declarator group.
+Function-pointer aliases, typedefs, and declarations keep a space between the return type and a compact `(*)` declarator. Long forms may break at that return-type/declarator space before breaking inside the function-pointer declarator group.
 
 ```cpp
 using AuthCheckerFactoryFactory = utils::UniqueRef<AuthCheckerFactoryBase> (*)(const components::ComponentContext&);
@@ -465,7 +467,7 @@ void FuncLong(
 }
 ```
 
-Template prefixes are emitted before the introduced declaration. A `requires` clause stays on the same line as `template <...>` only when the complete template prefix and compact clause fit on that line. Otherwise, including when the clause owns a forced break, the `requires` clause moves to a subordinate line and wraps structurally.
+Template prefixes are emitted before the introduced declaration, and the introduced declaration always starts on a separate physical line from the template prefix. A `requires` clause stays on the same line as `template <...>` only when the complete template prefix and compact clause fit on that line. Otherwise, including when the clause owns a forced break, the `requires` clause moves to a subordinate line and wraps structurally.
 
 ```cpp
 template <typename T> requires(HasValue<T>)
@@ -573,15 +575,13 @@ Nested switches restore the enclosing switch case indentation after the inner sw
 
 ## Lambdas
 
-Lambdas intentionally format like functions. A lambda is a callable for all header/body placement decisions: the capture list, parameter list, and optional trailing return type form the callable header, and an assignment prefix such as `const auto name =` behaves like a function return-type prefix.
+Lambdas intentionally format like functions. A lambda is a callable for all header/body placement decisions: the capture list, parameter list, and optional trailing return type form the callable header, and an owner prefix such as `const auto name =` or `return` behaves like a function return-type prefix.
 
 Single-statement lambda bodies may keep their braces and statement compact only when the complete lambda capture, parameter list, optional trailing return type, and body fit on one physical line. The compact single-statement form is limited to statements whose subtree contains no compound block, so a statement such as `if (condition) { work(); }` uses the same broken-body form as other block-bearing lambda bodies. If a lambda breaks anywhere, its body breaks after `{`, formats the body one indentation step deeper than the declaration, and closes on its own line. Multi-statement lambda bodies always use that broken-body form. Any delimited list containing a broken lambda body splits like any other list containing a multi-line item.
 
-When an assigned lambda keeps the assignment prefix and lambda header together, a split parameter list must keep the body opener attached as `) {`, matching function definitions whose only header continuation is a split parameter list.
+When a lambda header itself splits, a broken lambda body keeps the body opener attached as `) {`, matching function definitions whose parameter list is the visible separator. When only an owner prefix such as `const auto name =` or `return` splits away and the lambda header stays compact, the body opener may start on its own line at owner indentation.
 
 Lambda captures and lambda parameters are separate break opportunities. Captures and parameters use the same compact-or-split optimization as other delimiter groups.
-
-When an assigned lambda splits the assignment prefix away from the lambda header and the lambda body is broken, the body opener starts on its own line at declaration indentation so body statements are one indentation step deeper than the declaration.
 
 ```cpp
 const auto updateKey = [&](
@@ -622,7 +622,7 @@ Macro category roles and runtime scanner ownership are described in [Formatter C
 
 Conditional compilation is accepted when each branch contributes complete grammar items at the surrounding level: complete declarations, complete statements, field or method declarations, enum entries, macro definitions, includes, or similar syntax that already has a mandatory structural line break. Conditional declaration-prefix modifiers are also accepted for standalone modifiers and for attributes that precede a declaration. The conditional directive lines stay at column zero, and the guarded code keeps the indentation it would have at that source location.
 
-Conditional compilation may also patch complete items in comma-separated lists. This is accepted for function arguments, braced initializer items, subscript items, declaration parameters, template arguments, template parameters, and enum entries. A conditional in one of these lists makes the guarded item use split-list indentation: directive lines stay at column zero, and branch items are indented as list items. Conditional list items use the same comma normalization as ordinary list items, so final items lose trailing commas except in enum bodies.
+Conditional compilation may also patch complete expression or declaration items in comma-separated lists. This is accepted for function arguments, braced initializer items, subscript items, declaration parameters, template arguments, template parameters, and enum entries. A conditional in one of these lists makes the guarded item use split-list indentation: directive lines stay at column zero, and branch items are indented as list items. Conditional expression items do not contain statement-terminating semicolons; conditional right-hand sides use the separate `=` rule below. Conditional list items use the same comma normalization as ordinary list items, so final items lose trailing commas except in enum bodies.
 
 ```cpp
 void NormalizeSocketFlags(int& flags) {
@@ -659,6 +659,13 @@ std::vector<std::string> list{
     "four"
 #endif
 };
+
+using ValueTypes = ::testing::Types<
+#if HAS_ARRAY_VALUE
+    std::array<int, 4>,
+#endif
+    std::string
+>;
 ```
 
 Conditional compilation is not accepted in base-class lists or constructor initializer lists. Those lists do not have a stable trailing-comma form in the supported style, so patching items there remains an unsupported preprocessor placement.
@@ -710,7 +717,7 @@ void RegisterGeneratedMetrics() {
 }
 ```
 
-Conditional directives are rejected below the complete-item, declaration-prefix modifier, conditional-right-hand-side, or list-item boundary, such as inside an expression or statement header. The formatter reports every offending `#if`, `#ifdef`, `#ifndef`, or `#include` line as `unsupported preprocessor placement`.
+Conditional directives are rejected below the complete-item, declaration-prefix modifier, conditional-right-hand-side, or list-item boundary, such as inside an expression or statement header. A conditional block that is followed by an expression-continuation operator is also rejected, independent of the specific operator token. The formatter reports every offending `#if`, `#ifdef`, `#ifndef`, or `#include` line as `unsupported preprocessor placement`.
 
 Do not patch one operand into an expression:
 
@@ -786,7 +793,7 @@ Token spelling is preserved even when the parser grammar treats multiple spellin
 
 ## Tooling Ownership
 
-- `strictfmt` owns explicit stdin input passed with `--stdin`, direct file arguments, recursive roots passed with `-r <path>` or `--recursive <path>` for `.c`, `.cc`, `.cpp`, `.cxx`, `.c++`, `.h`, `.hh`, `.hpp`, `.hxx`, `.h++`, `.ipp`, `.inl`, and `.tpp` files, newline file lists passed with `--files <path>`, `-i`, `--dry-run`, `--style <path>`, `--concurrency <n>` handling, parsing, parse-error rejection, checking, fixing, ignore-file filtering, and stdout rendering. Running `strictfmt` without inputs prints command-line help instead of reading stdin. Interactive file runs show completed file count and elapsed time while work is active, and final summaries report completed files, LOC, and elapsed time.
+- `strictfmt` owns explicit stdin input passed with `--stdin`, direct file arguments, recursive roots passed with `-r <path>` or `--recursive <path>` for `.c`, `.cc`, `.cpp`, `.cxx`, `.c++`, `.h`, `.hh`, `.hpp`, `.hxx`, `.h++`, `.ipp`, `.inl`, and `.tpp` files, newline file lists passed with `--files <path>`, `-i`, `--dry-run`, `--style <path>`, `--concurrency <n>` handling, parsing, parse-error rejection, checking, fixing, ignore-file filtering, and stdout rendering. Invoking `strictfmt` without inputs prints command-line help instead of reading stdin. Interactive file sessions show completed file count and elapsed time while work is active, and final summaries report completed files, LOC, and elapsed time.
 - `strictfmt::cli` exposes the same CLI implementation through `RunStrictfmtCli(argc, argv)` for embedding in host tools. Wrapper scripts own their own mode selection and changed or staged file-list preparation.
 - `src\tools\format_cli.cpp` owns formatter command orchestration, `src\tools\format.cpp` owns source-text formatting, and the internal `src\tools\impl\format_*` formatter modules own parser setup, model definitions, tree-sitter model builder helpers, preprocessor model helpers, and pretty printing.
 - `format_model_dump` owns ad hoc formatter model debugging. It takes one source file path and writes YAML to stdout with each `SyntaxNode` represented by `kind`, plus `text` only when node text is non-empty and `children` only when child nodes exist; text values up to 60 bytes are YAML-quoted, and longer text values are emitted as their byte length.
@@ -802,7 +809,7 @@ Regenerate parser outputs only after editing vendored grammar source:
 python tools/regenerate_tree_sitter_grammar.py
 ```
 
-The regeneration tool runs the pinned tree-sitter CLI and updates generated files
+The regeneration tool invokes the pinned tree-sitter CLI and updates generated files
 under `vendor\tree-sitter\tree-sitter-cpp\src\`. Pass `--tree-sitter-cli <path>`
 to use an existing CLI. Otherwise it downloads the pinned host CLI under `build\`
 for Windows x64, macOS arm64/x64, or Linux arm64/x64. Macro category entries in
@@ -861,7 +868,7 @@ StreamShift:
 
 ### StreamShift
 
-`StreamShift.ConfigurationMethods` lists manipulators that bind to the following shifted value. The formatter keeps the configured manipulator run and its value together instead of choosing a break between them.
+`StreamShift.ConfigurationMethods` lists manipulators that bind to the following shifted value. The formatter keeps the configured manipulator sequence and its value together instead of choosing a break between them.
 
 ```cpp
 stream << std::boolalpha << enabled << std::setw(8) << value;

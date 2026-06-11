@@ -320,7 +320,7 @@
         "named": true
       },
       {
-        "type": "preproc_initializer_expression",
+        "type": "preproc_expression_item_fragment",
         "named": true
       },
       {
@@ -2040,6 +2040,10 @@
           "named": true
         },
         {
+          "type": "top_level_macro_call_statement",
+          "named": true
+        },
+        {
           "type": "top_level_operator_macro_call",
           "named": true
         },
@@ -2702,6 +2706,10 @@
         },
         {
           "type": "top_level_item_macro",
+          "named": true
+        },
+        {
+          "type": "top_level_macro_call_statement",
           "named": true
         },
         {
@@ -5782,6 +5790,10 @@
           "named": true
         },
         {
+          "type": "top_level_macro_call_statement",
+          "named": true
+        },
+        {
           "type": "top_level_operator_macro_call",
           "named": true
         },
@@ -6876,6 +6888,10 @@
           "named": true
         },
         {
+          "type": "top_level_macro_call_statement",
+          "named": true
+        },
+        {
           "type": "top_level_operator_macro_call",
           "named": true
         },
@@ -7148,6 +7164,10 @@
           "named": true
         },
         {
+          "type": "top_level_macro_call_statement",
+          "named": true
+        },
+        {
           "type": "top_level_operator_macro_call",
           "named": true
         },
@@ -7388,6 +7408,10 @@
         },
         {
           "type": "top_level_item_macro",
+          "named": true
+        },
+        {
+          "type": "top_level_macro_call_statement",
           "named": true
         },
         {
@@ -7743,6 +7767,10 @@
           "named": true
         },
         {
+          "type": "top_level_macro_call_statement",
+          "named": true
+        },
+        {
           "type": "top_level_operator_macro_call",
           "named": true
         },
@@ -8012,6 +8040,10 @@
         },
         {
           "type": "top_level_item_macro",
+          "named": true
+        },
+        {
+          "type": "top_level_macro_call_statement",
           "named": true
         },
         {
@@ -9145,7 +9177,7 @@
             "named": true
           },
           {
-            "type": "preproc_initializer_expression",
+            "type": "preproc_expression_item_fragment",
             "named": true
           },
           {
@@ -9489,7 +9521,7 @@
             "named": true
           },
           {
-            "type": "preproc_initializer_expression",
+            "type": "preproc_expression_item_fragment",
             "named": true
           },
           {
@@ -9696,7 +9728,7 @@
           "named": true
         },
         {
-          "type": "preproc_initializer_expression",
+          "type": "preproc_expression_item_fragment",
           "named": true
         },
         {
@@ -10361,6 +10393,10 @@
         },
         {
           "type": "top_level_item_macro",
+          "named": true
+        },
+        {
+          "type": "top_level_macro_call_statement",
           "named": true
         },
         {
@@ -11681,6 +11717,10 @@
     "named": true
   },
   {
+    "type": "preproc_expression_item_fragment",
+    "named": true
+  },
+  {
     "type": "preproc_field_initializer_fragment",
     "named": true
   },
@@ -11690,10 +11730,6 @@
   },
   {
     "type": "preproc_hashhash_function_def",
-    "named": true
-  },
-  {
-    "type": "preproc_initializer_expression",
     "named": true
   },
   {
@@ -11854,6 +11890,10 @@
   },
   {
     "type": "top_level_call_statement",
+    "named": true
+  },
+  {
+    "type": "top_level_macro_call_statement",
     "named": true
   },
   {
