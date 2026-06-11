@@ -67,3 +67,22 @@ Unix state under an OS-specific subdirectory:
 The build directory is ignored by Git. Windows and Linux builds can coexist in
 the same checkout because their generated state lives under separate
 `build/windows/` and `build/linux/` subdirectories.
+
+## Tree-Sitter Grammar Regeneration
+
+Normal builds compile the vendored generated parser sources directly. After
+editing `vendor/tree-sitter/tree-sitter-cpp/grammar.js`, regenerate the generated
+grammar outputs from the repository root:
+
+```sh
+python tools/regenerate_tree_sitter_grammar.py
+```
+
+The regeneration tool supports Windows x64, macOS arm64/x64, and Linux
+arm64/x64 hosts. When `--tree-sitter-cli <path>` is omitted, it downloads the
+pinned tree-sitter CLI for the current host under `build/`, verifies the pinned
+SHA-512, and uses it to update generated files under
+`vendor/tree-sitter/tree-sitter-cpp/src/`.
+
+Pass `--tree-sitter-cli <path>` to use an existing tree-sitter CLI executable
+instead of the pinned download.

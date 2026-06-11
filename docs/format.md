@@ -798,11 +798,15 @@ The formatter uses tree-sitter core from vcpkg and the vendored C++ grammar unde
 
 Regenerate parser outputs only after editing vendored grammar source:
 
-```bat
-python tools\regenerate_tree_sitter_grammar.py
+```sh
+python tools/regenerate_tree_sitter_grammar.py
 ```
 
-The regeneration tool runs the pinned tree-sitter CLI and updates generated files under `vendor\tree-sitter\tree-sitter-cpp\src\`. Pass `--tree-sitter-cli <path>` to use an existing CLI. Otherwise it downloads the pinned Windows CLI under `build\`. Macro category entries in `.cpp-format` are runtime scanner inputs and do not require parser regeneration.
+The regeneration tool runs the pinned tree-sitter CLI and updates generated files
+under `vendor\tree-sitter\tree-sitter-cpp\src\`. Pass `--tree-sitter-cli <path>`
+to use an existing CLI. Otherwise it downloads the pinned host CLI under `build\`
+for Windows x64, macOS arm64/x64, or Linux arm64/x64. Macro category entries in
+`.cpp-format` are runtime scanner inputs and do not require parser regeneration.
 
 ## Formatter Configuration
 
