@@ -2,6 +2,12 @@
 
 #include <cmath>
 
+#ifdef _WIN32
+#include <io.h>
+#else
+#include <unistd.h>
+#endif
+
 std::string FormatToolElapsed(std::chrono::steady_clock::duration elapsed) {
     const double seconds = std::chrono::duration<double>(elapsed).count();
     char buffer[64] = {};
@@ -14,8 +20,14 @@ std::string FormatToolElapsed(std::chrono::steady_clock::duration elapsed) {
 }
 
 bool IsToolOutputTerminal(FILE* output) {
-    (void)output;
-    return false;
+    if (output == nullptr) {
+        return false;
+    }
+#ifdef _WIN32
+    return _isatty(_fileno(output)) != 0;
+#else
+    return isatty(fileno(output)) != 0;
+#endif
 }
 
 ToolFileProgress::ToolFileProgress(
