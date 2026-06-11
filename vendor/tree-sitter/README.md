@@ -2,7 +2,7 @@
 
 This directory vendors the grammar sources and generated parser files used by `strictfmt`.
 
-- `tree-sitter-cpp` is based on `tree-sitter-cpp` 0.23.4 with CaseDash parser support applied directly in `grammar.js`.
+- `tree-sitter-cpp` is based on `tree-sitter-cpp` 0.23.4 with strictfmt parser support applied directly in `grammar.js`.
 - `tree-sitter-c` is based on `tree-sitter-c` 0.23.4 and is kept as the C grammar dependency used by the C++ grammar.
 - Runtime bindings, prebuilt native packages, WASM packages, and `node_modules` are not vendored.
 - Each vendored grammar retains its upstream MIT license in its `LICENSE` file.

@@ -21,7 +21,6 @@
   "_resolved": "https://registry.npmjs.org/tree-sitter-c/-/tree-sitter-c-0.23.6.tgz",
   "_shasum": "62a7a69a417cbf022fa97a8d5f7e2afb5712dcfb",
   "_spec": "tree-sitter-c@^0.23.1",
-  "_where": "D:\\Projects\\CaseDash-tidy\\vcpkg\\vcpkg\\blds\\tree-sitter-cpp\\src\\v0.23.4-27d6f59f11.clean",
   "author": {
     "name": "Max Brunsfeld",
     "email": "maxbrunsfeld@gmail.com"
