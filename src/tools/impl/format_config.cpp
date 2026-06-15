@@ -151,14 +151,14 @@ void ValidateMacroCategoryEntries(std::string_view configKey, const std::vector<
         if (name.empty() || !IsMacroNameStart(name.front())) {
             throw std::runtime_error(
                 "MacroCategories." + std::string(configKey) +
-                " entries must be C/C++ macro names or trailing-* macro prefixes"
+                " entries must be C/C++ macro names or prefix globs ending in *"
             );
         }
         for (const char ch : name) {
             if (!IsMacroNameContinue(ch)) {
                 throw std::runtime_error(
                     "MacroCategories." + std::string(configKey) +
-                    " entries must be C/C++ macro names or trailing-* macro prefixes"
+                    " entries must be C/C++ macro names or prefix globs ending in *"
                 );
             }
         }
