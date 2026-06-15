@@ -458,6 +458,10 @@
         "named": true
       },
       {
+        "type": "preproc_case_label_fragment",
+        "named": true
+      },
+      {
         "type": "preproc_guarded_assignment_statement",
         "named": true
       },
@@ -1532,6 +1536,10 @@
         },
         {
           "type": "preproc_assignment_statement",
+          "named": true
+        },
+        {
+          "type": "preproc_case_label_fragment",
           "named": true
         },
         {
@@ -11698,6 +11706,10 @@
   },
   {
     "type": "preproc_bitwise_expression_fragment",
+    "named": true
+  },
+  {
+    "type": "preproc_case_label_fragment",
     "named": true
   },
   {

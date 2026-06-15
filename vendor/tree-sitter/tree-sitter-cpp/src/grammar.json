@@ -6789,6 +6789,10 @@
         },
         {
           "type": "SYMBOL",
+          "name": "preproc_case_label_fragment"
+        },
+        {
+          "type": "SYMBOL",
           "name": "preproc_assignment_statement"
         },
         {
@@ -12586,17 +12590,6 @@
         "content": {
           "type": "PATTERN",
           "value": "[A-Z][A-Z0-9_]*\\((?:==|!=|<=|>=|<=>|<|>)\\)"
-        }
-      }
-    },
-    "top_level_macro_call_statement": {
-      "type": "TOKEN",
-      "content": {
-        "type": "PREC",
-        "value": 2,
-        "content": {
-          "type": "PATTERN",
-          "value": "[A-Z][A-Z0-9_]*\\([^;\\n]*\\);"
         }
       }
     },
@@ -18862,6 +18855,17 @@
         }
       ]
     },
+    "preproc_case_label_fragment": {
+      "type": "TOKEN",
+      "content": {
+        "type": "PREC",
+        "value": 1,
+        "content": {
+          "type": "PATTERN",
+          "value": "#[ \\t]*(?:if|ifdef|ifndef)[^\\n]*\\r?\\n(?:[ \\t]*(?:(?:case[^\\r\\n:]*:)|(?:default[ \\t]*:))[ \\t]*(?:\\/\\/[^\\n]*)?\\r?\\n)+(?:#[ \\t]*(?:elif|else)[^\\n]*\\r?\\n(?:[ \\t]*(?:(?:case[^\\r\\n:]*:)|(?:default[ \\t]*:))[ \\t]*(?:\\/\\/[^\\n]*)?\\r?\\n)+)*#[ \\t]*endif"
+        }
+      }
+    },
     "preproc_endif_fragment": {
       "type": "TOKEN",
       "content": {
@@ -23489,6 +23493,10 @@
     {
       "type": "SYMBOL",
       "name": "top_level_call_statement"
+    },
+    {
+      "type": "SYMBOL",
+      "name": "top_level_macro_call_statement"
     },
     {
       "type": "SYMBOL",

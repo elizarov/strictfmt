@@ -761,7 +761,8 @@ bool IsAllowedAtomicConditionalNode(std::string_view treeType) {
         treeType == "preproc_define_elif_chain" ||
         treeType == "preproc_define_namespace_if" ||
         treeType == "conditional_extern_c_open" ||
-        treeType == "conditional_extern_c_close";
+        treeType == "conditional_extern_c_close" ||
+        treeType == "preproc_case_label_fragment";
 }
 
 bool PreviousSourceAllowsWholePreprocessorItem(TSNode node, const std::string& source) {
@@ -772,9 +773,56 @@ bool PreviousSourceAllowsWholePreprocessorItem(TSNode node, const std::string& s
         if (ch == ' ' || ch == '\t' || ch == '\r' || ch == '\n') {
             continue;
         }
-        return ch == ';' || ch == '}';
+        return ch == ';' || ch == '}' || ch == ':';
     }
     return true;
+}
+
+bool LineLooksLikeWholePreprocessorItem(std::string_view line) {
+    std::string trimmed = TrimAsciiWhitespace(line);
+    if (trimmed.empty()) {
+        return true;
+    }
+    if (StartsWith(trimmed, "//") || StartsWith(trimmed, "/*") || StartsWith(trimmed, "*")) {
+        return true;
+    }
+    if (trimmed[0] == '#') {
+        return true;
+    }
+    const size_t lineComment = trimmed.find("//");
+    if (lineComment != std::string::npos) {
+        trimmed = TrimAsciiWhitespace(std::string_view(trimmed).substr(0, lineComment));
+        if (trimmed.empty()) {
+            return true;
+        }
+    }
+    const char last = trimmed.back();
+    return last == '{' || last == '}' || last == ';' || last == ':';
+}
+
+bool ConditionalPreprocessorBranchesLookLikeWholeItems(std::string_view text) {
+    bool sawCode = false;
+    size_t lineStart = 0;
+    while (lineStart <= text.size()) {
+        size_t lineEnd = text.find('\n', lineStart);
+        if (lineEnd == std::string_view::npos) {
+            lineEnd = text.size();
+        }
+        const std::string_view line = text.substr(lineStart, lineEnd - lineStart);
+        const std::string trimmed = TrimAsciiWhitespace(line);
+        if (!trimmed.empty() && !StartsWith(trimmed, "#") && !StartsWith(trimmed, "//") && !StartsWith(trimmed, "/*") &&
+            !StartsWith(trimmed, "*")) {
+            sawCode = true;
+            if (!LineLooksLikeWholePreprocessorItem(line)) {
+                return false;
+            }
+        }
+        if (lineEnd == text.size()) {
+            break;
+        }
+        lineStart = lineEnd + 1;
+    }
+    return sawCode;
 }
 
 bool IsForbiddenPreprocessorPlacement(
@@ -807,6 +855,13 @@ bool IsForbiddenPreprocessorPlacement(
         if (
             treeType == "declaration_suffix_preproc_ifdef" &&
             PreviousSourceAllowsWholePreprocessorItem(node, source)
+        ) {
+            return false;
+        }
+        if (
+            treeType == "preproc_expression_item_fragment" &&
+            PreviousSourceAllowsWholePreprocessorItem(node, source) &&
+            ConditionalPreprocessorBranchesLookLikeWholeItems(NodeText(node, source))
         ) {
             return false;
         }
@@ -901,25 +956,7 @@ bool IsExpressionContinuationLine(std::string_view line) {
 }
 
 bool PreviousLineAllowsWholePreprocessorItem(std::string_view line) {
-    std::string trimmed = TrimAsciiWhitespace(line);
-    if (trimmed.empty()) {
-        return true;
-    }
-    if (StartsWith(trimmed, "//") || StartsWith(trimmed, "/*") || StartsWith(trimmed, "*")) {
-        return true;
-    }
-    if (trimmed[0] == '#') {
-        return true;
-    }
-    const size_t lineComment = trimmed.find("//");
-    if (lineComment != std::string::npos) {
-        trimmed = TrimAsciiWhitespace(std::string_view(trimmed).substr(0, lineComment));
-        if (trimmed.empty()) {
-            return true;
-        }
-    }
-    const char last = trimmed.back();
-    return last == '{' || last == '}' || last == ';' || last == ':';
+    return LineLooksLikeWholePreprocessorItem(line);
 }
 
 PreprocessorPlacementError MakeLinePlacementError(int row, std::string_view line) {
@@ -969,8 +1006,15 @@ void CollectIncludePlacementErrors(const std::string& source, std::vector<Prepro
 }
 
 void CollectConditionalTailPlacementErrors(const std::string& source, std::vector<PreprocessorPlacementError>& errors) {
-    std::vector<PreprocessorPlacementError> directiveStack;
+    struct ConditionalTailFrame {
+        PreprocessorPlacementError directive;
+        bool sawCode = false;
+        bool lastCodeLooksWhole = false;
+    };
+
+    std::vector<ConditionalTailFrame> directiveStack;
     std::optional<PreprocessorPlacementError> pendingClosedDirective;
+    bool pendingClosedDirectiveBranchesLookWhole = false;
     size_t lineStart = 0;
     int row = 0;
     while (lineStart <= source.size()) {
@@ -981,20 +1025,39 @@ void CollectConditionalTailPlacementErrors(const std::string& source, std::vecto
         const std::string_view line = LineText(source, lineStart, lineEnd);
         const std::string trimmed = TrimAsciiWhitespace(line);
         if (IsConditionalOpeningDirectiveLine(trimmed)) {
-            directiveStack.push_back(MakeLinePlacementError(row, line));
+            directiveStack.push_back(ConditionalTailFrame{.directive = MakeLinePlacementError(row, line)});
             pendingClosedDirective.reset();
+            pendingClosedDirectiveBranchesLookWhole = false;
         } else if (IsEndifDirectiveLine(trimmed)) {
             if (!directiveStack.empty()) {
-                pendingClosedDirective = directiveStack.back();
+                const ConditionalTailFrame closed = directiveStack.back();
+                pendingClosedDirective = closed.directive;
+                pendingClosedDirectiveBranchesLookWhole = closed.sawCode && closed.lastCodeLooksWhole;
                 directiveStack.pop_back();
+                if (!directiveStack.empty()) {
+                    directiveStack.back().sawCode = true;
+                    directiveStack.back().lastCodeLooksWhole = pendingClosedDirectiveBranchesLookWhole;
+                }
             } else {
                 pendingClosedDirective.reset();
+                pendingClosedDirectiveBranchesLookWhole = false;
             }
         } else if (!IsIgnorablePreprocessorTailLine(trimmed)) {
-            if (pendingClosedDirective.has_value() && IsExpressionContinuationLine(trimmed)) {
+            if (
+                pendingClosedDirective.has_value() &&
+                !pendingClosedDirectiveBranchesLookWhole &&
+                IsExpressionContinuationLine(trimmed)
+            ) {
                 errors.push_back(*pendingClosedDirective);
             }
             pendingClosedDirective.reset();
+            pendingClosedDirectiveBranchesLookWhole = false;
+            if (trimmed.empty() || trimmed[0] != '#') {
+                if (!directiveStack.empty()) {
+                    directiveStack.back().sawCode = true;
+                    directiveStack.back().lastCodeLooksWhole = LineLooksLikeWholePreprocessorItem(trimmed);
+                }
+            }
         }
         if (lineEnd == source.size()) {
             break;

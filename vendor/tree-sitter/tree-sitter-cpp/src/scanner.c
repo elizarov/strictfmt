@@ -14,6 +14,7 @@ enum TokenType {
     BARE_MACRO_IDENTIFIER,
     CALL_SYNTAX_MACRO_IDENTIFIER,
     TOP_LEVEL_CALL_STATEMENT,
+    TOP_LEVEL_MACRO_CALL_STATEMENT,
     CONDITIONAL_MACRO_FUNCTION_HEADER,
     NAME_MACRO_CALL,
     TYPE_SPECIFIER_MACRO_CALL,
@@ -419,6 +420,36 @@ static bool scan_top_level_call_statement_tail(TSLexer *lexer) {
     return true;
 }
 
+static bool is_upper_macro_name(const char *name, unsigned length) {
+    if (length == 0 || !is_upper_identifier_start(name[0])) {
+        return false;
+    }
+    for (unsigned index = 0; index < length; ++index) {
+        const char ch = name[index];
+        if (!((ch >= 'A' && ch <= 'Z') || (ch >= '0' && ch <= '9') || ch == '_')) {
+            return false;
+        }
+    }
+    return true;
+}
+
+static bool scan_top_level_macro_call_statement(TSLexer *lexer) {
+    char name[MAX_MACRO_NAME_LENGTH];
+    unsigned length = 0;
+    if (!scan_identifier(lexer, name, &length)) {
+        return false;
+    }
+    if (!is_upper_macro_name(name, length)) {
+        return false;
+    }
+    if (!scan_top_level_call_statement_tail(lexer)) {
+        return false;
+    }
+    lexer->result_symbol = TOP_LEVEL_MACRO_CALL_STATEMENT;
+    lexer->mark_end(lexer);
+    return true;
+}
+
 static bool scan_top_level_call_statement_or_identifier(
     TSLexer *lexer,
     bool allow_name_macro_call,
@@ -662,6 +693,7 @@ bool tree_sitter_cpp_external_scanner_scan(void *payload, TSLexer *lexer, const 
 
     const bool accepts_whole_macro_token = valid_symbols[RAW_MACRO_FUNCTION_DEFINITION] ||
                                            valid_symbols[TOP_LEVEL_CALL_STATEMENT] ||
+                                           valid_symbols[TOP_LEVEL_MACRO_CALL_STATEMENT] ||
                                            valid_symbols[CONDITIONAL_MACRO_FUNCTION_HEADER] ||
                                            valid_symbols[NAME_MACRO_CALL] ||
                                            valid_symbols[TYPE_SPECIFIER_MACRO_CALL];
@@ -688,6 +720,10 @@ bool tree_sitter_cpp_external_scanner_scan(void *payload, TSLexer *lexer, const 
             valid_symbols[CALL_SYNTAX_MACRO_IDENTIFIER],
             valid_symbols[BARE_MACRO_IDENTIFIER]
         );
+    }
+
+    if (valid_symbols[TOP_LEVEL_MACRO_CALL_STATEMENT] && is_identifier_start(lexer->lookahead)) {
+        return scan_top_level_macro_call_statement(lexer);
     }
 
     if (valid_symbols[NAME_MACRO_CALL] && is_identifier_start(lexer->lookahead)) {
