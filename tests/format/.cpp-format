@@ -19,10 +19,17 @@ MainIncludeChar: Quote
 IncludeIsMainRegex: '(Test)?$'
 
 MacroCategories:
+  RawMacroFunctionDefinitions:
+    - ENUM_STRING_DECLARE
+    - FORMAT_FIXTURE_COMMENT_CONTINUATION
+    - FORMAT_FIXTURE_ENUM_ITEMS
+    - FORMAT_FIXTURE_ITEMS
+    - FORMAT_FIXTURE_LOAD_OPTIONAL
   BareIdentifierMacros:
     - WINAPI
   CallSyntaxMacros:
     - ENUM_STRING_DECLARE
+    - FORMAT_FIXTURE_DECLARE_OPTION
 
 StreamShift:
   ConfigurationMethods:

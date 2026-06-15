@@ -902,15 +902,13 @@ build
 
 ### Macro Categories
 
-All `MacroCategories` entries are read from the active `.cpp-format` at formatting time. These categories are runtime parser inputs: the custom tree-sitter scanner classifies identifiers into the fixed grammar token roles only when the active config contains the identifier or a matching trailing-`*` prefix. Changing these category entries requires rerunning the formatter with the new config, but does not require parser regeneration.
-
 Macro category entries must be C/C++ identifiers. Add a trailing `*` to an entry when the role applies to every identifier with that prefix, such as `ATTRIBUTE*`; no other glob syntax is supported.
+
+Object-like `#define NAME replacement` definitions are always preserved as raw preprocessor definitions. Their replacement lists are arbitrary preprocessing tokens, so the formatter does not reinterpret them as C++ expressions or declarations.
 
 #### RawMacroFunctionDefinitions
 
 `RawMacroFunctionDefinitions` names `#define` function-like macro identifiers that should be parsed as one raw preprocessor function definition. Use it for macro families whose replacement lists are not normal C++ fragments.
-
-Raw replacement-list definition: the macro body is a declaration-fragment DSL that should remain one raw preprocessor definition.
 
 ```cpp
 #define UPROTO_ONEOF_HEADER(oneof_type)                                                   \
@@ -922,7 +920,7 @@ public:                                                                         
 
 #### BareIdentifierMacros
 
-`BareIdentifierMacros` names macro identifiers that the grammar consumes as bare tokens in non-call positions or as assertion-style statement-call names. This category owns calling-convention modifiers, declaration-prefix modifiers, complete declaration-level items, qualified-identifier prefixes, and statement-call macros whose argument is parsed as a statement without its trailing semicolon.
+`BareIdentifierMacros` names macro identifiers that the grammar consumes as bare tokens in non-call positions or as assertion-style statement-call names. This category owns calling-convention modifiers, declaration-prefix modifiers, complete declaration-level items, qualified-identifier prefixes, top-level call-statement suffix macros, declaration suffix macros, initializer macros, and statement-call macros whose argument is parsed as a statement without its trailing semicolon.
 
 Calling-convention modifier: the macro appears in a declarator where a platform calling-convention token is expected.
 
@@ -961,7 +959,7 @@ UEXPECT_THROW([[maybe_unused]] auto bytes_read = source.ReadSome(kBuffer, kDeadl
 
 #### CallSyntaxMacros
 
-`CallSyntaxMacros` names macro identifiers whose supported grammar roles start with a macro-style call. This category owns macro function definitions, macro function definitions with trailing C++ parameter lists, top-level free-token call statements with optional chained `->` tails, simple name macro calls, class-field method declaration macros, and type-specifier macro calls.
+`CallSyntaxMacros` names macro identifiers whose supported grammar roles start with a macro-style call. This category owns macro function definitions, macro function definitions with trailing C++ parameter lists, top-level macro call statements with optional chained `->` tails, simple name macro calls, class-field method declaration macros, and type-specifier macro calls.
 
 Macro function definition: the macro call header is followed by a compound statement body.
 
@@ -979,7 +977,7 @@ BENCHMARK_DEFINE_F(FormatterBenchmark, Inline)(benchmark::State& state) {
 }
 ```
 
-Top-level free-token call statement: the whole call and optional `->` chain are formatted as one statement.
+Top-level macro call statement: the whole call, optional configured bare-macro suffix, and optional `->` chain are formatted as one statement. 
 
 ```cpp
 BENCHMARK_TEMPLATE(RecentPeriodOfPercentilesAccountBenchmark, DefaultClock)->ThreadRange(1, 16);
