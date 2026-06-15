@@ -16,7 +16,6 @@ enum class ScannerMacroCategory : unsigned {
     RawMacroFunctionDefinition = 0,
     BareIdentifier = 1,
     CallSyntax = 2,
-    BareIdentifierStarPrefix = 3,
 };
 
 thread_local const FormatterConfig* g_parseConfig = nullptr;
@@ -56,18 +55,6 @@ bool MacroCategoryMatches(const std::vector<std::string>& entries, std::string_v
     return false;
 }
 
-bool MacroCategoryStarPrefixMatches(const std::vector<std::string>& entries, std::string_view name) {
-    for (std::string_view entry : entries) {
-        if (entry.size() > 1 && entry.back() == '*') {
-            entry.remove_suffix(1);
-            if (name.starts_with(entry)) {
-                return true;
-            }
-        }
-    }
-    return false;
-}
-
 bool ConfigMacroCategoryMatches(ScannerMacroCategory category, std::string_view name) {
     if (g_parseConfig == nullptr) {
         return false;
@@ -79,8 +66,6 @@ bool ConfigMacroCategoryMatches(ScannerMacroCategory category, std::string_view 
             return MacroCategoryMatches(g_parseConfig->bareIdentifierMacros, name);
         case ScannerMacroCategory::CallSyntax:
             return MacroCategoryMatches(g_parseConfig->callSyntaxMacros, name);
-        case ScannerMacroCategory::BareIdentifierStarPrefix:
-            return MacroCategoryStarPrefixMatches(g_parseConfig->bareIdentifierMacros, name);
     }
     return false;
 }

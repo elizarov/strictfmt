@@ -21,7 +21,6 @@ enum MacroCategory {
     MACRO_CATEGORY_RAW_FUNCTION_DEFINITION = 0,
     MACRO_CATEGORY_BARE_IDENTIFIER = 1,
     MACRO_CATEGORY_CALL_SYNTAX = 2,
-    MACRO_CATEGORY_BARE_IDENTIFIER_STAR_PREFIX = 3,
 };
 
 /// The spec limits raw-string delimiters to 16 chars.
@@ -307,7 +306,7 @@ static bool scan_macro_identifier_token(TSLexer *lexer, bool allow_call, bool al
         allow_bare && strictfmt_tree_sitter_cpp_macro_category_matches(MACRO_CATEGORY_BARE_IDENTIFIER, name, length);
     const bool suffix_match =
         allow_suffix &&
-        strictfmt_tree_sitter_cpp_macro_category_matches(MACRO_CATEGORY_BARE_IDENTIFIER_STAR_PREFIX, name, length);
+        strictfmt_tree_sitter_cpp_macro_category_matches(MACRO_CATEGORY_BARE_IDENTIFIER, name, length);
     if (call_match) {
         lexer->result_symbol = CALL_SYNTAX_MACRO_IDENTIFIER;
         return true;
