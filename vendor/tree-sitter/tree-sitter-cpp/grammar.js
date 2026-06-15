@@ -61,6 +61,7 @@ module.exports = grammar(C, {
     $.bare_macro_identifier,
     $.call_syntax_macro_identifier,
     $.top_level_call_statement,
+    $.top_level_macro_call_statement,
     $.conditional_macro_function_header,
     $.name_macro_call,
     $.type_specifier_macro_call,
@@ -337,8 +338,6 @@ module.exports = grammar(C, {
     )),
 
     top_level_operator_macro_call: _ => token(prec(1, /[A-Z][A-Z0-9_]*\((?:==|!=|<=|>=|<=>|<|>)\)/)),
-
-    top_level_macro_call_statement: _ => token(prec(2, /[A-Z][A-Z0-9_]*\([^;\n]*\);/)),
 
     conditional_macro_function_definition: $ => prec(1, seq(
       field('declarator', $.conditional_macro_function_header),
@@ -1368,6 +1367,7 @@ module.exports = grammar(C, {
 
     _non_case_statement: ($, original) => choice(
       $.top_level_call_statement,
+      $.preproc_case_label_fragment,
       $.preproc_assignment_statement,
       $.preproc_guarded_assignment_statement,
       $.preproc_selected_braced_if_else_statement,
@@ -1386,6 +1386,11 @@ module.exports = grammar(C, {
       field('condition', $.condition_clause),
       field('body', $.compound_statement),
     ),
+
+    preproc_case_label_fragment: _ => token(prec(
+      1,
+      /#[ \t]*(?:if|ifdef|ifndef)[^\n]*\r?\n(?:[ \t]*(?:(?:case[^\r\n:]*:)|(?:default[ \t]*:))[ \t]*(?:\/\/[^\n]*)?\r?\n)+(?:#[ \t]*(?:elif|else)[^\n]*\r?\n(?:[ \t]*(?:(?:case[^\r\n:]*:)|(?:default[ \t]*:))[ \t]*(?:\/\/[^\n]*)?\r?\n)+)*#[ \t]*endif/,
+    )),
 
     preproc_endif_fragment: _ => token(prec(1, /#[ \t]*endif/)),
 

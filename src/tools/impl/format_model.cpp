@@ -170,6 +170,7 @@ constexpr auto kSyntaxKindMappings = std::to_array<SyntaxKindMapping>({
     Tree(SyntaxNodeKind::PreprocIf, "preproc_bitwise_expression_fragment", kAtomicPreprocessorClasses),
     Tree(SyntaxNodeKind::PreprocIf, "preproc_logical_tail_expression_fragment", kAtomicPreprocessorClasses),
     Tree(SyntaxNodeKind::PreprocIf, "preproc_condition_expression", kAtomicPreprocessorClasses),
+    Tree(SyntaxNodeKind::PreprocIf, "preproc_case_label_fragment", kAtomicPreprocessorClasses),
     Tree(SyntaxNodeKind::PreprocIf, "preproc_semicolon_initializer", kConditionalRhsPreprocessorClasses),
     Tree(SyntaxNodeKind::PreprocIf, "preproc_expression_item_fragment", kAtomicPreprocessorClasses),
     Tree(SyntaxNodeKind::PreprocIf, "preproc_template_argument_fragment", kAtomicPreprocessorClasses),

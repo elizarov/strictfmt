@@ -620,7 +620,7 @@ Macro category roles and runtime scanner ownership are described in [Formatter C
 
 ## Conditional Compilation And Local Includes
 
-Conditional compilation is accepted when each branch contributes complete grammar items at the surrounding level: complete declarations, complete statements, field or method declarations, enum entries, macro definitions, includes, or similar syntax that already has a mandatory structural line break. Conditional declaration-prefix modifiers are also accepted for standalone modifiers and for attributes that precede a declaration. The conditional directive lines stay at column zero, and the guarded code keeps the indentation it would have at that source location.
+Conditional compilation is accepted when each branch contributes complete grammar items at the surrounding level: complete declarations, complete statements, switch `case` or `default` labels, field or method declarations, enum entries, macro definitions, includes, or similar syntax that already has a mandatory structural line break. Conditional declaration-prefix modifiers are also accepted for standalone modifiers and for attributes that precede a declaration. The conditional directive lines stay at column zero, and the guarded code keeps the indentation it would have at that source location.
 
 Conditional compilation may also patch complete expression or declaration items in comma-separated lists. This is accepted for function arguments, braced initializer items, subscript items, declaration parameters, template arguments, template parameters, and enum entries. A conditional in one of these lists makes the guarded item use split-list indentation: directive lines stay at column zero, and branch items are indented as list items. Conditional expression items do not contain statement-terminating semicolons; conditional right-hand sides use the separate `=` rule below. Conditional list items use the same comma normalization as ordinary list items, so final items lose trailing commas except in enum bodies.
 
@@ -706,6 +706,17 @@ void SelectStatus(Status& status) {
         Status{};
 #endif
 }
+
+void HandleSocketError(int error) {
+    switch (error) {
+        case Temporary:
+#if TEMPORARY_AGAIN_IS_DISTINCT
+        case TemporaryAgain:
+#endif
+            Retry();
+            break;
+    }
+}
 ```
 
 Local `#include` directives follow the same boundary rule: they may stand where the surrounding grammar accepts a complete declaration, statement, member declaration, enum entry, or directive, but not inside another expression or declaration. The include directive line stays at column zero.
@@ -717,7 +728,7 @@ void RegisterGeneratedMetrics() {
 }
 ```
 
-Conditional directives are rejected below the complete-item, declaration-prefix modifier, conditional-right-hand-side, or list-item boundary, such as inside an expression or statement header. A conditional block that is followed by an expression-continuation operator is also rejected, independent of the specific operator token. The formatter reports every offending `#if`, `#ifdef`, `#ifndef`, or `#include` line as `unsupported preprocessor placement`.
+Conditional directives are rejected below the complete-item, declaration-prefix modifier, conditional-right-hand-side, or list-item boundary, such as inside an expression or statement header. A conditional block whose branches do not end as complete items and that is followed by an expression-continuation operator is also rejected, independent of the specific operator token. The formatter reports every offending `#if`, `#ifdef`, `#ifndef`, or `#include` line as `unsupported preprocessor placement`.
 
 Do not patch one operand into an expression:
 
