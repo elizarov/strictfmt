@@ -1079,15 +1079,9 @@ private:
         if (!node.forceSplit && compact.valid && compact.extraLines == 0) {
             alternatives.push_back(compact);
         }
-        NodeResult split = SolveTransparentDelimiterStackSplit(node, stack, column, indentLevel, lineHasText);
-        if (split.valid) {
-            alternatives.push_back(split);
-        }
-        if (!split.valid || (compact.valid && compact.extraLines > 0)) {
-            NodeResult stackSplit = SolveDelimiterStack(node, stack, column, indentLevel, lineHasText);
-            if (stackSplit.valid) {
-                alternatives.push_back(stackSplit);
-            }
+        NodeResult stackSplit = SolveDelimiterStack(node, stack, column, indentLevel, lineHasText);
+        if (stackSplit.valid) {
+            alternatives.push_back(stackSplit);
         }
         return alternatives;
     }
@@ -1100,20 +1094,11 @@ private:
         bool lineHasText
     ) {
         NodeResult compact = SolveDelimitedCompact(node, column, indentLevel, lineHasText);
-        NodeResult split = SolveTransparentDelimiterStackSplit(node, stack, column, indentLevel, lineHasText);
-        NodeResult stackSplit = (!split.valid || (compact.valid && compact.extraLines > 0)) ?
-            SolveDelimiterStack(node, stack, column, indentLevel, lineHasText) :
-            NodeResult{};
+        NodeResult stackSplit = SolveDelimiterStack(node, stack, column, indentLevel, lineHasText);
         if (compact.extraLines > 0) {
             compact = {};
         }
-        if (node.forceSplit && split.valid) {
-            return split;
-        }
-        if (compact.valid && split.valid && CompactLineEndsOverLimit(compact) && split.maxOverflow == 0) {
-            return split;
-        }
-        NodeResult best = Better(split, compact) ? split : compact;
+        NodeResult best = compact;
         return Better(stackSplit, best) ? stackSplit : best;
     }
 
@@ -1186,22 +1171,18 @@ private:
             result = AddToken(result, open);
         }
 
-        NodeResult leaf = Solve(*stack.leaf, result.endColumn, result.endIndentLevel, result.endLineHasText);
-        if (leaf.valid && result.endLineHasText && (leaf.extraLines > 0 || leaf.maxOverflow > 0)) {
-            NodeResult broken = AddBreak(result, nextOpenIndent, node.structuralDepth);
-            leaf = Solve(*stack.leaf, broken.endColumn, broken.endIndentLevel, broken.endLineHasText);
-            result = broken;
+        if (result.endLineHasText) {
+            result = AddBreak(result, nextOpenIndent, node.structuralDepth);
         }
+        NodeResult leaf = Solve(*stack.leaf, result.endColumn, result.endIndentLevel, result.endLineHasText);
         if (!leaf.valid) {
             return {};
         }
-        const bool leafHasBreaks = leaf.valid && leaf.extraLines > 0;
         Merge(result, leaf);
 
         for (size_t runIndex = delimiterRuns.size(); runIndex-- > 0;) {
             const DelimiterStackRun& run = delimiterRuns[runIndex];
-            const bool firstClosingRun = runIndex + 1 == delimiterRuns.size();
-            if (result.endLineHasText && (leafHasBreaks || !firstClosingRun)) {
+            if (result.endLineHasText) {
                 result = AddBreak(result, run.indentLevel, node.structuralDepth);
             }
             for (size_t index = run.end; index-- > run.begin;) {

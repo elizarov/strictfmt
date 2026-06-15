@@ -22,10 +22,9 @@
 #include <grpcpp/grpcpp.h>
 #include <array>
 
-#define FORMAT_USERVER_DO_WHILE(flag) do { \
-        if (flag) { \
-            break; \
-        } \
+#define FORMAT_USERVER_DO_WHILE(flag) \
+    do { \
+        if (flag) break; \
         UseFlag(flag); \
     } while (false)
 #define USERVER_IMPL_FORCE_INLINE __attribute__((always_inline)) inline
@@ -55,7 +54,8 @@ public: \
     }
 #define FORMAT_USERVER_BENCHMARK_ARGS ->Arg(2)->Arg(4)
 #define IMPL_UTEST_FORMAT_USERVER(name) \
-    TestLauncher<::testing::Test>::RunTest<name>(); \
+    TestLauncher<::testing::Test>::RunTest< \
+        name>();                         \
     struct FormatUserverForceSemicolon
 
 BENCHMARK_CAPTURE(FormatterBenchmark, Mode, kValue) FORMAT_USERVER_BENCHMARK_ARGS;

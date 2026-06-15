@@ -1797,15 +1797,13 @@ private:
             delimiterRuns.back().end = index + 1;
             WriteBreakToken(open);
         }
-        const bool leafUsesBreaks = UsesNonCompactChoice(*stack->leaf, solution);
-        if (leafUsesBreaks && lineHasText_) {
+        if (lineHasText_) {
             NewLineWithIndent(nextOpenIndent);
         }
         EmitBreakNode(*stack->leaf, solution, nextOpenIndent);
         for (size_t runIndex = delimiterRuns.size(); runIndex-- > 0;) {
             const DelimiterStackRun& run = delimiterRuns[runIndex];
-            const bool firstClosingRun = runIndex + 1 == delimiterRuns.size();
-            if (lineHasText_ && (leafUsesBreaks || !firstClosingRun)) {
+            if (lineHasText_) {
                 NewLineWithIndent(run.indentLevel);
             }
             for (size_t index = run.end; index-- > run.begin;) {

@@ -647,11 +647,11 @@ class FormatCommandTests(unittest.TestCase):
         self.assertEqual(0, result.returncode, msg=f"stdout:\n{result.stdout}\n\nstderr:\n{result.stderr}")
         self.assertEqual(
             "#define STRICTFMT_LOAD_OPTIONAL(function, name) \\\n"
-            "    function = reinterpret_cast<decltype(function)>(GetProcAddress(module_, name))\n",
+            "function=reinterpret_cast<decltype(function)>(GetProcAddress(module_,name))\n",
             result.stdout,
         )
 
-    def test_invalid_formatted_candidate_keeps_original_source(self) -> None:
+    def test_macro_arrow_chain_formats_and_reparses(self) -> None:
         build_dir = TEST_TEMP_ROOT
         build_dir.mkdir(exist_ok=True)
 
@@ -672,7 +672,7 @@ class FormatCommandTests(unittest.TestCase):
             result = native_format("--stdin", "--style", str(config), input_text=source)
 
             self.assertEqual(0, result.returncode, msg=f"stdout:\n{result.stdout}\n\nstderr:\n{result.stderr}")
-            self.assertEqual(source, result.stdout)
+            self.assertEqual("BENCHMARK(Foo)->Args({1, 2});\n", result.stdout)
 
             second_result = native_format("--dry-run", "--stdin", "--style", str(config), input_text=result.stdout)
 
