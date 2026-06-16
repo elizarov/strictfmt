@@ -31,13 +31,19 @@ void SayHello(std::string_view requestedGreetingName) {
 
 ## Detailed documentation
 
-- [docs/architecture.md](docs/architecture.md) describes code module ownership.
-- [docs/command_line.md](docs/command_line.md) specifies the `strictfmt` executable command line.
-- [docs/glossary.md](docs/glossary.md) defines shared terminology used across docs.
+Detailed user-level docs:
+
 - [docs/format.md](docs/format.md) specifies the source layout produced by formatter.
 - [docs/config.md](docs/config.md) specifies formatter configuration and ignore files.
+- [docs/command_line.md](docs/command_line.md) specifies the `strictfmt` executable command line.
 - [docs/preprocessor.md](docs/preprocessor.md) describes handling of preprocessor directives and conditional compilation.
 - [docs/syntax_ambiguities.md](docs/syntax_ambiguities.md) explains treatment of C++ syntax ambiguities. 
+
+Development docs:
+
+- [docs/glossary.md](docs/glossary.md) defines shared terminology used across docs.
+- [docs/architecture.md](docs/architecture.md) describes code module ownership.
+- [docs/tests.md](docs/tests.md) explains test strategy, test file placement, and golden fixtures.
 
 ## License
 
