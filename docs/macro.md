@@ -2,17 +2,20 @@
 
 This document specifies the macro configuration and macro formatting for `strictfmt`.
 
-## General
+## Definition-side vs use-side 
 
-Macro continuation backslashes, spaces before continuation backslashes, and continuation newlines are formatter-owned. A multi-line macro definition is parsed as one replacement list, then emitted with continuation backslashes on all continued macro lines.
+Definition-side macro categories and use-side macro categories are independent:
 
-Macro replacement lists that form declaration fragments are recursively formatted before continuation backslashes are added.
+- `RawMacroDefinitions` affects only how a `#define` replacement is parsed and printed. 
+- `BareIdentifierMacros` and `CallSyntaxMacros` affect only how macro identifiers are parsed when they are used elsewhere in source.
 
-## Object-Like and Function-Like Macros
+## Macro Replacements
 
-Object-like `#define NAME replacement` definitions are always preserved as raw preprocessor definitions. Their replacement lists are treated as arbitrary tokens and the formatter does not reinterpret them as C++ expressions or declarations.
+Structured macro definitions are the default. Their replacement parses as a structured token stream and parse tree, and the formatter owns replacement whitespace, continuation backslashes, continuation newlines, and line-limit wrapping. Macro replacement lists that form declaration fragments are recursively formatted before continuation backslashes are added.
 
-Function-like `#define NAME(PARAMS...) replacement` definitions are treated depending on their macro category.
+It is a parse error when a structured macro replacement cannot be parsed structurally. Add that macro identifier to `RawMacroDefinitions` only when the replacement intentionally is not a supported C++ fragment.
+
+Raw macro definitions are the explicit exception. A macro whose identifier matches `RawMacroDefinitions` replacement is one raw string token instead of a structured replacement tree. The raw replacement printer collapses horizontal whitespace for single-line replacements. For multi-line replacements, it preserves the physical continuation-line structure and backslashes while applying the same line-ending and trailing `//` comment-spacing normalization as other raw preprocessor text. This is the only macro-definition case where the formatter intentionally does not own all replacement whitespace and line breaks.
 
 ## Macro Categories
 
@@ -20,9 +23,9 @@ Macro category entries must be C/C++ identifiers. Add a trailing `*` to an entry
 
 The macros that belong to different categories are configured in formatter configuration, see [config.md](config.md).
 
-### RawMacroFunctionDefinitions
+### RawMacroDefinitions
 
-`RawMacroFunctionDefinitions` names `#define` function-like macro identifiers that should be parsed as one raw preprocessor function definition. Use it for macro families whose replacement lists are not normal C++ fragments.
+`RawMacroDefinitions` names object-like or function-like `#define` identifiers whose replacement should be parsed as raw text. Use it for macro families whose replacement lists are not supported structured C++ fragments.
 
 ```cpp
 #define UPROTO_ONEOF_HEADER(oneof_type)                                                   \
@@ -32,9 +35,13 @@ public:                                                                         
     using Base::Base;
 ```
 
+```cpp
+#define USERVER_IMPL_FORCE_INLINE [[gnu::always_inline]] inline
+```
+
 ### BareIdentifierMacros
 
-`BareIdentifierMacros` names macro identifiers that the grammar consumes as bare tokens in non-call positions or as assertion-style statement-call names. This category owns calling-convention modifiers, declaration-prefix modifiers, complete declaration-level items, qualified-identifier prefixes, top-level call-statement suffix macros, declaration suffix macros, initializer macros, and statement-call macros whose argument is parsed as a statement without its trailing semicolon.
+`BareIdentifierMacros` names macro identifiers that the grammar consumes on the use side as bare tokens in non-call positions or as assertion-style statement-call names. This category owns calling-convention modifiers, declaration-prefix modifiers, complete declaration-level items, qualified-identifier prefixes, top-level call-statement suffix macros, declaration suffix macros, initializer macros, and statement-call macros whose argument is parsed as a statement without its trailing semicolon.
 
 Calling-convention modifier: the macro appears in a declarator where a platform calling-convention token is expected.
 
@@ -73,7 +80,7 @@ UEXPECT_THROW([[maybe_unused]] auto bytes_read = source.ReadSome(kBuffer, kDeadl
 
 ### CallSyntaxMacros
 
-`CallSyntaxMacros` names macro identifiers whose supported grammar roles start with a macro-style call. This category owns macro function definitions, macro function definitions with trailing C++ parameter lists, top-level macro call statements with optional chained `->` tails, simple name macro calls, class-field method declaration macros, and type-specifier macro calls.
+`CallSyntaxMacros` names macro identifiers whose supported use-side grammar roles start with a macro-style call. This category owns macro function definitions, macro function definitions with trailing C++ parameter lists, top-level macro call statements with optional chained `->` tails, simple name macro calls, class-field method declaration macros, and type-specifier macro calls.
 
 Macro function definition: the macro call header is followed by a compound statement body.
 

@@ -57,7 +57,7 @@ module.exports = grammar(C, {
   externals: $ => [
     $.raw_string_delimiter,
     $.raw_string_content,
-    $.raw_macro_function_definition,
+    $.raw_macro_definition_identifier,
     $.bare_macro_identifier,
     $.suffix_macro_identifier,
     $.call_syntax_macro_identifier,
@@ -172,10 +172,7 @@ module.exports = grammar(C, {
   rules: {
     _top_level_item: ($, original) => choice(
       $.conditional_macro_function_definition,
-      $.raw_macro_function_definition,
-      $.raw_macro_definition,
       $.deleted_operator_declaration,
-      $.preproc_hashhash_function_def,
       $.preproc_value_declaration,
       $.preproc_nested_define_ifdef,
       $.preproc_define_elif_chain,
@@ -209,10 +206,7 @@ module.exports = grammar(C, {
 
     _block_item: ($, original) => choice(
       $.conditional_macro_function_definition,
-      $.raw_macro_function_definition,
-      $.raw_macro_definition,
       $.deleted_operator_declaration,
-      $.preproc_hashhash_function_def,
       $.preproc_value_declaration,
       $.preproc_nested_define_ifdef,
       $.preproc_define_elif_chain,
@@ -290,12 +284,41 @@ module.exports = grammar(C, {
       'consteval',
     ),
 
-    preproc_def: (_, original) => original,
-    preproc_function_def: ($, original) => withStructuredMacroReplacementList($, original),
+    preproc_def: $ => choice(
+      prec(2, seq(
+        preprocessor('define'),
+        field('name', alias($.raw_macro_definition_identifier, $.identifier)),
+        field('value', optional($.raw_macro_replacement)),
+        token.immediate(/\r?\n/),
+      )),
+      prec(1, seq(
+        preprocessor('define'),
+        field('name', $.identifier),
+        field('value', optional($.macro_replacement_list)),
+        token.immediate(/\r?\n/),
+      )),
+    ),
 
-    raw_macro_definition: _ => token(prec(2, choice(
-      /#[ \t]*define[ \t]+[A-Za-z_]\w*(?:[ \t]+[^\n]*(?:\\\r?\n[^\n]*)*|[ \t]*\\\r?\n(?:[^\n]*\\\r?\n)*[^\n]*)/,
-      /#[ \t]*define[ \t]+[A-Za-z_]\w*[ \t]+__attribute__[ \t]*\(\([^\n]*\)\)[^\n]*/,
+    preproc_function_def: $ => choice(
+      prec(2, seq(
+        preprocessor('define'),
+        field('name', alias($.raw_macro_definition_identifier, $.identifier)),
+        field('parameters', $.preproc_params),
+        field('value', optional($.raw_macro_replacement)),
+        token.immediate(/\r?\n/),
+      )),
+      prec(1, seq(
+        preprocessor('define'),
+        field('name', $.identifier),
+        field('parameters', $.preproc_params),
+        field('value', optional($.macro_replacement_list)),
+        token.immediate(/\r?\n/),
+      )),
+    ),
+
+    raw_macro_replacement: _ => token.immediate(prec(1, choice(
+      /[ \t]+[^\n]*(?:\\\r?\n[^\n]*)*/,
+      /[ \t]*\\\r?\n(?:[^\n]*\\\r?\n)*[^\n]*/,
     ))),
 
     macro_replacement_list: $ => seq(
@@ -305,7 +328,7 @@ module.exports = grammar(C, {
       optional($._macro_replacement_trailing_gap),
     ),
 
-    _macro_replacement_gap: _ => token.immediate(/(?:[ \t]*\\\r?\n[ \t]*)+/),
+    _macro_replacement_gap: _ => token.immediate(/(?:[ \t]+|[ \t]*\\\r?\n[ \t]*)+/),
 
     _macro_replacement_trailing_gap: _ => token.immediate(/[ \t]+/),
 
@@ -494,11 +517,6 @@ module.exports = grammar(C, {
     ),
 
     preproc_using: _ => token(prec(1, /#[ \t]*using[^\n]*/)),
-
-    preproc_hashhash_function_def: _ => token(prec(
-      2,
-      /#[ \t]*define[^\n]*(?:\\\r?\n[^\n]*)*##[^\n]*(?:\\\r?\n[^\n]*)*/,
-    )),
 
     preproc_define_ifdef: _ => token(prec(
       1,
@@ -2521,16 +2539,4 @@ function preprocIf(suffix, content, precedence = 0) {
 function preprocessor(command) {
   const pattern = command === 'if' ? '#[ \\t]*if[ \\t]+' : '#[ \\t]*' + command;
   return alias(token(prec(1, new RegExp(pattern))), '#' + command);
-}
-
-function withStructuredMacroReplacementList($, original) {
-  return {
-    ...original,
-    members: original.members.map((member) => {
-      if (member.type === 'FIELD' && member.name === 'value') {
-        return field('value', optional(choice($.macro_replacement_list, $.preproc_arg)));
-      }
-      return member;
-    }),
-  };
 }

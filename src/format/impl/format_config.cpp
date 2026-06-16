@@ -24,7 +24,7 @@ struct FormatterConfigPatch {
     std::optional<int> tabWidth;
     std::optional<std::string> mainIncludeRegex;
     std::optional<bool> mainIncludeQuote;
-    std::optional<std::vector<std::string>> rawMacroFunctionDefinitions;
+    std::optional<std::vector<std::string>> rawMacroDefinitions;
     std::optional<std::vector<std::string>> bareIdentifierMacros;
     std::optional<std::vector<std::string>> callSyntaxMacros;
     std::optional<std::vector<std::string>> streamShiftConfigurationMethods;
@@ -223,9 +223,9 @@ void ParseMacroCategories(const std::vector<ConfigLine>& lines, size_t& index, F
             break;
         }
         const auto [key, value] = SplitKeyValue(line.text);
-        if (key == "RawMacroFunctionDefinitions" && value.empty()) {
-            patch.rawMacroFunctionDefinitions = ParseIndentedStringList(lines, index, line.indent);
-            ValidateMacroCategoryEntries(key, *patch.rawMacroFunctionDefinitions);
+        if (key == "RawMacroDefinitions" && value.empty()) {
+            patch.rawMacroDefinitions = ParseIndentedStringList(lines, index, line.indent);
+            ValidateMacroCategoryEntries(key, *patch.rawMacroDefinitions);
         } else if (key == "BareIdentifierMacros" && value.empty()) {
             patch.bareIdentifierMacros = ParseIndentedStringList(lines, index, line.indent);
             ValidateMacroCategoryEntries(key, *patch.bareIdentifierMacros);
@@ -302,8 +302,8 @@ FormatterConfig ApplyConfigPatch(FormatterConfig config, FormatterConfigPatch pa
     if (patch.mainIncludeQuote.has_value()) {
         config.mainIncludeQuote = *patch.mainIncludeQuote;
     }
-    if (patch.rawMacroFunctionDefinitions.has_value()) {
-        config.rawMacroFunctionDefinitions = std::move(*patch.rawMacroFunctionDefinitions);
+    if (patch.rawMacroDefinitions.has_value()) {
+        config.rawMacroDefinitions = std::move(*patch.rawMacroDefinitions);
     }
     if (patch.bareIdentifierMacros.has_value()) {
         config.bareIdentifierMacros = std::move(*patch.bareIdentifierMacros);

@@ -1984,10 +1984,6 @@
           "named": true
         },
         {
-          "type": "preproc_hashhash_function_def",
-          "named": true
-        },
-        {
           "type": "preproc_if",
           "named": true
         },
@@ -2009,14 +2005,6 @@
         },
         {
           "type": "preproc_value_declaration",
-          "named": true
-        },
-        {
-          "type": "raw_macro_definition",
-          "named": true
-        },
-        {
-          "type": "raw_macro_function_definition",
           "named": true
         },
         {
@@ -2649,10 +2637,6 @@
           "named": true
         },
         {
-          "type": "preproc_hashhash_function_def",
-          "named": true
-        },
-        {
           "type": "preproc_if",
           "named": true
         },
@@ -2674,14 +2658,6 @@
         },
         {
           "type": "preproc_value_declaration",
-          "named": true
-        },
-        {
-          "type": "raw_macro_definition",
-          "named": true
-        },
-        {
-          "type": "raw_macro_function_definition",
           "named": true
         },
         {
@@ -6077,10 +6053,6 @@
           "named": true
         },
         {
-          "type": "preproc_hashhash_function_def",
-          "named": true
-        },
-        {
           "type": "preproc_if",
           "named": true
         },
@@ -6102,14 +6074,6 @@
         },
         {
           "type": "preproc_value_declaration",
-          "named": true
-        },
-        {
-          "type": "raw_macro_definition",
-          "named": true
-        },
-        {
-          "type": "raw_macro_function_definition",
           "named": true
         },
         {
@@ -6939,7 +6903,11 @@
         "required": false,
         "types": [
           {
-            "type": "preproc_arg",
+            "type": "macro_replacement_list",
+            "named": true
+          },
+          {
+            "type": "raw_macro_replacement",
             "named": true
           }
         ]
@@ -7171,10 +7139,6 @@
           "named": true
         },
         {
-          "type": "preproc_hashhash_function_def",
-          "named": true
-        },
-        {
           "type": "preproc_if",
           "named": true
         },
@@ -7196,14 +7160,6 @@
         },
         {
           "type": "preproc_value_declaration",
-          "named": true
-        },
-        {
-          "type": "raw_macro_definition",
-          "named": true
-        },
-        {
-          "type": "raw_macro_function_definition",
           "named": true
         },
         {
@@ -7443,10 +7399,6 @@
           "named": true
         },
         {
-          "type": "preproc_hashhash_function_def",
-          "named": true
-        },
-        {
           "type": "preproc_if",
           "named": true
         },
@@ -7468,14 +7420,6 @@
         },
         {
           "type": "preproc_value_declaration",
-          "named": true
-        },
-        {
-          "type": "raw_macro_definition",
-          "named": true
-        },
-        {
-          "type": "raw_macro_function_definition",
           "named": true
         },
         {
@@ -7686,10 +7630,6 @@
           "named": true
         },
         {
-          "type": "preproc_hashhash_function_def",
-          "named": true
-        },
-        {
           "type": "preproc_if",
           "named": true
         },
@@ -7711,14 +7651,6 @@
         },
         {
           "type": "preproc_value_declaration",
-          "named": true
-        },
-        {
-          "type": "raw_macro_definition",
-          "named": true
-        },
-        {
-          "type": "raw_macro_function_definition",
           "named": true
         },
         {
@@ -7821,7 +7753,7 @@
             "named": true
           },
           {
-            "type": "preproc_arg",
+            "type": "raw_macro_replacement",
             "named": true
           }
         ]
@@ -8038,10 +7970,6 @@
           "named": true
         },
         {
-          "type": "preproc_hashhash_function_def",
-          "named": true
-        },
-        {
           "type": "preproc_if",
           "named": true
         },
@@ -8063,14 +7991,6 @@
         },
         {
           "type": "preproc_value_declaration",
-          "named": true
-        },
-        {
-          "type": "raw_macro_definition",
-          "named": true
-        },
-        {
-          "type": "raw_macro_function_definition",
           "named": true
         },
         {
@@ -8310,10 +8230,6 @@
           "named": true
         },
         {
-          "type": "preproc_hashhash_function_def",
-          "named": true
-        },
-        {
           "type": "preproc_if",
           "named": true
         },
@@ -8335,14 +8251,6 @@
         },
         {
           "type": "preproc_value_declaration",
-          "named": true
-        },
-        {
-          "type": "raw_macro_definition",
-          "named": true
-        },
-        {
-          "type": "raw_macro_function_definition",
           "named": true
         },
         {
@@ -10717,10 +10625,6 @@
           "named": true
         },
         {
-          "type": "preproc_hashhash_function_def",
-          "named": true
-        },
-        {
           "type": "preproc_if",
           "named": true
         },
@@ -10742,14 +10646,6 @@
         },
         {
           "type": "preproc_value_declaration",
-          "named": true
-        },
-        {
-          "type": "raw_macro_definition",
-          "named": true
-        },
-        {
-          "type": "raw_macro_function_definition",
           "named": true
         },
         {
@@ -12128,10 +12024,6 @@
     "named": true
   },
   {
-    "type": "preproc_hashhash_function_def",
-    "named": true
-  },
-  {
     "type": "preproc_logical_expression_fragment",
     "named": true
   },
@@ -12184,11 +12076,7 @@
     "named": false
   },
   {
-    "type": "raw_macro_definition",
-    "named": true
-  },
-  {
-    "type": "raw_macro_function_definition",
+    "type": "raw_macro_replacement",
     "named": true
   },
   {

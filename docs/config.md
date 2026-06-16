@@ -45,6 +45,8 @@ MainIncludeChar: Quote
 IncludeIsMainRegex: '(Test)?$'
 
 MacroCategories:
+  RawMacroDefinitions:
+    - GENERATED_TABLE
   BareIdentifierMacros:
     - CALLBACK
   CallSyntaxMacros:

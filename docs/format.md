@@ -43,6 +43,7 @@ This document specifies the source layout produced by `strictfmt`.
 - Drop blank lines at the beginning of a block and immediately before a closing brace.
 - Insert required structural blank lines only when they separate neighboring source items.
 - Remove trailing commas except in enum bodies.
+- Structured macro definitions use formatter-owned replacement whitespace and continuation lines. Raw macro definitions configured with `RawMacroDefinitions` intentionally preserve raw replacement line structure as specified in [macro.md](macro.md).
 
 ## Mandatory Line Breaks
 

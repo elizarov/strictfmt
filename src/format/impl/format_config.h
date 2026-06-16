@@ -19,7 +19,7 @@ struct FormatterConfig {
     int tabWidth = 4;
     std::string mainIncludeRegex = "(Test)?$";
     bool mainIncludeQuote = true;
-    std::vector<std::string> rawMacroFunctionDefinitions;
+    std::vector<std::string> rawMacroDefinitions;
     std::vector<std::string> bareIdentifierMacros;
     std::vector<std::string> callSyntaxMacros;
     std::vector<std::string> streamShiftConfigurationMethods;

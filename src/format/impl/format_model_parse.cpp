@@ -13,7 +13,7 @@
 namespace {
 
 enum class ScannerMacroCategory : unsigned {
-    RawMacroFunctionDefinition = 0,
+    RawMacroDefinition = 0,
     BareIdentifier = 1,
     CallSyntax = 2,
 };
@@ -60,8 +60,8 @@ bool ConfigMacroCategoryMatches(ScannerMacroCategory category, std::string_view 
         return false;
     }
     switch (category) {
-        case ScannerMacroCategory::RawMacroFunctionDefinition:
-            return MacroCategoryMatches(g_parseConfig->rawMacroFunctionDefinitions, name);
+        case ScannerMacroCategory::RawMacroDefinition:
+            return MacroCategoryMatches(g_parseConfig->rawMacroDefinitions, name);
         case ScannerMacroCategory::BareIdentifier:
             return MacroCategoryMatches(g_parseConfig->bareIdentifierMacros, name);
         case ScannerMacroCategory::CallSyntax:
