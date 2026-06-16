@@ -604,6 +604,47 @@ class FormatCommandTests(unittest.TestCase):
             result.stdout,
         )
 
+    def test_preprocessor_directive_whitespace_is_canonicalized(self) -> None:
+        result = native_format(
+            "--stdin",
+            input_text=(
+                "#   if FOO\n"
+                "int value;\n"
+                "#   else\n"
+                "int other;\n"
+                "#   endif\n"
+            ),
+        )
+
+        self.assertEqual(0, result.returncode, msg=f"stdout:\n{result.stdout}\n\nstderr:\n{result.stderr}")
+        self.assertEqual(
+            "#if FOO\n"
+            "int value;\n"
+            "#else\n"
+            "int other;\n"
+            "#endif\n",
+            result.stdout,
+        )
+
+    def test_dump_uses_preprocessor_directive_tokens(self) -> None:
+        result = native_format(
+            "--stdin",
+            "--dump",
+            input_text=(
+                "#   if FOO\n"
+                "int value;\n"
+                "#   else\n"
+                "int other;\n"
+                "#   endif\n"
+            ),
+        )
+
+        self.assertEqual(0, result.returncode, msg=f"stdout:\n{result.stdout}\n\nstderr:\n{result.stderr}")
+        self.assertEqual("", result.stderr)
+        self.assertIn("- kind: PreprocessorDirectiveIf\n", result.stdout)
+        self.assertIn("- kind: PreprocessorDirectiveElse\n", result.stdout)
+        self.assertIn("- kind: PreprocessorDirectiveEndif\n", result.stdout)
+
     def test_trailing_comma_normalization(self) -> None:
         result = native_format(
             "--stdin",

@@ -2,6 +2,10 @@
 
 This document describes handling of preprocessor directives and conditional compilation by `strictfmt`.
 
+## Directive Spelling
+
+Recognized preprocessor directives use canonical `#keyword` spelling. Horizontal whitespace between `#` and the directive keyword is not preserved, so `# if` formats as `#if`.
+
 ## Empty lines
 
 Put one empty line after `#pragma once` when another source item follows. Put one empty line before and after each `#undef` when it separates `#undef` from a neighboring source item.

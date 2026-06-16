@@ -59,15 +59,20 @@ bool IsCommentSourceLine(std::string_view line) {
     return StartsWith(trimmed, "//") || StartsWith(trimmed, "/*");
 }
 
+SyntaxNodeKind PreprocessorDirectiveKind(std::string_view line) {
+    return SyntaxNodeKindFromPreprocessorDirectiveLine(TrimView(line));
+}
+
 bool IsIncludeSourceLine(std::string_view line) {
-    return StartsWith(TrimView(line), "#include");
+    return SyntaxNodeKindHasClass(PreprocessorDirectiveKind(line), SyntaxNodeClass::IncludeDirective);
 }
 
 bool IsIncludeGuardOpening(const std::vector<std::string>& lines) {
     if (lines.size() < 3) {
         return false;
     }
-    return StartsWith(TrimView(lines[0]), "#ifndef") && StartsWith(TrimView(lines[1]), "#define");
+    return PreprocessorDirectiveKind(lines[0]) == SyntaxNodeKind::PreprocessorDirectiveIfndef &&
+        PreprocessorDirectiveKind(lines[1]) == SyntaxNodeKind::PreprocessorDirectiveDefine;
 }
 
 void AppendSourceLines(std::string& output, const std::vector<std::string>& lines, size_t first, size_t last) {

@@ -311,6 +311,9 @@ bool FormatTokenNeedsSpace(const PrintToken* previous, const PrintToken& current
         previous->kind == PrintTokenKind::Known ? previous->syntaxKind : SyntaxNodeKind::Unknown;
     const SyntaxNodeKind cur = current.kind == PrintTokenKind::Known ? current.syntaxKind : SyntaxNodeKind::Unknown;
 
+    if (SyntaxNodeKindHasClass(prev, SyntaxNodeClass::PreprocessorDirective)) {
+        return true;
+    }
     if (IsTemplateArgumentExpressionOperator(*previous) || IsTemplateArgumentExpressionOperator(current)) {
         return true;
     }

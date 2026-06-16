@@ -86,7 +86,10 @@ SyntaxNode* MakeTokenNode(FormatModel& model, SyntaxNodeKind token) {
 
 void SetKnownTokenNode(SyntaxNode& node, SyntaxNodeKind token, std::string_view text) {
     node.kind = token;
-    if (text != SyntaxNodeKindTokenText(token)) {
+    if (
+        text != SyntaxNodeKindTokenText(token) &&
+        !SyntaxNodeKindHasClass(token, SyntaxNodeClass::PreprocessorDirective)
+    ) {
         node.text = text;
     }
 }
@@ -685,26 +688,6 @@ std::string PreprocessorDirectiveLine(TSNode node, const std::string& source) {
     return TrimAsciiWhitespace(FirstLine(NodeText(node, source)));
 }
 
-bool IsConditionalOpeningDirectiveLine(std::string_view line) {
-    return StartsWith(line, "#if ") ||
-        StartsWith(line, "#if\t") ||
-        StartsWith(line, "#ifdef ") ||
-        StartsWith(line, "#ifdef\t") ||
-        StartsWith(line, "#ifndef ") ||
-        StartsWith(line, "#ifndef\t");
-}
-
-bool IsCheckedPreprocessorDirective(std::string_view line) {
-    return StartsWith(line, "#if ") ||
-        StartsWith(line, "#if\t") ||
-        StartsWith(line, "#ifdef ") ||
-        StartsWith(line, "#ifdef\t") ||
-        StartsWith(line, "#ifndef ") ||
-        StartsWith(line, "#ifndef\t") ||
-        StartsWith(line, "#include ") ||
-        StartsWith(line, "#include\t");
-}
-
 bool HasAllowedListPreprocessorAncestor(TSNode node) {
     for (TSNode parent = ts_node_parent(node); !ts_node_is_null(parent); parent = ts_node_parent(parent)) {
         const SyntaxNodeKind parentKind = GetTsNodeSyntax(parent).kind;
@@ -846,8 +829,9 @@ void CollectPreprocessorPlacementErrors(
     const TsNodeSyntax syntax = GetTsNodeSyntax(node);
     const std::string_view treeType = ts_node_type(node);
     const std::string directiveLine = PreprocessorDirectiveLine(node, source);
+    const SyntaxNodeKind directiveKind = SyntaxNodeKindFromPreprocessorDirectiveLine(directiveLine);
     if (
-        IsCheckedPreprocessorDirective(directiveLine) &&
+        SyntaxNodeKindHasClass(directiveKind, SyntaxNodeClass::CheckedPreprocessorDirective) &&
         IsForbiddenPreprocessorPlacement(node, source, syntax, parentKind, treeType)
     ) {
         errors.push_back({ts_node_start_point(node), directiveLine});
@@ -860,14 +844,17 @@ void CollectPreprocessorPlacementErrors(
 }
 
 bool IsIncludeDirectiveLine(std::string_view line) {
-    return StartsWith(line, "#include ") || StartsWith(line, "#include\t");
+    return SyntaxNodeKindHasClass(
+        SyntaxNodeKindFromPreprocessorDirectiveLine(line),
+        SyntaxNodeClass::IncludeDirective
+    );
 }
 
 bool IsEndifDirectiveLine(std::string_view line) {
-    return line == "#endif" ||
-        StartsWith(line, "#endif ") ||
-        StartsWith(line, "#endif\t") ||
-        StartsWith(line, "#endif//");
+    return SyntaxNodeKindHasClass(
+        SyntaxNodeKindFromPreprocessorDirectiveLine(line),
+        SyntaxNodeClass::EndifDirective
+    );
 }
 
 bool IsIgnorablePreprocessorTailLine(std::string_view line) {
@@ -988,7 +975,10 @@ void CollectConditionalTailPlacementErrors(const std::string& source, std::vecto
         }
         const std::string_view line = LineText(source, lineStart, lineEnd);
         const std::string trimmed = TrimAsciiWhitespace(line);
-        if (IsConditionalOpeningDirectiveLine(trimmed)) {
+        if (SyntaxNodeKindHasClass(
+            SyntaxNodeKindFromPreprocessorDirectiveLine(trimmed),
+            SyntaxNodeClass::ConditionalOpeningDirective
+        )) {
             directiveStack.push_back(ConditionalTailFrame{.directive = MakeLinePlacementError(row, line)});
             pendingClosedDirective.reset();
             pendingClosedDirectiveBranchesLookWhole = false;
@@ -1134,7 +1124,9 @@ bool IsPragmaOnceNode(const SyntaxNode& node) {
 }
 
 bool IsPreprocessorConditionHeaderNode(const SyntaxNode& node) {
-    return node.kind == SyntaxNodeKind::FreeToken || node.kind == SyntaxNodeKind::Identifier;
+    return node.kind == SyntaxNodeKind::FreeToken ||
+        node.kind == SyntaxNodeKind::Identifier ||
+        SyntaxNodeKindHasClass(node.kind, SyntaxNodeClass::PreprocessorDirective);
 }
 
 bool CanRemainInOpeningIncludeArea(const SyntaxNode& owner, const SyntaxNode& child, bool sawInclude) {
