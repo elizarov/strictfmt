@@ -597,3 +597,10 @@ The formatter preserves source token order except for:
 String literals ending with escaped `\n` or `\r\n` are line-fragment boundaries and are not joined with the following literal. A trailing escape such as `\xB0` that would consume the next fragment's first character after textual joining also prevents joining.
 
 Outside the listed changes, the formatter changes only spaces and line breaks.
+
+## Further reading
+
+- [config.md] specifies the configuration files. 
+- [macro.md] specifies the macro configuration and macro formatting. 
+- [preprocessor.md] describes handing of preprocessor directives and conditional compilation. 
+- [syntax_ambiguities.md] specifies the treatment of C++ syntax ambiguities.
