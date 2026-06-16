@@ -19,7 +19,9 @@ struct FormatOptions {
     bool readStdin = false;
     bool fileListProvided = false;
     bool recursiveInputProvided = false;
+    bool concurrencyProvided = false;
     size_t concurrency = 0;
+    std::optional<std::string> dumpFile;
     std::optional<std::string> explicitStylePath;
     std::vector<std::string> files;
     std::vector<std::string> recursiveRoots;

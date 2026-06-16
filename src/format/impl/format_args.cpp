@@ -70,6 +70,16 @@ std::optional<FormatOptions> ParseFormatArgs(int argc, char** argv, std::string&
             options.verbose = true;
         } else if (arg == "--stdin") {
             options.readStdin = true;
+        } else if (arg == "--dump") {
+            if (index + 1 >= argc) {
+                error = "--dump requires a file";
+                return std::nullopt;
+            }
+            if (options.dumpFile.has_value()) {
+                error = "--dump can be specified only once";
+                return std::nullopt;
+            }
+            options.dumpFile = argv[++index];
         } else if (arg == "-r" || arg == "--recursive") {
             if (index + 1 >= argc) {
                 error = "-r requires a path";
@@ -83,6 +93,7 @@ std::optional<FormatOptions> ParseFormatArgs(int argc, char** argv, std::string&
                 error = "--concurrency requires a value";
                 return std::nullopt;
             }
+            options.concurrencyProvided = true;
             if (!ParseToolConcurrency(argv[++index], options.concurrency, error)) {
                 return std::nullopt;
             }
@@ -111,6 +122,20 @@ std::optional<FormatOptions> ParseFormatArgs(int argc, char** argv, std::string&
             options.files.push_back(arg);
         }
     }
+    if (options.dumpFile.has_value()) {
+        if (options.mode != FormatMode::Stdout) {
+            error = "--dump is incompatible with -i and --dry-run";
+            return std::nullopt;
+        }
+        if (options.readStdin || options.fileListProvided || options.recursiveInputProvided || !options.files.empty()) {
+            error = "--dump cannot be combined with format inputs";
+            return std::nullopt;
+        }
+        if (options.concurrencyProvided) {
+            error = "--dump is incompatible with --concurrency";
+            return std::nullopt;
+        }
+    }
     if (options.readStdin && (options.fileListProvided || options.recursiveInputProvided || !options.files.empty())) {
         error = "--stdin cannot be combined with file inputs";
         return std::nullopt;
@@ -135,6 +160,7 @@ void PrintFormatUsage(FILE* output) {
     std::fprintf(output, "Usage:\n");
     std::fprintf(output, "  strictfmt [options] [file...]\n");
     std::fprintf(output, "  strictfmt --stdin [options]\n");
+    std::fprintf(output, "  strictfmt --dump <file> [--style <config-file>]\n");
     std::fprintf(output, "\n");
     std::fprintf(output, "Inputs:\n");
     std::fprintf(
@@ -149,6 +175,10 @@ void PrintFormatUsage(FILE* output) {
     std::fprintf(output, "  --files <path>          Read input file paths from a newline-delimited file list.\n");
     std::fprintf(output, "\n");
     std::fprintf(output, "Modes:\n");
+    std::fprintf(
+        output,
+        "  --dump <file>           Print the parsed internal format model for debugging.\n"
+    );
     std::fprintf(
         output,
         "  -i                      Rewrite files in place. Requires file, --files, or --recursive input.\n"

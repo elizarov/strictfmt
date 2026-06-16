@@ -16,125 +16,157 @@ namespace {
 constexpr size_t kQuotedTextLimit = 60;
 constexpr int kYamlIndentSpaces = 2;
 
-void WriteIndent(int indent) {
+void WriteIndent(FILE* output, int indent) {
     for (int index = 0; index < indent * kYamlIndentSpaces; ++index) {
-        std::fputc(' ', stdout);
+        std::fputc(' ', output);
     }
 }
 
-void WriteString(std::string_view text) {
+void WriteString(FILE* output, std::string_view text) {
     if (!text.empty()) {
-        std::fwrite(text.data(), 1, text.size(), stdout);
+        std::fwrite(text.data(), 1, text.size(), output);
     }
 }
 
-void WriteQuotedText(std::string_view text) {
-    std::fputc('"', stdout);
+void WriteQuotedText(FILE* output, std::string_view text) {
+    std::fputc('"', output);
     for (const unsigned char ch : text) {
         switch (ch) {
             case '\\':
-                std::fputs("\\\\", stdout);
+                std::fputs("\\\\", output);
                 break;
             case '"':
-                std::fputs("\\\"", stdout);
+                std::fputs("\\\"", output);
                 break;
             case '\n':
-                std::fputs("\\n", stdout);
+                std::fputs("\\n", output);
                 break;
             case '\r':
-                std::fputs("\\r", stdout);
+                std::fputs("\\r", output);
                 break;
             case '\t':
-                std::fputs("\\t", stdout);
+                std::fputs("\\t", output);
                 break;
             default:
                 if (ch < 0x20) {
-                    std::fprintf(stdout, "\\x%02X", static_cast<unsigned int>(ch));
+                    std::fprintf(output, "\\x%02X", static_cast<unsigned int>(ch));
                 } else {
-                    std::fputc(static_cast<char>(ch), stdout);
+                    std::fputc(static_cast<char>(ch), output);
                 }
                 break;
         }
     }
-    std::fputc('"', stdout);
+    std::fputc('"', output);
 }
 
-void WriteTextValue(std::string_view text) {
+void WriteTextValue(FILE* output, std::string_view text) {
     if (text.size() <= kQuotedTextLimit) {
-        WriteQuotedText(text);
+        WriteQuotedText(output, text);
         return;
     }
-    std::fprintf(stdout, "%zu", text.size());
+    std::fprintf(output, "%zu", text.size());
 }
 
-void WriteNode(const SyntaxNode& node, int indent, bool listItem) {
+void WriteNode(FILE* output, const SyntaxNode& node, int indent, bool listItem) {
     const int fieldIndent = listItem ? indent + 1 : indent;
-    WriteIndent(indent);
+    WriteIndent(output, indent);
     if (listItem) {
-        std::fputs("- kind: ", stdout);
+        std::fputs("- kind: ", output);
     } else {
-        std::fputs("kind: ", stdout);
+        std::fputs("kind: ", output);
     }
-    WriteString(SyntaxNodeKindName(node.kind));
-    std::fputc('\n', stdout);
+    WriteString(output, SyntaxNodeKindName(node.kind));
+    std::fputc('\n', output);
 
     if (!node.text.empty()) {
-        WriteIndent(fieldIndent);
-        std::fputs("text: ", stdout);
-        WriteTextValue(node.text);
-        std::fputc('\n', stdout);
+        WriteIndent(output, fieldIndent);
+        std::fputs("text: ", output);
+        WriteTextValue(output, node.text);
+        std::fputc('\n', output);
     }
 
     if (node.children.empty()) {
         return;
     }
-    WriteIndent(fieldIndent);
-    std::fputs("children:\n", stdout);
+    WriteIndent(output, fieldIndent);
+    std::fputs("children:\n", output);
     for (const SyntaxNode* child : node.children) {
         if (child != nullptr) {
-            WriteNode(*child, fieldIndent + 1, true);
+            WriteNode(output, *child, fieldIndent + 1, true);
         }
     }
 }
 
-void PrintUsage() {
-    std::fprintf(stderr, "Usage: format_model_dump <source-file>\n");
+void PrintUsage(FILE* output) {
+    std::fprintf(output, "Usage: format_model_dump <source-file>\n");
 }
 
 }  // namespace
 
-int RunFormatModelDump(int argc, char** argv) {
-    if (argc != 1) {
-        PrintUsage();
-        return 2;
-    }
-
-    const std::string path = AbsolutePath(argv[0]);
+int DumpFormatModel(
+    std::string_view sourcePath,
+    const std::optional<std::string>& explicitStylePath,
+    FILE* output,
+    FILE* errorOutput,
+    std::string_view commandName
+) {
+    const std::string path = AbsolutePath(sourcePath);
     const std::optional<std::string> text = ReadFileBinary(path);
     if (!text.has_value()) {
-        std::fprintf(stderr, "format_model_dump: cannot read file: %s\n", path.c_str());
+        std::fprintf(
+            errorOutput,
+            "%.*s: cannot read file: %s\n",
+            static_cast<int>(commandName.size()),
+            commandName.data(),
+            path.c_str()
+        );
         return 1;
     }
 
-    FormatStyleCache styleCache(std::nullopt);
+    FormatStyleCache styleCache(explicitStylePath);
     std::string configError;
     const FormatterConfig* config = styleCache.ConfigForPath(path, configError);
     if (config == nullptr) {
-        std::fprintf(stderr, "format_model_dump: %s\n", configError.c_str());
-        return 1;
+        std::fprintf(
+            errorOutput,
+            "%.*s: %s\n",
+            static_cast<int>(commandName.size()),
+            commandName.data(),
+            configError.c_str()
+        );
+        return 2;
     }
 
     FormatModel model = ParseFormatModel(*text, *config);
     if (!model.parse.ok) {
         const std::string error = model.parse.error.empty() ? std::string("parser setup failed") : model.parse.error;
-        std::fprintf(stderr, "format_model_dump: parse failed: %s\n", error.c_str());
+        std::fprintf(
+            errorOutput,
+            "%.*s: parse failed: %s\n",
+            static_cast<int>(commandName.size()),
+            commandName.data(),
+            error.c_str()
+        );
         return 1;
     }
     if (model.root == nullptr) {
-        std::fprintf(stderr, "format_model_dump: parse produced no root node\n");
+        std::fprintf(
+            errorOutput,
+            "%.*s: parse produced no root node\n",
+            static_cast<int>(commandName.size()),
+            commandName.data()
+        );
         return 1;
     }
 
-    WriteNode(*model.root, 0, false);
+    WriteNode(output, *model.root, 0, false);
     return 0;
+}
+
+int RunFormatModelDump(int argc, char** argv) {
+    if (argc != 1) {
+        PrintUsage(stderr);
+        return 2;
+    }
+    return DumpFormatModel(argv[0], std::nullopt, stdout, stderr, "format_model_dump");
 }

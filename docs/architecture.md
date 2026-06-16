@@ -10,7 +10,7 @@
 - `src/format/strictfmt_cli.h|cpp` own the embeddable `RunStrictfmtCli(argc, argv)` entry point.
 - `src/format/format.h|cpp` own source text formatting, line ending preservation, and second-pass verification.
 - `src/format/format_cli.cpp` owns the end-user formatter command orchestration: input collection, configuration lookup, ignore filtering, parallel file formatting, output routing, summaries, and exit codes.
-- `src/format/format_model_dump.h|cpp` own the ad hoc format model dump command.
+- `src/format/format_model_dump.h|cpp` own the debug format model dump used by `--dump`.
 - `src/format/impl/format_args.h|cpp` own command-line option parsing and usage text.
 - `src/format/impl/format_break_model.h|cpp` own the break model data structures and shared break model predicates.
 - `src/format/impl/format_break_model_builder.h|cpp` own conversion from print tokens to break models.

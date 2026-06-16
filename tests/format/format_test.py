@@ -555,6 +555,25 @@ class FormatCommandTests(unittest.TestCase):
 
         self.assertNotIn('"\\r\\n"', pretty_printer)
 
+    def test_dump_prints_format_model_for_small_source(self) -> None:
+        build_dir = TEST_TEMP_ROOT
+        build_dir.mkdir(exist_ok=True)
+
+        with tempfile.TemporaryDirectory(prefix="format_dump_", dir=build_dir) as temp_dir:
+            root = Path(temp_dir)
+            copy_default_config(root)
+            source = root / "sample.cpp"
+            source.write_text("int main(){return 1;}\n", encoding="utf-8")
+
+            result = native_format("--dump", str(source), cwd=root)
+
+            self.assertEqual(0, result.returncode, msg=f"stdout:\n{result.stdout}\n\nstderr:\n{result.stderr}")
+            self.assertEqual("", result.stderr)
+            self.assertIn("kind: TranslationUnit\n", result.stdout)
+            self.assertIn("- kind: FunctionDefinition\n", result.stdout)
+            self.assertIn("text: \"main\"", result.stdout)
+            self.assertIn("- kind: KeywordReturn\n", result.stdout)
+
     def test_declarator_reference_tokens_include_managed_cpp(self) -> None:
         result = native_format(
             "--stdin",
@@ -970,6 +989,10 @@ class FormatCommandTests(unittest.TestCase):
             ("-i",),
             ("-i", "--dry-run", str(TEST_ROOT / OUTPUT_FIXTURE)),
             ("--style",),
+            ("--dump",),
+            ("--dump", str(TEST_ROOT / OUTPUT_FIXTURE), "--stdin"),
+            ("--dump", str(TEST_ROOT / OUTPUT_FIXTURE), "--dry-run"),
+            ("--dump", str(TEST_ROOT / OUTPUT_FIXTURE), "--concurrency", "1"),
             ("--files",),
             ("-r",),
             ("--concurrency",),
