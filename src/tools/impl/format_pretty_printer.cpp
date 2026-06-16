@@ -1562,35 +1562,14 @@ private:
             choice == FormatBreakChoice::BodyHeaderSplitAtParentIndent ||
             choice == FormatBreakChoice::BodyHeaderDetachedBody ||
             choice == FormatBreakChoice::SplitAttachedOpen ||
-            choice == FormatBreakChoice::SplitDelimiterStack;
+            choice == FormatBreakChoice::SplitDelimiterStack ||
+            choice == FormatBreakChoice::SplitDelimiterStackDetachedLeaf;
     }
 
     static bool IsBodyHeaderSplitChoice(FormatBreakChoice choice) {
         return choice == FormatBreakChoice::Split ||
             choice == FormatBreakChoice::BodyHeaderSplitAtParentIndent ||
             choice == FormatBreakChoice::BodyHeaderDetachedBody;
-    }
-
-    bool UsesNonCompactChoice(const FormatBreakNode& node, const FormatBreakSolution& solution) const {
-        if (ChoiceFor(solution, node.id) != FormatBreakChoice::Compact) {
-            return true;
-        }
-        for (const FormatBreakNode* child : node.children) {
-            if (child != nullptr && UsesNonCompactChoice(*child, solution)) {
-                return true;
-            }
-        }
-        for (const FormatBreakListItem& item : node.items) {
-            if (item.node != nullptr && UsesNonCompactChoice(*item.node, solution)) {
-                return true;
-            }
-        }
-        for (const FormatBreakNode* operand : node.operands) {
-            if (operand != nullptr && UsesNonCompactChoice(*operand, solution)) {
-                return true;
-            }
-        }
-        return false;
     }
 
     void WriteBreakToken(const FormatBreakToken& token) {
@@ -1797,13 +1776,15 @@ private:
             delimiterRuns.back().end = index + 1;
             WriteBreakToken(open);
         }
-        if (lineHasText_) {
+        const bool detachLeaf = ChoiceFor(solution, node.id) == FormatBreakChoice::SplitDelimiterStackDetachedLeaf;
+        if (detachLeaf && lineHasText_) {
             NewLineWithIndent(nextOpenIndent);
         }
         EmitBreakNode(*stack->leaf, solution, nextOpenIndent);
         for (size_t runIndex = delimiterRuns.size(); runIndex-- > 0;) {
             const DelimiterStackRun& run = delimiterRuns[runIndex];
-            if (lineHasText_) {
+            const bool firstClosingRun = runIndex + 1 == delimiterRuns.size();
+            if (lineHasText_ && (detachLeaf || !firstClosingRun)) {
                 NewLineWithIndent(run.indentLevel);
             }
             for (size_t index = run.end; index-- > run.begin;) {
@@ -1822,7 +1803,10 @@ private:
 
     void EmitDelimitedNode(const FormatBreakNode& node, const FormatBreakSolution& solution, int baseIndent) {
         const FormatBreakChoice choice = ChoiceFor(solution, node.id);
-        if (choice == FormatBreakChoice::SplitDelimiterStack) {
+        if (
+            choice == FormatBreakChoice::SplitDelimiterStack ||
+            choice == FormatBreakChoice::SplitDelimiterStackDetachedLeaf
+        ) {
             EmitDelimiterStackNode(node, solution, baseIndent);
             return;
         }

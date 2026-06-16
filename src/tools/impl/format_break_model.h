@@ -43,6 +43,7 @@ enum class FormatBreakChoice {
     BodyHeaderDetachedBody,
     SplitAttachedOpen,
     SplitDelimiterStack,
+    SplitDelimiterStackDetachedLeaf,
     StreamCompactTail,
     TernaryBreakAfterQuestion,
     TernaryBreakAfterColon,
