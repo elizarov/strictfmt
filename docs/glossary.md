@@ -5,6 +5,7 @@ This document owns shared terminology used across the `strictfmt` documentation.
 - **break choice**: A compact or split layout decision selected by the break optimizer for one break model node.
 - **break model**: The formatter-owned tree of possible compact and split layouts for one formatted segment. In code this is `FormatBreakModel`.
 - **break optimizer**: The dynamic-programming solver that chooses break choices for a break model under the configured column limit. In code this is `SolveFormatBreaks`.
+- **break solver**: The developer-facing implementation of the break optimizer in `src/tools/impl/format_break_solver.h|cpp`; see `docs/break_solver.md`.
 - **command-line input**: A source file, file list, recursive root, or stdin stream passed to the `strictfmt` executable.
 - **complete item**: A syntactic item that can stand at the surrounding grammar level, such as a complete declaration, statement, enum entry, include, macro definition, or list item.
 - **conditional compilation**: Preprocessor-controlled source branches introduced by directives such as `#if`, `#ifdef`, `#ifndef`, `#elif`, `#else`, and `#endif`.

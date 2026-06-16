@@ -6,6 +6,7 @@ References to all the docs their ownership areas, read them only when needed for
 
 - `README.md`: project overview, goals, and doc links.
 - `docs/architecture.md`: general architecture and ownership of different code modules.
+- `docs/break_solver.md`: break solver implementation details and allowed optimization speedups.
 - `docs/build.md`: build scripts and embedding/test options.
 - `docs/command_line.md`: strictfmt executable command-line parameters and behavior.
 - `docs/config.md`: formatter configuration.

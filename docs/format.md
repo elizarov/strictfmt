@@ -82,7 +82,7 @@ if (value != next) {
 
 ## Line Break Opportunities
 
-Line break opportunities are optional boundaries that the break optimizer may take when formatting one formatted segment between mandatory line breaks. See **Break Selection Algorithm** for the solver objective and tie-break rules.
+Line break opportunities are optional boundaries that the break optimizer may take when formatting one formatted segment between mandatory line breaks. See **Break Selection** for the optimization objective and constraints.
 
 - After assignment operators and after binary or ternary operators.
 - After delimiter openers and before matching closers for `()`, `[]`, `{}`, and template `<>`.
@@ -93,7 +93,7 @@ Line break opportunities are optional boundaries that the break optimizer may ta
 
 ## Indent Economy
 
-Indent economy lets nested delimiter groups share one body indentation level when their opener and closer placement stays visually unambiguous. It applies to broken `()`, `[]`, `{}`, and parsed template `<>` delimiter groups. It is a legality rule for candidate layouts; the break optimizer still chooses among legal layouts with the normal dynamic-programming objective.
+Indent economy lets nested delimiter groups share one body indentation level when their opener and closer placement stays visually unambiguous. It applies to broken `()`, `[]`, `{}`, and parsed template `<>` delimiter groups. It is a legality rule for candidate layouts; the break optimizer still chooses among legal layouts with the normal break-selection objective.
 
 For any broken delimiter stack:
 
@@ -284,20 +284,24 @@ int ratio = (
 - Unary operators and declarator `*` or `&` are token facts, not chain break points.
 - An end-of-line comment attached to one chain part forces the chain into split form.
 
-## Break Selection Algorithm
+## Break Selection
 
-For each formatted segment between mandatory line breaks, the formatter builds a break model from the format model. Break model nodes represent text leaves, sequences, delimiter groups, lists, operator structures, adjacent string literal sequences, lambda headers and bodies, and comments. The formatter rejects inputs whose tree-sitter parse contains errors or missing nodes; formatter-supported syntax is added to the grammar instead of falling back to token-span recovery.
+For each formatted segment between mandatory line breaks, strictfmt chooses the legal layout with the best break-selection cost. Dynamic programming is used to find that layout.
 
-Each break model node exposes its legal compact and split layouts. The break optimizer chooses which line break opportunities to take with dynamic programming:
+A legal layout must satisfy all constraints in this document:
+
+- Preserve source token order, supported comments, and the file line-ending style.
+- Take all mandatory line breaks.
+- Take optional line breaks only at listed line break opportunities.
+- Obey spacing, indentation, list, delimiter, chain, declaration, macro, and preprocessor rules.
+- Obey indent-economy legality for delimiter groups.
+
+Among legal layouts, the break optimizer chooses the layout with the best cost:
 
 - Minimize the largest overflow beyond the configured column limit; layouts with no overflowing physical line have zero overflow.
 - On equal maximum overflow, minimize the number of physical lines that overflow.
 - On equal overflow cost, minimize the physical line count.
 - On equal line count, prefer the layout whose deepest taken break renders at the shallower indentation level; if still tied, prefer the structurally shallower deepest taken break, then source-order-stable compact behavior.
-
-The break optimizer treats the column limit as bounded input and caches each subproblem by node and normalized layout context, including indentation, prefix, suffix, and continuation mode.
-
-Delimiter-group legality is defined by indent economy. The legality rules restrict candidate layouts without forcing a local break choice; the break optimizer chooses among the legal compact, split, and indent-economy layouts.
 
 Function signatures may break after the complete return type before breaking inside the return type. The function name is indented one continuation level. Split parameters may keep the return type and function name together when that line fits. Functions and lambdas deliberately share one callable-header model. Function definitions whose return-type prefix is split away from the function name start the body `{` on its own line at declaration indentation. Lambda body headers whose header itself splits keep the body opener attached as `) {`; when only the owner prefix splits away and the lambda header remains compact, the body opener may start at owner indentation.
 

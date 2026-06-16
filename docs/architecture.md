@@ -15,7 +15,7 @@
 - `src/tools/impl/format_break_model.h|cpp` own the break model data structures and shared break model predicates.
 - `src/tools/impl/format_break_model_builder.h|cpp` own conversion from print tokens to break models.
 - `src/tools/impl/format_break_model_inline_helpers.h` owns small inline accessors for optional break model tokens.
-- `src/tools/impl/format_break_solver.h|cpp` own the break optimizer.
+- `src/tools/impl/format_break_solver.h|cpp` own the break optimizer, see [break_solver.md] for details.
 - `src/tools/impl/format_config.h|cpp` own formatter configuration, ignore files, upward discovery, inheritance, parsing, and caching.
 - `src/tools/impl/format_include_sort.h|cpp` own include run normalization, grouping, main-include detection, and sorting.
 - `src/tools/impl/format_model.h|cpp` own format model node kinds, token classes, symbol mappings, and syntax metadata.
