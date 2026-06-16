@@ -4,8 +4,8 @@
 #include <string>
 #include <string_view>
 
-#include "tools/impl/format_config.h"
-#include "tools/impl/format_model.h"
+#include "format/impl/format_config.h"
+#include "format/impl/format_model.h"
 
 struct FormatModelTextStats {
     std::chrono::nanoseconds tokenize{};

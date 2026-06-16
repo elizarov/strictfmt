@@ -73,9 +73,9 @@ function(strictfmt_apply_common_options target)
 endfunction()
 
 add_library(strictfmt_util STATIC
-    src/tools/impl/tools_common.cpp
-    src/tools/impl/tools_parallel.cpp
-    src/tools/impl/tools_progress.cpp
+    src/tools/tools_common.cpp
+    src/tools/tools_parallel.cpp
+    src/tools/tools_progress.cpp
     src/util/file_path.cpp
     src/util/strings.cpp
 )
@@ -102,17 +102,17 @@ if(MSVC)
 endif()
 
 add_library(strictfmt_core STATIC
-    src/tools/format.cpp
-    src/tools/impl/format_break_model.cpp
-    src/tools/impl/format_break_model_builder.cpp
-    src/tools/impl/format_break_solver.cpp
-    src/tools/impl/format_config.cpp
-    src/tools/impl/format_include_sort.cpp
-    src/tools/impl/format_model.cpp
-    src/tools/impl/format_model_builder.cpp
-    src/tools/impl/format_model_parse.cpp
-    src/tools/impl/format_pretty_printer.cpp
-    src/tools/impl/format_spacing.cpp
+    src/format/format.cpp
+    src/format/impl/format_break_model.cpp
+    src/format/impl/format_break_model_builder.cpp
+    src/format/impl/format_break_solver.cpp
+    src/format/impl/format_config.cpp
+    src/format/impl/format_include_sort.cpp
+    src/format/impl/format_model.cpp
+    src/format/impl/format_model_builder.cpp
+    src/format/impl/format_model_parse.cpp
+    src/format/impl/format_pretty_printer.cpp
+    src/format/impl/format_spacing.cpp
 )
 target_include_directories(strictfmt_core PUBLIC
     "${CMAKE_CURRENT_SOURCE_DIR}/src"
@@ -125,10 +125,10 @@ target_link_libraries(strictfmt_core PUBLIC
 strictfmt_apply_common_options(strictfmt_core)
 
 add_library(strictfmt_cli STATIC
-    src/tools/format_cli.cpp
-    src/tools/format_model_dump.cpp
-    src/tools/impl/format_args.cpp
-    src/tools/strictfmt_cli.cpp
+    src/format/format_cli.cpp
+    src/format/format_model_dump.cpp
+    src/format/impl/format_args.cpp
+    src/format/strictfmt_cli.cpp
 )
 target_include_directories(strictfmt_cli PUBLIC
     "${CMAKE_CURRENT_SOURCE_DIR}/src"

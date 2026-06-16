@@ -1,4 +1,4 @@
-#include "tools/impl/format_model_builder.h"
+#include "format/impl/format_model_builder.h"
 
 #include <algorithm>
 #include <optional>
@@ -6,7 +6,7 @@
 #include <string_view>
 #include <vector>
 
-#include "tools/impl/tools_common.h"
+#include "tools/tools_common.h"
 
 namespace {
 

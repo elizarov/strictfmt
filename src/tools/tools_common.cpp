@@ -1,4 +1,4 @@
-#include "tools/impl/tools_common.h"
+#include "tools/tools_common.h"
 
 #include <algorithm>
 #include <cstdio>

@@ -1,4 +1,4 @@
-#include "tools/impl/format_model.h"
+#include "format/impl/format_model.h"
 
 #include <array>
 #include <tree_sitter_cpp.h>

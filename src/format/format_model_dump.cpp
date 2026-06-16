@@ -1,14 +1,14 @@
-#include "tools/format_model_dump.h"
+#include "format/format_model_dump.h"
 
 #include <cstdio>
 #include <optional>
 #include <string>
 #include <string_view>
 
-#include "tools/impl/format_config.h"
-#include "tools/impl/format_model.h"
-#include "tools/impl/format_model_parse.h"
-#include "tools/impl/tools_common.h"
+#include "format/impl/format_config.h"
+#include "format/impl/format_model.h"
+#include "format/impl/format_model_parse.h"
+#include "tools/tools_common.h"
 #include "util/file_path.h"
 
 namespace {

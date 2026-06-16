@@ -1,4 +1,4 @@
-#include "tools/impl/format_model_parse.h"
+#include "format/impl/format_model_parse.h"
 
 #include <cstdint>
 #include <memory>
@@ -7,8 +7,8 @@
 #include <tree_sitter/api.h>
 #include <tree_sitter_cpp.h>
 
-#include "tools/impl/format_config.h"
-#include "tools/impl/format_model_builder.h"
+#include "format/impl/format_config.h"
+#include "format/impl/format_model_builder.h"
 
 namespace {
 

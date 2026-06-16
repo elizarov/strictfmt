@@ -1,4 +1,4 @@
-#include "tools/impl/tools_progress.h"
+#include "tools/tools_progress.h"
 
 #include <cmath>
 

@@ -1,4 +1,4 @@
-#include "tools/impl/format_pretty_printer.h"
+#include "format/impl/format_pretty_printer.h"
 
 #include <algorithm>
 #include <chrono>
@@ -6,12 +6,12 @@
 #include <string>
 #include <vector>
 
-#include "tools/impl/format_break_model_builder.h"
-#include "tools/impl/format_break_model_inline_helpers.h"
-#include "tools/impl/format_break_solver.h"
-#include "tools/impl/format_include_sort.h"
-#include "tools/impl/format_spacing.h"
-#include "tools/impl/tools_common.h"
+#include "format/impl/format_break_model_builder.h"
+#include "format/impl/format_break_model_inline_helpers.h"
+#include "format/impl/format_break_solver.h"
+#include "format/impl/format_include_sort.h"
+#include "format/impl/format_spacing.h"
+#include "tools/tools_common.h"
 
 namespace {
 

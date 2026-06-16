@@ -11,12 +11,12 @@
 #include <io.h>
 #endif
 
-#include "tools/format.h"
-#include "tools/impl/format_args.h"
-#include "tools/impl/format_config.h"
-#include "tools/impl/tools_common.h"
-#include "tools/impl/tools_parallel.h"
-#include "tools/impl/tools_progress.h"
+#include "format/format.h"
+#include "format/impl/format_args.h"
+#include "format/impl/format_config.h"
+#include "tools/tools_common.h"
+#include "tools/tools_parallel.h"
+#include "tools/tools_progress.h"
 #include "util/file_path.h"
 #include "util/strings.h"
 

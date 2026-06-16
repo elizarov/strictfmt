@@ -1,6 +1,6 @@
 #include <algorithm>
 
-#include "tools/impl/format_break_model_inline_helpers.h"
+#include "format/impl/format_break_model_inline_helpers.h"
 
 namespace {
 

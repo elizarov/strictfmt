@@ -1,4 +1,4 @@
-#include "tools/impl/format_config.h"
+#include "format/impl/format_config.h"
 
 #include <algorithm>
 #include <cstdio>
@@ -6,7 +6,7 @@
 #include <string_view>
 #include <utility>
 
-#include "tools/impl/tools_common.h"
+#include "tools/tools_common.h"
 #include "util/file_path.h"
 #include "util/strings.h"
 

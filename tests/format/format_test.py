@@ -17,7 +17,7 @@ FORMAT_EXE_ARGS = os.environ.get("STRICTFMT_EXE_ARGS", "").split()
 FORMAT_CMD_TEXT = os.environ.get("STRICTFMT_FORMAT_CMD")
 FORMAT_CMD = Path(FORMAT_CMD_TEXT).resolve() if FORMAT_CMD_TEXT else None
 PLATFORM_LINE_ENDING = os.linesep.encode("ascii")
-PRETTY_PRINTER_SOURCE = STRICTFMT_ROOT / "src" / "tools" / "impl" / "format_pretty_printer.cpp"
+PRETTY_PRINTER_SOURCE = STRICTFMT_ROOT / "src" / "format" / "impl" / "format_pretty_printer.cpp"
 USERVER_SUBMODULE_ROOT = STRICTFMT_ROOT / "external" / "userver"
 SOURCE_SUFFIXES = {
     ".c",
