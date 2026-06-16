@@ -14,6 +14,7 @@ References to all the docs their ownership areas, read them only when needed for
 - `docs/macro.md`: macro categories and macro formatting. 
 - `docs/preprocessor.md`: preprocessor directives and conditional compilation. 
 - `docs/syntax_ambiguities.md`: syntax ambiguities.
+- `vendor/tree-sitter/README.md`: vendored tree-sitter runtime and grammar ownership.
 
 ## Validation
 

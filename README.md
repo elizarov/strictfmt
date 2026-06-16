@@ -41,5 +41,5 @@ void SayHello(std::string_view requestedGreetingName) {
 
 ## License
 
-`strictfmt` is distributed under the MIT License. Vendored tree-sitter grammars
+`strictfmt` is distributed under the MIT License. Vendored tree-sitter components
 retain their upstream MIT notices; see [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).

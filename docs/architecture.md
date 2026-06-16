@@ -31,7 +31,7 @@
 
 ## Build Ownership
 
-- `strictfmt_tree_sitter_runtime` owns the fallback static tree-sitter runtime when no external tree-sitter package target is available.
+- `strictfmt_tree_sitter_runtime` owns the vendored static tree-sitter runtime when `STRICTFMT_USE_SYSTEM_TREE_SITTER` is disabled.
 - `strictfmt_tree_sitter_cpp_grammar` owns the vendored generated C++ grammar and scanner.
 - `strictfmt_util` owns utility modules shared by CLI and formatter code.
 - `strictfmt::util` owns the public CMake alias for `strictfmt_util`.
