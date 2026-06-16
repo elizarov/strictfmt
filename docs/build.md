@@ -16,6 +16,15 @@ scripts\build.cmd
 The build script intentionally does not configure Visual Studio itself, so it can
 fail fast when run from an unconfigured shell.
 
+To build and run the formatter tests:
+
+```bat
+scripts\test.cmd
+```
+
+The test script invokes `scripts\build.cmd` first, then builds the
+`strictfmt_tests` CMake target in `build\windows\cmake\`.
+
 The script writes the final executable directly under `build\` and all generated
 Windows state under `build\windows\`:
 
@@ -49,6 +58,15 @@ From the repository root:
 scripts/build.sh
 ```
 
+To build and run the formatter tests:
+
+```sh
+scripts/test.sh
+```
+
+The test script invokes `scripts/build.sh` first, then builds the
+`strictfmt_tests` CMake target in the platform CMake build tree.
+
 The script uses `CC` and `CXX` from the shell when they are already configured.
 Otherwise it selects `clang`/`clang++`, or a matching versioned pair such as
 `clang-17`/`clang++-17`. It does not install packages or configure the toolchain
@@ -75,7 +93,7 @@ editing `vendor/tree-sitter/tree-sitter-cpp/grammar.js`, regenerate the generate
 grammar outputs from the repository root:
 
 ```sh
-python tools/regenerate_tree_sitter_grammar.py
+python3 tools/regenerate_tree_sitter_grammar.py
 ```
 
 The regeneration tool supports Windows x64, macOS arm64/x64, and Linux
