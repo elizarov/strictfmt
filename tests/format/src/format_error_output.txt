@@ -1,14 +1,4 @@
-<stdin>: unsupported preprocessor placement at 6:1: #if ARES_VERSION < 0x011400
-<stdin>: unsupported preprocessor placement at 15:1: #if FORMAT_USERVER_OLD_LIB
-<stdin>: unsupported preprocessor placement at 24:1: #ifdef FORMAT_USERVER_THROW
-<stdin>: unsupported preprocessor placement at 31:1: #if FORMAT_USERVER_HAS_DUPLICATE_WOULD_BLOCK
-<stdin>: unsupported preprocessor placement at 42:1: #if FORMAT_USERVER_PIPELINE_STATUS
-<stdin>: unsupported preprocessor placement at 53:1: #if FORMAT_USERVER_PIPELINE_STATUS
-<stdin>: unsupported preprocessor placement at 63:1: #if FORMAT_USERVER_NEW_MONGO
-<stdin>: unsupported preprocessor placement at 76:1: #if FORMAT_USERVER_USE_WOULD_BLOCK
-<stdin>: unsupported preprocessor placement at 100:1: #ifndef FORMAT_USERVER_ARCADIA
-<stdin>: unsupported preprocessor placement at 110:1: #if FORMAT_USERVER_HAS_STATUS_FACTORY
-<stdin>: unsupported preprocessor placement at 120:1: #if FORMAT_USERVER_HAS_FAST_VALUE
-<stdin>: unsupported preprocessor placement at 129:1: #if FORMAT_USERVER_HAS_PIPELINING
-<stdin>: unsupported preprocessor placement at 139:1: #if FORMAT_USERVER_USE_UTC
-<stdin>: unsupported preprocessor placement at 149:1: #include "format_userver_value.inc"
+<stdin>: parse failed at 4:10 near missing )
+<stdin>: parse failed at 8:9 near ERROR
+<stdin>: parse failed at 17:5 near ERROR
+<stdin>: parse failed at 21:16 near missing preproc_semicolon_initializer

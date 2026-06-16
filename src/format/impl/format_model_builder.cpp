@@ -631,22 +631,18 @@ void AppendTsChildren(
 }
 
 struct ProblemNode {
-    bool found = false;
     bool missing = false;
     TSNode node = {};
 };
 
-struct PreprocessorPlacementError {
-    TSPoint point = {};
-    std::string directiveLine;
-};
-
-ProblemNode FindFirstProblem(TSNode node) {
+void CollectProblemNodes(TSNode node, std::vector<ProblemNode>& problems) {
     if (ts_node_is_missing(node)) {
-        return {.found = true, .missing = true, .node = node};
+        problems.push_back({.missing = true, .node = node});
+        return;
     }
     if (std::string_view(ts_node_type(node)) == "ERROR") {
-        return {.found = true, .missing = false, .node = node};
+        problems.push_back({.missing = false, .node = node});
+        return;
     }
 
     const uint32_t childCount = ts_node_child_count(node);
@@ -655,422 +651,8 @@ ProblemNode FindFirstProblem(TSNode node) {
         if (!ts_node_has_error(child) && !ts_node_is_missing(child)) {
             continue;
         }
-        ProblemNode problem = FindFirstProblem(child);
-        if (problem.found) {
-            return problem;
-        }
+        CollectProblemNodes(child, problems);
     }
-    return {};
-}
-
-std::string_view NodeText(TSNode node, const std::string& source) {
-    return NodeText(node, std::string_view(source));
-}
-
-std::string_view FirstLine(std::string_view text) {
-    const size_t lineEnd = text.find_first_of("\r\n");
-    return lineEnd == std::string_view::npos ? text : text.substr(0, lineEnd);
-}
-
-std::string TrimAsciiWhitespace(std::string_view value) {
-    while (!value.empty() && (value.front() == ' ' || value.front() == '\t')) {
-        value.remove_prefix(1);
-    }
-    while (
-        !value.empty() && (value.back() == ' ' || value.back() == '\t' || value.back() == '\r' || value.back() == '\n')
-    ) {
-        value.remove_suffix(1);
-    }
-    return std::string(value);
-}
-
-std::string PreprocessorDirectiveLine(TSNode node, const std::string& source) {
-    return TrimAsciiWhitespace(FirstLine(NodeText(node, source)));
-}
-
-bool HasAllowedListPreprocessorAncestor(TSNode node) {
-    for (TSNode parent = ts_node_parent(node); !ts_node_is_null(parent); parent = ts_node_parent(parent)) {
-        const SyntaxNodeKind parentKind = GetTsNodeSyntax(parent).kind;
-        if (SyntaxNodeKindHasClass(parentKind, SyntaxNodeClass::AllowedListPreprocessorContainer)) {
-            return true;
-        }
-        if (SyntaxNodeKindHasClass(parentKind, SyntaxNodeClass::PrefixList)) {
-            return false;
-        }
-    }
-    return false;
-}
-
-bool IsAllowedAtomicConditionalNode(std::string_view treeType) {
-    return treeType == "preproc_define_ifdef" ||
-        treeType == "preproc_nested_define_ifdef" ||
-        treeType == "preproc_define_elif_chain" ||
-        treeType == "preproc_define_namespace_if" ||
-        treeType == "conditional_extern_c_open" ||
-        treeType == "conditional_extern_c_close" ||
-        treeType == "preproc_case_label_fragment";
-}
-
-bool PreviousSourceAllowsWholePreprocessorItem(TSNode node, const std::string& source) {
-    size_t cursor = ts_node_start_byte(node);
-    while (cursor > 0) {
-        --cursor;
-        const char ch = source[cursor];
-        if (ch == ' ' || ch == '\t' || ch == '\r' || ch == '\n') {
-            continue;
-        }
-        return ch == ';' || ch == '}' || ch == ':';
-    }
-    return true;
-}
-
-bool LineLooksLikeWholePreprocessorItem(std::string_view line) {
-    std::string trimmed = TrimAsciiWhitespace(line);
-    if (trimmed.empty()) {
-        return true;
-    }
-    if (StartsWith(trimmed, "//") || StartsWith(trimmed, "/*") || StartsWith(trimmed, "*")) {
-        return true;
-    }
-    if (trimmed[0] == '#') {
-        return true;
-    }
-    const size_t lineComment = trimmed.find("//");
-    if (lineComment != std::string::npos) {
-        trimmed = TrimAsciiWhitespace(std::string_view(trimmed).substr(0, lineComment));
-        if (trimmed.empty()) {
-            return true;
-        }
-    }
-    const char last = trimmed.back();
-    return last == '{' || last == '}' || last == ';' || last == ':';
-}
-
-bool ConditionalPreprocessorBranchesLookLikeWholeItems(std::string_view text) {
-    bool sawCode = false;
-    size_t lineStart = 0;
-    while (lineStart <= text.size()) {
-        size_t lineEnd = text.find('\n', lineStart);
-        if (lineEnd == std::string_view::npos) {
-            lineEnd = text.size();
-        }
-        const std::string_view line = text.substr(lineStart, lineEnd - lineStart);
-        const std::string trimmed = TrimAsciiWhitespace(line);
-        if (!trimmed.empty() && !StartsWith(trimmed, "#") && !StartsWith(trimmed, "//") && !StartsWith(trimmed, "/*") &&
-            !StartsWith(trimmed, "*")) {
-            sawCode = true;
-            if (!LineLooksLikeWholePreprocessorItem(line)) {
-                return false;
-            }
-        }
-        if (lineEnd == text.size()) {
-            break;
-        }
-        lineStart = lineEnd + 1;
-    }
-    return sawCode;
-}
-
-bool IsForbiddenPreprocessorPlacement(
-    TSNode node,
-    const std::string& source,
-    TsNodeSyntax syntax,
-    SyntaxNodeKind parentKind,
-    std::string_view treeType
-) {
-    if (syntax.kind == SyntaxNodeKind::PreprocInclude) {
-        return parentKind != SyntaxNodeKind::Unknown &&
-            !SyntaxNodeKindHasClass(parentKind, SyntaxNodeClass::AllowedPreprocessorContainer);
-    }
-    if (!SyntaxNodeKindHasClass(syntax.kind, SyntaxNodeClass::ConditionalPreprocessorOpen)) {
-        return false;
-    }
-    if (TsNodeSyntaxHasClass(syntax, SyntaxNodeClass::AtomicPreprocessor)) {
-        if (TsNodeSyntaxHasClass(syntax, SyntaxNodeClass::DeclarationModifierPreprocessor)) {
-            return false;
-        }
-        if (TsNodeSyntaxHasClass(syntax, SyntaxNodeClass::ConditionalRhsPreprocessor)) {
-            return false;
-        }
-        if (
-            HasAllowedListPreprocessorAncestor(node) &&
-            !TsNodeSyntaxHasClass(syntax, SyntaxNodeClass::DeclarationModifierPreprocessor) &&
-            !TsNodeSyntaxHasClass(syntax, SyntaxNodeClass::ConditionalRhsPreprocessor)
-        ) {
-            return false;
-        }
-        if (
-            treeType == "declaration_suffix_preproc_ifdef" &&
-            PreviousSourceAllowsWholePreprocessorItem(node, source)
-        ) {
-            return false;
-        }
-        if (
-            treeType == "preproc_expression_item_fragment" &&
-            PreviousSourceAllowsWholePreprocessorItem(node, source) &&
-            ConditionalPreprocessorBranchesLookLikeWholeItems(NodeText(node, source))
-        ) {
-            return false;
-        }
-        return !IsAllowedAtomicConditionalNode(treeType);
-    }
-    if (parentKind == SyntaxNodeKind::Unknown) {
-        return false;
-    }
-    return !SyntaxNodeKindHasClass(parentKind, SyntaxNodeClass::AllowedPreprocessorContainer);
-}
-
-void CollectPreprocessorPlacementErrors(
-    TSNode node,
-    const std::string& source,
-    SyntaxNodeKind parentKind,
-    std::vector<PreprocessorPlacementError>& errors
-) {
-    const TsNodeSyntax syntax = GetTsNodeSyntax(node);
-    const std::string_view treeType = ts_node_type(node);
-    const std::string directiveLine = PreprocessorDirectiveLine(node, source);
-    const SyntaxNodeKind directiveKind = SyntaxNodeKindFromPreprocessorDirectiveLine(directiveLine);
-    if (
-        SyntaxNodeKindHasClass(directiveKind, SyntaxNodeClass::CheckedPreprocessorDirective) &&
-        IsForbiddenPreprocessorPlacement(node, source, syntax, parentKind, treeType)
-    ) {
-        errors.push_back({ts_node_start_point(node), directiveLine});
-    }
-
-    const uint32_t childCount = ts_node_child_count(node);
-    for (uint32_t index = 0; index < childCount; ++index) {
-        CollectPreprocessorPlacementErrors(ts_node_child(node, index), source, syntax.kind, errors);
-    }
-}
-
-bool IsIncludeDirectiveLine(std::string_view line) {
-    return SyntaxNodeKindHasClass(
-        SyntaxNodeKindFromPreprocessorDirectiveLine(line),
-        SyntaxNodeClass::IncludeDirective
-    );
-}
-
-bool IsEndifDirectiveLine(std::string_view line) {
-    return SyntaxNodeKindHasClass(
-        SyntaxNodeKindFromPreprocessorDirectiveLine(line),
-        SyntaxNodeClass::EndifDirective
-    );
-}
-
-bool IsIgnorablePreprocessorTailLine(std::string_view line) {
-    return line.empty() || StartsWith(line, "//") || StartsWith(line, "/*") || StartsWith(line, "*");
-}
-
-bool IsExpressionContinuationLine(std::string_view line) {
-    static constexpr std::string_view kContinuationPrefixes[] = {
-        "::",
-        "->*",
-        ".*",
-        "->",
-        ".",
-        "<<=",
-        ">>=",
-        "<<",
-        ">>",
-        "<=>",
-        "<=",
-        ">=",
-        "==",
-        "!=",
-        "&&",
-        "||",
-        "+=",
-        "-=",
-        "*=",
-        "/=",
-        "%=",
-        "^=",
-        "&=",
-        "|=",
-        "+",
-        "-",
-        "*",
-        "/",
-        "%",
-        "^",
-        "&",
-        "|",
-        "=",
-        "?"
-    };
-    for (const std::string_view prefix : kContinuationPrefixes) {
-        if (StartsWith(line, prefix)) {
-            return true;
-        }
-    }
-    return false;
-}
-
-bool PreviousLineAllowsWholePreprocessorItem(std::string_view line) {
-    return LineLooksLikeWholePreprocessorItem(line);
-}
-
-PreprocessorPlacementError MakeLinePlacementError(int row, std::string_view line) {
-    const std::string trimmed = TrimAsciiWhitespace(line);
-    return {
-        TSPoint{static_cast<uint32_t>(row), static_cast<uint32_t>(line.size() - TrimLeadingWhitespace(line).size())},
-        trimmed
-    };
-}
-
-std::string_view LineText(const std::string& source, size_t start, size_t end) {
-    if (end > start && source[end - 1] == '\r') {
-        --end;
-    }
-    return std::string_view(source).substr(start, end - start);
-}
-
-void CollectIncludePlacementErrors(const std::string& source, std::vector<PreprocessorPlacementError>& errors) {
-    size_t lineStart = 0;
-    size_t previousNonEmptyStart = std::string::npos;
-    size_t previousNonEmptyEnd = std::string::npos;
-    int row = 0;
-    while (lineStart <= source.size()) {
-        size_t lineEnd = source.find('\n', lineStart);
-        if (lineEnd == std::string::npos) {
-            lineEnd = source.size();
-        }
-        const std::string_view line = LineText(source, lineStart, lineEnd);
-        const std::string trimmed = TrimAsciiWhitespace(line);
-        if (IsIncludeDirectiveLine(trimmed)) {
-            const bool previousAllowed = previousNonEmptyStart == std::string::npos ||
-                PreviousLineAllowsWholePreprocessorItem(LineText(source, previousNonEmptyStart, previousNonEmptyEnd));
-            if (!previousAllowed) {
-                errors.push_back(MakeLinePlacementError(row, line));
-            }
-        }
-        if (!trimmed.empty()) {
-            previousNonEmptyStart = lineStart;
-            previousNonEmptyEnd = lineEnd;
-        }
-        if (lineEnd == source.size()) {
-            break;
-        }
-        lineStart = lineEnd + 1;
-        ++row;
-    }
-}
-
-void CollectConditionalTailPlacementErrors(const std::string& source, std::vector<PreprocessorPlacementError>& errors) {
-    struct ConditionalTailFrame {
-        PreprocessorPlacementError directive;
-        bool sawCode = false;
-        bool lastCodeLooksWhole = false;
-    };
-
-    std::vector<ConditionalTailFrame> directiveStack;
-    std::optional<PreprocessorPlacementError> pendingClosedDirective;
-    bool pendingClosedDirectiveBranchesLookWhole = false;
-    size_t lineStart = 0;
-    int row = 0;
-    while (lineStart <= source.size()) {
-        size_t lineEnd = source.find('\n', lineStart);
-        if (lineEnd == std::string::npos) {
-            lineEnd = source.size();
-        }
-        const std::string_view line = LineText(source, lineStart, lineEnd);
-        const std::string trimmed = TrimAsciiWhitespace(line);
-        if (SyntaxNodeKindHasClass(
-            SyntaxNodeKindFromPreprocessorDirectiveLine(trimmed),
-            SyntaxNodeClass::ConditionalOpeningDirective
-        )) {
-            directiveStack.push_back(ConditionalTailFrame{.directive = MakeLinePlacementError(row, line)});
-            pendingClosedDirective.reset();
-            pendingClosedDirectiveBranchesLookWhole = false;
-        } else if (IsEndifDirectiveLine(trimmed)) {
-            if (!directiveStack.empty()) {
-                const ConditionalTailFrame closed = directiveStack.back();
-                pendingClosedDirective = closed.directive;
-                pendingClosedDirectiveBranchesLookWhole = closed.sawCode && closed.lastCodeLooksWhole;
-                directiveStack.pop_back();
-                if (!directiveStack.empty()) {
-                    directiveStack.back().sawCode = true;
-                    directiveStack.back().lastCodeLooksWhole = pendingClosedDirectiveBranchesLookWhole;
-                }
-            } else {
-                pendingClosedDirective.reset();
-                pendingClosedDirectiveBranchesLookWhole = false;
-            }
-        } else if (!IsIgnorablePreprocessorTailLine(trimmed)) {
-            if (
-                pendingClosedDirective.has_value() &&
-                !pendingClosedDirectiveBranchesLookWhole &&
-                IsExpressionContinuationLine(trimmed)
-            ) {
-                errors.push_back(*pendingClosedDirective);
-            }
-            pendingClosedDirective.reset();
-            pendingClosedDirectiveBranchesLookWhole = false;
-            if (trimmed.empty() || trimmed[0] != '#') {
-                if (!directiveStack.empty()) {
-                    directiveStack.back().sawCode = true;
-                    directiveStack.back().lastCodeLooksWhole = LineLooksLikeWholePreprocessorItem(trimmed);
-                }
-            }
-        }
-        if (lineEnd == source.size()) {
-            break;
-        }
-        lineStart = lineEnd + 1;
-        ++row;
-    }
-}
-
-std::string FormatPreprocessorPlacementErrors(const std::vector<PreprocessorPlacementError>& errors) {
-    std::string text;
-    for (const PreprocessorPlacementError& error : errors) {
-        if (!text.empty()) {
-            text += '\n';
-        }
-        text += "unsupported preprocessor placement at ";
-        text += std::to_string(static_cast<int>(error.point.row) + 1);
-        text += ":";
-        text += std::to_string(static_cast<int>(error.point.column) + 1);
-        text += ": ";
-        text += error.directiveLine;
-    }
-    return text;
-}
-
-void SortAndDeduplicatePreprocessorPlacementErrors(std::vector<PreprocessorPlacementError>& errors) {
-    std::sort(errors.begin(), errors.end(), [](const auto& left, const auto& right) {
-        if (left.point.row != right.point.row) {
-            return left.point.row < right.point.row;
-        }
-        if (left.point.column != right.point.column) {
-            return left.point.column < right.point.column;
-        }
-        return left.directiveLine < right.directiveLine;
-    });
-    errors.erase(
-        std::unique(errors.begin(), errors.end(), [](const auto& left, const auto& right) {
-            return left.point.row == right.point.row &&
-                left.point.column == right.point.column &&
-                left.directiveLine == right.directiveLine;
-        }),
-        errors.end()
-    );
-}
-
-ParseResult PreprocessorPlacementFailure(TSNode root, const std::string& source) {
-    std::vector<PreprocessorPlacementError> errors;
-    CollectIncludePlacementErrors(source, errors);
-    CollectConditionalTailPlacementErrors(source, errors);
-    CollectPreprocessorPlacementErrors(root, source, SyntaxNodeKind::Unknown, errors);
-    SortAndDeduplicatePreprocessorPlacementErrors(errors);
-    ParseResult parse;
-    if (errors.empty()) {
-        parse.ok = true;
-        return parse;
-    }
-    parse.ok = false;
-    parse.error = FormatPreprocessorPlacementErrors(errors);
-    return parse;
 }
 
 void AppendIncludeRun(
@@ -1189,22 +771,33 @@ void GroupOpeningIncludeRuns(FormatModel& model, SyntaxNode& root) {
     root.children = std::move(groupedChildren);
 }
 
-ParseResult ParseFailure(TSNode root) {
-    ProblemNode problem = FindFirstProblem(root);
-    if (!problem.found) {
-        problem = {.found = true, .missing = false, .node = root};
-    }
+std::string ParseProblemMessage(const ProblemNode& problem) {
     const TSPoint point = ts_node_start_point(problem.node);
     const std::string nodeType = problem.missing ? "missing " + std::string(ts_node_type(problem.node)) :
         std::string(ts_node_type(problem.node));
-    ParseResult parse;
-    parse.ok = false;
-    parse.error = "parse failed at " +
+    return "parse failed at " +
         std::to_string(static_cast<int>(point.row) + 1) +
         ":" +
         std::to_string(static_cast<int>(point.column) + 1) +
         " near " +
         nodeType;
+}
+
+ParseResult ParseFailure(TSNode root) {
+    std::vector<ProblemNode> problems;
+    CollectProblemNodes(root, problems);
+    if (problems.empty()) {
+        problems.push_back({.missing = false, .node = root});
+    }
+
+    ParseResult parse;
+    parse.ok = false;
+    for (const ProblemNode& problem : problems) {
+        if (!parse.error.empty()) {
+            parse.error.push_back('\n');
+        }
+        parse.error += ParseProblemMessage(problem);
+    }
     return parse;
 }
 
@@ -1220,10 +813,6 @@ FormatModel BuildFormatModel(TSNode root, std::unique_ptr<std::string> sourceTex
 
     const std::string_view source(*model.sourceText);
     model.nodes.reserve(source.size() * 2 + 64);
-    model.parse = PreprocessorPlacementFailure(root, *model.sourceText);
-    if (!model.parse.ok) {
-        return model;
-    }
     if (ts_node_has_error(root) || ts_node_is_missing(root)) {
         model.parse = ParseFailure(root);
         return model;
