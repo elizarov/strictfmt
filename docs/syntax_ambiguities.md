@@ -11,7 +11,7 @@ int product(a * b, c & d);  // direct initializer
 ResultType local(FirstType* first, SecondType& second);  // function declaration
 ```
 
-Parenthesized initialization is rare in project code, so the formatter defaults the declaration parse. Prefer braced initialization to remove amgiuty:
+Parenthesized initialization is rare in project code, so the formatter defaults the declaration parse. Prefer braced initialization to remove ambiguity:
 
 ```cpp
 int product{a * b, c & b};  // preferred direct initializer
@@ -48,7 +48,7 @@ Formatter parses expressions and templates using the following rules:
 If a non-type template argument expression can parse as a type-like argument, parenthesize the value argument. For example, `Size(A * B)` inside a template argument list parses as a type-like function declarator and formats with type-declarator spacing:
 
 ```cpp
-using X = Box<Size(A* B)>;  // type-like function declaration as tempalate argument  
+using X = Box<Size(A* B)>;  // type-like function declaration as template argument
 ```
 
 Write the value expression as:

@@ -7,8 +7,10 @@ References to all the docs their ownership areas, read them only when needed for
 - `README.md`: project overview, goals, and doc links.
 - `docs/architecture.md`: general architecture and ownership of different code modules.
 - `docs/build.md`: build scripts and embedding/test options.
+- `docs/command_line.md`: strictfmt executable command-line parameters and behavior.
 - `docs/config.md`: formatter configuration.
 - `docs/format.md`: specifies source layout produced by formatter.
+- `docs/glossary.md`: shared terminology used across docs.
 - `docs/macro.md`: macro categories and macro formatting. 
 - `docs/preprocessor.md`: preprocessor directives and conditional compilation. 
 - `docs/syntax_ambiguities.md`: syntax ambiguities.

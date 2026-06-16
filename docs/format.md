@@ -82,7 +82,7 @@ if (value != next) {
 
 ## Line Break Opportunities
 
-Line break opportunities are optional boundaries that the optimizer may take when formatting one segment between mandatory breaks. The formatter sends these opportunities to a dynamic-programming optimization solver; see **Break Selection Algorithm** for the solver objective and tie-break rules.
+Line break opportunities are optional boundaries that the break optimizer may take when formatting one formatted segment between mandatory line breaks. See **Break Selection Algorithm** for the solver objective and tie-break rules.
 
 - After assignment operators and after binary or ternary operators.
 - After delimiter openers and before matching closers for `()`, `[]`, `{}`, and template `<>`.
@@ -93,7 +93,7 @@ Line break opportunities are optional boundaries that the optimizer may take whe
 
 ## Indent Economy
 
-Indent economy lets nested delimiter groups share one body indentation level when their opener and closer placement stays visually unambiguous. It applies to broken `()`, `[]`, `{}`, and parsed template `<>` delimiter groups. It is a legality rule for candidate layouts; the optimizer still chooses among legal layouts with the normal dynamic-programming objective.
+Indent economy lets nested delimiter groups share one body indentation level when their opener and closer placement stays visually unambiguous. It applies to broken `()`, `[]`, `{}`, and parsed template `<>` delimiter groups. It is a legality rule for candidate layouts; the break optimizer still chooses among legal layouts with the normal dynamic-programming objective.
 
 For any broken delimiter stack:
 
@@ -286,18 +286,18 @@ int ratio = (
 
 ## Break Selection Algorithm
 
-For each parsed segment between mandatory line breaks, the formatter uses a tree-sitter-derived layout model built directly from the parsed syntax tree. Tree nodes represent text leaves, sequences, delimiter groups, lists, operator structures, adjacent string literal sequences, lambda headers and bodies, and comments. The formatter rejects inputs whose tree-sitter parse contains errors or missing nodes; formatter-supported syntax is added to the grammar instead of falling back to token-span recovery.
+For each formatted segment between mandatory line breaks, the formatter builds a break model from the format model. Break model nodes represent text leaves, sequences, delimiter groups, lists, operator structures, adjacent string literal sequences, lambda headers and bodies, and comments. The formatter rejects inputs whose tree-sitter parse contains errors or missing nodes; formatter-supported syntax is added to the grammar instead of falling back to token-span recovery.
 
-Each node exposes its legal compact and split layouts. The optimizer chooses which optional breaks to take with dynamic programming:
+Each break model node exposes its legal compact and split layouts. The break optimizer chooses which line break opportunities to take with dynamic programming:
 
 - Minimize the largest overflow beyond the configured column limit; layouts with no overflowing physical line have zero overflow.
 - On equal maximum overflow, minimize the number of physical lines that overflow.
 - On equal overflow cost, minimize the physical line count.
 - On equal line count, prefer the layout whose deepest taken break renders at the shallower indentation level; if still tied, prefer the structurally shallower deepest taken break, then source-order-stable compact behavior.
 
-The optimizer treats the column limit as bounded input and caches each subproblem by node and normalized layout context, including indentation, prefix, suffix, and continuation mode.
+The break optimizer treats the column limit as bounded input and caches each subproblem by node and normalized layout context, including indentation, prefix, suffix, and continuation mode.
 
-Delimiter-group legality is defined by indent economy. The legality rules restrict candidate layouts without forcing a local break choice; the optimizer chooses among the legal compact, split, and indent-economy layouts.
+Delimiter-group legality is defined by indent economy. The legality rules restrict candidate layouts without forcing a local break choice; the break optimizer chooses among the legal compact, split, and indent-economy layouts.
 
 Function signatures may break after the complete return type before breaking inside the return type. The function name is indented one continuation level. Split parameters may keep the return type and function name together when that line fits. Functions and lambdas deliberately share one callable-header model. Function definitions whose return-type prefix is split away from the function name start the body `{` on its own line at declaration indentation. Lambda body headers whose header itself splits keep the body opener attached as `) {`; when only the owner prefix splits away and the lambda header remains compact, the body opener may start at owner indentation.
 
@@ -563,7 +563,7 @@ Include sorting is enabled when include groups are configured. Sorting may move 
 
 When include groups are absent, include sorting is disabled. Include directives are normalized and emitted in source order, and blank-separated include blocks are preserved.
 
-Opening include blocks follow the same include-run formatting path for `#pragma once` headers and `#ifndef`/`#define` guarded headers, so configured include groups control sorting or preservation for both forms.
+Opening include blocks follow the same include run formatting path for `#pragma once` headers and `#ifndef`/`#define` guarded headers, so configured include groups control sorting or preservation for both forms.
 
 Comments inside an include area bound the sortable include run around them.
 
@@ -600,7 +600,8 @@ Outside the listed changes, the formatter changes only spaces and line breaks.
 
 ## Further reading
 
-- [config.md] specifies the configuration files. 
-- [macro.md] specifies the macro configuration and macro formatting. 
-- [preprocessor.md] describes handing of preprocessor directives and conditional compilation. 
-- [syntax_ambiguities.md] specifies the treatment of C++ syntax ambiguities.
+- [config.md](config.md) specifies formatter configuration and ignore files.
+- [glossary.md](glossary.md) defines shared terminology.
+- [macro.md](macro.md) specifies macro configuration and macro formatting.
+- [preprocessor.md](preprocessor.md) describes handling of preprocessor directives and conditional compilation.
+- [syntax_ambiguities.md](syntax_ambiguities.md) specifies the treatment of C++ syntax ambiguities.

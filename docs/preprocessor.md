@@ -1,12 +1,12 @@
 # Preprocessor
 
-This document describes handing of preprocessor directives and conditional compilation by `strictfmt`.
+This document describes handling of preprocessor directives and conditional compilation by `strictfmt`.
 
 ## Empty lines
 
 Put one empty line after `#pragma once` when another source item follows. Put one empty line before and after each `#undef` when it separates `#undef` from a neighboring source item.
 
-## Conditional Compilation And Local Includes
+## Conditional Compilation and Local Includes
 
 Conditional compilation is accepted when each branch contributes complete grammar items at the surrounding level: complete declarations, complete statements, switch `case` or `default` labels, field or method declarations, enum entries, macro definitions, includes, or similar syntax that already has a mandatory structural line break. Conditional declaration-prefix modifiers are also accepted for standalone modifiers and for attributes that precede a declaration. The conditional directive lines stay at column zero, and the guarded code keeps the indentation it would have at that source location.
 

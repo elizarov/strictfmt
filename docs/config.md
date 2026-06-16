@@ -1,19 +1,19 @@
 # Formatter Configuration
 
-This document specifies the configuration files consumed by `strictfmt`.
+This document specifies formatter configuration and ignore files consumed by `strictfmt`.
 
-Configuration is intentionally narrow and does not expose style policy knobs. Brace behavior, wrapping behavior, spacing, alignment behavior, and other layout decisions are fixed in formatter source and
+Formatter configuration is intentionally narrow and does not expose style policy knobs. Brace behavior, wrapping behavior, spacing, alignment behavior, and other layout decisions are fixed in formatter source and
 are documented in [format.md](format.md).
 
 ## Discovery and inheritance
 
-When `--style` is omitted, `strictfmt` searches upward from each formatted file for `.cpp-format`. For `--stdin`, discovery starts at the current working directory. `--style <path>` uses the provided config path for every input. Formatting file paths are still checked against the nearest `.cpp-format-ignore` found by walking upward from each formatted file.
+When `--style` is omitted, `strictfmt` searches upward from each formatted file for `.cpp-format`. For `--stdin`, discovery starts at the current working directory. `--style <path>` uses the provided formatter configuration path for every input. Formatting file paths are still checked against the nearest ignore file found by walking upward from each formatted file.
 
-`Inherit: Parent` makes a `.cpp-format` file inherit from the next `.cpp-format` found by searching upward from the config file's parent directory. Explicit `--style <path>` configs use the same parent search rooted at the explicit config file. If no parent config exists, inheritance starts from built-in defaults. Local scalar keys override inherited scalar keys. Local list keys replace inherited lists. Nested maps, such as `MacroCategories` and `StreamShift`, inherit by category, and a local category replaces only that inherited category.
+`Inherit: Parent` makes a `.cpp-format` file inherit from the next `.cpp-format` found by searching upward from the formatter configuration file's parent directory. Explicit `--style <path>` formatter configuration files use the same parent search rooted at the explicit file. If no parent `.cpp-format` exists, inheritance starts from built-in defaults. Local scalar keys override inherited scalar keys. Local list keys replace inherited lists. Nested maps, such as `MacroCategories` and `StreamShift`, inherit by category, and a local category replaces only that inherited category.
 
 ## .cpp-format
 
-The `.cpp-format` file uses the formatter's YAML-like subset: blank lines, `---`, `...`, and comments are ignored; comments start with `#` outside single or double quotes; scalars may be unquoted, single quoted, or double quoted; lists use indented `- value` entries. Unknown keys are ignored by the native formatter.
+The `.cpp-format` file uses the formatter's YAML-like subset: blank lines, `---`, `...`, and comments are ignored; comments start with `#` outside single or double quotes; scalars may be unquoted, single quoted, or double quoted; lists use indented `- value` entries. Unknown keys are ignored by the formatter.
 
 Supported top-level keys:
 

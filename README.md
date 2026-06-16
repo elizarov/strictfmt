@@ -12,7 +12,7 @@ A strict, rule-based source formatter. No heuristics. No bikeshedding.
 
 - Never use vertical alignment.
 - Keep formatter-owned chains and lists compact or split item-by-item.
-- Use no heuristics or weights; use only the general line-break optimization rule.
+- Use no heuristics or weights; use only the break optimizer.
 - Use indentation changes as visual group borders; one indentation size for every indentation change.
 
 ## Example
@@ -31,9 +31,12 @@ void SayHello(std::string_view requestedGreetingName) {
 
 ## Detailed documentation
 
+- [docs/architecture.md](docs/architecture.md) describes code module ownership.
+- [docs/command_line.md](docs/command_line.md) specifies the `strictfmt` executable command line.
+- [docs/glossary.md](docs/glossary.md) defines shared terminology used across docs.
 - [docs/format.md](docs/format.md) specifies the source layout produced by formatter.
-- [docs/config.md](docs/config.md) specifies the configuration files consumed by formatter.
-- [docs/preprocessor.md](docs/preprocessor.md) describes handing of preprocessor directives and conditional compilation.
+- [docs/config.md](docs/config.md) specifies formatter configuration and ignore files.
+- [docs/preprocessor.md](docs/preprocessor.md) describes handling of preprocessor directives and conditional compilation.
 - [docs/syntax_ambiguities.md](docs/syntax_ambiguities.md) explains treatment of C++ syntax ambiguities. 
 
 ## License
