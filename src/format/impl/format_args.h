@@ -20,6 +20,7 @@ struct FormatOptions {
     bool fileListProvided = false;
     bool recursiveInputProvided = false;
     bool concurrencyProvided = false;
+    bool dump = false;
     size_t concurrency = 0;
     std::optional<std::string> dumpFile;
     std::optional<std::string> explicitStylePath;

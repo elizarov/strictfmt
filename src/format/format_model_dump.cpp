@@ -137,7 +137,17 @@ int DumpFormatModel(
         return 2;
     }
 
-    FormatModel model = ParseFormatModel(*text, *config);
+    return DumpFormatModelText(*text, *config, output, errorOutput, commandName);
+}
+
+int DumpFormatModelText(
+    std::string_view sourceText,
+    const FormatterConfig& config,
+    FILE* output,
+    FILE* errorOutput,
+    std::string_view commandName
+) {
+    FormatModel model = ParseFormatModel(sourceText, config);
     if (!model.parse.ok) {
         const std::string error = model.parse.error.empty() ? std::string("parser setup failed") : model.parse.error;
         std::fprintf(

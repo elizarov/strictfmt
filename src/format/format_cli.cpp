@@ -199,7 +199,11 @@ int RunFormat(int argc, char** argv) {
             return 2;
         }
         SetBinaryMode(stdin);
-        SourceFormatResult result = FormatSourceText(ReadStdinText(), *config, "<stdin>");
+        std::string stdinText = ReadStdinText();
+        if (options.dump) {
+            return DumpFormatModelText(stdinText, *config, stdout, stderr, "strictfmt --dump");
+        }
+        SourceFormatResult result = FormatSourceText(stdinText, *config, "<stdin>");
         if (!result.ok) {
             PrintSourceError(stderr, "<stdin>", result.error);
             return 1;
