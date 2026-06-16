@@ -1079,9 +1079,13 @@ private:
         if (!node.forceSplit && compact.valid && compact.extraLines == 0) {
             alternatives.push_back(compact);
         }
-        NodeResult stackSplit = SolveDelimiterStack(node, stack, column, indentLevel, lineHasText);
-        if (stackSplit.valid) {
-            alternatives.push_back(stackSplit);
+        NodeResult attachedLeaf = SolveDelimiterStack(node, stack, column, indentLevel, lineHasText, false);
+        if (attachedLeaf.valid) {
+            alternatives.push_back(attachedLeaf);
+        }
+        NodeResult detachedLeaf = SolveDelimiterStack(node, stack, column, indentLevel, lineHasText, true);
+        if (detachedLeaf.valid) {
+            alternatives.push_back(detachedLeaf);
         }
         return alternatives;
     }
@@ -1094,12 +1098,14 @@ private:
         bool lineHasText
     ) {
         NodeResult compact = SolveDelimitedCompact(node, column, indentLevel, lineHasText);
-        NodeResult stackSplit = SolveDelimiterStack(node, stack, column, indentLevel, lineHasText);
+        NodeResult attachedLeaf = SolveDelimiterStack(node, stack, column, indentLevel, lineHasText, false);
+        NodeResult detachedLeaf = SolveDelimiterStack(node, stack, column, indentLevel, lineHasText, true);
         if (compact.extraLines > 0) {
             compact = {};
         }
         NodeResult best = compact;
-        return Better(stackSplit, best) ? stackSplit : best;
+        best = Better(attachedLeaf, best) ? attachedLeaf : best;
+        return Better(detachedLeaf, best) ? detachedLeaf : best;
     }
 
     NodeResult SolveDelimited(const FormatBreakNode& node, int column, int indentLevel, bool lineHasText) {
@@ -1144,11 +1150,17 @@ private:
         const DelimiterStackView& stack,
         int column,
         int indentLevel,
-        bool lineHasText
+        bool lineHasText,
+        bool detachLeaf
     ) {
         NodeResult
             result{.valid = true, .endColumn = column, .endIndentLevel = indentLevel, .endLineHasText = lineHasText};
-        AddChoice(result, node.id, FormatBreakChoice::SplitDelimiterStack);
+        AddChoice(
+            result,
+            node.id,
+            detachLeaf ? FormatBreakChoice::SplitDelimiterStackDetachedLeaf :
+                FormatBreakChoice::SplitDelimiterStack
+        );
 
         int currentLineIndent = indentLevel;
         int nextOpenIndent = indentLevel + 1;
@@ -1171,18 +1183,19 @@ private:
             result = AddToken(result, open);
         }
 
-        if (result.endLineHasText) {
+        if (detachLeaf && result.endLineHasText) {
             result = AddBreak(result, nextOpenIndent, node.structuralDepth);
         }
         NodeResult leaf = Solve(*stack.leaf, result.endColumn, result.endIndentLevel, result.endLineHasText);
-        if (!leaf.valid) {
+        if (!leaf.valid || (!detachLeaf && leaf.extraLines > 0)) {
             return {};
         }
         Merge(result, leaf);
 
         for (size_t runIndex = delimiterRuns.size(); runIndex-- > 0;) {
             const DelimiterStackRun& run = delimiterRuns[runIndex];
-            if (result.endLineHasText) {
+            const bool firstClosingRun = runIndex + 1 == delimiterRuns.size();
+            if (result.endLineHasText && (detachLeaf || !firstClosingRun)) {
                 result = AddBreak(result, run.indentLevel, node.structuralDepth);
             }
             for (size_t index = run.end; index-- > run.begin;) {
