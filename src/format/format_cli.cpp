@@ -12,6 +12,7 @@
 #endif
 
 #include "format/format.h"
+#include "format/format_model_dump.h"
 #include "format/impl/format_args.h"
 #include "format/impl/format_config.h"
 #include "tools/tools_common.h"
@@ -176,6 +177,9 @@ int RunFormat(int argc, char** argv) {
     if (options.help) {
         PrintFormatUsage(stdout);
         return 0;
+    }
+    if (options.dumpFile.has_value()) {
+        return DumpFormatModel(*options.dumpFile, options.explicitStylePath, stdout, stderr, "strictfmt --dump");
     }
 
     FormatStyleCache styleCache(options.explicitStylePath);
