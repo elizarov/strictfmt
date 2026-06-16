@@ -8,7 +8,7 @@
 #include <string_view>
 #include <vector>
 
-#include "tools/impl/format_spacing.h"
+#include "format/impl/format_spacing.h"
 
 enum class FormatBreakNodeKind {
     Token,

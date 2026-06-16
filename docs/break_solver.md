@@ -1,12 +1,12 @@
 # Break Solver
 
-This document owns developer-facing details of the break solver in `src/tools/impl/format_break_solver.h|cpp`. `docs/format.md` owns the user-facing layout objective and legality constraints.
+This document owns developer-facing details of the break solver in `src/format/impl/format_break_solver.h|cpp`. [format.md] owns the user-facing layout objective and legality constraints.
 
 ## Solver Contract
 
 The solver receives a `FormatBreakModel` for one formatted segment and returns a `FormatBreakSolution`, which records the selected `FormatBreakChoice` for each break model node. The pretty printer must emit exactly the selected choices; it must not re-run local layout decisions or infer hidden choices from child nodes.
 
-`Better` implements the break-selection cost from `docs/format.md`. Any change to that ordering changes the formatter spec and must update `docs/format.md` in the same change.
+`Better` implements the break-selection cost from [format.md].
 
 ## Search Shape
 
@@ -29,7 +29,7 @@ Do not encode an observable layout distinction as a printer-side heuristic such 
 
 ## Allowed Speedups
 
-Heuristics are allowed only when they are equivalence-preserving: the result must be the same as exhaustive enumeration of all legal layouts under the objective in `docs/format.md`.
+Heuristics are allowed only when they are equivalence-preserving: the result must be the same as exhaustive enumeration of all legal layouts under the objective in [format.md].
 
 Allowed speedups include:
 
@@ -42,7 +42,7 @@ Allowed speedups include:
 Not allowed:
 
 - Local rules that force a break because a nearby token would overflow unless that break is a legal candidate selected by `Better`.
-- Arbitrary weights, preferences, or tie-breaks outside `docs/format.md`.
+- Arbitrary weights, preferences, or tie-breaks outside [format.md].
 - Printer-side reconstruction of a choice that the solver did not record.
 - Dropping a legal candidate because it looks unlikely to win without a dominance or optimality proof.
 

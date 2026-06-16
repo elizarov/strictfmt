@@ -1,4 +1,4 @@
-#include "tools/impl/format_include_sort.h"
+#include "format/impl/format_include_sort.h"
 
 #include <algorithm>
 #include <cctype>
@@ -8,9 +8,9 @@
 #include <string>
 #include <vector>
 
-#include "tools/impl/format_config.h"
-#include "tools/impl/format_model.h"
-#include "tools/impl/tools_common.h"
+#include "format/impl/format_config.h"
+#include "format/impl/format_model.h"
+#include "tools/tools_common.h"
 #include "util/strings.h"
 
 namespace {

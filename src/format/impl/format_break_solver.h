@@ -2,8 +2,8 @@
 
 #include <vector>
 
-#include "tools/impl/format_break_model.h"
-#include "tools/impl/format_config.h"
+#include "format/impl/format_break_model.h"
+#include "format/impl/format_config.h"
 
 struct FormatBreakSolution {
     std::vector<FormatBreakChoice> choices;

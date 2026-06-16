@@ -1,4 +1,4 @@
-#include "tools/impl/format_break_solver.h"
+#include "format/impl/format_break_solver.h"
 
 #include <algorithm>
 #include <cstddef>
@@ -10,7 +10,7 @@
 #include <unordered_map>
 #include <vector>
 
-#include "tools/impl/format_break_model_inline_helpers.h"
+#include "format/impl/format_break_model_inline_helpers.h"
 
 namespace {
 

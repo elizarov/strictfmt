@@ -1,6 +1,6 @@
-#include "tools/strictfmt_cli.h"
+#include "format/strictfmt_cli.h"
 
-#include "tools/format.h"
+#include "format/format.h"
 
 int RunStrictfmtCli(int argc, char** argv) {
     if (argc <= 0) {

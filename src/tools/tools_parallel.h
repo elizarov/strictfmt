@@ -8,7 +8,7 @@
 #include <thread>
 #include <vector>
 
-#include "tools/impl/tools_progress.h"
+#include "tools/tools_progress.h"
 
 constexpr size_t kToolAutoConcurrency = 0;
 

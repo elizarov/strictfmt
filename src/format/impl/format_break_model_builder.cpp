@@ -1,4 +1,4 @@
-#include "tools/impl/format_break_model_builder.h"
+#include "format/impl/format_break_model_builder.h"
 
 #include <algorithm>
 #include <array>
@@ -8,7 +8,7 @@
 #include <span>
 #include <utility>
 
-#include "tools/impl/format_break_model_inline_helpers.h"
+#include "format/impl/format_break_model_inline_helpers.h"
 
 namespace {
 

@@ -1,9 +1,9 @@
-#include "tools/impl/format_args.h"
+#include "format/impl/format_args.h"
 
 #include <cstdio>
 
-#include "tools/impl/tools_common.h"
-#include "tools/impl/tools_parallel.h"
+#include "tools/tools_common.h"
+#include "tools/tools_parallel.h"
 #include "util/file_path.h"
 #include "util/strings.h"
 

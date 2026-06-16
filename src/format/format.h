@@ -3,7 +3,7 @@
 #include <string>
 #include <string_view>
 
-#include "tools/impl/format_config.h"
+#include "format/impl/format_config.h"
 
 struct SourceFormatResult {
     bool ok = true;

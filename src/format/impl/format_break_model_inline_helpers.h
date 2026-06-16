@@ -1,6 +1,6 @@
 #pragma once
 
-#include "tools/impl/format_break_model.h"
+#include "format/impl/format_break_model.h"
 
 inline const PrintToken& FormatBreakTokenValue(const FormatBreakToken& token) {
     static const PrintToken kEmptyToken;
