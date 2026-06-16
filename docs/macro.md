@@ -8,17 +8,17 @@ Macro continuation backslashes, spaces before continuation backslashes, and cont
 
 Macro replacement lists that form declaration fragments are recursively formatted before continuation backslashes are added.
 
-## Object-line and function-line macro 
+## Object-Like and Function-Like Macros
 
 Object-like `#define NAME replacement` definitions are always preserved as raw preprocessor definitions. Their replacement lists are treated as arbitrary tokens and the formatter does not reinterpret them as C++ expressions or declarations.
 
-Funline-line `#define NAME(PARAMS...) replacement` definitiion are treated depending on their category.
+Function-like `#define NAME(PARAMS...) replacement` definitions are treated depending on their macro category.
 
-## Marco categories
+## Macro Categories
 
 Macro category entries must be C/C++ identifiers. Add a trailing `*` to an entry when the role applies to every identifier with that prefix, such as `ATTRIBUTE*`; no other glob syntax is supported.
 
-The macros that belong to different categories are configured in configuration file, see [config.md](config.md).
+The macros that belong to different categories are configured in formatter configuration, see [config.md](config.md).
 
 ### RawMacroFunctionDefinitions
 
