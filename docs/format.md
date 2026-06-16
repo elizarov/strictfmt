@@ -212,11 +212,11 @@ struct Context {
 
 Binary chain operators are the operators whose usual source meaning is an associative, mostly commutative aggregation. Formatting them as a chain avoids implying that the first operand owns a subordinate "rest of expression" branch. Stream shifts and comma expressions are also chain-shaped because their syntax is a repeated separator sequence, but they do not use the associativity rationale.
 
-- Chain operators are token-class defined.
+- Chain operators are the operators listed below.
 - Binary chain operators are `+`, `*`, `&`, `|`, `^`, `&&`, and `||`.
 - Comma is a chain operator only in comma expressions.
 - Stream-shift chain operators are `<<` and `>>`.
-- Operators outside the chain-operator token class are ordinary operators. Examples include `==`, `-`, `/`, `%`, and comparisons.
+- Operators outside these chain-operator groups are ordinary operators. Examples include `==`, `-`, `/`, `%`, and comparisons.
 - Chain classification is independent of operand count. A chain with two operands is still a chain.
 - Chains use compact or split form.
 - Compact chains may keep leading operands on one line while the final operand uses an indent-economy delimiter expansion.

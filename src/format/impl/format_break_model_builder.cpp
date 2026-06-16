@@ -80,14 +80,14 @@ bool IsSelectedSeparator(const FormatBreakToken& token) {
 bool IsBinaryOperatorForNode(const FormatBreakToken& token) {
     const PrintToken& printToken = FormatBreakTokenValue(token);
     return printToken.kind == PrintTokenKind::Known &&
-        SyntaxNodeKindHasClass(printToken.syntaxKind, TokenClass::BinaryOperator) &&
+        SyntaxNodeKindHasClass(printToken.syntaxKind, SyntaxNodeClass::BinaryOperator) &&
         printToken.parentKind == SyntaxNodeKind::BinaryExpression;
 }
 
 bool IsAssignmentOperatorForNode(const FormatBreakToken& token) {
     const PrintToken& printToken = FormatBreakTokenValue(token);
     return printToken.kind == PrintTokenKind::Known &&
-        SyntaxNodeKindHasClass(printToken.syntaxKind, TokenClass::AssignmentOperator) && (
+        SyntaxNodeKindHasClass(printToken.syntaxKind, SyntaxNodeClass::AssignmentOperator) && (
             printToken.parentKind == SyntaxNodeKind::AssignmentExpression ||
             printToken.parentKind == SyntaxNodeKind::InitDeclarator ||
             printToken.parentKind == SyntaxNodeKind::FieldDeclaration ||
@@ -107,11 +107,7 @@ bool IsCommaOperatorForNode(const FormatBreakToken& token) {
     const PrintToken& printToken = FormatBreakTokenValue(token);
     return printToken.kind == PrintTokenKind::Known &&
         printToken.parentKind == SyntaxNodeKind::CommaExpression &&
-        SyntaxNodeKindHasClass(printToken.syntaxKind, TokenClass::ChainOperator);
-}
-
-bool IsControlHeaderKind(SyntaxNodeKind kind) {
-    return SyntaxNodeKindHasClass(kind, TokenClass::ControlHeader);
+        SyntaxNodeKindHasClass(printToken.syntaxKind, SyntaxNodeClass::ChainOperator);
 }
 
 bool IsForHeaderDelimiter(const FormatBreakToken& open) {
@@ -120,17 +116,9 @@ bool IsForHeaderDelimiter(const FormatBreakToken& open) {
         printToken.grandParentKind == SyntaxNodeKind::ForStatement;
 }
 
-bool IsFlatLogicalHeaderKind(SyntaxNodeKind kind) {
-    return SyntaxNodeKindHasClass(kind, TokenClass::FlatLogicalHeader);
-}
-
-bool IsChainOperatorKind(SyntaxNodeKind token) {
-    return SyntaxNodeKindHasClass(token, TokenClass::ChainOperator);
-}
-
 bool IsChainOperatorToken(const FormatBreakToken& token) {
     return FormatBreakTokenKind(token) == PrintTokenKind::Known &&
-        IsChainOperatorKind(FormatBreakTokenSyntaxKind(token));
+        SyntaxNodeKindHasClass(FormatBreakTokenSyntaxKind(token), SyntaxNodeClass::ChainOperator);
 }
 
 bool EndsWithEscapedLineFragment(std::string_view text) {
@@ -188,7 +176,8 @@ bool UsesFlatLogicalContinuation(const FormatBreakToken& open, const FormatBreak
     ) {
         return false;
     }
-    return IsFlatLogicalHeaderKind(printToken.parentKind) || IsFlatLogicalHeaderKind(printToken.grandParentKind);
+    return SyntaxNodeKindHasClass(printToken.parentKind, SyntaxNodeClass::FlatLogicalHeader) ||
+        SyntaxNodeKindHasClass(printToken.grandParentKind, SyntaxNodeClass::FlatLogicalHeader);
 }
 
 bool UsesFlatNonCallParenthesisContinuation(const FormatBreakToken& open) {
@@ -200,20 +189,6 @@ bool UsesFlatNonCallParenthesisContinuation(const FormatBreakToken& open) {
         printToken.parentKind != SyntaxNodeKind::ParameterList &&
         printToken.parentKind != SyntaxNodeKind::ForStatement &&
         printToken.grandParentKind != SyntaxNodeKind::ForStatement;
-}
-
-bool IsListForceSplitMarker(SyntaxNodeKind kind) {
-    return kind == SyntaxNodeKind::BlankLine ||
-        kind == SyntaxNodeKind::Comment ||
-        kind == SyntaxNodeKind::TrailingComment;
-}
-
-bool IsPrefixListNodeKind(SyntaxNodeKind kind) {
-    return kind == SyntaxNodeKind::BaseClassClause || kind == SyntaxNodeKind::FieldInitializerList;
-}
-
-bool IsDeclarationNodeKind(SyntaxNodeKind kind) {
-    return kind == SyntaxNodeKind::Declaration || kind == SyntaxNodeKind::FieldDeclaration;
 }
 
 class BreakModelBuilder {
@@ -511,19 +486,6 @@ private:
         return false;
     }
 
-    static bool IsSemanticDelimitedParent(SyntaxNodeKind kind) {
-        return kind == SyntaxNodeKind::ArgumentList ||
-            kind == SyntaxNodeKind::ParameterList ||
-            kind == SyntaxNodeKind::SubscriptArgumentList ||
-            kind == SyntaxNodeKind::TemplateArgumentList ||
-            kind == SyntaxNodeKind::TemplateParameterList ||
-            kind == SyntaxNodeKind::InitializerList ||
-            kind == SyntaxNodeKind::FieldInitializerList ||
-            kind == SyntaxNodeKind::ConditionClause ||
-            kind == SyntaxNodeKind::ParenthesizedDeclarator ||
-            kind == SyntaxNodeKind::AbstractParenthesizedDeclarator;
-    }
-
     static void MarkForceSplitAdjacentStringsFlat(FormatBreakNode& node) {
         if (node.kind == FormatBreakNodeKind::AdjacentStrings && node.forceSplit) {
             node.flatSplitIndent = true;
@@ -532,7 +494,10 @@ private:
             const FormatBreakNode* open = node.children.front();
             if (open != nullptr && open->kind == FormatBreakNodeKind::Token) {
                 const PrintToken& token = FormatBreakTokenValue(open->token);
-                if (IsSemanticDelimitedParent(token.parentKind) || IsSemanticDelimitedParent(token.grandParentKind)) {
+                if (
+                    SyntaxNodeKindHasClass(token.parentKind, SyntaxNodeClass::SemanticDelimitedParent) ||
+                    SyntaxNodeKindHasClass(token.grandParentKind, SyntaxNodeClass::SemanticDelimitedParent)
+                ) {
                     return;
                 }
             }
@@ -695,7 +660,7 @@ private:
         if (std::optional<FormatBreakToken> token = TokenForNode(node)) {
             return BuildToken(*token, depth);
         }
-        if (!SyntaxNodeKindHasClass(node.kind, TokenClass::Tree)) {
+        if (!SyntaxNodeKindHasClass(node.kind, SyntaxNodeClass::Tree)) {
             return nullptr;
         }
         if (node.kind == SyntaxNodeKind::FunctionPointerAliasDeclaration) {
@@ -703,12 +668,12 @@ private:
                 return alias;
             }
         }
-        if (IsDeclarationNodeKind(node.kind)) {
+        if (SyntaxNodeKindHasClass(node.kind, SyntaxNodeClass::DeclarationNode)) {
             if (auto declaration = BuildFunctionPointerDeclaratorDeclaration(node, depth)) {
                 return declaration;
             }
         }
-        if (IsDeclarationNodeKind(node.kind)) {
+        if (SyntaxNodeKindHasClass(node.kind, SyntaxNodeClass::DeclarationNode)) {
             if (auto declaration = BuildDirectInitializedDeclaration(node, depth)) {
                 return declaration;
             }
@@ -756,7 +721,7 @@ private:
                 return expression;
             }
         }
-        if (IsPrefixListNodeKind(node.kind)) {
+        if (SyntaxNodeKindHasClass(node.kind, SyntaxNodeClass::PrefixList)) {
             if (auto list = BuildPrefixList(node, depth)) {
                 return list;
             }
@@ -1125,8 +1090,8 @@ private:
                 continue;
             }
             if (
-                SyntaxNodeKindHasClass(child->kind, TokenClass::Known) &&
-                SyntaxNodeKindHasClass(child->kind, TokenClass::AssignmentOperator)
+                SyntaxNodeKindHasClass(child->kind, SyntaxNodeClass::Known) &&
+                SyntaxNodeKindHasClass(child->kind, SyntaxNodeClass::AssignmentOperator)
             ) {
                 hasAssignment = true;
             }
@@ -1141,8 +1106,8 @@ private:
     }
 
     static bool IsAssignmentOperatorNode(const SyntaxNode& node) {
-        return SyntaxNodeKindHasClass(node.kind, TokenClass::Known) &&
-            SyntaxNodeKindHasClass(node.kind, TokenClass::AssignmentOperator);
+        return SyntaxNodeKindHasClass(node.kind, SyntaxNodeClass::Known) &&
+            SyntaxNodeKindHasClass(node.kind, SyntaxNodeClass::AssignmentOperator);
     }
 
     std::optional<size_t> DirectInitializedDeclaratorIndex(const SyntaxNode& node) const {
@@ -1382,10 +1347,12 @@ private:
         SyntaxNodeKind op,
         int depth
     ) {
-        if (end == begin + 1 && children[begin] && IsChainOperatorKind(op) && HasSameDirectBinaryOperator(
-            *children[begin],
-            op
-        )) {
+        if (
+            end == begin + 1 &&
+            children[begin] &&
+            SyntaxNodeKindHasClass(op, SyntaxNodeClass::ChainOperator) &&
+            HasSameDirectBinaryOperator(*children[begin], op)
+        ) {
             AppendBinaryChain(*children[begin], op, operands, operators, depth);
             return;
         }
@@ -1427,7 +1394,10 @@ private:
         chain->chainKind = (
             operatorKind == SyntaxNodeKind::LessLess || operatorKind == SyntaxNodeKind::GreaterGreater
         ) ? FormatBreakChainKind::StreamBeforeOperator : FormatBreakChainKind::AfterOperator;
-        if (node.kind == SyntaxNodeKind::BinaryExpression && IsChainOperatorKind(operatorKind)) {
+        if (
+            node.kind == SyntaxNodeKind::BinaryExpression &&
+            SyntaxNodeKindHasClass(operatorKind, SyntaxNodeClass::ChainOperator)
+        ) {
             std::vector<FormatBreakNode*> operands;
             std::vector<FormatBreakToken> operators;
             operands.reserve(2);
@@ -1564,7 +1534,7 @@ private:
             if (child == nullptr) {
                 continue;
             }
-            if (IsListForceSplitMarker(child->kind)) {
+            if (SyntaxNodeKindHasClass(child->kind, SyntaxNodeClass::ListForceSplitMarker)) {
                 list->forceSplit = true;
                 if (child->kind == SyntaxNodeKind::BlankLine) {
                     pendingBlankLine = true;
@@ -1721,7 +1691,7 @@ private:
             if (child == nullptr) {
                 continue;
             }
-            if (IsListForceSplitMarker(child->kind)) {
+            if (SyntaxNodeKindHasClass(child->kind, SyntaxNodeClass::ListForceSplitMarker)) {
                 delimited->forceSplit = true;
                 if (child->kind == SyntaxNodeKind::BlankLine) {
                     pendingBlankLine = true;
@@ -1775,8 +1745,8 @@ private:
             itemChildren.push_back(child);
             if (
                 (
-                    IsControlHeaderKind(FormatBreakTokenValue(*open).parentKind) ||
-                    IsControlHeaderKind(FormatBreakTokenValue(*open).grandParentKind)
+                    SyntaxNodeKindHasClass(FormatBreakTokenValue(*open).parentKind, SyntaxNodeClass::ControlHeader) ||
+                    SyntaxNodeKindHasClass(FormatBreakTokenValue(*open).grandParentKind, SyntaxNodeClass::ControlHeader)
                 ) &&
                 itemChildren.size() == 1 &&
                 (child->kind == SyntaxNodeKind::Declaration || child->kind == SyntaxNodeKind::InitStatement)

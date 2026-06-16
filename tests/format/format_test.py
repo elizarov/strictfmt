@@ -1138,7 +1138,7 @@ class FormatCommandTests(unittest.TestCase):
         self.assertEqual(0, result.returncode, msg=f"stdout:\n{result.stdout}\n\nstderr:\n{result.stderr}")
         self.assertEqual("", result.stderr)
         self.assertIn("Usage:", result.stdout)
-        self.assertIn("strictfmt --stdin [options]", result.stdout)
+        self.assertIn("strictfmt [options] [ <file>... | -r <path> | --stdin | --files <path> ]", result.stdout)
         self.assertIn("--style <config-file>", result.stdout)
 
     def test_wrapper_rejects_current_unformatted_fixture(self) -> None:

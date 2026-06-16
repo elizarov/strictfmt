@@ -31,13 +31,13 @@ struct BraceFrame {
     int closeIndent = 0;
 };
 
-bool SyntaxNodeHasClass(const SyntaxNode& node, TokenClass tokenClass) {
-    return (node.classes & static_cast<std::uint64_t>(tokenClass)) != 0 ||
-        SyntaxNodeKindHasClass(node.kind, tokenClass);
+bool SyntaxNodeHasClass(const SyntaxNode& node, SyntaxNodeClass syntaxNodeClass) {
+    return (node.classes & static_cast<std::uint64_t>(syntaxNodeClass)) != 0 ||
+        SyntaxNodeKindHasClass(node.kind, syntaxNodeClass);
 }
 
 bool IsPreprocessorNode(const SyntaxNode& node) {
-    return SyntaxNodeHasClass(node, TokenClass::AtomicPreprocessor);
+    return SyntaxNodeHasClass(node, SyntaxNodeClass::AtomicPreprocessor);
 }
 
 std::string_view TrimSourceLine(std::string_view line) {
@@ -94,26 +94,18 @@ BraceRole RoleForBrace(const PrintToken& token) {
     return RoleForBraceParent(token.parentKind);
 }
 
-bool IsMacroDefinitionNode(SyntaxNodeKind kind) {
-    return SyntaxNodeKindHasClass(kind, TokenClass::MacroDefinition);
-}
-
-bool IsMacroDeclarationFragment(SyntaxNodeKind kind) {
-    return SyntaxNodeKindHasClass(kind, TokenClass::MacroDeclarationFragment);
-}
-
 bool IsConditionalMacroFunctionHeader(const PrintToken& token) {
     return token.syntaxKind == SyntaxNodeKind::PreprocIf && token.parentKind == SyntaxNodeKind::FunctionDefinition;
 }
 
 bool IsDeclarationModifierPreprocessorToken(const PrintToken& token) {
     return token.node != nullptr &&
-        (token.node->classes & static_cast<std::uint64_t>(TokenClass::DeclarationModifierPreprocessor)) != 0;
+        (token.node->classes & static_cast<std::uint64_t>(SyntaxNodeClass::DeclarationModifierPreprocessor)) != 0;
 }
 
 bool IsConditionalRhsPreprocessorToken(const PrintToken& token) {
     return token.node != nullptr &&
-        (token.node->classes & static_cast<std::uint64_t>(TokenClass::ConditionalRhsPreprocessor)) != 0;
+        (token.node->classes & static_cast<std::uint64_t>(SyntaxNodeClass::ConditionalRhsPreprocessor)) != 0;
 }
 
 bool IsStandalonePreprocessorBranchToken(const SyntaxNode& node, SyntaxNodeKind parentKind) {
@@ -136,12 +128,7 @@ bool IsConditionalOpenLine(std::string_view line) {
 }
 
 bool IsStructuredConditionalPreprocessorNode(const SyntaxNode& node) {
-    return (
-        node.kind == SyntaxNodeKind::PreprocIf ||
-        node.kind == SyntaxNodeKind::PreprocIfdef ||
-        node.kind == SyntaxNodeKind::PreprocElse ||
-        node.kind == SyntaxNodeKind::PreprocElif
-    ) && !IsPreprocessorNode(node);
+    return SyntaxNodeKindHasClass(node.kind, SyntaxNodeClass::ConditionalPreprocessorTree) && !IsPreprocessorNode(node);
 }
 
 bool IsSourceLineBreak(char ch) {
@@ -261,28 +248,11 @@ bool RequiresMacroValueBreak(const SyntaxNode& node) {
         if (topLevelElementCount > 1) {
             return true;
         }
-        if (IsMacroDeclarationFragment(child->kind)) {
+        if (SyntaxNodeKindHasClass(child->kind, SyntaxNodeClass::MacroDeclarationFragment)) {
             return true;
         }
     }
     return false;
-}
-
-bool PreservesBlankLineToken(SyntaxNodeKind parentKind) {
-    return parentKind == SyntaxNodeKind::TranslationUnit ||
-        parentKind == SyntaxNodeKind::DeclarationList ||
-        parentKind == SyntaxNodeKind::CompoundStatement ||
-        parentKind == SyntaxNodeKind::FieldDeclarationList ||
-        parentKind == SyntaxNodeKind::EnumeratorList ||
-        parentKind == SyntaxNodeKind::PreprocIf ||
-        parentKind == SyntaxNodeKind::PreprocIfdef;
-}
-
-bool IsListOpenToken(SyntaxNodeKind kind) {
-    return kind == SyntaxNodeKind::LeftParen ||
-        kind == SyntaxNodeKind::LeftBracket ||
-        kind == SyntaxNodeKind::LeftBrace ||
-        kind == SyntaxNodeKind::Less;
 }
 
 SyntaxNodeKind MatchingListCloseToken(SyntaxNodeKind kind) {
@@ -311,7 +281,7 @@ bool HasDirectKnownChild(const SyntaxNode& node, SyntaxNodeKind kind) {
 
 bool HasDirectListDelimiterPair(const SyntaxNode& node) {
     for (const SyntaxNode* child : node.children) {
-        if (child == nullptr || !IsListOpenToken(child->kind)) {
+        if (child == nullptr || !SyntaxNodeKindHasClass(child->kind, SyntaxNodeClass::OpeningDelimiter)) {
             continue;
         }
         const SyntaxNodeKind close = MatchingListCloseToken(child->kind);
@@ -426,14 +396,14 @@ void AppendTokens(
         nodeKind == SyntaxNodeKind::MsDeclspecModifier;
     const bool childInSingleStatementLambdaBody =
         inSingleStatementLambdaBody || LambdaBodyAllowsCompactSingleStatementForm(node, parentKind);
-    const SyntaxNode* childMacroDefinition =
-        macroDefinition != nullptr ? macroDefinition : (IsMacroDefinitionNode(nodeKind) ? &node : nullptr);
+    const SyntaxNode* childMacroDefinition = macroDefinition != nullptr ? macroDefinition :
+        (SyntaxNodeKindHasClass(nodeKind, SyntaxNodeClass::MacroDefinition) ? &node : nullptr);
     const bool childInMacroValue = inMacroValue || nodeKind == SyntaxNodeKind::MacroReplacementList;
     const bool childBreakBeforeMacroValue =
         breakBeforeMacroValue || (nodeKind == SyntaxNodeKind::MacroReplacementList && RequiresMacroValueBreak(node));
 
     if (nodeKind == SyntaxNodeKind::BlankLine) {
-        if (!PreservesBlankLineToken(parentKind)) {
+        if (!SyntaxNodeKindHasClass(parentKind, SyntaxNodeClass::PreserveBlankLineParent)) {
             return;
         }
         tokens.push_back({
@@ -560,7 +530,7 @@ void AppendTokens(
         }
         return;
     }
-    if (SyntaxNodeKindHasClass(nodeKind, TokenClass::Known)) {
+    if (SyntaxNodeKindHasClass(nodeKind, SyntaxNodeClass::Known)) {
         tokens.push_back({
             .kind = PrintTokenKind::Known,
             .syntaxKind = nodeKind,
@@ -654,7 +624,7 @@ void AppendTokens(
         }
         return;
     }
-    if (SyntaxNodeKindHasClass(nodeKind, TokenClass::Tree)) {
+    if (SyntaxNodeKindHasClass(nodeKind, SyntaxNodeClass::Tree)) {
         for (const SyntaxNode* child : node.children) {
             AppendTokens(
                 *child,
@@ -1003,13 +973,6 @@ private:
         return false;
     }
 
-    static bool IsOpeningDelimiterToken(SyntaxNodeKind kind) {
-        return kind == SyntaxNodeKind::LeftParen ||
-            kind == SyntaxNodeKind::LeftBracket ||
-            kind == SyntaxNodeKind::LeftBrace ||
-            kind == SyntaxNodeKind::Less;
-    }
-
     static SyntaxNodeKind MatchingClosingDelimiterToken(SyntaxNodeKind kind) {
         switch (kind) {
             case SyntaxNodeKind::LeftParen:
@@ -1027,7 +990,7 @@ private:
 
     static const SyntaxNode* DirectOpeningDelimiterChild(const SyntaxNode& node) {
         for (const SyntaxNode* child : node.children) {
-            if (child && IsOpeningDelimiterToken(child->kind)) {
+            if (child && SyntaxNodeKindHasClass(child->kind, SyntaxNodeClass::OpeningDelimiter)) {
                 return child;
             }
         }
@@ -1068,30 +1031,14 @@ private:
         return nullptr;
     }
 
-    static bool IsPreprocessorSplitListKind(SyntaxNodeKind kind) {
-        return kind == SyntaxNodeKind::ArgumentList ||
-            kind == SyntaxNodeKind::InitializerList ||
-            kind == SyntaxNodeKind::ParameterList ||
-            kind == SyntaxNodeKind::SubscriptArgumentList ||
-            kind == SyntaxNodeKind::TemplateArgumentList ||
-            kind == SyntaxNodeKind::TemplateParameterList;
-    }
-
-    static bool IsConditionalPreprocessorTreeKind(SyntaxNodeKind kind) {
-        return kind == SyntaxNodeKind::PreprocIf ||
-            kind == SyntaxNodeKind::PreprocIfdef ||
-            kind == SyntaxNodeKind::PreprocElse ||
-            kind == SyntaxNodeKind::PreprocElif;
-    }
-
     static bool StartsPreprocessorSplitList(const PrintToken& token) {
         return token.kind == PrintTokenKind::Preprocessor &&
-            (token.syntaxKind == SyntaxNodeKind::PreprocIf || token.syntaxKind == SyntaxNodeKind::PreprocIfdef);
+            SyntaxNodeKindHasClass(token.syntaxKind, SyntaxNodeClass::ConditionalPreprocessorOpen);
     }
 
     static const SyntaxNode* NearestPreprocessorSplitListAncestor(const PrintToken& token) {
         for (const SyntaxNode* cursor = token.node; cursor != nullptr; cursor = cursor->parent) {
-            if (IsPreprocessorSplitListKind(cursor->kind)) {
+            if (SyntaxNodeKindHasClass(cursor->kind, SyntaxNodeClass::PreprocessorSplitList)) {
                 return cursor;
             }
         }
@@ -1099,12 +1046,7 @@ private:
     }
 
     static bool NodeOrDescendantHasConditionalPreprocessor(const SyntaxNode& node) {
-        if (
-            node.kind == SyntaxNodeKind::PreprocIf ||
-            node.kind == SyntaxNodeKind::PreprocIfdef ||
-            node.kind == SyntaxNodeKind::PreprocElse ||
-            node.kind == SyntaxNodeKind::PreprocElif
-        ) {
+        if (SyntaxNodeKindHasClass(node.kind, SyntaxNodeClass::ConditionalPreprocessorTree)) {
             return true;
         }
         for (const SyntaxNode* child : node.children) {
@@ -1119,7 +1061,7 @@ private:
         const SyntaxNode* parent = token.node == nullptr ? nullptr : token.node->parent;
         if (
             parent == nullptr ||
-            !IsPreprocessorSplitListKind(parent->kind) ||
+            !SyntaxNodeKindHasClass(parent->kind, SyntaxNodeClass::PreprocessorSplitList) ||
             !NodeOrDescendantHasConditionalPreprocessor(*parent)
         ) {
             return nullptr;
@@ -1184,7 +1126,7 @@ private:
         for (auto token = pendingTokens_.rbegin(); token != pendingTokens_.rend(); ++token) {
             if (
                 token->kind == PrintTokenKind::Known &&
-                IsOpeningDelimiterToken(token->syntaxKind) &&
+                SyntaxNodeKindHasClass(token->syntaxKind, SyntaxNodeClass::OpeningDelimiter) &&
                 SyntaxPathContains(*token, list)
             ) {
                 return token->node;
@@ -1585,19 +1527,6 @@ private:
         int indentLevel = 0;
     };
 
-    static bool IsSemanticDelimitedParent(SyntaxNodeKind kind) {
-        return kind == SyntaxNodeKind::ArgumentList ||
-            kind == SyntaxNodeKind::ParameterList ||
-            kind == SyntaxNodeKind::SubscriptArgumentList ||
-            kind == SyntaxNodeKind::TemplateArgumentList ||
-            kind == SyntaxNodeKind::TemplateParameterList ||
-            kind == SyntaxNodeKind::InitializerList ||
-            kind == SyntaxNodeKind::FieldInitializerList ||
-            kind == SyntaxNodeKind::ConditionClause ||
-            kind == SyntaxNodeKind::ParenthesizedDeclarator ||
-            kind == SyntaxNodeKind::AbstractParenthesizedDeclarator;
-    }
-
     static bool IsTransparentSingleItemDelimiter(const FormatBreakNode& node) {
         if (
             node.forceSplit ||
@@ -1616,7 +1545,8 @@ private:
             return false;
         }
         const PrintToken& token = FormatBreakTokenValue(open->token);
-        return !IsSemanticDelimitedParent(token.parentKind) && !IsSemanticDelimitedParent(token.grandParentKind);
+        return !SyntaxNodeKindHasClass(token.parentKind, SyntaxNodeClass::SemanticDelimitedParent) &&
+            !SyntaxNodeKindHasClass(token.grandParentKind, SyntaxNodeClass::SemanticDelimitedParent);
     }
 
     static const FormatBreakNode* SingleChildSequenceNode(const FormatBreakNode& node) {
@@ -2264,7 +2194,7 @@ private:
             return true;
         }
         return token.node->parent != nullptr &&
-            IsConditionalPreprocessorTreeKind(token.node->parent->kind) &&
+            SyntaxNodeKindHasClass(token.node->parent->kind, SyntaxNodeClass::ConditionalPreprocessorTree) &&
             SyntaxPathContains(token, context.list);
     }
 
@@ -2320,7 +2250,7 @@ private:
     bool TryPrintConditionalPreprocessorListOpen(const PrintToken& token) {
         if (
             token.kind != PrintTokenKind::Known ||
-            !IsOpeningDelimiterToken(token.syntaxKind) ||
+            !SyntaxNodeKindHasClass(token.syntaxKind, SyntaxNodeClass::OpeningDelimiter) ||
             ImmediateConditionalPreprocessorListParent(token) == nullptr
         ) {
             return false;
@@ -2872,7 +2802,7 @@ private:
                 }
                 if (previous != nullptr && previous->kind == PrintTokenKind::Known && (
                     previous->syntaxKind == SyntaxNodeKind::KeywordDefault ||
-                    SyntaxNodeKindHasClass(previous->syntaxKind, TokenClass::AccessKeyword)
+                    SyntaxNodeKindHasClass(previous->syntaxKind, SyntaxNodeClass::AccessKeyword)
                 )) {
                     FlushPendingTokens();
                     NewLine(ShouldContinueMacroLine(token, next));
@@ -3043,7 +2973,7 @@ private:
                     next->syntaxKind == SyntaxNodeKind::RightParen;
                 const bool closesCompoundExpression = RightParenClosesCompoundExpression(token, *next);
                 const bool attachesToFollowingKeyword =
-                    SyntaxNodeKindHasClass(next->syntaxKind, TokenClass::AttachAfterBlockKeyword) &&
+                    SyntaxNodeKindHasClass(next->syntaxKind, SyntaxNodeClass::AttachAfterBlockKeyword) &&
                         next->syntaxKind != SyntaxNodeKind::KeywordWhile;
                 const bool closesDoWhile =
                     next->syntaxKind == SyntaxNodeKind::KeywordWhile && next->parentKind == SyntaxNodeKind::DoStatement;
@@ -3051,7 +2981,7 @@ private:
                     next->syntaxKind == SyntaxNodeKind::Semicolon ||
                     next->syntaxKind == SyntaxNodeKind::Comma || (
                         token.parentKind == SyntaxNodeKind::RequirementSeq &&
-                        SyntaxNodeKindHasClass(next->syntaxKind, TokenClass::BinaryOperator)
+                        SyntaxNodeKindHasClass(next->syntaxKind, SyntaxNodeClass::BinaryOperator)
                     ) ||
                     closesLambdaArgument ||
                     closesCompoundExpression ||

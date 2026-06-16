@@ -838,19 +838,6 @@ private:
         });
     }
 
-    static bool IsSemanticDelimitedParent(SyntaxNodeKind kind) {
-        return kind == SyntaxNodeKind::ArgumentList ||
-            kind == SyntaxNodeKind::ParameterList ||
-            kind == SyntaxNodeKind::SubscriptArgumentList ||
-            kind == SyntaxNodeKind::TemplateArgumentList ||
-            kind == SyntaxNodeKind::TemplateParameterList ||
-            kind == SyntaxNodeKind::InitializerList ||
-            kind == SyntaxNodeKind::FieldInitializerList ||
-            kind == SyntaxNodeKind::ConditionClause ||
-            kind == SyntaxNodeKind::ParenthesizedDeclarator ||
-            kind == SyntaxNodeKind::AbstractParenthesizedDeclarator;
-    }
-
     static bool IsTransparentSingleItemDelimiter(const FormatBreakNode& node) {
         if (
             node.forceSplit ||
@@ -869,7 +856,8 @@ private:
             return false;
         }
         const PrintToken& token = FormatBreakTokenValue(open->token);
-        return !IsSemanticDelimitedParent(token.parentKind) && !IsSemanticDelimitedParent(token.grandParentKind);
+        return !SyntaxNodeKindHasClass(token.parentKind, SyntaxNodeClass::SemanticDelimitedParent) &&
+            !SyntaxNodeKindHasClass(token.grandParentKind, SyntaxNodeClass::SemanticDelimitedParent);
     }
 
     static const FormatBreakNode* SingleChildSequenceNode(const FormatBreakNode& node) {
@@ -1339,7 +1327,7 @@ private:
 
     static bool IsFormatterOwnedChainOperator(const FormatBreakToken& token) {
         return FormatBreakTokenKind(token) == PrintTokenKind::Known &&
-            SyntaxNodeKindHasClass(FormatBreakTokenSyntaxKind(token), TokenClass::ChainOperator);
+            SyntaxNodeKindHasClass(FormatBreakTokenSyntaxKind(token), SyntaxNodeClass::ChainOperator);
     }
 
     static bool IsFormatterOwnedChain(const FormatBreakNode& node) {
@@ -1879,7 +1867,7 @@ private:
         const PrintToken& opToken = FormatBreakTokenValue(op);
         return opToken.kind == PrintTokenKind::Known &&
             opToken.parentKind == SyntaxNodeKind::BinaryExpression &&
-            SyntaxNodeKindHasClass(opToken.syntaxKind, TokenClass::BinaryOperator) &&
+            SyntaxNodeKindHasClass(opToken.syntaxKind, SyntaxNodeClass::BinaryOperator) &&
             operand.kind == FormatBreakNodeKind::Delimited &&
             operand.delimiterKind == FormatBreakDelimiterKind::Paren;
     }

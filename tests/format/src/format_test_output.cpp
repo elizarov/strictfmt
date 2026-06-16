@@ -63,16 +63,16 @@ class string {};
 constexpr wchar_t kFilterCueText[] = L"Filter settings";
 
 constexpr auto kFixtureSyntaxKindMappings = std::to_array<SyntaxKindMapping>({
-    Kind(SyntaxNodeKind::Tree, Bit(TokenClass::Tree)),
+    Kind(SyntaxNodeKind::Tree, Bit(SyntaxNodeClass::Tree)),
     Tree(SyntaxNodeKind::TranslationUnit, "translation_unit"),
     Tree(SyntaxNodeKind::IncludeRun, "include_run"),
     Tree(SyntaxNodeKind::MacroReplacementList, "macro_replacement_list"),
-    Tree(SyntaxNodeKind::Declaration, "declaration", Bit(TokenClass::MacroDeclarationFragment)),
-    Tree(SyntaxNodeKind::FieldDeclaration, "field_declaration", Bit(TokenClass::MacroDeclarationFragment))
+    Tree(SyntaxNodeKind::Declaration, "declaration", Bit(SyntaxNodeClass::MacroDeclarationFragment)),
+    Tree(SyntaxNodeKind::FieldDeclaration, "field_declaration", Bit(SyntaxNodeClass::MacroDeclarationFragment))
 });
 
 constexpr auto kFixtureCommentedSyntaxKindMappings = std::to_array<SyntaxKindMapping>({
-    Kind(SyntaxNodeKind::Tree, Bit(TokenClass::Tree)),
+    Kind(SyntaxNodeKind::Tree, Bit(SyntaxNodeClass::Tree)),
 
     // tree nodes
 

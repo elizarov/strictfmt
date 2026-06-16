@@ -220,7 +220,7 @@ std::optional<size_t> PreviousNonTriviaChildIndex(const SyntaxChildList& childre
     while (before > 0) {
         --before;
         const SyntaxNode* child = children[before];
-        if (child == nullptr || !SyntaxNodeKindHasClass(child->kind, TokenClass::Trivia)) {
+        if (child == nullptr || !SyntaxNodeKindHasClass(child->kind, SyntaxNodeClass::Trivia)) {
             return before;
         }
     }
@@ -230,7 +230,7 @@ std::optional<size_t> PreviousNonTriviaChildIndex(const SyntaxChildList& childre
 std::optional<size_t> NextNonTriviaChildIndex(const SyntaxChildList& children, size_t after) {
     for (size_t index = after; index < children.size(); ++index) {
         const SyntaxNode* child = children[index];
-        if (child == nullptr || !SyntaxNodeKindHasClass(child->kind, TokenClass::Trivia)) {
+        if (child == nullptr || !SyntaxNodeKindHasClass(child->kind, SyntaxNodeClass::Trivia)) {
             return index;
         }
     }
@@ -285,7 +285,7 @@ void WrapControlBody(FormatModel& model, SyntaxNode& node, size_t childIndex) {
     size_t firstBodyIndex = childIndex;
     while (firstBodyIndex > 0 && node.children[firstBodyIndex - 1] != nullptr && SyntaxNodeKindHasClass(
         node.children[firstBodyIndex - 1]->kind,
-        TokenClass::Comment
+        SyntaxNodeClass::Comment
     )) {
         --firstBodyIndex;
     }
@@ -438,8 +438,8 @@ inline TsNodeSyntax GetTsNodeSyntax(TSNode tsNode) {
     };
 }
 
-bool TsNodeSyntaxHasClass(TsNodeSyntax syntax, TokenClass tokenClass) {
-    return (syntax.classes & static_cast<std::uint64_t>(tokenClass)) != 0;
+bool TsNodeSyntaxHasClass(TsNodeSyntax syntax, SyntaxNodeClass syntaxNodeClass) {
+    return (syntax.classes & static_cast<std::uint64_t>(syntaxNodeClass)) != 0;
 }
 
 void AppendTsChildren(
@@ -500,8 +500,8 @@ SyntaxNode* BuildNode(
         }
     }
     if (
-        TsNodeSyntaxHasClass(syntax, TokenClass::WholeNodeAsFreeToken) ||
-        TsNodeSyntaxHasClass(syntax, TokenClass::AtomicPreprocessor)
+        TsNodeSyntaxHasClass(syntax, SyntaxNodeClass::WholeNodeAsFreeToken) ||
+        TsNodeSyntaxHasClass(syntax, SyntaxNodeClass::AtomicPreprocessor)
     ) {
         node->kind = syntax.kind;
         node->text = NodeText(tsNode, source);
@@ -527,12 +527,7 @@ SyntaxNode* BuildNode(
     }
 
     node->kind = syntax.kind == SyntaxNodeKind::Unknown ? SyntaxNodeKind::Tree : syntax.kind;
-    if (
-        node->kind == SyntaxNodeKind::PreprocIf ||
-        node->kind == SyntaxNodeKind::PreprocIfdef ||
-        node->kind == SyntaxNodeKind::PreprocElse ||
-        node->kind == SyntaxNodeKind::PreprocElif
-    ) {
+    if (SyntaxNodeKindHasClass(node->kind, SyntaxNodeClass::ConditionalPreprocessorTree)) {
         node->text = NodeText(tsNode, source);
     }
     node->children.reserve(childCount);
@@ -710,49 +705,17 @@ bool IsCheckedPreprocessorDirective(std::string_view line) {
         StartsWith(line, "#include\t");
 }
 
-bool IsAllowedPreprocessorContainer(SyntaxNodeKind kind) {
-    return kind == SyntaxNodeKind::TranslationUnit ||
-        kind == SyntaxNodeKind::DeclarationList ||
-        kind == SyntaxNodeKind::CompoundStatement ||
-        kind == SyntaxNodeKind::FieldDeclarationList ||
-        kind == SyntaxNodeKind::EnumeratorList ||
-        kind == SyntaxNodeKind::ArgumentList ||
-        kind == SyntaxNodeKind::InitializerList ||
-        kind == SyntaxNodeKind::ParameterList ||
-        kind == SyntaxNodeKind::SubscriptArgumentList ||
-        kind == SyntaxNodeKind::TemplateArgumentList ||
-        kind == SyntaxNodeKind::TemplateParameterList ||
-        kind == SyntaxNodeKind::PreprocIf ||
-        kind == SyntaxNodeKind::PreprocIfdef ||
-        kind == SyntaxNodeKind::PreprocElse ||
-        kind == SyntaxNodeKind::PreprocElif;
-}
-
-bool IsAllowedListPreprocessorContainer(SyntaxNodeKind kind) {
-    return kind == SyntaxNodeKind::ArgumentList ||
-        kind == SyntaxNodeKind::EnumeratorList ||
-        kind == SyntaxNodeKind::InitializerList ||
-        kind == SyntaxNodeKind::ParameterList ||
-        kind == SyntaxNodeKind::SubscriptArgumentList ||
-        kind == SyntaxNodeKind::TemplateArgumentList ||
-        kind == SyntaxNodeKind::TemplateParameterList;
-}
-
 bool HasAllowedListPreprocessorAncestor(TSNode node) {
     for (TSNode parent = ts_node_parent(node); !ts_node_is_null(parent); parent = ts_node_parent(parent)) {
         const SyntaxNodeKind parentKind = GetTsNodeSyntax(parent).kind;
-        if (IsAllowedListPreprocessorContainer(parentKind)) {
+        if (SyntaxNodeKindHasClass(parentKind, SyntaxNodeClass::AllowedListPreprocessorContainer)) {
             return true;
         }
-        if (parentKind == SyntaxNodeKind::BaseClassClause || parentKind == SyntaxNodeKind::FieldInitializerList) {
+        if (SyntaxNodeKindHasClass(parentKind, SyntaxNodeClass::PrefixList)) {
             return false;
         }
     }
     return false;
-}
-
-bool IsConditionalPreprocessorKind(SyntaxNodeKind kind) {
-    return kind == SyntaxNodeKind::PreprocIf || kind == SyntaxNodeKind::PreprocIfdef;
 }
 
 bool IsAllowedAtomicConditionalNode(std::string_view treeType) {
@@ -833,22 +796,23 @@ bool IsForbiddenPreprocessorPlacement(
     std::string_view treeType
 ) {
     if (syntax.kind == SyntaxNodeKind::PreprocInclude) {
-        return parentKind != SyntaxNodeKind::Unknown && !IsAllowedPreprocessorContainer(parentKind);
+        return parentKind != SyntaxNodeKind::Unknown &&
+            !SyntaxNodeKindHasClass(parentKind, SyntaxNodeClass::AllowedPreprocessorContainer);
     }
-    if (!IsConditionalPreprocessorKind(syntax.kind)) {
+    if (!SyntaxNodeKindHasClass(syntax.kind, SyntaxNodeClass::ConditionalPreprocessorOpen)) {
         return false;
     }
-    if (TsNodeSyntaxHasClass(syntax, TokenClass::AtomicPreprocessor)) {
-        if (TsNodeSyntaxHasClass(syntax, TokenClass::DeclarationModifierPreprocessor)) {
+    if (TsNodeSyntaxHasClass(syntax, SyntaxNodeClass::AtomicPreprocessor)) {
+        if (TsNodeSyntaxHasClass(syntax, SyntaxNodeClass::DeclarationModifierPreprocessor)) {
             return false;
         }
-        if (TsNodeSyntaxHasClass(syntax, TokenClass::ConditionalRhsPreprocessor)) {
+        if (TsNodeSyntaxHasClass(syntax, SyntaxNodeClass::ConditionalRhsPreprocessor)) {
             return false;
         }
         if (
             HasAllowedListPreprocessorAncestor(node) &&
-            !TsNodeSyntaxHasClass(syntax, TokenClass::DeclarationModifierPreprocessor) &&
-            !TsNodeSyntaxHasClass(syntax, TokenClass::ConditionalRhsPreprocessor)
+            !TsNodeSyntaxHasClass(syntax, SyntaxNodeClass::DeclarationModifierPreprocessor) &&
+            !TsNodeSyntaxHasClass(syntax, SyntaxNodeClass::ConditionalRhsPreprocessor)
         ) {
             return false;
         }
@@ -870,7 +834,7 @@ bool IsForbiddenPreprocessorPlacement(
     if (parentKind == SyntaxNodeKind::Unknown) {
         return false;
     }
-    return !IsAllowedPreprocessorContainer(parentKind);
+    return !SyntaxNodeKindHasClass(parentKind, SyntaxNodeClass::AllowedPreprocessorContainer);
 }
 
 void CollectPreprocessorPlacementErrors(
@@ -1134,7 +1098,7 @@ void AppendIncludeRun(
     for (; index < sourceChildren.size(); ++index) {
         if (
             sourceChildren[index] != nullptr &&
-            SyntaxNodeKindHasClass(sourceChildren[index]->kind, TokenClass::IncludeDirective)
+            SyntaxNodeKindHasClass(sourceChildren[index]->kind, SyntaxNodeClass::IncludeDirective)
         ) {
             AppendChild(*includeRun, sourceChildren[index]);
             continue;
@@ -1150,7 +1114,7 @@ void AppendIncludeRun(
             }
             if (nextIndex < sourceChildren.size() && sourceChildren[nextIndex] != nullptr && SyntaxNodeKindHasClass(
                 sourceChildren[nextIndex]->kind,
-                TokenClass::IncludeDirective
+                SyntaxNodeClass::IncludeDirective
             )) {
                 AppendChild(*includeRun, sourceChildren[index]);
                 index = nextIndex - 1;
@@ -1173,12 +1137,8 @@ bool IsPreprocessorConditionHeaderNode(const SyntaxNode& node) {
     return node.kind == SyntaxNodeKind::FreeToken || node.kind == SyntaxNodeKind::Identifier;
 }
 
-bool IsStructuredIncludeGuardOwner(SyntaxNodeKind kind) {
-    return kind == SyntaxNodeKind::PreprocIfdef || kind == SyntaxNodeKind::PreprocIf;
-}
-
 bool CanRemainInOpeningIncludeArea(const SyntaxNode& owner, const SyntaxNode& child, bool sawInclude) {
-    if (SyntaxNodeKindHasClass(child.kind, TokenClass::Trivia)) {
+    if (SyntaxNodeKindHasClass(child.kind, SyntaxNodeClass::Trivia)) {
         return true;
     }
     if (sawInclude) {
@@ -1187,7 +1147,7 @@ bool CanRemainInOpeningIncludeArea(const SyntaxNode& owner, const SyntaxNode& ch
     if (owner.kind == SyntaxNodeKind::TranslationUnit) {
         return IsPragmaOnceNode(child);
     }
-    if (IsStructuredIncludeGuardOwner(owner.kind)) {
+    if (SyntaxNodeKindHasClass(owner.kind, SyntaxNodeClass::ConditionalPreprocessorOpen)) {
         return child.kind == SyntaxNodeKind::MacroDefinition || IsPreprocessorConditionHeaderNode(child);
     }
     return false;
@@ -1200,7 +1160,10 @@ void GroupOpeningIncludeRuns(FormatModel& model, SyntaxNode& root) {
         }
     }
 
-    if (root.kind != SyntaxNodeKind::TranslationUnit && !IsStructuredIncludeGuardOwner(root.kind)) {
+    if (
+        root.kind != SyntaxNodeKind::TranslationUnit &&
+        !SyntaxNodeKindHasClass(root.kind, SyntaxNodeClass::ConditionalPreprocessorOpen)
+    ) {
         return;
     }
 
@@ -1211,7 +1174,7 @@ void GroupOpeningIncludeRuns(FormatModel& model, SyntaxNode& root) {
     for (size_t index = 0; index < root.children.size();) {
         if (inOpeningArea && root.children[index] != nullptr && SyntaxNodeKindHasClass(
             root.children[index]->kind,
-            TokenClass::IncludeDirective
+            SyntaxNodeClass::IncludeDirective
         )) {
             AppendIncludeRun(root.children, index, groupedChildren, model, root);
             sawInclude = true;
