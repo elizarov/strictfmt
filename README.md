@@ -1,6 +1,6 @@
 # strictfmt
 
-A strict, rule-based source formatter. No heuristics. No bikeshedding.
+A strict, rule-based source formatter. No layout heuristics. No bikeshedding.
 
 ## Design goals
 
@@ -12,7 +12,7 @@ A strict, rule-based source formatter. No heuristics. No bikeshedding.
 
 - Never use vertical alignment.
 - Keep formatter-owned chains and lists compact or split item-by-item.
-- Use no heuristics or weights; use only the break optimizer.
+- Use no layout heuristics or weights; use only the break optimizer.
 - Use indentation changes as visual group borders; one indentation size for every indentation change.
 
 ## Example
@@ -43,6 +43,7 @@ Development docs:
 
 - [docs/glossary.md](docs/glossary.md) defines shared terminology used across docs.
 - [docs/architecture.md](docs/architecture.md) describes code module ownership.
+- [docs/break_solver.md](docs/break_solver.md) describes break solver implementation details and allowed speedups.
 - [docs/tests.md](docs/tests.md) explains test strategy, test file placement, and golden fixtures.
 
 ## License
