@@ -71,15 +71,14 @@ std::optional<FormatOptions> ParseFormatArgs(int argc, char** argv, std::string&
         } else if (arg == "--stdin") {
             options.readStdin = true;
         } else if (arg == "--dump") {
-            if (index + 1 >= argc) {
-                error = "--dump requires a file";
-                return std::nullopt;
-            }
-            if (options.dumpFile.has_value()) {
+            if (options.dump) {
                 error = "--dump can be specified only once";
                 return std::nullopt;
             }
-            options.dumpFile = argv[++index];
+            options.dump = true;
+            if (index + 1 < argc && argv[index + 1][0] != '-') {
+                options.dumpFile = argv[++index];
+            }
         } else if (arg == "-r" || arg == "--recursive") {
             if (index + 1 >= argc) {
                 error = "-r requires a path";
@@ -122,13 +121,21 @@ std::optional<FormatOptions> ParseFormatArgs(int argc, char** argv, std::string&
             options.files.push_back(arg);
         }
     }
-    if (options.dumpFile.has_value()) {
+    if (options.dump) {
         if (options.mode != FormatMode::Stdout) {
             error = "--dump is incompatible with -i and --dry-run";
             return std::nullopt;
         }
-        if (options.readStdin || options.fileListProvided || options.recursiveInputProvided || !options.files.empty()) {
+        if (options.fileListProvided || options.recursiveInputProvided || !options.files.empty()) {
             error = "--dump cannot be combined with format inputs";
+            return std::nullopt;
+        }
+        if (options.dumpFile.has_value() && options.readStdin) {
+            error = "--dump <file> cannot be combined with --stdin";
+            return std::nullopt;
+        }
+        if (!options.dumpFile.has_value() && !options.readStdin) {
+            error = "--dump requires a file unless combined with --stdin";
             return std::nullopt;
         }
         if (options.concurrencyProvided) {
@@ -156,57 +163,29 @@ std::optional<FormatOptions> ParseFormatArgs(int argc, char** argv, std::string&
     return options;
 }
 
-void PrintFormatUsage(FILE* output) {
-    std::fprintf(output, "Usage:\n");
-    std::fprintf(output, "  strictfmt [options] [file...]\n");
-    std::fprintf(output, "  strictfmt --stdin [options]\n");
-    std::fprintf(output, "  strictfmt --dump <file> [--style <config-file>]\n");
-    std::fprintf(output, "\n");
-    std::fprintf(output, "Inputs:\n");
-    std::fprintf(
-        output,
-        "  file...                 Format the listed source files and write formatted text to stdout.\n"
-    );
-    std::fprintf(
-        output,
-        "  --stdin                 Read one source file from stdin and write formatted text to stdout.\n"
-    );
-    std::fprintf(output, "  -r, --recursive <path>  Recursively format supported C/C++ files under a directory.\n");
-    std::fprintf(output, "  --files <path>          Read input file paths from a newline-delimited file list.\n");
-    std::fprintf(output, "\n");
-    std::fprintf(output, "Modes:\n");
-    std::fprintf(
-        output,
-        "  --dump <file>           Print the parsed internal format model for debugging.\n"
-    );
-    std::fprintf(
-        output,
-        "  -i                      Rewrite files in place. Requires file, --files, or --recursive input.\n"
-    );
-    std::fprintf(
-        output,
-        "  -n, --dry-run           Check formatting and return 1 when formatting changes are needed.\n"
-    );
-    std::fprintf(
-        output,
-        "                          Without -i or --dry-run, file inputs and --stdin write formatted text to stdout.\n"
-    );
-    std::fprintf(output, "\n");
-    std::fprintf(output, "Configuration:\n");
-    std::fprintf(output, "  --style <config-file>   Use this .cpp-format file for every input.\n");
-    std::fprintf(
-        output,
-        "                          When omitted, strictfmt searches upward from each input for .cpp-format.\n"
-    );
-    std::fprintf(output, "\n");
-    std::fprintf(output, "Other options:\n");
-    std::fprintf(
-        output,
-        "  --concurrency <n>       Limit worker threads for file formatting. Defaults to hardware concurrency.\n"
-    );
-    std::fprintf(
-        output,
-        "  -v, --verbose           Reserved for verbose progress output. Final summaries are always printed.\n"
-    );
-    std::fprintf(output, "  -h, --help              Print this help text.\n");
+void PrintFormatUsage(FILE* out) {
+    std::fprintf(out, "Usage:\n");
+    std::fprintf(out, "  strictfmt [options] [ <file>... | -r <path> | --stdin | --files <path> ]\n");
+    std::fprintf(out, "\n");
+    std::fprintf(out, "Inputs:\n");
+    std::fprintf(out, "  <file>...               Format the listed source files and write formatted text to stdout.\n");
+    std::fprintf(out, "  -r, --recursive <path>  Recursively format supported C/C++ files under a directory.\n");
+    std::fprintf(out, "  --stdin                 Read one source file from stdin.\n");
+    std::fprintf(out, "  --files <path>          Read input file paths from a newline-delimited file list.\n");
+    std::fprintf(out, "\n");
+    std::fprintf(out, "Modes:\n");
+    std::fprintf(out, "  -i                      Rewrite files in place.\n");
+    std::fprintf(out, "  -n, --dry-run           Check formatting and return 1 when formatting changes are needed.\n");
+    std::fprintf(out, "                          Without -i or -n, write formatted text to stdout.\n");
+    std::fprintf(out, "  --dump                  Print the parsed internal format model for debugging to stdout.\n");
+    std::fprintf(out, "                          Pass one file or combine with --stdin to dump stdin.\n");
+    std::fprintf(out, "\n");
+    std::fprintf(out, "Configuration:\n");
+    std::fprintf(out, "  --style <config-file>   Use this .cpp-format file for every input.\n");
+    std::fprintf(out, "                          By default, searches upward from each input for .cpp-format.\n");
+    std::fprintf(out, "\n");
+    std::fprintf(out, "Other options:\n");
+    std::fprintf(out, "  --concurrency <n>       Limit worker threads. Defaults to hardware concurrency.\n");
+    std::fprintf(out, "  -v, --verbose           Verbose progress output.\n");
+    std::fprintf(out, "  -h, --help              Print this help text.\n");
 }

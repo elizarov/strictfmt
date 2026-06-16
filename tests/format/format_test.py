@@ -574,6 +574,24 @@ class FormatCommandTests(unittest.TestCase):
             self.assertIn("text: \"main\"", result.stdout)
             self.assertIn("- kind: KeywordReturn\n", result.stdout)
 
+    def test_dump_reads_stdin_source(self) -> None:
+        result = native_format("--stdin", "--dump", input_text="int value(){return 2;}\n")
+
+        self.assertEqual(0, result.returncode, msg=f"stdout:\n{result.stdout}\n\nstderr:\n{result.stderr}")
+        self.assertEqual("", result.stderr)
+        self.assertIn("kind: TranslationUnit\n", result.stdout)
+        self.assertIn("text: \"value\"", result.stdout)
+        self.assertIn("text: \"2\"", result.stdout)
+
+        reversed_result = native_format("--dump", "--stdin", input_text="int other(){return 3;}\n")
+
+        self.assertEqual(
+            0,
+            reversed_result.returncode,
+            msg=f"stdout:\n{reversed_result.stdout}\n\nstderr:\n{reversed_result.stderr}",
+        )
+        self.assertIn("text: \"other\"", reversed_result.stdout)
+
     def test_declarator_reference_tokens_include_managed_cpp(self) -> None:
         result = native_format(
             "--stdin",
