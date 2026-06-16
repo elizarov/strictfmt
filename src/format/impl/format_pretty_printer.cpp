@@ -109,22 +109,69 @@ bool IsConditionalRhsPreprocessorToken(const PrintToken& token) {
 }
 
 bool IsStandalonePreprocessorBranchToken(const SyntaxNode& node, SyntaxNodeKind parentKind) {
-    return parentKind == SyntaxNodeKind::PreprocElse && node.kind == SyntaxNodeKind::FreeToken && node.text == "#else";
+    return parentKind == SyntaxNodeKind::PreprocElse && node.kind == SyntaxNodeKind::PreprocessorDirectiveElse;
 }
 
-bool IsConditionalPreprocessorDirective(std::string_view line) {
-    return StartsWith(line, "#if") ||
-        StartsWith(line, "#elif") ||
-        StartsWith(line, "#else") ||
-        StartsWith(line, "#endif");
+bool PreprocessorLineHasClass(std::string_view line, SyntaxNodeClass syntaxNodeClass) {
+    return SyntaxNodeKindHasClass(SyntaxNodeKindFromPreprocessorDirectiveLine(line), syntaxNodeClass);
 }
 
-bool IsConditionalBranchSeparatorLine(std::string_view line) {
-    return StartsWith(line, "#elif") || StartsWith(line, "#else") || StartsWith(line, "#endif");
+bool IsPreprocessorDirectiveNameChar(char ch) {
+    return (ch >= 'A' && ch <= 'Z') || (ch >= 'a' && ch <= 'z') || (ch >= '0' && ch <= '9') || ch == '_';
 }
 
-bool IsConditionalOpenLine(std::string_view line) {
-    return StartsWith(line, "#if");
+std::string CanonicalizePreprocessorDirectiveLine(std::string_view line) {
+    const SyntaxNodeKind directiveKind = SyntaxNodeKindFromPreprocessorDirectiveLine(line);
+    if (!SyntaxNodeKindHasClass(directiveKind, SyntaxNodeClass::PreprocessorDirective)) {
+        return std::string(line);
+    }
+
+    size_t cursor = 0;
+    while (cursor < line.size() && (line[cursor] == ' ' || line[cursor] == '\t')) {
+        ++cursor;
+    }
+    const size_t prefixEnd = cursor;
+    if (cursor >= line.size() || line[cursor] != '#') {
+        return std::string(line);
+    }
+    ++cursor;
+    while (cursor < line.size() && (line[cursor] == ' ' || line[cursor] == '\t')) {
+        ++cursor;
+    }
+    while (cursor < line.size() && IsPreprocessorDirectiveNameChar(line[cursor])) {
+        ++cursor;
+    }
+
+    std::string result;
+    result.reserve(line.size());
+    result.append(line.data(), prefixEnd);
+    result.append(SyntaxNodeKindTokenText(directiveKind));
+    while (cursor < line.size() && (line[cursor] == ' ' || line[cursor] == '\t')) {
+        ++cursor;
+    }
+    if (cursor < line.size()) {
+        result.push_back(' ');
+        result.append(line.data() + cursor, line.size() - cursor);
+    }
+    return NormalizeTrailingLineCommentSpacing(result);
+}
+
+std::string CanonicalizePreprocessorDirectiveLines(std::string_view text) {
+    std::string result;
+    size_t start = 0;
+    while (start <= text.size()) {
+        const size_t end = text.find('\n', start);
+        const std::string_view line = end == std::string::npos ? text.substr(start) : text.substr(start, end - start);
+        if (!result.empty()) {
+            result.push_back('\n');
+        }
+        result.append(CanonicalizePreprocessorDirectiveLine(line));
+        if (end == std::string::npos) {
+            break;
+        }
+        start = end + 1;
+    }
+    return result;
 }
 
 bool IsStructuredConditionalPreprocessorNode(const SyntaxNode& node) {
@@ -209,9 +256,7 @@ bool IsPreprocIfHeaderChild(const SyntaxNode& node, bool& inHeader) {
 }
 
 bool IsPreprocEndifToken(const SyntaxNode& node) {
-    const std::string_view line = TrimSourceLine(FirstSourceLine(node.text));
-    return node.kind == SyntaxNodeKind::FreeToken &&
-        (line == "#endif" || StartsWith(line, "#endif ") || StartsWith(line, "#endif\t"));
+    return SyntaxNodeKindHasClass(node.kind, SyntaxNodeClass::EndifDirective);
 }
 
 bool IsCommentAlreadyInPreprocessorHeader(const SyntaxNode& parent, const SyntaxNode& child) {
@@ -222,7 +267,7 @@ bool IsCommentAlreadyInPreprocessorHeader(const SyntaxNode& parent, const Syntax
 }
 
 std::string_view PreprocEndifLine(const SyntaxNode& node) {
-    return TrimSourceLine(FirstSourceLine(node.text));
+    return node.text.empty() ? SyntaxNodeKindTokenText(node.kind) : TrimSourceLine(FirstSourceLine(node.text));
 }
 
 bool IsRawStatementToken(const PrintToken& token) {
@@ -698,7 +743,8 @@ std::string FormatListPreprocessorLines(std::string_view text, int itemIndent, i
         const size_t end = normalized.find('\n', start);
         const std::string_view rawLine = end == std::string::npos ? std::string_view(normalized).substr(start) :
             std::string_view(normalized).substr(start, end - start);
-        lines.push_back(NormalizeTrailingLineCommentSpacing(TrimSourceLine(rawLine)));
+        const std::string line = NormalizeTrailingLineCommentSpacing(TrimSourceLine(rawLine));
+        lines.push_back(CanonicalizePreprocessorDirectiveLine(line));
         if (end == std::string::npos) {
             break;
         }
@@ -708,7 +754,7 @@ std::string FormatListPreprocessorLines(std::string_view text, int itemIndent, i
     if (finalListItem) {
         size_t finalConditionalStart = lines.size();
         for (size_t index = lines.size(); index > 0; --index) {
-            if (IsConditionalOpenLine(lines[index - 1])) {
+            if (PreprocessorLineHasClass(lines[index - 1], SyntaxNodeClass::ConditionalOpeningDirective)) {
                 finalConditionalStart = index - 1;
                 break;
             }
@@ -742,7 +788,8 @@ std::string FormatDeclarationModifierPreprocessorLines(std::string_view text, in
         const size_t end = normalized.find('\n', start);
         const std::string_view rawLine = end == std::string::npos ? std::string_view(normalized).substr(start) :
             std::string_view(normalized).substr(start, end - start);
-        const std::string line = NormalizeTrailingLineCommentSpacing(TrimSourceLine(rawLine));
+        const std::string line =
+            CanonicalizePreprocessorDirectiveLine(NormalizeTrailingLineCommentSpacing(TrimSourceLine(rawLine)));
         if (!result.empty()) {
             result.push_back('\n');
         }
@@ -766,7 +813,8 @@ std::string FormatConditionalRhsPreprocessorLines(std::string_view text, int con
         const size_t end = normalized.find('\n', start);
         const std::string_view rawLine = end == std::string::npos ? std::string_view(normalized).substr(start) :
             std::string_view(normalized).substr(start, end - start);
-        const std::string line = NormalizeTrailingLineCommentSpacing(TrimSourceLine(rawLine));
+        const std::string line =
+            CanonicalizePreprocessorDirectiveLine(NormalizeTrailingLineCommentSpacing(TrimSourceLine(rawLine)));
         if (!result.empty()) {
             result.push_back('\n');
         }
@@ -2402,7 +2450,7 @@ private:
         return token.kind == PrintTokenKind::TrailingComment &&
             rawPrevious != nullptr &&
             rawPrevious->kind == PrintTokenKind::Preprocessor &&
-            StartsWith(rawPrevious->text, "#endif");
+            SyntaxNodeKindHasClass(rawPrevious->syntaxKind, SyntaxNodeClass::EndifDirective);
     }
 
     void PrintOne(
@@ -2526,16 +2574,23 @@ private:
         currentColumn_ = 0;
         atLineStart_ = true;
         lineHasText_ = false;
-        if (!text.empty() && next != nullptr && !IsConditionalBranchSeparatorLine(next->text)) {
+        if (
+            !text.empty() &&
+            next != nullptr &&
+            !SyntaxNodeKindHasClass(next->syntaxKind, SyntaxNodeClass::ConditionalBranchSeparatorDirective)
+        ) {
             BlankLine();
         }
     }
 
     void PrintPreprocessor(const PrintToken& token, const PrintToken* next) {
         const bool hasLineBreak = ContainsSourceLineBreak(token.text);
-        const std::string line = hasLineBreak ? PreservePreprocessorLines(token.text) :
-            NormalizeTrailingLineCommentSpacing(CollapseSourceWhitespace(token.text));
-        const bool isInclude = StartsWith(line, "#include");
+        const std::string line = CanonicalizePreprocessorDirectiveLines(
+            hasLineBreak ? PreservePreprocessorLines(token.text) :
+            NormalizeTrailingLineCommentSpacing(CollapseSourceWhitespace(token.text))
+        );
+        const bool isInclude = SyntaxNodeKindHasClass(token.syntaxKind, SyntaxNodeClass::IncludeDirective) ||
+            PreprocessorLineHasClass(line, SyntaxNodeClass::IncludeDirective);
         const bool listConditional =
             StartsPreprocessorSplitList(token) && NearestPreprocessorSplitListAncestor(token) != nullptr;
         if (IsConditionalRhsPreprocessorToken(token)) {
@@ -2614,8 +2669,11 @@ private:
             token.parentKind == SyntaxNodeKind::BinaryExpression ||
             token.parentKind == SyntaxNodeKind::ConditionClause ||
             token.grandParentKind == SyntaxNodeKind::ArgumentList;
-        const bool isUndef = StartsWith(line, "#undef");
-        const bool isConditionalDirective = IsConditionalPreprocessorDirective(line);
+        const SyntaxNodeKind lineDirectiveKind = SyntaxNodeKindFromPreprocessorDirectiveLine(line);
+        const bool isUndef = lineDirectiveKind == SyntaxNodeKind::PreprocessorDirectiveUndef;
+        const bool isConditionalDirective =
+            SyntaxNodeKindHasClass(token.syntaxKind, SyntaxNodeClass::ConditionalPreprocessorDirective) ||
+            SyntaxNodeKindHasClass(lineDirectiveKind, SyntaxNodeClass::ConditionalPreprocessorDirective);
         if (isUndef) {
             BlankLine();
         }

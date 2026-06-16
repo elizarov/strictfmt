@@ -20,6 +20,7 @@ This document owns shared terminology used across the `strictfmt` documentation.
 - **macro category**: A formatter configuration list that tells the grammar which macro identifiers use special parsing roles.
 - **mandatory line break**: A structural boundary that the formatter always emits before optional wrapping is considered.
 - **pretty printer**: The formatter component that turns the format model and break choices into formatted source.
+- **preprocessor directive**: A source line that begins with a recognized `#keyword` command. The directive keyword uses canonical spelling in formatted source.
 - **print token**: The token stream derived from the format model for spacing, break model construction, and emission. In code this is `PrintToken`.
 - **recursive discovery**: Directory traversal from `-r` or `--recursive` roots to find supported source files while applying ignore files.
 - **source code module**: A paired `.cpp` and `.h` implementation unit, or a single `.cpp` or `.h` file when no pair exists.

@@ -127,6 +127,24 @@ enum class SyntaxNodeKind : std::uint16_t {
     NumberLiteral,
     Identifier,
 
+    // Preprocessor directive tokens.
+    PreprocessorDirectiveInclude,
+    PreprocessorDirectiveDefine,
+    PreprocessorDirectiveIf,
+    PreprocessorDirectiveIfdef,
+    PreprocessorDirectiveIfndef,
+    PreprocessorDirectiveElif,
+    PreprocessorDirectiveElifdef,
+    PreprocessorDirectiveElifndef,
+    PreprocessorDirectiveElse,
+    PreprocessorDirectiveEndif,
+    PreprocessorDirectiveUndef,
+    PreprocessorDirectivePragma,
+    PreprocessorDirectiveError,
+    PreprocessorDirectiveWarning,
+    PreprocessorDirectiveLine,
+    PreprocessorDirectiveUsing,
+
     // Known tokens.
     Hash,
     LeftParen,
@@ -306,6 +324,12 @@ enum class SyntaxNodeClass : std::uint64_t {
     SemanticDelimitedParent = 1ull << 36,
     PreprocessorSplitList = 1ull << 37,
     OpeningDelimiter = 1ull << 38,
+    PreprocessorDirective = 1ull << 39,
+    ConditionalPreprocessorDirective = 1ull << 40,
+    ConditionalOpeningDirective = 1ull << 41,
+    ConditionalBranchSeparatorDirective = 1ull << 42,
+    CheckedPreprocessorDirective = 1ull << 43,
+    EndifDirective = 1ull << 44,
 };
 
 enum class SyntaxWrapperRole : std::uint8_t {
@@ -326,6 +350,7 @@ struct SyntaxSymbolInfo {
 
 SyntaxNodeKind SyntaxNodeKindFromTreeType(std::string_view type);
 SyntaxNodeKind SyntaxNodeKindFromTokenText(std::string_view text);
+SyntaxNodeKind SyntaxNodeKindFromPreprocessorDirectiveLine(std::string_view line);
 SyntaxSymbolInfo SyntaxSymbolInfoForSymbol(TSSymbol symbol);
 std::string_view SyntaxNodeKindName(SyntaxNodeKind kind);
 std::string_view SyntaxNodeKindTokenText(SyntaxNodeKind kind);

@@ -57,9 +57,27 @@ constexpr std::uint64_t kPreprocessorSplitListClasses =
     Bit(SyntaxNodeClass::PreprocessorSplitList) |
     Bit(SyntaxNodeClass::SemanticDelimitedParent);
 constexpr std::uint64_t kConditionalPreprocessorTreeClasses =
-    kAllowedPreprocessorContainerClasses | Bit(SyntaxNodeClass::ConditionalPreprocessorTree);
+    kAllowedPreprocessorContainerClasses |
+    Bit(SyntaxNodeClass::ConditionalPreprocessorTree) |
+    Bit(SyntaxNodeClass::ConditionalPreprocessorDirective);
 constexpr std::uint64_t kConditionalPreprocessorOpenClasses =
-    kConditionalPreprocessorTreeClasses | Bit(SyntaxNodeClass::ConditionalPreprocessorOpen);
+    kConditionalPreprocessorTreeClasses |
+    Bit(SyntaxNodeClass::ConditionalPreprocessorOpen) |
+    Bit(SyntaxNodeClass::ConditionalOpeningDirective) |
+    Bit(SyntaxNodeClass::CheckedPreprocessorDirective);
+constexpr std::uint64_t kPreprocessorDirectiveClasses = Bit(SyntaxNodeClass::PreprocessorDirective);
+constexpr std::uint64_t kCheckedPreprocessorDirectiveClasses =
+    kPreprocessorDirectiveClasses | Bit(SyntaxNodeClass::CheckedPreprocessorDirective);
+constexpr std::uint64_t kConditionalPreprocessorDirectiveClasses =
+    kPreprocessorDirectiveClasses | Bit(SyntaxNodeClass::ConditionalPreprocessorDirective);
+constexpr std::uint64_t kConditionalOpeningDirectiveClasses =
+    kConditionalPreprocessorDirectiveClasses |
+    Bit(SyntaxNodeClass::ConditionalOpeningDirective) |
+    Bit(SyntaxNodeClass::CheckedPreprocessorDirective);
+constexpr std::uint64_t kConditionalBranchSeparatorDirectiveClasses =
+    kConditionalPreprocessorDirectiveClasses | Bit(SyntaxNodeClass::ConditionalBranchSeparatorDirective);
+constexpr std::uint64_t kEndifDirectiveClasses =
+    kConditionalBranchSeparatorDirectiveClasses | Bit(SyntaxNodeClass::EndifDirective);
 constexpr std::uint64_t kSymbolLocalClasses =
     Bit(SyntaxNodeClass::WholeNodeAsFreeToken) |
     Bit(SyntaxNodeClass::AtomicPreprocessor) |
@@ -142,17 +160,20 @@ constexpr auto kSyntaxKindMappings = std::to_array<SyntaxKindMapping>({
     Tree(SyntaxNodeKind::PreprocCall, "preproc_call", kAtomicPreprocessorClasses),
     Tree(SyntaxNodeKind::MacroDefinition, "preproc_def", Bit(SyntaxNodeClass::MacroDefinition)),
     Tree(SyntaxNodeKind::MacroDefinition, "preproc_function_def", Bit(SyntaxNodeClass::MacroDefinition)),
-    Tree(SyntaxNodeKind::PreprocInclude, "preproc_include", kAtomicPreprocessorClasses | Bit(
-        SyntaxNodeClass::IncludeDirective
-    )),
+    Tree(SyntaxNodeKind::PreprocInclude, "preproc_include", kAtomicPreprocessorClasses |
+        Bit(SyntaxNodeClass::IncludeDirective) | Bit(SyntaxNodeClass::CheckedPreprocessorDirective)),
     Tree(SyntaxNodeKind::PreprocIf, "preproc_if", kConditionalPreprocessorOpenClasses | Bit(
         SyntaxNodeClass::PreserveBlankLineParent
     )),
     Tree(SyntaxNodeKind::PreprocIfdef, "preproc_ifdef", kConditionalPreprocessorOpenClasses | Bit(
         SyntaxNodeClass::PreserveBlankLineParent
     )),
-    Tree(SyntaxNodeKind::PreprocElse, "preproc_else", kConditionalPreprocessorTreeClasses),
-    Tree(SyntaxNodeKind::PreprocElif, "preproc_elif", kConditionalPreprocessorTreeClasses),
+    Tree(SyntaxNodeKind::PreprocElse, "preproc_else", kConditionalPreprocessorTreeClasses | Bit(
+        SyntaxNodeClass::ConditionalBranchSeparatorDirective
+    )),
+    Tree(SyntaxNodeKind::PreprocElif, "preproc_elif", kConditionalPreprocessorTreeClasses | Bit(
+        SyntaxNodeClass::ConditionalBranchSeparatorDirective
+    )),
     Tree(SyntaxNodeKind::PreprocUsing, "preproc_using", kAtomicPreprocessorClasses),
     Tree(SyntaxNodeKind::PreprocParams, "preproc_params"),
     Tree(SyntaxNodeKind::PreprocArg, "preproc_arg", Bit(SyntaxNodeClass::WholeNodeAsFreeToken)),
@@ -298,6 +319,24 @@ constexpr auto kSyntaxKindMappings = std::to_array<SyntaxKindMapping>({
     Tree(SyntaxNodeKind::Identifier, "type_identifier"),
     Tree(SyntaxNodeKind::Identifier, "qualified_identifier"),
     Tree(SyntaxNodeKind::Identifier, "macro_qualified_identifier"),
+    Token(SyntaxNodeKind::PreprocessorDirectiveInclude, "#include", kCheckedPreprocessorDirectiveClasses | Bit(
+        SyntaxNodeClass::IncludeDirective
+    )),
+    Token(SyntaxNodeKind::PreprocessorDirectiveDefine, "#define", kPreprocessorDirectiveClasses),
+    Token(SyntaxNodeKind::PreprocessorDirectiveIf, "#if", kConditionalOpeningDirectiveClasses),
+    Token(SyntaxNodeKind::PreprocessorDirectiveIfdef, "#ifdef", kConditionalOpeningDirectiveClasses),
+    Token(SyntaxNodeKind::PreprocessorDirectiveIfndef, "#ifndef", kConditionalOpeningDirectiveClasses),
+    Token(SyntaxNodeKind::PreprocessorDirectiveElif, "#elif", kConditionalBranchSeparatorDirectiveClasses),
+    Token(SyntaxNodeKind::PreprocessorDirectiveElifdef, "#elifdef", kConditionalBranchSeparatorDirectiveClasses),
+    Token(SyntaxNodeKind::PreprocessorDirectiveElifndef, "#elifndef", kConditionalBranchSeparatorDirectiveClasses),
+    Token(SyntaxNodeKind::PreprocessorDirectiveElse, "#else", kConditionalBranchSeparatorDirectiveClasses),
+    Token(SyntaxNodeKind::PreprocessorDirectiveEndif, "#endif", kEndifDirectiveClasses),
+    Token(SyntaxNodeKind::PreprocessorDirectiveUndef, "#undef", kPreprocessorDirectiveClasses),
+    Token(SyntaxNodeKind::PreprocessorDirectivePragma, "#pragma", kPreprocessorDirectiveClasses),
+    Token(SyntaxNodeKind::PreprocessorDirectiveError, "#error", kPreprocessorDirectiveClasses),
+    Token(SyntaxNodeKind::PreprocessorDirectiveWarning, "#warning", kPreprocessorDirectiveClasses),
+    Token(SyntaxNodeKind::PreprocessorDirectiveLine, "#line", kPreprocessorDirectiveClasses),
+    Token(SyntaxNodeKind::PreprocessorDirectiveUsing, "#using", kPreprocessorDirectiveClasses),
     Token(SyntaxNodeKind::Hash, "#"),
     Token(SyntaxNodeKind::LeftParen, "(", Bit(SyntaxNodeClass::OpeningDelimiter)),
     Token(SyntaxNodeKind::RightParen, ")"),
@@ -668,6 +707,30 @@ SyntaxNodeKind SyntaxNodeKindFromTokenText(std::string_view text) {
     return found == tokens.end() ? SyntaxNodeKind::Unknown : found->second;
 }
 
+SyntaxNodeKind SyntaxNodeKindFromPreprocessorDirectiveLine(std::string_view line) {
+    while (!line.empty() && (line.front() == ' ' || line.front() == '\t')) {
+        line.remove_prefix(1);
+    }
+    if (line.empty() || line.front() != '#') {
+        return SyntaxNodeKind::Unknown;
+    }
+    line.remove_prefix(1);
+    while (!line.empty() && (line.front() == ' ' || line.front() == '\t')) {
+        line.remove_prefix(1);
+    }
+
+    std::string tokenText = "#";
+    while (!line.empty()) {
+        const char ch = line.front();
+        if (!((ch >= 'A' && ch <= 'Z') || (ch >= 'a' && ch <= 'z') || (ch >= '0' && ch <= '9') || ch == '_')) {
+            break;
+        }
+        tokenText.push_back(ch);
+        line.remove_prefix(1);
+    }
+    return tokenText.size() == 1 ? SyntaxNodeKind::Unknown : SyntaxNodeKindFromTokenText(tokenText);
+}
+
 SyntaxSymbolInfo SyntaxSymbolInfoForSymbol(TSSymbol symbol) {
     const auto& symbols = SyntaxInfoBySymbol();
     return static_cast<size_t>(symbol) < symbols.size() ? symbols[symbol] : SyntaxSymbolInfo{};
@@ -891,6 +954,38 @@ std::string_view SyntaxNodeKindName(SyntaxNodeKind kind) {
             return "NumberLiteral";
         case SyntaxNodeKind::Identifier:
             return "Identifier";
+        case SyntaxNodeKind::PreprocessorDirectiveInclude:
+            return "PreprocessorDirectiveInclude";
+        case SyntaxNodeKind::PreprocessorDirectiveDefine:
+            return "PreprocessorDirectiveDefine";
+        case SyntaxNodeKind::PreprocessorDirectiveIf:
+            return "PreprocessorDirectiveIf";
+        case SyntaxNodeKind::PreprocessorDirectiveIfdef:
+            return "PreprocessorDirectiveIfdef";
+        case SyntaxNodeKind::PreprocessorDirectiveIfndef:
+            return "PreprocessorDirectiveIfndef";
+        case SyntaxNodeKind::PreprocessorDirectiveElif:
+            return "PreprocessorDirectiveElif";
+        case SyntaxNodeKind::PreprocessorDirectiveElifdef:
+            return "PreprocessorDirectiveElifdef";
+        case SyntaxNodeKind::PreprocessorDirectiveElifndef:
+            return "PreprocessorDirectiveElifndef";
+        case SyntaxNodeKind::PreprocessorDirectiveElse:
+            return "PreprocessorDirectiveElse";
+        case SyntaxNodeKind::PreprocessorDirectiveEndif:
+            return "PreprocessorDirectiveEndif";
+        case SyntaxNodeKind::PreprocessorDirectiveUndef:
+            return "PreprocessorDirectiveUndef";
+        case SyntaxNodeKind::PreprocessorDirectivePragma:
+            return "PreprocessorDirectivePragma";
+        case SyntaxNodeKind::PreprocessorDirectiveError:
+            return "PreprocessorDirectiveError";
+        case SyntaxNodeKind::PreprocessorDirectiveWarning:
+            return "PreprocessorDirectiveWarning";
+        case SyntaxNodeKind::PreprocessorDirectiveLine:
+            return "PreprocessorDirectiveLine";
+        case SyntaxNodeKind::PreprocessorDirectiveUsing:
+            return "PreprocessorDirectiveUsing";
         case SyntaxNodeKind::Hash:
             return "Hash";
         case SyntaxNodeKind::LeftParen:
