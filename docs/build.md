@@ -43,6 +43,12 @@ still be reused by setting `STRICTFMT_FORMAT_TEST_EXE` to the host executable an
 `STRICTFMT_FORMAT_TEST_EXE_ARGS` to fixed arguments that precede the normal
 strictfmt test arguments.
 
+By default the build uses the vendored static tree-sitter runtime under
+`vendor\tree-sitter\tree-sitter\`. Package maintainers can set
+`STRICTFMT_USE_SYSTEM_TREE_SITTER=ON` to require an installed tree-sitter runtime
+provided by either `unofficial-tree-sitter` CMake config package or the
+`tree-sitter` pkg-config package.
+
 Windows wrapper compatibility coverage is skipped unless `STRICTFMT_FORMAT_CMD`
 points to the wrapper command file under test.
 
@@ -85,6 +91,12 @@ Unix state under an OS-specific subdirectory:
 The build directory is ignored by Git. Windows and Linux builds can coexist in
 the same checkout because their generated state lives under separate
 `build/windows/` and `build/linux/` subdirectories.
+
+By default the build uses the vendored static tree-sitter runtime under
+`vendor/tree-sitter/tree-sitter/`. Package maintainers can set
+`STRICTFMT_USE_SYSTEM_TREE_SITTER=ON` to require an installed tree-sitter runtime
+provided by either `unofficial-tree-sitter` CMake config package or the
+`tree-sitter` pkg-config package.
 
 ## Tree-Sitter Grammar Regeneration
 

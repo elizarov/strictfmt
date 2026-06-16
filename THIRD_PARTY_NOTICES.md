@@ -19,3 +19,10 @@ tree-sitter-cpp copyright and license notice remain preserved.
 - License: MIT
 - Copyright: Copyright (c) 2014 Max Brunsfeld
 - Notice: the upstream MIT license is preserved in `vendor/tree-sitter/tree-sitter-c/LICENSE`.
+
+## tree-sitter runtime
+
+- Path: `vendor/tree-sitter/tree-sitter`
+- License: MIT
+- Copyright: Copyright (c) 2018-2021 Max Brunsfeld
+- Notice: the upstream MIT license is preserved in `vendor/tree-sitter/tree-sitter/LICENSE`.
