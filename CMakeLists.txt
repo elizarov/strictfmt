@@ -83,7 +83,6 @@ target_include_directories(strictfmt_util PUBLIC
     "${CMAKE_CURRENT_SOURCE_DIR}/src"
 )
 strictfmt_apply_common_options(strictfmt_util)
-add_library(strictfmt::util ALIAS strictfmt_util)
 
 add_library(strictfmt_tree_sitter_cpp_grammar STATIC
     vendor/tree-sitter/tree-sitter-cpp/src/parser.c
@@ -124,7 +123,6 @@ target_link_libraries(strictfmt_core PUBLIC
     ${strictfmt_tree_sitter_target}
 )
 strictfmt_apply_common_options(strictfmt_core)
-add_library(strictfmt::core ALIAS strictfmt_core)
 
 add_library(strictfmt_cli STATIC
     src/tools/format_cli.cpp
@@ -133,14 +131,12 @@ add_library(strictfmt_cli STATIC
     src/tools/strictfmt_cli.cpp
 )
 target_include_directories(strictfmt_cli PUBLIC
-    "${CMAKE_CURRENT_SOURCE_DIR}/include"
     "${CMAKE_CURRENT_SOURCE_DIR}/src"
 )
 target_link_libraries(strictfmt_cli PUBLIC
     strictfmt_core
 )
 strictfmt_apply_common_options(strictfmt_cli)
-add_library(strictfmt::cli ALIAS strictfmt_cli)
 
 if(STRICTFMT_BUILD_STANDALONE)
     add_executable(strictfmt

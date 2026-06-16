@@ -1,4 +1,5 @@
-#include "strictfmt/cli.h"
+#include "tools/strictfmt_cli.h"
+
 #include "tools/format.h"
 
 int RunStrictfmtCli(int argc, char** argv) {
