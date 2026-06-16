@@ -29,7 +29,12 @@ void SayHello(std::string_view requestedGreetingName) {
 }
 ```
 
-The formatter behavior and configuration reference live in [docs/format.md](docs/format.md).
+## Detailed documentation
+
+- [docs/format.md](docs/format.md) specifies the source layout produced by formatter.
+- [docs/config.md](docs/config.md) specifies the configuration files consumed by formatter.
+- [docs/preprocessor.md](docs/preprocessor.md) describes handing of preprocessor directives and conditional compilation.
+- [docs/syntax_ambiguities.md](docs/syntax_ambiguities.md) explains treatment of C++ syntax ambiguities. 
 
 ## License
 
