@@ -60,8 +60,6 @@ using ValueTypes = ::testing::Types<
 >;
 ```
 
-Conditional compilation is not accepted in base-class lists or constructor initializer lists. Those lists do not have a stable trailing-comma form in the supported style, so patching items there remains an unsupported preprocessor placement.
-
 Conditional declaration-prefix modifiers format as a forced break before the rest of the declaration. The directive lines stay at column zero, while comments, attributes, and modifier lines inside the conditional use the indentation of the declaration that follows.
 
 ```cpp
@@ -111,7 +109,7 @@ void HandleSocketError(int error) {
 }
 ```
 
-Local `#include` directives follow the same boundary rule: they may stand where the surrounding grammar accepts a complete declaration, statement, member declaration, enum entry, or directive, but not inside another expression or declaration. The include directive line stays at column zero.
+Local `#include` directives follow the same parser-owned boundary rule: they may stand where the surrounding grammar accepts them as complete items, but not where tree-sitter recovery reports a parse error. The include directive line stays at column zero.
 
 ```cpp
 void RegisterGeneratedMetrics() {
@@ -120,33 +118,8 @@ void RegisterGeneratedMetrics() {
 }
 ```
 
-Conditional directives are rejected below the complete-item, declaration-prefix modifier, conditional-right-hand-side, or list-item boundary, such as inside an expression or statement header. A conditional block whose branches do not end as complete items and that is followed by an expression-continuation operator is also rejected, independent of the specific operator token. The formatter reports every offending `#if`, `#ifdef`, `#ifndef`, or `#include` line as `unsupported preprocessor placement`.
+## Unsupported preprocessor placement
 
-Do not patch one operand into an expression:
+Conditional compilation and include placements outside the supported grammar may or may not parse successfully. The erorr is reported only when tree-sitter recovery produces parse errors. All recovered `ERROR` and missing nodes are reported as `parse failed` diagnostics.
 
-```cpp
-constexpr int kOptmask =
-    ARES_OPT_FLAGS | ARES_OPT_TIMEOUTMS | ARES_OPT_TRIES | ARES_OPT_DOMAINS |
-#if ARES_VERSION < 0x011400
-    ARES_OPT_SOCK_STATE_CB |
-#endif
-    ARES_OPT_LOOKUPS;
-```
-
-Prefer a separately declared compatibility constant, or a conditionally declared macro when the surrounding language position cannot name a constant.
-
-```cpp
-#if ARES_VERSION < 0x011400
-constexpr int kAresOptSockStateCbCompat = ARES_OPT_SOCK_STATE_CB;
-#else
-constexpr int kAresOptSockStateCbCompat = 0;
-#endif
-
-constexpr int kOptmask =
-    ARES_OPT_FLAGS |
-    ARES_OPT_TIMEOUTMS |
-    ARES_OPT_TRIES |
-    ARES_OPT_DOMAINS |
-    kAresOptSockStateCbCompat |
-    ARES_OPT_LOOKUPS;
-```
+Some unsupported syntactic shapes still parse after tree-sitter recovery. When that happens, `strictfmt` may emit formatted output, but the indentation and spacing for that shape are not stable formatting guarantees.
