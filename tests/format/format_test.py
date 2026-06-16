@@ -670,6 +670,152 @@ class FormatCommandTests(unittest.TestCase):
             result.stdout,
         )
 
+    def test_structured_macro_definitions_format_replacements(self) -> None:
+        source = (
+            "#define EMPTY_OBJECT\n"
+            "#define STRUCTURED_OBJECT Foo(1,2)\n"
+            "#define STRUCTURED_FUNCTION(first,second) (first+second)\n"
+        )
+        result = native_format("--stdin", input_text=source)
+
+        self.assertEqual(0, result.returncode, msg=f"stdout:\n{result.stdout}\n\nstderr:\n{result.stderr}")
+        self.assertEqual(
+            "#define EMPTY_OBJECT\n"
+            "#define STRUCTURED_OBJECT Foo(1, 2)\n"
+            "#define STRUCTURED_FUNCTION(first, second) (first + second)\n",
+            result.stdout,
+        )
+
+        build_dir = TEST_TEMP_ROOT
+        build_dir.mkdir(exist_ok=True)
+        with tempfile.TemporaryDirectory(prefix="format_structured_macros_", dir=build_dir) as temp_dir:
+            source_path = Path(temp_dir) / "sample.cpp"
+            source_path.write_text(source, encoding="utf-8")
+
+            dump = native_format("--dump", str(source_path))
+
+            self.assertEqual(0, dump.returncode, msg=f"stdout:\n{dump.stdout}\n\nstderr:\n{dump.stderr}")
+            self.assertIn("- kind: MacroDefinition\n", dump.stdout)
+            self.assertIn("- kind: MacroReplacementList\n", dump.stdout)
+            self.assertNotIn("PreprocDef", dump.stdout)
+            self.assertNotIn("PreprocFunctionDef", dump.stdout)
+            self.assertNotIn("RawMacroReplacement", dump.stdout)
+
+    def test_raw_macro_definitions_format_raw_replacements(self) -> None:
+        build_dir = TEST_TEMP_ROOT
+        build_dir.mkdir(exist_ok=True)
+        with tempfile.TemporaryDirectory(prefix="format_raw_macros_", dir=build_dir) as temp_dir:
+            root = Path(temp_dir)
+            config = root / ".cpp-format"
+            config.write_text(
+                "---\n"
+                "ColumnLimit: 120\n"
+                "IndentWidth: 4\n"
+                "TabWidth: 4\n"
+                "MacroCategories:\n"
+                "  RawMacroDefinitions:\n"
+                "    - RAW_OBJECT\n"
+                "    - RAW_FUNCTION\n",
+                encoding="utf-8",
+            )
+            source = root / "sample.cpp"
+            source.write_text(
+                "#define RAW_OBJECT value ## suffix\n"
+                "#define RAW_FUNCTION(first,second) first ## second\n",
+                encoding="utf-8",
+            )
+
+            result = native_format("--stdin", "--style", str(config), input_text=source.read_text(encoding="utf-8"))
+
+            self.assertEqual(0, result.returncode, msg=f"stdout:\n{result.stdout}\n\nstderr:\n{result.stderr}")
+            self.assertEqual(
+                "#define RAW_OBJECT value ## suffix\n"
+                "#define RAW_FUNCTION(first, second) first ## second\n",
+                result.stdout,
+            )
+
+            dump = native_format("--dump", str(source), "--style", str(config))
+
+            self.assertEqual(0, dump.returncode, msg=f"stdout:\n{dump.stdout}\n\nstderr:\n{dump.stderr}")
+            self.assertIn("- kind: MacroDefinition\n", dump.stdout)
+            self.assertIn("- kind: RawMacroReplacement\n", dump.stdout)
+            self.assertNotIn("MacroReplacementList", dump.stdout)
+            self.assertNotIn("PreprocDef", dump.stdout)
+            self.assertNotIn("PreprocFunctionDef", dump.stdout)
+
+    def test_token_paste_macro_requires_raw_definition_configuration(self) -> None:
+        source = "#define HASH_JOIN(first,second) first ## second\n"
+        failed = native_format("--stdin", input_text=source)
+
+        self.assertEqual(1, failed.returncode, msg=f"stdout:\n{failed.stdout}\n\nstderr:\n{failed.stderr}")
+        self.assertEqual("", failed.stdout)
+        self.assertIn("parse failed", failed.stderr)
+
+        build_dir = TEST_TEMP_ROOT
+        build_dir.mkdir(exist_ok=True)
+        with tempfile.TemporaryDirectory(prefix="format_hash_join_macro_", dir=build_dir) as temp_dir:
+            config = Path(temp_dir) / ".cpp-format"
+            config.write_text(
+                "---\n"
+                "ColumnLimit: 120\n"
+                "IndentWidth: 4\n"
+                "TabWidth: 4\n"
+                "MacroCategories:\n"
+                "  RawMacroDefinitions:\n"
+                "    - HASH_JOIN\n",
+                encoding="utf-8",
+            )
+
+            formatted = native_format("--stdin", "--style", str(config), input_text=source)
+
+            self.assertEqual(0, formatted.returncode, msg=f"stdout:\n{formatted.stdout}\n\nstderr:\n{formatted.stderr}")
+            self.assertEqual("#define HASH_JOIN(first, second) first ## second\n", formatted.stdout)
+
+    def test_raw_macro_definition_category_is_definition_side_only(self) -> None:
+        source = (
+            "#define RAW_ONLY(name) name ## _impl\n"
+            "RAW_ONLY(Generated, Case) {\n"
+            "Run();\n"
+            "}\n"
+        )
+        build_dir = TEST_TEMP_ROOT
+        build_dir.mkdir(exist_ok=True)
+        with tempfile.TemporaryDirectory(prefix="format_raw_macro_use_side_", dir=build_dir) as temp_dir:
+            root = Path(temp_dir)
+            raw_only_config = root / "raw_only.cpp-format"
+            raw_only_config.write_text(
+                "---\n"
+                "ColumnLimit: 120\n"
+                "IndentWidth: 4\n"
+                "TabWidth: 4\n"
+                "MacroCategories:\n"
+                "  RawMacroDefinitions:\n"
+                "    - RAW_ONLY\n",
+                encoding="utf-8",
+            )
+            failed = native_format("--stdin", "--style", str(raw_only_config), input_text=source)
+
+            self.assertEqual(1, failed.returncode, msg=f"stdout:\n{failed.stdout}\n\nstderr:\n{failed.stderr}")
+            self.assertEqual("", failed.stdout)
+            self.assertIn("parse failed", failed.stderr)
+
+            explicit_use_config = root / "raw_and_call.cpp-format"
+            explicit_use_config.write_text(
+                "---\n"
+                "ColumnLimit: 120\n"
+                "IndentWidth: 4\n"
+                "TabWidth: 4\n"
+                "MacroCategories:\n"
+                "  RawMacroDefinitions:\n"
+                "    - RAW_ONLY\n"
+                "  CallSyntaxMacros:\n"
+                "    - RAW_ONLY\n",
+                encoding="utf-8",
+            )
+            formatted = native_format("--stdin", "--style", str(explicit_use_config), input_text=source)
+
+            self.assertEqual(0, formatted.returncode, msg=f"stdout:\n{formatted.stdout}\n\nstderr:\n{formatted.stderr}")
+
     def test_macro_arrow_chain_formats_and_reparses(self) -> None:
         build_dir = TEST_TEMP_ROOT
         build_dir.mkdir(exist_ok=True)

@@ -117,17 +117,8 @@ constexpr auto kSyntaxKindMappings = std::to_array<SyntaxKindMapping>({
         TokenClass::WholeNodeAsFreeToken
     )),
     Tree(SyntaxNodeKind::PreprocCall, "preproc_call", kAtomicPreprocessorClasses),
-    Tree(SyntaxNodeKind::PreprocDef, "preproc_def", Bit(TokenClass::MacroDefinition)),
-    Tree(SyntaxNodeKind::PreprocFunctionDef, "preproc_function_def", Bit(TokenClass::MacroDefinition)),
-    Tree(SyntaxNodeKind::PreprocFunctionDef, "raw_macro_function_definition", kAtomicPreprocessorClasses | Bit(
-        TokenClass::MacroDefinition
-    )),
-    Tree(SyntaxNodeKind::PreprocDef, "raw_macro_definition", kAtomicPreprocessorClasses | Bit(
-        TokenClass::MacroDefinition
-    )),
-    Tree(SyntaxNodeKind::PreprocFunctionDef, "preproc_hashhash_function_def", kAtomicPreprocessorClasses | Bit(
-        TokenClass::MacroDefinition
-    )),
+    Tree(SyntaxNodeKind::MacroDefinition, "preproc_def", Bit(TokenClass::MacroDefinition)),
+    Tree(SyntaxNodeKind::MacroDefinition, "preproc_function_def", Bit(TokenClass::MacroDefinition)),
     Tree(SyntaxNodeKind::PreprocInclude, "preproc_include", kAtomicPreprocessorClasses | Bit(
         TokenClass::IncludeDirective
     )),
@@ -138,6 +129,7 @@ constexpr auto kSyntaxKindMappings = std::to_array<SyntaxKindMapping>({
     Tree(SyntaxNodeKind::PreprocUsing, "preproc_using", kAtomicPreprocessorClasses),
     Tree(SyntaxNodeKind::PreprocParams, "preproc_params"),
     Tree(SyntaxNodeKind::PreprocArg, "preproc_arg", Bit(TokenClass::WholeNodeAsFreeToken)),
+    Tree(SyntaxNodeKind::RawMacroReplacement, "raw_macro_replacement", Bit(TokenClass::WholeNodeAsFreeToken)),
     Tree(SyntaxNodeKind::Tree, "macro_arrow_chain"),
     Tree(SyntaxNodeKind::FunctionDefinition, "macro_function_definition_with_trailing_parameters"),
     Tree(SyntaxNodeKind::Tree, "top_level_call_statement"),
@@ -744,10 +736,8 @@ std::string_view SyntaxNodeKindName(SyntaxNodeKind kind) {
             return "PreprocAssignmentStatement";
         case SyntaxNodeKind::PreprocCall:
             return "PreprocCall";
-        case SyntaxNodeKind::PreprocDef:
-            return "PreprocDef";
-        case SyntaxNodeKind::PreprocFunctionDef:
-            return "PreprocFunctionDef";
+        case SyntaxNodeKind::MacroDefinition:
+            return "MacroDefinition";
         case SyntaxNodeKind::PreprocInclude:
             return "PreprocInclude";
         case SyntaxNodeKind::PreprocIf:
@@ -764,6 +754,8 @@ std::string_view SyntaxNodeKindName(SyntaxNodeKind kind) {
             return "PreprocParams";
         case SyntaxNodeKind::PreprocArg:
             return "PreprocArg";
+        case SyntaxNodeKind::RawMacroReplacement:
+            return "RawMacroReplacement";
         case SyntaxNodeKind::BinaryExpression:
             return "BinaryExpression";
         case SyntaxNodeKind::UnaryExpression:

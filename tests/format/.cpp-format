@@ -19,7 +19,7 @@ MainIncludeChar: Quote
 IncludeIsMainRegex: '(Test)?$'
 
 MacroCategories:
-  RawMacroFunctionDefinitions:
+  RawMacroDefinitions:
     - ENUM_STRING_DECLARE
     - FORMAT_FIXTURE_COMMENT_CONTINUATION
     - FORMAT_FIXTURE_ENUM_ITEMS

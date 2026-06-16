@@ -1188,7 +1188,7 @@ bool CanRemainInOpeningIncludeArea(const SyntaxNode& owner, const SyntaxNode& ch
         return IsPragmaOnceNode(child);
     }
     if (IsStructuredIncludeGuardOwner(owner.kind)) {
-        return child.kind == SyntaxNodeKind::PreprocDef || IsPreprocessorConditionHeaderNode(child);
+        return child.kind == SyntaxNodeKind::MacroDefinition || IsPreprocessorConditionHeaderNode(child);
     }
     return false;
 }
