@@ -3,9 +3,9 @@
 This directory vendors the tree-sitter runtime and grammar sources used by
 `strictfmt`.
 
-- `tree-sitter` is the pinned tree-sitter C runtime used by the default static
-  build. It contains only the runtime `lib` source, headers, README, and license
-  files needed by `strictfmt`.
+- `tree-sitter` is the pinned tree-sitter C runtime from tree-sitter 0.20.6 used
+  by the default static build. It contains only the runtime `lib` source,
+  headers, README, and license files needed by `strictfmt`.
 - `tree-sitter-cpp` is based on `tree-sitter-cpp` 0.23.4 with strictfmt parser support applied directly in `grammar.js`.
 - `tree-sitter-c` is based on `tree-sitter-c` 0.23.4 and is kept as the C grammar dependency used by the C++ grammar.
 - Runtime bindings, prebuilt native packages, WASM packages, and `node_modules`

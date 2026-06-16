@@ -14,9 +14,11 @@ References to all the docs their ownership areas, read them only when needed for
 - `docs/macro.md`: macro categories and macro formatting. 
 - `docs/preprocessor.md`: preprocessor directives and conditional compilation. 
 - `docs/syntax_ambiguities.md`: syntax ambiguities.
-- `vendor/tree-sitter/README.md`: vendored tree-sitter runtime and grammar ownership.
+- `vendor/tree-sitter/README.md`: vendored tree-sitter runtime and owned grammar, read it if you are changing `vendor/tree-sitter/tree-sitter-cpp/grammar.js`.
 
 ## Validation
 
+On source code changes:
+
 - Use `scripts\build.sh|cmd` to build.
-- Use `scripts\test.sh|cmd` to test.
+- Use `scripts\test.sh|cmd` to test (includes build).
