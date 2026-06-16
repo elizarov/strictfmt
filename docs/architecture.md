@@ -18,7 +18,7 @@
 - `src/format/impl/format_break_solver.h|cpp` own the break optimizer; see [break_solver.md].
 - `src/format/impl/format_config.h|cpp` own formatter configuration, ignore files, upward discovery, inheritance, parsing, and caching.
 - `src/format/impl/format_include_sort.h|cpp` own include run normalization, grouping, main-include detection, and sorting.
-- `src/format/impl/format_model.h|cpp` own format model node kinds, token classes, symbol mappings, and syntax metadata.
+- `src/format/impl/format_model.h|cpp` own format model node kinds, `SyntaxNodeClass`, symbol mappings, and syntax metadata; category checks must use `SyntaxNodeClass` helpers, not duplicated `SyntaxNodeKind` lists, with exact kind comparisons reserved for one concrete syntax rule.
 - `src/format/impl/format_model_builder.h|cpp` own conversion from tree-sitter nodes to the normalized format model, including syntax normalization and preprocessor placement checks.
 - `src/format/impl/format_model_parse.h|cpp` own tree-sitter parser setup, macro-category callbacks, and parse-to-format-model wiring.
 - `src/format/impl/format_pretty_printer.h|cpp` own print token production, mandatory line breaks, break model solving integration, and formatted source emission.

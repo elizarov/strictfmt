@@ -2,17 +2,14 @@
 
 namespace {
 
-bool IsDeclaratorReferenceParent(SyntaxNodeKind kind) {
-    return SyntaxNodeKindHasClass(kind, TokenClass::DeclaratorReferenceParent);
-}
-
 bool IsReferenceToken(const PrintToken& token) {
     return token.kind == PrintTokenKind::Known &&
-        SyntaxNodeKindHasClass(token.syntaxKind, TokenClass::DeclaratorReferenceToken);
+        SyntaxNodeKindHasClass(token.syntaxKind, SyntaxNodeClass::DeclaratorReferenceToken);
 }
 
 bool IsDeclaratorBindingToken(const PrintToken& token) {
-    return IsDeclaratorReferenceParent(token.parentKind) && IsReferenceToken(token);
+    return SyntaxNodeKindHasClass(token.parentKind, SyntaxNodeClass::DeclaratorReferenceParent) &&
+        IsReferenceToken(token);
 }
 
 bool IsUnaryContext(const PrintToken& token) {
@@ -42,7 +39,7 @@ bool IsOperatorSpellingContext(const PrintToken& token) {
 bool IsBinaryOperatorSpacingContext(const PrintToken& token) {
     if (
         token.kind != PrintTokenKind::Known ||
-        !SyntaxNodeKindHasClass(token.syntaxKind, TokenClass::BinaryOperator) ||
+        !SyntaxNodeKindHasClass(token.syntaxKind, SyntaxNodeClass::BinaryOperator) ||
         IsUnaryContext(token) ||
         IsTemplateDelimiterContext(token) ||
         IsOperatorSpellingContext(token)
@@ -78,10 +75,6 @@ bool KeywordOperatorNeedsSpaceAfter(const PrintToken& previous, const PrintToken
         current.parentKind == SyntaxNodeKind::OperatorCast ||
         current.syntaxKind == SyntaxNodeKind::KeywordNew ||
         current.syntaxKind == SyntaxNodeKind::KeywordDelete;
-}
-
-bool IsParenthesizedDeclarator(SyntaxNodeKind kind) {
-    return SyntaxNodeKindHasClass(kind, TokenClass::ParenthesizedDeclarator);
 }
 
 bool IsWordBoundaryChar(char ch) {
@@ -130,7 +123,7 @@ bool IsInlineBlockCommentToken(const PrintToken& token) {
 bool IsTemplateArgumentExpressionOperator(const PrintToken& token) {
     return token.kind == PrintTokenKind::Known &&
         token.parentKind == SyntaxNodeKind::TemplateArgumentList &&
-        SyntaxNodeKindHasClass(token.syntaxKind, TokenClass::BinaryOperator) &&
+        SyntaxNodeKindHasClass(token.syntaxKind, SyntaxNodeClass::BinaryOperator) &&
         token.syntaxKind != SyntaxNodeKind::Less &&
         token.syntaxKind != SyntaxNodeKind::Greater;
 }
@@ -141,8 +134,8 @@ bool HasCallModifierBeforeDeclaratorBinding(const PrintToken& token) {
     if (
         declarator == nullptr ||
         parenthesized == nullptr ||
-        !IsDeclaratorReferenceParent(declarator->kind) ||
-        !IsParenthesizedDeclarator(parenthesized->kind)
+        !SyntaxNodeKindHasClass(declarator->kind, SyntaxNodeClass::DeclaratorReferenceParent) ||
+        !SyntaxNodeKindHasClass(parenthesized->kind, SyntaxNodeClass::ParenthesizedDeclarator)
     ) {
         return false;
     }
@@ -212,16 +205,16 @@ bool IsWordLike(const PrintToken& token) {
     if (token.kind == PrintTokenKind::Free) {
         return !token.text.empty() && (IsWordBoundaryChar(token.text.front()) || IsWordBoundaryChar(token.text.back()));
     }
-    return token.kind == PrintTokenKind::Known && SyntaxNodeKindHasClass(token.syntaxKind, TokenClass::Keyword);
+    return token.kind == PrintTokenKind::Known && SyntaxNodeKindHasClass(token.syntaxKind, SyntaxNodeClass::Keyword);
 }
 
 bool IsStringLike(const PrintToken& token) {
-    return SyntaxNodeKindHasClass(token.syntaxKind, TokenClass::StringLike) ||
+    return SyntaxNodeKindHasClass(token.syntaxKind, SyntaxNodeClass::StringLike) ||
         (token.kind == PrintTokenKind::Free && LooksLikeStringLiteral(token.text));
 }
 
 bool IsAccessKeyword(const PrintToken& token) {
-    return token.kind == PrintTokenKind::Known && SyntaxNodeKindHasClass(token.syntaxKind, TokenClass::AccessKeyword);
+    return token.kind == PrintTokenKind::Known && SyntaxNodeKindHasClass(token.syntaxKind, SyntaxNodeClass::AccessKeyword);
 }
 
 bool IsCaseLabelKeyword(const PrintToken& token) {
@@ -256,7 +249,7 @@ bool FormatTokenNeedsSpace(const PrintToken* previous, const PrintToken& current
             return true;
         }
         return previous->kind == PrintTokenKind::Known && (
-            SyntaxNodeKindHasClass(previous->syntaxKind, TokenClass::AssignmentOperator) ||
+            SyntaxNodeKindHasClass(previous->syntaxKind, SyntaxNodeClass::AssignmentOperator) ||
             previous->syntaxKind == SyntaxNodeKind::Comma ||
             previous->syntaxKind == SyntaxNodeKind::KeywordReturn ||
             previous->syntaxKind == SyntaxNodeKind::Colon ||
@@ -299,7 +292,7 @@ bool FormatTokenNeedsSpace(const PrintToken* previous, const PrintToken& current
     }
     if (IsCompactEmptyBraceToken(*previous) && current.kind == PrintTokenKind::Known) {
         if (
-            SyntaxNodeKindHasClass(current.syntaxKind, TokenClass::AssignmentOperator) ||
+            SyntaxNodeKindHasClass(current.syntaxKind, SyntaxNodeClass::AssignmentOperator) ||
             IsBinaryOperatorSpacingContext(current)
         ) {
             return true;
@@ -309,7 +302,7 @@ bool FormatTokenNeedsSpace(const PrintToken* previous, const PrintToken& current
         )) {
             return true;
         }
-        return SyntaxNodeKindHasClass(current.syntaxKind, TokenClass::AttachAfterBlockKeyword);
+        return SyntaxNodeKindHasClass(current.syntaxKind, SyntaxNodeClass::AttachAfterBlockKeyword);
     }
     if (previous->kind != PrintTokenKind::Known && current.kind != PrintTokenKind::Known) {
         return IsWordLike(*previous) && IsWordLike(current);
@@ -348,8 +341,8 @@ bool FormatTokenNeedsSpace(const PrintToken* previous, const PrintToken& current
         cur == SyntaxNodeKind::ArrowStar
     ) {
         if (cur == SyntaxNodeKind::ColonColon && (
-            SyntaxNodeKindHasClass(prev, TokenClass::Keyword) ||
-            SyntaxNodeKindHasClass(prev, TokenClass::AssignmentOperator) ||
+            SyntaxNodeKindHasClass(prev, SyntaxNodeClass::Keyword) ||
+            SyntaxNodeKindHasClass(prev, SyntaxNodeClass::AssignmentOperator) ||
             prev == SyntaxNodeKind::KeywordReturn
         )) {
             return true;
@@ -393,7 +386,7 @@ bool FormatTokenNeedsSpace(const PrintToken* previous, const PrintToken& current
         ) {
             return false;
         }
-        if (IsParenthesizedDeclarator(current.parentKind)) {
+        if (SyntaxNodeKindHasClass(current.parentKind, SyntaxNodeClass::ParenthesizedDeclarator)) {
             return true;
         }
         if (IsFunctionPointerDeclaratorGroupOpen(current)) {
@@ -412,8 +405,8 @@ bool FormatTokenNeedsSpace(const PrintToken* previous, const PrintToken& current
             return true;
         }
         if (previous->kind == PrintTokenKind::Known && (
-            SyntaxNodeKindHasClass(prev, TokenClass::AssignmentOperator) ||
-            (SyntaxNodeKindHasClass(prev, TokenClass::BinaryOperator) && IsBinaryContext(*previous)) ||
+            SyntaxNodeKindHasClass(prev, SyntaxNodeClass::AssignmentOperator) ||
+            (SyntaxNodeKindHasClass(prev, SyntaxNodeClass::BinaryOperator) && IsBinaryContext(*previous)) ||
             prev == SyntaxNodeKind::Comma ||
             prev == SyntaxNodeKind::KeywordReturn ||
             (prev == SyntaxNodeKind::Colon && previous->parentKind == SyntaxNodeKind::ConditionalExpression) ||
@@ -421,7 +414,7 @@ bool FormatTokenNeedsSpace(const PrintToken* previous, const PrintToken& current
         )) {
             return true;
         }
-        return previous->kind == PrintTokenKind::Known && SyntaxNodeKindHasClass(prev, TokenClass::ControlKeyword);
+        return previous->kind == PrintTokenKind::Known && SyntaxNodeKindHasClass(prev, SyntaxNodeClass::ControlKeyword);
     }
     if (cur == SyntaxNodeKind::LeftBracket) {
         if (current.parentKind == SyntaxNodeKind::StructuredBindingDeclarator) {
@@ -429,7 +422,7 @@ bool FormatTokenNeedsSpace(const PrintToken* previous, const PrintToken& current
         }
         if (current.parentKind == SyntaxNodeKind::LambdaCaptureSpecifier) {
             return previous->kind == PrintTokenKind::Known && (
-                SyntaxNodeKindHasClass(prev, TokenClass::AssignmentOperator) ||
+                SyntaxNodeKindHasClass(prev, SyntaxNodeClass::AssignmentOperator) ||
                 prev == SyntaxNodeKind::Comma ||
                 prev == SyntaxNodeKind::KeywordReturn ||
                 prev == SyntaxNodeKind::Question ||
@@ -444,7 +437,7 @@ bool FormatTokenNeedsSpace(const PrintToken* previous, const PrintToken& current
         }
         if (current.parentKind == SyntaxNodeKind::InitializerList) {
             return previous->kind == PrintTokenKind::Known && (
-                SyntaxNodeKindHasClass(prev, TokenClass::AssignmentOperator) ||
+                SyntaxNodeKindHasClass(prev, SyntaxNodeClass::AssignmentOperator) ||
                 prev == SyntaxNodeKind::Comma ||
                 prev == SyntaxNodeKind::KeywordReturn ||
                 prev == SyntaxNodeKind::Question ||
@@ -483,7 +476,7 @@ bool FormatTokenNeedsSpace(const PrintToken* previous, const PrintToken& current
     }
     if (prev == SyntaxNodeKind::Colon) {
         return current.parentKind != SyntaxNodeKind::CaseStatement &&
-            !SyntaxNodeKindHasClass(previous->syntaxKind, TokenClass::AccessKeyword);
+            !SyntaxNodeKindHasClass(previous->syntaxKind, SyntaxNodeClass::AccessKeyword);
     }
     if (cur == SyntaxNodeKind::Less && prev == SyntaxNodeKind::KeywordTemplate) {
         return true;
@@ -491,7 +484,7 @@ bool FormatTokenNeedsSpace(const PrintToken* previous, const PrintToken& current
     if (cur == SyntaxNodeKind::Colon) {
         if (
             previous->syntaxKind == SyntaxNodeKind::KeywordDefault ||
-            SyntaxNodeKindHasClass(previous->syntaxKind, TokenClass::AccessKeyword) ||
+            SyntaxNodeKindHasClass(previous->syntaxKind, SyntaxNodeClass::AccessKeyword) ||
             current.parentKind == SyntaxNodeKind::LabeledStatement
         ) {
             return false;
@@ -505,7 +498,7 @@ bool FormatTokenNeedsSpace(const PrintToken* previous, const PrintToken& current
         if (cur == SyntaxNodeKind::Greater) {
             return false;
         }
-        if (IsParenthesizedDeclarator(previous->grandParentKind)) {
+        if (SyntaxNodeKindHasClass(previous->grandParentKind, SyntaxNodeClass::ParenthesizedDeclarator)) {
             return HasCallModifierBeforeDeclaratorBinding(*previous) &&
                 cur != SyntaxNodeKind::RightParen &&
                 !IsDeclaratorBindingToken(current);
@@ -514,37 +507,37 @@ bool FormatTokenNeedsSpace(const PrintToken* previous, const PrintToken& current
     }
     if (prev == SyntaxNodeKind::KeywordReturn && current.kind == PrintTokenKind::Known && SyntaxNodeKindHasClass(
         cur,
-        TokenClass::UnaryOperator
+        SyntaxNodeClass::UnaryOperator
     )) {
         return true;
     }
-    if (current.kind == PrintTokenKind::Known && (SyntaxNodeKindHasClass(cur, TokenClass::AssignmentOperator) || (
-        SyntaxNodeKindHasClass(cur, TokenClass::BinaryOperator) && IsBinaryOperatorSpacingContext(current)
+    if (current.kind == PrintTokenKind::Known && (SyntaxNodeKindHasClass(cur, SyntaxNodeClass::AssignmentOperator) || (
+        SyntaxNodeKindHasClass(cur, SyntaxNodeClass::BinaryOperator) && IsBinaryOperatorSpacingContext(current)
     ))) {
         return true;
     }
-    if (previous->kind == PrintTokenKind::Known && (SyntaxNodeKindHasClass(prev, TokenClass::AssignmentOperator) || (
-        SyntaxNodeKindHasClass(prev, TokenClass::BinaryOperator) && IsBinaryOperatorSpacingContext(*previous)
+    if (previous->kind == PrintTokenKind::Known && (SyntaxNodeKindHasClass(prev, SyntaxNodeClass::AssignmentOperator) || (
+        SyntaxNodeKindHasClass(prev, SyntaxNodeClass::BinaryOperator) && IsBinaryOperatorSpacingContext(*previous)
     ))) {
         return true;
     }
     if (
         current.kind == PrintTokenKind::Known &&
-        SyntaxNodeKindHasClass(cur, TokenClass::UnaryOperator) &&
+        SyntaxNodeKindHasClass(cur, SyntaxNodeClass::UnaryOperator) &&
         IsUnaryContext(current)
     ) {
         return false;
     }
     if (
         previous->kind == PrintTokenKind::Known &&
-        SyntaxNodeKindHasClass(prev, TokenClass::UnaryOperator) &&
+        SyntaxNodeKindHasClass(prev, SyntaxNodeClass::UnaryOperator) &&
         IsUnaryContext(*previous)
     ) {
         return false;
     }
     if (
-        SyntaxNodeKindHasClass(prev, TokenClass::MemberOperator) ||
-        SyntaxNodeKindHasClass(cur, TokenClass::MemberOperator)
+        SyntaxNodeKindHasClass(prev, SyntaxNodeClass::MemberOperator) ||
+        SyntaxNodeKindHasClass(cur, SyntaxNodeClass::MemberOperator)
     ) {
         return false;
     }

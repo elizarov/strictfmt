@@ -266,7 +266,7 @@ enum class SyntaxNodeKind : std::uint16_t {
     KeywordCoYield,
 };
 
-enum class TokenClass : std::uint64_t {
+enum class SyntaxNodeClass : std::uint64_t {
     Keyword = 1ull << 0,
     ControlKeyword = 1ull << 1,
     AttachAfterBlockKeyword = 1ull << 2,
@@ -295,6 +295,17 @@ enum class TokenClass : std::uint64_t {
     Trivia = 1ull << 25,
     DeclarationModifierPreprocessor = 1ull << 26,
     ConditionalRhsPreprocessor = 1ull << 27,
+    AllowedPreprocessorContainer = 1ull << 28,
+    AllowedListPreprocessorContainer = 1ull << 29,
+    ConditionalPreprocessorTree = 1ull << 30,
+    ConditionalPreprocessorOpen = 1ull << 31,
+    PreserveBlankLineParent = 1ull << 32,
+    ListForceSplitMarker = 1ull << 33,
+    PrefixList = 1ull << 34,
+    DeclarationNode = 1ull << 35,
+    SemanticDelimitedParent = 1ull << 36,
+    PreprocessorSplitList = 1ull << 37,
+    OpeningDelimiter = 1ull << 38,
 };
 
 enum class SyntaxWrapperRole : std::uint8_t {
@@ -318,7 +329,7 @@ SyntaxNodeKind SyntaxNodeKindFromTokenText(std::string_view text);
 SyntaxSymbolInfo SyntaxSymbolInfoForSymbol(TSSymbol symbol);
 std::string_view SyntaxNodeKindName(SyntaxNodeKind kind);
 std::string_view SyntaxNodeKindTokenText(SyntaxNodeKind kind);
-bool SyntaxNodeKindHasClass(SyntaxNodeKind kind, TokenClass tokenClass);
+bool SyntaxNodeKindHasClass(SyntaxNodeKind kind, SyntaxNodeClass syntaxNodeClass);
 bool LambdaBodyAllowsCompactSingleStatementForm(const SyntaxNode& node, SyntaxNodeKind parentKind);
 
 struct SyntaxNode {
