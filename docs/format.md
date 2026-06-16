@@ -30,6 +30,7 @@ This document specifies the source layout produced by `strictfmt`.
 - Put no space before access-specifier, label, or `case` colons, e.g. `public:`.
 - Put no spaces around namespace, member-access, or pointer-member-access operators, e.g. `std::string`.
 - Put two spaces before a trailing `//` comment after code, e.g. `value;  // note`.
+- Put no space between `#` and any preprocessor directive keyword, e.g. `#if` and `#include`.
 - Put one space after a preprocessor directive keyword before its operand, e.g. `#pragma once`.
 
 ## Line Hygiene
@@ -42,6 +43,7 @@ This document specifies the source layout produced by `strictfmt`.
 - Treat empty lines only as separators between neighboring source items. Do not emit empty lines at the beginning or end of a file.
 - Drop blank lines at the beginning of a block and immediately before a closing brace.
 - Insert required structural blank lines only when they separate neighboring source items.
+- Put one empty line after `#pragma once` when another source item follows. Put one empty line before and after each `#undef` when it separates `#undef` from a neighboring source item.
 - Remove trailing commas except in enum bodies.
 - Structured macro definitions use formatter-owned replacement whitespace and continuation lines. Raw macro definitions configured with `RawMacroDefinitions` intentionally preserve raw replacement line structure as specified in [macro.md](macro.md).
 

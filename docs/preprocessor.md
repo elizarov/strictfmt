@@ -1,20 +1,26 @@
 # Preprocessor
 
-This document describes handling of preprocessor directives and conditional compilation by `strictfmt`.
+This document describes handling of preprocessor directives, conditional compilation, and local includes by `strictfmt`.
 
-## Directive Spelling
+## Supported Conditional Compilation and Local Includes
 
-Recognized preprocessor directives use canonical `#keyword` spelling. Horizontal whitespace between `#` and the directive keyword is not preserved, so `# if` formats as `#if`.
+- **Whole source items**: conditionals may select complete declarations, statements, switch `case` or `default` labels, field or method declarations, enum entries, macro definitions, includes, and other complete grammar items at the surrounding level.
+- **Comma-separated list items**: conditionals may select complete function arguments, braced initializer items, subscript items, declaration parameters, template arguments, template parameters, and enum entries.
+- **Declaration-prefix modifiers**: conditionals may select standalone modifiers or attributes that precede a declaration.
+- **Conditional right-hand sides after `=`**: conditionals may select branch bodies for variable declarations, assignment statements, alias declarations, and concept definitions. Each branch body must supply its own terminating semicolon.
+- **Local includes**: local `#include` directives may stand where the parser accepts them as complete items.
 
-## Empty lines
+All other places (e.g. patching parts of expressions or arbitrary pieces of declarations) is not supported and may result in parsing errors or produce and misformatted output if the parser manages to recover without errors.
 
-Put one empty line after `#pragma once` when another source item follows. Put one empty line before and after each `#undef` when it separates `#undef` from a neighboring source item.
+## Formatting rules
 
-## Conditional Compilation and Local Includes
+- Directive lines stay at column zero. Guarded code keeps the indentation it would have at that source location.
+- Conditional declaration-prefix modifiers force a break before the rest of the declaration. Comments, attributes, and modifier lines inside the conditional use the indentation of the declaration that follows.
+- For conditional right-hand sides after `=`, the formatter always breaks after the `=` and formats branch contents with one continuation indent relative to the line that contains the `=`.
 
-Conditional compilation is accepted when each branch contributes complete grammar items at the surrounding level: complete declarations, complete statements, switch `case` or `default` labels, field or method declarations, enum entries, macro definitions, includes, or similar syntax that already has a mandatory structural line break. Conditional declaration-prefix modifiers are also accepted for standalone modifiers and for attributes that precede a declaration. The conditional directive lines stay at column zero, and the guarded code keeps the indentation it would have at that source location.
+## Examples
 
-Conditional compilation may also patch complete expression or declaration items in comma-separated lists. This is accepted for function arguments, braced initializer items, subscript items, declaration parameters, template arguments, template parameters, and enum entries. A conditional in one of these lists makes the guarded item use split-list indentation: directive lines stay at column zero, and branch items are indented as list items. Conditional expression items do not contain statement-terminating semicolons; conditional right-hand sides use the separate `=` rule below. Conditional list items use the same comma normalization as ordinary list items, so final items lose trailing commas except in enum bodies.
+Whole-item conditionals:
 
 ```cpp
 void NormalizeSocketFlags(int& flags) {
@@ -22,23 +28,9 @@ void NormalizeSocketFlags(int& flags) {
     flags &= ~SOCK_CLOEXEC;
 #endif
 }
-
-struct ConnectionOptions {
-#ifdef FORMAT_USERVER_HAS_SOCKET_MARK
-    int socket_mark = 0;
-#endif
-
-#ifndef FORMAT_USERVER_DISABLE_TLS
-    void EnableTls();
-#endif
-};
-
-#if FORMAT_USERVER_LEGACY_FMT
-#define FORMAT_USERVER_CONST
-#else
-#define FORMAT_USERVER_CONST const
-#endif
 ```
+
+Comma-separated list items:
 
 ```cpp
 std::vector<std::string> list{
@@ -51,16 +43,9 @@ std::vector<std::string> list{
     "four"
 #endif
 };
-
-using ValueTypes = ::testing::Types<
-#if HAS_ARRAY_VALUE
-    std::array<int, 4>,
-#endif
-    std::string
->;
 ```
 
-Conditional declaration-prefix modifiers format as a forced break before the rest of the declaration. The directive lines stay at column zero, while comments, attributes, and modifier lines inside the conditional use the indentation of the declaration that follows.
+Declaration-prefix modifiers:
 
 ```cpp
 class StringLiteral : public zstring_view {
@@ -76,18 +61,9 @@ public:
 };
 ```
 
-Conditional right-hand sides after `=` are accepted for variable declarations, assignment statements, alias declarations, and concept definitions. The formatter always breaks after the `=`, keeps directive lines at column zero, and formats branch contents with one continuation indent relative to the line that contains the `=`. Each branch body supplies its own terminating semicolon, so there is no extra semicolon after `#endif`.
+Conditional right-hand sides:
 
 ```cpp
-template <typename T>
-concept IsFromCharsCorrectlySupported =
-#if defined(_GLIBCXX_RELEASE) && _GLIBCXX_RELEASE < 13
-    // libstdc++ before 13.1 parse long double incorrectly
-    !std::same_as<T, long double>;
-#else
-    true;
-#endif
-
 void SelectStatus(Status& status) {
     status =
 #if USE_FACTORY
@@ -96,20 +72,9 @@ void SelectStatus(Status& status) {
         Status{};
 #endif
 }
-
-void HandleSocketError(int error) {
-    switch (error) {
-        case Temporary:
-#if TEMPORARY_AGAIN_IS_DISTINCT
-        case TemporaryAgain:
-#endif
-            Retry();
-            break;
-    }
-}
 ```
 
-Local `#include` directives follow the same parser-owned boundary rule: they may stand where the surrounding grammar accepts them as complete items, but not where tree-sitter recovery reports a parse error. The include directive line stays at column zero.
+Local includes:
 
 ```cpp
 void RegisterGeneratedMetrics() {
@@ -117,9 +82,3 @@ void RegisterGeneratedMetrics() {
     CommitGeneratedMetrics();
 }
 ```
-
-## Unsupported preprocessor placement
-
-Conditional compilation and include placements outside the supported grammar may or may not parse successfully. The erorr is reported only when tree-sitter recovery produces parse errors. All recovered `ERROR` and missing nodes are reported as `parse failed` diagnostics.
-
-Some unsupported syntactic shapes still parse after tree-sitter recovery. When that happens, `strictfmt` may emit formatted output, but the indentation and spacing for that shape are not stable formatting guarantees.
