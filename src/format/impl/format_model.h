@@ -330,6 +330,7 @@ enum class SyntaxNodeClass : std::uint64_t {
     ConditionalBranchSeparatorDirective = 1ull << 42,
     CheckedPreprocessorDirective = 1ull << 43,
     EndifDirective = 1ull << 44,
+    SupportedPreprocessorPlacement = 1ull << 45,
 };
 
 enum class SyntaxWrapperRole : std::uint8_t {

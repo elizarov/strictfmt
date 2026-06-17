@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import os
+import re
 import shutil
 import subprocess
 import tempfile
@@ -42,6 +43,7 @@ IFDEF_INPUT_FIXTURE = Path("src") / "format_ifdef_input.cpp"
 IFDEF_OUTPUT_FIXTURE = Path("src") / "format_ifdef_output.cpp"
 UNSUPPORTED_INPUT_FIXTURE = Path("src") / "format_unsupported_input.cpp"
 UNSUPPORTED_OUTPUT_FIXTURE = Path("src") / "format_unsupported_output.cpp"
+UNSUPPORTED_WARNINGS_FIXTURE = Path("src") / "format_unsupported_output.txt"
 ERROR_INPUT_FIXTURE = Path("src") / "format_error_input.cpp"
 ERROR_OUTPUT_FIXTURE = Path("src") / "format_error_output.txt"
 USERVER_FORMAT_CONFIG = TEST_ROOT / ".cpp-format-userver"
@@ -254,7 +256,11 @@ class FormatCommandTests(unittest.TestCase):
 
         self.assertEqual(0, result.returncode, msg=f"stdout:\n{result.stdout}\n\nstderr:\n{result.stderr}")
         self.assertEqual(read_fixture(UNSUPPORTED_OUTPUT_FIXTURE), result.stdout)
-        self.assertRegex(result.stderr, r"Formatted stdin in (?:\d+ms|\d+\.\d{3}s)\.\s*$")
+        self.assertRegex(
+            result.stderr,
+            re.escape(read_fixture(UNSUPPORTED_WARNINGS_FIXTURE)) +
+            r"Formatted stdin in (?:\d+ms|\d+\.\d{3}s)\.\s*$",
+        )
 
     def test_error_stdin_reports_expected_parse_errors(self) -> None:
         result = native_format(

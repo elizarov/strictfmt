@@ -5,6 +5,7 @@
 #include "format/impl/format_model.h"
 #include "format/impl/format_model_parse.h"
 #include "format/impl/format_pretty_printer.h"
+#include "format/impl/format_preprocessor_validation.h"
 
 namespace {
 
@@ -94,6 +95,7 @@ SourceFormatResult FormatSourceText(std::string_view text, const FormatterConfig
         result.error = model.parse.error.empty() ? "parser setup failed" : model.parse.error;
         return result;
     }
+    result.warnings = ValidatePreprocessorPlacement(model);
     result.formatted =
         WithLineEndings(FormatModelText(config, model, sourcePath), SourceOutputLineEnding(*model.sourceText));
     if (model.sourceText != nullptr && *model.sourceText != result.formatted) {

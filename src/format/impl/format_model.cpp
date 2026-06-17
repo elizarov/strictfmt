@@ -44,10 +44,15 @@ constexpr std::uint64_t kNumberLiteralClasses = Bit(SyntaxNodeClass::Literal) | 
 constexpr std::uint64_t kCommentClasses = Bit(SyntaxNodeClass::Comment) | Bit(SyntaxNodeClass::Trivia);
 constexpr std::uint64_t kAtomicPreprocessorClasses =
     Bit(SyntaxNodeClass::AtomicPreprocessor) | Bit(SyntaxNodeClass::WholeNodeAsFreeToken);
+constexpr std::uint64_t kSupportedPreprocessorPlacementClasses = Bit(SyntaxNodeClass::SupportedPreprocessorPlacement);
 constexpr std::uint64_t kDeclarationModifierPreprocessorClasses =
-    kAtomicPreprocessorClasses | Bit(SyntaxNodeClass::DeclarationModifierPreprocessor);
+    kAtomicPreprocessorClasses |
+    kSupportedPreprocessorPlacementClasses |
+    Bit(SyntaxNodeClass::DeclarationModifierPreprocessor);
 constexpr std::uint64_t kConditionalRhsPreprocessorClasses =
-    kAtomicPreprocessorClasses | Bit(SyntaxNodeClass::ConditionalRhsPreprocessor);
+    kAtomicPreprocessorClasses |
+    kSupportedPreprocessorPlacementClasses |
+    Bit(SyntaxNodeClass::ConditionalRhsPreprocessor);
 constexpr std::uint64_t kChainBinaryClasses = Bit(SyntaxNodeClass::BinaryOperator) | Bit(SyntaxNodeClass::ChainOperator);
 constexpr std::uint64_t kAllowedPreprocessorContainerClasses = Bit(SyntaxNodeClass::AllowedPreprocessorContainer);
 constexpr std::uint64_t kAllowedListPreprocessorContainerClasses =
@@ -58,6 +63,7 @@ constexpr std::uint64_t kPreprocessorSplitListClasses =
     Bit(SyntaxNodeClass::SemanticDelimitedParent);
 constexpr std::uint64_t kConditionalPreprocessorTreeClasses =
     kAllowedPreprocessorContainerClasses |
+    kSupportedPreprocessorPlacementClasses |
     Bit(SyntaxNodeClass::ConditionalPreprocessorTree) |
     Bit(SyntaxNodeClass::ConditionalPreprocessorDirective);
 constexpr std::uint64_t kConditionalPreprocessorOpenClasses =
@@ -200,44 +206,57 @@ constexpr auto kSyntaxKindMappings = std::to_array<SyntaxKindMapping>({
     Tree(SyntaxNodeKind::PreprocIf, "standalone_attribute_preproc_if", kDeclarationModifierPreprocessorClasses),
     Tree(SyntaxNodeKind::PreprocIf, "conditional_macro_function_header", kAtomicPreprocessorClasses),
     Tree(SyntaxNodeKind::PreprocIfdef, "declaration_suffix_preproc_ifdef", kAtomicPreprocessorClasses),
-    Tree(SyntaxNodeKind::PreprocIfdef, "preproc_define_ifdef", kAtomicPreprocessorClasses),
-    Tree(SyntaxNodeKind::PreprocIfdef, "preproc_nested_define_ifdef", kAtomicPreprocessorClasses),
-    Tree(SyntaxNodeKind::PreprocIfdef, "preproc_define_elif_chain", kAtomicPreprocessorClasses),
-    Tree(SyntaxNodeKind::PreprocIfdef, "preproc_define_namespace_if", kAtomicPreprocessorClasses),
-    Tree(SyntaxNodeKind::PreprocIfdef, "conditional_extern_c_open", kAtomicPreprocessorClasses),
-    Tree(SyntaxNodeKind::PreprocIfdef, "conditional_extern_c_close", kAtomicPreprocessorClasses),
+    Tree(SyntaxNodeKind::PreprocIfdef, "preproc_define_ifdef", kAtomicPreprocessorClasses |
+        kSupportedPreprocessorPlacementClasses),
+    Tree(SyntaxNodeKind::PreprocIfdef, "preproc_nested_define_ifdef", kAtomicPreprocessorClasses |
+        kSupportedPreprocessorPlacementClasses),
+    Tree(SyntaxNodeKind::PreprocIfdef, "preproc_define_elif_chain", kAtomicPreprocessorClasses |
+        kSupportedPreprocessorPlacementClasses),
+    Tree(SyntaxNodeKind::PreprocIfdef, "preproc_define_namespace_if", kAtomicPreprocessorClasses |
+        kSupportedPreprocessorPlacementClasses),
+    Tree(SyntaxNodeKind::PreprocIfdef, "conditional_extern_c_open", kAtomicPreprocessorClasses |
+        kSupportedPreprocessorPlacementClasses),
+    Tree(SyntaxNodeKind::PreprocIfdef, "conditional_extern_c_close", kAtomicPreprocessorClasses |
+        kSupportedPreprocessorPlacementClasses),
     Tree(SyntaxNodeKind::PreprocIf, "preproc_binary_expression_fragment", kAtomicPreprocessorClasses),
     Tree(SyntaxNodeKind::PreprocIf, "preproc_logical_expression_fragment", kAtomicPreprocessorClasses),
     Tree(SyntaxNodeKind::PreprocIf, "preproc_bitwise_expression_fragment", kAtomicPreprocessorClasses),
     Tree(SyntaxNodeKind::PreprocIf, "preproc_logical_tail_expression_fragment", kAtomicPreprocessorClasses),
     Tree(SyntaxNodeKind::PreprocIf, "preproc_condition_expression", kAtomicPreprocessorClasses),
-    Tree(SyntaxNodeKind::PreprocIf, "preproc_case_label_fragment", kAtomicPreprocessorClasses),
+    Tree(SyntaxNodeKind::PreprocIf, "preproc_case_label_fragment", kAtomicPreprocessorClasses |
+        kSupportedPreprocessorPlacementClasses),
     Tree(SyntaxNodeKind::PreprocIf, "preproc_semicolon_initializer", kConditionalRhsPreprocessorClasses),
     Tree(SyntaxNodeKind::PreprocIf, "preproc_expression_item_fragment", kAtomicPreprocessorClasses),
     Tree(SyntaxNodeKind::PreprocIf, "preproc_template_argument_fragment", kAtomicPreprocessorClasses),
     Tree(SyntaxNodeKind::PreprocIf, "preproc_field_initializer_fragment", kAtomicPreprocessorClasses),
     Tree(SyntaxNodeKind::PreprocIf, "preproc_string_literal_fragment", kAtomicPreprocessorClasses),
     Tree(SyntaxNodeKind::PreprocIfdef, "preproc_argument_fragment", kAtomicPreprocessorClasses),
-    Tree(SyntaxNodeKind::PreprocIf, "preproc_if_in_field_declaration_list"),
-    Tree(SyntaxNodeKind::PreprocIfdef, "preproc_ifdef_in_field_declaration_list"),
-    Tree(SyntaxNodeKind::PreprocElse, "preproc_else_in_field_declaration_list"),
-    Tree(SyntaxNodeKind::PreprocElif, "preproc_elif_in_field_declaration_list"),
-    Tree(SyntaxNodeKind::PreprocElif, "preproc_elifdef_in_field_declaration_list"),
-    Tree(SyntaxNodeKind::PreprocIf, "preproc_if_in_enumerator_list"),
-    Tree(SyntaxNodeKind::PreprocIfdef, "preproc_ifdef_in_enumerator_list"),
-    Tree(SyntaxNodeKind::PreprocElse, "preproc_else_in_enumerator_list"),
-    Tree(SyntaxNodeKind::PreprocElif, "preproc_elif_in_enumerator_list"),
-    Tree(SyntaxNodeKind::PreprocElif, "preproc_elifdef_in_enumerator_list"),
-    Tree(SyntaxNodeKind::PreprocIf, "preproc_if_in_parameter_list"),
-    Tree(SyntaxNodeKind::PreprocIfdef, "preproc_ifdef_in_parameter_list"),
-    Tree(SyntaxNodeKind::PreprocElse, "preproc_else_in_parameter_list"),
-    Tree(SyntaxNodeKind::PreprocElif, "preproc_elif_in_parameter_list"),
-    Tree(SyntaxNodeKind::PreprocElif, "preproc_elifdef_in_parameter_list"),
-    Tree(SyntaxNodeKind::PreprocIf, "preproc_if_in_template_parameter_list"),
-    Tree(SyntaxNodeKind::PreprocIfdef, "preproc_ifdef_in_template_parameter_list"),
-    Tree(SyntaxNodeKind::PreprocElse, "preproc_else_in_template_parameter_list"),
-    Tree(SyntaxNodeKind::PreprocElif, "preproc_elif_in_template_parameter_list"),
-    Tree(SyntaxNodeKind::PreprocElif, "preproc_elifdef_in_template_parameter_list"),
+    Tree(SyntaxNodeKind::PreprocIf, "preproc_if_in_field_declaration_list", kSupportedPreprocessorPlacementClasses),
+    Tree(SyntaxNodeKind::PreprocIfdef, "preproc_ifdef_in_field_declaration_list",
+         kSupportedPreprocessorPlacementClasses),
+    Tree(SyntaxNodeKind::PreprocElse, "preproc_else_in_field_declaration_list", kSupportedPreprocessorPlacementClasses),
+    Tree(SyntaxNodeKind::PreprocElif, "preproc_elif_in_field_declaration_list", kSupportedPreprocessorPlacementClasses),
+    Tree(SyntaxNodeKind::PreprocElif, "preproc_elifdef_in_field_declaration_list",
+         kSupportedPreprocessorPlacementClasses),
+    Tree(SyntaxNodeKind::PreprocIf, "preproc_if_in_enumerator_list", kSupportedPreprocessorPlacementClasses),
+    Tree(SyntaxNodeKind::PreprocIfdef, "preproc_ifdef_in_enumerator_list", kSupportedPreprocessorPlacementClasses),
+    Tree(SyntaxNodeKind::PreprocElse, "preproc_else_in_enumerator_list", kSupportedPreprocessorPlacementClasses),
+    Tree(SyntaxNodeKind::PreprocElif, "preproc_elif_in_enumerator_list", kSupportedPreprocessorPlacementClasses),
+    Tree(SyntaxNodeKind::PreprocElif, "preproc_elifdef_in_enumerator_list", kSupportedPreprocessorPlacementClasses),
+    Tree(SyntaxNodeKind::PreprocIf, "preproc_if_in_parameter_list", kSupportedPreprocessorPlacementClasses),
+    Tree(SyntaxNodeKind::PreprocIfdef, "preproc_ifdef_in_parameter_list", kSupportedPreprocessorPlacementClasses),
+    Tree(SyntaxNodeKind::PreprocElse, "preproc_else_in_parameter_list", kSupportedPreprocessorPlacementClasses),
+    Tree(SyntaxNodeKind::PreprocElif, "preproc_elif_in_parameter_list", kSupportedPreprocessorPlacementClasses),
+    Tree(SyntaxNodeKind::PreprocElif, "preproc_elifdef_in_parameter_list", kSupportedPreprocessorPlacementClasses),
+    Tree(SyntaxNodeKind::PreprocIf, "preproc_if_in_template_parameter_list", kSupportedPreprocessorPlacementClasses),
+    Tree(SyntaxNodeKind::PreprocIfdef, "preproc_ifdef_in_template_parameter_list",
+         kSupportedPreprocessorPlacementClasses),
+    Tree(SyntaxNodeKind::PreprocElse, "preproc_else_in_template_parameter_list",
+         kSupportedPreprocessorPlacementClasses),
+    Tree(SyntaxNodeKind::PreprocElif, "preproc_elif_in_template_parameter_list",
+         kSupportedPreprocessorPlacementClasses),
+    Tree(SyntaxNodeKind::PreprocElif, "preproc_elifdef_in_template_parameter_list",
+         kSupportedPreprocessorPlacementClasses),
     Tree(SyntaxNodeKind::PreprocElif, "preproc_elifdef"),
     Tree(SyntaxNodeKind::BinaryExpression, "binary_expression"),
     Tree(SyntaxNodeKind::UnaryExpression, "unary_expression"),

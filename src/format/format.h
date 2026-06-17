@@ -2,6 +2,7 @@
 
 #include <string>
 #include <string_view>
+#include <vector>
 
 #include "format/impl/format_config.h"
 
@@ -10,6 +11,7 @@ struct SourceFormatResult {
     bool changed = false;
     std::string formatted;
     std::string error;
+    std::vector<std::string> warnings;
 };
 
 SourceFormatResult FormatSourceText(std::string_view text, const FormatterConfig& config, std::string_view sourcePath);

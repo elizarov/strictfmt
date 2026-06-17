@@ -44,10 +44,12 @@ and exist only to exercise one command or configuration edge.
   `tests/format/src/format_ifdef_output.cpp`: supported conditional compilation
   and preprocessor formatting coverage using `.cpp-format-userver` as documented in [preprocessor.md].
 - `tests/format/src/format_unsupported_input.cpp` ->
-  `tests/format/src/format_unsupported_output.cpp`: current formatting for
-  parser-recovered unsupported syntactic shapes. This pair records observed
-  output only; stable indentation and spacing are not guaranteed, but the
-  recorded output must still reparse and format idempotently.
+  `tests/format/src/format_unsupported_output.cpp` and
+  `tests/format/src/format_unsupported_output.txt`: current formatting and
+  warning output for parser-recovered unsupported syntactic shapes. These
+  fixtures record observed output only; stable indentation and spacing are not
+  guaranteed, but the recorded source output must still reparse and format
+  idempotently.
 - `tests/format/src/format_error_input.cpp` ->
   `tests/format/src/format_error_output.txt`: golden diagnostics for recovered
   parse errors.
