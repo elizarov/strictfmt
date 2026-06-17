@@ -2,3 +2,7 @@
 	path = external/userver
 	url = git@github.com:elizarov/userver.git
 	branch = strictfmt
+[submodule "external/casedash"]
+	path = external/casedash
+	url = git@github.com:casedash/CaseDash.git
+	branch = strictfmt

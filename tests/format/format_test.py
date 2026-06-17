@@ -19,7 +19,7 @@ FORMAT_CMD_TEXT = os.environ.get("STRICTFMT_FORMAT_CMD")
 FORMAT_CMD = Path(FORMAT_CMD_TEXT).resolve() if FORMAT_CMD_TEXT else None
 PLATFORM_LINE_ENDING = os.linesep.encode("ascii")
 PRETTY_PRINTER_SOURCE = STRICTFMT_ROOT / "src" / "format" / "impl" / "format_pretty_printer.cpp"
-USERVER_SUBMODULE_ROOT = STRICTFMT_ROOT / "external" / "userver"
+EXTERNAL_ROOT = STRICTFMT_ROOT / "external"
 SOURCE_SUFFIXES = {
     ".c",
     ".cc",
@@ -180,6 +180,58 @@ class FormatCommandTests(unittest.TestCase):
 
     def assert_no_unsupported_placement_warnings(self, result: subprocess.CompletedProcess[str]) -> None:
         self.assertNotIn(": warning at ", result.stderr)
+
+    def assert_external_project_sources_parse_without_warnings_and_format_idempotently(
+        self,
+        name: str,
+    ) -> None:
+        project_root = EXTERNAL_ROOT / name
+        if not (project_root / ".cpp-format").exists():
+            self.skipTest(f"external/{name} submodule is not initialized")
+
+        source_files = discover_source_files(project_root)
+        self.assertGreater(len(source_files), 0)
+
+        build_dir = TEST_TEMP_ROOT
+        build_dir.mkdir(exist_ok=True)
+
+        with tempfile.TemporaryDirectory(prefix=f"{name}_format_", dir=build_dir) as temp_dir:
+            root = Path(temp_dir)
+            shutil.copyfile(project_root / ".cpp-format", root / ".cpp-format")
+            ignore_file = project_root / ".cpp-format-ignore"
+            if ignore_file.exists():
+                shutil.copyfile(ignore_file, root / ".cpp-format-ignore")
+            else:
+                write_empty_ignore(root)
+            for relative in source_files:
+                copied = root / relative
+                copied.parent.mkdir(parents=True, exist_ok=True)
+                shutil.copyfile(project_root / relative, copied)
+
+            first_result = native_format("-i", "-r", ".", cwd=root)
+
+            self.assertEqual(
+                0,
+                first_result.returncode,
+                msg=f"stdout:\n{first_result.stdout}\n\nstderr:\n{first_result.stderr}",
+            )
+            self.assertNotIn("parse failed", first_result.stderr)
+            self.assert_no_unsupported_placement_warnings(first_result)
+
+            after_first_pass = read_files(root, source_files)
+            second_result = native_format("-i", "-r", ".", cwd=root)
+
+            self.assertEqual(
+                0,
+                second_result.returncode,
+                msg=f"stdout:\n{second_result.stdout}\n\nstderr:\n{second_result.stderr}",
+            )
+            self.assertNotIn("parse failed", second_result.stderr)
+            self.assert_no_unsupported_placement_warnings(second_result)
+            after_second_pass = read_files(root, source_files)
+            for relative in source_files:
+                if after_first_pass[relative] != after_second_pass[relative]:
+                    self.fail(f"{relative} changed on the second formatter pass")
 
     def test_stdin_formats_to_expected_output(self) -> None:
         result = native_format("--stdin", cwd=TEST_ROOT, input_text=read_fixture(INPUT_FIXTURE))
@@ -471,45 +523,11 @@ class FormatCommandTests(unittest.TestCase):
             self.assertEqual(0, result.returncode, msg=f"stdout:\n{result.stdout}\n\nstderr:\n{result.stderr}")
             self.assertRegex(result.stdout, r"Checked 13 files, 13 LOC in (?:\d+ms|\d+\.\d{3}s)\.\s*$")
 
-    def test_userver_submodule_sources_parse_and_format_idempotently(self) -> None:
-        if not (USERVER_SUBMODULE_ROOT / ".cpp-format").exists():
-            self.skipTest("external/userver submodule is not initialized")
+    def test_userver_submodule_sources_parse_without_warnings_and_format_idempotently(self) -> None:
+        self.assert_external_project_sources_parse_without_warnings_and_format_idempotently("userver")
 
-        source_files = discover_source_files(USERVER_SUBMODULE_ROOT)
-        self.assertGreater(len(source_files), 0)
-
-        build_dir = TEST_TEMP_ROOT
-        build_dir.mkdir(exist_ok=True)
-
-        with tempfile.TemporaryDirectory(prefix="userver_format_", dir=build_dir) as temp_dir:
-            root = Path(temp_dir)
-            shutil.copyfile(USERVER_SUBMODULE_ROOT / ".cpp-format", root / ".cpp-format")
-            shutil.copyfile(USERVER_SUBMODULE_ROOT / ".cpp-format-ignore", root / ".cpp-format-ignore")
-            for relative in source_files:
-                copied = root / relative
-                copied.parent.mkdir(parents=True, exist_ok=True)
-                shutil.copyfile(USERVER_SUBMODULE_ROOT / relative, copied)
-
-            first_result = native_format("-i", "-r", ".", cwd=root)
-
-            self.assertEqual(
-                0,
-                first_result.returncode,
-                msg=f"stdout:\n{first_result.stdout}\n\nstderr:\n{first_result.stderr}",
-            )
-
-            after_first_pass = read_files(root, source_files)
-            second_result = native_format("-i", "-r", ".", cwd=root)
-
-            self.assertEqual(
-                0,
-                second_result.returncode,
-                msg=f"stdout:\n{second_result.stdout}\n\nstderr:\n{second_result.stderr}",
-            )
-            after_second_pass = read_files(root, source_files)
-            for relative in source_files:
-                if after_first_pass[relative] != after_second_pass[relative]:
-                    self.fail(f"{relative} changed on the second formatter pass")
+    def test_casedash_submodule_sources_parse_without_warnings_and_format_idempotently(self) -> None:
+        self.assert_external_project_sources_parse_without_warnings_and_format_idempotently("casedash")
 
     def test_concurrency_one_preserves_file_list_output_order(self) -> None:
         build_dir = TEST_TEMP_ROOT
