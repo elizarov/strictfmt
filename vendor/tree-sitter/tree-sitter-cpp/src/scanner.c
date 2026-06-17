@@ -12,7 +12,6 @@ enum TokenType {
     RAW_STRING_CONTENT,
     RAW_MACRO_DEFINITION_IDENTIFIER,
     BARE_MACRO_IDENTIFIER,
-    SUFFIX_MACRO_IDENTIFIER,
     CALL_SYNTAX_MACRO_IDENTIFIER,
     CONDITIONAL_MACRO_FUNCTION_HEADER,
     PREPROC_DIRECTIVE_END,
@@ -273,7 +272,7 @@ static bool scan_conditional_macro_function_header(TSLexer *lexer) {
     return scan_literal(lexer, "endif") && scan_to_line_end(lexer, false);
 }
 
-static bool scan_macro_identifier_token(TSLexer *lexer, bool allow_call, bool allow_bare, bool allow_suffix) {
+static bool scan_macro_identifier_token(TSLexer *lexer, bool allow_call, bool allow_bare) {
     char name[MAX_MACRO_NAME_LENGTH];
     unsigned length = 0;
     if (!scan_identifier(lexer, name, &length)) {
@@ -285,16 +284,8 @@ static bool scan_macro_identifier_token(TSLexer *lexer, bool allow_call, bool al
         allow_call && strictfmt_tree_sitter_cpp_macro_category_matches(MACRO_CATEGORY_CALL_SYNTAX, name, length);
     const bool bare_match =
         allow_bare && strictfmt_tree_sitter_cpp_macro_category_matches(MACRO_CATEGORY_BARE_IDENTIFIER, name, length);
-    const bool suffix_match =
-        allow_suffix &&
-        strictfmt_tree_sitter_cpp_macro_category_matches(MACRO_CATEGORY_BARE_IDENTIFIER, name, length);
     if (call_match) {
         lexer->result_symbol = CALL_SYNTAX_MACRO_IDENTIFIER;
-        return true;
-    }
-
-    if (suffix_match) {
-        lexer->result_symbol = SUFFIX_MACRO_IDENTIFIER;
         return true;
     }
 
@@ -340,7 +331,6 @@ bool tree_sitter_cpp_external_scanner_scan(void *payload, TSLexer *lexer, const 
     if (valid_symbols[CONDITIONAL_MACRO_FUNCTION_HEADER]) {
         skip_external_whitespace(lexer);
     } else if (valid_symbols[RAW_MACRO_DEFINITION_IDENTIFIER] || valid_symbols[BARE_MACRO_IDENTIFIER] ||
-               valid_symbols[SUFFIX_MACRO_IDENTIFIER] ||
                valid_symbols[CALL_SYNTAX_MACRO_IDENTIFIER]) {
         skip_external_whitespace(lexer);
     }
@@ -355,14 +345,12 @@ bool tree_sitter_cpp_external_scanner_scan(void *payload, TSLexer *lexer, const 
         return scan_macro_identifier(lexer, MACRO_CATEGORY_RAW_DEFINITION);
     }
 
-    if ((valid_symbols[CALL_SYNTAX_MACRO_IDENTIFIER] || valid_symbols[BARE_MACRO_IDENTIFIER] ||
-         valid_symbols[SUFFIX_MACRO_IDENTIFIER]) &&
+    if ((valid_symbols[CALL_SYNTAX_MACRO_IDENTIFIER] || valid_symbols[BARE_MACRO_IDENTIFIER]) &&
         is_identifier_start(lexer->lookahead)) {
         return scan_macro_identifier_token(
             lexer,
             valid_symbols[CALL_SYNTAX_MACRO_IDENTIFIER],
-            valid_symbols[BARE_MACRO_IDENTIFIER],
-            valid_symbols[SUFFIX_MACRO_IDENTIFIER]
+            valid_symbols[BARE_MACRO_IDENTIFIER]
         );
     }
 

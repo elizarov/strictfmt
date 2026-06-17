@@ -59,7 +59,6 @@ module.exports = grammar(C, {
     $.raw_string_content,
     $.raw_macro_definition_identifier,
     $.bare_macro_identifier,
-    $.suffix_macro_identifier,
     $.call_syntax_macro_identifier,
     $.conditional_macro_function_header,
     $._preproc_directive_end,
@@ -418,10 +417,10 @@ module.exports = grammar(C, {
 
     top_level_item_macro: $ => $.bare_macro_identifier,
 
-    top_level_call_statement: $ => prec(1, seq(
+    top_level_call_statement: $ => prec(PREC.CALL + 1, seq(
       field('function', $.call_syntax_macro_identifier),
       field('arguments', $.macro_argument_list),
-      optional(field('suffix', $.function_suffix_macro)),
+      optional(field('suffix', $.bare_macro_identifier)),
       optional($.macro_arrow_chain),
       ';',
     )),
@@ -1232,7 +1231,7 @@ module.exports = grammar(C, {
       ),
     )),
 
-    function_suffix_macro: $ => $.suffix_macro_identifier,
+    function_suffix_macro: $ => $.bare_macro_identifier,
 
     _function_postfix: $ => prec.right(choice(
       repeat1($.virtual_specifier),
