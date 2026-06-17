@@ -2217,6 +2217,14 @@ private:
             !closesDoWhile;
     }
 
+    static bool ClosesImmediatelyInvokedLambda(const PrintToken& token, const PrintToken& next) {
+        return token.parentKind == SyntaxNodeKind::CompoundStatement &&
+            token.grandParentKind == SyntaxNodeKind::LambdaExpression &&
+            next.kind == PrintTokenKind::Known &&
+            next.syntaxKind == SyntaxNodeKind::LeftParen &&
+            next.parentKind == SyntaxNodeKind::ArgumentList;
+    }
+
     DeferredSplitListContext* ActiveDeferredSplitListContext() {
         return deferredSplitListContexts_.empty() ? nullptr : &deferredSplitListContexts_.back();
     }
@@ -2855,6 +2863,9 @@ private:
                     ) {
                         return;
                     }
+                    if (rawNext != nullptr && rawNext->kind == PrintTokenKind::TrailingComment) {
+                        return;
+                    }
                     NewLine(ShouldContinueMacroLine(token, next));
                     return;
                 }
@@ -3042,6 +3053,7 @@ private:
                         SyntaxNodeKindHasClass(next->syntaxKind, SyntaxNodeClass::BinaryOperator)
                     ) ||
                     closesLambdaArgument ||
+                    ClosesImmediatelyInvokedLambda(token, *next) ||
                     closesCompoundExpression ||
                     attachesToFollowingKeyword ||
                     closesDoWhile
@@ -3049,11 +3061,17 @@ private:
                     return;
                 }
             }
-            if (next != nullptr && token.parentKind == SyntaxNodeKind::FieldDeclarationList && (
-                token.grandParentKind == SyntaxNodeKind::StructSpecifier ||
-                token.grandParentKind == SyntaxNodeKind::ClassSpecifier
-            )) {
-                return;
+            if (next != nullptr) {
+                const bool closesStructOrClassBody = token.parentKind == SyntaxNodeKind::FieldDeclarationList && (
+                    token.grandParentKind == SyntaxNodeKind::StructSpecifier ||
+                    token.grandParentKind == SyntaxNodeKind::ClassSpecifier
+                );
+                const bool closesEnumBody =
+                    token.parentKind == SyntaxNodeKind::EnumeratorList &&
+                    token.grandParentKind == SyntaxNodeKind::EnumSpecifier;
+                if (closesStructOrClassBody || closesEnumBody) {
+                    return;
+                }
             }
             FlushPendingTokens();
             NewLine(ShouldContinueMacroLine(token, next));

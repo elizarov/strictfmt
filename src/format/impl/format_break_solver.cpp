@@ -1519,6 +1519,98 @@ private:
         return result;
     }
 
+    static bool IsParameterListDelimited(const FormatBreakNode& node) {
+        if (
+            node.kind != FormatBreakNodeKind::Delimited ||
+            node.delimiterKind != FormatBreakDelimiterKind::Paren ||
+            node.children.empty() ||
+            node.children.front() == nullptr ||
+            node.children.front()->kind != FormatBreakNodeKind::Token
+        ) {
+            return false;
+        }
+        const PrintToken& open = FormatBreakTokenValue(node.children.front()->token);
+        return open.parentKind == SyntaxNodeKind::ParameterList;
+    }
+
+    NodeResult SolveWithFirstParameterListSplit(
+        const FormatBreakNode& node,
+        int column,
+        int indentLevel,
+        bool lineHasText,
+        bool& splitParameterList
+    ) {
+        if (IsParameterListDelimited(node) && !splitParameterList) {
+            splitParameterList = true;
+            return SolveDelimitedSplit(node, column, indentLevel, lineHasText);
+        }
+        if (node.kind != FormatBreakNodeKind::Sequence && node.kind != FormatBreakNodeKind::FunctionSignature) {
+            return Solve(node, column, indentLevel, lineHasText);
+        }
+
+        NodeResult
+            result{.valid = true, .endColumn = column, .endIndentLevel = indentLevel, .endLineHasText = lineHasText};
+        std::vector<const FormatBreakNode*> sequenceChildren;
+        AppendSequenceChildren(node.children, sequenceChildren);
+        for (const FormatBreakNode* child : sequenceChildren) {
+            if (child == nullptr) {
+                continue;
+            }
+            NodeResult item = SolveWithFirstParameterListSplit(
+                *child,
+                result.endColumn,
+                result.endIndentLevel,
+                result.endLineHasText,
+                splitParameterList
+            );
+            if (!item.valid) {
+                return {};
+            }
+            Merge(result, item);
+        }
+        return result;
+    }
+
+    NodeResult SolveFunctionSignatureCompactWithSplitParameters(
+        const FormatBreakNode& node,
+        int column,
+        int indentLevel,
+        bool lineHasText
+    ) {
+        if (node.children.size() < 2) {
+            return {};
+        }
+        NodeResult
+            result{.valid = true, .endColumn = column, .endIndentLevel = indentLevel, .endLineHasText = lineHasText};
+        AddChoice(result, node.id, FormatBreakChoice::Compact);
+        NodeResult returnType =
+            Solve(*node.children[0], result.endColumn, result.endIndentLevel, result.endLineHasText);
+        if (!returnType.valid) {
+            return {};
+        }
+        Merge(result, returnType);
+        bool splitParameterList = false;
+        NodeResult declarator = SolveWithFirstParameterListSplit(
+            *node.children[1],
+            result.endColumn,
+            result.endIndentLevel,
+            result.endLineHasText,
+            splitParameterList
+        );
+        if (!splitParameterList || !declarator.valid) {
+            return {};
+        }
+        Merge(result, declarator);
+        if (node.children.size() > 2) {
+            NodeResult tail = Solve(*node.children[2], result.endColumn, result.endIndentLevel, result.endLineHasText);
+            if (!tail.valid) {
+                return {};
+            }
+            Merge(result, tail);
+        }
+        return result;
+    }
+
     NodeResult SolveFunctionSignatureSplit(const FormatBreakNode& node, int column, int indentLevel, bool lineHasText) {
         if (node.children.size() < 2) {
             return {};
@@ -1548,11 +1640,16 @@ private:
     {
         NodeResults alternatives;
         NodeResult compact = SolveFunctionSignatureCompact(node, column, indentLevel, lineHasText);
+        NodeResult splitParameters =
+            SolveFunctionSignatureCompactWithSplitParameters(node, column, indentLevel, lineHasText);
         NodeResult split = SolveFunctionSignatureSplit(node, column, indentLevel, lineHasText);
         if (compact.valid && !(node.functionSignaturePrefersOuterSplit && split.valid && (
             compact.extraLines > 0 || compact.maxOverflow > 0
         ))) {
             alternatives.push_back(compact);
+        }
+        if (splitParameters.valid) {
+            alternatives.push_back(splitParameters);
         }
         if (split.valid) {
             alternatives.push_back(split);
@@ -1562,6 +1659,8 @@ private:
 
     NodeResult SolveFunctionSignature(const FormatBreakNode& node, int column, int indentLevel, bool lineHasText) {
         NodeResult compact = SolveFunctionSignatureCompact(node, column, indentLevel, lineHasText);
+        NodeResult splitParameters =
+            SolveFunctionSignatureCompactWithSplitParameters(node, column, indentLevel, lineHasText);
         NodeResult split = SolveFunctionSignatureSplit(node, column, indentLevel, lineHasText);
         NodeResult returnType =
             node.children.empty() ? NodeResult{} : Solve(*node.children[0], column, indentLevel, lineHasText);
@@ -1574,9 +1673,13 @@ private:
             return split;
         }
         if (compact.valid && split.valid && CompactLineEndsOverLimit(compact) && split.maxOverflow == 0) {
-            return split;
+            return Better(splitParameters, split) ? splitParameters : split;
         }
-        return Better(split, compact) ? split : compact;
+        NodeResult best = compact;
+        if (Better(splitParameters, best)) {
+            best = splitParameters;
+        }
+        return Better(split, best) ? split : best;
     }
 
     NodeResult SolveBodyHeaderCompact(const FormatBreakNode& node, int column, int indentLevel, bool lineHasText) {

@@ -193,6 +193,18 @@ bool CommentConsumesLineTail(std::string_view source, uint32_t commentStart, uin
         if (ch == '\r' || ch == '\n') {
             return true;
         }
+        if (ch == '\\') {
+            for (size_t tail = index + 1; tail < source.size(); ++tail) {
+                const char tailCh = source[tail];
+                if (tailCh == '\r' || tailCh == '\n') {
+                    return true;
+                }
+                if (tailCh != ' ' && tailCh != '\t') {
+                    return false;
+                }
+            }
+            return true;
+        }
         if (ch != ' ' && ch != '\t') {
             return false;
         }
@@ -279,12 +291,34 @@ void NormalizeTrailingCommas(FormatModel& model, SyntaxNode& node) {
     }
 }
 
+bool IsEmptyStatementNode(const SyntaxNode& node) {
+    if (node.kind == SyntaxNodeKind::Semicolon) {
+        return true;
+    }
+    if (node.kind != SyntaxNodeKind::Tree) {
+        return false;
+    }
+    const SyntaxNode* content = nullptr;
+    for (const SyntaxNode* child : node.children) {
+        if (child == nullptr || SyntaxNodeKindHasClass(child->kind, SyntaxNodeClass::Trivia)) {
+            continue;
+        }
+        if (content != nullptr) {
+            return false;
+        }
+        content = child;
+    }
+    return content != nullptr && content->kind == SyntaxNodeKind::Semicolon;
+}
+
 void WrapControlBody(FormatModel& model, SyntaxNode& node, size_t childIndex) {
     if (childIndex >= node.children.size() || (
         node.children[childIndex] != nullptr && node.children[childIndex]->kind == SyntaxNodeKind::CompoundStatement
     )) {
         return;
     }
+    const bool emptyStatementBody =
+        node.children[childIndex] != nullptr && IsEmptyStatementNode(*node.children[childIndex]);
     size_t firstBodyIndex = childIndex;
     while (firstBodyIndex > 0 && node.children[firstBodyIndex - 1] != nullptr && SyntaxNodeKindHasClass(
         node.children[firstBodyIndex - 1]->kind,
@@ -300,6 +334,9 @@ void WrapControlBody(FormatModel& model, SyntaxNode& node, size_t childIndex) {
     compound->children.reserve(childIndex - firstBodyIndex + 3);
     AppendChild(*compound, MakeTokenNode(model, SyntaxNodeKind::LeftBrace));
     for (size_t index = firstBodyIndex; index <= childIndex; ++index) {
+        if (emptyStatementBody && index == childIndex) {
+            continue;
+        }
         AppendChild(*compound, node.children[index]);
     }
     AppendChild(*compound, MakeTokenNode(model, SyntaxNodeKind::RightBrace));
