@@ -46,6 +46,12 @@ ERROR_INPUT_FIXTURE = Path("src") / "format_error_input.cpp"
 ERROR_OUTPUT_FIXTURE = Path("src") / "format_error_output.txt"
 USERVER_FORMAT_CONFIG = TEST_ROOT / ".cpp-format-userver"
 DEFAULT_FORMAT_CONFIG = TEST_ROOT / ".cpp-format"
+FORMATTED_GOLDEN_OUTPUTS = (
+    ("default", OUTPUT_FIXTURE, None),
+    ("userver", USERVER_OUTPUT_FIXTURE, USERVER_FORMAT_CONFIG),
+    ("ifdef", IFDEF_OUTPUT_FIXTURE, USERVER_FORMAT_CONFIG),
+    ("unsupported", UNSUPPORTED_OUTPUT_FIXTURE, USERVER_FORMAT_CONFIG),
+)
 
 
 def native_format(
@@ -183,6 +189,19 @@ class FormatCommandTests(unittest.TestCase):
 
         self.assertEqual(0, result.returncode, msg=f"stdout:\n{result.stdout}\n\nstderr:\n{result.stderr}")
         self.assertNotIn("parse failed", result.stderr)
+
+    def test_golden_outputs_reparse_and_format_idempotently(self) -> None:
+        for name, fixture, style in FORMATTED_GOLDEN_OUTPUTS:
+            with self.subTest(name=name):
+                args = ["--stdin"]
+                if style is not None:
+                    args.extend(("--style", str(style)))
+
+                expected = read_fixture(fixture)
+                result = native_format(*args, cwd=TEST_ROOT, input_text=expected)
+
+                self.assertEqual(0, result.returncode, msg=f"stdout:\n{result.stdout}\n\nstderr:\n{result.stderr}")
+                self.assertEqual(expected, result.stdout)
 
     def test_userver_stdin_formats_to_expected_output(self) -> None:
         result = native_format(

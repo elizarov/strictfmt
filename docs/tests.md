@@ -6,7 +6,13 @@ This document owns the general testing strategy and test file placement for `str
 
 Formatter tests are driven by `tests/format/format_test.py` through the `strictfmt_tests` CMake target and the `scripts/test.sh|cmd` wrappers described in [build.md](build.md). 
 
-These are end-to-end tests: cases run the built formatter with real command-line arguments, formatter configuration, and temporary files when file-system behavior matters. Golden fixture pairs cover broad formatter behavior, while small inline snippets cover narrow command and configuration edges.
+These are end-to-end tests: cases run the built formatter with real command-line
+arguments, formatter configuration, and temporary files when file-system
+behavior matters. Golden fixture pairs cover broad formatter behavior, while
+small inline snippets cover narrow command and configuration edges. Formatted
+golden output fixtures are also reparsed with their owning style and must format
+back to the same text. This idempotence check catches formatter output that
+looks correct once but cannot be accepted as stable input.
 
 Tests write transient files under `STRICTFMT_TEST_TEMP_ROOT`, defaulting to the
 build tree. Golden fixtures are copied before mutation, so tests do not edit
@@ -40,7 +46,8 @@ and exist only to exercise one command or configuration edge.
 - `tests/format/src/format_unsupported_input.cpp` ->
   `tests/format/src/format_unsupported_output.cpp`: current formatting for
   parser-recovered unsupported syntactic shapes. This pair records observed
-  output only; stable indentation and spacing are not guaranteed.
+  output only; stable indentation and spacing are not guaranteed, but the
+  recorded output must still reparse and format idempotently.
 - `tests/format/src/format_error_input.cpp` ->
   `tests/format/src/format_error_output.txt`: golden diagnostics for recovered
   parse errors.
