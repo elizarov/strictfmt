@@ -2070,6 +2070,61 @@ struct FormatterMacroTrailingCommentRegression {
     FORMAT_FIXTURE_DECLARE_OPTION(set_ssh_key_function, void*);  // TODO curl_sshkeycallback?
 };
 
+int DumpFormatModelText(
+    std::string_view sourceText,
+    const FormatterConfig& config,
+    FILE* output,
+    FILE* errorOutput,
+    std::string_view commandName
+);
+
+FormatBreakNode*
+    BuildTemplatePrefix(const ConstSyntaxChildList& templateHeadChildren, const SyntaxNode* requiresNode, int depth)
+{
+    return nullptr;
+}
+
+void IifeCallSplit() {
+    auto value = []() { return 1; }();
+    Use(value);
+}
+
+void TemplateAngleSpacing() {
+    chaotic::Validate<Validators...>(arr, value);
+    return std::get<0>(key_or_result_);
+}
+
+void FallthroughSpaceBeforeSemicolon(int value) {
+    switch (value) {
+        case 0:
+            [[fallthrough]];
+        case 1:
+            break;
+    }
+}
+
+void ForEmptyInitSpacingOrBody(size_t count) {
+    size_t len = 0;
+    for (; (1UL << len) < count; ++len) {}
+}
+
+void StandaloneOrTrailingCommentsMoved(int command) {
+    switch (command) {
+        case 67:  /* command complete */
+            Complete();
+            break;
+    }
+}
+
+void EnumDeclaratorDetached() {
+    enum {
+        kChar,
+        kPercent,
+        kKey,
+    } state = kChar;
+    Use(state);
+}
+
 struct FormatterEmptyBlockBreakRegression {
     FormatterEmptyBlockBreakRegression() {}
     int value;

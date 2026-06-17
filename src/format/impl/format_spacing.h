@@ -41,6 +41,7 @@ bool IsStringLike(const PrintToken& token);
 bool IsAccessKeyword(const PrintToken& token);
 bool IsCaseLabelKeyword(const PrintToken& token);
 bool FormatTokensShareMacroDefinition(const PrintToken* left, const PrintToken* right);
+bool IsTemplateAnglePrintToken(const PrintToken& token);
 bool FormatTokenNeedsSpace(const PrintToken* previous, const PrintToken& current);
 std::string_view FormatTokenText(const PrintToken& token);
 int FormatTokenWidth(const PrintToken& token);
