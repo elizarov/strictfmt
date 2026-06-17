@@ -4172,7 +4172,7 @@
       "required": true,
       "types": [
         {
-          "type": "suffix_macro_identifier",
+          "type": "bare_macro_identifier",
           "named": true
         }
       ]
@@ -10373,7 +10373,7 @@
         "required": false,
         "types": [
           {
-            "type": "function_suffix_macro",
+            "type": "bare_macro_identifier",
             "named": true
           }
         ]
@@ -12115,10 +12115,6 @@
   {
     "type": "struct",
     "named": false
-  },
-  {
-    "type": "suffix_macro_identifier",
-    "named": true
   },
   {
     "type": "switch",

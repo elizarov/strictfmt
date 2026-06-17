@@ -37,12 +37,11 @@ The scanner owns these identifier tokens:
 
 - `raw_macro_definition_identifier`
 - `bare_macro_identifier`
-- `suffix_macro_identifier`
 - `call_syntax_macro_identifier`
 
 The scanner reads a normal C/C++ identifier and then asks the formatter configuration whether the identifier belongs to the relevant macro category. This keeps macro categories runtime-configurable while the generated parser stays static.
 
-The grammar uses these tokens to separate definition-side macro behavior from use-side macro behavior, as specified in [macro.md](macro.md).
+The scanner classifies identifiers by configured macro category. [macro.md](macro.md) specifies the categories and their supported grammar uses.
 
 ### Conditional Macro Function Headers
 

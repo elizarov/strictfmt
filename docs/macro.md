@@ -49,19 +49,19 @@ public:                                                                         
 
 `BareIdentifierMacros` names macro identifiers that the grammar consumes on the use side as bare tokens in non-call positions or as assertion-style statement-call names. This category owns calling-convention modifiers, declaration-prefix modifiers, complete declaration-level items, qualified-identifier prefixes, top-level call-statement suffix macros, declaration suffix macros, initializer macros, and statement-call macros whose argument is parsed as a statement without its trailing semicolon.
 
-Calling-convention modifier: the macro appears in a declarator where a platform calling-convention token is expected.
+**Calling-convention modifier:** the macro appears in a declarator where a platform calling-convention token is expected.
 
 ```cpp
 typedef PDH_STATUS (WINAPI* PdhAddEnglishCounterAFn)(PDH_HQUERY, LPCSTR, DWORD_PTR, PDH_HCOUNTER*);
 ```
 
-Declaration-prefix modifier: the macro appears before a declaration as an attribute, inline, or sanitizer-control token.
+**Declaration-prefix modifier:** the macro appears before a declaration as an attribute, inline, or sanitizer-control token.
 
 ```cpp
 ATTRIBUTE_NO_SANITIZE_UNDEFINED std::size_t AttributePrefixedFunction(const BoundsBlock& block, float value) noexcept;
 ```
 
-Complete declaration-level item: the macro stands as a full top-level declaration item, such as namespace wrappers.
+**Complete declaration-level item:** the macro stands as a full top-level declaration item, such as namespace wrappers.
 
 ```cpp
 USERVER_NAMESPACE_BEGIN
@@ -70,12 +70,20 @@ namespace utils {
 USERVER_NAMESPACE_END
 ```
 
-Qualified-identifier prefix: the macro supplies an optional namespace qualifier before an identifier.
+**Qualified-identifier prefix:** the macro supplies an optional namespace qualifier before an identifier.
 
 ```cpp
 enum netrc_t {
     netrc_optional = CURL_8_13_NAMESPACE CURL_NETRC_OPTIONAL,
 };
+```
+
+Function suffix macro: the macro appears after a function declarator where an attribute-like suffix is expected.
+
+```cpp
+Data& operator*() & FORMAT_USERVER_LIFETIME_BOUND {
+    return data_;
+}
 ```
 
 Statement-call macro: the macro parses its first argument as a declaration or expression statement.
