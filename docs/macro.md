@@ -13,6 +13,8 @@ Definition-side macro categories and use-side macro categories are independent:
 
 Structured macro definitions are the default. Their replacement parses as a structured token stream and parse tree, and the formatter owns replacement whitespace, continuation backslashes, continuation newlines, and line-limit wrapping. Macro replacement lists that form declaration fragments are recursively formatted before continuation backslashes are added.
 
+For structured macro definitions, the original placement of continuation backslashes is semantically inert. A backslash-newline inside the replacement is treated as whitespace, just like ordinary source whitespace. The replacement ends at the first bare preprocessor directive newline after the macro value, and the pretty printer chooses the formatted line breaks and continuation backslashes.
+
 It is a parse error when a structured macro replacement cannot be parsed structurally. Add that macro identifier to `RawMacroDefinitions` only when the replacement intentionally is not a supported C++ fragment.
 
 Raw macro definitions are the explicit exception. A macro whose identifier matches `RawMacroDefinitions` replacement is one raw string token instead of a structured replacement tree. The raw replacement printer collapses horizontal whitespace for single-line replacements. For multi-line replacements, it preserves the physical continuation-line structure and backslashes while applying the same line-ending and trailing `//` comment-spacing normalization as other raw preprocessor text. This is the only macro-definition case where the formatter intentionally does not own all replacement whitespace and line breaks.

@@ -15,6 +15,8 @@ enum TokenType {
     SUFFIX_MACRO_IDENTIFIER,
     CALL_SYNTAX_MACRO_IDENTIFIER,
     CONDITIONAL_MACRO_FUNCTION_HEADER,
+    PREPROC_DIRECTIVE_END,
+    LINE_BREAK_WHITESPACE,
 };
 
 enum MacroCategory {
@@ -323,6 +325,16 @@ bool tree_sitter_cpp_external_scanner_scan(void *payload, TSLexer *lexer, const 
     if (!raw_string_ambiguous && valid_symbols[RAW_STRING_CONTENT]) {
         lexer->result_symbol = RAW_STRING_CONTENT;
         return scan_raw_string_content(scanner, lexer);
+    }
+
+    if (valid_symbols[PREPROC_DIRECTIVE_END] && (lexer->lookahead == '\r' || lexer->lookahead == '\n')) {
+        lexer->result_symbol = PREPROC_DIRECTIVE_END;
+        return scan_newline(lexer);
+    }
+
+    if (valid_symbols[LINE_BREAK_WHITESPACE] && (lexer->lookahead == '\r' || lexer->lookahead == '\n')) {
+        lexer->result_symbol = LINE_BREAK_WHITESPACE;
+        return scan_newline(lexer);
     }
 
     if (valid_symbols[CONDITIONAL_MACRO_FUNCTION_HEADER]) {
