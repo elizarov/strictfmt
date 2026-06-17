@@ -72,3 +72,5 @@ By default the build uses the vendored static tree-sitter runtime under
 `STRICTFMT_USE_SYSTEM_TREE_SITTER=ON` to require an installed tree-sitter runtime
 provided by either `unofficial-tree-sitter` CMake config package or the
 `tree-sitter` pkg-config package.
+
+The vendored C++ grammar also compiles a custom external scanner; see [scanner.md](scanner.md).

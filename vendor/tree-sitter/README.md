@@ -15,8 +15,9 @@ This directory vendors the tree-sitter runtime and grammar sources used by
 
 Normal builds compile `tree-sitter/lib/src/lib.c`,
 `tree-sitter-cpp/src/parser.c`, and `tree-sitter-cpp/src/scanner.c` directly.
+The custom scanner architecture is documented in [docs/scanner.md](../../docs/scanner.md).
 Package maintainers can opt into an installed runtime with
-`STRICTFMT_USE_SYSTEM_TREE_SITTER=ON`; see `docs/build.md`.
+`STRICTFMT_USE_SYSTEM_TREE_SITTER=ON`; see [docs/build.md](../../docs/build.md).
 
 To regenerate generated grammar outputs after changing `grammar.js`, run:
 
