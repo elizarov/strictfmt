@@ -35,9 +35,14 @@ X(First,"first") X(Second,"second")
     callback();
 #define FORMAT_FIXTURE_FILEPATH FORMAT_NAMESPACE::logging::impl::CutFilePath(__builtin_FILE())
 #define ENUM_STRING_DECLARE(EnumType, ItemsMacro) \
-    enum class EnumType{ItemsMacro( \
-        ENUM_STRING_DECLARE_ENUMERATOR \
-    )}; template <> struct EnumStringTraits<EnumType>{static constexpr auto names = std::to_array<std::string_view>({ItemsMacro(ENUM_STRING_DECLARE_NAME)}); static_assert(enum_string_detail::ValidateCanonicalNames(names)); }
+    enum class EnumType { \
+        ItemsMacro(ENUM_STRING_DECLARE_ENUMERATOR) \
+    }; \
+    template <> \
+    struct EnumStringTraits<EnumType> { \
+        static constexpr auto names = std::to_array<std::string_view>({ItemsMacro(ENUM_STRING_DECLARE_NAME)}); \
+        static_assert(enum_string_detail::ValidateCanonicalNames(names)); \
+    }
 
 ENUM_STRING_DECLARE(FormatFixtureEnum, FORMAT_FIXTURE_ENUM_ITEMS);
 

@@ -775,6 +775,23 @@ class FormatCommandTests(unittest.TestCase):
             self.assertNotIn("PreprocFunctionDef", dump.stdout)
             self.assertNotIn("RawMacroReplacement", dump.stdout)
 
+    def test_structured_macro_definition_with_templated_struct_body_reparses(self) -> None:
+        source = (
+            "#define DECLARE_TRAITS(Type) \\\n"
+            "    template <> struct Traits<Type>{static constexpr auto value = Type{}; }\n"
+        )
+        result = native_format("--stdin", input_text=source)
+
+        self.assertEqual(0, result.returncode, msg=f"stdout:\n{result.stdout}\n\nstderr:\n{result.stderr}")
+        self.assertEqual(
+            "#define DECLARE_TRAITS(Type) \\\n"
+            "    template <> \\\n"
+            "    struct Traits<Type> { \\\n"
+            "        static constexpr auto value = Type{}; \\\n"
+            "    }\n",
+            result.stdout,
+        )
+
     def test_raw_macro_definitions_format_raw_replacements(self) -> None:
         build_dir = TEST_TEMP_ROOT
         build_dir.mkdir(exist_ok=True)
