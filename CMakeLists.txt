@@ -112,6 +112,7 @@ add_library(strictfmt_core STATIC
     src/format/impl/format_model_builder.cpp
     src/format/impl/format_model_parse.cpp
     src/format/impl/format_pretty_printer.cpp
+    src/format/impl/format_preprocessor_validation.cpp
     src/format/impl/format_raw_macro.cpp
     src/format/impl/format_spacing.cpp
 )

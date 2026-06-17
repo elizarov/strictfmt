@@ -78,6 +78,12 @@ void PrintSourceError(FILE* output, std::string_view file, std::string_view erro
     }
 }
 
+void PrintSourceWarnings(FILE* output, std::string_view file, const std::vector<std::string>& warnings) {
+    for (const std::string& warning : warnings) {
+        std::fprintf(output, "%.*s: %s\n", static_cast<int>(file.size()), file.data(), warning.c_str());
+    }
+}
+
 std::string CompletedFileText(int completedCount, size_t totalCount) {
     std::string text = std::to_string(completedCount);
     if (completedCount != static_cast<int>(totalCount)) {
@@ -208,6 +214,7 @@ int RunFormat(int argc, char** argv) {
             PrintSourceError(stderr, "<stdin>", result.error);
             return 1;
         }
+        PrintSourceWarnings(stderr, "<stdin>", result.warnings);
         if (options.mode == FormatMode::DryRun && result.changed) {
             std::fprintf(
                 summary,
@@ -310,6 +317,7 @@ int RunFormat(int argc, char** argv) {
             failed = true;
             continue;
         }
+        PrintSourceWarnings(stderr, file, result.warnings);
         if (result.changed) {
             ++changedCount;
             if (options.mode == FormatMode::DryRun) {
