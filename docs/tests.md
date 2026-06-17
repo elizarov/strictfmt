@@ -5,6 +5,8 @@ This document owns the general testing strategy and test file placement for `str
 ## Strategy
 
 Formatter tests are driven by `tests/format/format_test.py` through the `strictfmt_tests` CMake target and the `scripts/test.sh|cmd` wrappers described in [build.md](build.md). 
+The Python runner uses verbose `unittest` output with compact method names, so
+test logs list each test with its pass/fail status instead of dot-only progress.
 
 These are end-to-end tests: cases run the built formatter with real command-line
 arguments, formatter configuration, and temporary files when file-system

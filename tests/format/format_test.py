@@ -158,6 +158,11 @@ def read_files(root: Path, paths: list[Path]) -> dict[Path, bytes]:
     return {path: (root / path).read_bytes() for path in paths}
 
 
+class MethodNameTestResult(unittest.TextTestResult):
+    def getDescription(self, test: unittest.case.TestCase) -> str:
+        return test.id().rsplit(".", maxsplit=1)[-1]
+
+
 @contextmanager
 def copied_fixtures(*paths: Path):
     build_dir = TEST_TEMP_ROOT
@@ -523,10 +528,10 @@ class FormatCommandTests(unittest.TestCase):
             self.assertEqual(0, result.returncode, msg=f"stdout:\n{result.stdout}\n\nstderr:\n{result.stderr}")
             self.assertRegex(result.stdout, r"Checked 13 files, 13 LOC in (?:\d+ms|\d+\.\d{3}s)\.\s*$")
 
-    def test_userver_submodule_sources_parse_without_warnings_and_format_idempotently(self) -> None:
+    def test_userver_submodule(self) -> None:
         self.assert_external_project_sources_parse_without_warnings_and_format_idempotently("userver")
 
-    def test_casedash_submodule_sources_parse_without_warnings_and_format_idempotently(self) -> None:
+    def test_casedash_submodule(self) -> None:
         self.assert_external_project_sources_parse_without_warnings_and_format_idempotently("casedash")
 
     def test_concurrency_one_preserves_file_list_output_order(self) -> None:
@@ -1314,4 +1319,5 @@ class FormatCommandTests(unittest.TestCase):
 
 
 if __name__ == "__main__":
-    unittest.main()
+    runner = unittest.TextTestRunner(verbosity=2, resultclass=MethodNameTestResult)
+    unittest.main(testRunner=runner)
