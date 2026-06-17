@@ -338,6 +338,8 @@ module.exports = grammar(C, {
       $.macro_call_sequence_item,
       alias($.macro_template_declaration, $.template_declaration),
       alias($.macro_enum_declaration, $.declaration),
+      alias($.macro_class_specifier, $.class_specifier),
+      alias($.macro_struct_specifier, $.struct_specifier),
       $.macro_declaration_fragment,
       $.macro_class_declaration_fragment,
       $.comment,
@@ -447,6 +449,32 @@ module.exports = grammar(C, {
       field('name', $._type_identifier),
     )),
 
+    macro_class_specifier: $ => prec(2, seq(
+      optional('ref'),
+      'class',
+      $._macro_class_declaration_with_body,
+    )),
+
+    macro_struct_specifier: $ => prec(2, seq(
+      'struct',
+      $._macro_class_declaration_with_body,
+    )),
+
+    _macro_class_declaration_with_body: $ => choice(
+      prec(2, seq(
+        field('name', $._class_name),
+        repeat($.virtual_specifier),
+        optional($.base_class_clause),
+        optional($._macro_replacement_gap),
+        field('body', $.field_declaration_list),
+        optional($.attribute_specifier),
+      )),
+      prec(2, seq(
+        field('body', $.field_declaration_list),
+        optional($.attribute_specifier),
+      )),
+    ),
+
     conditional_macro_function_body: $ => seq(
       repeat($._block_item),
       '}',
@@ -507,6 +535,8 @@ module.exports = grammar(C, {
         $.function_definition,
         $.concept_definition,
         $.friend_declaration,
+        alias($.macro_class_specifier, $.class_specifier),
+        alias($.macro_struct_specifier, $.struct_specifier),
         $.class_specifier,
         $.struct_specifier,
         alias($.constructor_or_destructor_declaration, $.declaration),

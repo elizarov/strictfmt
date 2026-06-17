@@ -5594,6 +5594,10 @@
       "required": true,
       "types": [
         {
+          "type": "class_specifier",
+          "named": true
+        },
+        {
           "type": "comment",
           "named": true
         },
@@ -5639,6 +5643,10 @@
         },
         {
           "type": "static_assert_declaration",
+          "named": true
+        },
+        {
+          "type": "struct_specifier",
           "named": true
         },
         {
