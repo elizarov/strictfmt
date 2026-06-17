@@ -21,6 +21,7 @@
 - `src/format/impl/format_model.h|cpp` own format model node kinds, `SyntaxNodeClass`, symbol mappings, and syntax metadata; category checks must use `SyntaxNodeClass` helpers, not duplicated `SyntaxNodeKind` lists, with exact kind comparisons reserved for one concrete syntax rule.
 - `src/format/impl/format_model_builder.h|cpp` own conversion from tree-sitter nodes to the normalized format model, including syntax normalization and preprocessor placement checks.
 - `src/format/impl/format_model_parse.h|cpp` own tree-sitter parser setup, macro-category callbacks, and parse-to-format-model wiring.
+- `vendor/tree-sitter/tree-sitter-cpp/src/scanner.c` owns custom tree-sitter external tokens, including runtime-configured macro identifiers, raw string delimiter state, and preprocessor directive newline ownership; see [scanner.md](scanner.md).
 - `src/format/impl/format_pretty_printer.h|cpp` own print token production, mandatory line breaks, break model solving integration, and formatted source emission.
 - `src/format/impl/format_raw_macro.h|cpp` own raw macro replacement whitespace normalization and the raw preprocessor line-preservation helpers used by the pretty printer.
 - `src/format/impl/format_spacing.h|cpp` own print token text, width, classification, and spacing rules.
@@ -33,7 +34,7 @@
 ## Build Ownership
 
 - `strictfmt_tree_sitter_runtime` owns the vendored static tree-sitter runtime when `STRICTFMT_USE_SYSTEM_TREE_SITTER` is disabled.
-- `strictfmt_tree_sitter_cpp_grammar` owns the vendored generated C++ grammar and scanner.
+- `strictfmt_tree_sitter_cpp_grammar` owns the vendored generated C++ grammar and custom scanner; see [scanner.md](scanner.md).
 - `strictfmt_util` owns utility modules shared by CLI and formatter code.
 - `strictfmt_core` owns the formatter core pipeline from source text through formatted source.
 - `strictfmt_cli` owns command-line and embedding support on top of `strictfmt_core`.

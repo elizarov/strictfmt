@@ -2,6 +2,8 @@
 
 This document describes handling of preprocessor directives, conditional compilation, and local includes by `strictfmt`.
 
+The custom scanner owns the lexical distinction between directive-ending line breaks and ordinary line-break whitespace; see [scanner.md](scanner.md).
+
 ## Supported Conditional Compilation and Local Includes
 
 - **Whole source items**: conditionals may select complete declarations, statements, switch `case` or `default` labels, field or method declarations, enum entries, macro definitions, includes, and other complete grammar items at the surrounding level.

@@ -44,6 +44,7 @@ Development docs:
 - [docs/glossary.md](docs/glossary.md) defines shared terminology used across docs.
 - [docs/architecture.md](docs/architecture.md) describes code module ownership.
 - [docs/break_solver.md](docs/break_solver.md) describes break solver implementation details and allowed speedups.
+- [docs/scanner.md](docs/scanner.md) explains the custom tree-sitter scanner architecture.
 - [docs/tests.md](docs/tests.md) explains test strategy, test file placement, and golden fixtures.
 
 ## License

@@ -15,6 +15,8 @@ Structured macro definitions are the default. Their replacement parses as a stru
 
 For structured macro definitions, the original placement of continuation backslashes is semantically inert. A backslash-newline inside the replacement is treated as whitespace, just like ordinary source whitespace. The replacement ends at the first bare preprocessor directive newline after the macro value, and the pretty printer chooses the formatted line breaks and continuation backslashes.
 
+The parser/scanner split that makes this possible is described in [scanner.md](scanner.md).
+
 It is a parse error when a structured macro replacement cannot be parsed structurally. Add that macro identifier to `RawMacroDefinitions` only when the replacement intentionally is not a supported C++ fragment.
 
 Raw macro definitions are the explicit exception. A macro whose identifier matches `RawMacroDefinitions` replacement is one raw string token instead of a structured replacement tree. The raw replacement printer collapses horizontal whitespace for single-line replacements. For multi-line replacements, it preserves the physical continuation-line structure and backslashes while applying the same line-ending and trailing `//` comment-spacing normalization as other raw preprocessor text. This is the only macro-definition case where the formatter intentionally does not own all replacement whitespace and line breaks.
@@ -24,6 +26,8 @@ Raw macro definitions are the explicit exception. A macro whose identifier match
 Macro category entries must be C/C++ identifiers. Add a trailing `*` to an entry when the role applies to every identifier with that prefix, such as `ATTRIBUTE*`; no other glob syntax is supported.
 
 The macros that belong to different categories are configured in formatter configuration, see [config.md](config.md).
+
+Runtime macro category lookup is implemented by the custom scanner; see [scanner.md](scanner.md).
 
 ### RawMacroDefinitions
 
