@@ -178,11 +178,15 @@ def copied_fixtures(*paths: Path):
 class FormatCommandTests(unittest.TestCase):
     maxDiff = None
 
+    def assert_no_unsupported_placement_warnings(self, result: subprocess.CompletedProcess[str]) -> None:
+        self.assertNotIn(": warning at ", result.stderr)
+
     def test_stdin_formats_to_expected_output(self) -> None:
         result = native_format("--stdin", cwd=TEST_ROOT, input_text=read_fixture(INPUT_FIXTURE))
 
         self.assertEqual(0, result.returncode, msg=f"stdout:\n{result.stdout}\n\nstderr:\n{result.stderr}")
         self.assertEqual(read_fixture(OUTPUT_FIXTURE), result.stdout)
+        self.assert_no_unsupported_placement_warnings(result)
         self.assertRegex(result.stderr, r"Formatted stdin in (?:\d+ms|\d+\.\d{3}s)\.\s*$")
 
     def test_golden_input_parses_without_errors(self) -> None:
@@ -191,6 +195,7 @@ class FormatCommandTests(unittest.TestCase):
 
         self.assertEqual(0, result.returncode, msg=f"stdout:\n{result.stdout}\n\nstderr:\n{result.stderr}")
         self.assertNotIn("parse failed", result.stderr)
+        self.assert_no_unsupported_placement_warnings(result)
 
     def test_golden_outputs_reparse_and_format_idempotently(self) -> None:
         for name, fixture, style in FORMATTED_GOLDEN_OUTPUTS:
@@ -204,6 +209,8 @@ class FormatCommandTests(unittest.TestCase):
 
                 self.assertEqual(0, result.returncode, msg=f"stdout:\n{result.stdout}\n\nstderr:\n{result.stderr}")
                 self.assertEqual(expected, result.stdout)
+                if name != "unsupported":
+                    self.assert_no_unsupported_placement_warnings(result)
 
     def test_userver_stdin_formats_to_expected_output(self) -> None:
         result = native_format(
@@ -216,6 +223,7 @@ class FormatCommandTests(unittest.TestCase):
 
         self.assertEqual(0, result.returncode, msg=f"stdout:\n{result.stdout}\n\nstderr:\n{result.stderr}")
         self.assertEqual(read_fixture(USERVER_OUTPUT_FIXTURE), result.stdout)
+        self.assert_no_unsupported_placement_warnings(result)
         self.assertRegex(result.stderr, r"Formatted stdin in (?:\d+ms|\d+\.\d{3}s)\.\s*$")
 
     def test_userver_golden_input_parses_without_errors(self) -> None:
@@ -224,6 +232,7 @@ class FormatCommandTests(unittest.TestCase):
 
         self.assertEqual(0, result.returncode, msg=f"stdout:\n{result.stdout}\n\nstderr:\n{result.stderr}")
         self.assertNotIn("parse failed", result.stderr)
+        self.assert_no_unsupported_placement_warnings(result)
 
     def test_ifdef_stdin_formats_to_expected_output(self) -> None:
         result = native_format(
@@ -236,6 +245,7 @@ class FormatCommandTests(unittest.TestCase):
 
         self.assertEqual(0, result.returncode, msg=f"stdout:\n{result.stdout}\n\nstderr:\n{result.stderr}")
         self.assertEqual(read_fixture(IFDEF_OUTPUT_FIXTURE), result.stdout)
+        self.assert_no_unsupported_placement_warnings(result)
         self.assertRegex(result.stderr, r"Formatted stdin in (?:\d+ms|\d+\.\d{3}s)\.\s*$")
 
     def test_ifdef_golden_input_parses_without_errors(self) -> None:
@@ -244,6 +254,7 @@ class FormatCommandTests(unittest.TestCase):
 
         self.assertEqual(0, result.returncode, msg=f"stdout:\n{result.stdout}\n\nstderr:\n{result.stderr}")
         self.assertNotIn("parse failed", result.stderr)
+        self.assert_no_unsupported_placement_warnings(result)
 
     def test_unsupported_stdin_formats_to_current_output(self) -> None:
         result = native_format(
