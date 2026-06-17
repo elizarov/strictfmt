@@ -62,6 +62,14 @@ module.exports = grammar(C, {
     $.suffix_macro_identifier,
     $.call_syntax_macro_identifier,
     $.conditional_macro_function_header,
+    $._preproc_directive_end,
+    $._line_break_whitespace,
+  ],
+
+  extras: $ => [
+    /[ \t\f\v]|\\\r?\n/,
+    $._line_break_whitespace,
+    $.comment,
   ],
 
   conflicts: $ => [
@@ -141,7 +149,6 @@ module.exports = grammar(C, {
     [$.argument_list, $.macro_argument_sequence],
     [$.argument_list, $.macro_argument_list],
     [$._macro_argument_list_item, $._argument_list_item],
-    [$.macro_class_declaration_fragment, $._class_name, $._scope_resolution],
     [$.initializer_pair, $.comma_expression],
     [$.expression_statement, $._for_statement_body],
     [$.init_statement, $._for_statement_body],
@@ -289,13 +296,15 @@ module.exports = grammar(C, {
         preprocessor('define'),
         field('name', alias($.raw_macro_definition_identifier, $.identifier)),
         field('value', optional($.raw_macro_replacement)),
-        token.immediate(/\r?\n/),
+        $._preproc_directive_end,
       )),
       prec(1, seq(
         preprocessor('define'),
         field('name', $.identifier),
-        field('value', optional($.macro_replacement_list)),
-        token.immediate(/\r?\n/),
+        choice(
+          field('value', $.macro_replacement_list),
+          $._preproc_directive_end,
+        ),
       )),
     ),
 
@@ -305,15 +314,34 @@ module.exports = grammar(C, {
         field('name', alias($.raw_macro_definition_identifier, $.identifier)),
         field('parameters', $.preproc_params),
         field('value', optional($.raw_macro_replacement)),
-        token.immediate(/\r?\n/),
+        $._preproc_directive_end,
       )),
       prec(1, seq(
         preprocessor('define'),
         field('name', $.identifier),
         field('parameters', $.preproc_params),
-        field('value', optional($.macro_replacement_list)),
-        token.immediate(/\r?\n/),
+        choice(
+          field('value', $.macro_replacement_list),
+          $._preproc_directive_end,
+        ),
       )),
+    ),
+
+    preproc_include: $ => seq(
+      preprocessorInclude(),
+      field('path', choice(
+        $.string_literal,
+        $.system_lib_string,
+        $.identifier,
+        alias($.preproc_call_expression, $.call_expression),
+      )),
+      $._preproc_directive_end,
+    ),
+
+    preproc_call: $ => seq(
+      field('directive', $.preproc_directive),
+      field('argument', optional($.preproc_arg)),
+      $._preproc_directive_end,
     ),
 
     raw_macro_replacement: _ => token.immediate(prec(1, choice(
@@ -322,26 +350,14 @@ module.exports = grammar(C, {
     ))),
 
     macro_replacement_list: $ => seq(
-      $._macro_replacement_gap,
-      $._macro_replacement_list_item,
-      repeat(seq($._macro_replacement_gap, $._macro_replacement_list_item)),
-      optional($._macro_replacement_trailing_gap),
+      repeat1($._macro_replacement_list_item),
+      $._preproc_directive_end,
     ),
 
-    _macro_replacement_gap: _ => token.immediate(/(?:[ \t]+|[ \t]*\\\r?\n[ \t]*)+/),
-
-    _macro_replacement_trailing_gap: _ => token.immediate(/[ \t]+/),
-
-    _macro_horizontal_space: _ => token.immediate(/[ \t]+/),
-
     _macro_replacement_list_item: $ => choice(
-      $.macro_call_sequence_item,
       alias($.macro_template_declaration, $.template_declaration),
       alias($.macro_enum_declaration, $.declaration),
-      alias($.macro_class_specifier, $.class_specifier),
-      alias($.macro_struct_specifier, $.struct_specifier),
       $.macro_declaration_fragment,
-      $.macro_class_declaration_fragment,
       $.comment,
       $.function_definition,
       $.static_assert_declaration,
@@ -351,13 +367,9 @@ module.exports = grammar(C, {
       $.macro_compound_literal_fragment,
       $.expression_statement,
       $.macro_expression_item,
+      prec(1, $.class_specifier),
+      prec(1, $.struct_specifier),
     ),
-
-    macro_call_sequence_item: $ => prec(1, seq(
-      $.call_expression,
-      repeat1(seq($._macro_horizontal_space, $.call_expression)),
-      optional(','),
-    )),
 
     macro_do_statement: $ => prec(1, seq(
       'do',
@@ -444,37 +456,6 @@ module.exports = grammar(C, {
       field('body', alias($.conditional_macro_function_body, $.compound_statement)),
     )),
 
-    macro_class_declaration_fragment: $ => prec(1, seq(
-      choice('class', 'struct'),
-      field('name', $._type_identifier),
-    )),
-
-    macro_class_specifier: $ => prec(2, seq(
-      optional('ref'),
-      'class',
-      $._macro_class_declaration_with_body,
-    )),
-
-    macro_struct_specifier: $ => prec(2, seq(
-      'struct',
-      $._macro_class_declaration_with_body,
-    )),
-
-    _macro_class_declaration_with_body: $ => choice(
-      prec(2, seq(
-        field('name', $._class_name),
-        repeat($.virtual_specifier),
-        optional($.base_class_clause),
-        optional($._macro_replacement_gap),
-        field('body', $.field_declaration_list),
-        optional($.attribute_specifier),
-      )),
-      prec(2, seq(
-        field('body', $.field_declaration_list),
-        optional($.attribute_specifier),
-      )),
-    ),
-
     conditional_macro_function_body: $ => seq(
       repeat($._block_item),
       '}',
@@ -506,6 +487,11 @@ module.exports = grammar(C, {
       '}',
     ),
 
+    ...preprocIf('', $ => $._block_item),
+    ...preprocIf('_in_field_declaration_list', $ => $._field_declaration_list_item),
+    ...preprocIf('_in_enumerator_list', $ => seq($.enumerator, ',')),
+    ...preprocIf('_in_enumerator_list_no_comma', $ => $.enumerator, -1),
+
     ...preprocIf('_in_parameter_list', $ => seq(choice(
       $.parameter_declaration,
       $.optional_parameter_declaration,
@@ -535,8 +521,6 @@ module.exports = grammar(C, {
         $.function_definition,
         $.concept_definition,
         $.friend_declaration,
-        alias($.macro_class_specifier, $.class_specifier),
-        alias($.macro_struct_specifier, $.struct_specifier),
         $.class_specifier,
         $.struct_specifier,
         alias($.constructor_or_destructor_declaration, $.declaration),
@@ -2530,7 +2514,7 @@ function preprocIf(suffix, content, precedence = 0) {
     ['preproc_if' + suffix]: $ => prec(precedence, seq(
       preprocessor('if'),
       field('condition', $._preproc_expression),
-      '\n',
+      $._preproc_directive_end,
       repeat(content($)),
       field('alternative', optional(alternativeBlock($))),
       preprocessor('endif'),
@@ -2539,6 +2523,7 @@ function preprocIf(suffix, content, precedence = 0) {
     ['preproc_ifdef' + suffix]: $ => prec(precedence, seq(
       choice(preprocessor('ifdef'), preprocessor('ifndef')),
       field('name', $.identifier),
+      $._preproc_directive_end,
       repeat(content($)),
       field('alternative', optional(alternativeBlock($))),
       preprocessor('endif'),
@@ -2546,13 +2531,14 @@ function preprocIf(suffix, content, precedence = 0) {
 
     ['preproc_else' + suffix]: $ => prec(precedence, seq(
       preprocessor('else'),
+      $._preproc_directive_end,
       repeat(content($)),
     )),
 
     ['preproc_elif' + suffix]: $ => prec(precedence, seq(
       preprocessor('elif'),
       field('condition', $._preproc_expression),
-      '\n',
+      $._preproc_directive_end,
       repeat(content($)),
       field('alternative', optional(alternativeBlock($))),
     )),
@@ -2560,6 +2546,7 @@ function preprocIf(suffix, content, precedence = 0) {
     ['preproc_elifdef' + suffix]: $ => prec(precedence, seq(
       choice(preprocessor('elifdef'), preprocessor('elifndef')),
       field('name', $.identifier),
+      $._preproc_directive_end,
       repeat(content($)),
       field('alternative', optional(alternativeBlock($))),
     )),
@@ -2569,4 +2556,8 @@ function preprocIf(suffix, content, precedence = 0) {
 function preprocessor(command) {
   const pattern = command === 'if' ? '#[ \\t]*if[ \\t]+' : '#[ \\t]*' + command;
   return alias(token(prec(1, new RegExp(pattern))), '#' + command);
+}
+
+function preprocessorInclude() {
+  return alias(token(prec(1, /#[ \t]*include[ \t]+/)), '#include');
 }

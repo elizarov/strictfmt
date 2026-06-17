@@ -5017,21 +5017,6 @@
     }
   },
   {
-    "type": "macro_call_sequence_item",
-    "named": true,
-    "fields": {},
-    "children": {
-      "multiple": true,
-      "required": true,
-      "types": [
-        {
-          "type": "call_expression",
-          "named": true
-        }
-      ]
-    }
-  },
-  {
     "type": "macro_call_statement_argument",
     "named": true,
     "fields": {},
@@ -5091,22 +5076,6 @@
           "named": true
         }
       ]
-    }
-  },
-  {
-    "type": "macro_class_declaration_fragment",
-    "named": true,
-    "fields": {
-      "name": {
-        "multiple": false,
-        "required": true,
-        "types": [
-          {
-            "type": "type_identifier",
-            "named": true
-          }
-        ]
-      }
     }
   },
   {
@@ -5619,14 +5588,6 @@
         },
         {
           "type": "macro_arrow_chain",
-          "named": true
-        },
-        {
-          "type": "macro_call_sequence_item",
-          "named": true
-        },
-        {
-          "type": "macro_class_declaration_fragment",
           "named": true
         },
         {
@@ -11250,10 +11211,6 @@
         ]
       }
     }
-  },
-  {
-    "type": "\n",
-    "named": false
   },
   {
     "type": "!",

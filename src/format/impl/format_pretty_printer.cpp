@@ -244,7 +244,7 @@ bool IsPreprocElseHeaderChild(const SyntaxNode& node, size_t index) {
     return index == 1 && IsPreprocHeaderSeparator(node);
 }
 
-bool IsPreprocIfHeaderChild(const SyntaxNode& node, bool& inHeader) {
+bool IsPreprocIfHeaderChild(const SyntaxNode& node, size_t index, bool& inHeader) {
     if (!inHeader) {
         return false;
     }
@@ -252,7 +252,11 @@ bool IsPreprocIfHeaderChild(const SyntaxNode& node, bool& inHeader) {
         inHeader = false;
         return true;
     }
-    return true;
+    if (index < 2) {
+        return true;
+    }
+    inHeader = false;
+    return false;
 }
 
 bool IsPreprocEndifToken(const SyntaxNode& node) {
@@ -554,7 +558,7 @@ void AppendTokens(
             }
             if (
                 (nodeKind == SyntaxNodeKind::PreprocIf || nodeKind == SyntaxNodeKind::PreprocElif) &&
-                IsPreprocIfHeaderChild(*child, inPreprocIfHeader)
+                IsPreprocIfHeaderChild(*child, index, inPreprocIfHeader)
             ) {
                 continue;
             }

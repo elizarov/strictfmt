@@ -747,7 +747,7 @@ class FormatCommandTests(unittest.TestCase):
             result.stdout,
         )
 
-    def test_macro_decltype_argument_is_preserved(self) -> None:
+    def test_macro_decltype_argument_formats_structurally(self) -> None:
         result = native_format(
             "--stdin",
             input_text=(
@@ -759,7 +759,7 @@ class FormatCommandTests(unittest.TestCase):
         self.assertEqual(0, result.returncode, msg=f"stdout:\n{result.stdout}\n\nstderr:\n{result.stderr}")
         self.assertEqual(
             "#define STRICTFMT_LOAD_OPTIONAL(function, name) \\\n"
-            "function=reinterpret_cast<decltype(function)>(GetProcAddress(module_,name))\n",
+            "    function = reinterpret_cast<decltype(function)>(GetProcAddress(module_, name))\n",
             result.stdout,
         )
 
@@ -795,21 +795,32 @@ class FormatCommandTests(unittest.TestCase):
             self.assertNotIn("RawMacroReplacement", dump.stdout)
 
     def test_structured_macro_definition_with_templated_struct_body_reparses(self) -> None:
-        source = (
-            "#define DECLARE_TRAITS(Type) \\\n"
-            "    template <> struct Traits<Type>{static constexpr auto value = Type{}; }\n"
-        )
-        result = native_format("--stdin", input_text=source)
-
-        self.assertEqual(0, result.returncode, msg=f"stdout:\n{result.stdout}\n\nstderr:\n{result.stderr}")
-        self.assertEqual(
+        expected = (
             "#define DECLARE_TRAITS(Type) \\\n"
             "    template <> \\\n"
             "    struct Traits<Type> { \\\n"
             "        static constexpr auto value = Type{}; \\\n"
-            "    }\n",
-            result.stdout,
+            "    }\n"
         )
+        sources = (
+            (
+                "#define DECLARE_TRAITS(Type) \\\n"
+                "    template <> struct Traits<Type>{static constexpr auto value = Type{}; }\n"
+            ),
+            (
+                "#define DECLARE_TRAITS(Type) \\\n"
+                "    template <> \\\n"
+                "    struct Traits<Type>{ \\\n"
+                "        static constexpr auto value = Type{}; }\n"
+            ),
+        )
+
+        for source in sources:
+            with self.subTest(source=source):
+                result = native_format("--stdin", input_text=source)
+
+                self.assertEqual(0, result.returncode, msg=f"stdout:\n{result.stdout}\n\nstderr:\n{result.stderr}")
+                self.assertEqual(expected, result.stdout)
 
     def test_raw_macro_definitions_format_raw_replacements(self) -> None:
         build_dir = TEST_TEMP_ROOT
