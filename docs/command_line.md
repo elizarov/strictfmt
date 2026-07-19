@@ -42,7 +42,7 @@ specified in [config.md](config.md).
 - Default mode formats input and writes formatted source to stdout. For file inputs and `--stdin`, the final summary is written to stderr so stdout contains only formatted source.
 - `-i` rewrites files in place. It requires at least one file input from `file...`, `--files`, `-r`, or `--recursive`. It is incompatible with `--stdin` and `--dry-run`.
 - `-n` and `--dry-run` check formatting without writing formatted source or modifying files. The command exits with code `1` when formatting changes are needed.
-- `--dump <file>` or `--stdin --dump` prints the parsed internal format model for one source file to stdout. This debugging mode helps inspect parsing, syntax normalization, macro classification, and the internal model used by the formatter. It does not format, check, rewrite, or honor ignore files. It is incompatible with formatting inputs, `-i`, `--dry-run`, and `--concurrency`.
+- `--dump <file>` or `--stdin --dump` prints the parsed internal format model for one source file to stdout. This debugging mode helps inspect parsing, syntax normalization, macro classification, and the internal model used by the formatter. When the parser produces an error tree, the dump still prints the model with `Error` and `Missing` nodes, reports the parse failure to stderr, and exits with code `1`. It does not format, check, rewrite, or honor ignore files. It is incompatible with formatting inputs, `-i`, `--dry-run`, and `--concurrency`.
 
 ## Configuration
 

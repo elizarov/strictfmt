@@ -21,7 +21,10 @@ struct FormatterConfig {
     bool mainIncludeQuote = true;
     std::vector<std::string> rawMacroDefinitions;
     std::vector<std::string> bareIdentifierMacros;
+    std::vector<std::string> declarationPrefixMacros;
     std::vector<std::string> callSyntaxMacros;
+    std::vector<std::string> statementArgumentMacros;
+    std::vector<std::string> typeSpecifierMacros;
     std::vector<std::string> streamShiftConfigurationMethods;
     std::vector<IncludeGroup> includeGroups;
 };

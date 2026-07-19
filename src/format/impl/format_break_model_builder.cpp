@@ -1399,6 +1399,92 @@ private:
         return std::nullopt;
     }
 
+    bool HasDirectCommaOperator(const SyntaxNode& node) const {
+        if (node.kind != SyntaxNodeKind::CommaExpression) {
+            return false;
+        }
+        const std::optional<size_t> opIndex = DirectOperatorIndex(node);
+        if (!opIndex || !node.children[*opIndex]) {
+            return false;
+        }
+        const std::optional<FormatBreakToken> token = TokenForNode(*node.children[*opIndex]);
+        return token && FormatBreakTokenSyntaxKind(*token) == SyntaxNodeKind::Comma;
+    }
+
+    bool AppendCommaExpressionListOperand(
+        FormatBreakNode& list,
+        const ::SyntaxChildList& children,
+        size_t begin,
+        size_t end,
+        const FormatBreakToken& open,
+        int depth,
+        bool blankLineBefore
+    ) {
+        const SyntaxNode* selectedChild = nullptr;
+        for (size_t index = begin; index < end; ++index) {
+            const SyntaxNode* child = children[index];
+            if (child == nullptr || !ContainsSelected(*child)) {
+                continue;
+            }
+            if (selectedChild != nullptr) {
+                selectedChild = nullptr;
+                break;
+            }
+            selectedChild = child;
+        }
+        if (selectedChild != nullptr && HasDirectCommaOperator(*selectedChild)) {
+            return AppendCommaExpressionListItems(list, *selectedChild, open, depth, blankLineBefore);
+        }
+
+        FormatBreakNode* item = BuildSequenceFromChildren(children, begin, end, depth + 1);
+        if (item == nullptr) {
+            return false;
+        }
+        AppendListItem(list, item, blankLineBefore);
+        return true;
+    }
+
+    bool AppendCommaExpressionListItems(
+        FormatBreakNode& list,
+        const SyntaxNode& node,
+        const FormatBreakToken& open,
+        int depth,
+        bool blankLineBefore
+    ) {
+        const std::optional<size_t> opIndex = DirectOperatorIndex(node);
+        if (!opIndex || !node.children[*opIndex]) {
+            return false;
+        }
+        const std::optional<FormatBreakToken> separator = TokenForNode(*node.children[*opIndex]);
+        if (!separator || FormatBreakTokenSyntaxKind(*separator) != SyntaxNodeKind::Comma) {
+            return false;
+        }
+        if (!AppendCommaExpressionListOperand(list, node.children, 0, *opIndex, open, depth, blankLineBefore)) {
+            return false;
+        }
+        AttachSeparatorToPreviousItem(list, *separator);
+        return AppendCommaExpressionListOperand(list, node.children, *opIndex + 1, node.children.size(), open, depth, false);
+    }
+
+    const SyntaxNode* DirectDelimitedCommaExpressionBody(
+        const ::SyntaxChildList& children,
+        size_t openIndex,
+        size_t closeIndex
+    ) const {
+        const SyntaxNode* body = nullptr;
+        for (size_t index = openIndex + 1; index < closeIndex; ++index) {
+            const SyntaxNode* child = children[index];
+            if (child == nullptr || !ContainsSelected(*child)) {
+                continue;
+            }
+            if (body != nullptr) {
+                return nullptr;
+            }
+            body = child;
+        }
+        return body != nullptr && HasDirectCommaOperator(*body) ? body : nullptr;
+    }
+
     std::optional<std::pair<size_t, size_t>> DirectConditionalOperatorIndices(const SyntaxNode& node) const {
         std::optional<size_t> question;
         std::optional<size_t> colon;
@@ -1779,6 +1865,18 @@ private:
         delimited->suppressCompactDelimiterPadding = delimiter == FormatBreakDelimiterKind::Brace &&
             FormatBreakTokenValue(*open).parentKind == SyntaxNodeKind::InitializerList;
         delimited->children = StoreNodePointers({BuildToken(*open, depth + 1), BuildToken(*close, depth + 1)});
+
+        if (delimiter == FormatBreakDelimiterKind::Paren) {
+            if (const SyntaxNode* commaExpression = DirectDelimitedCommaExpressionBody(children, openIndex, closeIndex)) {
+                if (AppendCommaExpressionListItems(*delimited, *commaExpression, *open, depth, false)) {
+                    delimited->forceSplit =
+                        delimited->forceSplit || (hasVirtualClose && context_.forceSplitVirtualDelimiter);
+                    afterDelimited = hasVirtualClose ? end : closeIndex + 1;
+                    return delimited;
+                }
+                delimited->items.clear();
+            }
+        }
 
         ConstSyntaxChildList itemChildren;
         bool pendingBlankLine = false;

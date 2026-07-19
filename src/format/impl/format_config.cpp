@@ -26,7 +26,10 @@ struct FormatterConfigPatch {
     std::optional<bool> mainIncludeQuote;
     std::optional<std::vector<std::string>> rawMacroDefinitions;
     std::optional<std::vector<std::string>> bareIdentifierMacros;
+    std::optional<std::vector<std::string>> declarationPrefixMacros;
     std::optional<std::vector<std::string>> callSyntaxMacros;
+    std::optional<std::vector<std::string>> statementArgumentMacros;
+    std::optional<std::vector<std::string>> typeSpecifierMacros;
     std::optional<std::vector<std::string>> streamShiftConfigurationMethods;
     std::optional<std::vector<IncludeGroup>> includeGroups;
 };
@@ -229,9 +232,18 @@ void ParseMacroCategories(const std::vector<ConfigLine>& lines, size_t& index, F
         } else if (key == "BareIdentifierMacros" && value.empty()) {
             patch.bareIdentifierMacros = ParseIndentedStringList(lines, index, line.indent);
             ValidateMacroCategoryEntries(key, *patch.bareIdentifierMacros);
+        } else if (key == "DeclarationPrefixMacros" && value.empty()) {
+            patch.declarationPrefixMacros = ParseIndentedStringList(lines, index, line.indent);
+            ValidateMacroCategoryEntries(key, *patch.declarationPrefixMacros);
         } else if (key == "CallSyntaxMacros" && value.empty()) {
             patch.callSyntaxMacros = ParseIndentedStringList(lines, index, line.indent);
             ValidateMacroCategoryEntries(key, *patch.callSyntaxMacros);
+        } else if (key == "StatementArgumentMacros" && value.empty()) {
+            patch.statementArgumentMacros = ParseIndentedStringList(lines, index, line.indent);
+            ValidateMacroCategoryEntries(key, *patch.statementArgumentMacros);
+        } else if (key == "TypeSpecifierMacros" && value.empty()) {
+            patch.typeSpecifierMacros = ParseIndentedStringList(lines, index, line.indent);
+            ValidateMacroCategoryEntries(key, *patch.typeSpecifierMacros);
         }
     }
 }
@@ -308,8 +320,17 @@ FormatterConfig ApplyConfigPatch(FormatterConfig config, FormatterConfigPatch pa
     if (patch.bareIdentifierMacros.has_value()) {
         config.bareIdentifierMacros = std::move(*patch.bareIdentifierMacros);
     }
+    if (patch.declarationPrefixMacros.has_value()) {
+        config.declarationPrefixMacros = std::move(*patch.declarationPrefixMacros);
+    }
     if (patch.callSyntaxMacros.has_value()) {
         config.callSyntaxMacros = std::move(*patch.callSyntaxMacros);
+    }
+    if (patch.statementArgumentMacros.has_value()) {
+        config.statementArgumentMacros = std::move(*patch.statementArgumentMacros);
+    }
+    if (patch.typeSpecifierMacros.has_value()) {
+        config.typeSpecifierMacros = std::move(*patch.typeSpecifierMacros);
     }
     if (patch.streamShiftConfigurationMethods.has_value()) {
         config.streamShiftConfigurationMethods = std::move(*patch.streamShiftConfigurationMethods);

@@ -148,8 +148,10 @@ module.exports = grammar({
     ),
 
     preproc_params: $ => seq(
-      token.immediate('('), commaSep(choice($.identifier, '...')), ')',
+      token.immediate('('), commaSep(choice($.identifier, $.preproc_variadic_parameter, '...')), ')',
     ),
+
+    preproc_variadic_parameter: $ => seq($.identifier, token.immediate('...')),
 
     preproc_call: $ => seq(
       field('directive', $.preproc_directive),
@@ -173,6 +175,7 @@ module.exports = grammar({
       $.preproc_defined,
       alias($.preproc_unary_expression, $.unary_expression),
       alias($.preproc_binary_expression, $.binary_expression),
+      alias($.preproc_conditional_expression, $.conditional_expression),
       alias($.preproc_parenthesized_expression, $.parenthesized_expression),
     ),
 
@@ -235,6 +238,14 @@ module.exports = grammar({
       }));
     },
 
+    preproc_conditional_expression: $ => prec.right(PREC.CONDITIONAL, seq(
+      field('condition', $._preproc_expression),
+      '?',
+      field('consequence', $._preproc_expression),
+      ':',
+      field('alternative', $._preproc_expression),
+    )),
+
     // Main Grammar
 
     function_definition: $ => seq(
@@ -274,7 +285,11 @@ module.exports = grammar({
       repeat($.attribute_specifier),
       ';',
     ),
-    _type_definition_type: $ => seq(repeat($.type_qualifier), field('type', $.type_specifier), repeat($.type_qualifier)),
+    _type_definition_type: $ => seq(
+      repeat($._declaration_modifiers),
+      field('type', $.type_specifier),
+      repeat($._declaration_modifiers),
+    ),
     _type_definition_declarators: $ => commaSep1(field('declarator', $._type_declarator)),
 
     _declaration_modifiers: $ => choice(
@@ -323,7 +338,7 @@ module.exports = grammar({
     ms_declspec_modifier: $ => seq(
       '__declspec',
       '(',
-      $.identifier,
+      commaSep1(seq($.identifier, optional($.argument_list))),
       ')',
     ),
 
@@ -1285,14 +1300,14 @@ module.exports = grammar({
       ));
     },
 
-    char_literal: $ => seq(
+    char_literal: _ => token(seq(
       choice('L\'', 'u\'', 'U\'', 'u8\'', '\''),
       repeat1(choice(
-        $.escape_sequence,
-        alias(token.immediate(/[^\n']/), $.character),
+        /\\(?:[^xuU]|\d{2,3}|x[0-9a-fA-F]{1,4}|u[0-9a-fA-F]{4}|U[0-9a-fA-F]{8})/,
+        /[^\\\n']/,
       )),
       '\'',
-    ),
+    )),
 
     // Must concatenate at least 2 nodes, one of which must be a string_literal.
     // Identifier is added to parse macros that are strings, like PRIu64.

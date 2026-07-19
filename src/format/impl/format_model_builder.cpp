@@ -252,6 +252,39 @@ std::optional<size_t> NextNonTriviaChildIndex(const SyntaxChildList& children, s
     return std::nullopt;
 }
 
+void RemovePreviousComma(SyntaxChildList& children, size_t before) {
+    const std::optional<size_t> previous = PreviousNonTriviaChildIndex(children, before);
+    if (previous && children[*previous]->kind == SyntaxNodeKind::Comma) {
+        children.erase(children.begin() + static_cast<std::ptrdiff_t>(*previous));
+    }
+}
+
+void RemoveTerminalConditionalListCommas(SyntaxNode& node) {
+    SyntaxChildList& children = node.children;
+    for (size_t index = children.size(); index > 0; --index) {
+        SyntaxNode* child = children[index - 1];
+        if (
+            child != nullptr && (
+                SyntaxNodeKindHasClass(child->kind, SyntaxNodeClass::ConditionalPreprocessorTree) ||
+                SyntaxNodeKindHasClass(child->kind, SyntaxNodeClass::EndifDirective)
+            )
+        ) {
+            RemovePreviousComma(children, index - 1);
+        }
+    }
+    for (SyntaxNode* child : children) {
+        if (child != nullptr && SyntaxNodeKindHasClass(child->kind, SyntaxNodeClass::ConditionalPreprocessorTree)) {
+            RemoveTerminalConditionalListCommas(*child);
+        }
+    }
+    if (
+        SyntaxNodeKindHasClass(node.kind, SyntaxNodeClass::ConditionalPreprocessorTree) &&
+        !SyntaxNodeKindHasClass(node.kind, SyntaxNodeClass::ConditionalPreprocessorOpen)
+    ) {
+        RemovePreviousComma(children, children.size());
+    }
+}
+
 void NormalizeTrailingCommas(FormatModel& model, SyntaxNode& node) {
     SyntaxChildList& children = node.children;
     for (size_t index = 0; index < children.size(); ++index) {
@@ -269,6 +302,12 @@ void NormalizeTrailingCommas(FormatModel& model, SyntaxNode& node) {
         const std::optional<size_t> previous = PreviousNonTriviaChildIndex(children, index);
         if (!previous) {
             continue;
+        }
+        if (
+            node.kind != SyntaxNodeKind::EnumeratorList &&
+            SyntaxNodeKindHasClass(children[*previous]->kind, SyntaxNodeClass::ConditionalPreprocessorTree)
+        ) {
+            RemoveTerminalConditionalListCommas(*children[*previous]);
         }
         if (node.kind == SyntaxNodeKind::EnumeratorList) {
             if (
@@ -501,6 +540,21 @@ SyntaxNode* BuildNode(
     node->parent = parent;
     node->depth = parent == nullptr ? 0 : parent->depth + 1;
     node->classes = syntax.classes;
+
+    if (ts_node_is_missing(tsNode)) {
+        node->kind = SyntaxNodeKind::Missing;
+        node->text = ts_node_type(tsNode);
+        return node;
+    }
+
+    if (std::string_view(ts_node_type(tsNode)) == "ERROR") {
+        node->kind = SyntaxNodeKind::Error;
+        node->text = NodeText(tsNode, source);
+        const uint32_t childCount = ts_node_child_count(tsNode);
+        node->children.reserve(childCount);
+        AppendTsChildren(model, tsNode, source, *node, childCount);
+        return node;
+    }
 
     if (syntax.kind == SyntaxNodeKind::Comment) {
         node->kind = SyntaxNodeKind::Comment;
@@ -850,13 +904,16 @@ FormatModel BuildFormatModel(TSNode root, std::unique_ptr<std::string> sourceTex
 
     const std::string_view source(*model.sourceText);
     model.nodes.reserve(source.size() * 2 + 64);
-    if (ts_node_has_error(root) || ts_node_is_missing(root)) {
+
+    const bool hasParseProblems = ts_node_has_error(root) || ts_node_is_missing(root);
+    if (hasParseProblems) {
         model.parse = ParseFailure(root);
-        return model;
     }
 
     model.root = BuildNode(model, root, source, nullptr, GetTsNodeSyntax(root));
     GroupOpeningIncludeRuns(model, *model.root);
-    model.parse.ok = true;
+    if (!hasParseProblems) {
+        model.parse.ok = true;
+    }
     return model;
 }

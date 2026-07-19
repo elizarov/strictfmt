@@ -15,8 +15,6 @@ STRICTFMT_ROOT = Path(os.environ.get("STRICTFMT_PROJECT_ROOT", TEST_ROOT.parents
 TEST_TEMP_ROOT = Path(os.environ.get("STRICTFMT_TEST_TEMP_ROOT", STRICTFMT_ROOT / "build")).resolve()
 FORMAT_EXE = Path(os.environ.get("STRICTFMT_EXE", STRICTFMT_ROOT / "build" / "strictfmt.exe")).resolve()
 FORMAT_EXE_ARGS = os.environ.get("STRICTFMT_EXE_ARGS", "").split()
-FORMAT_CMD_TEXT = os.environ.get("STRICTFMT_FORMAT_CMD")
-FORMAT_CMD = Path(FORMAT_CMD_TEXT).resolve() if FORMAT_CMD_TEXT else None
 PLATFORM_LINE_ENDING = os.linesep.encode("ascii")
 PRETTY_PRINTER_SOURCE = STRICTFMT_ROOT / "src" / "format" / "impl" / "format_pretty_printer.cpp"
 EXTERNAL_ROOT = STRICTFMT_ROOT / "external"
@@ -78,19 +76,6 @@ def native_format_bytes(
         input=input_bytes,
         check=False,
         capture_output=True,
-    )
-
-
-def run_wrapper(*args: str) -> subprocess.CompletedProcess[str]:
-    if FORMAT_CMD is None:
-        raise RuntimeError("STRICTFMT_FORMAT_CMD is not configured")
-    command = subprocess.list2cmdline([str(FORMAT_CMD), *args])
-    return subprocess.run(
-        ["cmd.exe", "/d", "/c", command],
-        cwd=FORMAT_CMD.parent,
-        check=False,
-        capture_output=True,
-        text=True,
     )
 
 
@@ -534,6 +519,9 @@ class FormatCommandTests(unittest.TestCase):
     def test_casedash_submodule(self) -> None:
         self.assert_external_project_sources_parse_without_warnings_and_format_idempotently("casedash")
 
+    def test_googletest_submodule(self) -> None:
+        self.assert_external_project_sources_parse_without_warnings_and_format_idempotently("googletest")
+
     def test_concurrency_one_preserves_file_list_output_order(self) -> None:
         build_dir = TEST_TEMP_ROOT
         build_dir.mkdir(exist_ok=True)
@@ -665,6 +653,21 @@ class FormatCommandTests(unittest.TestCase):
             msg=f"stdout:\n{reversed_result.stdout}\n\nstderr:\n{reversed_result.stderr}",
         )
         self.assertIn("text: \"other\"", reversed_result.stdout)
+
+    def test_dump_prints_model_for_parse_error_tree(self) -> None:
+        result = native_format(
+            "--stdin",
+            "--dump",
+            "--style",
+            str(USERVER_FORMAT_CONFIG),
+            input_text=read_fixture(ERROR_INPUT_FIXTURE),
+        )
+
+        self.assertEqual(1, result.returncode, msg=f"stdout:\n{result.stdout}\n\nstderr:\n{result.stderr}")
+        self.assertIn("parse failed", result.stderr)
+        self.assertIn("kind: TranslationUnit\n", result.stdout)
+        self.assertIn("- kind: Error\n", result.stdout)
+        self.assertIn("- kind: Missing\n", result.stdout)
 
     def test_declarator_reference_tokens_include_managed_cpp(self) -> None:
         result = native_format(
@@ -1283,13 +1286,6 @@ class FormatCommandTests(unittest.TestCase):
         self.assertIn("Usage:", result.stdout)
         self.assertIn("strictfmt [options] [ <file>... | -r <path> | --stdin | --files <path> ]", result.stdout)
         self.assertIn("--style <config-file>", result.stdout)
-
-    def test_wrapper_rejects_current_unformatted_fixture(self) -> None:
-        if FORMAT_CMD is None or not FORMAT_CMD.exists():
-            self.skipTest("strictfmt format wrapper is not configured")
-        result = run_wrapper("changed")
-
-        self.assertIn(result.returncode, (0, 1), msg=f"stdout:\n{result.stdout}\n\nstderr:\n{result.stderr}")
 
     def test_invalid_native_usage_is_rejected(self) -> None:
         invalid_cases = [

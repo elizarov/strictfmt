@@ -26,6 +26,8 @@ enum class SyntaxNodeKind : std::uint16_t {
     Comment,
     TrailingComment,
     BlankLine,
+    Error,
+    Missing,
 
     // Tree-sitter syntax nodes.
     TranslationUnit,
@@ -115,6 +117,7 @@ enum class SyntaxNodeKind : std::uint16_t {
     AttributeDeclaration,
     Attribute,
     AttributedStatement,
+    MacroCallItem,
     MacroStatementSequence,
     MsCallModifier,
     MsDeclspecModifier,

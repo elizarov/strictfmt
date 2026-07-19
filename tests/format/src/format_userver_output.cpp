@@ -52,13 +52,13 @@ public: \
     } catch (const Error& error) { \
         EXPECT_EQ(error.Code(), ErrorCode::kExpected); \
     }
-#define FORMAT_USERVER_BENCHMARK_ARGS ->Arg(2)->Arg(4)
+#define BENCHMARK_THREAD_ARGS ->Arg(2)->Arg(4)
 #define IMPL_UTEST_FORMAT_USERVER(name) \
     TestLauncher<::testing::Test>::RunTest< \
         name>();                         \
     struct FormatUserverForceSemicolon
 
-BENCHMARK_CAPTURE(FormatterBenchmark, Mode, kValue) FORMAT_USERVER_BENCHMARK_ARGS;
+BENCHMARK_CAPTURE(FormatterBenchmark, Mode, kValue) BENCHMARK_THREAD_ARGS;
 BENCHMARK_INSTANTIATE_TEMPLATE_F(FormatterBenchmark, Value, int);
 BENCHMARK_DEFINE_TEMPLATE_F(FormatterBenchmark, Value)(benchmark::State& state) {
     UseBenchmarkState(state);
@@ -78,6 +78,11 @@ int FormatUserverExternCValue(int input);
 #endif
 
 namespace format_userver_fixture {
+
+void __rseq_percpu* FormatUserverPerCpuIdentity(void __rseq_percpu* pointer) {
+    void __rseq_percpu* result = (void __rseq_percpu*)pointer;
+    return result;
+}
 
 template <typename Output>
 USERVER_IMPL_FORCE_INLINE Output FormatUserverInline(Output output) {
@@ -100,6 +105,13 @@ public:
 class MacroFieldDeclarationHost {
 public:
     MOCK_METHOD(void, SetValue, (std::string_view, std::string&&), (override));
+};
+
+class MacroSuffixConstructorFixture {
+public:
+    MacroSuffixConstructorFixture(MacroSuffixConstructorFixture&& other) RAPIDJSON_NOEXCEPT : value_(other.value_) {}
+private:
+    int value_ = 0;
 };
 
 UTEST_DEATH(FormatterMacroFixture, KeepsBody) {
@@ -185,8 +197,10 @@ void DeclarationMacroArgument(Source& source) {
 
 void SplitConstDeclarationMacroArgument(Source& source) {
     EXPECT_THROW(
-        [[maybe_unused]] const auto bytes_read =
-            source.ReadSome(kVeryLongBufferNameForFormatterFixture, kVeryLongDeadlineNameForFormatterFixture),
+        [[maybe_unused]] const auto bytes_read = source.ReadSome(
+            kVeryLongBufferNameForFormatterFixture,
+            kVeryLongDeadlineNameForFormatterFixture
+        ),
         IoTimeout
     );
 }
@@ -198,6 +212,21 @@ void ThrowExpressionMacroArgument() {
 void PlainDeclarationMacroArgument() {
     UEXPECT_THROW(auto future = Client().SayHello(request), std::runtime_error);
     UEXPECT_NO_THROW(const auto stream = Client().ReadMany(request));
+}
+
+void StreamedStatementArgumentMacro() {
+    UEXPECT_NO_THROW(client = CreateClient()) << "Connect to in-memory database" << request_id;
+}
+
+void NestedStatementArgumentMacro() {
+    EXPECT_NONFATAL_FAILURE(UEXPECT_NO_THROW(throw std::runtime_error("what")) << "Blah", "Blah");
+}
+
+void NestedStatementSequenceMacro() {
+    UEXPECT_NO_THROW(
+        EXPECT_NO_THROW(first());
+        EXPECT_NO_THROW(second())
+    );
 }
 
 void StatementSequenceMacroArgument() {
@@ -236,11 +265,10 @@ concept HasNonEmptyName = requires {
 template <typename T>
 struct DetectedBufferCategory : decltype(DetectBufferCategory<T>()) {};
 
-template <
-    typename RedisRequestType,
-    typename... Args,
-    typename M = RedisRequestType (storages::redis::Client::*)(Args..., const redis::CommandControl&)
->
+template <typename RedisRequestType, typename... Args, typename M = RedisRequestType (storages::redis::Client::*)(
+    Args...,
+    const redis::CommandControl&
+)>
 HedgedRedisRequest<RedisRequestType> MakeHedgedRedisRequestAsync(M method, Args... args);
 
 template <typename StringViews, typename DistanceFunc = std::size_t (*)(std::string_view, std::string_view)>

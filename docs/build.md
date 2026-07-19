@@ -67,10 +67,8 @@ Windows and Linux builds can coexist in the same checkout because their generate
 
 ## Tree-sitter
 
-By default the build uses the vendored static tree-sitter runtime under
-`vendor/tree-sitter/tree-sitter/`. Package maintainers can set
-`STRICTFMT_USE_SYSTEM_TREE_SITTER=ON` to require an installed tree-sitter runtime
-provided by either `unofficial-tree-sitter` CMake config package or the
-`tree-sitter` pkg-config package.
+The build uses the vendored static tree-sitter runtime under
+`vendor/tree-sitter/tree-sitter/`. Runtime and generated-parser compatibility is
+governed by the hard [upstream tree-sitter runtime constraint](architecture.md#upstream-tree-sitter-runtime).
 
 The vendored C++ grammar also compiles a custom external scanner; see [scanner.md](scanner.md).

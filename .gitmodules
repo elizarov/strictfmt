@@ -6,3 +6,7 @@
 	path = external/casedash
 	url = git@github.com:casedash/CaseDash.git
 	branch = strictfmt
+[submodule "external/googletest"]
+	path = external/googletest
+	url = git@github.com:elizarov/googletest.git
+	branch = strictfmt

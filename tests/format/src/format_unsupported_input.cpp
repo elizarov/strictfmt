@@ -102,26 +102,6 @@ void ConditionalArgumentExpressionFragment() {
     );
 }
 
-void ConditionalStreamingAssertion() {
-#ifndef FORMAT_USERVER_ARCADIA
-// Test flaps on external CI.
-GTEST_SKIP()
-#else
-FAIL()
-#endif
-    << "failed to trigger failures";
-}
-
-void ConditionalArithmeticContinuation() {
-value =
-#if FORMAT_USERVER_HAS_FAST_VALUE
-    FastValue()
-#else
-    SlowValue()
-#endif
-    + suffix;
-}
-
 void PreprocessorEndedConsequence(Status status, Handle& handle, Handle next_handle) {
 #if FORMAT_USERVER_HAS_PIPELINING
 if (status == Status::kSync) {

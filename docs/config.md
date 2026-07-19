@@ -49,8 +49,14 @@ MacroCategories:
     - GENERATED_TABLE
   BareIdentifierMacros:
     - CALLBACK
+  DeclarationPrefixMacros:
+    - API_EXPORT
   CallSyntaxMacros:
     - TEST
+  StatementArgumentMacros:
+    - EXPECT_THROW
+  TypeSpecifierMacros:
+    - TYPE_OF
 
 StreamShift:
   ConfigurationMethods:
