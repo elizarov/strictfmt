@@ -11,9 +11,12 @@ enum TokenType {
     RAW_STRING_DELIMITER,
     RAW_STRING_CONTENT,
     RAW_MACRO_DEFINITION_IDENTIFIER,
+    RAW_MACRO_REPLACEMENT,
     BARE_MACRO_IDENTIFIER,
+    DECLARATION_PREFIX_MACRO_IDENTIFIER,
     CALL_SYNTAX_MACRO_IDENTIFIER,
-    CONDITIONAL_MACRO_FUNCTION_HEADER,
+    STATEMENT_ARGUMENT_MACRO_IDENTIFIER,
+    TYPE_SPECIFIER_MACRO_IDENTIFIER,
     PREPROC_DIRECTIVE_END,
     LINE_BREAK_WHITESPACE,
 };
@@ -22,6 +25,9 @@ enum MacroCategory {
     MACRO_CATEGORY_RAW_DEFINITION = 0,
     MACRO_CATEGORY_BARE_IDENTIFIER = 1,
     MACRO_CATEGORY_CALL_SYNTAX = 2,
+    MACRO_CATEGORY_STATEMENT_ARGUMENT = 3,
+    MACRO_CATEGORY_DECLARATION_PREFIX = 4,
+    MACRO_CATEGORY_TYPE_SPECIFIER = 5,
 };
 
 /// The spec limits raw-string delimiters to 16 chars.
@@ -55,9 +61,28 @@ static bool is_identifier_continue(int32_t ch) {
 }
 
 static void skip_external_whitespace(TSLexer *lexer) {
-    while (lexer->lookahead == ' ' || lexer->lookahead == '\t' || lexer->lookahead == '\r' || lexer->lookahead == '\n' ||
-           lexer->lookahead == '\f') {
+    for (;;) {
+        while (lexer->lookahead == ' ' || lexer->lookahead == '\t' || lexer->lookahead == '\f') {
+            advance_skip(lexer);
+        }
+        if (lexer->lookahead != '\\') {
+            return;
+        }
         advance_skip(lexer);
+        if (lexer->lookahead == '\r') {
+            advance_skip(lexer);
+            if (lexer->lookahead == '\n') {
+                advance_skip(lexer);
+            }
+            continue;
+        }
+        if (lexer->lookahead == '\n') {
+            advance_skip(lexer);
+            continue;
+        }
+        if (lexer->lookahead != ' ' && lexer->lookahead != '\t' && lexer->lookahead != '\f') {
+            return;
+        }
     }
 }
 
@@ -89,28 +114,90 @@ static bool scan_macro_identifier(TSLexer *lexer, enum MacroCategory category) {
     return strictfmt_tree_sitter_cpp_macro_category_matches(category, name, length);
 }
 
+static bool classify_macro_identifier_token(
+    TSLexer *lexer,
+    const char *name,
+    unsigned length,
+    bool allow_call,
+    bool allow_statement_argument,
+    bool allow_type_specifier,
+    bool allow_declaration_prefix,
+    bool allow_bare
+) {
+    const bool call_match =
+        allow_call &&
+        strictfmt_tree_sitter_cpp_macro_category_matches(MACRO_CATEGORY_CALL_SYNTAX, name, length);
+    const bool statement_argument_match =
+        allow_statement_argument &&
+        strictfmt_tree_sitter_cpp_macro_category_matches(MACRO_CATEGORY_STATEMENT_ARGUMENT, name, length);
+    const bool type_specifier_match =
+        allow_type_specifier &&
+        strictfmt_tree_sitter_cpp_macro_category_matches(MACRO_CATEGORY_TYPE_SPECIFIER, name, length);
+    const bool declaration_prefix_match =
+        allow_declaration_prefix &&
+        strictfmt_tree_sitter_cpp_macro_category_matches(MACRO_CATEGORY_DECLARATION_PREFIX, name, length);
+    const bool bare_match =
+        allow_bare && strictfmt_tree_sitter_cpp_macro_category_matches(MACRO_CATEGORY_BARE_IDENTIFIER, name, length);
+
+    if (declaration_prefix_match) {
+        lexer->result_symbol = DECLARATION_PREFIX_MACRO_IDENTIFIER;
+        return true;
+    }
+
+    if (call_match) {
+        lexer->result_symbol = CALL_SYNTAX_MACRO_IDENTIFIER;
+        return true;
+    }
+
+    if (statement_argument_match) {
+        lexer->result_symbol = STATEMENT_ARGUMENT_MACRO_IDENTIFIER;
+        return true;
+    }
+
+    if (type_specifier_match) {
+        lexer->result_symbol = TYPE_SPECIFIER_MACRO_IDENTIFIER;
+        return true;
+    }
+
+    if (bare_match) {
+        lexer->result_symbol = BARE_MACRO_IDENTIFIER;
+        return true;
+    }
+
+    return false;
+}
+
 static void skip_spaces_tabs(TSLexer *lexer) {
     while (lexer->lookahead == ' ' || lexer->lookahead == '\t') {
         advance(lexer);
     }
 }
 
-static bool scan_char(TSLexer *lexer, int32_t expected) {
-    if (lexer->lookahead != expected) {
+static bool scan_macro_identifier_token(
+    TSLexer *lexer,
+    bool allow_call,
+    bool allow_statement_argument,
+    bool allow_type_specifier,
+    bool allow_declaration_prefix,
+    bool allow_bare
+) {
+    char name[MAX_MACRO_NAME_LENGTH];
+    unsigned length = 0;
+    if (!scan_identifier(lexer, name, &length)) {
         return false;
     }
-    advance(lexer);
-    return true;
-}
+    lexer->mark_end(lexer);
 
-static bool scan_literal(TSLexer *lexer, const char *literal) {
-    for (const char *ch = literal; *ch != '\0'; ++ch) {
-        if (lexer->lookahead != *ch) {
-            return false;
-        }
-        advance(lexer);
-    }
-    return true;
+    return classify_macro_identifier_token(
+        lexer,
+        name,
+        length,
+        allow_call,
+        allow_statement_argument,
+        allow_type_specifier,
+        allow_declaration_prefix,
+        allow_bare
+    );
 }
 
 static bool scan_newline(TSLexer *lexer) {
@@ -128,24 +215,68 @@ static bool scan_newline(TSLexer *lexer) {
     return false;
 }
 
-static bool scan_to_line_end(TSLexer *lexer, bool allow_continuations) {
+static bool scan_horizontal_whitespace_then_newline(TSLexer *lexer) {
+    while (lexer->lookahead == ' ' || lexer->lookahead == '\t' || lexer->lookahead == '\f') {
+        advance(lexer);
+    }
+    return scan_newline(lexer);
+}
+
+static bool scan_horizontal_whitespace(TSLexer *lexer) {
+    bool consumed = false;
+    while (lexer->lookahead == ' ' || lexer->lookahead == '\t' || lexer->lookahead == '\f') {
+        advance(lexer);
+        consumed = true;
+    }
+    return consumed;
+}
+
+static bool scan_line_break_whitespace(TSLexer *lexer) {
+    scan_horizontal_whitespace(lexer);
+    if (scan_newline(lexer)) {
+        scan_horizontal_whitespace(lexer);
+        return true;
+    }
+    if (lexer->lookahead != '\\') {
+        return false;
+    }
+    advance(lexer);
+    if (!scan_newline(lexer)) {
+        return false;
+    }
+    scan_horizontal_whitespace(lexer);
+    return true;
+}
+
+static bool scan_raw_macro_replacement(TSLexer *lexer) {
+    if (lexer->lookahead == '\r' || lexer->lookahead == '\n' || lexer->eof(lexer)) {
+        return false;
+    }
+    if (lexer->lookahead != ' ' && lexer->lookahead != '\t' && lexer->lookahead != '\f' &&
+        lexer->lookahead != '\\') {
+        return false;
+    }
+
+    bool consumed = false;
     int32_t previous = 0;
     lexer->mark_end(lexer);
     while (!lexer->eof(lexer)) {
         if (lexer->lookahead == '\r' || lexer->lookahead == '\n') {
-            if (allow_continuations && previous == '\\') {
-                scan_newline(lexer);
-                lexer->mark_end(lexer);
-                previous = 0;
-                continue;
+            if (previous != '\\') {
+                return consumed;
             }
-            return true;
+            scan_newline(lexer);
+            lexer->mark_end(lexer);
+            consumed = true;
+            previous = 0;
+            continue;
         }
         previous = lexer->lookahead;
         advance(lexer);
         lexer->mark_end(lexer);
+        consumed = true;
     }
-    return true;
+    return consumed;
 }
 
 static bool scan_raw_string_delimiter(Scanner *scanner, TSLexer *lexer) {
@@ -202,101 +333,6 @@ static bool scan_raw_string_content(Scanner *scanner, TSLexer *lexer) {
     }
 }
 
-static bool scan_comment_line(TSLexer *lexer) {
-    skip_spaces_tabs(lexer);
-    if (lexer->lookahead != '/') {
-        return false;
-    }
-    advance(lexer);
-    if (lexer->lookahead != '/') {
-        return false;
-    }
-    return scan_to_line_end(lexer, false) && scan_newline(lexer);
-}
-
-static bool scan_optional_comment_lines(TSLexer *lexer) {
-    for (;;) {
-        if (!scan_comment_line(lexer)) {
-            return true;
-        }
-    }
-}
-
-static bool scan_conditional_macro_branch(TSLexer *lexer) {
-    scan_optional_comment_lines(lexer);
-    skip_spaces_tabs(lexer);
-    if (!scan_macro_identifier(lexer, MACRO_CATEGORY_CALL_SYNTAX)) {
-        return false;
-    }
-    while (!lexer->eof(lexer)) {
-        if (lexer->lookahead == '{') {
-            advance(lexer);
-            return scan_to_line_end(lexer, false) && scan_newline(lexer);
-        }
-        if (lexer->lookahead == '\r' || lexer->lookahead == '\n') {
-            return false;
-        }
-        advance(lexer);
-    }
-    return false;
-}
-
-static bool scan_preproc_directive_line(TSLexer *lexer, const char *directive) {
-    if (!scan_char(lexer, '#')) {
-        return false;
-    }
-    skip_spaces_tabs(lexer);
-    if (!scan_literal(lexer, directive)) {
-        return false;
-    }
-    return scan_to_line_end(lexer, false) && scan_newline(lexer);
-}
-
-static bool scan_conditional_macro_function_header(TSLexer *lexer) {
-    if (!scan_preproc_directive_line(lexer, "if")) {
-        return false;
-    }
-    if (!scan_conditional_macro_branch(lexer)) {
-        return false;
-    }
-    if (!scan_preproc_directive_line(lexer, "else")) {
-        return false;
-    }
-    if (!scan_conditional_macro_branch(lexer)) {
-        return false;
-    }
-    if (!scan_char(lexer, '#')) {
-        return false;
-    }
-    skip_spaces_tabs(lexer);
-    return scan_literal(lexer, "endif") && scan_to_line_end(lexer, false);
-}
-
-static bool scan_macro_identifier_token(TSLexer *lexer, bool allow_call, bool allow_bare) {
-    char name[MAX_MACRO_NAME_LENGTH];
-    unsigned length = 0;
-    if (!scan_identifier(lexer, name, &length)) {
-        return false;
-    }
-    lexer->mark_end(lexer);
-
-    const bool call_match =
-        allow_call && strictfmt_tree_sitter_cpp_macro_category_matches(MACRO_CATEGORY_CALL_SYNTAX, name, length);
-    const bool bare_match =
-        allow_bare && strictfmt_tree_sitter_cpp_macro_category_matches(MACRO_CATEGORY_BARE_IDENTIFIER, name, length);
-    if (call_match) {
-        lexer->result_symbol = CALL_SYNTAX_MACRO_IDENTIFIER;
-        return true;
-    }
-
-    if (bare_match) {
-        lexer->result_symbol = BARE_MACRO_IDENTIFIER;
-        return true;
-    }
-
-    return false;
-}
-
 void *tree_sitter_cpp_external_scanner_create() {
     Scanner *scanner = (Scanner *)ts_calloc(1, sizeof(Scanner));
     memset(scanner, 0, sizeof(Scanner));
@@ -318,26 +354,31 @@ bool tree_sitter_cpp_external_scanner_scan(void *payload, TSLexer *lexer, const 
         return scan_raw_string_content(scanner, lexer);
     }
 
-    if (valid_symbols[PREPROC_DIRECTIVE_END] && (lexer->lookahead == '\r' || lexer->lookahead == '\n')) {
+    if (valid_symbols[RAW_MACRO_REPLACEMENT]) {
+        if (scan_raw_macro_replacement(lexer)) {
+            lexer->result_symbol = RAW_MACRO_REPLACEMENT;
+            return true;
+        }
+    }
+
+    if (valid_symbols[PREPROC_DIRECTIVE_END] &&
+        (lexer->lookahead == ' ' || lexer->lookahead == '\t' || lexer->lookahead == '\f' ||
+         lexer->lookahead == '\r' || lexer->lookahead == '\n')) {
         lexer->result_symbol = PREPROC_DIRECTIVE_END;
-        return scan_newline(lexer);
+        return scan_horizontal_whitespace_then_newline(lexer);
     }
 
-    if (valid_symbols[LINE_BREAK_WHITESPACE] && (lexer->lookahead == '\r' || lexer->lookahead == '\n')) {
+    if (valid_symbols[LINE_BREAK_WHITESPACE] &&
+        (lexer->lookahead == ' ' || lexer->lookahead == '\t' || lexer->lookahead == '\f' ||
+         lexer->lookahead == '\r' || lexer->lookahead == '\n' || lexer->lookahead == '\\')) {
         lexer->result_symbol = LINE_BREAK_WHITESPACE;
-        return scan_newline(lexer);
+        return scan_line_break_whitespace(lexer);
     }
 
-    if (valid_symbols[CONDITIONAL_MACRO_FUNCTION_HEADER]) {
+    if (valid_symbols[RAW_MACRO_DEFINITION_IDENTIFIER] || valid_symbols[BARE_MACRO_IDENTIFIER] ||
+        valid_symbols[DECLARATION_PREFIX_MACRO_IDENTIFIER] || valid_symbols[CALL_SYNTAX_MACRO_IDENTIFIER] ||
+        valid_symbols[STATEMENT_ARGUMENT_MACRO_IDENTIFIER] || valid_symbols[TYPE_SPECIFIER_MACRO_IDENTIFIER]) {
         skip_external_whitespace(lexer);
-    } else if (valid_symbols[RAW_MACRO_DEFINITION_IDENTIFIER] || valid_symbols[BARE_MACRO_IDENTIFIER] ||
-               valid_symbols[CALL_SYNTAX_MACRO_IDENTIFIER]) {
-        skip_external_whitespace(lexer);
-    }
-
-    if (valid_symbols[CONDITIONAL_MACRO_FUNCTION_HEADER] && lexer->lookahead == '#') {
-        lexer->result_symbol = CONDITIONAL_MACRO_FUNCTION_HEADER;
-        return scan_conditional_macro_function_header(lexer);
     }
 
     if (valid_symbols[RAW_MACRO_DEFINITION_IDENTIFIER] && is_identifier_start(lexer->lookahead)) {
@@ -345,11 +386,16 @@ bool tree_sitter_cpp_external_scanner_scan(void *payload, TSLexer *lexer, const 
         return scan_macro_identifier(lexer, MACRO_CATEGORY_RAW_DEFINITION);
     }
 
-    if ((valid_symbols[CALL_SYNTAX_MACRO_IDENTIFIER] || valid_symbols[BARE_MACRO_IDENTIFIER]) &&
+    if ((valid_symbols[CALL_SYNTAX_MACRO_IDENTIFIER] || valid_symbols[DECLARATION_PREFIX_MACRO_IDENTIFIER] ||
+         valid_symbols[STATEMENT_ARGUMENT_MACRO_IDENTIFIER] || valid_symbols[TYPE_SPECIFIER_MACRO_IDENTIFIER] ||
+         valid_symbols[BARE_MACRO_IDENTIFIER]) &&
         is_identifier_start(lexer->lookahead)) {
         return scan_macro_identifier_token(
             lexer,
             valid_symbols[CALL_SYNTAX_MACRO_IDENTIFIER],
+            valid_symbols[STATEMENT_ARGUMENT_MACRO_IDENTIFIER],
+            valid_symbols[TYPE_SPECIFIER_MACRO_IDENTIFIER],
+            valid_symbols[DECLARATION_PREFIX_MACRO_IDENTIFIER],
             valid_symbols[BARE_MACRO_IDENTIFIER]
         );
     }

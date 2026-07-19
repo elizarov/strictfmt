@@ -16,6 +16,9 @@ enum class ScannerMacroCategory : unsigned {
     RawMacroDefinition = 0,
     BareIdentifier = 1,
     CallSyntax = 2,
+    StatementArgument = 3,
+    DeclarationPrefix = 4,
+    TypeSpecifier = 5,
 };
 
 thread_local const FormatterConfig* g_parseConfig = nullptr;
@@ -66,6 +69,12 @@ bool ConfigMacroCategoryMatches(ScannerMacroCategory category, std::string_view 
             return MacroCategoryMatches(g_parseConfig->bareIdentifierMacros, name);
         case ScannerMacroCategory::CallSyntax:
             return MacroCategoryMatches(g_parseConfig->callSyntaxMacros, name);
+        case ScannerMacroCategory::StatementArgument:
+            return MacroCategoryMatches(g_parseConfig->statementArgumentMacros, name);
+        case ScannerMacroCategory::DeclarationPrefix:
+            return MacroCategoryMatches(g_parseConfig->declarationPrefixMacros, name);
+        case ScannerMacroCategory::TypeSpecifier:
+            return MacroCategoryMatches(g_parseConfig->typeSpecifierMacros, name);
     }
     return false;
 }

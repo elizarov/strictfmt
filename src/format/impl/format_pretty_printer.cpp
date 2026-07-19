@@ -1083,6 +1083,43 @@ private:
         return nullptr;
     }
 
+    static bool IsStatementItemContainer(SyntaxNodeKind kind) {
+        switch (kind) {
+            case SyntaxNodeKind::TranslationUnit:
+            case SyntaxNodeKind::DeclarationList:
+            case SyntaxNodeKind::FieldDeclarationList:
+            case SyntaxNodeKind::CompoundStatement:
+            case SyntaxNodeKind::CaseStatement:
+            case SyntaxNodeKind::PreprocIf:
+            case SyntaxNodeKind::PreprocIfdef:
+            case SyntaxNodeKind::PreprocElse:
+            case SyntaxNodeKind::PreprocElif:
+                return true;
+            default:
+                return false;
+        }
+    }
+
+    static bool ClosesStatementPositionMacroCallItem(const PrintToken& token) {
+        if (
+            token.kind != PrintTokenKind::Known ||
+            token.syntaxKind != SyntaxNodeKind::RightParen ||
+            token.node == nullptr
+        ) {
+            return false;
+        }
+        const SyntaxNode* arguments = token.node->parent;
+        if (arguments == nullptr || arguments->kind != SyntaxNodeKind::ArgumentList) {
+            return false;
+        }
+        const SyntaxNode* macroCall = arguments->parent;
+        if (macroCall == nullptr || macroCall->kind != SyntaxNodeKind::MacroCallItem) {
+            return false;
+        }
+        const SyntaxNode* macroCallParent = macroCall->parent;
+        return macroCallParent != nullptr && IsStatementItemContainer(macroCallParent->kind);
+    }
+
     static bool StartsPreprocessorSplitList(const PrintToken& token) {
         return token.kind == PrintTokenKind::Preprocessor &&
             SyntaxNodeKindHasClass(token.syntaxKind, SyntaxNodeClass::ConditionalPreprocessorOpen);
@@ -2749,6 +2786,13 @@ private:
                 if (parenDepth_ > 0) {
                     --parenDepth_;
                 }
+                if (ClosesStatementPositionMacroCallItem(token) && !(
+                    rawNext != nullptr && rawNext->kind == PrintTokenKind::TrailingComment
+                )) {
+                    FlushPendingTokens();
+                    NewLine(ShouldContinueMacroLine(token, next));
+                    return;
+                }
                 if (token.parentKind == SyntaxNodeKind::RequiresClause && token.inTemplateDeclaration) {
                     FlushPendingTokens();
                     NewLine(ShouldContinueMacroLine(token, next));
@@ -2994,6 +3038,9 @@ private:
         }
         const BraceRole role = braceStack_.empty() ? tokenRole : braceStack_.back().role;
         FlushPendingTokens();
+        // A non-compact closing brace is positioned by its brace frame, never by a pending
+        // declaration or list-item indent left by the preceding construct.
+        pendingIndentLevel_.reset();
         std::optional<int> restoreIndent;
         std::optional<int> closeIndent;
         if (!braceStack_.empty()) {

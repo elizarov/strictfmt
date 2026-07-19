@@ -6,13 +6,24 @@ The custom scanner owns the lexical distinction between directive-ending line br
 
 ## Supported Conditional Compilation and Local Includes
 
-- **Whole source items**: conditionals may select complete declarations, statements, switch `case` or `default` labels, field or method declarations, enum entries, macro definitions, includes, and other complete grammar items at the surrounding level.
-- **Comma-separated list items**: conditionals may select complete function arguments, braced initializer items, subscript items, declaration parameters, template arguments, template parameters, and enum entries.
-- **Declaration-prefix modifiers**: conditionals may select standalone modifiers or attributes that precede a declaration.
+This is the closed list of placements that are explicitly supported.
+
+- **Whole source items**: conditionals may select complete sibling items that already parse at the surrounding level: declarations, namespace definitions, local declarations, field or method declarations, complete statements, switch `case` or `default` labels, macro definitions, configured semicolonless macro-call items, and local includes. `#else` and `#elif` branches are supported when every branch contributes complete items for the same surrounding container.
+- **Guarded anonymous namespace opener**: an `#if` may contain `namespace {` and all namespace items, with `#endif` immediately before the namespace's closing `}`. `#ifdef`, `#ifndef`, inline or named namespaces, namespace attributes, and branch alternatives are unsupported for this cross-directive grouping shape.
+- **Comma-separated list items**: conditionals may select complete function arguments, braced initializer items, constructor field-initializer items, subscript items, declaration parameters, template arguments, template parameters, and enum entries. A selected list item may own its trailing comma; conditional enum entries must own it. In constructor field-initializer and template-parameter lists, a selected item may also own the leading separator comma when it follows existing items. Other list positions do not support a branch-owned leading comma. Declaration and template parameters support `#if`, `#ifdef`, or `#ifndef` without branch alternatives. Subscript items support `#if` with an optional `#else`. Arguments, initializer items, ordinary constructor field-initializers, and enum entries support `#if`, `#ifdef`, or `#ifndef` with an optional `#else`; a branch-owned leading constructor comma is supported only by `#if` without an alternative.
+- **Declaration-prefix modifiers**: conditionals may select standalone declaration modifiers before a declaration: `const`, `constexpr`, `consteval`, `static`, `extern`, `inline`, `__inline`, `__inline__`, `__forceinline`, one macro-shaped modifier line, or standalone attributes.
+- **Declaration-suffix modifiers**: `#ifdef` or `#ifndef` blocks may select standalone identifiers, configured bare macros used as function-suffix modifiers, or attributes after a complete declaration declarator list and before the terminating semicolon.
+- **Selected common-body macro-function starts**: an `#if` with an optional `#else` may select complete configured macro-function or test prefixes when the shared body continues after the `#endif`. Each branch must consist only of the macro invocation and opening `{`. `#ifdef`, `#elif`, branch-local body-prefix statements, ordinary function or constructor starts, and branch-local sibling items before the selected macro-function start are unsupported.
 - **Conditional right-hand sides after `=`**: conditionals may select branch bodies for variable declarations, assignment statements, alias declarations, and concept definitions. Each branch body must supply its own terminating semicolon.
+- **Selected `if` statements**: a single `#if`, `#ifdef`, or `#ifndef` block with an optional `#else` branch may select complete unbraced `if` headers when the following statement starts after the `#endif`.
+- **Conditional `else if` branches**: conditionals may select complete `else if` branches inside an `if`/`else if` chain.
+- **Guarded `extern "C"` group delimiters**: `#if`, `#ifdef`, or `#ifndef` blocks may guard an `extern "C" {` opener or its matching closing brace as file-scope grouping items.
+- **Concatenated string fragments**: conditionals may select complete adjacent string-literal fragments inside a concatenated string literal, including fragments interleaved with identifier-like string macros.
 - **Local includes**: local `#include` directives may stand where the parser accepts them as complete items.
 
-All other places (e.g. patching parts of expressions or arbitrary pieces of declarations) is not supported and may result in parsing errors or produce and misformatted output if the parser manages to recover without errors.
+All other places are not supported and may result in parsing errors or produce misformatted output if the parser manages to recover without errors.
+
+Specialized contextual placements do not support `#elifdef` or `#elifndef` alternatives. The generic whole-item preprocessor grammar retains those directives.
 
 ## Formatting rules
 

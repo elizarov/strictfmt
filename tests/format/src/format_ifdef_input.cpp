@@ -2,12 +2,11 @@
 #define FORMAT_IFDEF_FIXTURE_HPP
 
 // Golden fixture for allowed conditional preprocessor formatting.
-// This project forbids ifdefs, and these examples come only from userver, so the fixture
-// is named format_ifdef_* rather than format_userver_ifdef_*. Keep future userver examples
-// that patch whole declarations, statements, fields, methods, macros, includes, or
-// comma-separated list items here. Conditional right-hand sides after equals signs are
-// accepted when each branch ends with a semicolon. Keep other conditional fragments inside
-// expressions, statement headers, or declaration suffixes in format_error_input.cpp.
+// This project forbids ifdefs, and these examples come from external projects, so the fixture
+// is named format_ifdef_* rather than for one project. Keep future external-project examples
+// that patch whole declarations, statements, fields, methods, macros, includes,
+// comma-separated list items, or another supported placement listed in preprocessor.md
+// here. Keep unsupported conditional fragments in format_unsupported_input.cpp.
 
 #include <userver/utils/assert.hpp>
 #include <algorithm>
@@ -62,6 +61,14 @@
 
 namespace format_userver_fixture {
 
+#if FORMAT_USERVER_GUARDED_NAMESPACE_MACRO
+GTEST_DISABLE_MSC_WARNINGS_PUSH_(4800)
+#elif FORMAT_USERVER_GUARDED_REPEATER_MACRO
+GTEST_REPEATER_METHOD_(OnTestProgramStart, UnitTest)
+#else
+GTEST_REVERSE_REPEATER_METHOD_(OnTestProgramEnd, UnitTest)
+#endif
+
 #if FORMAT_USERVER_LEGACY_FMT
 template <typename S>
 const S& LegacyRuntime(const S& s) {
@@ -81,6 +88,12 @@ x &= ~SOCK_CLOEXEC;
 #endif
 #include "format_userver_statement.inc"
 UseAfterInclude();
+}
+
+void ConditionalBlockMacroCalls() {
+#ifdef FORMAT_USERVER_GUARDED_BLOCK_MACROS
+RET_NAME(kNull)
+#endif
 }
 
 void ConditionalLocalDeclaration() {
@@ -115,6 +128,34 @@ typename Allocator,
 #endif
 typename Result>
 struct ConditionalTemplateParameters {};
+
+template <
+typename Value
+#ifdef FORMAT_USERVER_EXTRA_LEADING_TEMPLATE_PARAMETER
+,
+typename std::enable_if<!HasStringify<Value>::value,
+int>::type = 0
+#endif
+>
+struct ConditionalLeadingTemplateParameter {};
+
+struct ConditionalLeadingFieldInitializers {
+ConditionalLeadingFieldInitializers()
+: size(0),
+sp(0)
+#if defined(FORMAT_USERVER_USE_SEGMENTED_STACKS)
+, segments_ctx()
+#endif
+#if defined(FORMAT_USERVER_USE_VALGRIND)
+, valgrind_stack_id(0)
+#endif
+{}
+
+int size;
+int sp;
+int segments_ctx;
+int valgrind_stack_id;
+};
 
 using ConditionalTemplateArgumentChoice = boost::intrusive::link_mode<
 #ifdef FORMAT_USERVER_NORMAL_LINK
@@ -216,6 +257,12 @@ void Value();
 #endif
 #ifndef FORMAT_USERVER_DISABLE_METHOD
 void Method();
+#endif
+};
+
+struct ConditionalMacroMembers {
+#if FORMAT_USERVER_GUARDED_CLASS_MACRO
+RAPIDJSON_STRING_(Null, 'n', 'u', 'l', 'l')
 #endif
 };
 

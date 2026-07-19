@@ -33,7 +33,7 @@
 
 ## Build Ownership
 
-- `strictfmt_tree_sitter_runtime` owns the vendored static tree-sitter runtime when `STRICTFMT_USE_SYSTEM_TREE_SITTER` is disabled.
+- `strictfmt_tree_sitter_runtime` owns the vendored static tree-sitter runtime, subject to the upstream-runtime constraint below.
 - `strictfmt_tree_sitter_cpp_grammar` owns the vendored generated C++ grammar and custom scanner; see [scanner.md](scanner.md).
 - `strictfmt_util` owns utility modules shared by CLI and formatter code.
 - `strictfmt_core` owns the formatter core pipeline from source text through formatted source.
@@ -41,3 +41,15 @@
 - `strictfmt` owns the standalone executable when `STRICTFMT_BUILD_STANDALONE` is enabled.
 - `strictfmt_tests` owns the custom test runner target backed by `tests/format/format_test.py` when Python is available.
 - `StrictfmtFormatTests` owns the CTest entry for the formatter test suite when Python is available.
+
+## Upstream Tree-Sitter Runtime
+
+Using an unmodified upstream tree-sitter C runtime is a hard architectural constraint. The runtime source, public and parser-facing APIs, ABI, parse-table representation, and table readers vendored under `vendor/tree-sitter/tree-sitter/` must match the pinned upstream release; strictfmt-specific patches to them are not permitted. Parser customization belongs in the C++ grammar, the custom external scanner, or strictfmt's parser/model integration.
+
+The generated C++ parser must fit every limit imposed by the pinned upstream generator and runtime. In particular, parser state ids and parse-action indexes must remain representable by the upstream 16-bit table ABI and therefore must not exceed 65,535. A grammar change that exceeds an upstream limit must be reduced, redesigned, or rejected. Widening runtime or generated-table types, post-processing generated files to change their ABI, or maintaining a private runtime fork is not an acceptable solution.
+
+## Parser Genericity
+
+Grammar must model C++ constructs generically, following the shape of the C++ language rather than the source samples. Every piece of the grammar must work and parse in a recursive way. A grammar rule must not encode a shallow convenience shape that only works for the current nesting level or current fixture; if adding one more nesting level would require another special case, the rule is not generic enough. If a construct can appear where another C++ construct can appear, the grammar must compose through the same recursive nonterminal.
+
+Project-specific tokens are used only for intentionally non-C++ macro fragments or scanner-owned lexical features documented in [scanner.md](scanner.md) and are taken from configuration, not hard-coded. Otherwise, structured grammar productions compose with existing C++ declarators, type names, expressions, and statements.

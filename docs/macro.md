@@ -7,7 +7,7 @@ This document specifies the macro configuration and macro formatting for `strict
 Definition-side macro categories and use-side macro categories are independent:
 
 - `RawMacroDefinitions` affects only how a `#define` replacement is parsed and printed. 
-- `BareIdentifierMacros` and `CallSyntaxMacros` affect only how macro identifiers are parsed when they are used elsewhere in source.
+- `BareIdentifierMacros`, `DeclarationPrefixMacros`, `CallSyntaxMacros`, `StatementArgumentMacros`, and `TypeSpecifierMacros` affect only how macro identifiers are parsed when they are used elsewhere in source.
 
 ## Macro Replacements
 
@@ -45,9 +45,20 @@ public:                                                                         
 #define USERVER_IMPL_FORCE_INLINE [[gnu::always_inline]] inline
 ```
 
+### DeclarationPrefixMacros
+
+`DeclarationPrefixMacros` names macro identifiers that prefix a declaration, definition, class-field declaration, or declaration-like macro call as attribute, inline, export, or sanitizer-control tokens. A declaration-prefix modifier may be followed by a macro argument list when the macro spelling is function-like but the use-site role is still a modifier rather than a standalone macro call.
+
+```cpp
+ATTRIBUTE_NO_SANITIZE_UNDEFINED std::size_t AttributePrefixedFunction(const BoundsBlock& block, float value) noexcept;
+
+GTEST_INTERNAL_DEPRECATE_AND_INLINE("Use NewApi() instead")
+int OldApi();
+```
+
 ### BareIdentifierMacros
 
-`BareIdentifierMacros` names macro identifiers that the grammar consumes on the use side as bare tokens in non-call positions or as assertion-style statement-call names. This category owns calling-convention modifiers, declaration-prefix modifiers, complete declaration-level items, qualified-identifier prefixes, top-level call-statement suffix macros, declaration suffix macros, initializer macros, and statement-call macros whose argument is parsed as a statement without its trailing semicolon.
+`BareIdentifierMacros` names macro identifiers that the grammar consumes on the use side as bare tokens in non-call positions. This category owns calling-convention and post-type declarator annotations, complete declaration-level items, qualified-identifier prefixes, top-level call-statement suffix macros, declaration suffix macros, initializer macros, parameter-list items, and template-argument fragments.
 
 **Calling-convention modifier:** the macro appears in a declarator where a platform calling-convention token is expected.
 
@@ -55,10 +66,12 @@ public:                                                                         
 typedef PDH_STATUS (WINAPI* PdhAddEnglishCounterAFn)(PDH_HQUERY, LPCSTR, DWORD_PTR, PDH_HCOUNTER*);
 ```
 
-**Declaration-prefix modifier:** the macro appears before a declaration as an attribute, inline, or sanitizer-control token.
+Post-type declarator annotation: the macro appears after the declared type and before the normal declarator or abstract type suffix.
 
 ```cpp
-ATTRIBUTE_NO_SANITIZE_UNDEFINED std::size_t AttributePrefixedFunction(const BoundsBlock& block, float value) noexcept;
+static const unsigned char ALIGN(16) lookup_table[];
+
+auto value = static_cast<Functor USERVER_MOVE_ONLY_FUNCTION_INVOKE_QUALS>(*slot);
 ```
 
 **Complete declaration-level item:** the macro stands as a full top-level declaration item, such as namespace wrappers.
@@ -84,17 +97,35 @@ Function suffix macro: the macro appears after a function declarator where an at
 Data& operator*() & FORMAT_USERVER_LIFETIME_BOUND {
     return data_;
 }
+
+void Verify() GTEST_LOCK_EXCLUDED_(mutex);
 ```
 
-Statement-call macro: the macro parses its first argument as a declaration or expression statement.
+Parameter-list item: the macro appears as a complete parameter-list item, usually to inject an implementation-specific SFINAE or attribute parameter.
 
 ```cpp
-UEXPECT_THROW([[maybe_unused]] auto bytes_read = source.ReadSome(kBuffer, kDeadline), IoTimeout);
+explicit Value(T value, ENABLE_IF((std::is_integral_v<T>))) noexcept;
+```
+
+Template-argument fragment: the macro expands to one or more template arguments and any separators needed before the next visible argument.
+
+```cpp
+FlatTuple<GTEST_FLAT_TUPLE_INT256 int> tuple;
 ```
 
 ### CallSyntaxMacros
 
-`CallSyntaxMacros` names macro identifiers whose supported use-side grammar roles start with a macro-style call. This category owns macro function definitions, macro function definitions with trailing C++ parameter lists, top-level macro call statements with optional chained `->` tails, simple name macro calls, class-field method declaration macros, and type-specifier macro calls.
+`CallSyntaxMacros` names macro identifiers whose supported use-side grammar roles start with a macro-style call but are not ordinary C++ expression calls in that placement. This category owns macro function definitions, macro function definitions with trailing C++ parameter lists, namespace-scope declaration items written as macro calls with optional configured bare-macro suffixes or chained `->` tails, declaration-prefixed macro calls, parameter-list items, and class-field method declaration macros.
+
+Do not add a macro to `CallSyntaxMacros` merely because its spelling is uppercase or function-like. A macro invocation that looks like a plain function call and appears where a normal C++ function call expression is syntactically valid needs no special macro configuration. The regular C++ expression grammar handles those calls, including normal argument expressions, larger expressions that contain the call, and ordinary expression operators after the call.
+
+Use `CallSyntaxMacros` when the invocation appears in an expression-like position but its argument list is not a C++ argument list, for example because it contains type fragments.
+
+```cpp
+if (CHECK_ASSIGNABLE(T, T&&, value = std::move(other))) {
+    return true;
+}
+```
 
 Macro function definition: the macro call header is followed by a compound statement body.
 
@@ -112,16 +143,16 @@ BENCHMARK_DEFINE_F(FormatterBenchmark, Inline)(benchmark::State& state) {
 }
 ```
 
-Top-level macro call statement: the whole call, optional configured bare-macro suffix, and optional `->` chain are formatted as one statement. 
+Namespace-scope macro call statement: the whole call, optional configured bare-macro suffix, and optional `->` chain are formatted as one declaration item.
 
 ```cpp
 BENCHMARK_TEMPLATE(RecentPeriodOfPercentilesAccountBenchmark, DefaultClock)->ThreadRange(1, 16);
 ```
 
-Simple name macro call: the call has a single identifier argument and is treated as one standalone macro item.
+Declaration-prefixed macro call: declaration modifiers may precede a configured call-syntax macro when the macro itself supplies the declaration body.
 
 ```cpp
-RET_NAME(kNullValue)
+static DEFINE_MUTEX(global_mutex);
 ```
 
 Class member declaration macro: the macro call expands to a method declaration inside class scope.
@@ -130,8 +161,22 @@ Class member declaration macro: the macro call expands to a method declaration i
 MOCK_METHOD(void, SetValue, (std::string_view, std::string&&), (override));
 ```
 
-Type-specifier macro call: the macro call appears where a type specifier is expected.
+### TypeSpecifierMacros
+
+`TypeSpecifierMacros` names function-like macro identifiers that produce a C++ type specifier at the use site.
 
 ```cpp
-using CertStack = STACK_OF(X509);
+typedef GTEST_REMOVE_REFERENCE_AND_CONST_(Container) RawContainer;
+```
+
+### StatementArgumentMacros
+
+`StatementArgumentMacros` names macro identifiers whose call syntax parses the first argument as a declaration, block, or statement sequence without requiring that argument to be a C++ expression. Remaining arguments are parsed as ordinary macro arguments.
+
+Macros that look like plain function calls and whose arguments are all normal expressions do not belong here. Use this category for assertion-style macros where the documented argument is a statement, such as throw, no-throw, death, or fatal-failure assertions.
+
+```cpp
+UEXPECT_THROW([[maybe_unused]] auto bytes_read = source.ReadSome(kBuffer, kDeadline), IoTimeout);
+
+EXPECT_DEATH({ RunChildProcess(); }, "signal");
 ```

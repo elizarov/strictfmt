@@ -38,6 +38,7 @@ Detailed user-level docs:
 - [docs/command_line.md](docs/command_line.md) specifies the `strictfmt` executable command line.
 - [docs/preprocessor.md](docs/preprocessor.md) describes handling of preprocessor directives and conditional compilation.
 - [docs/syntax_ambiguities.md](docs/syntax_ambiguities.md) explains treatment of C++ syntax ambiguities. 
+- [docs/known_issues.md](docs/known_issues.md) tracks known limitations and planned work.
 
 Development docs:
 

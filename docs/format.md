@@ -44,7 +44,7 @@ This document specifies the source layout produced by `strictfmt`.
 - Drop blank lines at the beginning of a block and immediately before a closing brace.
 - Insert required structural blank lines only when they separate neighboring source items.
 - Put one empty line after `#pragma once` when another source item follows. Put one empty line before and after each `#undef` when it separates `#undef` from a neighboring source item.
-- Remove trailing commas except in enum bodies.
+- Remove trailing commas except in enum bodies. When the final item is selected by a conditional preprocessor branch, remove the branch-owned terminal comma from every final branch as part of the same normalization.
 - Structured macro definitions use formatter-owned replacement whitespace and continuation lines. Raw macro definitions configured with `RawMacroDefinitions` intentionally preserve raw replacement line structure as specified in [macro.md](macro.md).
 
 ## Mandatory Line Breaks
@@ -161,6 +161,8 @@ call(
 ```
 
 The rule applies to function arguments, template arguments, braced initializer lists, subscript lists, declaration parameter lists, base-class lists, enum bodies, and similar comma-separated syntax.
+
+Parenthesized comma expressions that represent list-like syntax, such as macro signature arguments, use the same single compact-or-split list decision.
 
 Compact comma-separated lists may keep leading items on the opener line while the final item uses an indent-economy delimiter expansion. The final item may be any expression, such as a braced initializer or call. If any earlier item splits, or if the final item only splits at an operator, the whole list uses split form.
 
@@ -609,6 +611,7 @@ Outside the listed changes, the formatter changes only spaces and line breaks.
 
 - [config.md](config.md) specifies formatter configuration and ignore files.
 - [glossary.md](glossary.md) defines shared terminology.
+- [known_issues.md](known_issues.md) tracks known limitations and planned work.
 - [macro.md](macro.md) specifies macro configuration and macro formatting.
 - [preprocessor.md](preprocessor.md) describes handling of preprocessor directives and conditional compilation.
 - [syntax_ambiguities.md](syntax_ambiguities.md) specifies the treatment of C++ syntax ambiguities.

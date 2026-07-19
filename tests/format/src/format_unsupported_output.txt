@@ -1,14 +1,9 @@
 <stdin>: warning at 12:1: unsupported placement of conditional compilation
 <stdin>: warning at 21:1: unsupported placement of conditional compilation
-<stdin>: warning at 30:1: unsupported placement of conditional compilation
 <stdin>: warning at 37:1: unsupported placement of conditional compilation
 <stdin>: warning at 48:1: unsupported placement of conditional compilation
-<stdin>: warning at 59:1: unsupported placement of conditional compilation
 <stdin>: warning at 69:1: unsupported placement of conditional compilation
 <stdin>: warning at 82:1: unsupported placement of conditional compilation
 <stdin>: warning at 95:1: unsupported placement of conditional compilation
 <stdin>: warning at 98:1: unsupported placement of conditional compilation
 <stdin>: warning at 106:1: unsupported placement of conditional compilation
-<stdin>: warning at 117:1: unsupported placement of conditional compilation
-<stdin>: warning at 126:1: unsupported placement of conditional compilation
-<stdin>: warning at 136:1: unsupported placement of conditional compilation

@@ -10,10 +10,6 @@ find_package(Python3 COMPONENTS Interpreter)
 enable_testing()
 
 option(STRICTFMT_BUILD_STANDALONE "Build the standalone strictfmt executable." ON)
-option(STRICTFMT_USE_SYSTEM_TREE_SITTER
-    "Use an installed tree-sitter runtime instead of the vendored static runtime."
-    OFF
-)
 set(STRICTFMT_FORMAT_TEST_EXE "" CACHE STRING
     "Executable used by strictfmt format tests. Defaults to the standalone strictfmt target."
 )
@@ -24,33 +20,12 @@ set(STRICTFMT_TEST_TEMP_ROOT "${CMAKE_BINARY_DIR}/strictfmt-tests" CACHE PATH
     "Directory used by strictfmt format tests for temporary files."
 )
 
-if(STRICTFMT_USE_SYSTEM_TREE_SITTER)
-    find_package(unofficial-tree-sitter CONFIG QUIET)
-    if(TARGET unofficial::tree-sitter::tree-sitter)
-        set(strictfmt_tree_sitter_target unofficial::tree-sitter::tree-sitter)
-    endif()
-    find_package(PkgConfig QUIET)
-    if(NOT strictfmt_tree_sitter_target AND PkgConfig_FOUND)
-        pkg_check_modules(TREE_SITTER QUIET IMPORTED_TARGET tree-sitter)
-    endif()
-    if(TARGET PkgConfig::TREE_SITTER AND NOT strictfmt_tree_sitter_target)
-        set(strictfmt_tree_sitter_target PkgConfig::TREE_SITTER)
-    endif()
-    if(NOT strictfmt_tree_sitter_target)
-        message(FATAL_ERROR
-            "STRICTFMT_USE_SYSTEM_TREE_SITTER=ON requires unofficial-tree-sitter "
-            "or pkg-config package tree-sitter."
-        )
-    endif()
-else()
-    add_library(strictfmt_tree_sitter_runtime STATIC
-        vendor/tree-sitter/tree-sitter/lib/src/lib.c
-    )
-    target_include_directories(strictfmt_tree_sitter_runtime PUBLIC
-        "${CMAKE_CURRENT_SOURCE_DIR}/vendor/tree-sitter/tree-sitter/lib/include"
-    )
-    set(strictfmt_tree_sitter_target strictfmt_tree_sitter_runtime)
-endif()
+add_library(strictfmt_tree_sitter_runtime STATIC
+    vendor/tree-sitter/tree-sitter/lib/src/lib.c
+)
+target_include_directories(strictfmt_tree_sitter_runtime PUBLIC
+    "${CMAKE_CURRENT_SOURCE_DIR}/vendor/tree-sitter/tree-sitter/lib/include"
+)
 
 function(strictfmt_apply_common_options target)
     target_compile_definitions(${target} PUBLIC
@@ -95,7 +70,7 @@ target_include_directories(strictfmt_tree_sitter_cpp_grammar
         "${CMAKE_CURRENT_SOURCE_DIR}/vendor/tree-sitter/tree-sitter-cpp/include"
 )
 target_link_libraries(strictfmt_tree_sitter_cpp_grammar PUBLIC
-    ${strictfmt_tree_sitter_target}
+    strictfmt_tree_sitter_runtime
 )
 if(MSVC)
     target_compile_options(strictfmt_tree_sitter_cpp_grammar PRIVATE /w)
@@ -122,7 +97,7 @@ target_include_directories(strictfmt_core PUBLIC
 target_link_libraries(strictfmt_core PUBLIC
     strictfmt_util
     strictfmt_tree_sitter_cpp_grammar
-    ${strictfmt_tree_sitter_target}
+    strictfmt_tree_sitter_runtime
 )
 strictfmt_apply_common_options(strictfmt_core)
 

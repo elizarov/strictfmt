@@ -19,7 +19,7 @@ The scanner uses four inputs:
 - Small scanner payload state for raw string delimiters.
 - Formatter macro category configuration, exposed through `strictfmt_tree_sitter_cpp_macro_category_matches`.
 
-`src/format/impl/format_model_parse.cpp` owns the callback bridge from parser to formatter configuration. `ParseFormatModel` installs a thread-local `FormatterConfig` for the parse, and the scanner calls back into that config when it needs to know whether an identifier belongs to `RawMacroDefinitions`, `BareIdentifierMacros`, or `CallSyntaxMacros`.
+`src/format/impl/format_model_parse.cpp` owns the callback bridge from parser to formatter configuration. `ParseFormatModel` installs a thread-local `FormatterConfig` for the parse, and the scanner calls back into that config when it needs to know whether an identifier belongs to `RawMacroDefinitions`, `BareIdentifierMacros`, `DeclarationPrefixMacros`, `CallSyntaxMacros`, `StatementArgumentMacros`, or `TypeSpecifierMacros`.
 
 The scanner checks higher-risk stateful tokens before it skips scanner-local whitespace. In particular, preprocessor directive endings must be recognized before any whitespace skipping, otherwise a bare newline that should end a directive can disappear as ordinary whitespace.
 
@@ -36,18 +36,18 @@ A generated token rule cannot express "remember this delimiter and later stop on
 The scanner owns these identifier tokens:
 
 - `raw_macro_definition_identifier`
+- `raw_macro_replacement`
 - `bare_macro_identifier`
+- `declaration_prefix_macro_identifier`
 - `call_syntax_macro_identifier`
+- `statement_argument_macro_identifier`
+- `type_specifier_macro_identifier`
 
 The scanner reads a normal C/C++ identifier and then asks the formatter configuration whether the identifier belongs to the relevant macro category. This keeps macro categories runtime-configurable while the generated parser stays static.
 
+`raw_macro_replacement` captures the rest of a configured raw macro definition once the grammar has accepted the raw macro name and parameters. This is scanner-owned so the raw macro path can preserve a continuation backslash that appears immediately after the macro name or parameter list, before ordinary structured-macro continuation whitespace can consume it.
+
 The scanner classifies identifiers by configured macro category. [macro.md](macro.md) specifies the categories and their supported grammar uses.
-
-### Conditional Macro Function Headers
-
-`conditional_macro_function_header` recognizes the supported conditional macro-function header shape where preprocessor branches select complete call-syntax macro headers before one shared function body. The scanner can consume the guarded header as one external token while still using configured `CallSyntaxMacros` to validate the branch headers.
-
-This token is intentionally narrow. General conditional compilation structure is still represented by grammar productions and formatted according to [preprocessor.md](preprocessor.md).
 
 ### Preprocessor Directive Newlines
 
@@ -58,7 +58,7 @@ This token is intentionally narrow. General conditional compilation structure is
 
 Backslash-newline remains ordinary grammar `extras` whitespace. That is what makes structured macro continuation placement inert: inside a structured macro replacement, a continuation backslash does not create a syntax node, and the replacement ends only at the first bare preprocessor directive newline.
 
-Raw macro replacements are the exception. They are scanned as raw replacement text by grammar token rules and then printed by the raw macro formatter, preserving the original physical continuation-line structure as specified in [macro.md](macro.md).
+Raw macro replacements are the exception. They are scanned as raw replacement text and then printed by the raw macro formatter, preserving the original physical continuation-line structure as specified in [macro.md](macro.md).
 
 ## Why Not Only the Generated Scanner?
 
@@ -67,7 +67,6 @@ The tree-sitter generated lexer is excellent for static token rules, but these s
 - Macro categories depend on the active `.cpp-format` configuration, so identifier classification requires a runtime callback.
 - Raw string parsing needs scanner payload state shared between delimiter and content tokens.
 - Preprocessor line breaks must be hidden whitespace in normal code but visible directive-ending tokens in specific parser states.
-- Conditional macro-function headers combine preprocessor line scanning with runtime-configured call-syntax macro identifiers.
 
 Encoding those cases as generated grammar tokens would either lose runtime configurability, duplicate scanner-like state in grammar productions, or force layout artifacts such as macro continuation gaps into the syntax tree. `strictfmt` avoids that. The scanner owns lexical facts; the pretty printer owns structured macro whitespace and continuation placement.
 

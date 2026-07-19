@@ -64,3 +64,28 @@ return (a < b) > (c);  // expression
 ```
 
 Without those parentheses, `a < b > (c)` is parsed as the template call `a<b>(c)`.
+
+## Conditional List Item Ambiguity
+
+A conditional block inside a comma-separated list can contain either complete list items or an incomplete expression prefix that continues after `#endif`. Complete items use the structured conditional-list grammar. The recovery fallback for an incomplete argument expression is limited to branch code lines whose last significant token is a continuation operator, so it cannot shadow a formatted complete list item merely because that item is indented.
+
+```cpp
+Use(
+#if ENABLE_FAST
+    FastValue()
+#else
+    SlowValue()
+#endif
+);
+```
+
+An operator-terminated branch remains an unsupported expression fragment and may parse through the fallback:
+
+```cpp
+Use(
+#if ENABLE_EXTRA
+    kExtra |
+#endif
+    kBase
+);
+```

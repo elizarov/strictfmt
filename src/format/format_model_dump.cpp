@@ -148,18 +148,19 @@ int DumpFormatModelText(
     std::string_view commandName
 ) {
     FormatModel model = ParseFormatModel(sourceText, config);
-    if (!model.parse.ok) {
-        const std::string error = model.parse.error.empty() ? std::string("parser setup failed") : model.parse.error;
-        std::fprintf(
-            errorOutput,
-            "%.*s: parse failed: %s\n",
-            static_cast<int>(commandName.size()),
-            commandName.data(),
-            error.c_str()
-        );
-        return 1;
-    }
     if (model.root == nullptr) {
+        if (!model.parse.ok) {
+            const std::string error =
+                model.parse.error.empty() ? std::string("parser setup failed") : model.parse.error;
+            std::fprintf(
+                errorOutput,
+                "%.*s: parse failed: %s\n",
+                static_cast<int>(commandName.size()),
+                commandName.data(),
+                error.c_str()
+            );
+            return 1;
+        }
         std::fprintf(
             errorOutput,
             "%.*s: parse produced no root node\n",
@@ -170,7 +171,18 @@ int DumpFormatModelText(
     }
 
     WriteNode(output, *model.root, 0, false);
-    return 0;
+    if (model.parse.ok) {
+        return 0;
+    }
+    const std::string error = model.parse.error.empty() ? std::string("parser setup failed") : model.parse.error;
+    std::fprintf(
+        errorOutput,
+        "%.*s: parse failed: %s\n",
+        static_cast<int>(commandName.size()),
+        commandName.data(),
+        error.c_str()
+    );
+    return 1;
 }
 
 int RunFormatModelDump(int argc, char** argv) {
