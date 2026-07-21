@@ -31,4 +31,4 @@ To regenerate generated grammar outputs after changing `grammar.js`, run:
 python3 tools/regenerate_tree_sitter_grammar.py
 ```
 
-The regeneration tool downloads the pinned host tree-sitter CLI under `build/` when no `--tree-sitter-cli` path is provided.
+The regeneration tool downloads the pinned host tree-sitter CLI under `build/` when no `--tree-sitter-cli` path is provided. After the stock generator finishes, it compacts only the C spelling of the monolithic parse tables: symbolic enum references and identity `STATE`/`ACTIONS` wrappers become their numeric values, and table indentation is removed. The numeric tables, structures, dimensions, ABI, generated parser header, and upstream runtime remain unchanged. Regeneration fails if the compacted `parser.c` exceeds 50,000,000 bytes. Measurements and rejected alternatives are recorded in [docs/grammar_research.md](../../docs/grammar_research.md#generated-parser-source-size).
