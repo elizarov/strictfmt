@@ -8,6 +8,7 @@ import gzip
 import hashlib
 import os
 import platform
+import re
 import shutil
 import subprocess
 import sys
@@ -18,6 +19,15 @@ from pathlib import Path
 
 TREE_SITTER_CLI_VERSION = "0.24.7"
 TREE_SITTER_RELEASE_URL = f"https://github.com/tree-sitter/tree-sitter/releases/download/v{TREE_SITTER_CLI_VERSION}"
+MAX_GENERATED_PARSER_BYTES = 50_000_000
+
+SYMBOL_ENUM_RE = re.compile(r"enum ts_symbol_identifiers \{(?P<body>.*?)\n\};", re.DOTALL)
+SYMBOL_VALUE_RE = re.compile(r"^\s*([A-Za-z_][A-Za-z0-9_]*)\s*=\s*([0-9]+),$", re.MULTILINE)
+SYMBOL_REFERENCE_RE = re.compile(
+    r"\b(?:(?:alias|anon|aux)_sym|sym)_[A-Za-z0-9_]+\b|\bts_builtin_sym_end\b"
+)
+IDENTITY_TABLE_ENTRY_RE = re.compile(r"\b(?:ACTIONS|STATE)\(([0-9]+)\)")
+LEADING_INDENT_RE = re.compile(r"^[ \t]+", re.MULTILINE)
 
 
 @dataclass(frozen=True)
@@ -153,6 +163,51 @@ def run_tree_sitter_generate(cpp_grammar_dir: Path, vendor_root: Path, tree_sitt
     subprocess.run([str(tree_sitter_cli), "generate"], cwd=cpp_grammar_dir, env=env, check=True)
 
 
+def compact_generated_parser(cpp_grammar_dir: Path) -> None:
+    parser_path = cpp_grammar_dir / "src" / "parser.c"
+    parser_header_path = cpp_grammar_dir / "src" / "tree_sitter" / "parser.h"
+    parser_header = parser_header_path.read_text(encoding="utf-8")
+    for macro in ("ACTIONS", "STATE"):
+        if f"#define {macro}(id) id" not in parser_header:
+            fail(f"Cannot compact parser table: {macro} is not an identity macro in {parser_header_path}")
+
+    generated = parser_path.read_text(encoding="utf-8")
+    symbol_enum = SYMBOL_ENUM_RE.search(generated)
+    if symbol_enum is None:
+        fail(f"Cannot compact parser table: symbol enum was not found in {parser_path}")
+
+    symbol_values = {"ts_builtin_sym_end": "0"}
+    symbol_values.update(dict(SYMBOL_VALUE_RE.findall(symbol_enum.group("body"))))
+
+    table_start = generated.find("static const uint16_t ts_parse_table")
+    table_end = generated.find("static const TSParseActionEntry ts_parse_actions[]")
+    if table_start < 0 or table_end < 0 or table_start >= table_end:
+        fail(f"Cannot compact parser table: generated table boundaries were not found in {parser_path}")
+
+    table = generated[table_start:table_end]
+
+    def replace_symbol(match: re.Match[str]) -> str:
+        symbol = match.group(0)
+        value = symbol_values.get(symbol)
+        if value is None:
+            fail(f"Cannot compact parser table: generated symbol has no numeric value: {symbol}")
+        return value
+
+    table = SYMBOL_REFERENCE_RE.sub(replace_symbol, table)
+    table = IDENTITY_TABLE_ENTRY_RE.sub(r"\1", table)
+    table = LEADING_INDENT_RE.sub("", table)
+    compacted = generated[:table_start] + table + generated[table_end:]
+    parser_path.write_bytes(compacted.encode("utf-8"))
+
+    parser_size = parser_path.stat().st_size
+    if parser_size > MAX_GENERATED_PARSER_BYTES:
+        fail(
+            f"Compacted generated parser is {parser_size:,} bytes; "
+            f"the limit is {MAX_GENERATED_PARSER_BYTES:,} bytes."
+        )
+    print(f"Compacted generated parser from {len(generated):,} to {parser_size:,} bytes", flush=True)
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument(
@@ -172,6 +227,7 @@ def main() -> int:
 
     tree_sitter_cli = ensure_tree_sitter_cli(repo_root, args.tree_sitter_cli)
     run_tree_sitter_generate(cpp_grammar_dir, vendor_root, tree_sitter_cli)
+    compact_generated_parser(cpp_grammar_dir)
     print(f"Regenerated tree-sitter C++ grammar outputs under {cpp_grammar_dir}")
     return 0
 
