@@ -353,7 +353,6 @@ module.exports = grammar(C, {
       $.preproc_value_declaration,
       $.preproc_disabled_block,
       $.block_macro_call_statement_item,
-      $.block_macro_call_line_item,
       $.declaration,
       $.statement,
       $.type_definition,
@@ -2217,6 +2216,7 @@ module.exports = grammar(C, {
     _non_case_statement: ($, original) => choice(
       $.bare_macro_statement,
       alias($.macro_statement_argument_expression_statement, $.expression_statement),
+      $.block_macro_call_line_item,
       $.macro_call_item,
       $.top_level_call_statement,
       $.throw_cast_statement,

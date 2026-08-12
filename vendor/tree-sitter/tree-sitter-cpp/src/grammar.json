@@ -316,10 +316,6 @@
         },
         {
           "type": "SYMBOL",
-          "name": "block_macro_call_line_item"
-        },
-        {
-          "type": "SYMBOL",
           "name": "declaration"
         },
         {
@@ -7054,6 +7050,10 @@
           },
           "named": true,
           "value": "expression_statement"
+        },
+        {
+          "type": "SYMBOL",
+          "name": "block_macro_call_line_item"
         },
         {
           "type": "SYMBOL",

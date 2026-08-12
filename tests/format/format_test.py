@@ -1208,6 +1208,49 @@ class FormatCommandTests(unittest.TestCase):
             result.stdout,
         )
 
+    def test_semicolonless_sentinel_is_statement_in_unbraced_switch_case(self) -> None:
+        source = (
+            "void WarningSentinelsAfterUnbracedSwitchCases(){\n"
+            "GTEST_DISABLE_MSC_WARNINGS_PUSH_(4065)\n"
+            "switch(0)\n"
+            "default:\n"
+            "UseDefault();\n"
+            "switch(0)\n"
+            "case 0:\n"
+            "UseCase();\n"
+            "GTEST_DISABLE_MSC_WARNINGS_POP_()\n"
+            "}\n"
+        )
+        expected = (
+            "void WarningSentinelsAfterUnbracedSwitchCases() {\n"
+            "    GTEST_DISABLE_MSC_WARNINGS_PUSH_(4065)\n"
+            "    switch (0) {\n"
+            "        default:\n"
+            "            UseDefault();\n"
+            "            switch (0) {\n"
+            "                case 0:\n"
+            "                    UseCase();\n"
+            "                    GTEST_DISABLE_MSC_WARNINGS_POP_()\n"
+            "            }\n"
+            "    }\n"
+            "}\n"
+        )
+
+        result = native_format("--stdin", input_text=source)
+
+        self.assertEqual(0, result.returncode, msg=f"stdout:\n{result.stdout}\n\nstderr:\n{result.stderr}")
+        self.assertEqual(expected, result.stdout)
+        self.assert_no_unsupported_placement_warnings(result)
+
+        second_result = native_format("--stdin", input_text=result.stdout)
+
+        self.assertEqual(
+            0,
+            second_result.returncode,
+            msg=f"stdout:\n{second_result.stdout}\n\nstderr:\n{second_result.stderr}",
+        )
+        self.assertEqual(expected, second_result.stdout)
+
     def test_lambda_argument_and_split_function_parameters_are_allowed(self) -> None:
         input_text = (
             "struct IncludeGroup { int priority; };\n"

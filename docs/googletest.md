@@ -2,7 +2,7 @@
 
 This document owns the compatibility notes for the pinned GoogleTest external project. The formatter configuration is in [`external/googletest/.cpp-format`](../external/googletest/.cpp-format), and the authoritative exclusion list is [`external/googletest/.cpp-format-ignore`](../external/googletest/.cpp-format-ignore).
 
-Each excluded file was parsed separately with the GoogleTest configuration. Candidate macro-category changes were retained only when they removed errors without introducing errors elsewhere in the GoogleTest corpus. Eleven former exclusions are now supported:
+Each excluded file was parsed separately with the GoogleTest configuration. Candidate macro-category changes were retained only when they removed errors without introducing errors elsewhere in the GoogleTest corpus. All twelve former exclusions are now supported:
 
 - `googletest/include/gtest/gtest-param-test.h`: `TEST_P`, `INSTANTIATE_TEST_SUITE_P`, and `INSTANTIATE_TEST_CASE_P` definitions intentionally contain generated identifier/declaration fragments, so their definitions are raw.
 - `googletest/test/googletest-printers-test.cc`: `EXPECT_PRINT_TO_STRING_` stringizes `value`, so its definition is raw.
@@ -15,18 +15,6 @@ Each excluded file was parsed separately with the GoogleTest configuration. Cand
 - `googletest/include/gtest/internal/gtest-internal.h`: `GTEST_BIND_` is configured only as a type-specifier macro, allowing its sole use to compose as the type in `typedef typename GTEST_BIND_(TestSel, Type) TestClass`.
 - `googlemock/src/gmock_main.cc`: an `#ifdef`/`#else` selects two ordinary function prefixes before a shared body, and the Windows branch owns a local include before its prefix. This is supported as an explicit conditional placement rather than through a project-specific macro rule.
 - `googletest/test/gtest_unittest.cc`: configured statement-argument calls now classify after same-line whitespace, including as unbraced control-flow bodies. `VERIFY_CODE_LOCATION` remains raw because its replacement mixes declarations and calls in a sequence that the structured replacement grammar does not compose.
+- `googletest/test/googletest-death-test-test.cc`: exact semicolonless diagnostic sentinels are valid statements inside `case` bodies, including as the final item after nested unbraced `switch` statements. The existing generated diagnostic-macro fallback owns the spelling; no macro-category entry is needed.
 
 The audit also classified the genuinely non-structural `MATCHER*`, `MY_MOCK_METHODS*`, and `LEGACY_MY_MOCK_METHODS*` definitions as raw. `GTEST_LOG_` was removed from `BareIdentifierMacros`: its uses are ordinary call expressions with stream tails, and bare classification broke its use inside a statement-argument macro.
-
-## Remaining exclusions
-
-### `googletest/test/googletest-death-test-test.cc`
-
-After correcting the `GTEST_LOG_` classification, the remaining failures are semicolonless diagnostic-pop calls used as the final item of a block. They reduce as ordinary call expressions and acquire a missing semicolon; adding the name to `CallSyntaxMacros` does not give it line-item ownership in this position.
-
-```cpp
-GTEST_DISABLE_MSC_WARNINGS_POP_()
-}
-```
-
-The same shape occurs in the conditional-death-macro switch test.
