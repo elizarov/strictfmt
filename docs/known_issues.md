@@ -10,6 +10,6 @@ Planned work: Support branch-owned leading separator commas whenever a condition
 
 ## Some GoogleTest source files are not supported
 
-Current behavior: The GoogleTest files listed in [.cpp-format-ignore](../external/googletest/.cpp-format-ignore) are excluded from recursive formatting and parsing coverage.
+Current behavior: The GoogleTest files listed in [.cpp-format-ignore](../external/googletest/.cpp-format-ignore) are excluded from recursive formatting and parsing coverage. [googletest.md](googletest.md) records the per-file audit, offending shapes, and configuration fixes already applied.
 
 Planned work: Support the remaining GoogleTest source files and remove their ignore entries.
