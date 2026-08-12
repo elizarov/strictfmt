@@ -10,7 +10,7 @@ Scanner tokens are acceptable only for lexical or line-aware classification that
 
 ## Generated Parser Source Size
 
-The generated C++ parser must remain one file no larger than 50,000,000 bytes while using the unmodified upstream tree-sitter runtime, parser ABI, and table readers. The accepted grammar at this checkpoint generates a 99,287,588-byte `parser.c` before source compaction, with 33,723 states, 14,438 large states, 806 symbols, 300 terminals, and 316 production IDs. All 50 tests pass at that baseline.
+The generated C++ parser must remain one file no larger than 50,000,000 bytes while using the unmodified upstream tree-sitter runtime, parser ABI, and table readers. The accepted grammar at this checkpoint generates a 99,227,802-byte `parser.c` before source compaction, with 33,698 states, 14,432 large states, 803 symbols, 300 terminals, and 316 production IDs. All 50 tests pass at that baseline.
 
 ### Stock-Table Source Compaction
 
@@ -18,7 +18,7 @@ Status: accepted.
 
 Shape: run the pinned unmodified tree-sitter CLI, then rewrite only redundant C spelling inside its monolithic parse-table declarations. Symbolic enum references become the same numeric enum values, `STATE(n)` and `ACTIONS(n)` become `n` after verifying that the pinned generated parser header defines both as identity macros, and leading table indentation is removed. The transformation does not split or re-encode a table, change a value or dimension, widen a type, modify a generated header, or require a runtime change. The regeneration tool rejects an output above the 50,000,000-byte limit.
 
-Result: `parser.c` decreases from 99,287,588 to 37,018,816 bytes. Its 33,723 states, 14,438 large states, 806 symbols, 300 terminals, and 316 production IDs are unchanged. The source compiles against the vendored stock runtime and all 50 tests pass, including golden parse/idempotence tests and the CaseDash, GoogleTest, and userver corpus sweeps.
+Result: `parser.c` decreases from 99,227,802 to 36,993,233 bytes. Its 33,698 states, 14,432 large states, 803 symbols, 300 terminals, and 316 production IDs are unchanged. The source compiles against the vendored stock runtime and all 50 tests pass, including golden parse/idempotence tests and the CaseDash, GoogleTest, and userver corpus sweeps.
 
 This is source compaction, not a private parse-table format. The runtime sees the same statically initialized arrays and the same `TSLanguage` structure that the stock generator emitted.
 
@@ -1273,6 +1273,14 @@ Rejected attempts:
 - Moving `macro_call_item` earlier in block and statement alternatives, removing the explicit `macro_call_item`/`expression_statement` conflict, and exposing `macro_call_item` through `bare_macro_statement` did not change the first-use state.
 
 Scanner traces during the investigation showed that the first `RET_NAME` use was offered to the scanner only as `bare_macro_identifier`, while the later uses were offered as `call_syntax_macro_identifier` and parsed correctly. The accepted fallback therefore stays exact and local to spellings proven to need it; do not broaden this into all-caps matching or make the scanner return categories that were not configured.
+
+### Recursive Expressions In Macro Arguments
+
+Status: accepted.
+
+Shape: remove `macro_string_concatenation_argument` and its component helper from `_macro_argument_list_item`. That high-precedence macro-only alternative recognized two or more adjacent string components, but the ordinary recursive `expression` alternative in the same list already owns concatenated strings and every expression that can contain them. The duplicate stopped after the string sequence and stole input from a following binary operator, so a normal diagnostic expression such as `"Actual: 5" + OfType("int")` was split into a completed macro argument followed by a unary `+` expression. When it followed a nested call as the second argument of a configured statement-argument macro, recovery crossed the separating comma and made the nested call appear responsible.
+
+Result: nested ordinary calls such as `EXPECT_FATAL_FAILURE(ASSERT_THAT(n, Gt(10)), diagnostic)` now use the same recursive call and binary-expression grammar as ordinary C++ calls; neither `ASSERT_THAT` nor `EXPECT_THAT` needs a macro category. The previously excluded `googlemock/test/gmock-matchers-containers_test.cc` parses, formats, reparses, and is idempotent. Against the compacted-parser baseline, states decrease from 33,723 to 33,698, large states from 14,438 to 14,432, symbols from 806 to 803, maximum action index from 52,851 to 52,781, and largest referenced shift state from 33,714 to 33,689. Stock generated `parser.c` decreases from 99,287,588 to 99,227,802 bytes, and source compaction decreases it from 37,018,816 to 36,993,233 bytes.
 
 ## Current External Unsupported Conditional Placements
 

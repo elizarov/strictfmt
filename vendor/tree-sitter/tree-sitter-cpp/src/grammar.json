@@ -23801,10 +23801,6 @@
         },
         {
           "type": "SYMBOL",
-          "name": "macro_string_concatenation_argument"
-        },
-        {
-          "type": "SYMBOL",
           "name": "macro_template_params_argument"
         },
         {
@@ -23934,51 +23930,6 @@
           "value": "(?:return|throw)[ \\t]+[A-Za-z_:][A-Za-z0-9_:]*(?:<[^>\\r\\n]+>)?\\([^()\\r\\n]*\\)"
         }
       }
-    },
-    "macro_string_concatenation_argument": {
-      "type": "PREC_RIGHT",
-      "value": 21,
-      "content": {
-        "type": "SEQ",
-        "members": [
-          {
-            "type": "SYMBOL",
-            "name": "macro_string_component"
-          },
-          {
-            "type": "REPEAT1",
-            "content": {
-              "type": "SYMBOL",
-              "name": "macro_string_component"
-            }
-          }
-        ]
-      }
-    },
-    "macro_string_component": {
-      "type": "CHOICE",
-      "members": [
-        {
-          "type": "SYMBOL",
-          "name": "concatenated_string"
-        },
-        {
-          "type": "PREC",
-          "value": 20,
-          "content": {
-            "type": "SYMBOL",
-            "name": "raw_string_literal"
-          }
-        },
-        {
-          "type": "PREC",
-          "value": 20,
-          "content": {
-            "type": "SYMBOL",
-            "name": "string_literal"
-          }
-        }
-      ]
     },
     "macro_template_params_argument": {
       "type": "TOKEN",

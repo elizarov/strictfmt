@@ -2479,7 +2479,6 @@ module.exports = grammar(C, {
       $.macro_empty_statement_argument,
       $.macro_function_pointer_type_descriptor,
       $.function_pointer_type_descriptor,
-      $.macro_string_concatenation_argument,
       $.macro_template_params_argument,
       $.macro_expression_without_semicolon,
       $.macro_function_type_argument,
@@ -2515,17 +2514,6 @@ module.exports = grammar(C, {
       1,
       /(?:return|throw)[ \t]+[A-Za-z_:][A-Za-z0-9_:]*(?:<[^>\r\n]+>)?\([^()\r\n]*\)/,
     )),
-
-    macro_string_concatenation_argument: $ => prec.right(PREC.CALL + 6, seq(
-      $.macro_string_component,
-      repeat1($.macro_string_component),
-    )),
-
-    macro_string_component: $ => choice(
-      $.concatenated_string,
-      prec(PREC.CALL + 5, $.raw_string_literal),
-      prec(PREC.CALL + 5, $.string_literal),
-    ),
 
     macro_template_params_argument: _ => token(prec(
       3,
