@@ -179,11 +179,14 @@ static bool has_valid_macro_identifier(
         return false;
     }
 
+    if (valid_symbols[TYPE_SPECIFIER_MACRO_IDENTIFIER] &&
+        strictfmt_tree_sitter_cpp_macro_category_matches(MACRO_CATEGORY_TYPE_SPECIFIER, name, length)) {
+        return true;
+    }
+
     if (include_non_statement_categories &&
         ((valid_symbols[CALL_SYNTAX_MACRO_IDENTIFIER] &&
           strictfmt_tree_sitter_cpp_macro_category_matches(MACRO_CATEGORY_CALL_SYNTAX, name, length)) ||
-         (valid_symbols[TYPE_SPECIFIER_MACRO_IDENTIFIER] &&
-          strictfmt_tree_sitter_cpp_macro_category_matches(MACRO_CATEGORY_TYPE_SPECIFIER, name, length)) ||
          (valid_symbols[DECLARATION_PREFIX_MACRO_IDENTIFIER] &&
           strictfmt_tree_sitter_cpp_macro_category_matches(MACRO_CATEGORY_DECLARATION_PREFIX, name, length)) ||
          (valid_symbols[BARE_MACRO_IDENTIFIER] &&
