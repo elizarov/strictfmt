@@ -2,7 +2,7 @@
 
 This document owns the compatibility notes for the pinned GoogleTest external project. The formatter configuration is in [`external/googletest/.cpp-format`](../external/googletest/.cpp-format), and the authoritative exclusion list is [`external/googletest/.cpp-format-ignore`](../external/googletest/.cpp-format-ignore).
 
-Each excluded file was parsed separately with the GoogleTest configuration. Candidate macro-category changes were retained only when they removed errors without introducing errors elsewhere in the GoogleTest corpus. Nine former exclusions are now supported:
+Each excluded file was parsed separately with the GoogleTest configuration. Candidate macro-category changes were retained only when they removed errors without introducing errors elsewhere in the GoogleTest corpus. Ten former exclusions are now supported:
 
 - `googletest/include/gtest/gtest-param-test.h`: `TEST_P`, `INSTANTIATE_TEST_SUITE_P`, and `INSTANTIATE_TEST_CASE_P` definitions intentionally contain generated identifier/declaration fragments, so their definitions are raw.
 - `googletest/test/googletest-printers-test.cc`: `EXPECT_PRINT_TO_STRING_` stringizes `value`, so its definition is raw.
@@ -12,6 +12,7 @@ Each excluded file was parsed separately with the GoogleTest configuration. Cand
 - `googlemock/include/gmock/gmock-matchers.h`: configured type-specifier macros retain their role after declaration keywords and type modifiers, including `typedef GTEST_REMOVE_REFERENCE_AND_CONST_(T) RawT` and `using Address = const GTEST_REMOVE_REFERENCE_AND_CONST_(Type) *`.
 - `googlemock/test/gmock-pp-string_test.cc`: `EXPECT_EXPANSION` uses the preprocessing-token-argument category because its second argument deliberately contains non-C++ token sequences such as `GMOCK_PP_CAT(+, =)`, empty comma arguments, and adjacent calls and identifiers. Its local `JOINER` definition remains structured after complete recursive expressions are preferred over a shallow call-only replacement.
 - `googlemock/test/gmock-pp_test.cc`: token-inspection and iteration macros use the preprocessing-token-argument category for payloads such as `(,)`, adjacent calls and identifiers, the standalone `~` data token, and tuples that generate template arguments. Empty final arguments retain their separator comma during formatting.
+- `googletest/include/gtest/internal/gtest-internal.h`: `GTEST_BIND_` is configured only as a type-specifier macro, allowing its sole use to compose as the type in `typedef typename GTEST_BIND_(TestSel, Type) TestClass`.
 - `googletest/test/gtest_unittest.cc`: configured statement-argument calls now classify after same-line whitespace, including as unbraced control-flow bodies. `VERIFY_CODE_LOCATION` remains raw because its replacement mixes declarations and calls in a sequence that the structured replacement grammar does not compose.
 
 The audit also classified the genuinely non-structural `MATCHER*`, `MY_MOCK_METHODS*`, and `LEGACY_MY_MOCK_METHODS*` definitions as raw. `GTEST_LOG_` was removed from `BareIdentifierMacros`: its uses are ordinary call expressions with stream tails, and bare classification broke its use inside a statement-argument macro.
@@ -30,14 +31,6 @@ GTEST_API_ int _tmain(int argc, TCHAR** argv) {
 GTEST_API_ int main(int argc, char** argv) {
 #endif
   std::cout << "Running main() from gmock_main.cc\n";
-```
-
-### `googletest/include/gtest/internal/gtest-internal.h`
-
-The parser does not accept a function-like type-producing macro after `typename` in this typedef. Adding `GTEST_BIND_` to `TypeSpecifierMacros`, with or without its existing call-syntax classification, does not change the recovery.
-
-```cpp
-typedef typename GTEST_BIND_(TestSel, Type) TestClass;
 ```
 
 ### `googletest/test/googletest-death-test-test.cc`

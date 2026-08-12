@@ -163,10 +163,11 @@ MOCK_METHOD(void, SetValue, (std::string_view, std::string&&), (override));
 
 ### TypeSpecifierMacros
 
-`TypeSpecifierMacros` names function-like macro identifiers that produce a C++ type specifier at the use site.
+`TypeSpecifierMacros` names function-like macro identifiers that produce a C++ type specifier at the use site. They compose after declaration modifiers and after `typename` in a dependent type.
 
 ```cpp
 typedef GTEST_REMOVE_REFERENCE_AND_CONST_(Container) RawContainer;
+typedef typename GTEST_BIND_(Selector, Type) BoundTest;
 ```
 
 ### PreprocessorArgumentMacros

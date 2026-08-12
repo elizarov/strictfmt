@@ -994,8 +994,9 @@ class FormatCommandTests(unittest.TestCase):
 
     def test_type_specifier_macro_classifies_after_horizontal_whitespace(self) -> None:
         source = (
-            "template<typename T>struct TypeMacroFixture{\n"
+            "template<typename T,typename U>struct TypeMacroFixture{\n"
             "typedef REMOVE_CV_REF(T) RawT;\n"
+            "typedef typename REMOVE_CV_REF(T,U) BoundT;\n"
             "using Address=const REMOVE_CV_REF(T)*;\n"
             "};\n"
         )
@@ -1018,9 +1019,10 @@ class FormatCommandTests(unittest.TestCase):
 
             self.assertEqual(0, formatted.returncode, msg=f"stdout:\n{formatted.stdout}\n\nstderr:\n{formatted.stderr}")
             self.assertEqual(
-                "template <typename T>\n"
+                "template <typename T, typename U>\n"
                 "struct TypeMacroFixture {\n"
                 "    typedef REMOVE_CV_REF(T) RawT;\n"
+                "    typedef typename REMOVE_CV_REF(T, U) BoundT;\n"
                 "    using Address = const REMOVE_CV_REF(T)*;\n"
                 "};\n",
                 formatted.stdout,
