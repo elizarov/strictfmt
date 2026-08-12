@@ -94,8 +94,13 @@ BraceRole RoleForBrace(const PrintToken& token) {
     return RoleForBraceParent(token.parentKind);
 }
 
-bool IsConditionalMacroFunctionHeader(const PrintToken& token) {
-    return token.syntaxKind == SyntaxNodeKind::PreprocIf && token.parentKind == SyntaxNodeKind::FunctionDefinition;
+bool IsWithinConditionalFunctionHeader(const PrintToken& token) {
+    for (const SyntaxNode* node = token.node; node != nullptr; node = node->parent) {
+        if (SyntaxNodeHasClass(*node, SyntaxNodeClass::ConditionalFunctionHeader)) {
+            return true;
+        }
+    }
+    return false;
 }
 
 bool IsDeclarationModifierPreprocessorToken(const PrintToken& token) {
@@ -953,7 +958,7 @@ private:
     std::vector<int> activeCaseBodySwitchDepths_;
     std::vector<DeferredSplitListContext> deferredSplitListContexts_;
     std::vector<PreprocessorSplitListContext> preprocessorSplitListContexts_;
-    std::vector<int> conditionalMacroFunctionIndents_;
+    std::vector<int> conditionalFunctionIndents_;
     std::optional<int> pendingIndentRestoreAfterFlush_;
 
     static const PrintToken* PreviousToken(const std::vector<PrintToken>& tokens, size_t index) {
@@ -2644,6 +2649,12 @@ private:
             PreprocessorLineHasClass(line, SyntaxNodeClass::IncludeDirective);
         const bool listConditional =
             StartsPreprocessorSplitList(token) && NearestPreprocessorSplitListAncestor(token) != nullptr;
+        const SyntaxNodeKind lineDirectiveKind = SyntaxNodeKindFromPreprocessorDirectiveLine(line);
+        const bool closesConditionalFunctionHeader =
+            ((token.node != nullptr && IsPreprocEndifToken(*token.node)) ||
+                token.syntaxKind == SyntaxNodeKind::PreprocessorDirectiveEndif ||
+                lineDirectiveKind == SyntaxNodeKind::PreprocessorDirectiveEndif) &&
+            IsWithinConditionalFunctionHeader(token);
         if (IsConditionalRhsPreprocessorToken(token)) {
             if (HasBufferedLineText()) {
                 FlushPendingTokens();
@@ -2710,17 +2721,19 @@ private:
             lineHasText_ = true;
             atLineStart_ = false;
             NewLine();
+            if (closesConditionalFunctionHeader) {
+                conditionalFunctionIndents_.push_back(indentLevel_);
+                ++indentLevel_;
+            }
             if (listItemIndent) {
                 pendingIndentLevel_ = *listItemIndent;
             }
             return;
         }
-        const bool conditionalMacroFunctionHeader = IsConditionalMacroFunctionHeader(token);
         const bool inlineFragment = token.parentKind == SyntaxNodeKind::ArgumentList ||
             token.parentKind == SyntaxNodeKind::BinaryExpression ||
             token.parentKind == SyntaxNodeKind::ConditionClause ||
             token.grandParentKind == SyntaxNodeKind::ArgumentList;
-        const SyntaxNodeKind lineDirectiveKind = SyntaxNodeKindFromPreprocessorDirectiveLine(line);
         const bool isUndef = lineDirectiveKind == SyntaxNodeKind::PreprocessorDirectiveUndef;
         const bool isConditionalDirective =
             SyntaxNodeKindHasClass(token.syntaxKind, SyntaxNodeClass::ConditionalPreprocessorDirective) ||
@@ -2736,8 +2749,8 @@ private:
         lineHasText_ = true;
         atLineStart_ = false;
         NewLine();
-        if (conditionalMacroFunctionHeader) {
-            conditionalMacroFunctionIndents_.push_back(indentLevel_);
+        if (closesConditionalFunctionHeader) {
+            conditionalFunctionIndents_.push_back(indentLevel_);
             ++indentLevel_;
             return;
         }
@@ -2942,6 +2955,12 @@ private:
     }
 
     void PrintLeftBrace(const PrintToken& token, const PrintToken* previous, const PrintToken* rawNext) {
+        if (IsWithinConditionalFunctionHeader(token)) {
+            BufferToken(token);
+            FlushPendingTokens();
+            NewLine(ShouldContinueMacroLine(token, rawNext));
+            return;
+        }
         const bool isEmptyBracePair = rawNext != nullptr &&
             rawNext->kind == PrintTokenKind::Known &&
             rawNext->syntaxKind == SyntaxNodeKind::RightBrace;
@@ -3017,14 +3036,14 @@ private:
             token.node != nullptr &&
             token.node->parent != nullptr &&
             !HasDirectTokenChild(*token.node->parent, SyntaxNodeKind::LeftBrace) &&
-            !conditionalMacroFunctionIndents_.empty()
+            !conditionalFunctionIndents_.empty()
         ) {
             FlushPendingTokens();
             if (lineHasText_) {
                 NewLine(token.inMacroValue);
             }
-            indentLevel_ = conditionalMacroFunctionIndents_.back();
-            conditionalMacroFunctionIndents_.pop_back();
+            indentLevel_ = conditionalFunctionIndents_.back();
+            conditionalFunctionIndents_.pop_back();
             BufferToken(token);
             FlushPendingTokens();
             if (next != nullptr && next->kind == PrintTokenKind::TrailingComment) {

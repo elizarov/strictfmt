@@ -91,7 +91,8 @@ constexpr std::uint64_t kSymbolLocalClasses =
     Bit(SyntaxNodeClass::AtomicPreprocessor) |
     Bit(SyntaxNodeClass::DeclarationModifierPreprocessor) |
     Bit(SyntaxNodeClass::ConditionalRhsPreprocessor) |
-    Bit(SyntaxNodeClass::PreserveTrailingComma);
+    Bit(SyntaxNodeClass::PreserveTrailingComma) |
+    Bit(SyntaxNodeClass::ConditionalFunctionHeader);
 
 constexpr auto kSyntaxKindMappings = std::to_array<SyntaxKindMapping>({
     Kind(SyntaxNodeKind::Tree, Bit(SyntaxNodeClass::Tree)),
@@ -265,9 +266,18 @@ constexpr auto kSyntaxKindMappings = std::to_array<SyntaxKindMapping>({
     Tree(SyntaxNodeKind::PreprocIfdef, "preproc_ifdef_in_template_parameter_list",
          kSupportedPreprocessorPlacementClasses),
     Tree(SyntaxNodeKind::PreprocIf, "preproc_if_in_macro_function_definition_prefix",
-         kSupportedPreprocessorPlacementClasses),
+         kSupportedPreprocessorPlacementClasses | Bit(SyntaxNodeClass::ConditionalFunctionHeader)),
     Tree(SyntaxNodeKind::PreprocElse, "preproc_else_in_macro_function_definition_prefix",
-         kSupportedPreprocessorPlacementClasses),
+         kSupportedPreprocessorPlacementClasses | Bit(SyntaxNodeClass::ConditionalFunctionHeader)),
+    Tree(SyntaxNodeKind::PreprocIf, "preproc_if_in_function_definition_prefix",
+         kAllowedPreprocessorContainerClasses | kSupportedPreprocessorPlacementClasses |
+         Bit(SyntaxNodeClass::ConditionalFunctionHeader)),
+    Tree(SyntaxNodeKind::PreprocIfdef, "preproc_ifdef_in_function_definition_prefix",
+         kAllowedPreprocessorContainerClasses | kSupportedPreprocessorPlacementClasses |
+         Bit(SyntaxNodeClass::ConditionalFunctionHeader)),
+    Tree(SyntaxNodeKind::PreprocElse, "preproc_else_in_function_definition_prefix",
+         kAllowedPreprocessorContainerClasses | kSupportedPreprocessorPlacementClasses |
+         Bit(SyntaxNodeClass::ConditionalFunctionHeader)),
     Tree(SyntaxNodeKind::PreprocElif, "preproc_elifdef"),
     Tree(SyntaxNodeKind::BinaryExpression, "binary_expression"),
     Tree(SyntaxNodeKind::UnaryExpression, "unary_expression"),

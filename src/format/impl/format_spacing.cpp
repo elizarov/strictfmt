@@ -30,6 +30,18 @@ bool IsTriviaNode(const SyntaxNode* node) {
     return node == nullptr || SyntaxNodeKindHasClass(node->kind, SyntaxNodeClass::Trivia);
 }
 
+bool NodeOrAncestorHasClass(const SyntaxNode* node, SyntaxNodeClass syntaxNodeClass) {
+    for (; node != nullptr; node = node->parent) {
+        if (
+            (node->classes & static_cast<std::uint64_t>(syntaxNodeClass)) != 0 ||
+            SyntaxNodeKindHasClass(node->kind, syntaxNodeClass)
+        ) {
+            return true;
+        }
+    }
+    return false;
+}
+
 const SyntaxNode* PreviousNonTriviaChild(const SyntaxNode& node, size_t before) {
     while (before > 0) {
         --before;
@@ -467,6 +479,13 @@ bool FormatTokenNeedsSpace(const PrintToken* previous, const PrintToken& current
     const SyntaxNodeKind prev =
         previous->kind == PrintTokenKind::Known ? previous->syntaxKind : SyntaxNodeKind::Unknown;
     const SyntaxNodeKind cur = current.kind == PrintTokenKind::Known ? current.syntaxKind : SyntaxNodeKind::Unknown;
+
+    if (
+        cur == SyntaxNodeKind::LeftBrace &&
+        NodeOrAncestorHasClass(current.node, SyntaxNodeClass::ConditionalFunctionHeader)
+    ) {
+        return true;
+    }
 
     if (
         prev == SyntaxNodeKind::Comma &&

@@ -13,7 +13,8 @@ This is the closed list of placements that are explicitly supported.
 - **Comma-separated list items**: conditionals may select complete function arguments, braced initializer items, constructor field-initializer items, subscript items, declaration parameters, template arguments, template parameters, and enum entries. A selected list item may own its trailing comma; conditional enum entries must own it. In constructor field-initializer and template-parameter lists, a selected item may also own the leading separator comma when it follows existing items. Other list positions do not support a branch-owned leading comma. Declaration and template parameters support `#if`, `#ifdef`, or `#ifndef` without branch alternatives. Subscript items support `#if` with an optional `#else`. Arguments, initializer items, ordinary constructor field-initializers, and enum entries support `#if`, `#ifdef`, or `#ifndef` with an optional `#else`; a branch-owned leading constructor comma is supported only by `#if` without an alternative.
 - **Declaration-prefix modifiers**: conditionals may select standalone declaration modifiers before a declaration: `const`, `constexpr`, `consteval`, `static`, `extern`, `inline`, `__inline`, `__inline__`, `__forceinline`, one macro-shaped modifier line, or standalone attributes.
 - **Declaration-suffix modifiers**: `#ifdef` or `#ifndef` blocks may select standalone identifiers, configured bare macros used as function-suffix modifiers, or attributes after a complete declaration declarator list and before the terminating semicolon.
-- **Selected common-body macro-function starts**: an `#if` with an optional `#else` may select complete configured macro-function or test prefixes when the shared body continues after the `#endif`. Each branch must consist only of the macro invocation and opening `{`. `#ifdef`, `#elif`, branch-local body-prefix statements, ordinary function or constructor starts, and branch-local sibling items before the selected macro-function start are unsupported.
+- **Selected common-body ordinary function starts**: a top-level `#if`, `#ifdef`, or `#ifndef` with a required `#else` may select complete ordinary function prefixes when the shared body continues after `#endif`. Each branch may contain local includes and must end with the declaration specifiers, function declarator, and opening `{`. `#elif`, constructors, declarations other than local includes before the selected prefix, and selected prefixes below top level are unsupported.
+- **Selected common-body macro-function starts**: an `#if` with an optional `#else` may select complete configured macro-function or test prefixes when the shared body continues after the `#endif`. Each branch must consist only of the macro invocation and opening `{`. `#ifdef`, `#elif`, and branch-local items before the selected macro-function start are unsupported.
 - **Conditional right-hand sides after `=`**: conditionals may select branch bodies for variable declarations, assignment statements, alias declarations, and concept definitions. Each branch body must supply its own terminating semicolon.
 - **Selected `if` statements**: a single `#if`, `#ifdef`, or `#ifndef` block with an optional `#else` branch may select complete unbraced `if` headers when the following statement starts after the `#endif`.
 - **Conditional `else if` branches**: conditionals may select complete `else if` branches inside an `if`/`else if` chain.
@@ -28,6 +29,7 @@ Specialized contextual placements do not support `#elifdef` or `#elifndef` alter
 ## Formatting rules
 
 - Directive lines stay at column zero. Guarded code keeps the indentation it would have at that source location.
+- Alternative function-prefix opening braces stay on their respective header lines. The shared body after `#endif` is indented once and the common closing brace returns to the function declaration indentation.
 - Conditional declaration-prefix modifiers force a break before the rest of the declaration. Comments, attributes, and modifier lines inside the conditional use the indentation of the declaration that follows.
 - For conditional right-hand sides after `=`, the formatter always breaks after the `=` and formats branch contents with one continuation indent relative to the line that contains the `=`.
 
@@ -72,6 +74,20 @@ public:
     StringLiteral(const char* literal) noexcept
         : zstring_view{literal} {}
 };
+```
+
+Selected common-body ordinary function start with a branch-local include:
+
+```cpp
+#ifdef PLATFORM_WINDOWS
+#include <tchar.h>
+
+API_EXPORT int PlatformMain(int argc, TCHAR** argv) {
+#else
+API_EXPORT int PlatformMain(int argc, char** argv) {
+#endif
+    return Run(argc, argv);
+}
 ```
 
 Conditional right-hand sides:

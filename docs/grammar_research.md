@@ -10,7 +10,7 @@ Scanner tokens are acceptable only for lexical or line-aware classification that
 
 ## Generated Parser Source Size
 
-The generated C++ parser must remain one file no larger than 50,000,000 bytes while using the unmodified upstream tree-sitter runtime, parser ABI, and table readers. The accepted grammar at this checkpoint generates a 100,956,932-byte `parser.c` before source compaction, with 34,114 states, 14,517 large states, 813 symbols, 302 terminals, and 316 production IDs. All 52 tests pass at that baseline.
+The generated C++ parser must remain one file no larger than 50,000,000 bytes while using the unmodified upstream tree-sitter runtime, parser ABI, and table readers. The accepted grammar at this checkpoint generates a 101,329,112-byte `parser.c` before source compaction, with 34,218 states, 14,558 large states, 822 symbols, 302 terminals, and 321 production IDs. All 52 tests pass at that baseline.
 
 ### Stock-Table Source Compaction
 
@@ -18,7 +18,7 @@ Status: accepted.
 
 Shape: run the pinned unmodified tree-sitter CLI, then rewrite only redundant C spelling inside its monolithic parse-table declarations. Symbolic enum references become the same numeric enum values, `STATE(n)` and `ACTIONS(n)` become `n` after verifying that the pinned generated parser header defines both as identity macros, and leading table indentation is removed. The transformation does not split or re-encode a table, change a value or dimension, widen a type, modify a generated header, or require a runtime change. The regeneration tool rejects an output above the 50,000,000-byte limit.
 
-Result: `parser.c` decreases from 100,956,932 to 37,488,347 bytes. Its 34,114 states, 14,517 large states, 813 symbols, 302 terminals, and 316 production IDs are unchanged. The source compiles against the vendored stock runtime and all 52 tests pass, including golden parse/idempotence tests and the CaseDash, GoogleTest, and userver corpus sweeps.
+Result: `parser.c` decreases from 101,329,112 to 37,614,930 bytes. Its 34,218 states, 14,558 large states, 822 symbols, 302 terminals, and 321 production IDs are unchanged. The source compiles against the vendored stock runtime and all 52 tests pass, including golden parse/idempotence tests and the CaseDash, GoogleTest, and userver corpus sweeps.
 
 This is source compaction, not a private parse-table format. The runtime sees the same statically initialized arrays and the same `TSLanguage` structure that the stock generator emitted.
 
@@ -344,13 +344,13 @@ Result: against the 50,261-state canonical-conditional-constructor checkpoint, s
 
 ### Removed Unsupported Ordinary Selected Function Starts
 
-Status: accepted.
+Status: superseded by narrow explicit support.
 
 Shape: remove the conditional family whose branches selected ordinary C++ function-definition prefixes before a shared body tail. Retain the distinct configured macro-function/test family used by supported GoogleTest sources. Complete ordinary function definitions inside whole-item conditionals remain supported; only the form in which `#endif` occurs between an opening function prefix and its shared body tail is removed.
 
 Corpus evidence found no use in project sources, golden fixtures, casedash, or supported GoogleTest and userver sources. The complete external trees contain 11 raw nodes, all under ignored userver third-party directories. Two are genuine shared-body forms in uBoost's `fiber_ucontext.hpp` and `continuation_ucontext.hpp`. The other nine are error-recovery false positives around complete guarded functions: two in librseq's RISC-V `bits.h`, one in RapidJSON's `pointer.h`, and six in RapidJSON's `document.h`.
 
-Result: against the 49,788-state macro-class-name checkpoint, states decreased by 232 to 49,556, large states decreased by 122 to 24,868, maximum action index decreased by 380 to 78,326, and generated `parser.c` decreased by 1,388,902 bytes to 189,679,398. The symbol count decreased by eight to 924 and the production-id count decreased by seven to 364. All 50 tests pass.
+Result at that checkpoint: against the 49,788-state macro-class-name checkpoint, states decreased by 232 to 49,556, large states decreased by 122 to 24,868, maximum action index decreased by 380 to 78,326, and generated `parser.c` decreased by 1,388,902 bytes to 189,679,398. The symbol count decreased by eight to 924 and the production-id count decreased by seven to 364. All 50 tests passed. The later [Selected Ordinary Function Starts With Shared Bodies](#selected-ordinary-function-starts-with-shared-bodies) change restores a smaller top-level subset with required alternatives and optional branch-local includes.
 
 ### Removed Zero-Owner Compatibility Paths
 
@@ -1326,14 +1326,25 @@ The grammar also removes the static precedence from the shallow semicolonless ca
 
 Result: `EXPECT_EXPANSION` accepts deliberate token payloads such as `GMOCK_PP_CAT(+, =)`, `GMOCK_PP_HAS_COMMA(, )`, and `GMOCK_PP_IS_BEGIN_PARENS(sss() sss)` without broadening ordinary macro argument lists. The same category now covers the token-inspection and iteration macros in `googlemock/test/gmock-pp_test.cc`, including `(,)`, an empty object-like macro name, the standalone `~` data token, and a parenthesized type tuple used to generate template arguments. The formatter preserves a separator comma before an empty final argument instead of applying C++ trailing-comma normalization. Both `gmock-pp-string_test.cc` and `gmock-pp_test.cc` are removed from the exclusion list. Relative to the preceding baseline, states increase from 33,697 to 34,114, large states from 14,431 to 14,517, symbols from 803 to 813, terminals from 300 to 302, maximum action index from 52,779 to 53,411, and largest referenced shift state from 33,688 to 34,105. Production IDs remain at 316. Stock generated `parser.c` increases from 99,212,287 to 100,956,932 bytes, and source compaction increases it from 36,988,236 to 37,488,347 bytes. All 52 tests pass, including focused configured/unconfigured token-argument and template-position coverage plus the expanded GoogleTest sweep.
 
+### Selected Ordinary Function Starts With Shared Bodies
+
+Status: accepted as an explicit top-level conditional placement.
+
+Shape: a top-level `#if`, `#ifdef`, or `#ifndef` with a required `#else` may select two ordinary function-definition prefixes before a shared body. Each branch reuses the normal declaration-specifier and declarator nonterminals, may own zero or more local includes, and must end with its opening `{`; the shared block items and closing `}` follow `#endif`. This deliberately excludes `#elif`, constructors, arbitrary branch-local declarations, and the same selected-prefix shape below top level. The existing configured macro-function form remains narrower, but its selected body is normalized to the same visible compound-statement structure.
+
+The formatter treats the alternative opening braces as openings of the same logical function body: each brace stays on its branch header, indentation increases once after `#endif`, and the shared closing brace restores the declaration indentation. Both conditional forms therefore use the ordinary function-definition layout without project-specific handling of `GTEST_API_`, `_tmain`, or `TCHAR`.
+
+Result: `googlemock/src/gmock_main.cc`, including its Windows-only `<tchar.h>` include, parses and formats without warnings and is removed from the GoogleTest exclusion list. Golden fixtures cover branch-local includes on both alternatives and retain coverage of the configured macro-function shape. Relative to the preprocessing-token-macro checkpoint, states increase from 34,114 to 34,218, large states from 14,517 to 14,558, symbols from 813 to 822, maximum action index from 53,411 to 53,554, and largest referenced shift state from 34,105 to 34,210. Production IDs increase from 316 to 321 while terminals remain at 302. Stock generated `parser.c` increases from 100,956,932 to 101,329,112 bytes, and source compaction increases from 37,488,347 to 37,614,930 bytes. All 52 tests pass, including golden parse/format checks and the expanded GoogleTest sweep.
+
+A follow-up experiment factored the normal function-definition header and the selected prefix through one hidden nonterminal. It reduced the generated parser to 34,032 states, 14,444 large states, a maximum action index of 53,430, and 37,381,557 compacted bytes, but it changed the valid-symbol states seen by the external macro scanner. Sixteen tests failed, including the three external corpus sweeps and the ordinary golden inputs, with configured identifiers broadly misclassified. The factoring was rejected; keeping the normal function rule's original state shape is required for runtime-configured macro classification.
+
 ## Current External Unsupported Conditional Placements
 
 The excluded external files are not all excluded because of conditional compilation: some also contain unsupported macro arguments, declaration modifiers, or vendored non-C++ token tricks. The conditional-placement gaps currently visible in excluded files are:
 
 - Branch-local diagnostic macro runs used as portability scaffolding, for example RapidJSON's `#ifdef __clang__` branch in `rapidjson/pointer.h` that contains `RAPIDJSON_DIAG_PUSH` and `RAPIDJSON_DIAG_OFF(switch-enum)` before the next ordinary declaration. These marker-only branches are not part of the supported placement contract, even though the same configured macros may parse in ordinary statement or declaration positions.
-- Ordinary selected common-body function starts are unsupported. One external example also mixes the start with branch-local sibling items: `googlemock/src/gmock_main.cc`, where the Windows branch supplies `#include <tchar.h>` and then `GTEST_API_ int _tmain(int argc, TCHAR** argv) {`, while the other branch supplies `GTEST_API_ int main(int argc, char** argv) {` and the shared function body starts after `#endif`.
-Both shapes are outside the supported placement list in [preprocessor.md](preprocessor.md), and supporting either should be revisited only with a generic grammar shape.
+This shape is outside the supported placement list in [preprocessor.md](preprocessor.md), and supporting it should be revisited only with a generic grammar shape.
 
-Complete guarded GoogleTest-style macro function definitions, branch-selected complete statements, selected `TEST(...) {` common-body headers, macro-interleaved string help fragments, and configured preprocessing-token macro arguments are not in this unsupported list: they parse with the GoogleTest style.
+Complete guarded GoogleTest-style macro function definitions, branch-selected complete statements, selected ordinary or `TEST(...) {` common-body headers, macro-interleaved string help fragments, and configured preprocessing-token macro arguments are not in this unsupported list: they parse with the GoogleTest style.
 
 The remaining non-conditional GoogleTest exclusion is also not conditional-placement evidence: it ends blocks with semicolonless diagnostic-pop calls. The exact generated fallback already covers other semicolonless warning sentinels, local generator runs such as `GMOCK_INTERNAL_PARSE_FLAG(...)`, and stress-test macro bursts such as `THOUSAND_TESTS_(T)`.
