@@ -879,13 +879,20 @@ class FormatCommandTests(unittest.TestCase):
                 "MacroCategories:\n"
                 "  RawMacroDefinitions:\n"
                 "    - RAW_OBJECT\n"
-                "    - RAW_FUNCTION\n",
+                "    - RAW_FUNCTION\n"
+                "    - RAW_BLOCK\n"
+                "    - RAW_ALREADY_INDENTED\n",
                 encoding="utf-8",
             )
             source = root / "sample.cpp"
             source.write_text(
                 "#define RAW_OBJECT value ## suffix\n"
-                "#define RAW_FUNCTION(first,second) first ## second\n",
+                "#define RAW_FUNCTION(first,second) first ## second\n"
+                "#define RAW_BLOCK(first,second) \\\n"
+                "first ## second; \\\n"
+                "    second ## first\n"
+                "#define RAW_ALREADY_INDENTED(first,second) \\\n"
+                "        first ## second\n",
                 encoding="utf-8",
             )
 
@@ -894,7 +901,12 @@ class FormatCommandTests(unittest.TestCase):
             self.assertEqual(0, result.returncode, msg=f"stdout:\n{result.stdout}\n\nstderr:\n{result.stderr}")
             self.assertEqual(
                 "#define RAW_OBJECT value ## suffix\n"
-                "#define RAW_FUNCTION(first, second) first ## second\n",
+                "#define RAW_FUNCTION(first, second) first ## second\n"
+                "#define RAW_BLOCK(first, second) \\\n"
+                "    first ## second; \\\n"
+                "        second ## first\n"
+                "#define RAW_ALREADY_INDENTED(first, second) \\\n"
+                "    first ## second\n",
                 result.stdout,
             )
 

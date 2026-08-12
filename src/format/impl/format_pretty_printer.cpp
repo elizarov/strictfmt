@@ -901,7 +901,8 @@ public:
         config_(config),
         sourcePath_(sourcePath),
         stats_(stats),
-        indentWidth_(std::max(1, config.indentWidth)) {}
+        indentWidth_(std::max(1, config.indentWidth)),
+        tabWidth_(std::max(1, config.tabWidth)) {}
 
     std::string Print(const std::vector<PrintToken>& tokens) {
         activeTokens_ = &tokens;
@@ -930,6 +931,7 @@ private:
     std::string_view sourcePath_;
     FormatModelTextStats* stats_ = nullptr;
     int indentWidth_ = 4;
+    int tabWidth_ = 4;
     std::string output_;
     std::vector<PrintToken> pendingTokens_;
     int indentLevel_ = 0;
@@ -2551,7 +2553,7 @@ private:
         }
         if (token.syntaxKind == SyntaxNodeKind::RawMacroReplacement) {
             FlushPendingTokens();
-            Write(FormatRawMacroReplacement(token.text));
+            Write(FormatRawMacroReplacement(token.text, CurrentLineIndentLevel() + 1, indentWidth_, tabWidth_));
             NewLine();
             return;
         }

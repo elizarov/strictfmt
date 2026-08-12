@@ -32,6 +32,10 @@ X(First,"first") X(Second,"second")
     callback(); \
     /* cold testing path: */ \
     callback();
+#define FORMAT_FIXTURE_TOKEN_PASTE(prefix,suffix) \
+prefix ## suffix
+#define FORMAT_FIXTURE_STRINGIZE(value) \
+#value
 #define FORMAT_FIXTURE_FILEPATH FORMAT_NAMESPACE::logging::impl::CutFilePath(__builtin_FILE())
 #define ENUM_STRING_DECLARE(EnumType, ItemsMacro) \
     enum class EnumType{ItemsMacro( \

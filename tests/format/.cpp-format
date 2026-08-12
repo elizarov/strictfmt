@@ -20,10 +20,8 @@ IncludeIsMainRegex: '(Test)?$'
 
 MacroCategories:
   RawMacroDefinitions:
-    - FORMAT_FIXTURE_COMMENT_CONTINUATION
-    - FORMAT_FIXTURE_ENUM_ITEMS
-    - FORMAT_FIXTURE_ITEMS
-    - FORMAT_FIXTURE_LOAD_OPTIONAL
+    - FORMAT_FIXTURE_STRINGIZE
+    - FORMAT_FIXTURE_TOKEN_PASTE
   BareIdentifierMacros:
     - WINAPI
   CallSyntaxMacros:
