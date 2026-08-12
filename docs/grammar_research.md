@@ -10,7 +10,7 @@ Scanner tokens are acceptable only for lexical or line-aware classification that
 
 ## Generated Parser Source Size
 
-The generated C++ parser must remain one file no larger than 50,000,000 bytes while using the unmodified upstream tree-sitter runtime, parser ABI, and table readers. The accepted grammar at this checkpoint generates a 101,329,112-byte `parser.c` before source compaction, with 34,218 states, 14,558 large states, 822 symbols, 302 terminals, and 321 production IDs. All 52 tests pass at that baseline.
+The generated C++ parser must remain one file no larger than 50,000,000 bytes while using the unmodified upstream tree-sitter runtime, parser ABI, and table readers. The accepted grammar at this checkpoint generates a 101,596,409-byte `parser.c` before source compaction, with 34,304 states, 14,594 large states, 822 symbols, 302 terminals, and 321 production IDs. All 53 tests pass at that baseline.
 
 ### Stock-Table Source Compaction
 
@@ -18,7 +18,7 @@ Status: accepted.
 
 Shape: run the pinned unmodified tree-sitter CLI, then rewrite only redundant C spelling inside its monolithic parse-table declarations. Symbolic enum references become the same numeric enum values, `STATE(n)` and `ACTIONS(n)` become `n` after verifying that the pinned generated parser header defines both as identity macros, and leading table indentation is removed. The transformation does not split or re-encode a table, change a value or dimension, widen a type, modify a generated header, or require a runtime change. The regeneration tool rejects an output above the 50,000,000-byte limit.
 
-Result: `parser.c` decreases from 101,329,112 to 37,614,930 bytes. Its 34,218 states, 14,558 large states, 822 symbols, 302 terminals, and 321 production IDs are unchanged. The source compiles against the vendored stock runtime and all 52 tests pass, including golden parse/idempotence tests and the CaseDash, GoogleTest, and userver corpus sweeps.
+Result: `parser.c` decreases from 101,596,409 to 37,709,317 bytes. Its 34,304 states, 14,594 large states, 822 symbols, 302 terminals, and 321 production IDs are unchanged. The source compiles against the vendored stock runtime and all 53 tests pass, including golden parse/idempotence tests and the CaseDash, GoogleTest, and userver corpus sweeps.
 
 This is source compaction, not a private parse-table format. The runtime sees the same statically initialized arrays and the same `TSLanguage` structure that the stock generator emitted.
 
@@ -1145,9 +1145,11 @@ Result: librseq availability checks such as `(int) rseq_offsetofend(struct rseq_
 
 Status: accepted narrowly through generated sentinel fallbacks.
 
-Shape: add block-scope and top-level macro-call line items for an exact generated sentinel fallback followed by a physical line break instead of a semicolon. Block scope also has a semicolon-terminated statement item for the same generated names, so generator uses such as `RET_NAME(...);` do not go through the line-break token. The item is parsed as a sibling item, not as a statement prefix for the following statement. This is intentionally not driven by `CallSyntaxMacros`: if the same spelling is also configured as a call-syntax macro, the scanner can classify it for the ordinary call-expression path before the generated line item wins.
+Shape: add block-scope and top-level macro-call line items for an exact generated sentinel fallback followed by a physical line break instead of a semicolon. The same line item is also a non-case statement, allowing it wherever a normal statement is required, including among the repeated statements owned by a `case` body. Block scope also has a semicolon-terminated statement item for the same generated names, so generator uses such as `RET_NAME(...);` do not go through the line-break token. The item is parsed as a sibling item, not as a statement prefix for the following statement. This is intentionally not driven by `CallSyntaxMacros`: if the same spelling is also configured as a call-syntax macro, the scanner can classify it for the ordinary call-expression path before the generated line item wins.
 
-Result: GoogleTest warning and intentional-constant-condition sentinels such as `GTEST_DISABLE_MSC_WARNINGS_PUSH_(4065)` and `GTEST_INTENTIONAL_CONST_COND_PUSH_()` parse before the following `switch`, `if`, or declaration without marking those spellings as `CallSyntaxMacros`. The same exact fallback covers local generator uses such as `GMOCK_INTERNAL_PARSE_FLAG(...)`, `THOUSAND_TESTS_(T)`, `GTEST_IMPL_CMP_HELPER_(GT, >)`, userver `RET_NAME(...)`, http-parser map generators, and RapidJSON schema generators. The formatter owns structured macro whitespace; the original newline is only the terminator that disambiguates the semicolonless item.
+Result: GoogleTest warning and intentional-constant-condition sentinels such as `GTEST_DISABLE_MSC_WARNINGS_PUSH_(4065)` and `GTEST_INTENTIONAL_CONST_COND_PUSH_()` parse before the following `switch`, `if`, or declaration without marking those spellings as `CallSyntaxMacros`. `GTEST_DISABLE_MSC_WARNINGS_POP_()` also parses as the final statement of the nested unbraced-switch cases in `googletest-death-test-test.cc`, removing the last GoogleTest exclusion. The same exact fallback covers local generator uses such as `GMOCK_INTERNAL_PARSE_FLAG(...)`, `THOUSAND_TESTS_(T)`, `GTEST_IMPL_CMP_HELPER_(GT, >)`, userver `RET_NAME(...)`, http-parser map generators, and RapidJSON schema generators. The formatter owns structured macro whitespace; the original newline is only the terminator that disambiguates the semicolonless item.
+
+The statement-position extension does not add a token or broaden the generated fallback spellings. Relative to the selected-function-header checkpoint, states increase from 34,218 to 34,304, large states from 14,558 to 14,594, maximum action index from 53,554 to 53,727, and largest referenced shift state from 34,210 to 34,286. Symbols, terminals, and production IDs remain at 822, 302, and 321. Stock generated `parser.c` increases from 101,329,112 to 101,596,409 bytes, and source compaction increases from 37,614,930 to 37,709,317 bytes. All 53 tests pass, including focused statement/idempotence coverage and the exclusion-free GoogleTest sweep.
 
 ### Type-Specifier Macro Calls
 
@@ -1347,4 +1349,4 @@ This shape is outside the supported placement list in [preprocessor.md](preproce
 
 Complete guarded GoogleTest-style macro function definitions, branch-selected complete statements, selected ordinary or `TEST(...) {` common-body headers, macro-interleaved string help fragments, and configured preprocessing-token macro arguments are not in this unsupported list: they parse with the GoogleTest style.
 
-The remaining non-conditional GoogleTest exclusion is also not conditional-placement evidence: it ends blocks with semicolonless diagnostic-pop calls. The exact generated fallback already covers other semicolonless warning sentinels, local generator runs such as `GMOCK_INTERNAL_PARSE_FLAG(...)`, and stress-test macro bursts such as `THOUSAND_TESTS_(T)`.
+GoogleTest has no remaining excluded source files. Semicolonless warning sentinels, local generator runs such as `GMOCK_INTERNAL_PARSE_FLAG(...)`, and stress-test macro bursts such as `THOUSAND_TESTS_(T)` use the same exact generated fallback.

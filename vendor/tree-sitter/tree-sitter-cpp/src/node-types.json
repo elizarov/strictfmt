@@ -406,6 +406,10 @@
         "named": true
       },
       {
+        "type": "block_macro_call_line_item",
+        "named": true
+      },
+      {
         "type": "break_statement",
         "named": true
       },
@@ -1661,6 +1665,10 @@
           "named": true
         },
         {
+          "type": "block_macro_call_line_item",
+          "named": true
+        },
+        {
           "type": "break_statement",
           "named": true
         },
@@ -2118,10 +2126,6 @@
       "types": [
         {
           "type": "alias_declaration",
-          "named": true
-        },
-        {
-          "type": "block_macro_call_line_item",
           "named": true
         },
         {
@@ -8650,10 +8654,6 @@
           "named": true
         },
         {
-          "type": "block_macro_call_line_item",
-          "named": true
-        },
-        {
           "type": "block_macro_call_statement_item",
           "named": true
         },
@@ -8878,10 +8878,6 @@
           "named": true
         },
         {
-          "type": "block_macro_call_line_item",
-          "named": true
-        },
-        {
           "type": "block_macro_call_statement_item",
           "named": true
         },
@@ -8982,10 +8978,6 @@
         },
         {
           "type": "attributed_friend_operator_declaration",
-          "named": true
-        },
-        {
-          "type": "block_macro_call_line_item",
           "named": true
         },
         {
@@ -9432,10 +9424,6 @@
         },
         {
           "type": "attributed_friend_operator_declaration",
-          "named": true
-        },
-        {
-          "type": "block_macro_call_line_item",
           "named": true
         },
         {
@@ -9946,10 +9934,6 @@
         },
         {
           "type": "attributed_friend_operator_declaration",
-          "named": true
-        },
-        {
-          "type": "block_macro_call_line_item",
           "named": true
         },
         {
