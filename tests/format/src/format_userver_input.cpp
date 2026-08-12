@@ -232,6 +232,11 @@ ASSERT_THAT(n,Gt(10)),
 "  Actual: 5" + OfType("unsigned short"));
 }
 
+void SameLineStatementArgumentMacros(bool enabled) {
+if (enabled) EXPECT_THROW(ThrowNothing(), bool);
+if (enabled) { EXPECT_NO_THROW(ThrowNothing()); }
+}
+
 void NestedStatementSequenceMacro() {
 UEXPECT_NO_THROW(
 EXPECT_NO_THROW(first());

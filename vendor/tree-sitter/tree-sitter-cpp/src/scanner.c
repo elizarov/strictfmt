@@ -114,6 +114,74 @@ static bool scan_macro_identifier(TSLexer *lexer, enum MacroCategory category) {
     return strictfmt_tree_sitter_cpp_macro_category_matches(category, name, length);
 }
 
+static bool has_following_argument_list(TSLexer *lexer) {
+    for (;;) {
+        while (lexer->lookahead == ' ' || lexer->lookahead == '\t' || lexer->lookahead == '\f' ||
+               lexer->lookahead == '\v' || lexer->lookahead == '\r' || lexer->lookahead == '\n') {
+            advance_skip(lexer);
+        }
+        if (lexer->lookahead == '(') {
+            return true;
+        }
+        if (lexer->lookahead == '\\') {
+            advance_skip(lexer);
+            if (lexer->lookahead == '\r') {
+                advance_skip(lexer);
+                if (lexer->lookahead == '\n') {
+                    advance_skip(lexer);
+                }
+                continue;
+            }
+            if (lexer->lookahead == '\n') {
+                advance_skip(lexer);
+                continue;
+            }
+            return false;
+        }
+        if (lexer->lookahead != '/') {
+            return false;
+        }
+        advance_skip(lexer);
+        if (lexer->lookahead == '/') {
+            while (!lexer->eof(lexer) && lexer->lookahead != '\r' && lexer->lookahead != '\n') {
+                advance_skip(lexer);
+            }
+            continue;
+        }
+        if (lexer->lookahead != '*') {
+            return false;
+        }
+        advance_skip(lexer);
+        bool closed = false;
+        for (bool star = false; !lexer->eof(lexer);) {
+            if (star && lexer->lookahead == '/') {
+                advance_skip(lexer);
+                closed = true;
+                break;
+            }
+            star = lexer->lookahead == '*';
+            advance_skip(lexer);
+        }
+        if (!closed) {
+            return false;
+        }
+    }
+}
+
+static bool has_valid_statement_argument_macro_identifier(TSLexer *lexer, const bool *valid_symbols) {
+    if (!valid_symbols[STATEMENT_ARGUMENT_MACRO_IDENTIFIER]) {
+        return false;
+    }
+
+    char name[MAX_MACRO_NAME_LENGTH];
+    unsigned length = 0;
+    if (!scan_identifier(lexer, name, &length)) {
+        return false;
+    }
+    return strictfmt_tree_sitter_cpp_macro_category_matches(MACRO_CATEGORY_STATEMENT_ARGUMENT, name, length) &&
+           has_following_argument_list(lexer);
+}
+
 static bool classify_macro_identifier_token(
     TSLexer *lexer,
     const char *name,
@@ -229,23 +297,6 @@ static bool scan_horizontal_whitespace(TSLexer *lexer) {
         consumed = true;
     }
     return consumed;
-}
-
-static bool scan_line_break_whitespace(TSLexer *lexer) {
-    scan_horizontal_whitespace(lexer);
-    if (scan_newline(lexer)) {
-        scan_horizontal_whitespace(lexer);
-        return true;
-    }
-    if (lexer->lookahead != '\\') {
-        return false;
-    }
-    advance(lexer);
-    if (!scan_newline(lexer)) {
-        return false;
-    }
-    scan_horizontal_whitespace(lexer);
-    return true;
 }
 
 static bool scan_raw_macro_replacement(TSLexer *lexer) {
@@ -371,8 +422,30 @@ bool tree_sitter_cpp_external_scanner_scan(void *payload, TSLexer *lexer, const 
     if (valid_symbols[LINE_BREAK_WHITESPACE] &&
         (lexer->lookahead == ' ' || lexer->lookahead == '\t' || lexer->lookahead == '\f' ||
          lexer->lookahead == '\r' || lexer->lookahead == '\n' || lexer->lookahead == '\\')) {
-        lexer->result_symbol = LINE_BREAK_WHITESPACE;
-        return scan_line_break_whitespace(lexer);
+        const bool horizontal = scan_horizontal_whitespace(lexer);
+        if (horizontal) {
+            lexer->mark_end(lexer);
+        }
+
+        bool line_break = scan_newline(lexer);
+        if (!line_break && lexer->lookahead == '\\') {
+            advance(lexer);
+            line_break = scan_newline(lexer);
+        }
+        if (line_break) {
+            scan_horizontal_whitespace(lexer);
+            lexer->mark_end(lexer);
+            lexer->result_symbol = LINE_BREAK_WHITESPACE;
+            return true;
+        }
+
+        if (horizontal && !valid_symbols[RAW_MACRO_DEFINITION_IDENTIFIER] &&
+            has_valid_statement_argument_macro_identifier(lexer, valid_symbols)) {
+            lexer->result_symbol = LINE_BREAK_WHITESPACE;
+            return true;
+        }
+
+        return false;
     }
 
     if (valid_symbols[RAW_MACRO_DEFINITION_IDENTIFIER] || valid_symbols[BARE_MACRO_IDENTIFIER] ||

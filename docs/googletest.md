@@ -2,11 +2,12 @@
 
 This document owns the compatibility notes for the pinned GoogleTest external project. The formatter configuration is in [`external/googletest/.cpp-format`](../external/googletest/.cpp-format), and the authoritative exclusion list is [`external/googletest/.cpp-format-ignore`](../external/googletest/.cpp-format-ignore).
 
-Each excluded file was parsed separately with the GoogleTest configuration. Candidate macro-category changes were retained only when they removed errors without introducing errors elsewhere in the GoogleTest corpus. Three former exclusions are now supported:
+Each excluded file was parsed separately with the GoogleTest configuration. Candidate macro-category changes were retained only when they removed errors without introducing errors elsewhere in the GoogleTest corpus. Four former exclusions are now supported:
 
 - `googletest/include/gtest/gtest-param-test.h`: `TEST_P`, `INSTANTIATE_TEST_SUITE_P`, and `INSTANTIATE_TEST_CASE_P` definitions intentionally contain generated identifier/declaration fragments, so their definitions are raw.
 - `googletest/test/googletest-printers-test.cc`: `EXPECT_PRINT_TO_STRING_` stringizes `value`, so its definition is raw.
 - `googlemock/test/gmock-matchers-containers_test.cc`: nested ordinary calls and diagnostic expressions now compose through the normal recursive expression grammar inside statement-argument macro lists.
+- `googletest/test/gtest_unittest.cc`: configured statement-argument calls now classify after same-line whitespace, including as unbraced control-flow bodies. `VERIFY_CODE_LOCATION` remains raw because its replacement mixes declarations and calls in a sequence that the structured replacement grammar does not compose.
 
 The audit also classified the genuinely non-structural `MATCHER*`, `MY_MOCK_METHODS*`, and `LEGACY_MY_MOCK_METHODS*` definitions as raw. `GTEST_LOG_` was removed from `BareIdentifierMacros`: its uses are ordinary call expressions with stream tails, and bare classification broke its use inside a statement-argument macro.
 
@@ -99,24 +100,3 @@ GTEST_DISABLE_MSC_WARNINGS_POP_()
 ```
 
 The same shape occurs in the conditional-death-macro switch test.
-
-### `googletest/test/gtest_unittest.cc`
-
-There are two independent failures. First, an `EXPECT_THROW` statement-argument macro is used as an unbraced control body, and its type-valued second argument is recovered as an invalid ordinary argument in that parser state.
-
-```cpp
-if (AlwaysFalse()) EXPECT_THROW(ThrowNothing(), bool);
-```
-
-Second, the structured replacement parser reduces only the first declaration in this multi-statement definition and recovers over the remaining statements.
-
-```cpp
-#define VERIFY_CODE_LOCATION                                                \
-  const int expected_line = __LINE__ - 1;                                   \
-  const TestInfo* const test_info = GetUnitTestImpl()->current_test_info(); \
-  ASSERT_TRUE(test_info);                                                   \
-  EXPECT_STREQ(__FILE__, test_info->file());                                \
-  EXPECT_EQ(expected_line, test_info->line())
-```
-
-The replacement is a supported kind of C++ statement sequence, so marking it raw would conceal a structural parser gap rather than correctly classify a genuinely raw definition.

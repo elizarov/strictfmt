@@ -1282,6 +1282,14 @@ Shape: remove `macro_string_concatenation_argument` and its component helper fro
 
 Result: nested ordinary calls such as `EXPECT_FATAL_FAILURE(ASSERT_THAT(n, Gt(10)), diagnostic)` now use the same recursive call and binary-expression grammar as ordinary C++ calls; neither `ASSERT_THAT` nor `EXPECT_THAT` needs a macro category. The previously excluded `googlemock/test/gmock-matchers-containers_test.cc` parses, formats, reparses, and is idempotent. Against the compacted-parser baseline, states decrease from 33,723 to 33,698, large states from 14,438 to 14,432, symbols from 806 to 803, maximum action index from 52,851 to 52,781, and largest referenced shift state from 33,714 to 33,689. Stock generated `parser.c` decreases from 99,287,588 to 99,227,802 bytes, and source compaction decreases it from 37,018,816 to 36,993,233 bytes.
 
+### Same-Line Runtime Macro Classification
+
+Status: accepted.
+
+Shape: reuse the existing hidden `_line_break_whitespace` external token as a narrow horizontal-only boundary when a configured statement-argument call follows in a non-preprocessor statement-argument state. Without that token boundary, the generated lexer could skip spaces and accept an ordinary identifier before the runtime scanner classified a configured macro. Letting the scanner fall through after consuming those spaces was also invalid because the spaces became part of the external identifier's source range. The scanner excludes preprocessor definition-name and replacement states and leaves every other horizontal gap to the generated lexer. The boundary advances tree-sitter to the identifier before classification, so the call composes through the existing recursive `statement` role whether it begins on the same line as an `if` condition, after a brace, or at the start of a line.
+
+Result: `googletest/test/gtest_unittest.cc` no longer fails on the unbraced `EXPECT_THROW(ThrowNothing(), bool)` body. The grammar and generated tables are unchanged: the parser remains at 33,698 states, 14,432 large states, 803 symbols, 300 terminals, and 316 production IDs; compacted `parser.c` remains 36,993,233 bytes.
+
 ## Current External Unsupported Conditional Placements
 
 The excluded external files are not all excluded because of conditional compilation: some also contain unsupported macro arguments, declaration modifiers, or vendored non-C++ token tricks. The conditional-placement gaps currently visible in excluded files are:
