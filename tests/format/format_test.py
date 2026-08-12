@@ -1026,6 +1026,51 @@ class FormatCommandTests(unittest.TestCase):
                 formatted.stdout,
             )
 
+    def test_preprocessor_argument_macro_accepts_balanced_token_sequences(self) -> None:
+        source = (
+            "void PreprocessorArguments(){\n"
+            "PP_EXPANSION(\"+=\", PP_CAT(+, =));\n"
+            "PP_EXPANSION(\"comma\", PP_HAS_COMMA(, ));\n"
+            "PP_EXPANSION(\"tokens\", PP_PARENS(sss() sss));\n"
+            "PP_EXPANSION(\"raw\", PP_RAW(R\"tag((,))tag\"));\n"
+            "}\n"
+        )
+        unconfigured = native_format("--stdin", input_text=source)
+
+        self.assertEqual(1, unconfigured.returncode, msg=f"stdout:\n{unconfigured.stdout}\n\nstderr:\n{unconfigured.stderr}")
+        self.assertIn("parse failed", unconfigured.stderr)
+
+        build_dir = TEST_TEMP_ROOT
+        build_dir.mkdir(exist_ok=True)
+        with tempfile.TemporaryDirectory(prefix="format_preprocessor_arguments_", dir=build_dir) as temp_dir:
+            config = Path(temp_dir) / ".cpp-format"
+            config.write_text(
+                "---\n"
+                "ColumnLimit: 120\n"
+                "IndentWidth: 4\n"
+                "TabWidth: 4\n"
+                "MacroCategories:\n"
+                "  PreprocessorArgumentMacros:\n"
+                "    - PP_EXPANSION\n",
+                encoding="utf-8",
+            )
+
+            formatted = native_format("--stdin", "--style", str(config), input_text=source)
+
+            self.assertEqual(0, formatted.returncode, msg=f"stdout:\n{formatted.stdout}\n\nstderr:\n{formatted.stderr}")
+            self.assertEqual(
+                "void PreprocessorArguments() {\n"
+                "    PP_EXPANSION(\"+=\", PP_CAT(+, =));\n"
+                "    PP_EXPANSION(\"comma\", PP_HAS_COMMA(, ));\n"
+                "    PP_EXPANSION(\"tokens\", PP_PARENS(sss() sss));\n"
+                "    PP_EXPANSION(\"raw\", PP_RAW(R\"tag((,))tag\"));\n"
+                "}\n",
+                formatted.stdout,
+            )
+
+            idempotent = native_format("--dry-run", "--stdin", "--style", str(config), input_text=formatted.stdout)
+            self.assertEqual(0, idempotent.returncode, msg=f"stdout:\n{idempotent.stdout}\n\nstderr:\n{idempotent.stderr}")
+
     def test_macro_arrow_chain_formats_and_reparses(self) -> None:
         build_dir = TEST_TEMP_ROOT
         build_dir.mkdir(exist_ok=True)

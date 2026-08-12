@@ -19,6 +19,7 @@ enum class ScannerMacroCategory : unsigned {
     StatementArgument = 3,
     DeclarationPrefix = 4,
     TypeSpecifier = 5,
+    PreprocessorArgument = 6,
 };
 
 thread_local const FormatterConfig* g_parseConfig = nullptr;
@@ -75,6 +76,8 @@ bool ConfigMacroCategoryMatches(ScannerMacroCategory category, std::string_view 
             return MacroCategoryMatches(g_parseConfig->declarationPrefixMacros, name);
         case ScannerMacroCategory::TypeSpecifier:
             return MacroCategoryMatches(g_parseConfig->typeSpecifierMacros, name);
+        case ScannerMacroCategory::PreprocessorArgument:
+            return MacroCategoryMatches(g_parseConfig->preprocessorArgumentMacros, name);
     }
     return false;
 }

@@ -57,6 +57,8 @@ MacroCategories:
     - EXPECT_THROW
   TypeSpecifierMacros:
     - TYPE_OF
+  PreprocessorArgumentMacros:
+    - EXPECT_EXPANSION
 
 StreamShift:
   ConfigurationMethods:

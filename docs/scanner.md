@@ -42,12 +42,13 @@ The scanner owns these identifier tokens:
 - `call_syntax_macro_identifier`
 - `statement_argument_macro_identifier`
 - `type_specifier_macro_identifier`
+- `preprocessor_argument_macro_identifier`
 
 The scanner reads a normal C/C++ identifier and then asks the formatter configuration whether the identifier belongs to the relevant macro category. This keeps macro categories runtime-configurable while the generated parser stays static.
 
 `raw_macro_replacement` captures the rest of a configured raw macro definition once the grammar has accepted the raw macro name and parameters. This is scanner-owned so the raw macro path can preserve a continuation backslash that appears immediately after the macro name or parameter list, before ordinary structured-macro continuation whitespace can consume it.
 
-The scanner classifies identifiers by configured macro category. [macro.md](macro.md) specifies the categories and their supported grammar uses.
+The scanner classifies identifiers by configured macro category. [macro.md](macro.md) specifies the categories and their supported grammar uses. For `PreprocessorArgumentMacros`, the scanner owns only the configured identifier token; the grammar recursively balances the invocation's parentheses and separates its preprocessing-token arguments.
 
 ### Whitespace And Preprocessor Directive Newlines
 
@@ -56,7 +57,7 @@ The scanner classifies identifiers by configured macro category. [macro.md](macr
 - `_preproc_directive_end` is returned when the parser is currently ending a preprocessor directive.
 - `_line_break_whitespace` is returned as hidden whitespace everywhere else.
 
-When a configured macro identifier follows leading line indentation in a parser state that also accepts `_line_break_whitespace`, that token supplies a narrow horizontal-only boundary. This prevents the generated lexer from consuming an ordinary identifier before the runtime scanner can classify the macro. The same boundary is allowed after non-leading horizontal whitespace for configured type-specifier macros and for configured statement-argument macros with a following argument list. Type-specifier macros need it after declaration keywords or modifiers; statement-argument macros need it in unbraced and other same-line statement positions. Preprocessor definition-name and replacement states are excluded, and every other horizontal gap remains owned by the generated lexer. The separate token boundary also ensures that skipped spaces do not become part of the external identifier's source range. Leading indentation needs explicit handling for the first macro in a preprocessor branch because the directive-ending token owns the preceding newline but leaves the branch body's indentation for the next scan.
+When a configured macro identifier follows leading line indentation in a parser state that also accepts `_line_break_whitespace`, that token supplies a narrow horizontal-only boundary. This prevents the generated lexer from consuming an ordinary identifier before the runtime scanner can classify the macro. The same boundary is allowed after non-leading horizontal whitespace for configured type-specifier macros, preprocessing-token-argument macros, and configured statement-argument macros with a following argument list. Type-specifier macros need it after declaration keywords or modifiers; preprocessing-token calls must remain classifiable as expression atoms; statement-argument macros need it in unbraced and other same-line statement positions. Preprocessor definition-name and replacement states are excluded, and every other horizontal gap remains owned by the generated lexer. The separate token boundary also ensures that skipped spaces do not become part of the external identifier's source range. Leading indentation needs explicit handling for the first macro in a preprocessor branch because the directive-ending token owns the preceding newline but leaves the branch body's indentation for the next scan.
 
 Backslash-newline remains ordinary grammar `extras` whitespace. That is what makes structured macro continuation placement inert: inside a structured macro replacement, a continuation backslash does not create a syntax node, and the replacement ends only at the first bare preprocessor directive newline.
 

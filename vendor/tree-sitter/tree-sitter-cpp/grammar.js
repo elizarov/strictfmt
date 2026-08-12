@@ -100,6 +100,7 @@ module.exports = grammar(C, {
     $.call_syntax_macro_identifier,
     $.statement_argument_macro_identifier,
     $.type_specifier_macro_identifier,
+    $.preprocessor_argument_macro_identifier,
     $._preproc_directive_end,
     $._line_break_whitespace,
   ],
@@ -217,6 +218,8 @@ module.exports = grammar(C, {
     [$.type_specifier_macro_call, $.macro_call_expression],
     [$.macro_call_item, $.macro_prefixed_declaration],
     [$.macro_call_item, $.macro_prefixed_function_definition],
+    [$.macro_call_replacement_item, $.call_expression],
+    [$.type_specifier, $.expression, $.macro_call_replacement_item],
     [$._declarator, $._field_declarator, $._type_declarator],
     [$._declarator, $._field_declarator],
     [$.template_method, $.template_function],
@@ -553,11 +556,11 @@ module.exports = grammar(C, {
       optional(','),
     ),
 
-    macro_call_replacement_item: $ => prec.left(PREC.CALL + 4, seq(
+    macro_call_replacement_item: $ => seq(
       field('function', $.identifier),
       field('arguments', $.macro_argument_list),
       optional(';'),
-    )),
+    ),
 
     macro_string_replacement_item: $ => prec(PREC.CALL + 7, choice(
       $.concatenated_string,
@@ -2448,6 +2451,35 @@ module.exports = grammar(C, {
       field('arguments', $.macro_argument_list),
     )),
 
+    preprocessing_token_macro_call: $ => prec(PREC.CALL + 8, seq(
+      field('function', $.preprocessor_argument_macro_identifier),
+      field('arguments', $.preprocessing_token_argument_list),
+    )),
+
+    preprocessing_token_argument_list: $ => seq(
+      '(',
+      optional($.preprocessing_token_argument),
+      repeat(seq(',', optional($.preprocessing_token_argument))),
+      ')',
+    ),
+
+    preprocessing_token_argument: $ => repeat1($._preprocessing_token),
+
+    _preprocessing_token: $ => choice(
+      $.preprocessing_parenthesized_tokens,
+      $.raw_string_literal,
+      $.string_literal,
+      $.char_literal,
+      token(prec(-1, /[^\(\),\s"'\/]+/)),
+      '/',
+    ),
+
+    preprocessing_parenthesized_tokens: $ => seq(
+      '(',
+      repeat(choice($._preprocessing_token, ',')),
+      ')',
+    ),
+
     macro_argument_list: $ => seq(
       '(',
       optional($.macro_argument_sequence),
@@ -2600,6 +2632,7 @@ module.exports = grammar(C, {
     _expression_not_binary: ($, original) => choice(
       $.macro_qualified_identifier,
       original,
+      $.preprocessing_token_macro_call,
       $.macro_call_expression,
       $.qualified_address_expression,
       $.delete_array_expression,

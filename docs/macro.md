@@ -7,7 +7,7 @@ This document specifies the macro configuration and macro formatting for `strict
 Definition-side macro categories and use-side macro categories are independent:
 
 - `RawMacroDefinitions` affects only how a `#define` replacement is parsed and printed. 
-- `BareIdentifierMacros`, `DeclarationPrefixMacros`, `CallSyntaxMacros`, `StatementArgumentMacros`, and `TypeSpecifierMacros` affect only how macro identifiers are parsed when they are used elsewhere in source.
+- `BareIdentifierMacros`, `DeclarationPrefixMacros`, `CallSyntaxMacros`, `StatementArgumentMacros`, `TypeSpecifierMacros`, and `PreprocessorArgumentMacros` affect only how macro identifiers are parsed when they are used elsewhere in source.
 
 ## Macro Replacements
 
@@ -168,6 +168,20 @@ MOCK_METHOD(void, SetValue, (std::string_view, std::string&&), (override));
 ```cpp
 typedef GTEST_REMOVE_REFERENCE_AND_CONST_(Container) RawContainer;
 ```
+
+### PreprocessorArgumentMacros
+
+`PreprocessorArgumentMacros` names function-like macros whose arguments are preprocessing-token sequences rather than C++ expressions, types, declarations, or statements. Use it only when the invocation deliberately inspects or transforms its arguments as tokens, for example a test helper that stringizes an unexpanded macro invocation.
+
+The outer call remains structured: top-level commas separate arguments and the formatter can split the argument list. Within each argument, recursively nested parentheses are recognized, while the complete argument text is preserved as one formatter atom. This accepts operators, adjacent identifiers or calls, empty arguments, string and character literals, raw strings, comments, and other preprocessing tokens. In accordance with function-like macro invocation rules, only parentheses protect an inner comma from separating outer arguments; brackets, braces, and angle brackets do not.
+
+```cpp
+EXPECT_EXPANSION("+=", GMOCK_PP_CAT(+, =));
+EXPECT_EXPANSION("1", GMOCK_PP_HAS_COMMA(, ));
+EXPECT_EXPANSION("0", GMOCK_PP_IS_BEGIN_PARENS(sss() sss));
+```
+
+Do not use this category for calls whose arguments are valid C++ syntax. Those calls should retain structural formatting through the ordinary expression grammar or another narrower use-side category.
 
 ### StatementArgumentMacros
 

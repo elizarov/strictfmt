@@ -30,6 +30,7 @@ struct FormatterConfigPatch {
     std::optional<std::vector<std::string>> callSyntaxMacros;
     std::optional<std::vector<std::string>> statementArgumentMacros;
     std::optional<std::vector<std::string>> typeSpecifierMacros;
+    std::optional<std::vector<std::string>> preprocessorArgumentMacros;
     std::optional<std::vector<std::string>> streamShiftConfigurationMethods;
     std::optional<std::vector<IncludeGroup>> includeGroups;
 };
@@ -244,6 +245,9 @@ void ParseMacroCategories(const std::vector<ConfigLine>& lines, size_t& index, F
         } else if (key == "TypeSpecifierMacros" && value.empty()) {
             patch.typeSpecifierMacros = ParseIndentedStringList(lines, index, line.indent);
             ValidateMacroCategoryEntries(key, *patch.typeSpecifierMacros);
+        } else if (key == "PreprocessorArgumentMacros" && value.empty()) {
+            patch.preprocessorArgumentMacros = ParseIndentedStringList(lines, index, line.indent);
+            ValidateMacroCategoryEntries(key, *patch.preprocessorArgumentMacros);
         }
     }
 }
@@ -331,6 +335,9 @@ FormatterConfig ApplyConfigPatch(FormatterConfig config, FormatterConfigPatch pa
     }
     if (patch.typeSpecifierMacros.has_value()) {
         config.typeSpecifierMacros = std::move(*patch.typeSpecifierMacros);
+    }
+    if (patch.preprocessorArgumentMacros.has_value()) {
+        config.preprocessorArgumentMacros = std::move(*patch.preprocessorArgumentMacros);
     }
     if (patch.streamShiftConfigurationMethods.has_value()) {
         config.streamShiftConfigurationMethods = std::move(*patch.streamShiftConfigurationMethods);

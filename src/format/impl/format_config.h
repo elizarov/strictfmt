@@ -25,6 +25,7 @@ struct FormatterConfig {
     std::vector<std::string> callSyntaxMacros;
     std::vector<std::string> statementArgumentMacros;
     std::vector<std::string> typeSpecifierMacros;
+    std::vector<std::string> preprocessorArgumentMacros;
     std::vector<std::string> streamShiftConfigurationMethods;
     std::vector<IncludeGroup> includeGroups;
 };
