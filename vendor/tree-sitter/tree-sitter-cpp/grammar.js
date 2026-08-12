@@ -2498,7 +2498,6 @@ module.exports = grammar(C, {
       $.type_descriptor,
       $.initializer_list,
       $.compound_statement,
-      $.macro_parenthesized_argument,
       $.virtual_specifier,
       $.type_qualifier,
       $.noexcept,

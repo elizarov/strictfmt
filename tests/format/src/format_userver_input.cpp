@@ -232,6 +232,11 @@ ASSERT_THAT(n,Gt(10)),
 "  Actual: 5" + OfType("unsigned short"));
 }
 
+MATCHER_P(ParenthesizedConditionalDescription, rhs,
+(negation ? "is greater than " : "is less than or equal to ") + PrintToString(rhs)) {
+return arg <= rhs;
+}
+
 void SameLineStatementArgumentMacros(bool enabled) {
 if (enabled) EXPECT_THROW(ThrowNothing(), bool);
 if (enabled) { EXPECT_NO_THROW(ThrowNothing()); }

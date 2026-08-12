@@ -2,11 +2,12 @@
 
 This document owns the compatibility notes for the pinned GoogleTest external project. The formatter configuration is in [`external/googletest/.cpp-format`](../external/googletest/.cpp-format), and the authoritative exclusion list is [`external/googletest/.cpp-format-ignore`](../external/googletest/.cpp-format-ignore).
 
-Each excluded file was parsed separately with the GoogleTest configuration. Candidate macro-category changes were retained only when they removed errors without introducing errors elsewhere in the GoogleTest corpus. Four former exclusions are now supported:
+Each excluded file was parsed separately with the GoogleTest configuration. Candidate macro-category changes were retained only when they removed errors without introducing errors elsewhere in the GoogleTest corpus. Five former exclusions are now supported:
 
 - `googletest/include/gtest/gtest-param-test.h`: `TEST_P`, `INSTANTIATE_TEST_SUITE_P`, and `INSTANTIATE_TEST_CASE_P` definitions intentionally contain generated identifier/declaration fragments, so their definitions are raw.
 - `googletest/test/googletest-printers-test.cc`: `EXPECT_PRINT_TO_STRING_` stringizes `value`, so its definition is raw.
 - `googlemock/test/gmock-matchers-containers_test.cc`: nested ordinary calls and diagnostic expressions now compose through the normal recursive expression grammar inside statement-argument macro lists.
+- `googlemock/test/gmock-matchers-arithmetic_test.cc`: parenthesized conditional expressions in ordinary macro arguments now compose recursively with following binary operators and calls.
 - `googletest/test/gtest_unittest.cc`: configured statement-argument calls now classify after same-line whitespace, including as unbraced control-flow bodies. `VERIFY_CODE_LOCATION` remains raw because its replacement mixes declarations and calls in a sequence that the structured replacement grammar does not compose.
 
 The audit also classified the genuinely non-structural `MATCHER*`, `MY_MOCK_METHODS*`, and `LEGACY_MY_MOCK_METHODS*` definitions as raw. `GTEST_LOG_` was removed from `BareIdentifierMacros`: its uses are ordinary call expressions with stream tails, and bare classification broke its use inside a statement-argument macro.
@@ -68,19 +69,6 @@ MOCK_METHOD(int, CTNullary, (), (Calltype(STDMETHODCALLTYPE)));
 ```
 
 `BareIdentifierMacros` is the semantically closest category, but adding `STDMETHODCALLTYPE` there does not fix this invocation and makes its legacy declaration-macro uses recover as errors. The separate `MY_MOCK_METHODS*` and `LEGACY_MY_MOCK_METHODS*` definition failures are fixed by raw-definition configuration.
-
-### `googlemock/test/gmock-matchers-arithmetic_test.cc`
-
-`MATCHER_P*` is already a call-syntax macro-function family. In this header, the argument parser closes the parenthesized conditional expression before its following `+` and then treats the plus as the start of a separate unary expression.
-
-```cpp
-MATCHER_P(DoubleLe, rhs,
-          (negation ? "is > " : "is <= ") + PrintToString(rhs)) {
-  return arg.value() <= rhs.value();
-}
-```
-
-No existing macro category changes the argument grammar for this call-syntax macro-function header.
 
 ### `googletest/include/gtest/internal/gtest-internal.h`
 

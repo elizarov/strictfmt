@@ -10,7 +10,7 @@ Scanner tokens are acceptable only for lexical or line-aware classification that
 
 ## Generated Parser Source Size
 
-The generated C++ parser must remain one file no larger than 50,000,000 bytes while using the unmodified upstream tree-sitter runtime, parser ABI, and table readers. The accepted grammar at this checkpoint generates a 99,227,802-byte `parser.c` before source compaction, with 33,698 states, 14,432 large states, 803 symbols, 300 terminals, and 316 production IDs. All 50 tests pass at that baseline.
+The generated C++ parser must remain one file no larger than 50,000,000 bytes while using the unmodified upstream tree-sitter runtime, parser ABI, and table readers. The accepted grammar at this checkpoint generates a 99,212,287-byte `parser.c` before source compaction, with 33,697 states, 14,431 large states, 803 symbols, 300 terminals, and 316 production IDs. All 50 tests pass at that baseline.
 
 ### Stock-Table Source Compaction
 
@@ -18,7 +18,7 @@ Status: accepted.
 
 Shape: run the pinned unmodified tree-sitter CLI, then rewrite only redundant C spelling inside its monolithic parse-table declarations. Symbolic enum references become the same numeric enum values, `STATE(n)` and `ACTIONS(n)` become `n` after verifying that the pinned generated parser header defines both as identity macros, and leading table indentation is removed. The transformation does not split or re-encode a table, change a value or dimension, widen a type, modify a generated header, or require a runtime change. The regeneration tool rejects an output above the 50,000,000-byte limit.
 
-Result: `parser.c` decreases from 99,227,802 to 36,993,233 bytes. Its 33,698 states, 14,432 large states, 803 symbols, 300 terminals, and 316 production IDs are unchanged. The source compiles against the vendored stock runtime and all 50 tests pass, including golden parse/idempotence tests and the CaseDash, GoogleTest, and userver corpus sweeps.
+Result: `parser.c` decreases from 99,212,287 to 36,988,236 bytes. Its 33,697 states, 14,431 large states, 803 symbols, 300 terminals, and 316 production IDs are unchanged. The source compiles against the vendored stock runtime and all 50 tests pass, including golden parse/idempotence tests and the CaseDash, GoogleTest, and userver corpus sweeps.
 
 This is source compaction, not a private parse-table format. The runtime sees the same statically initialized arrays and the same `TSLanguage` structure that the stock generator emitted.
 
@@ -1289,6 +1289,14 @@ Status: accepted.
 Shape: reuse the existing hidden `_line_break_whitespace` external token as a narrow horizontal-only boundary when a configured statement-argument call follows in a non-preprocessor statement-argument state. Without that token boundary, the generated lexer could skip spaces and accept an ordinary identifier before the runtime scanner classified a configured macro. Letting the scanner fall through after consuming those spaces was also invalid because the spaces became part of the external identifier's source range. The scanner excludes preprocessor definition-name and replacement states and leaves every other horizontal gap to the generated lexer. The boundary advances tree-sitter to the identifier before classification, so the call composes through the existing recursive `statement` role whether it begins on the same line as an `if` condition, after a brace, or at the start of a line.
 
 Result: `googletest/test/gtest_unittest.cc` no longer fails on the unbraced `EXPECT_THROW(ThrowNothing(), bool)` body. The grammar and generated tables are unchanged: the parser remains at 33,698 states, 14,432 large states, 803 symbols, 300 terminals, and 316 production IDs; compacted `parser.c` remains 36,993,233 bytes.
+
+### Recursive Parenthesized Macro Expressions
+
+Status: accepted.
+
+Shape: remove `macro_parenthesized_argument` from the general `_macro_argument_list_item` alternatives. Ordinary `parenthesized_expression` already owns parenthesized C++ expressions and composes through recursive call, field, unary, and binary expression rules. The competing macro token-list alternative could reduce `(conditional)` as a complete argument before seeing a following binary operator, after which recovery treated `+ call(...)` as a separate unary expression. The parenthesized token-list rule remains in `macro_method_return_type`, where method-declaration macros need it for parenthesized non-expression return types.
+
+Result: `MATCHER_P(DoubleLe, rhs, (conditional) + PrintToString(rhs))` now parses through the ordinary recursive binary-expression grammar, and `googlemock/test/gmock-matchers-arithmetic_test.cc` is removed from the exclusion list. States decrease from 33,698 to 33,697, large states from 14,432 to 14,431, maximum action index from 52,781 to 52,779, and largest referenced shift state from 33,689 to 33,688. Symbols, terminals, and production IDs remain unchanged. Stock generated `parser.c` decreases from 99,227,802 to 99,212,287 bytes, and source compaction decreases it from 36,993,233 to 36,988,236 bytes. All 50 tests pass, including the focused golden fixture and the expanded GoogleTest sweep.
 
 ## Current External Unsupported Conditional Placements
 
