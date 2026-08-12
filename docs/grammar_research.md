@@ -1155,7 +1155,7 @@ Status: accepted with a configured category.
 
 Shape: add `TypeSpecifierMacros` and a scanner token `type_specifier_macro_identifier` for function-like macros that expand to a type specifier. The normal declaration grammar accepts `type_specifier_macro_call` where a type specifier is expected. Runtime configuration is the sole owner of these names; the earlier spelling fallback for `GTEST_REMOVE_REFERENCE_AND_CONST_` proved redundant after the surrounding declaration grammar was normalized.
 
-Result: declarations and typedefs headed by configured `GTEST_REMOVE_REFERENCE_AND_CONST_`, and userver OpenSSL lambda parameters such as `STACK_OF(X509) * sk`, parse without putting the macro in `CallSyntaxMacros`. The 16-bit reduction record documents the later fallback deletion and complete external-project validation.
+Result: declarations and typedefs headed by configured `GTEST_REMOVE_REFERENCE_AND_CONST_`, dependent types such as `typedef typename GTEST_BIND_(TestSel, Type) TestClass`, and userver OpenSSL lambda parameters such as `STACK_OF(X509) * sk`, parse without putting the macro in `CallSyntaxMacros`. The later horizontal scanner boundary lets the configured type identifier retain its role after `typename`; `gtest-internal.h` is therefore removed from the exclusion list. The 16-bit reduction record documents the later fallback deletion and complete external-project validation.
 
 ### Generated Macro Fallbacks For Lexical Ambiguities
 
@@ -1336,4 +1336,4 @@ Both shapes are outside the supported placement list in [preprocessor.md](prepro
 
 Complete guarded GoogleTest-style macro function definitions, branch-selected complete statements, selected `TEST(...) {` common-body headers, macro-interleaved string help fragments, and configured preprocessing-token macro arguments are not in this unsupported list: they parse with the GoogleTest style.
 
-The remaining non-conditional GoogleTest exclusions are also not conditional-placement evidence: one places a type-producing macro after `typename`, and another ends blocks with semicolonless diagnostic-pop calls. The exact generated fallback already covers other semicolonless warning sentinels, local generator runs such as `GMOCK_INTERNAL_PARSE_FLAG(...)`, and stress-test macro bursts such as `THOUSAND_TESTS_(T)`.
+The remaining non-conditional GoogleTest exclusion is also not conditional-placement evidence: it ends blocks with semicolonless diagnostic-pop calls. The exact generated fallback already covers other semicolonless warning sentinels, local generator runs such as `GMOCK_INTERNAL_PARSE_FLAG(...)`, and stress-test macro bursts such as `THOUSAND_TESTS_(T)`.
