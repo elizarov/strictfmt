@@ -992,6 +992,40 @@ class FormatCommandTests(unittest.TestCase):
 
             self.assertEqual(0, formatted.returncode, msg=f"stdout:\n{formatted.stdout}\n\nstderr:\n{formatted.stderr}")
 
+    def test_type_specifier_macro_classifies_after_horizontal_whitespace(self) -> None:
+        source = (
+            "template<typename T>struct TypeMacroFixture{\n"
+            "typedef REMOVE_CV_REF(T) RawT;\n"
+            "using Address=const REMOVE_CV_REF(T)*;\n"
+            "};\n"
+        )
+        build_dir = TEST_TEMP_ROOT
+        build_dir.mkdir(exist_ok=True)
+        with tempfile.TemporaryDirectory(prefix="format_type_macro_", dir=build_dir) as temp_dir:
+            config = Path(temp_dir) / ".cpp-format"
+            config.write_text(
+                "---\n"
+                "ColumnLimit: 120\n"
+                "IndentWidth: 4\n"
+                "TabWidth: 4\n"
+                "MacroCategories:\n"
+                "  TypeSpecifierMacros:\n"
+                "    - REMOVE_CV_REF\n",
+                encoding="utf-8",
+            )
+
+            formatted = native_format("--stdin", "--style", str(config), input_text=source)
+
+            self.assertEqual(0, formatted.returncode, msg=f"stdout:\n{formatted.stdout}\n\nstderr:\n{formatted.stderr}")
+            self.assertEqual(
+                "template <typename T>\n"
+                "struct TypeMacroFixture {\n"
+                "    typedef REMOVE_CV_REF(T) RawT;\n"
+                "    using Address = const REMOVE_CV_REF(T)*;\n"
+                "};\n",
+                formatted.stdout,
+            )
+
     def test_macro_arrow_chain_formats_and_reparses(self) -> None:
         build_dir = TEST_TEMP_ROOT
         build_dir.mkdir(exist_ok=True)
