@@ -280,6 +280,7 @@ module.exports = grammar(C, {
     [$._block_item, $.preproc_selected_else_if_body_item],
     [$.statement, $.preproc_selected_else_if_body_item],
     [$._block_item, $.statement, $.preproc_selected_else_if_body_item],
+    [$._top_level_item, $._function_definition_prefix_branch],
   ],
 
   inline: ($, original) => original.concat([
@@ -331,7 +332,8 @@ module.exports = grammar(C, {
       $.alias_declaration,
       $.top_level_item_macro,
       $.macro_function_definition,
-      $.preproc_selected_macro_function_definition,
+      alias($.preproc_selected_macro_function_definition, $.function_definition),
+      alias($.preproc_selected_function_definition, $.function_definition),
       $.top_level_macro_call_line_item,
       $.macro_call_item,
       prec(1, $.top_level_call_statement),
@@ -935,12 +937,56 @@ module.exports = grammar(C, {
     )),
 
     function_definition: $ => prec(1, seq(
-      optional($.ms_call_modifier),
-      $._declaration_specifiers,
-      optional($.ms_call_modifier),
-      field('declarator', $._declarator),
+      ...functionDefinitionHeader($),
       field('body', choice($.compound_statement, $.try_statement, $.delete_method_clause)),
     )),
+
+    _function_definition_prefix: $ => prec(1, seq(
+      ...functionDefinitionHeader($),
+      '{',
+    )),
+
+    preproc_selected_function_definition: $ => prec(1, seq(
+      field('body', alias($.preproc_selected_function_body, $.compound_statement)),
+    )),
+
+    preproc_selected_function_body: $ => seq(
+      choice(
+        $.preproc_if_in_function_definition_prefix,
+        $.preproc_ifdef_in_function_definition_prefix,
+      ),
+      repeat($._block_item),
+      '}',
+    ),
+
+    _function_definition_prefix_branch: $ => seq(
+      repeat($.preproc_include),
+      $._function_definition_prefix,
+    ),
+
+    preproc_if_in_function_definition_prefix: $ => seq(
+      preprocessor('if'),
+      field('condition', $._preproc_expression),
+      $._preproc_directive_end,
+      $._function_definition_prefix_branch,
+      field('alternative', $.preproc_else_in_function_definition_prefix),
+      preprocessor('endif'),
+    ),
+
+    preproc_ifdef_in_function_definition_prefix: $ => seq(
+      choice(preprocessor('ifdef'), preprocessor('ifndef')),
+      field('name', $.identifier),
+      $._preproc_directive_end,
+      $._function_definition_prefix_branch,
+      field('alternative', $.preproc_else_in_function_definition_prefix),
+      preprocessor('endif'),
+    ),
+
+    preproc_else_in_function_definition_prefix: $ => seq(
+      preprocessor('else'),
+      $._preproc_directive_end,
+      $._function_definition_prefix_branch,
+    ),
 
     _macro_function_definition_prefix: $ => prec.right(PREC.CALL + 7, seq(
       field('name', $.call_syntax_macro_identifier),
@@ -949,10 +995,14 @@ module.exports = grammar(C, {
     )),
 
     preproc_selected_macro_function_definition: $ => prec(1, seq(
+      field('body', alias($.preproc_selected_macro_function_body, $.compound_statement)),
+    )),
+
+    preproc_selected_macro_function_body: $ => seq(
       $.preproc_if_in_macro_function_definition_prefix,
       repeat($._block_item),
       '}',
-    )),
+    ),
 
     preproc_if_in_macro_function_definition_prefix: $ => prec(PREC.CALL + 7, seq(
       preprocessor('if'),
@@ -3641,6 +3691,15 @@ function commaSepWithLeadingPreproc($, rule, suffix, forms = PREPROC_ALL_BRANCH_
  */
 function commaSep1(rule) {
   return seq(rule, repeat(seq(',', rule)));
+}
+
+function functionDefinitionHeader($) {
+  return [
+    optional($.ms_call_modifier),
+    $._declaration_specifiers,
+    optional($.ms_call_modifier),
+    field('declarator', $._declarator),
+  ];
 }
 
 function commaSep1WithRequiredPreproc($, rule, suffix, forms) {

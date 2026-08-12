@@ -29,6 +29,27 @@
 #include "format_userver/system.hpp"
 #endif
 
+#ifdef FORMAT_WINDOWS_MAIN
+#include <tchar.h>
+
+FORMAT_API_ int FormatMain(int argc,TCHAR** argv){
+#else
+#include "format_userver/portable_main.hpp"
+
+FORMAT_API_ int FormatMain(int argc,char** argv){
+#endif
+UseMain(argc,argv);
+return 0;
+}
+
+#if FORMAT_SELECTED_MACRO_FUNCTION
+FORMAT_FIXTURE_DECLARE_OPTION(Primary){
+#else
+FORMAT_FIXTURE_DECLARE_OPTION(Fallback){
+#endif
+UseSelectedMacroBody();
+}
+
 #ifdef FORMAT_USERVER_PROTECT_ATTR
 #define FORMAT_USERVER_PROTECTED_ATTR __attribute__((noinline, flatten))
 #else
