@@ -468,6 +468,15 @@ bool FormatTokenNeedsSpace(const PrintToken* previous, const PrintToken& current
         previous->kind == PrintTokenKind::Known ? previous->syntaxKind : SyntaxNodeKind::Unknown;
     const SyntaxNodeKind cur = current.kind == PrintTokenKind::Known ? current.syntaxKind : SyntaxNodeKind::Unknown;
 
+    if (
+        prev == SyntaxNodeKind::Comma &&
+        cur == SyntaxNodeKind::RightParen &&
+        ParentNode(current) != nullptr &&
+        (ParentNode(current)->classes & static_cast<std::uint64_t>(SyntaxNodeClass::PreserveTrailingComma)) != 0
+    ) {
+        return true;
+    }
+
     if (SyntaxNodeKindHasClass(prev, SyntaxNodeClass::PreprocessorDirective)) {
         return true;
     }

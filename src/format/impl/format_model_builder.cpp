@@ -216,6 +216,11 @@ bool IsBlockComment(std::string_view source, uint32_t commentStart) {
     return commentStart + 1 < source.size() && source[commentStart] == '/' && source[commentStart + 1] == '*';
 }
 
+bool SyntaxNodeHasClass(const SyntaxNode& node, SyntaxNodeClass syntaxNodeClass) {
+    return (node.classes & static_cast<std::uint64_t>(syntaxNodeClass)) != 0 ||
+        SyntaxNodeKindHasClass(node.kind, syntaxNodeClass);
+}
+
 bool KeepsBlockCommentInlineInParent(SyntaxNodeKind kind) {
     switch (kind) {
         case SyntaxNodeKind::ArgumentList:
@@ -323,7 +328,10 @@ void NormalizeTrailingCommas(FormatModel& model, SyntaxNode& node) {
             }
             continue;
         }
-        if (children[*previous]->kind == SyntaxNodeKind::Comma) {
+        if (
+            children[*previous]->kind == SyntaxNodeKind::Comma &&
+            !SyntaxNodeHasClass(node, SyntaxNodeClass::PreserveTrailingComma)
+        ) {
             children.erase(children.begin() + static_cast<std::ptrdiff_t>(*previous));
             --index;
         }

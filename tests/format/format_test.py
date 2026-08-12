@@ -1033,6 +1033,10 @@ class FormatCommandTests(unittest.TestCase):
             "PP_EXPANSION(\"comma\", PP_HAS_COMMA(, ));\n"
             "PP_EXPANSION(\"tokens\", PP_PARENS(sss() sss));\n"
             "PP_EXPANSION(\"raw\", PP_RAW(R\"tag((,))tag\"));\n"
+            "PP_EXPANSION(PP_ITEM, ~, (int, float));\n"
+            "using GeneratedTypes=Test<PP_EXPANSION(PP_ITEM, ~, (int, float))>;\n"
+            "PP_EXPANSION(item, );\n"
+            "PP_EXPANSION(, );\n"
             "}\n"
         )
         unconfigured = native_format("--stdin", input_text=source)
@@ -1064,6 +1068,10 @@ class FormatCommandTests(unittest.TestCase):
                 "    PP_EXPANSION(\"comma\", PP_HAS_COMMA(, ));\n"
                 "    PP_EXPANSION(\"tokens\", PP_PARENS(sss() sss));\n"
                 "    PP_EXPANSION(\"raw\", PP_RAW(R\"tag((,))tag\"));\n"
+                "    PP_EXPANSION(PP_ITEM, ~, (int, float));\n"
+                "    using GeneratedTypes = Test<PP_EXPANSION(PP_ITEM, ~, (int, float))>;\n"
+                "    PP_EXPANSION(item, );\n"
+                "    PP_EXPANSION(, );\n"
                 "}\n",
                 formatted.stdout,
             )

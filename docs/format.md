@@ -44,7 +44,7 @@ This document specifies the source layout produced by `strictfmt`.
 - Drop blank lines at the beginning of a block and immediately before a closing brace.
 - Insert required structural blank lines only when they separate neighboring source items.
 - Put one empty line after `#pragma once` when another source item follows. Put one empty line before and after each `#undef` when it separates `#undef` from a neighboring source item.
-- Remove trailing commas except in enum bodies. When the final item is selected by a conditional preprocessor branch, remove the branch-owned terminal comma from every final branch as part of the same normalization.
+- Remove trailing commas except in enum bodies. A comma before an empty final `PreprocessorArgumentMacros` argument is an argument separator, not a trailing comma, and is preserved. When the final item is selected by a conditional preprocessor branch, remove the branch-owned terminal comma from every final branch as part of the same normalization.
 - Structured macro definitions use formatter-owned replacement whitespace and continuation lines. Raw macro definitions configured with `RawMacroDefinitions` intentionally preserve raw replacement line structure as specified in [macro.md](macro.md).
 
 ## Mandatory Line Breaks

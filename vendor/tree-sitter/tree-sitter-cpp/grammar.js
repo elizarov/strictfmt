@@ -410,6 +410,7 @@ module.exports = grammar(C, {
       $.sized_type_specifier,
       $.primitive_type,
       $.type_specifier_macro_call,
+      $.preprocessing_token_macro_call,
       $.template_type,
       $.dependent_type,
       $.placeholder_type_specifier,
