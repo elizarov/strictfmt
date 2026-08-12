@@ -5711,10 +5711,6 @@
           "named": true
         },
         {
-          "type": "macro_parenthesized_argument",
-          "named": true
-        },
-        {
           "type": "macro_primitive_type_argument",
           "named": true
         },
@@ -6898,10 +6894,6 @@
           },
           {
             "type": "macro_numeric_sequence_argument",
-            "named": true
-          },
-          {
-            "type": "macro_parenthesized_argument",
             "named": true
           },
           {

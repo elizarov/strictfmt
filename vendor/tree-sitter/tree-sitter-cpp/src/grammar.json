@@ -23881,10 +23881,6 @@
         },
         {
           "type": "SYMBOL",
-          "name": "macro_parenthesized_argument"
-        },
-        {
-          "type": "SYMBOL",
           "name": "virtual_specifier"
         },
         {
