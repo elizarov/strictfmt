@@ -61,6 +61,8 @@ constexpr std::uint64_t kPreprocessorSplitListClasses =
     kAllowedListPreprocessorContainerClasses |
     Bit(SyntaxNodeClass::PreprocessorSplitList) |
     Bit(SyntaxNodeClass::SemanticDelimitedParent);
+constexpr std::uint64_t kPreprocessingTokenArgumentListClasses =
+    kPreprocessorSplitListClasses | Bit(SyntaxNodeClass::PreserveTrailingComma);
 constexpr std::uint64_t kConditionalPreprocessorTreeClasses =
     kAllowedPreprocessorContainerClasses |
     kSupportedPreprocessorPlacementClasses |
@@ -88,7 +90,8 @@ constexpr std::uint64_t kSymbolLocalClasses =
     Bit(SyntaxNodeClass::WholeNodeAsFreeToken) |
     Bit(SyntaxNodeClass::AtomicPreprocessor) |
     Bit(SyntaxNodeClass::DeclarationModifierPreprocessor) |
-    Bit(SyntaxNodeClass::ConditionalRhsPreprocessor);
+    Bit(SyntaxNodeClass::ConditionalRhsPreprocessor) |
+    Bit(SyntaxNodeClass::PreserveTrailingComma);
 
 constexpr auto kSyntaxKindMappings = std::to_array<SyntaxKindMapping>({
     Kind(SyntaxNodeKind::Tree, Bit(SyntaxNodeClass::Tree)),
@@ -196,7 +199,7 @@ constexpr auto kSyntaxKindMappings = std::to_array<SyntaxKindMapping>({
     Tree(SyntaxNodeKind::FreeToken, "macro_qualified_sized_type_specifier", Bit(SyntaxNodeClass::WholeNodeAsFreeToken)),
     Tree(SyntaxNodeKind::Tree, "type_specifier_macro_call"),
     Tree(SyntaxNodeKind::Tree, "preprocessing_token_macro_call"),
-    Tree(SyntaxNodeKind::ArgumentList, "preprocessing_token_argument_list", kPreprocessorSplitListClasses),
+    Tree(SyntaxNodeKind::ArgumentList, "preprocessing_token_argument_list", kPreprocessingTokenArgumentListClasses),
     Tree(SyntaxNodeKind::FreeToken, "preprocessing_token_argument", Bit(SyntaxNodeClass::WholeNodeAsFreeToken)),
     Tree(SyntaxNodeKind::Tree, "macro_expression_without_semicolon"),
     Tree(SyntaxNodeKind::FreeToken, "using_operator_pack_declaration", Bit(SyntaxNodeClass::WholeNodeAsFreeToken)),

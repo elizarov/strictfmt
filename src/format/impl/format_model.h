@@ -334,6 +334,7 @@ enum class SyntaxNodeClass : std::uint64_t {
     CheckedPreprocessorDirective = 1ull << 43,
     EndifDirective = 1ull << 44,
     SupportedPreprocessorPlacement = 1ull << 45,
+    PreserveTrailingComma = 1ull << 46,
 };
 
 enum class SyntaxWrapperRole : std::uint8_t {

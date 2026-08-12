@@ -5775,6 +5775,10 @@
         },
         {
           "type": "SYMBOL",
+          "name": "preprocessing_token_macro_call"
+        },
+        {
+          "type": "SYMBOL",
           "name": "template_type"
         },
         {

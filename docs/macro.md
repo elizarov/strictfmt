@@ -173,12 +173,14 @@ typedef GTEST_REMOVE_REFERENCE_AND_CONST_(Container) RawContainer;
 
 `PreprocessorArgumentMacros` names function-like macros whose arguments are preprocessing-token sequences rather than C++ expressions, types, declarations, or statements. Use it only when the invocation deliberately inspects or transforms its arguments as tokens, for example a test helper that stringizes an unexpanded macro invocation.
 
-The outer call remains structured: top-level commas separate arguments and the formatter can split the argument list. Within each argument, recursively nested parentheses are recognized, while the complete argument text is preserved as one formatter atom. This accepts operators, adjacent identifiers or calls, empty arguments, string and character literals, raw strings, comments, and other preprocessing tokens. In accordance with function-like macro invocation rules, only parentheses protect an inner comma from separating outer arguments; brackets, braces, and angle brackets do not.
+The outer call remains structured: top-level commas separate arguments and the formatter can split the argument list. The complete call composes in expression and type-specifier positions, allowing a configured token generator to occupy a template-argument slot. Within each argument, recursively nested parentheses are recognized, while the complete argument text is preserved as one formatter atom. This accepts operators, adjacent identifiers or calls, empty arguments, string and character literals, raw strings, comments, and other preprocessing tokens. Separator commas around empty arguments are semantic preprocessing syntax and are preserved, including a comma immediately before the closing parenthesis. In accordance with function-like macro invocation rules, only parentheses protect an inner comma from separating outer arguments; brackets, braces, and angle brackets do not.
 
 ```cpp
 EXPECT_EXPANSION("+=", GMOCK_PP_CAT(+, =));
 EXPECT_EXPANSION("1", GMOCK_PP_HAS_COMMA(, ));
 EXPECT_EXPANSION("0", GMOCK_PP_IS_BEGIN_PARENS(sss() sss));
+GMOCK_PP_HAS_COMMA(value, );
+Test<GMOCK_PP_FOR_EACH(TYPE_ELEMENT, ~, (int, float))>;
 ```
 
 Do not use this category for calls whose arguments are valid C++ syntax. Those calls should retain structural formatting through the ordinary expression grammar or another narrower use-side category.
