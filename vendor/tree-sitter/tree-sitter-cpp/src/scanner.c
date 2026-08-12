@@ -168,17 +168,31 @@ static bool has_following_argument_list(TSLexer *lexer) {
     }
 }
 
-static bool has_valid_statement_argument_macro_identifier(TSLexer *lexer, const bool *valid_symbols) {
-    if (!valid_symbols[STATEMENT_ARGUMENT_MACRO_IDENTIFIER]) {
-        return false;
-    }
-
+static bool has_valid_macro_identifier(
+    TSLexer *lexer,
+    const bool *valid_symbols,
+    bool include_non_statement_categories
+) {
     char name[MAX_MACRO_NAME_LENGTH];
     unsigned length = 0;
     if (!scan_identifier(lexer, name, &length)) {
         return false;
     }
-    return strictfmt_tree_sitter_cpp_macro_category_matches(MACRO_CATEGORY_STATEMENT_ARGUMENT, name, length) &&
+
+    if (include_non_statement_categories &&
+        ((valid_symbols[CALL_SYNTAX_MACRO_IDENTIFIER] &&
+          strictfmt_tree_sitter_cpp_macro_category_matches(MACRO_CATEGORY_CALL_SYNTAX, name, length)) ||
+         (valid_symbols[TYPE_SPECIFIER_MACRO_IDENTIFIER] &&
+          strictfmt_tree_sitter_cpp_macro_category_matches(MACRO_CATEGORY_TYPE_SPECIFIER, name, length)) ||
+         (valid_symbols[DECLARATION_PREFIX_MACRO_IDENTIFIER] &&
+          strictfmt_tree_sitter_cpp_macro_category_matches(MACRO_CATEGORY_DECLARATION_PREFIX, name, length)) ||
+         (valid_symbols[BARE_MACRO_IDENTIFIER] &&
+          strictfmt_tree_sitter_cpp_macro_category_matches(MACRO_CATEGORY_BARE_IDENTIFIER, name, length)))) {
+        return true;
+    }
+
+    return valid_symbols[STATEMENT_ARGUMENT_MACRO_IDENTIFIER] &&
+           strictfmt_tree_sitter_cpp_macro_category_matches(MACRO_CATEGORY_STATEMENT_ARGUMENT, name, length) &&
            has_following_argument_list(lexer);
 }
 
@@ -422,6 +436,7 @@ bool tree_sitter_cpp_external_scanner_scan(void *payload, TSLexer *lexer, const 
     if (valid_symbols[LINE_BREAK_WHITESPACE] &&
         (lexer->lookahead == ' ' || lexer->lookahead == '\t' || lexer->lookahead == '\f' ||
          lexer->lookahead == '\r' || lexer->lookahead == '\n' || lexer->lookahead == '\\')) {
+        const bool at_line_start = lexer->get_column(lexer) == 0;
         const bool horizontal = scan_horizontal_whitespace(lexer);
         if (horizontal) {
             lexer->mark_end(lexer);
@@ -440,7 +455,7 @@ bool tree_sitter_cpp_external_scanner_scan(void *payload, TSLexer *lexer, const 
         }
 
         if (horizontal && !valid_symbols[RAW_MACRO_DEFINITION_IDENTIFIER] &&
-            has_valid_statement_argument_macro_identifier(lexer, valid_symbols)) {
+            has_valid_macro_identifier(lexer, valid_symbols, at_line_start)) {
             lexer->result_symbol = LINE_BREAK_WHITESPACE;
             return true;
         }

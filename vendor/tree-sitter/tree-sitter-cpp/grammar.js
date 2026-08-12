@@ -1502,6 +1502,7 @@ module.exports = grammar(C, {
       $.macro_function_pointer_type_descriptor,
       $.function_pointer_type_descriptor,
       $.macro_parenthesized_argument,
+      $.macro_type_reference_argument,
       $._declaration_specifiers,
     )),
 
