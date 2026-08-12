@@ -2,10 +2,11 @@
 
 This document owns the compatibility notes for the pinned GoogleTest external project. The formatter configuration is in [`external/googletest/.cpp-format`](../external/googletest/.cpp-format), and the authoritative exclusion list is [`external/googletest/.cpp-format-ignore`](../external/googletest/.cpp-format-ignore).
 
-Each excluded file was parsed separately with the GoogleTest configuration. Candidate macro-category changes were retained only when they removed errors without introducing errors elsewhere in the GoogleTest corpus. Two former exclusions became supported during this audit:
+Each excluded file was parsed separately with the GoogleTest configuration. Candidate macro-category changes were retained only when they removed errors without introducing errors elsewhere in the GoogleTest corpus. Three former exclusions are now supported:
 
 - `googletest/include/gtest/gtest-param-test.h`: `TEST_P`, `INSTANTIATE_TEST_SUITE_P`, and `INSTANTIATE_TEST_CASE_P` definitions intentionally contain generated identifier/declaration fragments, so their definitions are raw.
 - `googletest/test/googletest-printers-test.cc`: `EXPECT_PRINT_TO_STRING_` stringizes `value`, so its definition is raw.
+- `googlemock/test/gmock-matchers-containers_test.cc`: nested ordinary calls and diagnostic expressions now compose through the normal recursive expression grammar inside statement-argument macro lists.
 
 The audit also classified the genuinely non-structural `MATCHER*`, `MY_MOCK_METHODS*`, and `LEGACY_MY_MOCK_METHODS*` definitions as raw. `GTEST_LOG_` was removed from `BareIdentifierMacros`: its uses are ordinary call expressions with stream tails, and bare classification broke its use inside a statement-argument macro.
 
@@ -79,19 +80,6 @@ MATCHER_P(DoubleLe, rhs,
 ```
 
 No existing macro category changes the argument grammar for this call-syntax macro-function header.
-
-### `googlemock/test/gmock-matchers-containers_test.cc`
-
-The fatal-failure macros correctly belong to `StatementArgumentMacros`, but their statement argument here is a nested assertion macro without a semicolon. It is followed by a diagnostic expression made from adjacent string literals and `+ OfType(...)`; the current argument recovery crosses the separating comma and splits the plus incorrectly.
-
-```cpp
-EXPECT_FATAL_FAILURE(ASSERT_THAT(n, Gt(10)),
-                     "Value of: n\n"
-                     "Expected: is > 10\n"
-                     "  Actual: 5" + OfType("unsigned short"));
-```
-
-Classifying `ASSERT_THAT` and `EXPECT_THAT` as call-syntax macros introduces missing-semicolon errors at their ordinary uses and does not fix these nested calls.
 
 ### `googletest/include/gtest/internal/gtest-internal.h`
 

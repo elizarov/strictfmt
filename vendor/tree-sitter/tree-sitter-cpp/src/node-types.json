@@ -5731,10 +5731,6 @@
           "named": true
         },
         {
-          "type": "macro_string_concatenation_argument",
-          "named": true
-        },
-        {
           "type": "macro_template_params_argument",
           "named": true
         },
@@ -6925,10 +6921,6 @@
             "named": true
           },
           {
-            "type": "macro_string_concatenation_argument",
-            "named": true
-          },
-          {
             "type": "macro_template_params_argument",
             "named": true
           },
@@ -7022,44 +7014,6 @@
         },
         {
           "type": "macro_complete_statement_item",
-          "named": true
-        }
-      ]
-    }
-  },
-  {
-    "type": "macro_string_component",
-    "named": true,
-    "fields": {},
-    "children": {
-      "multiple": false,
-      "required": true,
-      "types": [
-        {
-          "type": "concatenated_string",
-          "named": true
-        },
-        {
-          "type": "raw_string_literal",
-          "named": true
-        },
-        {
-          "type": "string_literal",
-          "named": true
-        }
-      ]
-    }
-  },
-  {
-    "type": "macro_string_concatenation_argument",
-    "named": true,
-    "fields": {},
-    "children": {
-      "multiple": true,
-      "required": true,
-      "types": [
-        {
-          "type": "macro_string_component",
           "named": true
         }
       ]

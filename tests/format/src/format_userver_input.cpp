@@ -224,6 +224,14 @@ UEXPECT_NO_THROW(throw std::runtime_error("what")) << "Blah",
 "Blah");
 }
 
+void NestedOrdinaryCallStatementArgumentMacro() {
+EXPECT_FATAL_FAILURE(
+ASSERT_THAT(n,Gt(10)),
+"Value of: n\n"
+"Expected: is > 10\n"
+"  Actual: 5" + OfType("unsigned short"));
+}
+
 void NestedStatementSequenceMacro() {
 UEXPECT_NO_THROW(
 EXPECT_NO_THROW(first());
