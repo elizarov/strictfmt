@@ -1,5 +1,8 @@
 #include "format/impl/format_raw_macro.h"
 
+#include <algorithm>
+#include <limits>
+
 #include "tools/tools_common.h"
 
 namespace {
@@ -10,6 +13,74 @@ bool IsNewline(char ch) {
 
 bool StartsWithHorizontalSpace(std::string_view text) {
     return !text.empty() && (text.front() == ' ' || text.front() == '\t');
+}
+
+struct SourceIndent {
+    size_t length = 0;
+    int columns = 0;
+};
+
+SourceIndent MeasureSourceIndent(std::string_view line, int tabWidth) {
+    SourceIndent result;
+    while (result.length < line.size()) {
+        if (line[result.length] == ' ') {
+            ++result.columns;
+        } else if (line[result.length] == '\t') {
+            result.columns += tabWidth - result.columns % tabWidth;
+        } else {
+            break;
+        }
+        ++result.length;
+    }
+    return result;
+}
+
+std::string ReindentRawMacroBody(std::string_view text, int bodyIndentLevel, int indentWidth, int tabWidth) {
+    const size_t firstLineEnd = text.find('\n');
+    if (firstLineEnd == std::string_view::npos) {
+        return std::string(text);
+    }
+
+    int commonIndent = std::numeric_limits<int>::max();
+    size_t lineStart = firstLineEnd + 1;
+    while (lineStart <= text.size()) {
+        const size_t lineEnd = text.find('\n', lineStart);
+        const std::string_view line =
+            lineEnd == std::string_view::npos ? text.substr(lineStart) : text.substr(lineStart, lineEnd - lineStart);
+        const SourceIndent indent = MeasureSourceIndent(line, tabWidth);
+        if (indent.length < line.size()) {
+            commonIndent = std::min(commonIndent, indent.columns);
+        }
+        if (lineEnd == std::string_view::npos) {
+            break;
+        }
+        lineStart = lineEnd + 1;
+    }
+    if (commonIndent == std::numeric_limits<int>::max()) {
+        commonIndent = 0;
+    }
+
+    std::string result;
+    result.reserve(text.size());
+    result.append(text.substr(0, firstLineEnd));
+    const int bodyIndent = std::max(0, bodyIndentLevel) * std::max(1, indentWidth);
+    lineStart = firstLineEnd + 1;
+    while (lineStart <= text.size()) {
+        const size_t lineEnd = text.find('\n', lineStart);
+        const std::string_view line =
+            lineEnd == std::string_view::npos ? text.substr(lineStart) : text.substr(lineStart, lineEnd - lineStart);
+        const SourceIndent indent = MeasureSourceIndent(line, tabWidth);
+        result.push_back('\n');
+        if (indent.length < line.size()) {
+            result.append(static_cast<size_t>(bodyIndent + std::max(0, indent.columns - commonIndent)), ' ');
+            result.append(line.substr(indent.length));
+        }
+        if (lineEnd == std::string_view::npos) {
+            break;
+        }
+        lineStart = lineEnd + 1;
+    }
+    return result;
 }
 
 }  // namespace
@@ -99,9 +170,10 @@ std::string PreservePreprocessorLines(std::string_view text) {
     return result;
 }
 
-std::string FormatRawMacroReplacement(std::string_view text) {
+std::string FormatRawMacroReplacement(std::string_view text, int bodyIndentLevel, int indentWidth, int tabWidth) {
     if (text.find_first_of("\r\n") != std::string_view::npos) {
-        return PreservePreprocessorLines(text);
+        return
+            ReindentRawMacroBody(PreservePreprocessorLines(text), bodyIndentLevel, indentWidth, std::max(1, tabWidth));
     }
     std::string collapsed = NormalizeTrailingLineCommentSpacing(CollapseSourceWhitespace(text));
     if (!collapsed.empty() && StartsWithHorizontalSpace(text)) {

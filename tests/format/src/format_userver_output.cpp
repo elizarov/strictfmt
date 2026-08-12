@@ -42,10 +42,10 @@
         UseOption(arg, PP_STRINGIZE(FUNCTION_NAME)); \
     }
 #define FORMAT_USERVER_HASH_JOIN(FUNCTION_NAME) \
-private: \
-    inline void FUNCTION_NAME##_impl() {} \
-public: \
-    static constexpr bool is_##FUNCTION_NAME##_available = true
+    private: \
+        inline void FUNCTION_NAME##_impl() {} \
+    public: \
+        static constexpr bool is_##FUNCTION_NAME##_available = true
 #define FORMAT_USERVER_EXPECT_TRY(cmd) \
     try { \
         cmd; \
