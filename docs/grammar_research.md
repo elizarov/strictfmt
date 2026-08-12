@@ -1298,6 +1298,24 @@ Shape: remove `macro_parenthesized_argument` from the general `_macro_argument_l
 
 Result: `MATCHER_P(DoubleLe, rhs, (conditional) + PrintToString(rhs))` now parses through the ordinary recursive binary-expression grammar, and `googlemock/test/gmock-matchers-arithmetic_test.cc` is removed from the exclusion list. States decrease from 33,698 to 33,697, large states from 14,432 to 14,431, maximum action index from 52,781 to 52,779, and largest referenced shift state from 33,689 to 33,688. Symbols, terminals, and production IDs remain unchanged. Stock generated `parser.c` decreases from 99,227,802 to 99,212,287 bytes, and source compaction decreases it from 36,993,233 to 36,988,236 bytes. All 50 tests pass, including the focused golden fixture and the expanded GoogleTest sweep.
 
+### Configured Macros At Indented Preprocessor Branch Starts
+
+Status: accepted.
+
+Shape: extend the existing horizontal-only `_line_break_whitespace` boundary from configured statement-argument macros to every configured macro-identifier category accepted by the current parser state, but only when the horizontal whitespace is leading line indentation. The boundary remains conditional on an actual configuration match, continues to exclude raw preprocessor definition-name and replacement states, and still requires a following argument list for statement-argument macros. Non-leading horizontal gaps retain the narrower statement-argument-only behavior; broadening them regressed adjacent configured declaration macros such as `GTEST_API_ GTEST_DECLARE_STATIC_MUTEX_(...)`. This is lexical ownership only: after the boundary advances the parser to the identifier, the grammar's existing role owns the complete construct.
+
+The extension is needed when a configured macro is the first indented item after `#if` or `#ifdef`. The preceding `_preproc_directive_end` token consumes the directive newline but not the branch body's indentation. Without a horizontal boundary, the generated lexer can consume that indentation and classify the following spelling as an ordinary identifier before the runtime scanner gets another opportunity. Later branch items do not expose the bug because their preceding newline is consumed by `_line_break_whitespace` together with indentation.
+
+Result: the first `MOCK_METHOD(int, CTNullary, (), (Calltype(STDMETHODCALLTYPE)))` in the Windows branch of `gmock-function-mocker_test.cc` retains its configured call-syntax role and reduces through `macro_method_declaration`. This scanner-only change leaves the generated parser metrics unchanged.
+
+### Dependent Reference Returns In Method Macros
+
+Status: accepted.
+
+Shape: reuse the existing `macro_type_reference_argument` alternative in `macro_method_return_type`. Method-macro return types such as `const T&` have the same lexical type-reference shape already supported in general macro arguments; admitting that existing token avoids duplicating a new return-type spelling rule. Parenthesized comma-containing returns and function-pointer returns keep their existing dedicated alternatives, and method parameters and qualifiers retain their constrained owners.
+
+Result: `MOCK_METHOD(const T&, GetTop, (), (const))` and the corresponding call-type/override form parse as complete method-macro declarations. `googlemock/test/gmock-function-mocker_test.cc` is removed from the exclusion list. The alternative reuses an existing terminal and leaves parser states, symbols, action indexes, and compacted source size at the preceding baseline.
+
 ## Current External Unsupported Conditional Placements
 
 The excluded external files are not all excluded because of conditional compilation: some also contain unsupported macro arguments, declaration modifiers, or vendored non-C++ token tricks. The conditional-placement gaps currently visible in excluded files are:

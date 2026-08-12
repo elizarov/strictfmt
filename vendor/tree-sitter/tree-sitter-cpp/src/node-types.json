@@ -6575,6 +6575,10 @@
           "named": true
         },
         {
+          "type": "macro_type_reference_argument",
+          "named": true
+        },
+        {
           "type": "ms_declspec_modifier",
           "named": true
         },

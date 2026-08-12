@@ -104,7 +104,17 @@ public:
 
 class MacroFieldDeclarationHost {
 public:
+#ifdef FORMAT_USERVER_WINDOWS
+    MOCK_METHOD(int, CTNullary, (), (Calltype(STDMETHODCALLTYPE)));
+#endif
     MOCK_METHOD(void, SetValue, (std::string_view, std::string&&), (override));
+};
+
+template <typename T>
+class MacroMethodReturnFixture {
+public:
+    MOCK_METHOD(const T&, GetTop, (), (const));
+    MOCK_METHOD(const T&, GetTopWithCallType, (), (Calltype(STDMETHODCALLTYPE), override, const));
 };
 
 class MacroSuffixConstructorFixture {

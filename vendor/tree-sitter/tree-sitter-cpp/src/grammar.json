@@ -18888,6 +18888,10 @@
           },
           {
             "type": "SYMBOL",
+            "name": "macro_type_reference_argument"
+          },
+          {
+            "type": "SYMBOL",
             "name": "_declaration_specifiers"
           }
         ]
