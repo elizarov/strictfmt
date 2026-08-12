@@ -12,8 +12,6 @@ References to all docs and their ownership areas; read them only when needed for
 - `docs/config.md`: formatter configuration.
 - `docs/format.md`: specifies source layout produced by formatter.
 - `docs/glossary.md`: shared terminology used across docs.
-- `docs/googletest.md`: compatibility and remaining exclusions for the pinned GoogleTest external project.
-- `docs/grammar_research.md`: parser grammar experiments and 16-bit table-reduction research.
 - `docs/known_issues.md`: known limitations and planned work.
 - `docs/macro.md`: macro categories and macro formatting. 
 - `docs/preprocessor.md`: preprocessor directives and conditional compilation. 
