@@ -10,7 +10,7 @@ Scanner tokens are acceptable only for lexical or line-aware classification that
 
 ## Generated Parser Source Size
 
-The generated C++ parser must remain one file no larger than 50,000,000 bytes while using the unmodified upstream tree-sitter runtime, parser ABI, and table readers. The accepted grammar at this checkpoint generates a 99,212,287-byte `parser.c` before source compaction, with 33,697 states, 14,431 large states, 803 symbols, 300 terminals, and 316 production IDs. All 50 tests pass at that baseline.
+The generated C++ parser must remain one file no larger than 50,000,000 bytes while using the unmodified upstream tree-sitter runtime, parser ABI, and table readers. The accepted grammar at this checkpoint generates a 100,410,897-byte `parser.c` before source compaction, with 33,947 states, 14,471 large states, 813 symbols, 302 terminals, and 316 production IDs. All 52 tests pass at that baseline.
 
 ### Stock-Table Source Compaction
 
@@ -18,7 +18,7 @@ Status: accepted.
 
 Shape: run the pinned unmodified tree-sitter CLI, then rewrite only redundant C spelling inside its monolithic parse-table declarations. Symbolic enum references become the same numeric enum values, `STATE(n)` and `ACTIONS(n)` become `n` after verifying that the pinned generated parser header defines both as identity macros, and leading table indentation is removed. The transformation does not split or re-encode a table, change a value or dimension, widen a type, modify a generated header, or require a runtime change. The regeneration tool rejects an output above the 50,000,000-byte limit.
 
-Result: `parser.c` decreases from 99,212,287 to 36,988,236 bytes. Its 33,697 states, 14,431 large states, 803 symbols, 300 terminals, and 316 production IDs are unchanged. The source compiles against the vendored stock runtime and all 50 tests pass, including golden parse/idempotence tests and the CaseDash, GoogleTest, and userver corpus sweeps.
+Result: `parser.c` decreases from 100,410,897 to 37,297,300 bytes. Its 33,947 states, 14,471 large states, 813 symbols, 302 terminals, and 316 production IDs are unchanged. The source compiles against the vendored stock runtime and all 52 tests pass, including golden parse/idempotence tests and the CaseDash, GoogleTest, and userver corpus sweeps.
 
 This is source compaction, not a private parse-table format. The runtime sees the same statically initialized arrays and the same `TSLanguage` structure that the stock generator emitted.
 
@@ -1181,7 +1181,7 @@ Status: structural attempts rejected; class-head case superseded by a narrow fal
 
 Shape: tried to make `class GTEST_INTERNAL_EMPTY_BASE_CLASS NiceMock : ...` parse by moving `function_prefix_macro` ownership into the class declaration item, then by adding a `function_prefix_macro + class name` composite to `_class_name`. Both generated and built, but reduced dumps still showed the parser treating `GTEST_INTERNAL_EMPTY_BASE_CLASS` as the class name and recovering on the following real name and base clause. The source changes were reverted. Also tried replacing the token-only `macro_call_string_concatenation_argument` helper with a grammatical sequence so structured macro definitions could parse `EXPECT_THAT("" GMOCK_PP_STRINGIZE(Macro), ...)`; this generated only after extra string conflicts but did not change the reduced failure, so it was reverted.
 
-Result: the class-head file now parses through the narrow `GTEST_INTERNAL_EMPTY_BASE_CLASS` declaration-prefix fallback documented above. `googlemock/test/gmock-pp-string_test.cc` remains ignored for string-literal adjacency to a macro call inside a structured macro replacement and needs a better generic shape before it should move out of the ignore list.
+Result at that checkpoint: the class-head file parsed through the narrow `GTEST_INTERNAL_EMPTY_BASE_CLASS` declaration-prefix fallback documented above. `googlemock/test/gmock-pp-string_test.cc` still needed a generic representation for non-C++ preprocessing-token arguments; the later [Preprocessing-Token Macro Arguments](#preprocessing-token-macro-arguments) change supplies it and removes the exclusion.
 
 ### Vendored Tree-Sitter State Id Width
 
@@ -1316,6 +1316,16 @@ Shape: reuse the existing `macro_type_reference_argument` alternative in `macro_
 
 Result: `MOCK_METHOD(const T&, GetTop, (), (const))` and the corresponding call-type/override form parse as complete method-macro declarations. `googlemock/test/gmock-function-mocker_test.cc` is removed from the exclusion list. The alternative reuses an existing terminal and leaves parser states, symbols, action indexes, and compacted source size at the preceding baseline.
 
+### Preprocessing-Token Macro Arguments
+
+Status: accepted with a configured category.
+
+Shape: add `PreprocessorArgumentMacros` for function-like invocations whose arguments are preprocessing-token sequences instead of C++ expressions, types, declarations, or statements. A configured external identifier introduces a dedicated expression atom. Its outer argument list keeps top-level commas structured, while each argument recursively balances parentheses and accepts arbitrary non-delimiter preprocessing-token chunks plus normal string, character, raw-string, comment, and slash tokens. Only parentheses protect commas, matching function-like macro argument collection; brackets, braces, and angle brackets remain ordinary tokens. The format model preserves each complete argument as one atom, so token spelling and internal whitespace are not reinterpreted as C++ layout, while the surrounding call and argument-list breaks remain formatter-owned.
+
+The grammar also removes the static precedence from the shallow semicolonless call-replacement item and retains its ambiguity with ordinary call expressions. This lets the complete recursive expression survive past the closing call parenthesis when an operator follows. Consequently, a structured replacement such as `JOINER_CAT(_Data, _N) = _Elem` parses as an assignment expression, while adjacent semicolonless generator calls still use the call-replacement sequence. Raising the general expression item's precedence did not help because the call-only reduction had already committed before the suffix; lowering only the call-item precedence had the same result. Keeping both interpretations at the actual call-expression conflict is the narrow generic fix.
+
+Result: `EXPECT_EXPANSION` accepts deliberate token payloads such as `GMOCK_PP_CAT(+, =)`, `GMOCK_PP_HAS_COMMA(, )`, and `GMOCK_PP_IS_BEGIN_PARENS(sss() sss)` without broadening ordinary macro argument lists. `googlemock/test/gmock-pp-string_test.cc` is removed from the exclusion list. Relative to the preceding baseline, states increase from 33,697 to 33,947, large states from 14,431 to 14,471, symbols from 803 to 813, terminals from 300 to 302, maximum action index from 52,779 to 53,182, and largest referenced shift state from 33,688 to 33,938. Production IDs remain at 316. Stock generated `parser.c` increases from 99,212,287 to 100,410,897 bytes, and source compaction increases it from 36,988,236 to 37,297,300 bytes. All 52 tests pass, including focused configured/unconfigured token-argument coverage and the expanded GoogleTest sweep.
+
 ## Current External Unsupported Conditional Placements
 
 The excluded external files are not all excluded because of conditional compilation: some also contain unsupported macro arguments, declaration modifiers, or vendored non-C++ token tricks. The conditional-placement gaps currently visible in excluded files are:
@@ -1324,6 +1334,6 @@ The excluded external files are not all excluded because of conditional compilat
 - Ordinary selected common-body function starts are unsupported. One external example also mixes the start with branch-local sibling items: `googlemock/src/gmock_main.cc`, where the Windows branch supplies `#include <tchar.h>` and then `GTEST_API_ int _tmain(int argc, TCHAR** argv) {`, while the other branch supplies `GTEST_API_ int main(int argc, char** argv) {` and the shared function body starts after `#endif`.
 Both shapes are outside the supported placement list in [preprocessor.md](preprocessor.md), and supporting either should be revisited only with a generic grammar shape.
 
-Complete guarded GoogleTest-style macro function definitions, branch-selected complete statements, selected `TEST(...) {` common-body headers, and macro-interleaved string help fragments are not in this unsupported list: they parse with the GoogleTest style. The ignored `gmock-pp-string_test.cc` and `gmock-pp_test.cc` files intentionally pass non-C++ token sequences into preprocessor macros, such as string literals adjacent to stringizing macro calls and `GMOCK_PP_FOR_EACH(..., ~, (int, float, double, char))` inside a template argument list, so they are not evidence for conditional-placement support.
+Complete guarded GoogleTest-style macro function definitions, branch-selected complete statements, selected `TEST(...) {` common-body headers, and macro-interleaved string help fragments are not in this unsupported list: they parse with the GoogleTest style. The ignored `gmock-pp_test.cc` file passes a preprocessing-token generator into a template argument list, including `GMOCK_PP_FOR_EACH(..., ~, (int, float, double, char))`, so it is not evidence for conditional-placement support.
 
 Other ignored GoogleTest files are also not conditional-placement evidence. Their remaining failures are macro-token-language cases such as preprocessor metaprogramming arguments, macro-generated declaration fragments, or matcher token sequences that are not normal C++ constructs at the use site. The exact generated fallback now covers the previously ignored semicolonless warning sentinels, local generator runs such as `GMOCK_INTERNAL_PARSE_FLAG(...)`, and stress-test macro bursts such as `THOUSAND_TESTS_(T)`.

@@ -17,6 +17,7 @@ enum TokenType {
     CALL_SYNTAX_MACRO_IDENTIFIER,
     STATEMENT_ARGUMENT_MACRO_IDENTIFIER,
     TYPE_SPECIFIER_MACRO_IDENTIFIER,
+    PREPROCESSOR_ARGUMENT_MACRO_IDENTIFIER,
     PREPROC_DIRECTIVE_END,
     LINE_BREAK_WHITESPACE,
 };
@@ -28,6 +29,7 @@ enum MacroCategory {
     MACRO_CATEGORY_STATEMENT_ARGUMENT = 3,
     MACRO_CATEGORY_DECLARATION_PREFIX = 4,
     MACRO_CATEGORY_TYPE_SPECIFIER = 5,
+    MACRO_CATEGORY_PREPROCESSOR_ARGUMENT = 6,
 };
 
 /// The spec limits raw-string delimiters to 16 chars.
@@ -184,6 +186,11 @@ static bool has_valid_macro_identifier(
         return true;
     }
 
+    if (valid_symbols[PREPROCESSOR_ARGUMENT_MACRO_IDENTIFIER] &&
+        strictfmt_tree_sitter_cpp_macro_category_matches(MACRO_CATEGORY_PREPROCESSOR_ARGUMENT, name, length)) {
+        return true;
+    }
+
     if (include_non_statement_categories &&
         ((valid_symbols[CALL_SYNTAX_MACRO_IDENTIFIER] &&
           strictfmt_tree_sitter_cpp_macro_category_matches(MACRO_CATEGORY_CALL_SYNTAX, name, length)) ||
@@ -207,7 +214,8 @@ static bool classify_macro_identifier_token(
     bool allow_statement_argument,
     bool allow_type_specifier,
     bool allow_declaration_prefix,
-    bool allow_bare
+    bool allow_bare,
+    bool allow_preprocessor_argument
 ) {
     const bool call_match =
         allow_call &&
@@ -223,9 +231,17 @@ static bool classify_macro_identifier_token(
         strictfmt_tree_sitter_cpp_macro_category_matches(MACRO_CATEGORY_DECLARATION_PREFIX, name, length);
     const bool bare_match =
         allow_bare && strictfmt_tree_sitter_cpp_macro_category_matches(MACRO_CATEGORY_BARE_IDENTIFIER, name, length);
+    const bool preprocessor_argument_match =
+        allow_preprocessor_argument &&
+        strictfmt_tree_sitter_cpp_macro_category_matches(MACRO_CATEGORY_PREPROCESSOR_ARGUMENT, name, length);
 
     if (declaration_prefix_match) {
         lexer->result_symbol = DECLARATION_PREFIX_MACRO_IDENTIFIER;
+        return true;
+    }
+
+    if (preprocessor_argument_match) {
+        lexer->result_symbol = PREPROCESSOR_ARGUMENT_MACRO_IDENTIFIER;
         return true;
     }
 
@@ -264,7 +280,8 @@ static bool scan_macro_identifier_token(
     bool allow_statement_argument,
     bool allow_type_specifier,
     bool allow_declaration_prefix,
-    bool allow_bare
+    bool allow_bare,
+    bool allow_preprocessor_argument
 ) {
     char name[MAX_MACRO_NAME_LENGTH];
     unsigned length = 0;
@@ -281,7 +298,8 @@ static bool scan_macro_identifier_token(
         allow_statement_argument,
         allow_type_specifier,
         allow_declaration_prefix,
-        allow_bare
+        allow_bare,
+        allow_preprocessor_argument
     );
 }
 
@@ -468,7 +486,8 @@ bool tree_sitter_cpp_external_scanner_scan(void *payload, TSLexer *lexer, const 
 
     if (valid_symbols[RAW_MACRO_DEFINITION_IDENTIFIER] || valid_symbols[BARE_MACRO_IDENTIFIER] ||
         valid_symbols[DECLARATION_PREFIX_MACRO_IDENTIFIER] || valid_symbols[CALL_SYNTAX_MACRO_IDENTIFIER] ||
-        valid_symbols[STATEMENT_ARGUMENT_MACRO_IDENTIFIER] || valid_symbols[TYPE_SPECIFIER_MACRO_IDENTIFIER]) {
+        valid_symbols[STATEMENT_ARGUMENT_MACRO_IDENTIFIER] || valid_symbols[TYPE_SPECIFIER_MACRO_IDENTIFIER] ||
+        valid_symbols[PREPROCESSOR_ARGUMENT_MACRO_IDENTIFIER]) {
         skip_external_whitespace(lexer);
     }
 
@@ -479,7 +498,7 @@ bool tree_sitter_cpp_external_scanner_scan(void *payload, TSLexer *lexer, const 
 
     if ((valid_symbols[CALL_SYNTAX_MACRO_IDENTIFIER] || valid_symbols[DECLARATION_PREFIX_MACRO_IDENTIFIER] ||
          valid_symbols[STATEMENT_ARGUMENT_MACRO_IDENTIFIER] || valid_symbols[TYPE_SPECIFIER_MACRO_IDENTIFIER] ||
-         valid_symbols[BARE_MACRO_IDENTIFIER]) &&
+         valid_symbols[BARE_MACRO_IDENTIFIER] || valid_symbols[PREPROCESSOR_ARGUMENT_MACRO_IDENTIFIER]) &&
         is_identifier_start(lexer->lookahead)) {
         return scan_macro_identifier_token(
             lexer,
@@ -487,7 +506,8 @@ bool tree_sitter_cpp_external_scanner_scan(void *payload, TSLexer *lexer, const 
             valid_symbols[STATEMENT_ARGUMENT_MACRO_IDENTIFIER],
             valid_symbols[TYPE_SPECIFIER_MACRO_IDENTIFIER],
             valid_symbols[DECLARATION_PREFIX_MACRO_IDENTIFIER],
-            valid_symbols[BARE_MACRO_IDENTIFIER]
+            valid_symbols[BARE_MACRO_IDENTIFIER],
+            valid_symbols[PREPROCESSOR_ARGUMENT_MACRO_IDENTIFIER]
         );
     }
 
