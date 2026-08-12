@@ -49,12 +49,14 @@ The scanner reads a normal C/C++ identifier and then asks the formatter configur
 
 The scanner classifies identifiers by configured macro category. [macro.md](macro.md) specifies the categories and their supported grammar uses.
 
-### Preprocessor Directive Newlines
+### Whitespace And Preprocessor Directive Newlines
 
-`_preproc_directive_end` and `_line_break_whitespace` split bare line breaks into two roles:
+`_preproc_directive_end` and `_line_break_whitespace` split scanner-visible whitespace into two roles:
 
 - `_preproc_directive_end` is returned when the parser is currently ending a preprocessor directive.
 - `_line_break_whitespace` is returned as hidden whitespace everywhere else.
+
+In non-preprocessor statement-argument states, `_line_break_whitespace` also supplies a narrow horizontal-only boundary when a configured call follows. This prevents the generated lexer from skipping spaces and consuming an ordinary identifier before the runtime scanner can classify the macro. Preprocessor definition-name and replacement states are excluded, and every other horizontal gap remains owned by the generated lexer. The separate token boundary also ensures that skipped spaces do not become part of the external identifier's source range.
 
 Backslash-newline remains ordinary grammar `extras` whitespace. That is what makes structured macro continuation placement inert: inside a structured macro replacement, a continuation backslash does not create a syntax node, and the replacement ends only at the first bare preprocessor directive newline.
 

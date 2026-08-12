@@ -231,6 +231,15 @@ void NestedOrdinaryCallStatementArgumentMacro() {
     );
 }
 
+void SameLineStatementArgumentMacros(bool enabled) {
+    if (enabled) {
+        EXPECT_THROW(ThrowNothing(), bool);
+    }
+    if (enabled) {
+        EXPECT_NO_THROW(ThrowNothing());
+    }
+}
+
 void NestedStatementSequenceMacro() {
     UEXPECT_NO_THROW(
         EXPECT_NO_THROW(first());
