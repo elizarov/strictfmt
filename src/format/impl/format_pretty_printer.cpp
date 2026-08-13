@@ -1964,6 +1964,24 @@ private:
             return;
         }
 
+        if (node.chainKind == FormatBreakChainKind::MemberBeforeOperator) {
+            EmitBreakNode(*node.operands.front(), solution, baseIndent);
+            if (choice == FormatBreakChoice::MemberCompactTail) {
+                NewLineWithIndent(baseIndent + 1);
+                for (size_t index = 0; index < node.operators.size(); ++index) {
+                    WriteBreakToken(node.operators[index]);
+                    EmitBreakNode(*node.operands[index + 1], solution, baseIndent + 1);
+                }
+                return;
+            }
+            for (size_t index = 0; index < node.operators.size(); ++index) {
+                NewLineWithIndent(baseIndent + 1);
+                WriteBreakToken(node.operators[index]);
+                EmitBreakNode(*node.operands[index + 1], solution, baseIndent + 1);
+            }
+            return;
+        }
+
         if (node.chainKind == FormatBreakChainKind::Ternary && node.operators.size() > 2) {
             for (size_t index = 0; index < node.operands.size(); ++index) {
                 EmitBreakNode(*node.operands[index], solution, index == 0 ? baseIndent : baseIndent + 1);

@@ -220,6 +220,7 @@ Binary chain operators are the operators whose usual source meaning is an associ
 - Binary chain operators are `+`, `*`, `&`, `|`, `^`, `&&`, and `||`.
 - Comma is a chain operator only in comma expressions.
 - Stream-shift chain operators are `<<` and `>>`.
+- Member-call chain operators are `.` and `->`. Pointer-to-member operators `.*` and `->*` are not chain operators.
 - Operators outside these chain-operator groups are ordinary operators. Examples include `==`, `-`, `/`, `%`, and comparisons.
 - Chain classification is independent of operand count. A chain with two operands is still a chain.
 - Chains use compact or split form.
@@ -253,6 +254,23 @@ int total = first + second + BuildValue(
 - A stream-shift chain may split once between the receiver and a compact shifted tail.
 - If the compact shifted tail does not fit, each continued shift segment starts a continuation line.
 - Configured stream methods bind to the following shifted value; no `<<` or `>>` break is taken between a configured manipulator sequence and that value.
+- Member-call chains have three forms: compact form breaks before no `.` or `->`; receiver-separated form breaks once before the first member operator and keeps the member tail compact; split form breaks before every member operator.
+- In compact and receiver-separated forms, every top-level member operator must occur on the same physical line. The receiver may expand before the first operator, and the final chain operand may expand after the last operator. An intermediate operand may not expand because that would place the operators before and after it on different lines.
+
+```cpp
+EXPECT_CALL(mock, GetSize())
+    .WillOnce(Return(0))
+    .WillOnce(Return(1))
+    .WillOnce(Return(0));
+
+return internal::GetUnitTestImpl()
+    ->current_test_result()
+    ->HasNonfatalFailure();
+
+return RenderPoint{firstCoordinate + secondCoordinate + thirdCoordinate, y}
+    .OffsetBy(deltaX, deltaY).x;
+```
+
 - Adjacent string literals are an implicit concatenation chain.
 - When a forced multi-line string-fragment sequence stays split, it follows the same indentation rule as other chains. In single-value contexts, such as after `=`, after `return`, or inside one plain parenthesis group, fragments align at the expression indentation. In multi-element contexts, such as call argument lists, declaration parameter lists, subscript argument lists, template argument lists, and initializer lists, continued fragments use one continuation indentation level so the string chain stays visually separate from neighboring elements.
 - Line-fragment strings ending with escaped `\n` or `\r\n` stay physically split.
@@ -306,7 +324,7 @@ Among legal layouts, the break optimizer chooses the layout with the best cost:
 - Minimize the largest overflow beyond the configured column limit; layouts with no overflowing physical line have zero overflow.
 - On equal maximum overflow, minimize the number of physical lines that overflow.
 - On equal overflow cost, minimize the physical line count.
-- On equal line count, prefer the layout whose deepest taken break renders at the shallower indentation level; if still tied, prefer the structurally shallower deepest taken break, then source-order-stable compact behavior.
+- On equal line count, prefer fewer member-chain breaks so they do not merely replace an equal number of operand-internal breaks. Then prefer the layout whose deepest taken break renders at the shallower indentation level; if still tied, prefer the structurally shallower deepest taken break, then source-order-stable compact behavior.
 
 Function signatures may break after the complete return type before breaking inside the return type. The function name is indented one continuation level. Split parameters may keep the return type and function name together when that line fits. Functions and lambdas deliberately share one callable-header model. Function definitions whose return-type prefix is split away from the function name start the body `{` on its own line at declaration indentation. Lambda body headers whose header itself splits keep the body opener attached as `) {`; when only the owner prefix splits away and the lambda header remains compact, the body opener may start at owner indentation.
 

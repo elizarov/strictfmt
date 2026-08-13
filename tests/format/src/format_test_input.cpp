@@ -1078,7 +1078,12 @@ void SplitOperatorChainPartsLineByLine() {
             DumpKey(historyPrefix, ".throughput_bucket_sample_count"),
             history.throughputBucketSampleCount,
             error
-        );
+    );
+}
+
+void GoogletestMemberCallChains() {
+value_pos=thread_local_values.insert(std::make_pair(thread_local_instance,std::shared_ptr<ThreadLocalValueHolderBase>(thread_local_instance->NewValueForCurrentThread()))).first;
+::testing::UnitTest::GetInstance()->parameterized_test_registry().GetTestSuitePatternHolder<test_suite_name>(GTEST_STRINGIFY_(test_suite_name),::testing::internal::CodeLocation(__FILE__,__LINE__))->AddTestPattern(GTEST_STRINGIFY_(test_suite_name),GTEST_STRINGIFY_(test_name),new ::testing::internal::TestMetaFactory<GTEST_TEST_CLASS_NAME_(test_suite_name,test_name)>(),::testing::internal::CodeLocation(__FILE__,__LINE__));
 }
 
 void UniversalBreakSelectionCases() {

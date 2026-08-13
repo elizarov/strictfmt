@@ -32,6 +32,7 @@ enum class FormatBreakDelimiterKind {
 
 enum class FormatBreakChainKind {
     AfterOperator,
+    MemberBeforeOperator,
     StreamBeforeOperator,
     Ternary,
 };
@@ -44,6 +45,7 @@ enum class FormatBreakChoice {
     SplitAttachedOpen,
     SplitDelimiterStack,
     SplitDelimiterStackDetachedLeaf,
+    MemberCompactTail,
     StreamCompactTail,
     TernaryBreakAfterQuestion,
     TernaryBreakAfterColon,

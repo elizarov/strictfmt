@@ -101,6 +101,13 @@ bool IsConditionalOperatorForNode(const FormatBreakToken& token) {
         (printToken.syntaxKind == SyntaxNodeKind::Question || printToken.syntaxKind == SyntaxNodeKind::Colon);
 }
 
+bool IsMemberChainOperatorForNode(const FormatBreakToken& token) {
+    const PrintToken& printToken = FormatBreakTokenValue(token);
+    return printToken.kind == PrintTokenKind::Known &&
+        printToken.parentKind == SyntaxNodeKind::FieldExpression &&
+        (printToken.syntaxKind == SyntaxNodeKind::Dot || printToken.syntaxKind == SyntaxNodeKind::Arrow);
+}
+
 bool IsCommaOperatorForNode(const FormatBreakToken& token) {
     const PrintToken& printToken = FormatBreakTokenValue(token);
     return printToken.kind == PrintTokenKind::Known &&
@@ -340,6 +347,20 @@ private:
     static bool IsStringTokenChild(const FormatBreakNode* node) {
         const FormatBreakToken* token = TokenChild(node);
         return token != nullptr && IsStringLike(FormatBreakTokenValue(*token));
+    }
+
+    static bool IsArgumentList(const FormatBreakNode* node) {
+        if (node == nullptr) {
+            return false;
+        }
+        if (const FormatBreakToken* atom = TokenChild(node)) {
+            return FormatBreakTokenSyntaxKind(*atom) == SyntaxNodeKind::ArgumentList;
+        }
+        if (node->kind != FormatBreakNodeKind::Delimited || node->children.empty()) {
+            return false;
+        }
+        const FormatBreakToken* open = TokenChild(node->children.front());
+        return open != nullptr && FormatBreakTokenValue(*open).parentKind == SyntaxNodeKind::ArgumentList;
     }
 
     static bool IsStandaloneCommentItem(const FormatBreakNode& node, size_t index) {
@@ -585,6 +606,27 @@ private:
         sequence.children = StoreNodePointers(grouped);
     }
 
+    void GroupMemberCallArguments(std::vector<FormatBreakNode*>& children, int depth) {
+        for (size_t index = 0; index + 1 < children.size();) {
+            FormatBreakNode* chain = children[index];
+            if (
+                chain == nullptr ||
+                chain->kind != FormatBreakNodeKind::Chain ||
+                chain->chainKind != FormatBreakChainKind::MemberBeforeOperator ||
+                chain->operands.empty() ||
+                !IsArgumentList(children[index + 1])
+            ) {
+                ++index;
+                continue;
+            }
+
+            auto call = MakeNode(FormatBreakNodeKind::Sequence, depth + 1);
+            call->children = StoreNodePointers({chain->operands.back(), children[index + 1]});
+            chain->operands.back() = call;
+            children.erase(children.begin() + static_cast<std::ptrdiff_t>(index + 1));
+        }
+    }
+
     FormatBreakNode* BuildFunctionPointerAliasDeclaration(const SyntaxNode& node, int depth) {
         std::optional<size_t> operatorIndex;
         std::optional<size_t> declaratorIndex;
@@ -734,6 +776,11 @@ private:
             node.kind == SyntaxNodeKind::ConditionalExpression
         ) {
             if (auto expression = BuildOperatorExpression(node, depth)) {
+                return expression;
+            }
+        }
+        if (node.kind == SyntaxNodeKind::FieldExpression) {
+            if (auto expression = BuildMemberExpression(node, depth)) {
                 return expression;
             }
         }
@@ -1328,6 +1375,7 @@ private:
                 builtChildren.push_back(built);
             }
         }
+        GroupMemberCallArguments(builtChildren, depth);
         if (builtChildren.size() == 1) {
             return builtChildren.front();
         }
@@ -1364,6 +1412,7 @@ private:
             }
             ++index;
         }
+        GroupMemberCallArguments(builtChildren, depth);
         if (builtChildren.size() == 1) {
             return builtChildren.front();
         }
@@ -1397,6 +1446,60 @@ private:
             }
         }
         return std::nullopt;
+    }
+
+    std::optional<size_t> DirectMemberOperatorIndex(const SyntaxNode& node) const {
+        if (node.kind != SyntaxNodeKind::FieldExpression) {
+            return std::nullopt;
+        }
+        for (size_t index = 0; index < node.children.size(); ++index) {
+            if (!node.children[index]) {
+                continue;
+            }
+            const std::optional<FormatBreakToken> token = TokenForNode(*node.children[index]);
+            if (token && IsMemberChainOperatorForNode(*token)) {
+                return index;
+            }
+        }
+        return std::nullopt;
+    }
+
+    FormatBreakNode* BuildMemberExpression(const SyntaxNode& node, int depth) {
+        const std::optional<size_t> opIndex = DirectMemberOperatorIndex(node);
+        if (!opIndex || !node.children[*opIndex]) {
+            return nullptr;
+        }
+        const std::optional<FormatBreakToken> op = TokenForNode(*node.children[*opIndex]);
+        if (!op) {
+            return nullptr;
+        }
+
+        FormatBreakNode* left = BuildSequenceFromChildren(node.children, 0, *opIndex, depth + 1);
+        FormatBreakNode* right =
+            BuildSequenceFromChildren(node.children, *opIndex + 1, node.children.size(), depth + 1);
+        if (left == nullptr || right == nullptr) {
+            return nullptr;
+        }
+
+        std::vector<FormatBreakNode*> operands;
+        std::vector<FormatBreakToken> operators;
+        if (
+            left->kind == FormatBreakNodeKind::Chain &&
+            left->chainKind == FormatBreakChainKind::MemberBeforeOperator
+        ) {
+            operands.insert(operands.end(), left->operands.begin(), left->operands.end());
+            operators.insert(operators.end(), left->operators.begin(), left->operators.end());
+        } else {
+            operands.push_back(left);
+        }
+        operators.push_back(*op);
+        operands.push_back(right);
+
+        auto chain = MakeNode(FormatBreakNodeKind::Chain, depth);
+        chain->chainKind = FormatBreakChainKind::MemberBeforeOperator;
+        chain->operands = StoreNodePointers(operands);
+        chain->operators = StoreTokens(operators);
+        return chain;
     }
 
     bool HasDirectCommaOperator(const SyntaxNode& node) const {

@@ -207,10 +207,8 @@ void DeclarationMacroArgument(Source& source) {
 
 void SplitConstDeclarationMacroArgument(Source& source) {
     EXPECT_THROW(
-        [[maybe_unused]] const auto bytes_read = source.ReadSome(
-            kVeryLongBufferNameForFormatterFixture,
-            kVeryLongDeadlineNameForFormatterFixture
-        ),
+        [[maybe_unused]] const auto bytes_read = source
+            .ReadSome(kVeryLongBufferNameForFormatterFixture, kVeryLongDeadlineNameForFormatterFixture),
         IoTimeout
     );
 }
