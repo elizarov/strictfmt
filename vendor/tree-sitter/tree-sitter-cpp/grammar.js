@@ -2868,6 +2868,7 @@ module.exports = grammar(C, {
     macro_declaration_without_semicolon: $ => prec(1, seq(
       $._declaration_specifiers,
       field('declarator', choice(
+        prec.dynamic(2, $.init_declarator),
         seq(
           optional($.ms_call_modifier),
           $._declarator,
@@ -3404,7 +3405,13 @@ module.exports = grammar(C, {
     ),
 
     dependent_identifier: $ => seq('template', $.template_function),
-    dependent_field_identifier: $ => seq('template', choice($.template_method, $._field_identifier)),
+    dependent_field_identifier: $ => choice(
+      // Nested template arguments accumulate type-vs-expression ambiguity, so
+      // prefer an explicit template-id and keep the bare name as a fallback
+      // for calls whose member-template arguments are deduced.
+      prec.dynamic(10, seq('template', $.template_method)),
+      prec.dynamic(-10, seq('template', $._field_identifier)),
+    ),
     dependent_type_identifier: $ => seq('template', $.template_type),
 
     _scope_resolution: $ => prec(1, seq(

@@ -188,12 +188,14 @@ Do not use this category for calls whose arguments are valid C++ syntax. Those c
 
 ### StatementArgumentMacros
 
-`StatementArgumentMacros` names macro identifiers whose call syntax parses the first argument as a declaration, block, or statement sequence without requiring that argument to be a C++ expression. Remaining arguments are parsed as ordinary macro arguments.
+`StatementArgumentMacros` names macro identifiers whose call syntax parses the first argument as a declaration, block, or statement sequence without requiring that argument to be a C++ expression. Declarations retain normal C++ initializer forms, including `=`, braced, and parenthesized direct initialization. Remaining arguments are parsed as ordinary macro arguments.
 
 Macros that look like plain function calls and whose arguments are all normal expressions do not belong here. Use this category for assertion-style macros where the documented argument is a statement, such as throw, no-throw, death, or fatal-failure assertions.
 
 ```cpp
 UEXPECT_THROW([[maybe_unused]] auto bytes_read = source.ReadSome(kBuffer, kDeadline), IoTimeout);
+
+UASSERT_NO_THROW(ydb::TopicWriter writer("test-writer", MakeWriterSettings(topic)));
 
 EXPECT_DEATH({ RunChildProcess(); }, "signal");
 ```
