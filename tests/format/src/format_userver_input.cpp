@@ -237,6 +237,14 @@ UASSERT_NO_THROW(ydb::TopicWriter writer("test-writer", MakeWriterSettings(topic
 UASSERT_NO_THROW(ydb::TopicWriter braced_writer{"test-writer", MakeWriterSettings(topic)});
 }
 
+GTEST_DISABLE_DEPRECATED_PUSH_()
+void DeprecatedCallSyntaxMacroLines() {
+GTEST_DISABLE_DEPRECATED_PUSH_(/* getenv: deprecated */)
+UseDeprecatedApi();
+GTEST_DISABLE_DEPRECATED_POP_()
+}
+GTEST_DISABLE_DEPRECATED_POP_()
+
 void StreamedStatementArgumentMacro() {
 UEXPECT_NO_THROW(client = CreateClient()) << "Connect to in-memory database" << request_id;
 }

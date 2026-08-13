@@ -53,6 +53,8 @@ MacroCategories:
     - API_EXPORT
   CallSyntaxMacros:
     - TEST
+  SemicolonlessCallMacros:
+    - DIAGNOSTIC_PUSH
   StatementArgumentMacros:
     - EXPECT_THROW
   TypeSpecifierMacros:

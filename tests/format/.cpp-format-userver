@@ -24,6 +24,7 @@ MacroCategories:
     - USERVER_IMPL_FORCE_INLINE
     - USERVER_IMPL_NODEBUG*
   BareIdentifierMacros:
+    - __rseq_percpu
     - FORMAT_USERVER_ATOMIC_INIT
     - BENCHMARK_THREAD_ARGS*
     - FORMAT_USERVER_LIFETIME_BOUND*
@@ -34,6 +35,7 @@ MacroCategories:
     - FORMAT_USERVER_NODEBUG_FUNC
     - FORMAT_USERVER_PROTECTED_ATTR
     - CURL_FORMAT_USERVER_NAMESPACE
+    - RAPIDJSON_NOEXCEPT
     - USERVER_IMPL_LIBC_INCLUDE_FIXES_THROW*
   DeclarationPrefixMacros:
     - FORMAT_API_
@@ -55,6 +57,10 @@ MacroCategories:
     - TYPED_UTEST_MT
     - TYPED_UTEST_P_MT
     - TYPED_UTEST_SUITE_P
+  SemicolonlessCallMacros:
+    - GTEST_DISABLE_DEPRECATED_*
+    - GTEST_DISABLE_MSC_WARNINGS_*
+    - RET_NAME
   StatementArgumentMacros:
     - UEXPECT_THROW
     - UEXPECT_NO_THROW

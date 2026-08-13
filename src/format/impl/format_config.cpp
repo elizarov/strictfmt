@@ -28,6 +28,7 @@ struct FormatterConfigPatch {
     std::optional<std::vector<std::string>> bareIdentifierMacros;
     std::optional<std::vector<std::string>> declarationPrefixMacros;
     std::optional<std::vector<std::string>> callSyntaxMacros;
+    std::optional<std::vector<std::string>> semicolonlessCallMacros;
     std::optional<std::vector<std::string>> statementArgumentMacros;
     std::optional<std::vector<std::string>> typeSpecifierMacros;
     std::optional<std::vector<std::string>> preprocessorArgumentMacros;
@@ -239,6 +240,9 @@ void ParseMacroCategories(const std::vector<ConfigLine>& lines, size_t& index, F
         } else if (key == "CallSyntaxMacros" && value.empty()) {
             patch.callSyntaxMacros = ParseIndentedStringList(lines, index, line.indent);
             ValidateMacroCategoryEntries(key, *patch.callSyntaxMacros);
+        } else if (key == "SemicolonlessCallMacros" && value.empty()) {
+            patch.semicolonlessCallMacros = ParseIndentedStringList(lines, index, line.indent);
+            ValidateMacroCategoryEntries(key, *patch.semicolonlessCallMacros);
         } else if (key == "StatementArgumentMacros" && value.empty()) {
             patch.statementArgumentMacros = ParseIndentedStringList(lines, index, line.indent);
             ValidateMacroCategoryEntries(key, *patch.statementArgumentMacros);
@@ -329,6 +333,9 @@ FormatterConfig ApplyConfigPatch(FormatterConfig config, FormatterConfigPatch pa
     }
     if (patch.callSyntaxMacros.has_value()) {
         config.callSyntaxMacros = std::move(*patch.callSyntaxMacros);
+    }
+    if (patch.semicolonlessCallMacros.has_value()) {
+        config.semicolonlessCallMacros = std::move(*patch.semicolonlessCallMacros);
     }
     if (patch.statementArgumentMacros.has_value()) {
         config.statementArgumentMacros = std::move(*patch.statementArgumentMacros);

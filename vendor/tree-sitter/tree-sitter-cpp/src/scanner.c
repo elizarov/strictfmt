@@ -18,6 +18,7 @@ enum TokenType {
     STATEMENT_ARGUMENT_MACRO_IDENTIFIER,
     TYPE_SPECIFIER_MACRO_IDENTIFIER,
     PREPROCESSOR_ARGUMENT_MACRO_IDENTIFIER,
+    SEMICOLONLESS_CALL_MACRO_IDENTIFIER,
     PREPROC_DIRECTIVE_END,
     LINE_BREAK_WHITESPACE,
 };
@@ -30,6 +31,7 @@ enum MacroCategory {
     MACRO_CATEGORY_DECLARATION_PREFIX = 4,
     MACRO_CATEGORY_TYPE_SPECIFIER = 5,
     MACRO_CATEGORY_PREPROCESSOR_ARGUMENT = 6,
+    MACRO_CATEGORY_SEMICOLONLESS_CALL = 7,
 };
 
 /// The spec limits raw-string delimiters to 16 chars.
@@ -191,13 +193,27 @@ static bool has_valid_macro_identifier(
         return true;
     }
 
+    if (valid_symbols[BARE_MACRO_IDENTIFIER] &&
+        strictfmt_tree_sitter_cpp_macro_category_matches(MACRO_CATEGORY_BARE_IDENTIFIER, name, length)) {
+        return true;
+    }
+
+    if (valid_symbols[DECLARATION_PREFIX_MACRO_IDENTIFIER] &&
+        strictfmt_tree_sitter_cpp_macro_category_matches(MACRO_CATEGORY_DECLARATION_PREFIX, name, length)) {
+        return true;
+    }
+
+    if (valid_symbols[CALL_SYNTAX_MACRO_IDENTIFIER] &&
+        strictfmt_tree_sitter_cpp_macro_category_matches(MACRO_CATEGORY_CALL_SYNTAX, name, length) &&
+        has_following_argument_list(lexer)) {
+        return true;
+    }
+
     if (include_non_statement_categories &&
         ((valid_symbols[CALL_SYNTAX_MACRO_IDENTIFIER] &&
           strictfmt_tree_sitter_cpp_macro_category_matches(MACRO_CATEGORY_CALL_SYNTAX, name, length)) ||
-         (valid_symbols[DECLARATION_PREFIX_MACRO_IDENTIFIER] &&
-          strictfmt_tree_sitter_cpp_macro_category_matches(MACRO_CATEGORY_DECLARATION_PREFIX, name, length)) ||
-         (valid_symbols[BARE_MACRO_IDENTIFIER] &&
-          strictfmt_tree_sitter_cpp_macro_category_matches(MACRO_CATEGORY_BARE_IDENTIFIER, name, length)))) {
+         (valid_symbols[SEMICOLONLESS_CALL_MACRO_IDENTIFIER] &&
+          strictfmt_tree_sitter_cpp_macro_category_matches(MACRO_CATEGORY_SEMICOLONLESS_CALL, name, length)))) {
         return true;
     }
 
@@ -215,7 +231,8 @@ static bool classify_macro_identifier_token(
     bool allow_type_specifier,
     bool allow_declaration_prefix,
     bool allow_bare,
-    bool allow_preprocessor_argument
+    bool allow_preprocessor_argument,
+    bool allow_semicolonless_call
 ) {
     const bool call_match =
         allow_call &&
@@ -234,6 +251,9 @@ static bool classify_macro_identifier_token(
     const bool preprocessor_argument_match =
         allow_preprocessor_argument &&
         strictfmt_tree_sitter_cpp_macro_category_matches(MACRO_CATEGORY_PREPROCESSOR_ARGUMENT, name, length);
+    const bool semicolonless_call_match =
+        allow_semicolonless_call &&
+        strictfmt_tree_sitter_cpp_macro_category_matches(MACRO_CATEGORY_SEMICOLONLESS_CALL, name, length);
 
     if (declaration_prefix_match) {
         lexer->result_symbol = DECLARATION_PREFIX_MACRO_IDENTIFIER;
@@ -242,6 +262,11 @@ static bool classify_macro_identifier_token(
 
     if (preprocessor_argument_match) {
         lexer->result_symbol = PREPROCESSOR_ARGUMENT_MACRO_IDENTIFIER;
+        return true;
+    }
+
+    if (semicolonless_call_match) {
+        lexer->result_symbol = SEMICOLONLESS_CALL_MACRO_IDENTIFIER;
         return true;
     }
 
@@ -281,7 +306,8 @@ static bool scan_macro_identifier_token(
     bool allow_type_specifier,
     bool allow_declaration_prefix,
     bool allow_bare,
-    bool allow_preprocessor_argument
+    bool allow_preprocessor_argument,
+    bool allow_semicolonless_call
 ) {
     char name[MAX_MACRO_NAME_LENGTH];
     unsigned length = 0;
@@ -299,7 +325,8 @@ static bool scan_macro_identifier_token(
         allow_type_specifier,
         allow_declaration_prefix,
         allow_bare,
-        allow_preprocessor_argument
+        allow_preprocessor_argument,
+        allow_semicolonless_call
     );
 }
 
@@ -487,7 +514,8 @@ bool tree_sitter_cpp_external_scanner_scan(void *payload, TSLexer *lexer, const 
     if (valid_symbols[RAW_MACRO_DEFINITION_IDENTIFIER] || valid_symbols[BARE_MACRO_IDENTIFIER] ||
         valid_symbols[DECLARATION_PREFIX_MACRO_IDENTIFIER] || valid_symbols[CALL_SYNTAX_MACRO_IDENTIFIER] ||
         valid_symbols[STATEMENT_ARGUMENT_MACRO_IDENTIFIER] || valid_symbols[TYPE_SPECIFIER_MACRO_IDENTIFIER] ||
-        valid_symbols[PREPROCESSOR_ARGUMENT_MACRO_IDENTIFIER]) {
+        valid_symbols[PREPROCESSOR_ARGUMENT_MACRO_IDENTIFIER] ||
+        valid_symbols[SEMICOLONLESS_CALL_MACRO_IDENTIFIER]) {
         skip_external_whitespace(lexer);
     }
 
@@ -498,7 +526,8 @@ bool tree_sitter_cpp_external_scanner_scan(void *payload, TSLexer *lexer, const 
 
     if ((valid_symbols[CALL_SYNTAX_MACRO_IDENTIFIER] || valid_symbols[DECLARATION_PREFIX_MACRO_IDENTIFIER] ||
          valid_symbols[STATEMENT_ARGUMENT_MACRO_IDENTIFIER] || valid_symbols[TYPE_SPECIFIER_MACRO_IDENTIFIER] ||
-         valid_symbols[BARE_MACRO_IDENTIFIER] || valid_symbols[PREPROCESSOR_ARGUMENT_MACRO_IDENTIFIER]) &&
+         valid_symbols[BARE_MACRO_IDENTIFIER] || valid_symbols[PREPROCESSOR_ARGUMENT_MACRO_IDENTIFIER] ||
+         valid_symbols[SEMICOLONLESS_CALL_MACRO_IDENTIFIER]) &&
         is_identifier_start(lexer->lookahead)) {
         return scan_macro_identifier_token(
             lexer,
@@ -507,7 +536,8 @@ bool tree_sitter_cpp_external_scanner_scan(void *payload, TSLexer *lexer, const 
             valid_symbols[TYPE_SPECIFIER_MACRO_IDENTIFIER],
             valid_symbols[DECLARATION_PREFIX_MACRO_IDENTIFIER],
             valid_symbols[BARE_MACRO_IDENTIFIER],
-            valid_symbols[PREPROCESSOR_ARGUMENT_MACRO_IDENTIFIER]
+            valid_symbols[PREPROCESSOR_ARGUMENT_MACRO_IDENTIFIER],
+            valid_symbols[SEMICOLONLESS_CALL_MACRO_IDENTIFIER]
         );
     }
 

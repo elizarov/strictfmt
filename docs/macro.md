@@ -7,7 +7,7 @@ This document specifies the macro configuration and macro formatting for `strict
 Definition-side macro categories and use-side macro categories are independent:
 
 - `RawMacroDefinitions` affects only how a `#define` replacement is parsed and printed. 
-- `BareIdentifierMacros`, `DeclarationPrefixMacros`, `CallSyntaxMacros`, `StatementArgumentMacros`, `TypeSpecifierMacros`, and `PreprocessorArgumentMacros` affect only how macro identifiers are parsed when they are used elsewhere in source.
+- `BareIdentifierMacros`, `DeclarationPrefixMacros`, `CallSyntaxMacros`, `SemicolonlessCallMacros`, `StatementArgumentMacros`, `TypeSpecifierMacros`, and `PreprocessorArgumentMacros` affect only how macro identifiers are parsed when they are used elsewhere in source.
 
 ## Macro Replacements
 
@@ -115,7 +115,7 @@ FlatTuple<GTEST_FLAT_TUPLE_INT256 int> tuple;
 
 ### CallSyntaxMacros
 
-`CallSyntaxMacros` names macro identifiers whose supported use-side grammar roles start with a macro-style call but are not ordinary C++ expression calls in that placement. This category owns macro function definitions, macro function definitions with trailing C++ parameter lists, namespace-scope declaration items written as macro calls with optional configured bare-macro suffixes or chained `->` tails, declaration-prefixed macro calls, parameter-list items, and class-field method declaration macros.
+`CallSyntaxMacros` names macro identifiers whose supported use-side grammar roles start with a macro-style call but are not ordinary C++ expression calls in that placement. This category owns macro function definitions, macro function definitions with trailing C++ parameter lists, namespace-scope macro calls with optional configured bare-macro suffixes or chained `->` tails, declaration-prefixed macro calls, parameter-list items, and class-field method declaration macros.
 
 Do not add a macro to `CallSyntaxMacros` merely because its spelling is uppercase or function-like. A macro invocation that looks like a plain function call and appears where a normal C++ function call expression is syntactically valid needs no special macro configuration. The regular C++ expression grammar handles those calls, including normal argument expressions, larger expressions that contain the call, and ordinary expression operators after the call.
 
@@ -159,6 +159,16 @@ Class member declaration macro: the macro call expands to a method declaration i
 
 ```cpp
 MOCK_METHOD(void, SetValue, (std::string_view, std::string&&), (override));
+```
+
+### SemicolonlessCallMacros
+
+`SemicolonlessCallMacros` names function-like macro invocations that occupy a complete physical line at namespace or block scope without a trailing semicolon. This narrow category is separate from `CallSyntaxMacros` because ordinary declaration-like call macros must not greedily consume later source lines as one run of semicolonless calls.
+
+```cpp
+GTEST_DISABLE_DEPRECATED_PUSH_(/* getenv: deprecated */)
+UseDeprecatedApi();
+GTEST_DISABLE_DEPRECATED_POP_()
 ```
 
 ### TypeSpecifierMacros

@@ -907,10 +907,6 @@
         {
           "type": "bare_macro_identifier",
           "named": true
-        },
-        {
-          "type": "reserved_alias_suffix_macro_identifier",
-          "named": true
         }
       ]
     }
@@ -1515,7 +1511,7 @@
         "required": true,
         "types": [
           {
-            "type": "semicolonless_macro_call_identifier_fallback",
+            "type": "semicolonless_call_macro_identifier",
             "named": true
           }
         ]
@@ -1541,7 +1537,7 @@
         "required": true,
         "types": [
           {
-            "type": "semicolonless_macro_call_identifier_fallback",
+            "type": "semicolonless_call_macro_identifier",
             "named": true
           }
         ]
@@ -2713,6 +2709,16 @@
     "type": "declaration",
     "named": true,
     "fields": {
+      "arguments": {
+        "multiple": false,
+        "required": false,
+        "types": [
+          {
+            "type": "macro_argument_list",
+            "named": true
+          }
+        ]
+      },
       "declarator": {
         "multiple": true,
         "required": false,
@@ -2757,6 +2763,24 @@
           },
           {
             "type": "initializer_list",
+            "named": true
+          }
+        ]
+      },
+      "function": {
+        "multiple": false,
+        "required": false,
+        "types": [
+          {
+            "type": "bare_macro_identifier",
+            "named": true
+          },
+          {
+            "type": "call_syntax_macro_identifier",
+            "named": true
+          },
+          {
+            "type": "identifier",
             "named": true
           }
         ]
@@ -4562,7 +4586,7 @@
       },
       "name": {
         "multiple": false,
-        "required": false,
+        "required": true,
         "types": [
           {
             "type": "type_identifier",
@@ -4572,7 +4596,7 @@
       },
       "parameters": {
         "multiple": false,
-        "required": false,
+        "required": true,
         "types": [
           {
             "type": "parameter_list",
@@ -4582,8 +4606,12 @@
       },
       "return_type": {
         "multiple": false,
-        "required": false,
+        "required": true,
         "types": [
+          {
+            "type": "primitive_type",
+            "named": true
+          },
           {
             "type": "qualified_identifier",
             "named": true
@@ -4613,6 +4641,10 @@
         },
         {
           "type": "attribute_specifier",
+          "named": true
+        },
+        {
+          "type": "calling_convention_macro",
           "named": true
         },
         {
@@ -4653,10 +4685,6 @@
         },
         {
           "type": "virtual_specifier",
-          "named": true
-        },
-        {
-          "type": "windows_int_function_pointer_alias_declaration",
           "named": true
         }
       ]
@@ -4731,10 +4759,6 @@
         {
           "type": "macro_argument_list",
           "named": true
-        },
-        {
-          "type": "macro_prefix_identifier_fallback",
-          "named": true
         }
       ]
     }
@@ -4749,10 +4773,6 @@
       "types": [
         {
           "type": "bare_macro_identifier",
-          "named": true
-        },
-        {
-          "type": "function_suffix_macro_identifier_fallback",
           "named": true
         },
         {
@@ -5802,7 +5822,7 @@
             "named": true
           },
           {
-            "type": "semicolonless_macro_call_identifier_fallback",
+            "type": "semicolonless_call_macro_identifier",
             "named": true
           }
         ]
@@ -5822,7 +5842,7 @@
           "named": true
         },
         {
-          "type": "semicolonless_macro_call_identifier_fallback",
+          "type": "semicolonless_call_macro_identifier",
           "named": true
         }
       ]
@@ -6367,10 +6387,6 @@
       "types": [
         {
           "type": "bare_macro_identifier",
-          "named": true
-        },
-        {
-          "type": "macro_initializer_fallback",
           "named": true
         }
       ]
@@ -8464,10 +8480,6 @@
         },
         {
           "type": "macro_argument_list",
-          "named": true
-        },
-        {
-          "type": "post_type_macro_annotation_fallback",
           "named": true
         }
       ]
@@ -12752,10 +12764,6 @@
           {
             "type": "bare_macro_identifier",
             "named": true
-          },
-          {
-            "type": "top_level_call_suffix_identifier_fallback",
-            "named": true
           }
         ]
       }
@@ -12820,7 +12828,7 @@
         "required": true,
         "types": [
           {
-            "type": "semicolonless_macro_call_identifier_fallback",
+            "type": "semicolonless_call_macro_identifier",
             "named": true
           }
         ]
@@ -14214,10 +14222,6 @@
     "named": false
   },
   {
-    "type": "function_suffix_macro_identifier_fallback",
-    "named": true
-  },
-  {
     "type": "gcnew",
     "named": false
   },
@@ -14274,10 +14278,6 @@
     "named": true
   },
   {
-    "type": "macro_initializer_fallback",
-    "named": true
-  },
-  {
     "type": "macro_interleaved_concatenated_string",
     "named": true
   },
@@ -14291,10 +14291,6 @@
   },
   {
     "type": "macro_numeric_sequence_argument",
-    "named": true
-  },
-  {
-    "type": "macro_prefix_identifier_fallback",
     "named": true
   },
   {
@@ -14408,10 +14404,6 @@
   {
     "type": "override",
     "named": false
-  },
-  {
-    "type": "post_type_macro_annotation_fallback",
-    "named": true
   },
   {
     "type": "preproc_arg",
@@ -14542,10 +14534,6 @@
     "named": false
   },
   {
-    "type": "reserved_alias_suffix_macro_identifier",
-    "named": true
-  },
-  {
     "type": "restrict",
     "named": false
   },
@@ -14558,7 +14546,7 @@
     "named": false
   },
   {
-    "type": "semicolonless_macro_call_identifier_fallback",
+    "type": "semicolonless_call_macro_identifier",
     "named": true
   },
   {
@@ -14642,10 +14630,6 @@
     "named": true
   },
   {
-    "type": "top_level_call_suffix_identifier_fallback",
-    "named": true
-  },
-  {
     "type": "true",
     "named": true
   },
@@ -14716,10 +14700,6 @@
   {
     "type": "while",
     "named": false
-  },
-  {
-    "type": "windows_int_function_pointer_alias_declaration",
-    "named": true
   },
   {
     "type": "xor",
