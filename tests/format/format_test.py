@@ -522,6 +522,9 @@ class FormatCommandTests(unittest.TestCase):
     def test_googletest_submodule(self) -> None:
         self.assert_external_project_sources_parse_without_warnings_and_format_idempotently("googletest")
 
+    def test_pfr_submodule(self) -> None:
+        self.assert_external_project_sources_parse_without_warnings_and_format_idempotently("pfr")
+
     def test_concurrency_one_preserves_file_list_output_order(self) -> None:
         build_dir = TEST_TEMP_ROOT
         build_dir.mkdir(exist_ok=True)
