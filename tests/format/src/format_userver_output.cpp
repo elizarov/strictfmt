@@ -150,6 +150,17 @@ void DependentTemplateMemberCall(DependentStorage& storage) {
     storage.template Emplace(tag, MakeValue());
 }
 
+void GeneratedDependentTemplateMemberCall(Value value) {
+    VariableTypeRaw res{
+        .timeout_ms = value["timeout_ms"].template As<std::optional<USERVER_NAMESPACE::chaotic::WithType<
+            USERVER_NAMESPACE::chaotic::Primitive<std::int64_t, USERVER_NAMESPACE::chaotic::Minimum<
+                ::dynamic_config::feature_flags::VariableTypeRaw::kTimeout_MsMinimum
+            >>,
+            std::chrono::milliseconds
+        >>>()
+    };
+}
+
 void DecltypeBracedSentinel(Iterator it) {
     for (; it != decltype(it){}; ++it) {}
 }
@@ -220,6 +231,11 @@ void ThrowExpressionMacroArgument() {
 void PlainDeclarationMacroArgument() {
     UEXPECT_THROW(auto future = Client().SayHello(request), std::runtime_error);
     UEXPECT_NO_THROW(const auto stream = Client().ReadMany(request));
+}
+
+void DirectInitializedDeclarationMacroArgument() {
+    UASSERT_NO_THROW(ydb::TopicWriter writer("test-writer", MakeWriterSettings(topic)));
+    UASSERT_NO_THROW(ydb::TopicWriter braced_writer{"test-writer", MakeWriterSettings(topic)});
 }
 
 void StreamedStatementArgumentMacro() {
