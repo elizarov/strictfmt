@@ -146,7 +146,7 @@ bool ContainsWholeAtomDelimiter(std::string_view text) {
 }
 
 bool ContainsWholeFieldAtomDelimiter(std::string_view text) {
-    // Field expressions get the same shortcut, but `object->field` is still atom-like; the `>` in `->` is allowed.
+    // Expose member operators so the break model can build member-call chains.
     for (size_t index = 0; index < text.size(); ++index) {
         switch (text[index]) {
             case '\t':
@@ -164,7 +164,13 @@ bool ContainsWholeFieldAtomDelimiter(std::string_view text) {
             case ';':
             case '"':
             case '\'':
+            case '.':
                 return true;
+            case '-':
+                if (index + 1 < text.size() && text[index + 1] == '>') {
+                    return true;
+                }
+                break;
             case '>':
                 if (index == 0 || text[index - 1] != '-') {
                     return true;
