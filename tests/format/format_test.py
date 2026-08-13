@@ -1236,13 +1236,15 @@ class FormatCommandTests(unittest.TestCase):
             "}\n"
         )
 
-        result = native_format("--stdin", input_text=source)
+        result = native_format("--stdin", "--style", str(USERVER_FORMAT_CONFIG), input_text=source)
 
         self.assertEqual(0, result.returncode, msg=f"stdout:\n{result.stdout}\n\nstderr:\n{result.stderr}")
         self.assertEqual(expected, result.stdout)
         self.assert_no_unsupported_placement_warnings(result)
 
-        second_result = native_format("--stdin", input_text=result.stdout)
+        second_result = native_format(
+            "--stdin", "--style", str(USERVER_FORMAT_CONFIG), input_text=result.stdout
+        )
 
         self.assertEqual(
             0,

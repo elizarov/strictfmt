@@ -101,6 +101,7 @@ module.exports = grammar(C, {
     $.statement_argument_macro_identifier,
     $.type_specifier_macro_identifier,
     $.preprocessor_argument_macro_identifier,
+    $.semicolonless_call_macro_identifier,
     $._preproc_directive_end,
     $._line_break_whitespace,
   ],
@@ -117,6 +118,7 @@ module.exports = grammar(C, {
     [$.type_specifier, $._type_declarator],
     [$.type_specifier, $._declarator, $._type_declarator],
     [$.type_specifier, $.expression],
+    [$.type_specifier, $.function_pointer_alias_declaration],
     [$.sized_type_specifier, $.expression],
     [$.expression, $.class_specifier],
     [$.expression, $.module_declaration],
@@ -624,22 +626,22 @@ module.exports = grammar(C, {
     )),
 
     block_macro_call_line_item: $ => prec.dynamic(10, prec.right(PREC.CALL + 8, seq(
-      field('function', $.semicolonless_macro_call_identifier_fallback),
+      field('function', $.semicolonless_call_macro_identifier),
       field('arguments', $.macro_argument_list),
       $._line_break_whitespace,
       repeat(seq(
-        field('function', $.semicolonless_macro_call_identifier_fallback),
+        field('function', $.semicolonless_call_macro_identifier),
         field('arguments', $.macro_argument_list),
         $._line_break_whitespace,
       )),
     ))),
 
     block_macro_call_statement_item: $ => prec.dynamic(10, prec.right(PREC.CALL + 8, seq(
-      field('function', $.semicolonless_macro_call_identifier_fallback),
+      field('function', $.semicolonless_call_macro_identifier),
       field('arguments', $.macro_argument_list),
       ';',
       repeat(seq(
-        field('function', $.semicolonless_macro_call_identifier_fallback),
+        field('function', $.semicolonless_call_macro_identifier),
         field('arguments', $.macro_argument_list),
         ';',
       )),
@@ -648,28 +650,15 @@ module.exports = grammar(C, {
     top_level_call_statement: $ => prec(PREC.CALL + 4, seq(
       field('function', $.call_syntax_macro_identifier),
       field('arguments', $.macro_argument_list),
-      optional(field('suffix', choice(
-        $.bare_macro_identifier,
-        $.top_level_call_suffix_identifier_fallback,
-      ))),
+      optional(field('suffix', $.bare_macro_identifier)),
       optional($.macro_arrow_chain),
       ';',
     )),
 
-    top_level_call_suffix_identifier_fallback: _ => token(prec(
-      1000,
-      /BENCHMARK_THREAD_ARGS/,
-    )),
-
     top_level_macro_call_line_item: $ => prec(PREC.CALL + 8, seq(
-      field('function', $.semicolonless_macro_call_identifier_fallback),
+      field('function', $.semicolonless_call_macro_identifier),
       field('arguments', $.macro_argument_list),
       $._line_break_whitespace,
-    )),
-
-    semicolonless_macro_call_identifier_fallback: _ => token(prec(
-      1000,
-      /RET_NAME|UTILS_STRONG_TYPEDEF_REL_OP|RSEQ_INJECT_C|GMOCK_(?:INTERNAL_PARSE_FLAG|KIND_OF_)|THOUSAND_TESTS_|GTEST_IMPL_CMP_HELPER_|GTEST_(?:DISABLE_MSC_(?:DEPRECATED_|WARNINGS_)(?:PUSH_|POP_)|INTENTIONAL_CONST_COND_(?:PUSH_|POP_))/,
     )),
 
     macro_call_item: $ => prec.right(PREC.CALL + 2, seq(
@@ -679,7 +668,7 @@ module.exports = grammar(C, {
 
     macro_call_identifier: $ => choice(
       $.call_syntax_macro_identifier,
-      $.semicolonless_macro_call_identifier_fallback,
+      $.semicolonless_call_macro_identifier,
     ),
 
     macro_decorator_call_item: $ => prec(PREC.CALL + 8, seq(
@@ -715,7 +704,18 @@ module.exports = grammar(C, {
       choice(
         $.declaration,
         alias($.constructor_or_destructor_declaration, $.declaration),
+        alias($.macro_prefixed_call_declaration, $.declaration),
       ),
+    )),
+
+    macro_prefixed_call_declaration: $ => prec(PREC.CALL + 8, seq(
+      field('function', choice(
+        $.call_syntax_macro_identifier,
+        $.bare_macro_identifier,
+        $.identifier,
+      )),
+      field('arguments', $.macro_argument_list),
+      ';',
     )),
 
     macro_prefixed_field_declaration_item: $ => prec(PREC.CALL + 6, seq(
@@ -1102,15 +1102,9 @@ module.exports = grammar(C, {
       'virtual',
     ),
 
-    macro_prefix_identifier_fallback: _ => token(prec(
-      1,
-      /GTEST_(?:API_|ATTRIBUTE_NO_SANITIZE_ADDRESS_|INTERNAL_EMPTY_BASE_CLASS|NO_TAIL_CALL_)|USERVER_IMPL_FORCE_INLINE/,
-    )),
-
     function_prefix_macro: $ => prec.right(PREC.CALL + 6, choice(
       $.declaration_prefix_macro_identifier,
       seq($.declaration_prefix_macro_identifier, $.macro_argument_list),
-      $.macro_prefix_identifier_fallback,
     )),
 
     ms_call_modifier: ($, original) => choice(
@@ -1395,15 +1389,7 @@ module.exports = grammar(C, {
       )),
     ),
 
-    macro_initializer: $ => choice(
-      $.bare_macro_identifier,
-      $.macro_initializer_fallback,
-    ),
-
-    macro_initializer_fallback: _ => token(prec(
-      1,
-      /ATOMIC_FLAG_INIT|FORMAT_USERVER_ATOMIC_INIT/,
-    )),
+    macro_initializer: $ => $.bare_macro_identifier,
 
     reference_argument_init_declarator: $ => prec(1, seq(
       field('declarator', alias($.reference_argument_declarator, $.reference_declarator)),
@@ -1743,14 +1729,7 @@ module.exports = grammar(C, {
 
     post_type_macro_annotation: $ => prec.right(PREC.CALL + 7, choice(
       seq($.bare_macro_identifier, $.macro_argument_list),
-      seq($.post_type_macro_annotation_fallback, $.macro_argument_list),
       $.bare_macro_identifier,
-      $.post_type_macro_annotation_fallback,
-    )),
-
-    post_type_macro_annotation_fallback: _ => token(prec(
-      PREC.CALL + 8,
-      /__(?:[A-Za-z0-9]+_)?percpu|ALIGN|WINAPI|CALLBACK/,
     )),
 
     reference_declarator: $ => prec.dynamic(1, prec.right(seq(choice('&', '&&', '%'), $._declarator))),
@@ -1860,14 +1839,7 @@ module.exports = grammar(C, {
 
     function_suffix_macro: $ => prec.right(PREC.CALL + 7, choice(
       $.bare_macro_identifier,
-      $.function_suffix_macro_identifier_fallback,
       seq($.bare_macro_identifier, $.macro_argument_list),
-      seq($.function_suffix_macro_identifier_fallback, $.macro_argument_list),
-    )),
-
-    function_suffix_macro_identifier_fallback: _ => token(prec(
-      PREC.CALL + 8,
-      /GTEST_(?:NO_TAIL_CALL_|LOCK_EXCLUDED_|EXCLUSIVE_LOCK_REQUIRED_)|USERVER_(?:IMPL_LIFETIME_BOUND|FMT_CONST|IMPL_LIBC_INCLUDE_FIXES_THROW)|RAPIDJSON_NOEXCEPT|FORMAT_USERVER_(?:LIFETIME_BOUND|THROW)/,
     )),
 
     _function_postfix: $ => prec.right(choice(
@@ -2097,13 +2069,7 @@ module.exports = grammar(C, {
       ';',
     ),
 
-    windows_int_function_pointer_alias_declaration: _ => token(prec(
-      PREC.CALL + 8,
-      /using[ \t]+[A-Za-z_]\w*[ \t]*=[ \t]*int[ \t]*\([ \t]*(?:WINAPI|CALLBACK|__cdecl)[ \t]*\*[ \t]*\)[ \t]*\([^;\r\n]*\)[ \t]*;/,
-    )),
-
     function_pointer_alias_declaration: $ => choice(
-      $.windows_int_function_pointer_alias_declaration,
       prec(1, seq(
         'using',
         field('name', $._type_identifier),
@@ -2122,6 +2088,18 @@ module.exports = grammar(C, {
           ),
           seq(optional($.ms_call_modifier), '*'),
         ),
+        ')',
+        $._function_declarator_seq,
+        ';',
+      )),
+      prec.dynamic(10, seq(
+        'using',
+        field('name', $._type_identifier),
+        '=',
+        field('return_type', $.primitive_type),
+        '(',
+        $.calling_convention_macro,
+        '*',
         ')',
         $._function_declarator_seq,
         ';',
@@ -2161,15 +2139,7 @@ module.exports = grammar(C, {
       ),
     ),
 
-    alias_suffix_macro: $ => prec(PREC.CALL + 7, choice(
-      $.bare_macro_identifier,
-      $.reserved_alias_suffix_macro_identifier,
-    )),
-
-    reserved_alias_suffix_macro_identifier: _ => token(prec(
-      PREC.CALL + 8,
-      /USERVER_IMPL_NODEBUG|FORMAT_USERVER_NODEBUG_FUNC/,
-    )),
+    alias_suffix_macro: $ => prec(PREC.CALL + 7, $.bare_macro_identifier),
 
     static_assert_declaration: $ => seq(
       'static_assert',
@@ -2888,7 +2858,7 @@ module.exports = grammar(C, {
     macro_expression_without_semicolon: $ => prec(PREC.CALL + 2, $.expression),
 
     macro_call_expression: $ => prec(PREC.CALL, seq(
-      field('function', choice($.call_syntax_macro_identifier, $.semicolonless_macro_call_identifier_fallback)),
+      field('function', choice($.call_syntax_macro_identifier, $.semicolonless_call_macro_identifier)),
       field('arguments', $.macro_argument_list),
     )),
 
