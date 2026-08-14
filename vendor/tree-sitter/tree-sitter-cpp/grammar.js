@@ -2653,6 +2653,8 @@ module.exports = grammar(C, {
     _expression_not_binary: ($, original) => choice(
       $.macro_qualified_identifier,
       original,
+      $.reflect_expression,
+      $.splice_specifier,
       $.preprocessing_token_macro_call,
       $.macro_call_expression,
       $.qualified_address_expression,
@@ -3011,6 +3013,7 @@ module.exports = grammar(C, {
         field('operator', choice('.', '.*', '->', '->*')),
       )),
       field('field', choice(
+        $.splice_specifier,
         prec.dynamic(1, $._field_identifier),
         alias($.qualified_field_identifier, $.qualified_identifier),
         $.destructor_name,
@@ -3185,6 +3188,27 @@ module.exports = grammar(C, {
       field('pattern', $.expression),
       '...',
     )),
+
+    reflect_expression: $ => prec.right(PREC.UNARY, seq(
+      field('operator', '^^'),
+      field('operand', choice(
+        '::',
+        $._reflection_name,
+        $.primitive_type,
+      )),
+    )),
+
+    _reflection_name: $ => prec.right(2, choice(
+      $.identifier,
+      seq($._scope_resolution, optional('template'), $.identifier),
+    )),
+
+    splice_specifier: $ => seq(
+      '[',
+      ':',
+      field('value', $.expression),
+      ':]',
+    ),
 
     type_parameter_pack_expansion: $ => seq(
       field('pattern', $.type_descriptor),

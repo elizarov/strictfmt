@@ -611,6 +611,16 @@ bool FormatTokenNeedsSpace(const PrintToken* previous, const PrintToken& current
         return previous->kind == PrintTokenKind::Known && SyntaxNodeKindHasClass(prev, SyntaxNodeClass::ControlKeyword);
     }
     if (cur == SyntaxNodeKind::LeftBracket) {
+        if (current.parentKind == SyntaxNodeKind::SpliceSpecifier) {
+            return previous->kind == PrintTokenKind::Known && (
+                SyntaxNodeKindHasClass(prev, SyntaxNodeClass::AssignmentOperator) ||
+                prev == SyntaxNodeKind::Comma ||
+                prev == SyntaxNodeKind::KeywordReturn ||
+                prev == SyntaxNodeKind::KeywordTypename ||
+                prev == SyntaxNodeKind::Question ||
+                (prev == SyntaxNodeKind::Colon && previous->parentKind == SyntaxNodeKind::ConditionalExpression)
+            );
+        }
         if (current.parentKind == SyntaxNodeKind::StructuredBindingDeclarator) {
             return true;
         }
@@ -669,6 +679,9 @@ bool FormatTokenNeedsSpace(const PrintToken* previous, const PrintToken& current
         return true;
     }
     if (prev == SyntaxNodeKind::Colon) {
+        if (previous->parentKind == SyntaxNodeKind::SpliceSpecifier) {
+            return false;
+        }
         return current.parentKind != SyntaxNodeKind::CaseStatement &&
             !SyntaxNodeKindHasClass(previous->syntaxKind, SyntaxNodeClass::AccessKeyword);
     }

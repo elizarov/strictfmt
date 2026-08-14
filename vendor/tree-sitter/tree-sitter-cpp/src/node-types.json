@@ -336,6 +336,10 @@
         "named": true
       },
       {
+        "type": "reflect_expression",
+        "named": true
+      },
+      {
         "type": "requires_clause",
         "named": true
       },
@@ -345,6 +349,10 @@
       },
       {
         "type": "sizeof_expression",
+        "named": true
+      },
+      {
+        "type": "splice_specifier",
         "named": true
       },
       {
@@ -3772,6 +3780,10 @@
           },
           {
             "type": "qualified_identifier",
+            "named": true
+          },
+          {
+            "type": "splice_specifier",
             "named": true
           },
           {
@@ -10932,6 +10944,86 @@
     }
   },
   {
+    "type": "reflect_expression",
+    "named": true,
+    "fields": {
+      "operand": {
+        "multiple": true,
+        "required": true,
+        "types": [
+          {
+            "type": "::",
+            "named": false
+          },
+          {
+            "type": "decltype",
+            "named": true
+          },
+          {
+            "type": "dependent_name",
+            "named": true
+          },
+          {
+            "type": "identifier",
+            "named": true
+          },
+          {
+            "type": "namespace_identifier",
+            "named": true
+          },
+          {
+            "type": "primitive_type",
+            "named": true
+          },
+          {
+            "type": "template",
+            "named": false
+          },
+          {
+            "type": "template_type",
+            "named": true
+          }
+        ]
+      },
+      "operator": {
+        "multiple": false,
+        "required": true,
+        "types": [
+          {
+            "type": "^^",
+            "named": false
+          }
+        ]
+      },
+      "scope": {
+        "multiple": true,
+        "required": false,
+        "types": [
+          {
+            "type": "::",
+            "named": false
+          },
+          {
+            "type": "decltype",
+            "named": true
+          },
+          {
+            "type": "dependent_name",
+            "named": true
+          },
+          {
+            "type": "namespace_identifier",
+            "named": true
+          },
+          {
+            "type": "template_type",
+            "named": true
+          }
+        ]
+      }
+    }
+  },
+  {
     "type": "requirement_seq",
     "named": true,
     "fields": {},
@@ -11198,6 +11290,22 @@
       "value": {
         "multiple": false,
         "required": false,
+        "types": [
+          {
+            "type": "expression",
+            "named": true
+          }
+        ]
+      }
+    }
+  },
+  {
+    "type": "splice_specifier",
+    "named": true,
+    "fields": {
+      "value": {
+        "multiple": false,
+        "required": true,
         "types": [
           {
             "type": "expression",
@@ -11750,6 +11858,10 @@
             "named": true
           },
           {
+            "type": "reflect_expression",
+            "named": true
+          },
+          {
             "type": "requires_clause",
             "named": true
           },
@@ -11759,6 +11871,10 @@
           },
           {
             "type": "sizeof_expression",
+            "named": true
+          },
+          {
+            "type": "splice_specifier",
             "named": true
           },
           {
@@ -12114,6 +12230,10 @@
             "named": true
           },
           {
+            "type": "reflect_expression",
+            "named": true
+          },
+          {
             "type": "requires_clause",
             "named": true
           },
@@ -12123,6 +12243,10 @@
           },
           {
             "type": "sizeof_expression",
+            "named": true
+          },
+          {
+            "type": "splice_specifier",
             "named": true
           },
           {
@@ -12333,6 +12457,10 @@
           "named": true
         },
         {
+          "type": "reflect_expression",
+          "named": true
+        },
+        {
           "type": "requires_clause",
           "named": true
         },
@@ -12342,6 +12470,10 @@
         },
         {
           "type": "sizeof_expression",
+          "named": true
+        },
+        {
+          "type": "splice_specifier",
           "named": true
         },
         {
@@ -13766,6 +13898,10 @@
     "named": false
   },
   {
+    "type": ":]",
+    "named": false
+  },
+  {
     "type": ";",
     "named": false
   },
@@ -13867,6 +14003,10 @@
   },
   {
     "type": "^=",
+    "named": false
+  },
+  {
+    "type": "^^",
     "named": false
   },
   {
