@@ -15,6 +15,7 @@ STRICTFMT_ROOT = Path(os.environ.get("STRICTFMT_PROJECT_ROOT", TEST_ROOT.parents
 TEST_TEMP_ROOT = Path(os.environ.get("STRICTFMT_TEST_TEMP_ROOT", STRICTFMT_ROOT / "build")).resolve()
 FORMAT_EXE = Path(os.environ.get("STRICTFMT_EXE", STRICTFMT_ROOT / "build" / "strictfmt.exe")).resolve()
 FORMAT_EXE_ARGS = os.environ.get("STRICTFMT_EXE_ARGS", "").split()
+EXPECTED_VERSION = os.environ.get("STRICTFMT_EXPECTED_VERSION")
 PLATFORM_LINE_ENDING = os.linesep.encode("ascii")
 PRETTY_PRINTER_SOURCE = STRICTFMT_ROOT / "src" / "format" / "impl" / "format_pretty_printer.cpp"
 EXTERNAL_ROOT = STRICTFMT_ROOT / "external"
@@ -170,6 +171,16 @@ class FormatCommandTests(unittest.TestCase):
 
     def assert_no_unsupported_placement_warnings(self, result: subprocess.CompletedProcess[str]) -> None:
         self.assertNotIn(": warning at ", result.stderr)
+
+    def test_version_prints_embedded_version(self) -> None:
+        result = native_format("--version")
+
+        self.assertEqual(0, result.returncode, msg=f"stdout:\n{result.stdout}\n\nstderr:\n{result.stderr}")
+        self.assertEqual("", result.stderr)
+        if EXPECTED_VERSION is None:
+            self.assertRegex(result.stdout, r"^strictfmt [0-9A-Za-z][0-9A-Za-z.+-]*\n$")
+        else:
+            self.assertEqual(f"strictfmt {EXPECTED_VERSION}\n", result.stdout)
 
     def assert_external_project_sources_parse_without_warnings_and_format_idempotently(
         self,

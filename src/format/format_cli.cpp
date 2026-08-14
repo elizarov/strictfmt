@@ -15,6 +15,7 @@
 #include "format/format_model_dump.h"
 #include "format/impl/format_args.h"
 #include "format/impl/format_config.h"
+#include "strictfmt_version.h"
 #include "tools/tools_common.h"
 #include "tools/tools_parallel.h"
 #include "tools/tools_progress.h"
@@ -180,6 +181,10 @@ int RunFormat(int argc, char** argv) {
         return 2;
     }
     const FormatOptions& options = *parsed;
+    if (options.version) {
+        std::fprintf(stdout, "strictfmt %s\n", kStrictfmtVersion);
+        return 0;
+    }
     if (options.help) {
         PrintFormatUsage(stdout);
         return 0;

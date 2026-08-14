@@ -72,3 +72,39 @@ The build uses the vendored static tree-sitter runtime under
 governed by the hard [upstream tree-sitter runtime constraint](architecture.md#upstream-tree-sitter-runtime).
 
 The vendored C++ grammar also compiles a custom external scanner; see [scanner.md](scanner.md).
+
+## Versions
+
+CMake embeds a version string in the command-line executable. `strictfmt --version`
+prints that value as specified in [command_line.md](command_line.md). A build may set
+`STRICTFMT_VERSION` as a CMake cache variable, or as an environment variable when
+using `scripts/build.sh|cmd`. Without an override, CMake derives a development
+version from `git describe`; an exact `v<version>` tag becomes `<version>`.
+
+## GitHub Workflows
+
+`.github/workflows/build.yml` runs `scripts/test.sh` on a Linux x86_64 runner for
+every pushed branch or tag. Checkout includes all external-project submodules, so
+this is the same complete validation suite used locally.
+
+`.github/workflows/release.yml` runs for `v<major>.<minor>.<patch>` tag pushes. It
+first runs the complete tests on Linux x86_64, then builds and verifies versioned
+executables on Linux x86_64, Windows x86_64, and macOS arm64 GitHub-hosted
+runners. The executables are packaged as `.tar.gz` or `.zip` archives, collected
+with a `SHA256SUMS` file, and published in a GitHub release. A manual workflow run
+performs the tests and all platform builds without publishing a release; use it
+to validate workflow changes before tagging.
+
+## Creating a Release
+
+From a clean `main` worktree, run:
+
+```sh
+scripts/release.sh 1.2.3
+```
+
+The script accepts a numeric three-component version, verifies that the tag does
+not already exist, pushes `main`, creates the annotated `v1.2.3` tag, and pushes
+that tag to the branch's configured remote. The tag push starts the release
+workflow. If the tag push fails, the script removes the unpushed local tag so the
+release can be retried after correcting the problem.

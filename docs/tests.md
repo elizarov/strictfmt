@@ -32,6 +32,11 @@ byte-for-byte idempotence after the first pass.
 
 - `tests/format/format_test.py` owns the Python test harness and individual test
   cases.
+
+Command-line coverage includes the build-time version string: the CMake test
+target passes its resolved version to the Python harness, which requires
+`strictfmt --version` to print the same value.
+
 - `tests/format/.cpp-format` owns the default test formatter configuration.
 - `tests/format/.cpp-format-userver` owns the userver-oriented test formatter
   configuration.

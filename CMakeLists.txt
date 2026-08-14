@@ -6,6 +6,45 @@ set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
+set(STRICTFMT_VERSION "" CACHE STRING
+    "Version embedded in the strictfmt executable. Defaults to the current Git description."
+)
+set(strictfmt_resolved_version "${STRICTFMT_VERSION}")
+if(strictfmt_resolved_version STREQUAL "")
+    set(strictfmt_git_describe_result 1)
+    set(strictfmt_git_description "")
+    find_package(Git QUIET)
+    if(Git_FOUND)
+        execute_process(
+            COMMAND "${GIT_EXECUTABLE}" describe --tags --match "v[0-9]*" --always --dirty
+            WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}"
+            RESULT_VARIABLE strictfmt_git_describe_result
+            OUTPUT_VARIABLE strictfmt_git_description
+            OUTPUT_STRIP_TRAILING_WHITESPACE
+            ERROR_QUIET
+        )
+    endif()
+    if(strictfmt_git_describe_result EQUAL 0 AND NOT strictfmt_git_description STREQUAL "")
+        if(strictfmt_git_description MATCHES "^v(.+)$")
+            set(strictfmt_resolved_version "${CMAKE_MATCH_1}")
+        else()
+            string(REPLACE "-" "." strictfmt_git_description "${strictfmt_git_description}")
+            set(strictfmt_resolved_version "0.0.0-dev+g${strictfmt_git_description}")
+        endif()
+    else()
+        set(strictfmt_resolved_version "0.0.0-dev")
+    endif()
+endif()
+if(NOT strictfmt_resolved_version MATCHES "^[0-9A-Za-z][0-9A-Za-z.+-]*$")
+    message(FATAL_ERROR "STRICTFMT_VERSION contains unsupported characters: ${strictfmt_resolved_version}")
+endif()
+message(STATUS "strictfmt version: ${strictfmt_resolved_version}")
+configure_file(
+    "${CMAKE_CURRENT_SOURCE_DIR}/cmake/strictfmt_version.h.in"
+    "${CMAKE_CURRENT_BINARY_DIR}/generated/strictfmt_version.h"
+    @ONLY
+)
+
 find_package(Python3 COMPONENTS Interpreter)
 enable_testing()
 
@@ -110,6 +149,9 @@ add_library(strictfmt_cli STATIC
 target_include_directories(strictfmt_cli PUBLIC
     "${CMAKE_CURRENT_SOURCE_DIR}/src"
 )
+target_include_directories(strictfmt_cli PRIVATE
+    "${CMAKE_CURRENT_BINARY_DIR}/generated"
+)
 target_link_libraries(strictfmt_cli PUBLIC
     strictfmt_core
 )
@@ -145,6 +187,7 @@ if(Python3_FOUND)
         "STRICTFMT_EXE_ARGS=${STRICTFMT_FORMAT_TEST_EXE_ARGS}"
         "STRICTFMT_PROJECT_ROOT=${CMAKE_CURRENT_SOURCE_DIR}"
         "STRICTFMT_TEST_TEMP_ROOT=${STRICTFMT_TEST_TEMP_ROOT}"
+        "STRICTFMT_EXPECTED_VERSION=${strictfmt_resolved_version}"
     )
     add_test(NAME StrictfmtFormatTests
         COMMAND
