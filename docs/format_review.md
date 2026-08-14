@@ -9,13 +9,12 @@ The review looked for:
 - behavior selected by an exact keyword, operator spelling, literal suffix, or syntax-node kind when equivalent syntax is treated differently
 - rules whose result depends on input whitespace or recursion depth instead of the formatted structure
 
-Configured macro categories, the documented distinction between chain operators and ordinary binary operators, mandatory adjacent-string line-fragment boundaries, compact single-statement lambdas, and compact empty control bodies are intentionally outside the findings. Those are supported semantic categories and readability or expression-layout rules rather than accidental layout patches.
+Configured macro categories, the documented distinction between chain operators and ordinary binary operators, mandatory adjacent-string line-fragment boundaries, compact single-statement lambdas, compact empty control bodies, and preprocessor pragma/undef groups are intentionally outside the findings. Those are supported semantic categories and readability, expression-layout, or source-grouping rules rather than accidental layout patches.
 
 ## Summary
 
 | Finding | Contract affected |
 | --- | --- |
-| Preprocessor blank lines depend on directive spellings | Generic item separation and exact directive recognition |
 | Enum trailing commas are suppressed by a macro-call shape guess | Specification agreement and generic comma normalization |
 
 ## Resolved During Review
@@ -154,49 +153,33 @@ while (running);
 
 Non-empty bodies retain the ordinary block-attachment layout.
 
-## Findings
+### Preprocessor directive groups
 
-### 1. Preprocessor blank lines depend on directive spellings
-
-The **Line Hygiene** section of `format.md` assigns unique blank-line behavior to `#pragma once` and `#undef`. The printer implements `#undef` by directive kind but recognizes `#pragma once` with `StartsWith(line, "#pragma once")`. `IsPragmaOnceNode` in `src/format/impl/format_model_builder.cpp` uses the same raw prefix test when grouping an opening include area.
-
-An ordinary definition at a declaration boundary receives only the generic post-directive separator:
+Preprocessor blank-line insertion now uses two structural source-item groups. Consecutive `#pragma` directives form one pragma group, consecutive `#undef` directives form one undef group, and each group is separated from neighboring items of another kind. The pragma operand is irrelevant:
 
 ```cpp
-int before;
-#define FEATURE 1
-
-int after;
-```
-
-Changing only the directive keyword gives `#undef` separators on both sides:
-
-```cpp
-int before;
-
-#undef FEATURE
-
-int after;
-```
-
-The spelling check also accepts unrelated pragma operands. A normal unknown pragma before an include has no inserted separator:
-
-```cpp
-#pragma twice
-#include <algorithm>
-```
-
-An equally unknown pragma whose operand merely begins with `once` is treated as `#pragma once`:
-
-```cpp
-#pragma once_more
+#pragma once
+#pragma warning(disable: 4100)
 
 #include <vector>
 ```
 
-Blank-line insertion should be expressed through broad source-item categories. If `#pragma once` remains a necessary semantic exception, it should at least be recognized structurally as the exact directive and operand rather than by raw prefix.
+Likewise, consecutive undefinitions stay together:
 
-### 2. Enum trailing commas are suppressed by a macro-call shape guess
+```cpp
+#define FIRST 1
+
+#undef FIRST
+#undef SECOND
+
+int value;
+```
+
+The printer no longer inserts blanks through a raw `#pragma once` prefix check or per-directive `#undef` branches. Opening include-run detection recognizes the exact `#pragma` directive kind, so includes following any pragma group retain normal sorting or preservation. Other preprocessor directives do not participate in this grouping rule.
+
+## Findings
+
+### 1. Enum trailing commas are suppressed by a macro-call shape guess
 
 `format.md` says that enum bodies always keep a trailing comma. `NormalizeTrailingCommas` in `src/format/impl/format_model_builder.cpp` instead calls `MacroLikeInvocationEnding` and suppresses the comma when the final enum child happens to have an identifier-plus-argument-list shape. This is not driven by a configured macro role or by known expansion semantics; it guesses that the call may generate its own comma-separated enumerators.
 
@@ -221,4 +204,4 @@ The formatter cannot infer whether `ItemsMacro` expands with no terminal comma, 
 
 ## Overall Direction
 
-The remaining findings should be resolved by deleting each exception or replacing it with a small semantic category that applies at every recursion depth and in every equivalent context. Golden fixtures should demonstrate category boundaries rather than preserve one-off outputs.
+The remaining finding should be resolved by deleting the exception or replacing it with a small semantic category that applies at every recursion depth and in every equivalent context. Golden fixtures should demonstrate category boundaries rather than preserve one-off outputs.

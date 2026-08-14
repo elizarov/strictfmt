@@ -874,7 +874,8 @@ inline void AppendTsChild(
     const bool consumesLineTail = !isComment || CommentConsumesLineTail(source, childStart, childEnd);
     const bool keepBlockInline = isBlock && KeepsBlockCommentInlineInParent(parent.kind);
     const bool isTrailingComment =
-        isComment && !keepBlockInline && hasPreviousSibling && previousEndRow == childStartRow && consumesLineTail;
+        isComment && !keepBlockInline && hasPreviousSibling && previousEndRow == childStartRow &&
+        previousEndColumn > 0 && consumesLineTail;
     const bool isInlineBlockComment = isBlock && (keepBlockInline || !consumesLineTail);
     AppendTsNode(model, child, source, parent, childSyntax, isTrailingComment, isInlineBlockComment);
     previousEnd = childEnd;
@@ -988,8 +989,10 @@ void AppendIncludeRun(
     groupedChildren.push_back(includeRun);
 }
 
-bool IsPragmaOnceNode(const SyntaxNode& node) {
-    return node.kind == SyntaxNodeKind::PreprocCall && StartsWith(TrimLeadingWhitespace(node.text), "#pragma once");
+bool IsPragmaNode(const SyntaxNode& node) {
+    return node.kind == SyntaxNodeKind::PreprocCall &&
+        SyntaxNodeKindFromPreprocessorDirectiveLine(TrimLeadingWhitespace(node.text)) ==
+            SyntaxNodeKind::PreprocessorDirectivePragma;
 }
 
 bool IsPreprocessorConditionHeaderNode(const SyntaxNode& node) {
@@ -1006,7 +1009,7 @@ bool CanRemainInOpeningIncludeArea(const SyntaxNode& owner, const SyntaxNode& ch
         return false;
     }
     if (owner.kind == SyntaxNodeKind::TranslationUnit) {
-        return IsPragmaOnceNode(child);
+        return IsPragmaNode(child);
     }
     if (SyntaxNodeKindHasClass(owner.kind, SyntaxNodeClass::ConditionalPreprocessorOpen)) {
         return child.kind == SyntaxNodeKind::MacroDefinition || IsPreprocessorConditionHeaderNode(child);
