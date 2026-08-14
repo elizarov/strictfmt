@@ -50,8 +50,10 @@ The generated C++ parser must fit every limit imposed by the pinned upstream gen
 
 Generated-source compaction may change only the C spelling of values emitted by the stock generator. It must preserve every table value, table dimension, and runtime-facing structure, keep the parser in one source file, and require no runtime or parser-header change. Re-encoding or splitting parse tables is not source compaction and is not permitted by this exception.
 
-## Parser Genericity
+## Structural Genericity
 
 Grammar must model C++ constructs generically, following the shape of the C++ language rather than the source samples. Every piece of the grammar must work and parse in a recursive way. A grammar rule must not encode a shallow convenience shape that only works for the current nesting level or current fixture; if adding one more nesting level would require another special case, the rule is not generic enough. If a construct can appear where another C++ construct can appear, the grammar must compose through the same recursive nonterminal.
 
 Project-specific tokens are used only for intentionally non-C++ macro fragments or scanner-owned lexical features documented in [scanner.md](scanner.md) and are taken from configuration, not hard-coded. Otherwise, structured grammar productions compose with existing C++ declarators, type names, expressions, and statements.
+
+Formatter behavior follows the same principle: rules use shared structural or configured semantic categories and apply at every supported recursion depth. Source spelling, incidental parser wrappers, and golden-fixture shape must not create one-off formatting categories.
