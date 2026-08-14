@@ -433,6 +433,12 @@ private:
             case FormatBreakNodeKind::Chain: {
                 NodeResults alternatives;
                 for (NodeResult compact : SolveChainCompactAlternatives(node, column, indentLevel, lineHasText)) {
+                    if (
+                        node.chainCompactRequiresFitOnOneLine &&
+                        (compact.extraLines > 0 || compact.maxOverflow > 0)
+                    ) {
+                        continue;
+                    }
                     if (node.chainPrefersSplitWhenCompactBreaks && compact.valid && compact.extraLines > 0) {
                         continue;
                     }
@@ -2848,6 +2854,14 @@ private:
             return best;
         }
         NodeResult split = SolveChainSplitAfterOperator(node, column, indentLevel, lineHasText);
+        if (
+            node.chainCompactRequiresFitOnOneLine &&
+            compact.valid &&
+            (compact.extraLines > 0 || compact.maxOverflow > 0) &&
+            split.valid
+        ) {
+            return split;
+        }
         if (node.chainPrefersSplitWhenCompactBreaks && compact.valid && compact.extraLines > 0 && split.valid) {
             return split;
         }

@@ -851,9 +851,38 @@ class FormatCommandTests(unittest.TestCase):
             self.assertNotIn("PreprocFunctionDef", dump.stdout)
             self.assertNotIn("RawMacroReplacement", dump.stdout)
 
+    def test_structured_macro_replacement_call_sequence_splits_by_unit(self) -> None:
+        source = (
+            '#define ONE(X) X(Alpha,"alpha")\n'
+            '#define MANY(X) X(Alpha,"alpha") X(Beta,"beta") X(Gamma,"gamma")\n'
+            "#define DIFFERENT(Y) Produce(Alpha) Consume(Beta)\n"
+        )
+        expected = (
+            '#define ONE(X) X(Alpha, "alpha")\n'
+            "#define MANY(X) \\\n"
+            '    X(Alpha, "alpha") \\\n'
+            '    X(Beta, "beta") \\\n'
+            '    X(Gamma, "gamma")\n'
+            "#define DIFFERENT(Y) \\\n"
+            "    Produce(Alpha) \\\n"
+            "    Consume(Beta)\n"
+        )
+
+        formatted = native_format("--stdin", input_text=source)
+
+        self.assertEqual(0, formatted.returncode, msg=f"stdout:\n{formatted.stdout}\n\nstderr:\n{formatted.stderr}")
+        self.assertEqual(expected, formatted.stdout)
+        idempotent = native_format("--dry-run", "--stdin", input_text=formatted.stdout)
+        self.assertEqual(
+            0,
+            idempotent.returncode,
+            msg=f"stdout:\n{idempotent.stdout}\n\nstderr:\n{idempotent.stderr}",
+        )
+
     def test_structured_macro_definition_with_templated_struct_body_reparses(self) -> None:
         expected = (
-            "#define DECLARE_TRAITS(Type) template <> \\\n"
+            "#define DECLARE_TRAITS(Type) \\\n"
+            "    template <> \\\n"
             "    struct Traits<Type> { \\\n"
             "        static constexpr auto value = Type{}; \\\n"
             "    }\n"
@@ -878,7 +907,7 @@ class FormatCommandTests(unittest.TestCase):
                 self.assertEqual(0, result.returncode, msg=f"stdout:\n{result.stdout}\n\nstderr:\n{result.stderr}")
                 self.assertEqual(expected, result.stdout)
 
-    def test_structured_macro_value_boundary_is_solver_owned(self) -> None:
+    def test_structured_macro_non_fitting_definition_splits_after_header(self) -> None:
         build_dir = TEST_TEMP_ROOT
         build_dir.mkdir(exist_ok=True)
         with tempfile.TemporaryDirectory(prefix="format_macro_value_solver_", dir=build_dir) as temp_dir:
@@ -892,11 +921,12 @@ class FormatCommandTests(unittest.TestCase):
             )
             source = "#define VALUE Build(first,second,third)\n#define D(v) void f(v)\n"
             expected = (
-                "#define VALUE Build( \\\n"
-                "    first, \\\n"
-                "    second, \\\n"
-                "    third \\\n"
-                ")\n"
+                "#define VALUE \\\n"
+                "    Build( \\\n"
+                "        first, \\\n"
+                "        second, \\\n"
+                "        third \\\n"
+                "    )\n"
                 "#define D(v) void f(v)\n"
             )
 

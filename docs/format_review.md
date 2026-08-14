@@ -29,14 +29,15 @@ Configured macro categories and the documented distinction between chain operato
 
 The printer previously broke before a structured macro replacement based on its total compact width, top-level element count, or declaration-fragment class. These local decisions discarded legal layouts that attached a fitting replacement prefix and used ordinary opportunities deeper in the replacement.
 
-Structured macro definitions now enter one solver model containing the header owner, the complete replacement value, and the optional boundary between them. At `ColumnLimit: 22`, the solver can keep the fitting call prefix attached and split its list:
+Structured macro definitions now enter one solver model containing the header owner and the complete replacement value. The specification was subsequently made stricter: the attached form is legal only when the complete definition fits on one physical line. At `ColumnLimit: 22`, a call whose arguments require wrapping therefore starts after the definition header:
 
 ```cpp
-#define VALUE Build( \
-    first, \
-    second, \
-    third \
-)
+#define VALUE \
+    Build( \
+        first, \
+        second, \
+        third \
+    )
 ```
 
 A short declaration replacement follows the same width-independent model and stays compact when that layout wins:
@@ -45,7 +46,7 @@ A short declaration replacement follows the same width-independent model and sta
 #define D(v) void f(v)
 ```
 
-The printer no longer annotates replacement widths or forces boundaries between replacement elements. The solver also includes the two-column ` \` suffix in the overflow cost of every taken structured-macro break, so candidate cost reflects the emitted physical lines.
+The printer no longer annotates replacement widths or chooses replacement boundaries. Spec-mandated boundaries, including the header split for a non-fitting definition and boundaries between top-level call units, are structural constraints in the break model. The solver includes the two-column ` \` suffix in the overflow cost of every taken structured-macro break, so candidate cost reflects the emitted physical lines.
 
 ### Delimiter-stack partitioning
 

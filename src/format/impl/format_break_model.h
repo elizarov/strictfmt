@@ -84,6 +84,7 @@ struct FormatBreakNode {
     bool bodyHeaderRequiresDetachedBody = false;
     bool bodyHeaderSplitAtParentIndentWhenLineStarts = false;
     bool chainPrefersSplitWhenCompactBreaks = false;
+    bool chainCompactRequiresFitOnOneLine = false;
     bool chainStartsWithOperator = false;
     bool splitTrailingBodyHeaderAtParentIndent = false;
     std::span<FormatBreakNode*> children;

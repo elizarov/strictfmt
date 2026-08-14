@@ -59,6 +59,7 @@ Mandatory line breaks are structural boundaries. The break is always taken befor
 - Break after a code-block closing brace unless the following token is `else`, `catch`, `finally`, or the `while` that closes a do-while statement.
 - Treat a standalone braced statement block as a block. Its closing brace does not attach to the following statement.
 - Break around preprocessor directives and macro continuation lines.
+- Break structured macro definitions and top-level replacement call-unit sequences where required by [macro.md](macro.md).
 - Break between enum enumerators; enum bodies keep one enumerator per line.
 - Break between declaration groups where declaration-scope separation rules require a blank line.
 - Break multi-statement lambda bodies after `{`, format each body statement with normal mandatory statement breaks, and put the closing `}` on its own line.
@@ -95,7 +96,6 @@ Line break opportunities are optional boundaries that the break optimizer may ta
 - Between a declaration type and its direct-initialized declarator value, whether the initializer is braced or parenthesized and whether the declaration is local or a field.
 - After semicolons inside `for` and control headers.
 - Around lambda captures, lambda parameter lists, lambda bodies, constructor initializer lists, and adjacent string literal sequences.
-- At the structured macro definition header/replacement boundary specified in [macro.md](macro.md).
 
 ## Indent Economy
 
