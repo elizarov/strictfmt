@@ -14,5 +14,6 @@ FormatBreakSolution SolveFormatBreaks(
     const FormatBreakModel& model,
     int startColumn,
     int indentLevel,
-    int indentWidth
+    int indentWidth,
+    int breakLineSuffixWidth
 );

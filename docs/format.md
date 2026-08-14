@@ -95,6 +95,7 @@ Line break opportunities are optional boundaries that the break optimizer may ta
 - Between a declaration type and its direct-initialized declarator value, whether the initializer is braced or parenthesized and whether the declaration is local or a field.
 - After semicolons inside `for` and control headers.
 - Around lambda captures, lambda parameter lists, lambda bodies, constructor initializer lists, and adjacent string literal sequences.
+- At the structured macro definition header/replacement boundary specified in [macro.md](macro.md).
 
 ## Indent Economy
 

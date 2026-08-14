@@ -853,8 +853,7 @@ class FormatCommandTests(unittest.TestCase):
 
     def test_structured_macro_definition_with_templated_struct_body_reparses(self) -> None:
         expected = (
-            "#define DECLARE_TRAITS(Type) \\\n"
-            "    template <> \\\n"
+            "#define DECLARE_TRAITS(Type) template <> \\\n"
             "    struct Traits<Type> { \\\n"
             "        static constexpr auto value = Type{}; \\\n"
             "    }\n"
@@ -878,6 +877,77 @@ class FormatCommandTests(unittest.TestCase):
 
                 self.assertEqual(0, result.returncode, msg=f"stdout:\n{result.stdout}\n\nstderr:\n{result.stderr}")
                 self.assertEqual(expected, result.stdout)
+
+    def test_structured_macro_value_boundary_is_solver_owned(self) -> None:
+        build_dir = TEST_TEMP_ROOT
+        build_dir.mkdir(exist_ok=True)
+        with tempfile.TemporaryDirectory(prefix="format_macro_value_solver_", dir=build_dir) as temp_dir:
+            config = Path(temp_dir) / ".cpp-format"
+            config.write_text(
+                "---\n"
+                "ColumnLimit: 22\n"
+                "IndentWidth: 4\n"
+                "TabWidth: 4\n",
+                encoding="utf-8",
+            )
+            source = "#define VALUE Build(first,second,third)\n#define D(v) void f(v)\n"
+            expected = (
+                "#define VALUE Build( \\\n"
+                "    first, \\\n"
+                "    second, \\\n"
+                "    third \\\n"
+                ")\n"
+                "#define D(v) void f(v)\n"
+            )
+
+            formatted = native_format("--stdin", "--style", str(config), input_text=source)
+
+            self.assertEqual(0, formatted.returncode, msg=f"stdout:\n{formatted.stdout}\n\nstderr:\n{formatted.stderr}")
+            self.assertEqual(expected, formatted.stdout)
+            idempotent = native_format(
+                "--dry-run", "--stdin", "--style", str(config), input_text=formatted.stdout
+            )
+            self.assertEqual(
+                0,
+                idempotent.returncode,
+                msg=f"stdout:\n{idempotent.stdout}\n\nstderr:\n{idempotent.stderr}",
+            )
+
+            config.write_text(
+                "---\n"
+                "ColumnLimit: 20\n"
+                "IndentWidth: 4\n"
+                "TabWidth: 4\n",
+                encoding="utf-8",
+            )
+            suffix_constrained = native_format(
+                "--stdin",
+                "--style",
+                str(config),
+                input_text=(
+                    "#define VALUE Build(first,second,third)\n"
+                    "#define EMPTY(first,second,third)\n"
+                ),
+            )
+            self.assertEqual(
+                0,
+                suffix_constrained.returncode,
+                msg=f"stdout:\n{suffix_constrained.stdout}\n\nstderr:\n{suffix_constrained.stderr}",
+            )
+            self.assertEqual(
+                "#define VALUE \\\n"
+                "    Build( \\\n"
+                "        first, \\\n"
+                "        second, \\\n"
+                "        third \\\n"
+                "    )\n"
+                "#define EMPTY( \\\n"
+                "    first, \\\n"
+                "    second, \\\n"
+                "    third \\\n"
+                ")\n",
+                suffix_constrained.stdout,
+            )
 
     def test_raw_macro_definitions_format_raw_replacements(self) -> None:
         build_dir = TEST_TEMP_ROOT

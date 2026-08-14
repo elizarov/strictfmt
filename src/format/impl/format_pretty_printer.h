@@ -9,7 +9,6 @@
 
 struct FormatModelTextStats {
     std::chrono::nanoseconds tokenize{};
-    std::chrono::nanoseconds annotate{};
     std::chrono::nanoseconds print{};
     std::chrono::nanoseconds breakModel{};
     std::chrono::nanoseconds solve{};

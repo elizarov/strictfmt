@@ -715,6 +715,46 @@ private:
         return signature;
     }
 
+    FormatBreakNode* BuildOwnedValue(FormatBreakNode* owner, FormatBreakNode* value, int depth) {
+        if (owner == nullptr || value == nullptr) {
+            return nullptr;
+        }
+        auto result = MakeNode(FormatBreakNodeKind::Chain, depth);
+        result->operands = StoreNodePointers({owner, value});
+        result->operators = StoreTokens({{}});
+        MarkForceSplitAdjacentStringsFlat(*value);
+        if (EndsWithBodyHeader(*value)) {
+            result->splitTrailingBodyHeaderAtParentIndent = true;
+            MarkBodyHeaderSplitAtParentIndentWhenLineStarts(*value);
+        }
+        return result;
+    }
+
+    FormatBreakNode* BuildMacroDefinition(const SyntaxNode& node, int depth) {
+        std::optional<size_t> valueIndex;
+        bool ownerSelected = false;
+        for (size_t index = 0; index < node.children.size(); ++index) {
+            const SyntaxNode* child = node.children[index];
+            if (child == nullptr) {
+                continue;
+            }
+            if (child->kind == SyntaxNodeKind::MacroReplacementList) {
+                if (ContainsSelected(*child)) {
+                    valueIndex = index;
+                }
+                break;
+            }
+            ownerSelected = ownerSelected || ContainsSelected(*child);
+        }
+        if (!ownerSelected || !valueIndex) {
+            return nullptr;
+        }
+
+        FormatBreakNode* owner = BuildSequenceFromChildren(node.children, 0, *valueIndex, depth + 1);
+        FormatBreakNode* value = BuildSyntaxNode(*node.children[*valueIndex], depth + 1);
+        return BuildOwnedValue(owner, value, depth);
+    }
+
     FormatBreakNode* BuildSyntaxNode(const SyntaxNode& node, int depth) {
         if (!ContainsSelected(node)) {
             return nullptr;
@@ -724,6 +764,11 @@ private:
         }
         if (!SyntaxNodeKindHasClass(node.kind, SyntaxNodeClass::Tree)) {
             return nullptr;
+        }
+        if (SyntaxNodeKindHasClass(node.kind, SyntaxNodeClass::MacroDefinition)) {
+            if (auto definition = BuildMacroDefinition(node, depth)) {
+                return definition;
+            }
         }
         if (node.kind == SyntaxNodeKind::FunctionPointerAliasDeclaration) {
             if (auto alias = BuildFunctionPointerAliasDeclaration(node, depth)) {
@@ -835,17 +880,10 @@ private:
             return nullptr;
         }
 
-        auto chain = MakeNode(FormatBreakNodeKind::Chain, depth + 1);
-        chain->operands = StoreNodePointers({prefix, value});
-        chain->operators = StoreTokens({{}});
-        MarkForceSplitAdjacentStringsFlat(*value);
-        if (EndsWithBodyHeader(*value)) {
-            chain->splitTrailingBodyHeaderAtParentIndent = true;
-            MarkBodyHeaderSplitAtParentIndentWhenLineStarts(*value);
-        }
+        FormatBreakNode* ownedValue = BuildOwnedValue(prefix, value, depth + 1);
 
         auto sequence = MakeNode(FormatBreakNodeKind::Sequence, depth);
-        sequence->children = StoreNodePointers({chain, suffix});
+        sequence->children = StoreNodePointers({ownedValue, suffix});
         return sequence;
     }
 
