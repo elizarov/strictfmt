@@ -41,6 +41,13 @@
 #define FORMAT_FIXTURE_STRINGIZE(value) \
     #value
 #define FORMAT_FIXTURE_FILEPATH FORMAT_NAMESPACE::logging::impl::CutFilePath(__builtin_FILE())
+#define FORMAT_FIXTURE_REGISTER_TYPE(Type, Index) \
+    constexpr std::size_t TypeToId(FormatFixtureIdentity<Type>) noexcept { \
+        return Index; \
+    } \
+    constexpr Type IdToType(FormatFixtureSize<Index>) noexcept { \
+        return FormatFixtureConstruct<Type>(); \
+    }
 #define ENUM_STRING_DECLARE(EnumType, ItemsMacro) \
     enum class EnumType { \
         ItemsMacro(ENUM_STRING_DECLARE_ENUMERATOR) \
@@ -52,6 +59,7 @@
     }
 
 ENUM_STRING_DECLARE(FormatFixtureEnum, FORMAT_FIXTURE_ENUM_ITEMS);
+FORMAT_FIXTURE_REGISTER_TYPE(unsigned char, 1)
 
 #undef FORMAT_FIXTURE_ENUM_ITEMS
 

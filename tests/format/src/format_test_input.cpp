@@ -37,12 +37,16 @@ prefix ## suffix
 #define FORMAT_FIXTURE_STRINGIZE(value) \
 #value
 #define FORMAT_FIXTURE_FILEPATH FORMAT_NAMESPACE::logging::impl::CutFilePath(__builtin_FILE())
+#define FORMAT_FIXTURE_REGISTER_TYPE(Type,Index) \
+constexpr std::size_t TypeToId(FormatFixtureIdentity<Type>) noexcept{return Index;} \
+constexpr Type IdToType(FormatFixtureSize<Index>) noexcept{return FormatFixtureConstruct<Type>();}
 #define ENUM_STRING_DECLARE(EnumType, ItemsMacro) \
     enum class EnumType{ItemsMacro( \
         ENUM_STRING_DECLARE_ENUMERATOR \
     )}; template <> struct EnumStringTraits<EnumType>{static constexpr auto names = std::to_array<std::string_view>({ItemsMacro(ENUM_STRING_DECLARE_NAME)}); static_assert(enum_string_detail::ValidateCanonicalNames(names)); }
 
 ENUM_STRING_DECLARE(FormatFixtureEnum, FORMAT_FIXTURE_ENUM_ITEMS);
+FORMAT_FIXTURE_REGISTER_TYPE(unsigned char,1)
 #undef FORMAT_FIXTURE_ENUM_ITEMS
 #define FORMAT_FIXTURE_TEMP_MACRO(value) (value)
 #undef FORMAT_FIXTURE_TEMP_MACRO

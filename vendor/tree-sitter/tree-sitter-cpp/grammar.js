@@ -514,10 +514,18 @@ module.exports = grammar(C, {
       $.declaration,
     ),
 
-    _macro_replacement_declaration_sequence: $ => prec.right(seq(
-      $._macro_replacement_declaration_item,
-      optional($._macro_replacement_declaration_sequence),
-    )),
+    _macro_replacement_declaration_sequence: $ => choice(
+      prec.dynamic(10, prec.right(seq(
+        alias($.macro_qualified_type_function_definition, $.function_definition),
+        alias($.macro_identifier_type_function_definition, $.function_definition),
+        repeat(alias($.macro_identifier_type_function_definition, $.function_definition)),
+        optional($._macro_replacement_declaration_sequence),
+      ))),
+      prec.right(seq(
+        $._macro_replacement_declaration_item,
+        optional($._macro_replacement_declaration_sequence),
+      )),
+    ),
 
     _macro_replacement_call_unit: $ => seq(
       $.macro_call_replacement_item,
@@ -1026,6 +1034,22 @@ module.exports = grammar(C, {
 
     qualified_type_function_definition: $ => prec(PREC.CALL + 2, seq(
       field('type', $._qualified_declaration_type),
+      repeat($.post_type_macro_annotation),
+      field('declarator', $._qualified_type_function_declarator),
+      field('body', choice($.compound_statement, $.try_statement, $.delete_method_clause)),
+    )),
+
+    macro_qualified_type_function_definition: $ => prec(PREC.CALL + 4, seq(
+      choice('constexpr', 'consteval'),
+      field('type', $._qualified_declaration_type),
+      repeat($.post_type_macro_annotation),
+      field('declarator', $._qualified_type_function_declarator),
+      field('body', choice($.compound_statement, $.try_statement, $.delete_method_clause)),
+    )),
+
+    macro_identifier_type_function_definition: $ => prec(PREC.CALL + 3, seq(
+      choice('constexpr', 'consteval'),
+      field('type', $._type_identifier),
       repeat($.post_type_macro_annotation),
       field('declarator', $._qualified_type_function_declarator),
       field('body', choice($.compound_statement, $.try_statement, $.delete_method_clause)),
