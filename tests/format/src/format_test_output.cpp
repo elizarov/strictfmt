@@ -1960,6 +1960,11 @@ void EmptyElseIfSpacing(bool first, bool second, bool third) {
     }
 }
 
+void EmptyDoWhile(bool running) {
+    do {}
+    while (running);
+}
+
 void TryFinallyCleanup() {
     const auto originalDirectory = Environment::CurrentDirectory;
     try {

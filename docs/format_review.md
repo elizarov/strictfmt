@@ -9,14 +9,12 @@ The review looked for:
 - behavior selected by an exact keyword, operator spelling, literal suffix, or syntax-node kind when equivalent syntax is treated differently
 - rules whose result depends on input whitespace or recursion depth instead of the formatted structure
 
-Configured macro categories, the documented distinction between chain operators and ordinary binary operators, and mandatory adjacent-string line-fragment boundaries are intentionally outside the findings. Those are supported semantic categories and readability rules rather than accidental layout patches.
+Configured macro categories, the documented distinction between chain operators and ordinary binary operators, mandatory adjacent-string line-fragment boundaries, compact single-statement lambdas, and compact empty control bodies are intentionally outside the findings. Those are supported semantic categories and readability or expression-layout rules rather than accidental layout patches.
 
 ## Summary
 
 | Finding | Contract affected |
 | --- | --- |
-| Compact single-statement blocks exist only for lambdas | Generic block structure |
-| Empty control blocks override the normal attachment category | Generic block attachment |
 | Preprocessor blank lines depend on directive spellings | Generic item separation and exact directive recognition |
 | Enum trailing commas are suppressed by a macro-call shape guess | Specification agreement and generic comma normalization |
 
@@ -122,52 +120,43 @@ co_yield
     "second line";
 ```
 
-## Findings
+### Compact single-statement lambdas
 
-### 1. Compact single-statement blocks exist only for lambdas
-
-`format.md` explicitly exempts a single-statement lambda from mandatory statement and block breaks. `LambdaBodyAllowsCompactSingleStatementForm` in `src/format/impl/format_model.cpp` recognizes exactly `CompoundStatement` under `LambdaExpression`, and the pretty printer skips the mandatory semicolon break when `inSingleStatementLambdaBody` is set.
-
-An ordinary one-statement callable body exposes its structural boundaries:
+The compact single-statement lambda is an intentional expression-layout rule. Lambdas participate in expression contexts even though their bodies contain statements, so keeping a complete short lambda on one physical line can preserve the readability of the enclosing expression:
 
 ```cpp
-void Ordinary() {
-    return;
+auto increment = [](int value) { return value + 1; };
+```
+
+Ordinary function and standalone statement bodies remain expanded because they do not serve as inline expression operands:
+
+```cpp
+int Increment(int value) {
+    return value + 1;
 }
 ```
 
-The structurally equivalent lambda body is collapsed only because its owner is a lambda:
+### Compact empty control bodies
 
-```cpp
-auto compact = []() { return; };
-```
-
-This is a syntax-owner exception rather than a block rule and works against the goal that braces, statements, and nesting be visually separated consistently. A generic policy should apply to all statement blocks of the same structural shape; the most structural policy is to keep mandatory block and statement breaks for lambdas too.
-
-### 2. Empty control blocks override the normal attachment category
-
-`format.md` first defines `else`, `catch`, `finally`, and do-while `while` as block-attachment keywords, then gives compact empty control bodies an exception. `PrettyPrinter::ShouldBreakAfterCompactEmptyBlock` implements that exception with next-token checks and separately exempts the exact do-while `while` case.
-
-A non-empty `if` body uses the general attachment rule:
-
-```cpp
-if (ready) {
-    Run();
-} else {
-    Reset();
-}
-```
-
-Changing only the body cardinality moves the same attachment keyword to a new line:
+Keeping an empty control body as `{}` is an intentional style rule; expanding an empty pair onto separate lines adds visual bulk without exposing any statement structure. A following attachment keyword begins a new line so the compact body finishes its own control-body line:
 
 ```cpp
 if (ready) {}
 else {}
 ```
 
-An empty `do {}` still attaches its `while`, so empty blocks do not even form one consistent exception category. Attachment should be determined by the following structural role, independent of whether the preceding block contains zero or more statements.
+The do-while form now follows the same rule instead of attaching its `while` as a one-off exception:
 
-### 3. Preprocessor blank lines depend on directive spellings
+```cpp
+do {}
+while (running);
+```
+
+Non-empty bodies retain the ordinary block-attachment layout.
+
+## Findings
+
+### 1. Preprocessor blank lines depend on directive spellings
 
 The **Line Hygiene** section of `format.md` assigns unique blank-line behavior to `#pragma once` and `#undef`. The printer implements `#undef` by directive kind but recognizes `#pragma once` with `StartsWith(line, "#pragma once")`. `IsPragmaOnceNode` in `src/format/impl/format_model_builder.cpp` uses the same raw prefix test when grouping an opening include area.
 
@@ -207,7 +196,7 @@ An equally unknown pragma whose operand merely begins with `once` is treated as 
 
 Blank-line insertion should be expressed through broad source-item categories. If `#pragma once` remains a necessary semantic exception, it should at least be recognized structurally as the exact directive and operand rather than by raw prefix.
 
-### 4. Enum trailing commas are suppressed by a macro-call shape guess
+### 2. Enum trailing commas are suppressed by a macro-call shape guess
 
 `format.md` says that enum bodies always keep a trailing comma. `NormalizeTrailingCommas` in `src/format/impl/format_model_builder.cpp` instead calls `MacroLikeInvocationEnding` and suppresses the comma when the final enum child happens to have an identifier-plus-argument-list shape. This is not driven by a configured macro role or by known expansion semantics; it guesses that the call may generate its own comma-separated enumerators.
 
