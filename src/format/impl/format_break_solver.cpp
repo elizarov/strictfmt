@@ -229,6 +229,16 @@ struct DelimiterStackRun {
     int indentLevel = 0;
 };
 
+struct DelimiterStackPartitionPath {
+    const DelimiterStackPartitionPath* previous = nullptr;
+    size_t runStart = 0;
+};
+
+struct DelimiterStackPartitionCandidate {
+    NodeResult result;
+    const DelimiterStackPartitionPath* path = nullptr;
+};
+
 class Solver {
 public:
     Solver(const FormatterConfig& config, int indentWidth) : config_(config), indentWidth_(indentWidth) {}
@@ -284,6 +294,7 @@ private:
     int indentWidth_ = 4;
     std::unordered_map<SolveKey, NodeResult, SolveKeyHash> memo_;
     std::deque<ChoiceTree> choiceArena_;
+    std::deque<DelimiterStackPartitionPath> delimiterStackPartitionPathArena_;
 
     int IndentColumn(int indentLevel) const {
         return std::max(0, indentLevel) * indentWidth_;
@@ -717,6 +728,67 @@ private:
         results.push_back(std::move(candidate));
     }
 
+    const DelimiterStackPartitionPath*
+        ExtendDelimiterStackPartitionPath(const DelimiterStackPartitionPath* previous, size_t runStart)
+    {
+        delimiterStackPartitionPathArena_.push_back({.previous = previous, .runStart = runStart});
+        return &delimiterStackPartitionPathArena_.back();
+    }
+
+    static std::vector<size_t> DelimiterStackRunStarts(const DelimiterStackPartitionPath* path) {
+        std::vector<size_t> starts;
+        for (const DelimiterStackPartitionPath* cursor = path; cursor != nullptr; cursor = cursor->previous) {
+            starts.push_back(cursor->runStart);
+        }
+        std::reverse(starts.begin(), starts.end());
+        return starts;
+    }
+
+    static bool PreferLaterDelimiterStackBreaks(
+        const DelimiterStackPartitionPath* candidate,
+        const DelimiterStackPartitionPath* incumbent
+    ) {
+        const std::vector<size_t> candidateStarts = DelimiterStackRunStarts(candidate);
+        const std::vector<size_t> incumbentStarts = DelimiterStackRunStarts(incumbent);
+        return std::lexicographical_compare(
+            incumbentStarts.begin(),
+            incumbentStarts.end(),
+            candidateStarts.begin(),
+            candidateStarts.end()
+        );
+    }
+
+    void AddPrunedDelimiterStackPartitionCandidate(
+        std::vector<DelimiterStackPartitionCandidate>& candidates,
+        DelimiterStackPartitionCandidate candidate
+    ) const {
+        if (!candidate.result.valid) {
+            return;
+        }
+        for (auto it = candidates.begin(); it != candidates.end();) {
+            if (SameResultState(it->result, candidate.result)) {
+                if (
+                    Better(candidate.result, it->result) || (
+                        !Better(it->result, candidate.result) &&
+                        PreferLaterDelimiterStackBreaks(candidate.path, it->path)
+                    )
+                ) {
+                    *it = std::move(candidate);
+                }
+                return;
+            }
+            if (DominatesResult(it->result, candidate.result)) {
+                return;
+            }
+            if (DominatesResult(candidate.result, it->result)) {
+                it = candidates.erase(it);
+                continue;
+            }
+            ++it;
+        }
+        candidates.push_back(std::move(candidate));
+    }
+
     static void SortPrunedResults(NodeResults& results) {
         std::sort(results.begin(), results.end(), ResultStateLess);
     }
@@ -1091,7 +1163,7 @@ private:
         bool lineHasText
     ) {
         NodeResults alternatives;
-        NodeResult compact = SolveDelimitedCompact(node, column, indentLevel, lineHasText);
+        NodeResult compact = SolveTransparentDelimiterStackSuffix(stack, 0, column, indentLevel, lineHasText);
         if (!node.forceSplit && compact.valid && compact.extraLines == 0) {
             alternatives.push_back(compact);
         }
@@ -1113,7 +1185,7 @@ private:
         int indentLevel,
         bool lineHasText
     ) {
-        NodeResult compact = SolveDelimitedCompact(node, column, indentLevel, lineHasText);
+        NodeResult compact = SolveTransparentDelimiterStackSuffix(stack, 0, column, indentLevel, lineHasText);
         NodeResult attachedLeaf = SolveDelimiterStack(node, stack, column, indentLevel, lineHasText, false);
         NodeResult detachedLeaf = SolveDelimiterStack(node, stack, column, indentLevel, lineHasText, true);
         if (compact.extraLines > 0) {
@@ -1161,14 +1233,30 @@ private:
             result.endColumn + TokenColumnAdvance(token, result.endLineHasText) > config_.columnLimit;
     }
 
-    NodeResult SolveDelimiterStack(
+    void AddDelimiterStackPartitionChoices(
+        NodeResult& result,
+        const DelimiterStackView& stack,
+        const DelimiterStackPartitionPath* path
+    ) {
+        for (const size_t runStart : DelimiterStackRunStarts(path)) {
+            if (runStart >= stack.delimiters.size()) {
+                continue;
+            }
+            const FormatBreakNode* open = stack.delimiters[runStart]->children.front();
+            AddChoice(result, open->id, FormatBreakChoice::SplitDelimiterStackRun);
+        }
+    }
+
+    NodeResult SolveGreedyDelimiterStack(
         const FormatBreakNode& node,
         const DelimiterStackView& stack,
         int column,
         int indentLevel,
         bool lineHasText,
-        bool detachLeaf
+        bool detachLeaf,
+        bool& delimiterOverflow
     ) {
+        delimiterOverflow = false;
         NodeResult
             result{.valid = true, .endColumn = column, .endIndentLevel = indentLevel, .endLineHasText = lineHasText};
         AddChoice(
@@ -1189,6 +1277,11 @@ private:
                 currentLineIndent = nextOpenIndent;
                 result = AddBreak(result, currentLineIndent, node.structuralDepth);
                 ++nextOpenIndent;
+                AddChoice(
+                    result,
+                    delimiter->children.front()->id,
+                    FormatBreakChoice::SplitDelimiterStackRun
+                );
             }
             if (delimiterRuns.empty() || delimiterRuns.back().indentLevel != currentLineIndent) {
                 delimiterRuns.push_back(
@@ -1197,6 +1290,78 @@ private:
             }
             delimiterRuns.back().end = index + 1;
             result = AddToken(result, open);
+            delimiterOverflow = delimiterOverflow || result.endColumn > config_.columnLimit;
+        }
+
+        if (detachLeaf && result.endLineHasText) {
+            result = AddBreak(result, nextOpenIndent, node.structuralDepth);
+        }
+        NodeResult leaf = Solve(*stack.leaf, result.endColumn, result.endIndentLevel, result.endLineHasText);
+        if (!leaf.valid || (!detachLeaf && leaf.extraLines > 0)) {
+            return {};
+        }
+        Merge(result, leaf);
+
+        for (size_t runIndex = delimiterRuns.size(); runIndex-- > 0;) {
+            const DelimiterStackRun& run = delimiterRuns[runIndex];
+            const bool firstClosingRun = runIndex + 1 == delimiterRuns.size();
+            if (result.endLineHasText && (detachLeaf || !firstClosingRun)) {
+                result = AddBreak(result, run.indentLevel, node.structuralDepth);
+            }
+            for (size_t index = run.end; index-- > run.begin;) {
+                result = AddToken(result, stack.delimiters[index]->children.back()->token);
+                delimiterOverflow = delimiterOverflow || result.endColumn > config_.columnLimit;
+            }
+        }
+        return result;
+    }
+
+    NodeResult SolveDelimiterStackPartition(
+        const FormatBreakNode& node,
+        const DelimiterStackView& stack,
+        int column,
+        int indentLevel,
+        bool lineHasText,
+        bool detachLeaf,
+        std::span<const size_t> runStarts
+    ) {
+        NodeResult
+            result{.valid = true, .endColumn = column, .endIndentLevel = indentLevel, .endLineHasText = lineHasText};
+        AddChoice(
+            result,
+            node.id,
+            detachLeaf ? FormatBreakChoice::SplitDelimiterStackDetachedLeaf :
+                FormatBreakChoice::SplitDelimiterStack
+        );
+
+        int currentLineIndent = indentLevel;
+        int nextOpenIndent = indentLevel + 1;
+        size_t nextRunStart = 0;
+        std::vector<DelimiterStackRun> delimiterRuns;
+        delimiterRuns.reserve(runStarts.size() + 1);
+        for (size_t index = 0; index < stack.delimiters.size(); ++index) {
+            const FormatBreakNode* delimiter = stack.delimiters[index];
+            if (nextRunStart < runStarts.size() && runStarts[nextRunStart] == index) {
+                currentLineIndent = nextOpenIndent;
+                result = AddBreak(result, currentLineIndent, node.structuralDepth);
+                ++nextOpenIndent;
+                ++nextRunStart;
+                AddChoice(
+                    result,
+                    delimiter->children.front()->id,
+                    FormatBreakChoice::SplitDelimiterStackRun
+                );
+            }
+            if (delimiterRuns.empty() || delimiterRuns.back().indentLevel != currentLineIndent) {
+                delimiterRuns.push_back(
+                    DelimiterStackRun{.begin = index, .end = index, .indentLevel = currentLineIndent}
+                );
+            }
+            delimiterRuns.back().end = index + 1;
+            result = AddToken(result, delimiter->children.front()->token);
+        }
+        if (nextRunStart != runStarts.size()) {
+            return {};
         }
 
         if (detachLeaf && result.endLineHasText) {
@@ -1219,6 +1384,367 @@ private:
             }
         }
         return result;
+    }
+
+    NodeResult SolveZeroOverflowAttachedDelimiterStack(
+        const FormatBreakNode& node,
+        const DelimiterStackView& stack,
+        int column,
+        int indentLevel,
+        bool lineHasText
+    ) {
+        NodeResult best;
+        std::vector<size_t> bestRunStarts;
+        const int lastInitialBreak = lineHasText ? 1 : 0;
+        for (int breakBeforeFirst = 0; breakBeforeFirst <= lastInitialBreak; ++breakBeforeFirst) {
+            for (size_t terminalBegin = 0; terminalBegin < stack.delimiters.size(); ++terminalBegin) {
+                NodeResult prefix{
+                    .valid = true,
+                    .endColumn = column,
+                    .endIndentLevel = indentLevel,
+                    .endLineHasText = lineHasText
+                };
+                int nextOpenIndent = indentLevel + 1;
+                std::vector<size_t> runStarts;
+                if (breakBeforeFirst != 0) {
+                    prefix = AddBreak(prefix, nextOpenIndent, node.structuralDepth);
+                    ++nextOpenIndent;
+                    runStarts.push_back(0);
+                }
+                bool prefixFits = true;
+                for (size_t index = 0; index < terminalBegin; ++index) {
+                    const FormatBreakToken& open = stack.delimiters[index]->children.front()->token;
+                    if (TokenWouldOverflow(prefix, open)) {
+                        prefix = AddBreak(prefix, nextOpenIndent, node.structuralDepth);
+                        ++nextOpenIndent;
+                        runStarts.push_back(index);
+                    }
+                    prefix = AddToken(prefix, open);
+                    if (prefix.maxOverflow > 0) {
+                        prefixFits = false;
+                        break;
+                    }
+                }
+                if (!prefixFits) {
+                    continue;
+                }
+                if (terminalBegin > 0) {
+                    runStarts.push_back(terminalBegin);
+                }
+                NodeResult candidate = SolveDelimiterStackPartition(
+                    node,
+                    stack,
+                    column,
+                    indentLevel,
+                    lineHasText,
+                    false,
+                    runStarts
+                );
+                if (!candidate.valid || candidate.maxOverflow > 0) {
+                    continue;
+                }
+                const bool equalCost = !Better(candidate, best) && !Better(best, candidate);
+                if (
+                    Better(candidate, best) || (
+                        equalCost && std::lexicographical_compare(
+                            bestRunStarts.begin(),
+                            bestRunStarts.end(),
+                            runStarts.begin(),
+                            runStarts.end()
+                        )
+                    )
+                ) {
+                    best = candidate;
+                    bestRunStarts = std::move(runStarts);
+                }
+            }
+        }
+        return best;
+    }
+
+    NodeResult SolveExactDelimiterStackWithInitialBreak(
+        const FormatBreakNode& node,
+        const DelimiterStackView& stack,
+        int column,
+        int indentLevel,
+        bool lineHasText,
+        bool detachLeaf,
+        bool breakBeforeFirst,
+        int maximumOverflow
+    ) {
+        const size_t delimiterCount = stack.delimiters.size();
+        const int firstRunIndent = indentLevel + (breakBeforeFirst ? 1 : 0);
+        const int maximumLineColumn = config_.columnLimit + maximumOverflow;
+        const int maximumRunIndent = (maximumLineColumn - 1) / std::max(1, indentWidth_);
+        if (firstRunIndent > maximumRunIndent) {
+            return {};
+        }
+        const size_t maximumRunCount = std::min(
+            delimiterCount,
+            static_cast<size_t>(maximumRunIndent - firstRunIndent + 1)
+        );
+        using PartitionCandidates = std::vector<DelimiterStackPartitionCandidate>;
+        std::vector<PartitionCandidates> states((maximumRunCount + 1) * (delimiterCount + 1));
+        const auto state = [&](size_t runCount, size_t delimiterIndex) -> PartitionCandidates& {
+            return states[runCount * (delimiterCount + 1) + delimiterIndex];
+        };
+
+        NodeResult initial{
+            .valid = true,
+            .endColumn = column,
+            .endIndentLevel = indentLevel,
+            .endLineHasText = lineHasText
+        };
+        const DelimiterStackPartitionPath* initialPath = nullptr;
+        if (breakBeforeFirst) {
+            initial = AddBreak(initial, firstRunIndent, node.structuralDepth);
+            initialPath = ExtendDelimiterStackPartitionPath(nullptr, 0);
+        }
+        state(0, 0).push_back({.result = initial, .path = initialPath});
+
+        for (size_t completedRuns = 0; completedRuns < maximumRunCount; ++completedRuns) {
+            for (size_t begin = 0; begin < delimiterCount; ++begin) {
+                const PartitionCandidates& prefixes = state(completedRuns, begin);
+                if (prefixes.empty()) {
+                    continue;
+                }
+                const int runIndent = firstRunIndent + static_cast<int>(completedRuns);
+                for (const DelimiterStackPartitionCandidate& prefix : prefixes) {
+                    const DelimiterStackPartitionPath* path = prefix.path;
+                    if (completedRuns > 0) {
+                        path = ExtendDelimiterStackPartitionPath(path, begin);
+                    }
+                    for (size_t end = begin + 1; end <= delimiterCount; ++end) {
+                        NodeResult candidate = prefix.result;
+                        const int outerEndColumn = candidate.endColumn;
+                        const int outerEndIndentLevel = candidate.endIndentLevel;
+                        const bool outerEndLineHasText = candidate.endLineHasText;
+                        if (completedRuns > 0) {
+                            candidate = AddBreak(candidate, runIndent, node.structuralDepth);
+                        }
+                        for (size_t index = begin; index < end; ++index) {
+                            candidate = AddToken(candidate, stack.delimiters[index]->children.front()->token);
+                        }
+                        if (candidate.maxOverflow > maximumOverflow) {
+                            break;
+                        }
+                        candidate = AddBreak(candidate, runIndent, node.structuralDepth);
+                        for (size_t index = end; index-- > begin;) {
+                            candidate = AddToken(candidate, stack.delimiters[index]->children.back()->token);
+                        }
+                        if (candidate.maxOverflow > maximumOverflow) {
+                            break;
+                        }
+                        if (completedRuns > 0) {
+                            candidate.endColumn = outerEndColumn;
+                            candidate.endIndentLevel = outerEndIndentLevel;
+                            candidate.endLineHasText = outerEndLineHasText;
+                        }
+                        AddPrunedDelimiterStackPartitionCandidate(
+                            state(completedRuns + 1, end),
+                            {.result = candidate, .path = path}
+                        );
+                    }
+                }
+            }
+        }
+
+        DelimiterStackPartitionCandidate best;
+        const auto consider = [&](NodeResult candidate, const DelimiterStackPartitionPath* path) {
+            if (!candidate.valid) {
+                return;
+            }
+            if (
+                Better(candidate, best.result) || (
+                    !Better(best.result, candidate) &&
+                    PreferLaterDelimiterStackBreaks(path, best.path)
+                )
+            ) {
+                best = {.result = candidate, .path = path};
+            }
+        };
+
+        if (detachLeaf) {
+            for (size_t runCount = 1; runCount <= maximumRunCount; ++runCount) {
+                const int leafIndent = firstRunIndent + static_cast<int>(runCount);
+                for (const DelimiterStackPartitionCandidate& partition : state(runCount, delimiterCount)) {
+                    NodeResult candidate = partition.result;
+                    const int outerEndColumn = candidate.endColumn;
+                    const int outerEndIndentLevel = candidate.endIndentLevel;
+                    const bool outerEndLineHasText = candidate.endLineHasText;
+                    candidate = AddBreak(candidate, leafIndent, node.structuralDepth);
+                    NodeResult leaf =
+                        Solve(*stack.leaf, candidate.endColumn, candidate.endIndentLevel, candidate.endLineHasText);
+                    if (!leaf.valid) {
+                        continue;
+                    }
+                    Merge(candidate, leaf);
+                    if (candidate.maxOverflow > maximumOverflow) {
+                        continue;
+                    }
+                    candidate.endColumn = outerEndColumn;
+                    candidate.endIndentLevel = outerEndIndentLevel;
+                    candidate.endLineHasText = outerEndLineHasText;
+                    consider(candidate, partition.path);
+                }
+            }
+        } else {
+            for (size_t completedRuns = 0; completedRuns < maximumRunCount; ++completedRuns) {
+                for (size_t begin = 0; begin < delimiterCount; ++begin) {
+                    const int runIndent = firstRunIndent + static_cast<int>(completedRuns);
+                    for (const DelimiterStackPartitionCandidate& prefix : state(completedRuns, begin)) {
+                        NodeResult candidate = prefix.result;
+                        const int outerEndColumn = candidate.endColumn;
+                        const int outerEndIndentLevel = candidate.endIndentLevel;
+                        const bool outerEndLineHasText = candidate.endLineHasText;
+                        const DelimiterStackPartitionPath* path = prefix.path;
+                        if (completedRuns > 0) {
+                            candidate = AddBreak(candidate, runIndent, node.structuralDepth);
+                            path = ExtendDelimiterStackPartitionPath(path, begin);
+                        }
+                        for (size_t index = begin; index < delimiterCount; ++index) {
+                            candidate = AddToken(candidate, stack.delimiters[index]->children.front()->token);
+                        }
+                        if (candidate.maxOverflow > maximumOverflow) {
+                            continue;
+                        }
+                        NodeResult leaf =
+                            Solve(*stack.leaf, candidate.endColumn, candidate.endIndentLevel, candidate.endLineHasText);
+                        if (!leaf.valid || leaf.extraLines > 0) {
+                            continue;
+                        }
+                        Merge(candidate, leaf);
+                        for (size_t index = delimiterCount; index-- > begin;) {
+                            candidate = AddToken(candidate, stack.delimiters[index]->children.back()->token);
+                        }
+                        if (candidate.maxOverflow > maximumOverflow) {
+                            continue;
+                        }
+                        if (completedRuns > 0) {
+                            candidate.endColumn = outerEndColumn;
+                            candidate.endIndentLevel = outerEndIndentLevel;
+                            candidate.endLineHasText = outerEndLineHasText;
+                        }
+                        consider(candidate, path);
+                    }
+                }
+            }
+        }
+
+        if (!best.result.valid) {
+            return {};
+        }
+        AddChoice(
+            best.result,
+            node.id,
+            detachLeaf ? FormatBreakChoice::SplitDelimiterStackDetachedLeaf :
+                FormatBreakChoice::SplitDelimiterStack
+        );
+        AddDelimiterStackPartitionChoices(best.result, stack, best.path);
+        return best.result;
+    }
+
+    NodeResult SolveExactDelimiterStack(
+        const FormatBreakNode& node,
+        const DelimiterStackView& stack,
+        int column,
+        int indentLevel,
+        bool lineHasText,
+        bool detachLeaf,
+        int maximumOverflow
+    ) {
+        if (!detachLeaf && maximumOverflow == 0) {
+            return SolveZeroOverflowAttachedDelimiterStack(node, stack, column, indentLevel, lineHasText);
+        }
+        NodeResult best = SolveExactDelimiterStackWithInitialBreak(
+            node,
+            stack,
+            column,
+            indentLevel,
+            lineHasText,
+            detachLeaf,
+            false,
+            maximumOverflow
+        );
+        if (lineHasText) {
+            NodeResult breakBeforeFirst = SolveExactDelimiterStackWithInitialBreak(
+                node,
+                stack,
+                column,
+                indentLevel,
+                lineHasText,
+                detachLeaf,
+                true,
+                maximumOverflow
+            );
+            if (Better(breakBeforeFirst, best)) {
+                best = breakBeforeFirst;
+            }
+        }
+        return best;
+    }
+
+    NodeResult SolveDelimiterStack(
+        const FormatBreakNode& node,
+        const DelimiterStackView& stack,
+        int column,
+        int indentLevel,
+        bool lineHasText,
+        bool detachLeaf
+    ) {
+        bool delimiterOverflow = false;
+        NodeResult greedy = SolveGreedyDelimiterStack(
+            node,
+            stack,
+            column,
+            indentLevel,
+            lineHasText,
+            detachLeaf,
+            delimiterOverflow
+        );
+        // Zero overflow is the primary optimum. At that point, delaying each opener-run break until the
+        // next opener would overflow is also line-optimal: by induction, an earlier break leaves at least
+        // as many openers for a line with the same or deeper indentation, so it cannot use fewer runs.
+        // Fewer runs mean fewer opener and closer lines, and the latest equal-run partition is the
+        // source-order-stable compact choice. This is therefore an equivalence-preserving fast path, not
+        // a local layout decision. Once overflow is unavoidable, that proof no longer applies because an
+        // additional run can reduce maximum overflow; the exact partition DP below must make the choice.
+        if (!greedy.valid || greedy.maxOverflow == 0) {
+            return greedy;
+        }
+        // A detached leaf starts one level after the final opener run. If all greedy delimiter lines fit,
+        // the minimum-run proof also gives the shallowest possible leaf indentation; repartitioning cannot
+        // improve the leaf, and adding a run can only move it deeper. Overflow confined to that leaf is
+        // therefore another proven fast path.
+        if (detachLeaf && !delimiterOverflow) {
+            return greedy;
+        }
+        int exactMaximumOverflow = greedy.maxOverflow;
+        if (!detachLeaf) {
+            bool detachedDelimiterOverflow = false;
+            const NodeResult detached = SolveGreedyDelimiterStack(
+                node,
+                stack,
+                column,
+                indentLevel,
+                lineHasText,
+                true,
+                detachedDelimiterOverflow
+            );
+            if (detached.valid) {
+                exactMaximumOverflow = std::min(exactMaximumOverflow, detached.maxOverflow);
+            }
+        }
+        NodeResult exact = SolveExactDelimiterStack(
+            node,
+            stack,
+            column,
+            indentLevel,
+            lineHasText,
+            detachLeaf,
+            exactMaximumOverflow
+        );
+        return Better(exact, greedy) ? exact : greedy;
     }
 
     static FormatBreakChoice ChoiceFor(const NodeResult& result, const FormatBreakNode& node) {
