@@ -767,6 +767,24 @@ class FormatCommandTests(unittest.TestCase):
             result.stdout,
         )
 
+    def test_enum_macro_call_final_item_keeps_trailing_comma(self) -> None:
+        result = native_format(
+            "--stdin",
+            input_text=(
+                "#define DECLARE_ENUM(ItemsMacro) \\\n"
+                "enum G { ItemsMacro(EMIT) };\n"
+            ),
+        )
+
+        self.assertEqual(0, result.returncode, msg=f"stdout:\n{result.stdout}\n\nstderr:\n{result.stderr}")
+        self.assertEqual(
+            "#define DECLARE_ENUM(ItemsMacro) \\\n"
+            "    enum G { \\\n"
+            "        ItemsMacro(EMIT), \\\n"
+            "    };\n",
+            result.stdout,
+        )
+
     def test_final_undef_does_not_emit_trailing_empty_line(self) -> None:
         result = native_format(
             "--stdin",
