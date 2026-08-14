@@ -33,6 +33,17 @@ enum class DeclarationGroupKind {
     Alias,
 };
 
+enum class PreprocessorGroupKind {
+    Other,
+    Pragma,
+    Undef,
+};
+
+struct PreprocessorGroup {
+    const SyntaxNode* item = nullptr;
+    PreprocessorGroupKind kind = PreprocessorGroupKind::Other;
+};
+
 struct BraceFrame {
     BraceRole role = BraceRole::Compact;
     int parenDepth = 0;
@@ -941,6 +952,7 @@ private:
     std::unordered_set<const SyntaxNode*> isolatedDeclarationItems_;
     const SyntaxNode* previousDeclarationItem_ = nullptr;
     const SyntaxNode* preparedDeclarationItem_ = nullptr;
+    const PrintToken* preparedPreprocessorGroupToken_ = nullptr;
 
     static const PrintToken* PreviousToken(const std::vector<PrintToken>& tokens, size_t index) {
         while (index > 0) {
@@ -1256,6 +1268,110 @@ private:
             preparedDeclarationItem_ = nextItem;
         }
         return false;
+    }
+
+    static const SyntaxNode* DirectSourceItem(const SyntaxNode* node) {
+        for (
+            const SyntaxNode* cursor = node;
+            cursor != nullptr && cursor->parent != nullptr;
+            cursor = cursor->parent
+        ) {
+            if (SyntaxNodeHasClass(*cursor->parent, SyntaxNodeClass::PreserveBlankLineParent)) {
+                return cursor;
+            }
+        }
+        return nullptr;
+    }
+
+    static const SyntaxNode* PreprocessorGroupingSourceItem(const PrintToken* token) {
+        if (token == nullptr || token->node == nullptr) {
+            return nullptr;
+        }
+        const SyntaxNode* item = DirectSourceItem(token->node);
+        if (item == nullptr) {
+            return nullptr;
+        }
+
+        // Delimiters belong to the source item that owns their structural container. Conditional
+        // branch delimiters likewise belong to the complete conditional item in the surrounding
+        // source-item scope. Mapping them to their owner prevents a group separator at the inside
+        // edge of `{ ... }` or `#if ... #endif`, while still exposing that complete item to a
+        // neighboring pragma or undef group in the enclosing scope.
+        if (item->kind == SyntaxNodeKind::LeftBrace || item->kind == SyntaxNodeKind::RightBrace) {
+            return DirectSourceItem(item->parent);
+        }
+        if (SyntaxNodeHasClass(*item, SyntaxNodeClass::ConditionalPreprocessorDirective)) {
+            for (const SyntaxNode* cursor = item; cursor != nullptr; cursor = cursor->parent) {
+                if (SyntaxNodeHasClass(*cursor, SyntaxNodeClass::ConditionalPreprocessorOpen)) {
+                    return DirectSourceItem(cursor);
+                }
+            }
+            return nullptr;
+        }
+        return item;
+    }
+
+    static std::optional<PreprocessorGroup> GroupForPreprocessorSeparation(const PrintToken* token) {
+        const SyntaxNode* item = PreprocessorGroupingSourceItem(token);
+        if (item == nullptr) {
+            return std::nullopt;
+        }
+        const SyntaxNodeKind directiveKind = item->kind == SyntaxNodeKind::PreprocCall ?
+            SyntaxNodeKindFromPreprocessorDirectiveLine(FirstSourceLine(item->text)) :
+            SyntaxNodeKind::Unknown;
+        if (directiveKind == SyntaxNodeKind::PreprocessorDirectivePragma) {
+            return PreprocessorGroup{.item = item, .kind = PreprocessorGroupKind::Pragma};
+        }
+        if (directiveKind == SyntaxNodeKind::PreprocessorDirectiveUndef) {
+            return PreprocessorGroup{.item = item, .kind = PreprocessorGroupKind::Undef};
+        }
+        return PreprocessorGroup{.item = item, .kind = PreprocessorGroupKind::Other};
+    }
+
+    static bool RequiresPreprocessorGroupSeparation(
+        PreprocessorGroupKind left,
+        PreprocessorGroupKind right
+    ) {
+        return left != right && (
+            left != PreprocessorGroupKind::Other || right != PreprocessorGroupKind::Other
+        );
+    }
+
+    void PreparePreprocessorGroupBoundary(
+        const PrintToken& token,
+        const PrintToken* previous,
+        const PrintToken* next
+    ) {
+        if (preparedPreprocessorGroupToken_ == &token) {
+            preparedPreprocessorGroupToken_ = nullptr;
+            return;
+        }
+        const bool prefixToken = token.kind == PrintTokenKind::BlankLine || token.kind == PrintTokenKind::Comment;
+        const PrintToken* right = prefixToken ? next : &token;
+        const std::optional<PreprocessorGroup> leftGroup = GroupForPreprocessorSeparation(previous);
+        const std::optional<PreprocessorGroup> rightGroup = GroupForPreprocessorSeparation(right);
+        if (
+            !leftGroup || !rightGroup ||
+            leftGroup->item == rightGroup->item ||
+            leftGroup->item->parent != rightGroup->item->parent ||
+            !RequiresPreprocessorGroupSeparation(leftGroup->kind, rightGroup->kind)
+        ) {
+            return;
+        }
+        if (preparedPreprocessorGroupToken_ != right) {
+            FlushPendingTokens();
+            BlankLine();
+        }
+        if (prefixToken) {
+            preparedPreprocessorGroupToken_ = right;
+        }
+    }
+
+    static bool AreNeighboringSourceItems(const PrintToken& left, const PrintToken& right) {
+        const SyntaxNode* leftItem = PreprocessorGroupingSourceItem(&left);
+        const SyntaxNode* rightItem = PreprocessorGroupingSourceItem(&right);
+        return leftItem != nullptr && rightItem != nullptr && leftItem != rightItem &&
+            leftItem->parent == rightItem->parent;
     }
 
     static bool SyntaxPathContains(const PrintToken& token, const SyntaxNode* node) {
@@ -2826,6 +2942,7 @@ private:
         if (PrepareDeclarationGroupBoundary(token)) {
             return;
         }
+        PreparePreprocessorGroupBoundary(token, previous, next);
         PrepareMacroBoundary(rawPrevious, token);
         if (token.kind == PrintTokenKind::BlankLine) {
             FlushPendingTokens();
@@ -3044,13 +3161,9 @@ private:
             token.parentKind == SyntaxNodeKind::BinaryExpression ||
             token.parentKind == SyntaxNodeKind::ConditionClause ||
             token.grandParentKind == SyntaxNodeKind::ArgumentList;
-        const bool isUndef = lineDirectiveKind == SyntaxNodeKind::PreprocessorDirectiveUndef;
         const bool isConditionalDirective =
             SyntaxNodeKindHasClass(token.syntaxKind, SyntaxNodeClass::ConditionalPreprocessorDirective) ||
             SyntaxNodeKindHasClass(lineDirectiveKind, SyntaxNodeClass::ConditionalPreprocessorDirective);
-        if (isUndef) {
-            BlankLine();
-        }
         if (lineHasText_) {
             NewLine();
         }
@@ -3064,11 +3177,10 @@ private:
             ++indentLevel_;
             return;
         }
-        if (StartsWith(line, "#pragma once") || isUndef || (
-            !inlineFragment && !isInclude && !isConditionalDirective && next != nullptr && !IsPreprocessorLikeToken(
-                *next
-            )
-        )) {
+        if (
+            !inlineFragment && !isInclude && !isConditionalDirective && next != nullptr &&
+            !IsPreprocessorLikeToken(*next) && AreNeighboringSourceItems(token, *next)
+        ) {
             BlankLine();
         }
     }

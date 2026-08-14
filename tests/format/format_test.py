@@ -787,6 +787,86 @@ class FormatCommandTests(unittest.TestCase):
             result.stdout,
         )
 
+    def test_pragma_and_undef_form_preprocessor_groups(self) -> None:
+        result = native_format(
+            "--stdin",
+            input_text=(
+                "int before; // attached to previous item\n"
+                "#pragma first\n"
+                "// attached to the next pragma\n"
+                "#pragma second\n"
+                "// attached to the definition\n"
+                "#define VALUE 1\n"
+                "#undef VALUE\n"
+                "#undef OTHER\n"
+                "#define OTHER 2\n"
+                "int after;\n"
+            ),
+        )
+
+        self.assertEqual(0, result.returncode, msg=f"stdout:\n{result.stdout}\n\nstderr:\n{result.stderr}")
+        self.assertEqual(
+            "int before;  // attached to previous item\n"
+            "\n"
+            "#pragma first\n"
+            "// attached to the next pragma\n"
+            "#pragma second\n"
+            "\n"
+            "// attached to the definition\n"
+            "#define VALUE 1\n"
+            "\n"
+            "#undef VALUE\n"
+            "#undef OTHER\n"
+            "\n"
+            "#define OTHER 2\n"
+            "\n"
+            "int after;\n",
+            result.stdout,
+        )
+
+    def test_preprocessor_groups_do_not_pad_structural_boundaries(self) -> None:
+        result = native_format(
+            "--stdin",
+            input_text=(
+                "void f(){\n"
+                "#pragma first\n"
+                "int value;\n"
+                "#undef VALUE\n"
+                "}\n"
+                "#pragma after_function\n"
+                "#if FLAG\n"
+                "#pragma second\n"
+                "int other;\n"
+                "#undef OTHER\n"
+                "#endif\n"
+                "#undef AFTER_CONDITIONAL\n"
+            ),
+        )
+
+        self.assertEqual(0, result.returncode, msg=f"stdout:\n{result.stdout}\n\nstderr:\n{result.stderr}")
+        self.assertEqual(
+            "void f() {\n"
+            "#pragma first\n"
+            "\n"
+            "    int value;\n"
+            "\n"
+            "#undef VALUE\n"
+            "}\n"
+            "\n"
+            "#pragma after_function\n"
+            "\n"
+            "#if FLAG\n"
+            "#pragma second\n"
+            "\n"
+            "int other;\n"
+            "\n"
+            "#undef OTHER\n"
+            "#endif\n"
+            "\n"
+            "#undef AFTER_CONDITIONAL\n",
+            result.stdout,
+        )
+
     def test_win32_boolean_macros_preserve_spelling(self) -> None:
         result = native_format(
             "--stdin",

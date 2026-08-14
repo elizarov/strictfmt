@@ -1,4 +1,5 @@
 #pragma once
+#pragma strictfmt_fixture
 #include <windows.h>
 #include <chrono> // formatter spacing regression include
 #include "zeta/thing.h"
@@ -48,6 +49,7 @@ constexpr Type IdToType(FormatFixtureSize<Index>) noexcept{return FormatFixtureC
 ENUM_STRING_DECLARE(FormatFixtureEnum, FORMAT_FIXTURE_ENUM_ITEMS);
 FORMAT_FIXTURE_REGISTER_TYPE(unsigned char,1)
 #undef FORMAT_FIXTURE_ENUM_ITEMS
+#undef FORMAT_FIXTURE_ENUM_ITEMS_AUX
 #define FORMAT_FIXTURE_TEMP_MACRO(value) (value)
 #undef FORMAT_FIXTURE_TEMP_MACRO
 
