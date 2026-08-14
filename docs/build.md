@@ -84,8 +84,9 @@ version from `git describe`; an exact `v<version>` tag becomes `<version>`.
 ## GitHub Workflows
 
 `.github/workflows/build.yml` runs `scripts/test.sh` on a Linux x86_64 runner for
-every pushed branch or tag. Checkout includes all external-project submodules, so
-this is the same complete validation suite used locally.
+every pushed branch or tag. Checkout includes the top-level external-project
+submodules but not submodules nested inside those fixtures, so this is the same
+complete validation suite used locally.
 
 `.github/workflows/release.yml` runs for `v<major>.<minor>.<patch>` tag pushes. It
 first runs the complete tests on Linux x86_64, then builds and verifies versioned
