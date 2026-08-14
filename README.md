@@ -42,6 +42,7 @@ Detailed user-level docs:
 
 Development docs:
 
+- [docs/build.md](docs/build.md) describes local builds, CI validation, and releases.
 - [docs/glossary.md](docs/glossary.md) defines shared terminology used across docs.
 - [docs/architecture.md](docs/architecture.md) describes code module ownership.
 - [docs/break_solver.md](docs/break_solver.md) describes break solver implementation details and allowed speedups.

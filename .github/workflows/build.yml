@@ -1,0 +1,29 @@
+name: Build
+
+on:
+  push:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: build-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  validate:
+    name: Linux tests (x86_64)
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Check out sources
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+          submodules: recursive
+
+      - name: Verify runner architecture
+        run: test "$(uname -m)" = x86_64
+
+      - name: Build and test
+        run: scripts/test.sh

@@ -29,7 +29,8 @@ cmake.exe -S "%REPO_ROOT%" -B "%CMAKE_BUILD_DIR%" -G "NMake Makefiles" ^
     -DCMAKE_LIBRARY_OUTPUT_DIRECTORY="%BUILD_TEMP_DIR%\lib" ^
     -DCMAKE_PDB_OUTPUT_DIRECTORY="%BUILD_TEMP_DIR%\pdb" ^
     -DCMAKE_COMPILE_PDB_OUTPUT_DIRECTORY="%BUILD_TEMP_DIR%\pdb" ^
-    -DSTRICTFMT_TEST_TEMP_ROOT="%BUILD_TEMP_DIR%\tests"
+    -DSTRICTFMT_TEST_TEMP_ROOT="%BUILD_TEMP_DIR%\tests" ^
+    -DSTRICTFMT_VERSION="%STRICTFMT_VERSION%"
 if errorlevel 1 exit /b %errorlevel%
 
 cmake.exe --build "%CMAKE_BUILD_DIR%" --target strictfmt

@@ -54,6 +54,8 @@ std::optional<FormatOptions> ParseFormatArgs(int argc, char** argv, std::string&
         const std::string arg = argv[index];
         if (arg == "-h" || arg == "--help") {
             options.help = true;
+        } else if (arg == "--version") {
+            options.version = true;
         } else if (arg == "-i") {
             if (options.mode == FormatMode::DryRun) {
                 error = "-i is incompatible with --dry-run";
@@ -187,5 +189,6 @@ void PrintFormatUsage(FILE* out) {
     std::fprintf(out, "Other options:\n");
     std::fprintf(out, "  --concurrency <n>       Limit worker threads. Defaults to hardware concurrency.\n");
     std::fprintf(out, "  -v, --verbose           Verbose progress output.\n");
+    std::fprintf(out, "  --version               Print the strictfmt version.\n");
     std::fprintf(out, "  -h, --help              Print this help text.\n");
 }

@@ -1,0 +1,3 @@
+#pragma once
+
+inline constexpr char kStrictfmtVersion[] = "@strictfmt_resolved_version@";

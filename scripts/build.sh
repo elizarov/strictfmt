@@ -70,7 +70,8 @@ cmake -S "$repo_root" -B "$cmake_build_dir" -G "Unix Makefiles" \
     -DCMAKE_RUNTIME_OUTPUT_DIRECTORY="$build_root" \
     -DCMAKE_ARCHIVE_OUTPUT_DIRECTORY="$build_temp_dir/lib" \
     -DCMAKE_LIBRARY_OUTPUT_DIRECTORY="$build_temp_dir/lib" \
-    -DSTRICTFMT_TEST_TEMP_ROOT="$build_temp_dir/tests"
+    -DSTRICTFMT_TEST_TEMP_ROOT="$build_temp_dir/tests" \
+    -DSTRICTFMT_VERSION="${STRICTFMT_VERSION:-}"
 
 cmake --build "$cmake_build_dir" --target strictfmt
 
