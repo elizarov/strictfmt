@@ -343,6 +343,36 @@ extern "C" {
 int FormatUserverExternAttribute();
 }
 
+template <std::size_t I, class T>
+constexpr
+#ifdef FORMAT_DOXYGEN_INVOKED
+std::string_view
+#else
+auto
+#endif
+ConditionalFieldName()noexcept{return detail::GetName<T,I>();}
+
+template <class T>
+constexpr
+#if FORMAT_DOXYGEN_INVOKED
+std::array<std::string_view, tuple_size_v<T>>
+#else
+auto
+#endif
+ConditionalFieldNames()noexcept {
+return detail::MakeNames<T>();
+}
+
+struct ConditionalMethodReturnType {
+constexpr
+#ifndef FORMAT_USE_DEDUCED_METHOD_RETURN_TYPE
+std::string_view
+#else
+auto
+#endif
+Get()const{return "field";}
+};
+
 void ConditionalLocalConstQualifier() {
 #if FORMAT_USERVER_OPENSSL_HAS_CONST_SIGNATURE
 const

@@ -282,6 +282,12 @@ constexpr auto kSyntaxKindMappings = std::to_array<SyntaxKindMapping>({
     Tree(SyntaxNodeKind::PreprocElse, "preproc_else_in_function_definition_prefix",
          kAllowedPreprocessorContainerClasses | kSupportedPreprocessorPlacementClasses |
          Bit(SyntaxNodeClass::ConditionalFunctionHeader)),
+    Tree(SyntaxNodeKind::PreprocIf, "preproc_if_in_function_return_type",
+         kSupportedPreprocessorPlacementClasses),
+    Tree(SyntaxNodeKind::PreprocIfdef, "preproc_ifdef_in_function_return_type",
+         kSupportedPreprocessorPlacementClasses),
+    Tree(SyntaxNodeKind::PreprocElse, "preproc_else_in_function_return_type",
+         kSupportedPreprocessorPlacementClasses),
     Tree(SyntaxNodeKind::PreprocElif, "preproc_elifdef"),
     Tree(SyntaxNodeKind::BinaryExpression, "binary_expression"),
     Tree(SyntaxNodeKind::UnaryExpression, "unary_expression"),
