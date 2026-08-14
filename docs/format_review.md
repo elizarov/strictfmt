@@ -13,9 +13,7 @@ Configured macro categories, the documented distinction between chain operators 
 
 ## Summary
 
-| Finding | Contract affected |
-| --- | --- |
-| Enum trailing commas are suppressed by a macro-call shape guess | Specification agreement and generic comma normalization |
+No unresolved non-generic behavior remains from this audit.
 
 ## Resolved During Review
 
@@ -177,31 +175,23 @@ int value;
 
 The printer no longer inserts blanks through a raw `#pragma once` prefix check or per-directive `#undef` branches. Opening include-run detection recognizes the exact `#pragma` directive kind, so includes following any pragma group retain normal sorting or preservation. Other preprocessor directives do not participate in this grouping rule.
 
-## Findings
+### Enum trailing commas
 
-### 1. Enum trailing commas are suppressed by a macro-call shape guess
-
-`format.md` says that enum bodies always keep a trailing comma. `NormalizeTrailingCommas` in `src/format/impl/format_model_builder.cpp` instead calls `MacroLikeInvocationEnding` and suppresses the comma when the final enum child happens to have an identifier-plus-argument-list shape. This is not driven by a configured macro role or by known expansion semantics; it guesses that the call may generate its own comma-separated enumerators.
-
-An ordinary final enumerator follows the generic enum rule:
+Enum comma normalization now depends only on the structural list kind. The final syntactic item of every non-empty enum body receives a comma, regardless of whether that item is an ordinary enumerator or has a macro-call shape:
 
 ```cpp
 enum class Plain {
     Default,
 };
-```
 
-The configured structured-macro fixture produces an enum whose final call-shaped child is exempted from the rule:
-
-```cpp
 #define ENUM_STRING_DECLARE(EnumType, ItemsMacro) \
     enum class EnumType { \
-        ItemsMacro(ENUM_STRING_DECLARE_ENUMERATOR) \
+        ItemsMacro(ENUM_STRING_DECLARE_ENUMERATOR), \
     };
 ```
 
-The formatter cannot infer whether `ItemsMacro` expands with no terminal comma, one terminal comma, several enumerators, or no enumerator at all. The exemption is also sensitive to the internal wrapper shape, so equivalent call text parsed in a different context need not receive it. Comma normalization should use the generic enum rule unless an explicit supported macro category supplies the otherwise unknowable expansion contract.
+The former identifier-plus-argument-list check guessed at the macro's expansion and made the result depend on parser wrapper shape. That check is gone. The formatter does not infer expansion contents; it applies the same enum-list invariant at every recursion depth.
 
 ## Overall Direction
 
-The remaining finding should be resolved by deleting the exception or replacing it with a small semantic category that applies at every recursion depth and in every equivalent context. Golden fixtures should demonstrate category boundaries rather than preserve one-off outputs.
+All findings from this audit have been resolved. Future layout changes should continue to use structural categories at every recursion depth, with golden fixtures demonstrating category boundaries rather than preserving one-off outputs.

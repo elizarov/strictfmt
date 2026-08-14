@@ -50,7 +50,7 @@
     }
 #define ENUM_STRING_DECLARE(EnumType, ItemsMacro) \
     enum class EnumType { \
-        ItemsMacro(ENUM_STRING_DECLARE_ENUMERATOR) \
+        ItemsMacro(ENUM_STRING_DECLARE_ENUMERATOR), \
     }; \
     template <> \
     struct EnumStringTraits<EnumType> { \

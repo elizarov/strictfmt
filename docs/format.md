@@ -197,7 +197,7 @@ Widget rows[] = {
 };
 ```
 
-Enum bodies always split one enumerator per line and keep a trailing comma on the final enumerator.
+Enum bodies always split one enumerator per line and keep a trailing comma on the final syntactic item. The item's internal shape does not change this rule; a macro-call-shaped item receives the same trailing comma as an ordinary enumerator.
 
 ```cpp
 enum class ValueFormat : std::uint8_t {

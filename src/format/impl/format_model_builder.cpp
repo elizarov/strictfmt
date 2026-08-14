@@ -95,27 +95,6 @@ void SetKnownTokenNode(SyntaxNode& node, SyntaxNodeKind token, std::string_view 
     }
 }
 
-bool MacroLikeInvocationNode(const SyntaxNode* node) {
-    return node != nullptr &&
-        node->kind == SyntaxNodeKind::Tree &&
-        node->children.size() == 2 &&
-        node->children[0] != nullptr &&
-        node->children[0]->kind == SyntaxNodeKind::Identifier &&
-        node->children[1] != nullptr &&
-        node->children[1]->kind == SyntaxNodeKind::ArgumentList;
-}
-
-bool MacroLikeInvocationEnding(const SyntaxChildList& children, size_t index) {
-    if (MacroLikeInvocationNode(children[index])) {
-        return true;
-    }
-    return index > 0 &&
-        children[index] != nullptr &&
-        children[index]->kind == SyntaxNodeKind::ArgumentList &&
-        children[index - 1] != nullptr &&
-        children[index - 1]->kind == SyntaxNodeKind::Identifier;
-}
-
 bool ContainsWholeAtomDelimiter(std::string_view text) {
     // Whole-atom wrappers are safe to keep as one text node only when the text has no structural separators.
     // Examples that take the shortcut: `name`, `ns::Type`, `*ptr`, `++index`.
@@ -324,8 +303,7 @@ void NormalizeTrailingCommas(FormatModel& model, SyntaxNode& node) {
         if (node.kind == SyntaxNodeKind::EnumeratorList) {
             if (
                 children[*previous]->kind != SyntaxNodeKind::Comma &&
-                children[*previous]->kind != SyntaxNodeKind::LeftBrace &&
-                !MacroLikeInvocationEnding(children, *previous)
+                children[*previous]->kind != SyntaxNodeKind::LeftBrace
             ) {
                 SyntaxNode* comma = MakeTokenNode(model, SyntaxNodeKind::Comma);
                 comma->parent = &node;
