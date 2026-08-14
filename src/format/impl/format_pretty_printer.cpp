@@ -275,6 +275,44 @@ bool IsCommentAlreadyInPreprocessorHeader(const SyntaxNode& parent, const Syntax
     return FirstSourceLine(parent.text).find(child.text) != std::string_view::npos;
 }
 
+bool IsFirstConditionalBranchChild(const SyntaxNode& node) {
+    const SyntaxNode* parent = node.parent;
+    if (
+        parent == nullptr ||
+        !SyntaxNodeKindHasClass(parent->kind, SyntaxNodeClass::ConditionalPreprocessorTree)
+    ) {
+        return false;
+    }
+
+    bool inPreprocIfHeader = true;
+    for (size_t index = 0; index < parent->children.size(); ++index) {
+        const SyntaxNode* child = parent->children[index];
+        if (child == nullptr) {
+            continue;
+        }
+        if (IsCommentAlreadyInPreprocessorHeader(*parent, *child)) {
+            continue;
+        }
+        if (parent->kind == SyntaxNodeKind::PreprocIfdef && IsPreprocIfdefHeaderChild(*child, index)) {
+            continue;
+        }
+        if (parent->kind == SyntaxNodeKind::PreprocElse && IsPreprocElseHeaderChild(*child, index)) {
+            continue;
+        }
+        if (
+            (parent->kind == SyntaxNodeKind::PreprocIf || parent->kind == SyntaxNodeKind::PreprocElif) &&
+            IsPreprocIfHeaderChild(*child, index, inPreprocIfHeader)
+        ) {
+            continue;
+        }
+        if (SyntaxNodeKindHasClass(child->kind, SyntaxNodeClass::Trivia)) {
+            continue;
+        }
+        return child == &node;
+    }
+    return false;
+}
+
 std::string_view PreprocEndifLine(const SyntaxNode& node) {
     return node.text.empty() ? SyntaxNodeKindTokenText(node.kind) : TrimSourceLine(FirstSourceLine(node.text));
 }
@@ -2320,6 +2358,13 @@ private:
             SyntaxPathContains(token, context.list);
     }
 
+    static bool IsForcedLeadingPreprocessorListComma(const PrintToken& token) {
+        return token.kind == PrintTokenKind::Known &&
+            token.syntaxKind == SyntaxNodeKind::Comma &&
+            token.node != nullptr &&
+            IsFirstConditionalBranchChild(*token.node);
+    }
+
     bool IsFinalPreprocessorSplitListItem(const PrintToken& token) const {
         if (activeTokens_ == nullptr || token.node == nullptr) {
             return false;
@@ -2350,6 +2395,9 @@ private:
             return false;
         }
         BufferToken(token);
+        if (IsForcedLeadingPreprocessorListComma(token)) {
+            return true;
+        }
         FlushPendingTokens();
         NewLineWithIndent(context->itemIndent);
         return true;
