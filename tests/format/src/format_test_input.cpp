@@ -1434,6 +1434,10 @@ void EmptyElseIfSpacing(bool first,bool second,bool third){
 if(first){}else if(second){}else if(third){Use(third);}
 }
 
+void EmptyDoWhile(bool running){
+do{}while(running);
+}
+
 void TryFinallyCleanup(){
 const auto originalDirectory=Environment::CurrentDirectory;
 try{

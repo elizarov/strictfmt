@@ -54,7 +54,8 @@ This document specifies the source layout produced by `strictfmt`.
 Mandatory line breaks are structural boundaries. The break is always taken before optional wrapping is considered.
 
 - Break between complete statements and declarations, including after each statement-terminating semicolon.
-- The single-statement lambda is an exception only when the whole lambda stays on one physical line.
+- The single-statement lambda is an exception only when the whole lambda stays on one physical line. Lambdas participate in expression layouts even though their bodies contain statements, so this exception lets a compact lambda remain an inline expression; ordinary statement and callable bodies retain their structural breaks.
+- Keep an empty control body compact as `{}` and finish its control-body line before a following attachment keyword, including the `while` of a do-while statement.
 - Put block-opening braces at the end of the introducing line, then break.
 - Break after a code-block closing brace unless the following token is `else`, `catch`, `finally`, or the `while` that closes a do-while statement.
 - Treat a standalone braced statement block as a block. Its closing brace does not attach to the following statement.
@@ -529,7 +530,7 @@ if (
 }
 ```
 
-`else`, `catch`, `finally`, and do-while `while` attach to the preceding closing block brace.
+For non-empty bodies, `else`, `catch`, `finally`, and do-while `while` attach to the preceding closing block brace.
 
 ```cpp
 try {

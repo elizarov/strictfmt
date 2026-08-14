@@ -2585,12 +2585,9 @@ private:
         const bool closesLambdaArgument = token.parentKind == SyntaxNodeKind::CompoundStatement &&
             token.grandParentKind == SyntaxNodeKind::LambdaExpression &&
             afterClose->syntaxKind == SyntaxNodeKind::RightParen;
-        const bool closesDoWhile = afterClose->syntaxKind == SyntaxNodeKind::KeywordWhile &&
-            afterClose->parentKind == SyntaxNodeKind::DoStatement;
         return afterClose->syntaxKind != SyntaxNodeKind::Semicolon &&
             afterClose->syntaxKind != SyntaxNodeKind::Comma &&
-            !closesLambdaArgument &&
-            !closesDoWhile;
+            !closesLambdaArgument;
     }
 
     static bool ClosesImmediatelyInvokedLambda(const PrintToken& token, const PrintToken& next) {
