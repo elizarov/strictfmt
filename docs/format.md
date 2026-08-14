@@ -21,6 +21,8 @@ This document specifies the source layout produced by `strictfmt`.
 - Put one space after non-empty `for` header semicolons. Put no space before semicolons. Keep `for (;;)` compact, e.g. `for (int i = 0; i < n; ++i)`.
 - Put spaces around binary and ternary operators, e.g. `a + b`.
 - Put no spaces around unary operators, e.g. `!ok`.
+- Keep the reflection operator and splice delimiters tight, e.g. `^^T` and `value.[:member:]`.
+- Put one space between a structured-binding pack ellipsis and its identifier, e.g. `[first, ... rest]`.
 - Bind type declarator symbols to the type, e.g. `int* value`.
 - Treat `operator` plus a following symbolic operator as one function name, e.g. `operator==(`.
 - Put one space after `operator` for conversion, allocation, and deallocation operators, e.g. `operator bool(` and `operator new(`.

@@ -160,6 +160,22 @@ frame.versions.snapshotVersion=++snapshotVersion_;
 frame.versions.previousVersion=--snapshotVersion_;
 }
 
+template<std::size_t I,typename T>
+consteval decltype(auto) ReferenceByIndex(T & value)noexcept{
+return value.[:
+nonstatic_data_members_of(
+^^T,
+std::meta::access_context::current()
+).at(I)
+:];
+}
+
+template<class T>
+constexpr decltype(auto) StructuredBindingPackAt(T&& value){
+auto&& [... members]=std::forward<T>(value);
+return members...[0];
+}
+
 void WriteTraceStringFragments(TraceLog& trace) {
     trace.WriteFmt(
         TracePrefix::Diagnostics,

@@ -327,6 +327,8 @@ constexpr auto kSyntaxKindMappings = std::to_array<SyntaxKindMapping>({
     Tree(SyntaxNodeKind::LambdaCaptureSpecifier, "lambda_capture_specifier"),
     Tree(SyntaxNodeKind::StructuredBindingDeclarator, "structured_binding_declarator"),
     Tree(SyntaxNodeKind::Tree, "structured_binding_pack_identifier"),
+    Tree(SyntaxNodeKind::SpliceSpecifier, "splice_specifier", Bit(SyntaxNodeClass::SemanticDelimitedParent)),
+    Tree(SyntaxNodeKind::UnaryExpression, "reflect_expression"),
     Tree(SyntaxNodeKind::FieldDesignator, "field_designator"),
     Tree(SyntaxNodeKind::FieldExpression, "field_expression"),
     Tree(SyntaxNodeKind::TrailingReturnType, "trailing_return_type"),
@@ -388,6 +390,7 @@ constexpr auto kSyntaxKindMappings = std::to_array<SyntaxKindMapping>({
     Token(SyntaxNodeKind::LeftParen, "(", Bit(SyntaxNodeClass::OpeningDelimiter)),
     Token(SyntaxNodeKind::RightParen, ")"),
     Token(SyntaxNodeKind::LeftBracket, "[", Bit(SyntaxNodeClass::OpeningDelimiter)),
+    Token(SyntaxNodeKind::RightBracket, ":]"),
     Token(SyntaxNodeKind::RightBracket, "]"),
     Token(SyntaxNodeKind::LeftBrace, "{", Bit(SyntaxNodeClass::OpeningDelimiter)),
     Token(SyntaxNodeKind::RightBrace, "}"),
@@ -406,6 +409,7 @@ constexpr auto kSyntaxKindMappings = std::to_array<SyntaxKindMapping>({
     Token(SyntaxNodeKind::Slash, "/", Bit(SyntaxNodeClass::BinaryOperator)),
     Token(SyntaxNodeKind::Percent, "%", Bit(SyntaxNodeClass::BinaryOperator) | Bit(SyntaxNodeClass::DeclaratorReferenceToken)),
     Token(SyntaxNodeKind::Caret, "^", kChainBinaryClasses | Bit(SyntaxNodeClass::DeclaratorReferenceToken)),
+    Token(SyntaxNodeKind::ReflectOperator, "^^", Bit(SyntaxNodeClass::UnaryOperator)),
     Token(SyntaxNodeKind::Ampersand, "&", kChainBinaryClasses | Bit(SyntaxNodeClass::UnaryOperator) | Bit(
         SyntaxNodeClass::DeclaratorReferenceToken
     )),
@@ -963,6 +967,8 @@ std::string_view SyntaxNodeKindName(SyntaxNodeKind kind) {
             return "LambdaCaptureSpecifier";
         case SyntaxNodeKind::StructuredBindingDeclarator:
             return "StructuredBindingDeclarator";
+        case SyntaxNodeKind::SpliceSpecifier:
+            return "SpliceSpecifier";
         case SyntaxNodeKind::FieldDesignator:
             return "FieldDesignator";
         case SyntaxNodeKind::FieldExpression:
@@ -1079,6 +1085,8 @@ std::string_view SyntaxNodeKindName(SyntaxNodeKind kind) {
             return "Percent";
         case SyntaxNodeKind::Caret:
             return "Caret";
+        case SyntaxNodeKind::ReflectOperator:
+            return "ReflectOperator";
         case SyntaxNodeKind::Ampersand:
             return "Ampersand";
         case SyntaxNodeKind::Pipe:
