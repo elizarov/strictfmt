@@ -24,9 +24,15 @@
 #define FORMAT_FIXTURE_DECLARE_OPTION(name, type) void name(type)
 #define FORMAT_FIXTURE_LOAD_OPTIONAL(function, name) \
     function = reinterpret_cast<decltype(function)>(GetProcAddress(module_, name))
-#define FORMAT_FIXTURE_ITEMS(X) X(Alpha, "alpha") X(Beta, "beta") X(Gamma, "gamma")
-#define FORMAT_FIXTURE_ENUM_ITEMS(X) X(First, "first") X(Second, "second")
-#define FORMAT_FIXTURE_COMMENT_CONTINUATION(callback) callback(); \
+#define FORMAT_FIXTURE_ITEMS(X) \
+    X(Alpha, "alpha") \
+    X(Beta, "beta") \
+    X(Gamma, "gamma")
+#define FORMAT_FIXTURE_ENUM_ITEMS(X) \
+    X(First, "first") \
+    X(Second, "second")
+#define FORMAT_FIXTURE_COMMENT_CONTINUATION(callback) \
+    callback(); \
     /* cold testing path: */ \
     callback();
 #define FORMAT_FIXTURE_TOKEN_PASTE(prefix, suffix) \
@@ -34,13 +40,15 @@
 #define FORMAT_FIXTURE_STRINGIZE(value) \
     #value
 #define FORMAT_FIXTURE_FILEPATH FORMAT_NAMESPACE::logging::impl::CutFilePath(__builtin_FILE())
-#define FORMAT_FIXTURE_REGISTER_TYPE(Type, Index) constexpr std::size_t TypeToId(FormatFixtureIdentity<Type>) noexcept { \
+#define FORMAT_FIXTURE_REGISTER_TYPE(Type, Index) \
+    constexpr std::size_t TypeToId(FormatFixtureIdentity<Type>) noexcept { \
         return Index; \
     } \
     constexpr Type IdToType(FormatFixtureSize<Index>) noexcept { \
         return FormatFixtureConstruct<Type>(); \
     }
-#define ENUM_STRING_DECLARE(EnumType, ItemsMacro) enum class EnumType { \
+#define ENUM_STRING_DECLARE(EnumType, ItemsMacro) \
+    enum class EnumType { \
         ItemsMacro(ENUM_STRING_DECLARE_ENUMERATOR) \
     }; \
     template <> \

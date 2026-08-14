@@ -21,7 +21,7 @@ Each node kind exposes legal layout candidates through `SolveAlternatives`:
 
 The solver compares complete candidates with `Better`. Intermediate candidate sets may be pruned only when the removed candidate cannot win any continuation under the same solver contract.
 
-Owner/value syntax uses one generic after-owner candidate shape. A structured macro definition is built as its header owner plus its complete replacement value, so the compact owner attachment and a break after the owner compete with all replacement-internal alternatives in the same solve. The solver's break-line suffix width accounts for text emitted only on taken breaks; structured macros use it for the trailing ` \`, including that physical suffix in overflow cost without making it a break heuristic.
+Owner/value syntax uses one generic after-owner candidate shape. A structured macro definition is built as its header owner plus its complete replacement value. Its compact chain candidate is legal only when the whole definition fits on one physical line; all other candidates split after the owner and solve the complete replacement recursively. A replacement parsed as multiple top-level call units is represented by a force-split statement sequence inside that value, so its required unit boundaries compose with the required header boundary without printer inference. The solver's break-line suffix width accounts for text emitted only on taken breaks; structured macros use it for the trailing ` \`, including that physical suffix in overflow cost without making it a break heuristic.
 
 ## Choice Fidelity
 

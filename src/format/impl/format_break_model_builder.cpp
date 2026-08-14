@@ -295,6 +295,15 @@ private:
         return node.formatSelectionMark == selectionMark_;
     }
 
+    bool ContainsUnselectedSourceLeaf(const SyntaxNode& node) const {
+        if (node.children.empty()) {
+            return !node.text.empty() && !ContainsSelected(node);
+        }
+        return std::any_of(node.children.begin(), node.children.end(), [this](const SyntaxNode* child) {
+            return child != nullptr && ContainsUnselectedSourceLeaf(*child);
+        });
+    }
+
     SyntaxNodeKind ParentKind(const SyntaxNode& node) const {
         return node.parent == nullptr ? SyntaxNodeKind::Unknown : node.parent->kind;
     }
@@ -730,6 +739,45 @@ private:
         return result;
     }
 
+    FormatBreakNode* BuildMacroReplacementCallSequence(const SyntaxNode& replacement, int depth) {
+        std::vector<ConstSyntaxChildList> itemChildren;
+        size_t callCount = 0;
+        for (const SyntaxNode* child : replacement.children) {
+            if (child == nullptr || !ContainsSelected(*child)) {
+                continue;
+            }
+            if (child->kind == SyntaxNodeKind::MacroCallItem) {
+                itemChildren.emplace_back();
+                itemChildren.back().push_back(child);
+                ++callCount;
+                continue;
+            }
+            if (
+                child->kind == SyntaxNodeKind::Comment ||
+                child->kind == SyntaxNodeKind::TrailingComment ||
+                child->kind == SyntaxNodeKind::BlankLine
+            ) {
+                itemChildren.emplace_back();
+                itemChildren.back().push_back(child);
+                continue;
+            }
+            if (itemChildren.empty()) {
+                return nullptr;
+            }
+            itemChildren.back().push_back(child);
+        }
+        if (callCount < 2) {
+            return nullptr;
+        }
+
+        auto sequence = MakeNode(FormatBreakNodeKind::StatementSequence, depth);
+        sequence->forceSplit = true;
+        for (const ConstSyntaxChildList& item : itemChildren) {
+            AppendListItem(*sequence, BuildSequenceFromPointers(item, depth + 1), false);
+        }
+        return sequence;
+    }
+
     FormatBreakNode* BuildMacroDefinition(const SyntaxNode& node, int depth) {
         std::optional<size_t> valueIndex;
         bool ownerSelected = false;
@@ -751,8 +799,21 @@ private:
         }
 
         FormatBreakNode* owner = BuildSequenceFromChildren(node.children, 0, *valueIndex, depth + 1);
-        FormatBreakNode* value = BuildSyntaxNode(*node.children[*valueIndex], depth + 1);
-        return BuildOwnedValue(owner, value, depth);
+        const SyntaxNode& replacement = *node.children[*valueIndex];
+        FormatBreakNode* value = BuildMacroReplacementCallSequence(replacement, depth + 1);
+        if (value == nullptr) {
+            value = BuildSyntaxNode(replacement, depth + 1);
+        }
+        FormatBreakNode* definition = BuildOwnedValue(owner, value, depth);
+        if (definition != nullptr) {
+            // The structured-macro grammar has only two header-level forms: one physical line, or a break after
+            // the complete definition header. A later mandatory formatting segment makes the one-line form
+            // structurally impossible; otherwise the solver retains it only when its complete candidate fits.
+            // Neither constraint inspects a chosen child layout or makes a local break decision in the printer.
+            definition->forceSplit = ContainsUnselectedSourceLeaf(replacement);
+            definition->chainCompactRequiresFitOnOneLine = true;
+        }
+        return definition;
     }
 
     FormatBreakNode* BuildSyntaxNode(const SyntaxNode& node, int depth) {

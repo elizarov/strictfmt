@@ -13,7 +13,23 @@ Definition-side macro categories and use-side macro categories are independent:
 
 Structured macro definitions are the default. Their replacement parses as a structured token stream and parse tree, and the formatter owns replacement whitespace, continuation backslashes, continuation newlines, and line-limit wrapping. Macro replacement lists that form declaration fragments are recursively formatted before continuation backslashes are added.
 
-The boundary between a structured macro definition header and its non-empty replacement is an optional owner/value break opportunity. The header and replacement are solved together with every ordinary break opportunity inside the replacement still available. If the owner/value boundary is selected, the replacement starts one continuation indentation level deeper. Replacement width, top-level element count, and replacement syntax class do not force that boundary independently of the solver.
+A structured macro definition has two header-level forms. If the complete definition fits on one physical line, it stays on that line. Otherwise, the formatter breaks after the complete definition header and starts the replacement one continuation indentation level deeper. The header and replacement are part of the same solver model; the one-line form is legal only when it contains no selected break and has no column-limit overflow, while the replacement in the split form retains every ordinary internal break opportunity.
+
+A replacement parsed as two or more top-level macro call units is a statement-like item sequence even when the calls have no separating commas or semicolons. The formatter breaks between every unit, and a standalone comment between units is a separate line. This rule depends on the replacement structure, not the spelling of its call target or the name of the definition parameter. A replacement containing one call unit is not an item sequence and follows the ordinary structured-macro rule.
+
+```cpp
+#define FORMAT_FIXTURE_ITEMS(X) \
+    X(Alpha, "alpha") \
+    X(Beta, "beta") \
+    X(Gamma, "gamma")
+```
+
+```cpp
+#define FORMAT_FIXTURE_COMMENT_CONTINUATION(callback) \
+    callback(); \
+    /* cold testing path: */ \
+    callback();
+```
 
 Every non-final physical line of a structured macro definition ends in ` \`. Those two emitted columns are part of that line's overflow cost. The final replacement line has no continuation suffix.
 
