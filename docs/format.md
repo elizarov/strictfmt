@@ -275,8 +275,9 @@ return RenderPoint{firstCoordinate + secondCoordinate + thirdCoordinate, y}
 ```
 
 - Adjacent string literals are an implicit concatenation chain.
-- When a forced multi-line string-fragment sequence stays split, it follows the same indentation rule as other chains. In single-value contexts, such as after `=`, after `return`, or inside one plain parenthesis group, fragments align at the expression indentation. In multi-element contexts, such as call argument lists, declaration parameter lists, subscript argument lists, template argument lists, and initializer lists, continued fragments use one continuation indentation level so the string chain stays visually separate from neighboring elements.
-- Line-fragment strings ending with escaped `\n` or `\r\n` stay physically split.
+- `return`, `co_return`, `throw`, and `co_yield` are one keyword-owned-value category. The boundary between the keyword and its value is an ordinary break opportunity selected by the optimizer.
+- When a forced multi-line string-fragment sequence stays split, it follows the same indentation rule as other chains. In single-value contexts, such as after `=`, after a value-owning keyword, or inside one plain parenthesis group, fragments align at the expression indentation. In multi-element contexts, such as call argument lists, declaration parameter lists, subscript argument lists, template argument lists, and initializer lists, continued fragments use one continuation indentation level so the string chain stays visually separate from neighboring elements.
+- An adjacent-literal boundary after a line-fragment string ending with escaped `\n` or `\r\n` is mandatory. It preserves the authored line structure of multi-line help, diagnostic, and similar text instead of allowing the optimizer to collapse the fragments onto one source line.
 - A boundary such as `"\xB0" "C"` stays token-separated to preserve escape parsing, but it may remain on one physical line when the adjacent-literal chain fits.
 - Ternary chains are flat chains.
 - A nested ternary chain either breaks after every `:` or stays compact.

@@ -9,14 +9,12 @@ The review looked for:
 - behavior selected by an exact keyword, operator spelling, literal suffix, or syntax-node kind when equivalent syntax is treated differently
 - rules whose result depends on input whitespace or recursion depth instead of the formatted structure
 
-Configured macro categories and the documented distinction between chain operators and ordinary binary operators are intentionally outside the findings. Those are supported semantic categories rather than accidental layout patches.
+Configured macro categories, the documented distinction between chain operators and ordinary binary operators, and mandatory adjacent-string line-fragment boundaries are intentionally outside the findings. Those are supported semantic categories and readability rules rather than accidental layout patches.
 
 ## Summary
 
 | Finding | Contract affected |
 | --- | --- |
-| Adjacent strings are forced by two raw literal suffixes | Generic break opportunities and lexical correctness |
-| Keyword-owned value layout exists only for `return` and `co_return` | Generic expression ownership |
 | Compact single-statement blocks exist only for lambdas | Generic block structure |
 | Empty control blocks override the normal attachment category | Generic block attachment |
 | Preprocessor blank lines depend on directive spellings | Generic item separation and exact directive recognition |
@@ -90,54 +88,43 @@ class Grouped {
 };
 ```
 
+### Adjacent line-fragment strings
+
+The forced boundary after an adjacent string fragment ending in source-spelled `\n` or `\r\n` is intentional. Such fragments conventionally encode authored lines of help, diagnostic, and similar text. Collapsing them onto one physical source line would discard useful visual structure, so [format.md](format.md#operator-chains) specifies this boundary as mandatory rather than offering it to the optimizer.
+
+Ordinary adjacent strings remain a compact-or-split chain:
+
+```cpp
+const char* label = "first " "second";
+```
+
+Line-fragment text retains one fragment per physical source line:
+
+```cpp
+const char* help =
+    "first line\n"
+    "second line\n";
+```
+
+### Keyword-owned values
+
+`return`, `co_return`, `throw`, and `co_yield` now share one structural keyword-owned-value category. The format model derives the category from the leading keyword, and the break model uses the same owner/value construction for statements and expressions. This removes the former exact-kind routing for only `ReturnStatement` and `CoReturnStatement`.
+
+A forced adjacent-string sequence therefore detaches and aligns identically for every category member:
+
+```cpp
+throw
+    "first line\n"
+    "second line";
+
+co_yield
+    "first line\n"
+    "second line";
+```
+
 ## Findings
 
-### 1. Adjacent strings are forced by two raw literal suffixes
-
-`EndsWithEscapedLineFragment` in `src/format/impl/format_break_model_builder.cpp` recognizes only raw text ending in `\n` or `\r\n`. `GroupAdjacentStrings` then sets `forceSplit`, which removes the compact candidate from the solver. The rule is tied to two content spellings rather than to the adjacent-string structure.
-
-A normal adjacent-string chain remains an optional break opportunity and stays compact when it fits:
-
-```cpp
-const char* plain = "first " "second";
-```
-
-A literal whose runtime value ends in a backslash followed by `n` is nevertheless forced to split because the raw token also ends with the characters `\n`:
-
-```cpp
-const char* escapedBackslash =
-    "first\\n"
-    "second";
-```
-
-The latter is not a semantic newline fragment. This exposes both the lack of lexical escape parsing and the narrowness of the rule. Adjacent-literal boundaries should remain solver choices unless a generic token-preservation constraint makes a layout illegal; if semantic fragment categories are retained, they must be derived from parsed literal contents rather than raw suffix matching.
-
-### 2. Keyword-owned value layout exists only for `return` and `co_return`
-
-`BreakModelBuilder::BuildSyntaxNode` routes only `ReturnStatement` and `CoReturnStatement` through `BuildKeywordValueStatement`. That path creates a break opportunity after the keyword and applies flat forced-string indentation. `throw` and `co_yield` have the same visible keyword-plus-value shape but use the generic expression sequence instead. `format.md` mirrors the one-off by naming `return` as a special single-value context.
-
-A forced adjacent-string sequence after `return` detaches from the keyword and aligns as one owned value:
-
-```cpp
-const char* GetMessage() {
-    return
-        "first line\n"
-        "second line";
-}
-```
-
-The analogous `throw` value keeps its first fragment on the keyword line, so the remaining fragment is indented relative to a different owner:
-
-```cpp
-void Fail() {
-    throw "first line\n"
-        "second line";
-}
-```
-
-`co_yield` behaves like `throw`, while `co_return` behaves like `return`. The rule should either be a broad keyword-owned-value category that covers equivalent value-bearing syntax or be removed in favor of the value expression's ordinary break model.
-
-### 3. Compact single-statement blocks exist only for lambdas
+### 1. Compact single-statement blocks exist only for lambdas
 
 `format.md` explicitly exempts a single-statement lambda from mandatory statement and block breaks. `LambdaBodyAllowsCompactSingleStatementForm` in `src/format/impl/format_model.cpp` recognizes exactly `CompoundStatement` under `LambdaExpression`, and the pretty printer skips the mandatory semicolon break when `inSingleStatementLambdaBody` is set.
 
@@ -157,7 +144,7 @@ auto compact = []() { return; };
 
 This is a syntax-owner exception rather than a block rule and works against the goal that braces, statements, and nesting be visually separated consistently. A generic policy should apply to all statement blocks of the same structural shape; the most structural policy is to keep mandatory block and statement breaks for lambdas too.
 
-### 4. Empty control blocks override the normal attachment category
+### 2. Empty control blocks override the normal attachment category
 
 `format.md` first defines `else`, `catch`, `finally`, and do-while `while` as block-attachment keywords, then gives compact empty control bodies an exception. `PrettyPrinter::ShouldBreakAfterCompactEmptyBlock` implements that exception with next-token checks and separately exempts the exact do-while `while` case.
 
@@ -180,7 +167,7 @@ else {}
 
 An empty `do {}` still attaches its `while`, so empty blocks do not even form one consistent exception category. Attachment should be determined by the following structural role, independent of whether the preceding block contains zero or more statements.
 
-### 5. Preprocessor blank lines depend on directive spellings
+### 3. Preprocessor blank lines depend on directive spellings
 
 The **Line Hygiene** section of `format.md` assigns unique blank-line behavior to `#pragma once` and `#undef`. The printer implements `#undef` by directive kind but recognizes `#pragma once` with `StartsWith(line, "#pragma once")`. `IsPragmaOnceNode` in `src/format/impl/format_model_builder.cpp` uses the same raw prefix test when grouping an opening include area.
 
@@ -220,7 +207,7 @@ An equally unknown pragma whose operand merely begins with `once` is treated as 
 
 Blank-line insertion should be expressed through broad source-item categories. If `#pragma once` remains a necessary semantic exception, it should at least be recognized structurally as the exact directive and operand rather than by raw prefix.
 
-### 6. Enum trailing commas are suppressed by a macro-call shape guess
+### 4. Enum trailing commas are suppressed by a macro-call shape guess
 
 `format.md` says that enum bodies always keep a trailing comma. `NormalizeTrailingCommas` in `src/format/impl/format_model_builder.cpp` instead calls `MacroLikeInvocationEnding` and suppresses the comma when the final enum child happens to have an identifier-plus-argument-list shape. This is not driven by a configured macro role or by known expansion semantics; it guesses that the call may generate its own comma-separated enumerators.
 

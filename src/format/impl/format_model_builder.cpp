@@ -534,6 +534,16 @@ const SyntaxNode* FirstNonTriviaChild(const SyntaxNode& node) {
     return nullptr;
 }
 
+void ClassifyKeywordOwnedValue(SyntaxNode& node) {
+    const SyntaxNode* first = FirstNonTriviaChild(node);
+    if (
+        first != nullptr &&
+        SyntaxNodeKindHasClass(first->kind, SyntaxNodeClass::KeywordOwnedValue)
+    ) {
+        node.classes |= static_cast<std::uint64_t>(SyntaxNodeClass::KeywordOwnedValue);
+    }
+}
+
 bool ContainsCallableDeclarator(const SyntaxNode& node, bool root = true) {
     if (node.kind == SyntaxNodeKind::OperatorCast) {
         return true;
@@ -677,6 +687,7 @@ void NormalizeSyntaxNode(FormatModel& model, SyntaxNode& node) {
             node.classes |= static_cast<std::uint64_t>(SyntaxNodeClass::ConditionalStreamOperatorChain);
         }
     }
+    ClassifyKeywordOwnedValue(node);
     ClassifyDeclarationGroup(node);
     NormalizeTrailingCommas(model, node);
     NormalizeControlBodies(model, node);

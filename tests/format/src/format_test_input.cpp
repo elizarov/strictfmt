@@ -1313,6 +1313,18 @@ const char* ReturnForcedAdjacentString() {
 return "first line\n" "second line";
 }
 
+Task CoReturnForcedAdjacentString() {
+co_return "first line\n" "second line";
+}
+
+void ThrowForcedAdjacentString() {
+throw "first line\n" "second line";
+}
+
+Generator CoYieldForcedAdjacentString() {
+co_yield "first line\n" "second line";
+}
+
 void CallForcedAdjacentString() {
 Log("first line\n" "second line");
 }
