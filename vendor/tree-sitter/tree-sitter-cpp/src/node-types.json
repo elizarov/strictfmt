@@ -4552,6 +4552,14 @@
           "named": true
         },
         {
+          "type": "preproc_if",
+          "named": true
+        },
+        {
+          "type": "preproc_ifdef",
+          "named": true
+        },
+        {
           "type": "pure_virtual_clause",
           "named": true
         },
@@ -8987,7 +8995,18 @@
   {
     "type": "preproc_else",
     "named": true,
-    "fields": {},
+    "fields": {
+      "type": {
+        "multiple": false,
+        "required": false,
+        "types": [
+          {
+            "type": "type_specifier",
+            "named": true
+          }
+        ]
+      }
+    },
     "children": {
       "multiple": true,
       "required": false,
@@ -8998,6 +9017,14 @@
         },
         {
           "type": "alias_declaration",
+          "named": true
+        },
+        {
+          "type": "attribute_declaration",
+          "named": true
+        },
+        {
+          "type": "attribute_specifier",
           "named": true
         },
         {
@@ -9073,6 +9100,10 @@
           "named": true
         },
         {
+          "type": "function_prefix_macro",
+          "named": true
+        },
+        {
           "type": "function_type_alias_declaration",
           "named": true
         },
@@ -9109,11 +9140,19 @@
           "named": true
         },
         {
+          "type": "ms_declspec_modifier",
+          "named": true
+        },
+        {
           "type": "namespace_alias_definition",
           "named": true
         },
         {
           "type": "namespace_definition",
+          "named": true
+        },
+        {
+          "type": "post_type_macro_annotation",
           "named": true
         },
         {
@@ -9165,6 +9204,10 @@
           "named": true
         },
         {
+          "type": "storage_class_specifier",
+          "named": true
+        },
+        {
           "type": "template_declaration",
           "named": true
         },
@@ -9190,6 +9233,10 @@
         },
         {
           "type": "type_definition",
+          "named": true
+        },
+        {
+          "type": "type_qualifier",
           "named": true
         },
         {
@@ -9223,7 +9270,7 @@
       },
       "type": {
         "multiple": false,
-        "required": true,
+        "required": false,
         "types": [
           {
             "type": "type_specifier",
@@ -9258,6 +9305,14 @@
         },
         {
           "type": "post_type_macro_annotation",
+          "named": true
+        },
+        {
+          "type": "preproc_if",
+          "named": true
+        },
+        {
+          "type": "preproc_ifdef",
           "named": true
         },
         {
@@ -9432,6 +9487,16 @@
             "named": true
           }
         ]
+      },
+      "type": {
+        "multiple": false,
+        "required": false,
+        "types": [
+          {
+            "type": "type_specifier",
+            "named": true
+          }
+        ]
       }
     },
     "children": {
@@ -9444,6 +9509,14 @@
         },
         {
           "type": "alias_declaration",
+          "named": true
+        },
+        {
+          "type": "attribute_declaration",
+          "named": true
+        },
+        {
+          "type": "attribute_specifier",
           "named": true
         },
         {
@@ -9519,6 +9592,10 @@
           "named": true
         },
         {
+          "type": "function_prefix_macro",
+          "named": true
+        },
+        {
           "type": "function_type_alias_declaration",
           "named": true
         },
@@ -9555,6 +9632,10 @@
           "named": true
         },
         {
+          "type": "ms_declspec_modifier",
+          "named": true
+        },
+        {
           "type": "namespace_alias_definition",
           "named": true
         },
@@ -9572,6 +9653,10 @@
         },
         {
           "type": "parameter_declaration",
+          "named": true
+        },
+        {
+          "type": "post_type_macro_annotation",
           "named": true
         },
         {
@@ -9627,6 +9712,10 @@
           "named": true
         },
         {
+          "type": "storage_class_specifier",
+          "named": true
+        },
+        {
           "type": "template_declaration",
           "named": true
         },
@@ -9656,6 +9745,10 @@
         },
         {
           "type": "type_definition",
+          "named": true
+        },
+        {
+          "type": "type_qualifier",
           "named": true
         },
         {
@@ -9765,7 +9858,7 @@
       },
       "type": {
         "multiple": false,
-        "required": true,
+        "required": false,
         "types": [
           {
             "type": "type_specifier",
@@ -9800,6 +9893,14 @@
         },
         {
           "type": "post_type_macro_annotation",
+          "named": true
+        },
+        {
+          "type": "preproc_if",
+          "named": true
+        },
+        {
+          "type": "preproc_ifdef",
           "named": true
         },
         {
@@ -9942,6 +10043,16 @@
             "named": true
           }
         ]
+      },
+      "type": {
+        "multiple": false,
+        "required": false,
+        "types": [
+          {
+            "type": "type_specifier",
+            "named": true
+          }
+        ]
       }
     },
     "children": {
@@ -9954,6 +10065,14 @@
         },
         {
           "type": "alias_declaration",
+          "named": true
+        },
+        {
+          "type": "attribute_declaration",
+          "named": true
+        },
+        {
+          "type": "attribute_specifier",
           "named": true
         },
         {
@@ -10029,6 +10148,10 @@
           "named": true
         },
         {
+          "type": "function_prefix_macro",
+          "named": true
+        },
+        {
           "type": "function_type_alias_declaration",
           "named": true
         },
@@ -10065,6 +10188,10 @@
           "named": true
         },
         {
+          "type": "ms_declspec_modifier",
+          "named": true
+        },
+        {
           "type": "namespace_alias_definition",
           "named": true
         },
@@ -10082,6 +10209,10 @@
         },
         {
           "type": "parameter_declaration",
+          "named": true
+        },
+        {
+          "type": "post_type_macro_annotation",
           "named": true
         },
         {
@@ -10137,6 +10268,10 @@
           "named": true
         },
         {
+          "type": "storage_class_specifier",
+          "named": true
+        },
+        {
           "type": "template_declaration",
           "named": true
         },
@@ -10166,6 +10301,10 @@
         },
         {
           "type": "type_definition",
+          "named": true
+        },
+        {
+          "type": "type_qualifier",
           "named": true
         },
         {
@@ -10227,7 +10366,7 @@
       },
       "type": {
         "multiple": false,
-        "required": true,
+        "required": false,
         "types": [
           {
             "type": "type_specifier",
@@ -10262,6 +10401,14 @@
         },
         {
           "type": "post_type_macro_annotation",
+          "named": true
+        },
+        {
+          "type": "preproc_if",
+          "named": true
+        },
+        {
+          "type": "preproc_ifdef",
           "named": true
         },
         {

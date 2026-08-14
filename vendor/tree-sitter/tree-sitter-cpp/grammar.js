@@ -277,6 +277,7 @@ module.exports = grammar(C, {
     [$.function_prefix_macro, $.macro_qualified_identifier],
     [$.function_prefix_macro, $.calling_convention_macro, $.macro_qualified_identifier],
     [$._declaration_modifiers, $.macro_prefixed_function_definition, $.macro_prefixed_declaration],
+    [$._declaration_specifiers, $._conditional_function_return_type_specifiers, $._constructor_specifiers],
     [$._declarator, $.reference_argument_declarator],
     [$.if_statement, $.preproc_selected_else_if_statement],
     [$._block_item, $.preproc_selected_else_if_body_item],
@@ -946,14 +947,48 @@ module.exports = grammar(C, {
       alias($.qualified_type_identifier, $.qualified_identifier),
     )),
 
-    function_definition: $ => prec(1, seq(
-      ...functionDefinitionHeader($),
-      field('body', choice($.compound_statement, $.try_statement, $.delete_method_clause)),
+    function_definition: $ => prec(1, choice(
+      functionDefinitionWithHeader($, functionDefinitionHeader($)),
+      functionDefinitionWithHeader($, conditionalFunctionDefinitionHeader($)),
     )),
 
-    _function_definition_prefix: $ => prec(1, seq(
-      ...functionDefinitionHeader($),
-      '{',
+    _conditional_function_return_type_specifiers: $ => prec.right(seq(
+      repeat($._declaration_modifiers),
+      choice(
+        alias($.preproc_if_in_function_return_type, $.preproc_if),
+        alias($.preproc_ifdef_in_function_return_type, $.preproc_ifdef),
+      ),
+      repeat($._declaration_modifiers),
+      repeat($.post_type_macro_annotation),
+    )),
+
+    preproc_if_in_function_return_type: $ => seq(
+      preprocessor('if'),
+      field('condition', $._preproc_expression),
+      $._preproc_directive_end,
+      $._declaration_specifiers,
+      field('alternative', alias($.preproc_else_in_function_return_type, $.preproc_else)),
+      preprocessor('endif'),
+    ),
+
+    preproc_ifdef_in_function_return_type: $ => seq(
+      choice(preprocessor('ifdef'), preprocessor('ifndef')),
+      field('name', $.identifier),
+      $._preproc_directive_end,
+      $._declaration_specifiers,
+      field('alternative', alias($.preproc_else_in_function_return_type, $.preproc_else)),
+      preprocessor('endif'),
+    ),
+
+    preproc_else_in_function_return_type: $ => seq(
+      preprocessor('else'),
+      $._preproc_directive_end,
+      $._declaration_specifiers,
+    ),
+
+    _function_definition_prefix: $ => prec(1, choice(
+      functionDefinitionPrefixWithHeader(functionDefinitionHeader($)),
+      functionDefinitionPrefixWithHeader(conditionalFunctionDefinitionHeader($)),
     )),
 
     preproc_selected_function_definition: $ => prec(1, seq(
@@ -1626,16 +1661,9 @@ module.exports = grammar(C, {
       )),
     )),
 
-    inline_method_definition: $ => seq(
-      $._declaration_specifiers,
-      optional($.ms_call_modifier),
-      field('declarator', $._field_declarator),
-      choice(
-        field('body', choice($.compound_statement, $.try_statement)),
-        $.default_method_clause,
-        $.delete_method_clause,
-        $.pure_virtual_clause,
-      ),
+    inline_method_definition: $ => choice(
+      inlineMethodDefinitionWithSpecifiers($, $._declaration_specifiers),
+      inlineMethodDefinitionWithSpecifiers($, $._conditional_function_return_type_specifiers),
     ),
 
     _constructor_specifiers: $ => choice(
@@ -3748,6 +3776,40 @@ function functionDefinitionHeader($) {
     optional($.ms_call_modifier),
     field('declarator', $._declarator),
   ];
+}
+
+function conditionalFunctionDefinitionHeader($) {
+  return [
+    optional($.ms_call_modifier),
+    $._conditional_function_return_type_specifiers,
+    optional($.ms_call_modifier),
+    field('declarator', $._declarator),
+  ];
+}
+
+function functionDefinitionWithHeader($, header) {
+  return seq(
+    ...header,
+    field('body', choice($.compound_statement, $.try_statement, $.delete_method_clause)),
+  );
+}
+
+function functionDefinitionPrefixWithHeader(header) {
+  return seq(...header, '{');
+}
+
+function inlineMethodDefinitionWithSpecifiers($, specifiers) {
+  return seq(
+    specifiers,
+    optional($.ms_call_modifier),
+    field('declarator', $._field_declarator),
+    choice(
+      field('body', choice($.compound_statement, $.try_statement)),
+      $.default_method_clause,
+      $.delete_method_clause,
+      $.pure_virtual_clause,
+    ),
+  );
 }
 
 function commaSep1WithRequiredPreproc($, rule, suffix, forms) {
