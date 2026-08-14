@@ -507,6 +507,30 @@ void NormalizeControlBodies(FormatModel& model, SyntaxNode& node) {
 }
 
 void NormalizeSyntaxNode(FormatModel& model, SyntaxNode& node) {
+    if (node.kind == SyntaxNodeKind::BinaryExpression) {
+        const bool startsConditionalStream = std::any_of(
+            node.children.begin(),
+            node.children.end(),
+            [](const SyntaxNode* child) {
+                return child != nullptr && SyntaxNodeHasClass(*child, SyntaxNodeClass::ConditionalPreprocessorTree);
+            }
+        );
+        const bool continuesConditionalStream = std::any_of(
+            node.children.begin(),
+            node.children.end(),
+            [](const SyntaxNode* child) {
+                return child != nullptr &&
+                    SyntaxNodeHasClass(*child, SyntaxNodeClass::ConditionalStreamOperatorChain);
+            }
+        ) && std::any_of(node.children.begin(), node.children.end(), [](const SyntaxNode* child) {
+            return child != nullptr && (
+                child->kind == SyntaxNodeKind::LessLess || child->kind == SyntaxNodeKind::GreaterGreater
+            );
+        });
+        if (startsConditionalStream || continuesConditionalStream) {
+            node.classes |= static_cast<std::uint64_t>(SyntaxNodeClass::ConditionalStreamOperatorChain);
+        }
+    }
     NormalizeTrailingCommas(model, node);
     NormalizeControlBodies(model, node);
 }

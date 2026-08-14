@@ -162,6 +162,7 @@ module.exports = grammar(C, {
     [$.template_type, $.qualified_type_identifier],
     [$.qualified_type_identifier, $.qualified_identifier],
     [$.qualified_identifier, $.macro_qualified_identifier],
+    [$.expression, $.macro_qualified_identifier],
     [$._declarator, $.macro_qualified_identifier],
     [$.qualified_type_identifier, $._declarator],
     [$._declarator, $._qualified_declaration_type],
@@ -808,6 +809,25 @@ module.exports = grammar(C, {
       const item = choice($.initializer_pair, $.expression, $.initializer_list);
       return prec.right(1, seq(repeat(seq(item, ',')), item, optional(',')));
     }, 0, PREPROC_IFDEF | PREPROC_ELSE, false),
+
+    ...preprocIf(
+      '_in_stream_operator_chain',
+      $ => $._stream_operator_chain_parts,
+      0,
+      PREPROC_IFDEF | PREPROC_ELSE,
+      false,
+    ),
+
+    _stream_operator_chain_parts: $ => repeat1(choice(
+      $.stream_operator_chain_suffix,
+      alias($.preproc_if_in_stream_operator_chain, $.preproc_if),
+      alias($.preproc_ifdef_in_stream_operator_chain, $.preproc_ifdef),
+    )),
+
+    stream_operator_chain_suffix: $ => prec.left(PREC.SHIFT, repeat1(seq(
+      field('operator', choice('<<', '>>')),
+      field('right', $.expression),
+    ))),
 
     _preproc_template_parameter_list_item: $ => choice(
       $.preproc_template_type_parameter_item,
@@ -2712,6 +2732,7 @@ module.exports = grammar(C, {
     // Expressions
 
     _expression_not_binary: ($, original) => choice(
+      alias($.bare_macro_identifier, $.identifier),
       $.macro_qualified_identifier,
       original,
       $.reflect_expression,
@@ -3340,6 +3361,18 @@ module.exports = grammar(C, {
       ];
 
       return choice(
+        prec.left(PREC.SHIFT, seq(
+          field('left', $.expression),
+          choice(
+            alias($.preproc_if_in_stream_operator_chain, $.preproc_if),
+            alias($.preproc_ifdef_in_stream_operator_chain, $.preproc_ifdef),
+          ),
+          repeat(choice(
+            $.stream_operator_chain_suffix,
+            alias($.preproc_if_in_stream_operator_chain, $.preproc_if),
+            alias($.preproc_ifdef_in_stream_operator_chain, $.preproc_ifdef),
+          )),
+        )),
         prec.left(PREC.INCLUSIVE_OR, seq(
           field('left', $.expression),
           field('operator', '|'),

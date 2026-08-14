@@ -14,6 +14,10 @@ namespace {
 
 using ConstSyntaxChildList = std::vector<const SyntaxNode*>;
 
+bool SyntaxNodeHasLocalClass(const SyntaxNode& node, SyntaxNodeClass syntaxNodeClass) {
+    return (node.classes & static_cast<std::uint64_t>(syntaxNodeClass)) != 0;
+}
+
 bool IsTemplateAngleToken(const FormatBreakToken& token) {
     return IsTemplateAnglePrintToken(FormatBreakTokenValue(token));
 }
@@ -1664,7 +1668,85 @@ private:
         AppendBinaryChainOperand(operands, operators, node.children, *opIndex + 1, node.children.size(), op, depth);
     }
 
+    FormatBreakNode* BuildLeadingStreamOperatorChain(const SyntaxNode& node, int depth) {
+        std::vector<size_t> operatorIndices;
+        std::vector<FormatBreakToken> directOperators;
+        for (size_t index = 0; index < node.children.size(); ++index) {
+            if (!node.children[index]) {
+                continue;
+            }
+            const std::optional<FormatBreakToken> token = TokenForNode(*node.children[index]);
+            if (!token) {
+                continue;
+            }
+            const SyntaxNodeKind kind = FormatBreakTokenSyntaxKind(*token);
+            if (kind != SyntaxNodeKind::LessLess && kind != SyntaxNodeKind::GreaterGreater) {
+                continue;
+            }
+            operatorIndices.push_back(index);
+            directOperators.push_back(*token);
+        }
+        if (operatorIndices.empty()) {
+            return nullptr;
+        }
+
+        std::vector<FormatBreakNode*> operands;
+        std::vector<FormatBreakToken> operators;
+        auto emptyReceiver = MakeNode(FormatBreakNodeKind::Sequence, depth + 1);
+        operands.push_back(emptyReceiver);
+        for (size_t index = 0; index < operatorIndices.size(); ++index) {
+            operators.push_back(directOperators[index]);
+            const size_t operandBegin = operatorIndices[index] + 1;
+            const size_t operandEnd = index + 1 < operatorIndices.size() ?
+                operatorIndices[index + 1] : node.children.size();
+            if (operandBegin >= operandEnd) {
+                return nullptr;
+            }
+            AppendBinaryChainOperand(
+                operands,
+                operators,
+                node.children,
+                operandBegin,
+                operandEnd,
+                FormatBreakTokenSyntaxKind(directOperators[index]),
+                depth
+            );
+        }
+        if (operands.size() != operators.size() + 1) {
+            return nullptr;
+        }
+
+        auto chain = MakeNode(FormatBreakNodeKind::Chain, depth);
+        chain->chainKind = FormatBreakChainKind::StreamBeforeOperator;
+        chain->chainStartsWithOperator = true;
+        chain->operands = StoreNodePointers(operands);
+        chain->operators = StoreTokens(operators);
+        return chain;
+    }
+
+    bool SelectionStartsWithDirectStreamOperator(const SyntaxNode& node) const {
+        for (const SyntaxNode* child : node.children) {
+            if (child == nullptr || !ContainsSelected(*child)) {
+                continue;
+            }
+            const std::optional<FormatBreakToken> token = TokenForNode(*child);
+            return token && (
+                FormatBreakTokenSyntaxKind(*token) == SyntaxNodeKind::LessLess ||
+                FormatBreakTokenSyntaxKind(*token) == SyntaxNodeKind::GreaterGreater
+            );
+        }
+        return false;
+    }
+
     FormatBreakNode* BuildBinaryOrAssignmentExpression(const SyntaxNode& node, int depth) {
+        if (
+            SyntaxNodeHasLocalClass(node, SyntaxNodeClass::LeadingStreamOperatorChain) || (
+                SyntaxNodeHasLocalClass(node, SyntaxNodeClass::ConditionalStreamOperatorChain) &&
+                SelectionStartsWithDirectStreamOperator(node)
+            )
+        ) {
+            return BuildLeadingStreamOperatorChain(node, depth);
+        }
         const std::optional<size_t> opIndex = DirectOperatorIndex(node);
         if (!opIndex || !node.children[*opIndex]) {
             return nullptr;
@@ -1679,6 +1761,10 @@ private:
         chain->chainKind = (
             operatorKind == SyntaxNodeKind::LessLess || operatorKind == SyntaxNodeKind::GreaterGreater
         ) ? FormatBreakChainKind::StreamBeforeOperator : FormatBreakChainKind::AfterOperator;
+        chain->forceSplit =
+            chain->chainKind == FormatBreakChainKind::StreamBeforeOperator &&
+            context_.forceSplitStreamChain &&
+            root_ == &node;
         if (
             node.kind == SyntaxNodeKind::BinaryExpression &&
             SyntaxNodeKindHasClass(operatorKind, SyntaxNodeClass::ChainOperator)

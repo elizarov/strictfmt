@@ -837,6 +837,9 @@ private:
                 }
                 return true;
             case FormatBreakNodeKind::Chain:
+                if (node.chainStartsWithOperator) {
+                    return false;
+                }
                 for (size_t index = 0; index < node.operands.size(); ++index) {
                     if (node.operands[index] != nullptr && !AppendCompactOneLine(*node.operands[index], result)) {
                         return false;
@@ -1941,6 +1944,9 @@ private:
     NodeResults
         SolveChainCompactAlternatives(const FormatBreakNode& node, int column, int indentLevel, bool lineHasText)
     {
+        if (node.forceSplit || node.chainStartsWithOperator) {
+            return {};
+        }
         NodeResult
             result{.valid = true, .endColumn = column, .endIndentLevel = indentLevel, .endLineHasText = lineHasText};
         AddChoice(result, node.id, FormatBreakChoice::Compact);
@@ -2147,10 +2153,17 @@ private:
         NodeResult
             result{.valid = true, .endColumn = column, .endIndentLevel = indentLevel, .endLineHasText = lineHasText};
         AddChoice(result, node.id, choice);
-        NodeResult receiver =
-            Solve(*node.operands.front(), result.endColumn, result.endIndentLevel, result.endLineHasText);
-        Merge(result, receiver);
-        result = AddBreak(result, indentLevel + 1, node.structuralDepth);
+        if (!node.chainStartsWithOperator) {
+            NodeResult receiver =
+                Solve(*node.operands.front(), result.endColumn, result.endIndentLevel, result.endLineHasText);
+            Merge(result, receiver);
+        }
+        if (node.chainStartsWithOperator && !result.endLineHasText) {
+            result.endIndentLevel = indentLevel + 1;
+            result.endColumn = IndentColumn(result.endIndentLevel);
+        } else {
+            result = AddBreak(result, indentLevel + 1, node.structuralDepth);
+        }
         for (size_t index = 0; index < node.operators.size(); ++index) {
             result = AddToken(result, node.operators[index]);
             NodeResult operand = choice == FormatBreakChoice::StreamCompactTail ?

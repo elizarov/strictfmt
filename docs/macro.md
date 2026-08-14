@@ -58,7 +58,7 @@ int OldApi();
 
 ### BareIdentifierMacros
 
-`BareIdentifierMacros` names macro identifiers that the grammar consumes on the use side as bare tokens in non-call positions. This category owns calling-convention and post-type declarator annotations, complete declaration-level items, qualified-identifier prefixes, top-level call-statement suffix macros, declaration suffix macros, initializer macros, parameter-list items, and template-argument fragments.
+`BareIdentifierMacros` names macro identifiers that the grammar consumes on the use side as bare tokens in non-call positions. This category owns calling-convention and post-type declarator annotations, complete declaration-level items, qualified-identifier prefixes, top-level call-statement suffix macros, declaration suffix macros, initializer macros, ordinary expression atoms, parameter-list items, and template-argument fragments. A configured token remains valid as an expression atom when the same project also passes it as a normal call argument or binary-expression operand.
 
 **Calling-convention modifier:** the macro appears in a declarator where a platform calling-convention token is expected.
 
