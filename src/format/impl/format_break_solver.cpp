@@ -241,7 +241,10 @@ struct DelimiterStackPartitionCandidate {
 
 class Solver {
 public:
-    Solver(const FormatterConfig& config, int indentWidth) : config_(config), indentWidth_(indentWidth) {}
+    Solver(const FormatterConfig& config, int indentWidth, int breakLineSuffixWidth) :
+        config_(config),
+        indentWidth_(indentWidth),
+        breakLineSuffixWidth_(breakLineSuffixWidth) {}
 
     NodeResult Solve(const FormatBreakNode& node, int column, int indentLevel, bool lineHasText) {
         const SolveKey key{node.id, column, indentLevel, lineHasText};
@@ -292,6 +295,7 @@ public:
 private:
     const FormatterConfig& config_;
     int indentWidth_ = 4;
+    int breakLineSuffixWidth_ = 0;
     std::unordered_map<SolveKey, NodeResult, SolveKeyHash> memo_;
     std::deque<ChoiceTree> choiceArena_;
     std::deque<DelimiterStackPartitionPath> delimiterStackPartitionPathArena_;
@@ -552,6 +556,17 @@ private:
     }
 
     NodeResult AddBreak(NodeResult result, int indentLevel, int structuralDepth) const {
+        // Some formats add text only when a line actually breaks. Account for that physical suffix here so it
+        // participates in the same DP cost as ordinary tokens without inventing a printer-side break decision.
+        if (result.endLineHasText && breakLineSuffixWidth_ > 0) {
+            const bool lineWasOverLimit = result.endColumn > config_.columnLimit;
+            const int suffixedColumn = result.endColumn + breakLineSuffixWidth_;
+            const bool lineIsOverLimit = suffixedColumn > config_.columnLimit;
+            result.maxOverflow = std::max(result.maxOverflow, suffixedColumn - config_.columnLimit);
+            if (!lineWasOverLimit && lineIsOverLimit) {
+                ++result.overflowLines;
+            }
+        }
         ++result.extraLines;
         result.endIndentLevel = indentLevel;
         result.endColumn = IndentColumn(indentLevel);
@@ -1290,7 +1305,8 @@ private:
             }
             delimiterRuns.back().end = index + 1;
             result = AddToken(result, open);
-            delimiterOverflow = delimiterOverflow || result.endColumn > config_.columnLimit;
+            delimiterOverflow = delimiterOverflow ||
+                result.endColumn + breakLineSuffixWidth_ > config_.columnLimit;
         }
 
         if (detachLeaf && result.endLineHasText) {
@@ -1310,7 +1326,8 @@ private:
             }
             for (size_t index = run.end; index-- > run.begin;) {
                 result = AddToken(result, stack.delimiters[index]->children.back()->token);
-                delimiterOverflow = delimiterOverflow || result.endColumn > config_.columnLimit;
+                delimiterOverflow = delimiterOverflow ||
+                    result.endColumn + breakLineSuffixWidth_ > config_.columnLimit;
             }
         }
         return result;
@@ -2900,13 +2917,14 @@ FormatBreakSolution SolveFormatBreaks(
     const FormatBreakModel& model,
     int startColumn,
     int indentLevel,
-    int indentWidth
+    int indentWidth,
+    int breakLineSuffixWidth
 ) {
     FormatBreakSolution solution;
     if (!model.root) {
         return solution;
     }
-    Solver solver(config, indentWidth);
+    Solver solver(config, indentWidth, breakLineSuffixWidth);
     NodeResult result = solver.Solve(*model.root, startColumn, indentLevel, startColumn > indentLevel * indentWidth);
     if (!result.valid) {
         return solution;

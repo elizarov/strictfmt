@@ -26,11 +26,8 @@ struct PrintToken {
     bool inSingleStatementLambdaBody = false;
     bool structuredPreprocessor = false;
     bool inMacroValue = false;
-    bool breakBeforeMacroValue = false;
-    int macroValueRemainingWidth = 0;
     const SyntaxNode* node = nullptr;
     const SyntaxNode* macroDefinition = nullptr;
-    const SyntaxNode* macroValueElement = nullptr;
 };
 
 bool IsPreprocessorPrintToken(PrintTokenKind kind);

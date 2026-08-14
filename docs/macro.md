@@ -13,6 +13,10 @@ Definition-side macro categories and use-side macro categories are independent:
 
 Structured macro definitions are the default. Their replacement parses as a structured token stream and parse tree, and the formatter owns replacement whitespace, continuation backslashes, continuation newlines, and line-limit wrapping. Macro replacement lists that form declaration fragments are recursively formatted before continuation backslashes are added.
 
+The boundary between a structured macro definition header and its non-empty replacement is an optional owner/value break opportunity. The header and replacement are solved together with every ordinary break opportunity inside the replacement still available. If the owner/value boundary is selected, the replacement starts one continuation indentation level deeper. Replacement width, top-level element count, and replacement syntax class do not force that boundary independently of the solver.
+
+Every non-final physical line of a structured macro definition ends in ` \`. Those two emitted columns are part of that line's overflow cost. The final replacement line has no continuation suffix.
+
 For structured macro definitions, the original placement of continuation backslashes is semantically inert. A backslash-newline inside the replacement is treated as whitespace, just like ordinary source whitespace. The replacement ends at the first bare preprocessor directive newline after the macro value, and the pretty printer chooses the formatted line breaks and continuation backslashes.
 
 The parser/scanner split that makes this possible is described in [scanner.md](scanner.md).

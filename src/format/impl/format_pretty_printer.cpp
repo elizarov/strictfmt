@@ -330,23 +330,6 @@ bool IsRawStatementToken(const PrintToken& token) {
     ) && EndsWith(TrimSourceLine(token.text), ";");
 }
 
-bool RequiresMacroValueBreak(const SyntaxNode& node) {
-    size_t topLevelElementCount = 0;
-    for (const SyntaxNode* child : node.children) {
-        if (!child || child->kind == SyntaxNodeKind::BlankLine) {
-            continue;
-        }
-        ++topLevelElementCount;
-        if (topLevelElementCount > 1) {
-            return true;
-        }
-        if (SyntaxNodeKindHasClass(child->kind, SyntaxNodeClass::MacroDeclarationFragment)) {
-            return true;
-        }
-    }
-    return false;
-}
-
 SyntaxNodeKind MatchingListCloseToken(SyntaxNodeKind kind) {
     switch (kind) {
         case SyntaxNodeKind::LeftParen:
@@ -441,10 +424,8 @@ void AppendPreprocessorPrintToken(
     bool inCompilerCallModifier,
     bool inSingleStatementLambdaBody,
     bool inMacroValue,
-    bool breakBeforeMacroValue,
     bool structuredPreprocessor,
     const SyntaxNode* macroDefinition,
-    const SyntaxNode* macroValueElement,
     std::vector<PrintToken>& tokens
 ) {
     tokens.push_back({
@@ -459,10 +440,8 @@ void AppendPreprocessorPrintToken(
         .inSingleStatementLambdaBody = inSingleStatementLambdaBody,
         .structuredPreprocessor = structuredPreprocessor,
         .inMacroValue = inMacroValue,
-        .breakBeforeMacroValue = breakBeforeMacroValue,
         .node = &node,
-        .macroDefinition = macroDefinition,
-        .macroValueElement = macroValueElement
+        .macroDefinition = macroDefinition
     });
 }
 
@@ -475,9 +454,7 @@ void AppendTokens(
     bool inCompilerCallModifier,
     bool inSingleStatementLambdaBody,
     const SyntaxNode* macroDefinition,
-    const SyntaxNode* macroValueElement,
     bool inMacroValue,
-    bool breakBeforeMacroValue,
     std::vector<PrintToken>& tokens
 ) {
     const SyntaxNodeKind nodeKind = node.kind;
@@ -491,8 +468,6 @@ void AppendTokens(
     const SyntaxNode* childMacroDefinition = macroDefinition != nullptr ? macroDefinition :
         (SyntaxNodeKindHasClass(nodeKind, SyntaxNodeClass::MacroDefinition) ? &node : nullptr);
     const bool childInMacroValue = inMacroValue || nodeKind == SyntaxNodeKind::MacroReplacementList;
-    const bool childBreakBeforeMacroValue =
-        breakBeforeMacroValue || (nodeKind == SyntaxNodeKind::MacroReplacementList && RequiresMacroValueBreak(node));
 
     if (nodeKind == SyntaxNodeKind::BlankLine) {
         if (!SyntaxNodeKindHasClass(parentKind, SyntaxNodeClass::PreserveBlankLineParent)) {
@@ -501,10 +476,8 @@ void AppendTokens(
         tokens.push_back({
             .kind = PrintTokenKind::BlankLine,
             .inMacroValue = childInMacroValue,
-            .breakBeforeMacroValue = childBreakBeforeMacroValue,
             .node = &node,
-            .macroDefinition = childMacroDefinition,
-            .macroValueElement = macroValueElement
+            .macroDefinition = childMacroDefinition
         });
         return;
     }
@@ -521,10 +494,8 @@ void AppendTokens(
             .inCompilerCallModifier = childInCompilerCallModifier,
             .inSingleStatementLambdaBody = childInSingleStatementLambdaBody,
             .inMacroValue = childInMacroValue,
-            .breakBeforeMacroValue = childBreakBeforeMacroValue,
             .node = &node,
-            .macroDefinition = childMacroDefinition,
-            .macroValueElement = macroValueElement
+            .macroDefinition = childMacroDefinition
         });
         return;
     }
@@ -540,10 +511,8 @@ void AppendTokens(
             .inCompilerCallModifier = childInCompilerCallModifier,
             .inSingleStatementLambdaBody = childInSingleStatementLambdaBody,
             .inMacroValue = childInMacroValue,
-            .breakBeforeMacroValue = childBreakBeforeMacroValue,
             .node = &node,
-            .macroDefinition = childMacroDefinition,
-            .macroValueElement = macroValueElement
+            .macroDefinition = childMacroDefinition
         });
         return;
     }
@@ -558,10 +527,8 @@ void AppendTokens(
             childInCompilerCallModifier,
             childInSingleStatementLambdaBody,
             childInMacroValue,
-            childBreakBeforeMacroValue,
             true,
             childMacroDefinition,
-            macroValueElement,
             tokens
         );
 
@@ -582,10 +549,8 @@ void AppendTokens(
                     childInCompilerCallModifier,
                     childInSingleStatementLambdaBody,
                     childInMacroValue,
-                    childBreakBeforeMacroValue,
                     true,
                     childMacroDefinition,
-                    macroValueElement,
                     tokens
                 );
                 continue;
@@ -614,9 +579,7 @@ void AppendTokens(
                 childInCompilerCallModifier,
                 childInSingleStatementLambdaBody,
                 childMacroDefinition,
-                macroValueElement,
                 childInMacroValue,
-                childBreakBeforeMacroValue,
                 tokens
             );
         }
@@ -634,10 +597,8 @@ void AppendTokens(
             .inCompilerCallModifier = childInCompilerCallModifier,
             .inSingleStatementLambdaBody = childInSingleStatementLambdaBody,
             .inMacroValue = childInMacroValue,
-            .breakBeforeMacroValue = childBreakBeforeMacroValue,
             .node = &node,
-            .macroDefinition = childMacroDefinition,
-            .macroValueElement = macroValueElement
+            .macroDefinition = childMacroDefinition
         });
         return;
     }
@@ -652,10 +613,8 @@ void AppendTokens(
             .inCompilerCallModifier = childInCompilerCallModifier,
             .inSingleStatementLambdaBody = childInSingleStatementLambdaBody,
             .inMacroValue = childInMacroValue,
-            .breakBeforeMacroValue = childBreakBeforeMacroValue,
             .node = &node,
-            .macroDefinition = childMacroDefinition,
-            .macroValueElement = macroValueElement
+            .macroDefinition = childMacroDefinition
         });
         return;
     }
@@ -671,10 +630,8 @@ void AppendTokens(
             .inCompilerCallModifier = childInCompilerCallModifier,
             .inSingleStatementLambdaBody = childInSingleStatementLambdaBody,
             .inMacroValue = childInMacroValue,
-            .breakBeforeMacroValue = childBreakBeforeMacroValue,
             .node = &node,
-            .macroDefinition = childMacroDefinition,
-            .macroValueElement = macroValueElement
+            .macroDefinition = childMacroDefinition
         });
         return;
     }
@@ -690,10 +647,8 @@ void AppendTokens(
             .inCompilerCallModifier = childInCompilerCallModifier,
             .inSingleStatementLambdaBody = childInSingleStatementLambdaBody,
             .inMacroValue = childInMacroValue,
-            .breakBeforeMacroValue = childBreakBeforeMacroValue,
             .node = &node,
-            .macroDefinition = childMacroDefinition,
-            .macroValueElement = macroValueElement
+            .macroDefinition = childMacroDefinition
         });
         return;
     }
@@ -708,9 +663,7 @@ void AppendTokens(
                 childInCompilerCallModifier,
                 childInSingleStatementLambdaBody,
                 childMacroDefinition,
-                child,
                 true,
-                childBreakBeforeMacroValue,
                 tokens
             );
         }
@@ -727,9 +680,7 @@ void AppendTokens(
                 childInCompilerCallModifier,
                 childInSingleStatementLambdaBody,
                 childMacroDefinition,
-                macroValueElement,
                 childInMacroValue,
-                childBreakBeforeMacroValue,
                 tokens
             );
         }
@@ -891,27 +842,6 @@ std::string FormatConditionalAssignmentPrefix(std::string_view text) {
     return result;
 }
 
-void AnnotateMacroValueWidths(std::vector<PrintToken>& tokens) {
-    for (size_t index = 0; index < tokens.size(); ++index) {
-        if (!tokens[index].inMacroValue || tokens[index].macroValueRemainingWidth != 0) {
-            continue;
-        }
-        const SyntaxNode* macroDefinition = tokens[index].macroDefinition;
-        size_t end = index;
-        int width = 0;
-        const PrintToken* previous = index > 0 ? &tokens[index - 1] : nullptr;
-        while (end < tokens.size() && tokens[end].inMacroValue && tokens[end].macroDefinition == macroDefinition) {
-            width += (FormatTokenNeedsSpace(previous, tokens[end]) ? 1 : 0) + FormatTokenWidth(tokens[end]);
-            previous = &tokens[end];
-            ++end;
-        }
-        for (size_t cursor = index; cursor < end; ++cursor) {
-            tokens[cursor].macroValueRemainingWidth = width;
-        }
-        index = end == 0 ? 0 : end - 1;
-    }
-}
-
 struct DeferredSplitListContext {
     const SyntaxNode* list = nullptr;
     const SyntaxNode* lambdaRightBrace = nullptr;
@@ -984,7 +914,7 @@ private:
     int currentColumn_ = 0;
     bool macroContinuationLine_ = false;
     bool forceColumnZeroLine_ = false;
-    bool emittingMacroValue_ = false;
+    bool emittingMacroDefinition_ = false;
     const std::vector<PrintToken>* activeTokens_ = nullptr;
     size_t currentTokenIndex_ = 0;
     std::optional<int> pendingIndentLevel_;
@@ -1228,7 +1158,6 @@ private:
             token.grandParentKind == SyntaxNodeKind::FieldInitializerList;
         if (
             token.inMacroValue ||
-            token.breakBeforeMacroValue ||
             token.macroDefinition != nullptr ||
             (stringLike && previousStringLike) ||
             (!allowFieldInitializerList && inFieldInitializerList)
@@ -1341,7 +1270,7 @@ private:
     }
 
     void NewLineWithIndent(int indentLevel) {
-        NewLine(emittingMacroValue_);
+        NewLine(emittingMacroDefinition_);
         pendingIndentLevel_ = std::max(0, indentLevel);
     }
 
@@ -1510,7 +1439,6 @@ private:
             const bool stringLike = IsStringLike(token);
             if (
                 token.inMacroValue ||
-                token.breakBeforeMacroValue ||
                 token.macroDefinition != nullptr ||
                 SyntaxPathContainsKind(token, SyntaxNodeKind::MacroStatementSequence) ||
                 SyntaxPathContainsClass(token, SyntaxNodeClass::LeadingStreamOperatorChain) ||
@@ -1578,7 +1506,12 @@ private:
             return;
         }
         const PrintToken& printToken = FormatBreakTokenValue(token);
-        if (printToken.macroDefinition != nullptr && !printToken.inMacroValue && atLineStart_) {
+        if (
+            printToken.macroDefinition != nullptr &&
+            !printToken.inMacroValue &&
+            atLineStart_ &&
+            !macroContinuationLine_
+        ) {
             forceColumnZeroLine_ = true;
             pendingIndentLevel_.reset();
         }
@@ -2161,17 +2094,27 @@ private:
         if (stats_ != nullptr) {
             stats_->breakModel += std::chrono::steady_clock::now() - modelStart;
         }
-        const bool previousEmittingMacroValue = emittingMacroValue_;
-        emittingMacroValue_ = std::any_of(pendingTokens_.begin(), pendingTokens_.end(), [](const PrintToken& token) {
-            return token.inMacroValue;
-        });
-        if (emittingMacroValue_ && pendingTokens_.front().inMacroValue && atLineStart_) {
+        const bool previousEmittingMacroDefinition = emittingMacroDefinition_;
+        emittingMacroDefinition_ = std::any_of(
+            pendingTokens_.begin(),
+            pendingTokens_.end(),
+            [](const PrintToken& token) {
+                return token.macroDefinition != nullptr;
+            }
+        );
+        if (emittingMacroDefinition_ && pendingTokens_.front().inMacroValue && atLineStart_) {
             pendingIndentLevel_ = std::max(pendingIndentLevel_.value_or(0), indentLevel_ + 1);
         }
         const int baseIndentLevel = pendingIndentLevel_.value_or(indentLevel_);
         const auto solveStart = std::chrono::steady_clock::now();
-        FormatBreakSolution solution =
-            SolveFormatBreaks(config_, model, CurrentColumn(), baseIndentLevel, indentWidth_);
+        FormatBreakSolution solution = SolveFormatBreaks(
+            config_,
+            model,
+            CurrentColumn(),
+            baseIndentLevel,
+            indentWidth_,
+            emittingMacroDefinition_ ? 2 : 0
+        );
         if (stats_ != nullptr) {
             stats_->solve += std::chrono::steady_clock::now() - solveStart;
         }
@@ -2184,7 +2127,7 @@ private:
                 stats_->emit += std::chrono::steady_clock::now() - emitStart;
             }
         }
-        emittingMacroValue_ = previousEmittingMacroValue;
+        emittingMacroDefinition_ = previousEmittingMacroDefinition;
         pendingTokens_.clear();
         if (pendingIndentRestoreAfterFlush_) {
             indentLevel_ = *pendingIndentRestoreAfterFlush_;
@@ -2527,22 +2470,6 @@ private:
         return true;
     }
 
-    bool StartsMacroValueRun(const PrintToken* previous, const PrintToken& current) const {
-        return current.inMacroValue &&
-            (previous == nullptr || !FormatTokensShareMacroDefinition(previous, &current) || !previous->inMacroValue);
-    }
-
-    bool StartsMacroValueElement(const PrintToken* previous, const PrintToken& current) const {
-        return current.inMacroValue &&
-            previous != nullptr &&
-            FormatTokensShareMacroDefinition(previous, &current) &&
-            previous->inMacroValue &&
-            previous->macroValueElement != nullptr &&
-            current.macroValueElement != nullptr &&
-            previous->macroValueElement != current.macroValueElement &&
-            FormatTokenNeedsSpace(previous, current);
-    }
-
     void PrepareMacroBoundary(const PrintToken* previous, const PrintToken& current) {
         if (current.macroDefinition != nullptr && !current.inMacroValue && atLineStart_) {
             forceColumnZeroLine_ = true;
@@ -2576,18 +2503,6 @@ private:
                 forceColumnZeroLine_ = true;
                 pendingIndentLevel_.reset();
             }
-        }
-        const bool startsMacroValue = StartsMacroValueRun(previous, current);
-        const bool macroValueWouldOverflow = startsMacroValue &&
-            CurrentColumn() + PendingCompactWidth() + 1 + current.macroValueRemainingWidth > config_.columnLimit;
-        if (
-            (
-                (startsMacroValue && (current.breakBeforeMacroValue || macroValueWouldOverflow)) ||
-                StartsMacroValueElement(previous, current)
-            ) && HasBufferedLineText()
-        ) {
-            FlushPendingTokens();
-            NewLine(true);
         }
     }
 
@@ -3270,15 +3185,10 @@ std::string FormatModelText(
         false,
         false,
         nullptr,
-        nullptr,
-        false,
         false,
         tokens
     );
     stats.tokenize += std::chrono::steady_clock::now() - tokenizeStart;
-    const auto annotateStart = std::chrono::steady_clock::now();
-    AnnotateMacroValueWidths(tokens);
-    stats.annotate += std::chrono::steady_clock::now() - annotateStart;
     const auto printStart = std::chrono::steady_clock::now();
     std::string result = Printer(config, sourcePath, &stats).Print(tokens);
     stats.print += std::chrono::steady_clock::now() - printStart;

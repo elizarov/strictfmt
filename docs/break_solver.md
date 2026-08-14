@@ -21,6 +21,8 @@ Each node kind exposes legal layout candidates through `SolveAlternatives`:
 
 The solver compares complete candidates with `Better`. Intermediate candidate sets may be pruned only when the removed candidate cannot win any continuation under the same solver contract.
 
+Owner/value syntax uses one generic after-owner candidate shape. A structured macro definition is built as its header owner plus its complete replacement value, so the compact owner attachment and a break after the owner compete with all replacement-internal alternatives in the same solve. The solver's break-line suffix width accounts for text emitted only on taken breaks; structured macros use it for the trailing ` \`, including that physical suffix in overflow cost without making it a break heuristic.
+
 ## Choice Fidelity
 
 Every observable layout distinction that the pretty printer needs must be represented by `FormatBreakChoice`. For example, delimiter-stack layouts distinguish an attached compact leaf from a detached leaf with separate choices. This keeps selection in the solver and emission in the printer.
