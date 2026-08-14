@@ -15,7 +15,6 @@ Configured macro categories and the documented distinction between chain operato
 
 | Finding | Contract affected |
 | --- | --- |
-| Declaration-group rules have no structural implementation | Specification/implementation agreement |
 | Adjacent strings are forced by two raw literal suffixes | Generic break opportunities and lexical correctness |
 | Keyword-owned value layout exists only for `return` and `co_return` | Generic expression ownership |
 | Compact single-statement blocks exist only for lambdas | Generic block structure |
@@ -54,34 +53,46 @@ The delimiter-stack audit originally identified opener-run boundaries chosen by 
 
 A deeper-indentation counterexample did expose the missing case. Once delimiter lines overflowed, an additional run could reduce maximum overflow, which is more important than line count. The solver now uses the proven greedy fast paths only for zero-overflow layouts and detached layouts whose overflow is confined to the leaf, falls back to exact run-partition DP when delimiter overflow can change the result, records every selected run boundary in `FormatBreakSolution`, and makes the printer replay those choices. [break_solver.md](break_solver.md#delimiter-stacks) owns the optimization proof and fallback contract.
 
+### Declaration groups
+
+Groupable declaration-scope siblings now receive one structural classification: type, callable, object or field, or alias. The classification follows the declared entity through single-declaration wrappers and nested declarators, rather than relying on an exact wrapper kind or the first type-shaped child. Type declarations are isolated, different groups are separated, and consecutive fields or methods stay grouped. For example, omitted source whitespace no longer hides a field/method boundary:
+
+```cpp
+class Grouped {
+    int field;
+
+    void Method();
+};
+```
+
+The layout-dependent rule uses the ordinary break solver rather than a width estimate. Moving only an initializer to a continuation line keeps adjacent fields together:
+
+```cpp
+class Grouped {
+    VeryLongType wrapped =
+        longValue;
+    int next;
+};
+```
+
+When the selected initializer or alias-target delimiter list closes at declaration indentation, that declaration is isolated from both neighbors:
+
+```cpp
+class Grouped {
+    int before;
+
+    Values values = {
+        first,
+        second
+    };
+
+    int after;
+};
+```
+
 ## Findings
 
-### 1. Declaration-group rules have no structural implementation
-
-The **Declaration Groups** section of `format.md` requires separation by declaration kind, type-declaration boundaries, field/method boundaries, and multi-line delimiter ownership. The implementation has no sibling classifier that applies those categories. `ContainsBlankLine` and `AppendTsChild` in `src/format/impl/format_model_builder.cpp` create `BlankLine` nodes from source whitespace, and the printer can preserve those nodes, but it does not derive required separators from declaration structure or from the selected layout.
-
-Consequently, a source blank line can make field/method separation appear to work:
-
-```cpp
-class Kept {
-    int field;
-
-    void Method();
-};
-```
-
-The same structural boundary is not inserted when the input omitted the blank line:
-
-```cpp
-class NotInserted {
-    int field;
-    void Method();
-};
-```
-
-The same omission occurs between neighboring type declarations and around fields whose initializer owns a multi-line delimiter expansion. Declaration grouping needs one structural classification pass, including the selected multi-line state where the rule requires it, rather than relying on source-history markers.
-
-### 2. Adjacent strings are forced by two raw literal suffixes
+### 1. Adjacent strings are forced by two raw literal suffixes
 
 `EndsWithEscapedLineFragment` in `src/format/impl/format_break_model_builder.cpp` recognizes only raw text ending in `\n` or `\r\n`. `GroupAdjacentStrings` then sets `forceSplit`, which removes the compact candidate from the solver. The rule is tied to two content spellings rather than to the adjacent-string structure.
 
@@ -101,7 +112,7 @@ const char* escapedBackslash =
 
 The latter is not a semantic newline fragment. This exposes both the lack of lexical escape parsing and the narrowness of the rule. Adjacent-literal boundaries should remain solver choices unless a generic token-preservation constraint makes a layout illegal; if semantic fragment categories are retained, they must be derived from parsed literal contents rather than raw suffix matching.
 
-### 3. Keyword-owned value layout exists only for `return` and `co_return`
+### 2. Keyword-owned value layout exists only for `return` and `co_return`
 
 `BreakModelBuilder::BuildSyntaxNode` routes only `ReturnStatement` and `CoReturnStatement` through `BuildKeywordValueStatement`. That path creates a break opportunity after the keyword and applies flat forced-string indentation. `throw` and `co_yield` have the same visible keyword-plus-value shape but use the generic expression sequence instead. `format.md` mirrors the one-off by naming `return` as a special single-value context.
 
@@ -126,7 +137,7 @@ void Fail() {
 
 `co_yield` behaves like `throw`, while `co_return` behaves like `return`. The rule should either be a broad keyword-owned-value category that covers equivalent value-bearing syntax or be removed in favor of the value expression's ordinary break model.
 
-### 4. Compact single-statement blocks exist only for lambdas
+### 3. Compact single-statement blocks exist only for lambdas
 
 `format.md` explicitly exempts a single-statement lambda from mandatory statement and block breaks. `LambdaBodyAllowsCompactSingleStatementForm` in `src/format/impl/format_model.cpp` recognizes exactly `CompoundStatement` under `LambdaExpression`, and the pretty printer skips the mandatory semicolon break when `inSingleStatementLambdaBody` is set.
 
@@ -146,7 +157,7 @@ auto compact = []() { return; };
 
 This is a syntax-owner exception rather than a block rule and works against the goal that braces, statements, and nesting be visually separated consistently. A generic policy should apply to all statement blocks of the same structural shape; the most structural policy is to keep mandatory block and statement breaks for lambdas too.
 
-### 5. Empty control blocks override the normal attachment category
+### 4. Empty control blocks override the normal attachment category
 
 `format.md` first defines `else`, `catch`, `finally`, and do-while `while` as block-attachment keywords, then gives compact empty control bodies an exception. `PrettyPrinter::ShouldBreakAfterCompactEmptyBlock` implements that exception with next-token checks and separately exempts the exact do-while `while` case.
 
@@ -169,7 +180,7 @@ else {}
 
 An empty `do {}` still attaches its `while`, so empty blocks do not even form one consistent exception category. Attachment should be determined by the following structural role, independent of whether the preceding block contains zero or more statements.
 
-### 6. Preprocessor blank lines depend on directive spellings
+### 5. Preprocessor blank lines depend on directive spellings
 
 The **Line Hygiene** section of `format.md` assigns unique blank-line behavior to `#pragma once` and `#undef`. The printer implements `#undef` by directive kind but recognizes `#pragma once` with `StartsWith(line, "#pragma once")`. `IsPragmaOnceNode` in `src/format/impl/format_model_builder.cpp` uses the same raw prefix test when grouping an opening include area.
 
@@ -209,7 +220,7 @@ An equally unknown pragma whose operand merely begins with `once` is treated as 
 
 Blank-line insertion should be expressed through broad source-item categories. If `#pragma once` remains a necessary semantic exception, it should at least be recognized structurally as the exact directive and operand rather than by raw prefix.
 
-### 7. Enum trailing commas are suppressed by a macro-call shape guess
+### 6. Enum trailing commas are suppressed by a macro-call shape guess
 
 `format.md` says that enum bodies always keep a trailing comma. `NormalizeTrailingCommas` in `src/format/impl/format_model_builder.cpp` instead calls `MacroLikeInvocationEnding` and suppresses the comma when the final enum child happens to have an identifier-plus-argument-list shape. This is not driven by a configured macro role or by known expansion semantics; it guesses that the call may generate its own comma-separated enumerators.
 

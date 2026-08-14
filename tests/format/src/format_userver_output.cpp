@@ -120,6 +120,7 @@ public:
 class MacroSuffixConstructorFixture {
 public:
     MacroSuffixConstructorFixture(MacroSuffixConstructorFixture&& other) RAPIDJSON_NOEXCEPT : value_(other.value_) {}
+
 private:
     int value_ = 0;
 };
@@ -204,6 +205,7 @@ Metric* ContextualRefIdentifier(Storage& storage) {
 }
 
 extern template class ExplicitTemplateInstantiation<ExplicitOptions>;
+
 template class ExplicitTemplateInstantiation<RuntimeOptions>;
 
 struct MacroInitializerFixture {

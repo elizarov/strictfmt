@@ -389,11 +389,15 @@ update(
 
 Declaration separation applies only in declaration scopes.
 
+The declaration grouping kinds are type declarations, callable declarations or definitions, object or field declarations, and type aliases. Classification follows the declared entity rather than incidental type syntax: an elaborated type specifier with a declarator is an object declaration, while a callable that returns a function pointer is a callable declaration. A declaration wrapper, such as a template or friend declaration, has the kind of the single declaration it introduces. Access specifiers and leading standalone comments attach to the following member group.
+
+Grouping determines where structural empty-line separators are required. It does not remove an existing source empty-line separator preserved by **Line Hygiene**.
+
 - Separate top-level logical groups with one empty line.
 - Separate neighboring type declarations from siblings with one empty line.
 - Separate neighboring declarations of different kinds with one empty line.
 - Keep consecutive fields grouped when wrapping only moves an initializer to a continuation line.
-- Separate a field or type alias from neighbors when its initializer or alias target owns a multi-line delimiter list whose closing delimiter returns to declaration indentation.
+- Separate a field or type alias from neighbors when the solver-selected layout makes its initializer or alias target own a multi-line delimiter list whose closing delimiter returns to declaration indentation. A continuation-only owner/value break does not isolate the declaration.
 - Separate fields from neighboring methods with one empty line.
 - Keep consecutive method declarations in one method group.
 

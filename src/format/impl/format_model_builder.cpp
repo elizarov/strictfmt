@@ -1,6 +1,7 @@
 #include "format/impl/format_model_builder.h"
 
 #include <algorithm>
+#include <cstddef>
 #include <optional>
 #include <string>
 #include <string_view>
@@ -506,6 +507,151 @@ void NormalizeControlBodies(FormatModel& model, SyntaxNode& node) {
     }
 }
 
+constexpr std::uint64_t kDeclarationGroupClasses =
+    static_cast<std::uint64_t>(SyntaxNodeClass::DeclarationGroupType) |
+    static_cast<std::uint64_t>(SyntaxNodeClass::DeclarationGroupCallable) |
+    static_cast<std::uint64_t>(SyntaxNodeClass::DeclarationGroupObject) |
+    static_cast<std::uint64_t>(SyntaxNodeClass::DeclarationGroupAlias);
+
+bool ContainsDeclarationSyntaxKind(const SyntaxNode& node, SyntaxNodeKind kind, bool root = true) {
+    if (node.kind == kind) {
+        return true;
+    }
+    if (!root && SyntaxNodeHasClass(node, SyntaxNodeClass::DeclarationScope)) {
+        return false;
+    }
+    return std::any_of(node.children.begin(), node.children.end(), [kind](const SyntaxNode* child) {
+        return child != nullptr && ContainsDeclarationSyntaxKind(*child, kind, false);
+    });
+}
+
+const SyntaxNode* FirstNonTriviaChild(const SyntaxNode& node) {
+    for (const SyntaxNode* child : node.children) {
+        if (child != nullptr && !SyntaxNodeHasClass(*child, SyntaxNodeClass::Trivia)) {
+            return child;
+        }
+    }
+    return nullptr;
+}
+
+bool ContainsCallableDeclarator(const SyntaxNode& node, bool root = true) {
+    if (node.kind == SyntaxNodeKind::OperatorCast) {
+        return true;
+    }
+    if (node.kind == SyntaxNodeKind::FunctionDeclarator) {
+        const SyntaxNode* target = FirstNonTriviaChild(node);
+        if (target != nullptr &&
+            target->kind != SyntaxNodeKind::ParenthesizedDeclarator &&
+            target->kind != SyntaxNodeKind::AbstractParenthesizedDeclarator
+        ) {
+            return true;
+        }
+    }
+    if (!root && SyntaxNodeHasClass(node, SyntaxNodeClass::DeclarationScope)) {
+        return false;
+    }
+    return std::any_of(node.children.begin(), node.children.end(), [](const SyntaxNode* child) {
+        return child != nullptr && ContainsCallableDeclarator(*child, false);
+    });
+}
+
+bool IsTypeSpecifier(const SyntaxNode& node) {
+    return node.kind == SyntaxNodeKind::ClassSpecifier ||
+        node.kind == SyntaxNodeKind::StructSpecifier ||
+        node.kind == SyntaxNodeKind::EnumSpecifier;
+}
+
+bool TypeSpecifierHasDefinitionBody(const SyntaxNode& node) {
+    return std::any_of(node.children.begin(), node.children.end(), [](const SyntaxNode* child) {
+        return child != nullptr && (
+            SyntaxNodeHasClass(*child, SyntaxNodeClass::DeclarationScope) ||
+            child->kind == SyntaxNodeKind::EnumeratorList
+        );
+    });
+}
+
+bool DirectlyDeclaresType(const SyntaxNode& declaration) {
+    for (size_t index = 0; index < declaration.children.size(); ++index) {
+        const SyntaxNode* child = declaration.children[index];
+        if (child == nullptr || !IsTypeSpecifier(*child)) {
+            continue;
+        }
+        if (TypeSpecifierHasDefinitionBody(*child)) {
+            return true;
+        }
+        const bool hasDeclarator = std::any_of(
+            declaration.children.begin() + static_cast<std::ptrdiff_t>(index + 1),
+            declaration.children.end(),
+            [](const SyntaxNode* suffix) {
+                return suffix != nullptr &&
+                    !SyntaxNodeHasClass(*suffix, SyntaxNodeClass::Trivia) &&
+                    suffix->kind != SyntaxNodeKind::Semicolon;
+            }
+        );
+        return !hasDeclarator;
+    }
+    return false;
+}
+
+std::uint64_t SingleIntroducedDeclarationGroup(const SyntaxNode& node) {
+    std::uint64_t result = 0;
+    for (const SyntaxNode* child : node.children) {
+        if (child == nullptr) {
+            continue;
+        }
+        const std::uint64_t childGroup = child->classes & kDeclarationGroupClasses;
+        if (childGroup == 0) {
+            continue;
+        }
+        if (result != 0) {
+            return 0;
+        }
+        result = childGroup;
+    }
+    return result;
+}
+
+void ClassifyDeclarationGroup(SyntaxNode& node) {
+    if ((node.classes & kDeclarationGroupClasses) != 0) {
+        return;
+    }
+    if (IsTypeSpecifier(node)) {
+        node.classes |= static_cast<std::uint64_t>(SyntaxNodeClass::DeclarationGroupType);
+        return;
+    }
+    if (
+        node.kind == SyntaxNodeKind::AliasDeclaration ||
+        node.kind == SyntaxNodeKind::FunctionPointerAliasDeclaration
+    ) {
+        node.classes |= static_cast<std::uint64_t>(SyntaxNodeClass::DeclarationGroupAlias);
+        return;
+    }
+    if (node.kind == SyntaxNodeKind::FunctionDefinition) {
+        node.classes |= static_cast<std::uint64_t>(SyntaxNodeClass::DeclarationGroupCallable);
+        return;
+    }
+    if (node.kind == SyntaxNodeKind::Declaration || node.kind == SyntaxNodeKind::FieldDeclaration) {
+        SyntaxNodeClass group = SyntaxNodeClass::DeclarationGroupObject;
+        if (DirectlyDeclaresType(node)) {
+            group = SyntaxNodeClass::DeclarationGroupType;
+        } else if (ContainsDeclarationSyntaxKind(node, SyntaxNodeKind::KeywordTypedef)) {
+            group = SyntaxNodeClass::DeclarationGroupAlias;
+        } else if (ContainsCallableDeclarator(node)) {
+            group = SyntaxNodeClass::DeclarationGroupCallable;
+        }
+        node.classes |= static_cast<std::uint64_t>(group);
+        return;
+    }
+    if (
+        node.parent == nullptr ||
+        !SyntaxNodeHasClass(*node.parent, SyntaxNodeClass::DeclarationScope) ||
+        SyntaxNodeHasClass(node, SyntaxNodeClass::ConditionalPreprocessorTree)
+    ) {
+        return;
+    }
+    node.classes |= SingleIntroducedDeclarationGroup(node);
+}
+
 void NormalizeSyntaxNode(FormatModel& model, SyntaxNode& node) {
     if (node.kind == SyntaxNodeKind::BinaryExpression) {
         const bool startsConditionalStream = std::any_of(
@@ -531,6 +677,7 @@ void NormalizeSyntaxNode(FormatModel& model, SyntaxNode& node) {
             node.classes |= static_cast<std::uint64_t>(SyntaxNodeClass::ConditionalStreamOperatorChain);
         }
     }
+    ClassifyDeclarationGroup(node);
     NormalizeTrailingCommas(model, node);
     NormalizeControlBodies(model, node);
 }

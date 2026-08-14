@@ -340,6 +340,11 @@ enum class SyntaxNodeClass : std::uint64_t {
     ConditionalFunctionHeader = 1ull << 47,
     LeadingStreamOperatorChain = 1ull << 48,
     ConditionalStreamOperatorChain = 1ull << 49,
+    DeclarationScope = 1ull << 50,
+    DeclarationGroupType = 1ull << 51,
+    DeclarationGroupCallable = 1ull << 52,
+    DeclarationGroupObject = 1ull << 53,
+    DeclarationGroupAlias = 1ull << 54,
 };
 
 enum class SyntaxWrapperRole : std::uint8_t {

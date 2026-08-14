@@ -94,7 +94,12 @@ constexpr std::uint64_t kSymbolLocalClasses =
     Bit(SyntaxNodeClass::PreserveTrailingComma) |
     Bit(SyntaxNodeClass::ConditionalFunctionHeader) |
     Bit(SyntaxNodeClass::LeadingStreamOperatorChain) |
-    Bit(SyntaxNodeClass::ConditionalStreamOperatorChain);
+    Bit(SyntaxNodeClass::ConditionalStreamOperatorChain) |
+    Bit(SyntaxNodeClass::DeclarationScope) |
+    Bit(SyntaxNodeClass::DeclarationGroupType) |
+    Bit(SyntaxNodeClass::DeclarationGroupCallable) |
+    Bit(SyntaxNodeClass::DeclarationGroupObject) |
+    Bit(SyntaxNodeClass::DeclarationGroupAlias);
 
 constexpr auto kSyntaxKindMappings = std::to_array<SyntaxKindMapping>({
     Kind(SyntaxNodeKind::Tree, Bit(SyntaxNodeClass::Tree)),
@@ -103,9 +108,8 @@ constexpr auto kSyntaxKindMappings = std::to_array<SyntaxKindMapping>({
     Kind(SyntaxNodeKind::BlankLine, Bit(SyntaxNodeClass::Trivia) | Bit(SyntaxNodeClass::ListForceSplitMarker)),
     Kind(SyntaxNodeKind::Error, Bit(SyntaxNodeClass::Tree)),
     Kind(SyntaxNodeKind::Missing, Bit(SyntaxNodeClass::Tree)),
-    Tree(SyntaxNodeKind::TranslationUnit, "translation_unit", kAllowedPreprocessorContainerClasses | Bit(
-        SyntaxNodeClass::PreserveBlankLineParent
-    )),
+    Tree(SyntaxNodeKind::TranslationUnit, "translation_unit", kAllowedPreprocessorContainerClasses |
+        Bit(SyntaxNodeClass::PreserveBlankLineParent) | Bit(SyntaxNodeClass::DeclarationScope)),
     Tree(SyntaxNodeKind::IncludeRun, "include_run"),
     Tree(SyntaxNodeKind::MacroReplacementList, "macro_replacement_list"),
     Tree(SyntaxNodeKind::Declaration, "declaration", Bit(SyntaxNodeClass::MacroDeclarationFragment) | Bit(
@@ -130,7 +134,8 @@ constexpr auto kSyntaxKindMappings = std::to_array<SyntaxKindMapping>({
     Tree(SyntaxNodeKind::CompoundStatement, "compound_statement", Bit(SyntaxNodeClass::CompoundBlock) |
         kAllowedPreprocessorContainerClasses | Bit(SyntaxNodeClass::PreserveBlankLineParent)),
     Tree(SyntaxNodeKind::FieldDeclarationList, "field_declaration_list", Bit(SyntaxNodeClass::CompoundBlock) |
-        kAllowedPreprocessorContainerClasses | Bit(SyntaxNodeClass::PreserveBlankLineParent)),
+        kAllowedPreprocessorContainerClasses | Bit(SyntaxNodeClass::PreserveBlankLineParent) |
+        Bit(SyntaxNodeClass::DeclarationScope)),
     Tree(SyntaxNodeKind::EnumeratorList, "enumerator_list", Bit(SyntaxNodeClass::CompoundBlock) |
         kAllowedListPreprocessorContainerClasses | Bit(SyntaxNodeClass::PreserveBlankLineParent)),
     Tree(SyntaxNodeKind::InitializerList, "initializer_list", kPreprocessorSplitListClasses),
@@ -139,9 +144,11 @@ constexpr auto kSyntaxKindMappings = std::to_array<SyntaxKindMapping>({
     )),
     Tree(SyntaxNodeKind::FieldInitializer, "field_initializer"),
     Tree(SyntaxNodeKind::DeclarationList, "declaration_list", Bit(SyntaxNodeClass::CompoundBlock) |
-        kAllowedPreprocessorContainerClasses | Bit(SyntaxNodeClass::PreserveBlankLineParent)),
+        kAllowedPreprocessorContainerClasses | Bit(SyntaxNodeClass::PreserveBlankLineParent) |
+        Bit(SyntaxNodeClass::DeclarationScope)),
     Tree(SyntaxNodeKind::DeclarationList, "namespace_declaration_list", Bit(SyntaxNodeClass::CompoundBlock) |
-        kAllowedPreprocessorContainerClasses | Bit(SyntaxNodeClass::PreserveBlankLineParent)),
+        kAllowedPreprocessorContainerClasses | Bit(SyntaxNodeClass::PreserveBlankLineParent) |
+        Bit(SyntaxNodeClass::DeclarationScope)),
     Tree(SyntaxNodeKind::NamespaceDefinition, "namespace_definition"),
     Tree(SyntaxNodeKind::LinkageSpecification, "linkage_specification"),
     Tree(SyntaxNodeKind::EnumSpecifier, "enum_specifier", Bit(SyntaxNodeClass::MacroDeclarationFragment)),
@@ -207,8 +214,11 @@ constexpr auto kSyntaxKindMappings = std::to_array<SyntaxKindMapping>({
     Tree(SyntaxNodeKind::FreeToken, "preprocessing_token_argument", Bit(SyntaxNodeClass::WholeNodeAsFreeToken)),
     Tree(SyntaxNodeKind::Tree, "macro_expression_without_semicolon"),
     Tree(SyntaxNodeKind::FreeToken, "using_operator_pack_declaration", Bit(SyntaxNodeClass::WholeNodeAsFreeToken)),
-    Tree(SyntaxNodeKind::FreeToken, "deleted_operator_declaration", Bit(SyntaxNodeClass::WholeNodeAsFreeToken)),
-    Tree(SyntaxNodeKind::FreeToken, "attributed_friend_operator_declaration", Bit(SyntaxNodeClass::WholeNodeAsFreeToken)),
+    Tree(SyntaxNodeKind::FreeToken, "deleted_operator_declaration", Bit(SyntaxNodeClass::WholeNodeAsFreeToken) |
+        Bit(SyntaxNodeClass::DeclarationGroupCallable)),
+    Tree(SyntaxNodeKind::FreeToken, "attributed_friend_operator_declaration", Bit(
+        SyntaxNodeClass::WholeNodeAsFreeToken
+    ) | Bit(SyntaxNodeClass::DeclarationGroupCallable)),
     Tree(SyntaxNodeKind::Tree, "throw_expression"),
     Tree(SyntaxNodeKind::Tree, "typeid_expression"),
     Tree(SyntaxNodeKind::Tree, "cpp_cast_expression"),
@@ -356,7 +366,9 @@ constexpr auto kSyntaxKindMappings = std::to_array<SyntaxKindMapping>({
     Tree(SyntaxNodeKind::OperatorName, "operator_name"),
     Tree(SyntaxNodeKind::OperatorCast, "operator_cast"),
     Tree(SyntaxNodeKind::LabeledStatement, "labeled_statement"),
-    Tree(SyntaxNodeKind::FreeToken, "deleted_operator_cast_declaration", Bit(SyntaxNodeClass::WholeNodeAsFreeToken)),
+    Tree(SyntaxNodeKind::FreeToken, "deleted_operator_cast_declaration", Bit(
+        SyntaxNodeClass::WholeNodeAsFreeToken
+    ) | Bit(SyntaxNodeClass::DeclarationGroupCallable)),
     Tree(SyntaxNodeKind::AttributeSpecifier, "attribute_specifier"),
     Tree(SyntaxNodeKind::AttributeDeclaration, "attribute_declaration"),
     Tree(SyntaxNodeKind::Attribute, "attribute"),

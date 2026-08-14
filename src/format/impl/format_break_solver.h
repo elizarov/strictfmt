@@ -7,6 +7,8 @@
 
 struct FormatBreakSolution {
     std::vector<FormatBreakChoice> choices;
+    // Selected delimiter choices record their render base; other entries remain -1.
+    std::vector<int> indentLevels;
 };
 
 FormatBreakSolution SolveFormatBreaks(

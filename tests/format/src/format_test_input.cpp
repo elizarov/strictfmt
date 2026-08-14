@@ -153,6 +153,40 @@ struct ColorMixExpression {
     bool operator==(const ColorMixExpression& other) const = default;
 };
 
+struct FirstTopLevelDeclarationGroupingType{};
+enum class SecondTopLevelDeclarationGroupingType{Only,};
+int topLevelDeclarationGroupingObject;
+void TopLevelDeclarationGroupingCallable();
+class DeclarationGroupingRules{
+int firstField;
+
+int secondField;
+void FirstMethod();
+
+void SecondMethod();
+int functionPointerFactoryNeighborBefore;
+void (*FunctionPointerFactory())();
+int functionPointerFactoryNeighborAfter;
+friend void DeclarationGroupingFriend();
+int fieldFollowingDeclarationGroupingFriend;
+operator bool() const = delete;
+bool operator==(const DeclarationGroupingRules&) const=delete;
+int fieldFollowingDeletedOperators;
+struct FirstNestedType{int nestedField;};
+struct FirstNestedType* nestedTypePointerField;
+int fieldFollowingNestedTypePointer;
+struct SecondNestedType{void NestedMethod();};
+VeryLongDeclarationGroupingValueTypeName wrappedOnlyMovesInitializerToContinuation=declarationGroupingInitializerValueWithLongName;
+int fieldFollowingWrappedInitializer;
+std::array<DeclarationGroupingValue,5> isolatedValues={firstDeclarationGroupingValue,secondDeclarationGroupingValue,thirdDeclarationGroupingValue,fourthDeclarationGroupingValue,fifthDeclarationGroupingValue};
+int fieldFollowingIsolatedValues;
+using CompactDeclarationGroupingAlias=int;
+using IsolatedDeclarationGroupingAlias=std::variant<FirstDeclarationGroupingAlternative,SecondDeclarationGroupingAlternative,ThirdDeclarationGroupingAlternative>;
+using FollowingDeclarationGroupingAlias=int;
+template<typename T> using IsolatedTemplatedDeclarationGroupingAlias=std::variant<T,FirstDeclarationGroupingAlternative,SecondDeclarationGroupingAlternative,ThirdDeclarationGroupingAlternative>;
+using AliasFollowingIsolatedTemplate=int;
+};
+
 void FormatAlphaNibble(char* text,unsigned int alpha){
 constexpr char kHex[]="0123456789ABCDEF";
 text[2]=kHex[(alpha >> 4)&0x0Fu];
