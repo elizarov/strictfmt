@@ -846,9 +846,9 @@ private:
                 return declaration;
             }
         }
-        if (node.kind == SyntaxNodeKind::ReturnStatement || node.kind == SyntaxNodeKind::CoReturnStatement) {
-            if (auto statement = BuildKeywordValueStatement(node, depth)) {
-                return statement;
+        if (SyntaxNodeHasLocalClass(node, SyntaxNodeClass::KeywordOwnedValue)) {
+            if (auto ownedValue = BuildKeywordOwnedValue(node, depth)) {
+                return ownedValue;
             }
         }
         if (node.kind == SyntaxNodeKind::TemplateDeclaration) {
@@ -907,7 +907,7 @@ private:
         return BuildSequenceFromChildren(node.children, 0, node.children.size(), depth);
     }
 
-    FormatBreakNode* BuildKeywordValueStatement(const SyntaxNode& node, int depth) {
+    FormatBreakNode* BuildKeywordOwnedValue(const SyntaxNode& node, int depth) {
         std::optional<size_t> valueIndex;
         std::optional<size_t> semicolonIndex;
         for (size_t index = 0; index < node.children.size(); ++index) {
@@ -929,19 +929,27 @@ private:
                 valueIndex = index;
             }
         }
-        if (!valueIndex || !semicolonIndex || *valueIndex >= *semicolonIndex) {
+        const size_t valueEnd = semicolonIndex.value_or(node.children.size());
+        if (!valueIndex || *valueIndex >= valueEnd) {
             return nullptr;
         }
 
         FormatBreakNode* prefix = BuildSequenceFromChildren(node.children, 0, *valueIndex, depth + 1);
-        FormatBreakNode* value = BuildSequenceFromChildren(node.children, *valueIndex, *semicolonIndex, depth + 1);
-        FormatBreakNode* suffix =
-            BuildSequenceFromChildren(node.children, *semicolonIndex, node.children.size(), depth + 1);
-        if (prefix == nullptr || value == nullptr || suffix == nullptr) {
+        FormatBreakNode* value = BuildSequenceFromChildren(node.children, *valueIndex, valueEnd, depth + 1);
+        if (prefix == nullptr || value == nullptr) {
             return nullptr;
         }
 
         FormatBreakNode* ownedValue = BuildOwnedValue(prefix, value, depth + 1);
+        if (ownedValue == nullptr || !semicolonIndex) {
+            return ownedValue;
+        }
+
+        FormatBreakNode* suffix =
+            BuildSequenceFromChildren(node.children, *semicolonIndex, node.children.size(), depth + 1);
+        if (suffix == nullptr) {
+            return nullptr;
+        }
 
         auto sequence = MakeNode(FormatBreakNodeKind::Sequence, depth);
         sequence->children = StoreNodePointers({ownedValue, suffix});

@@ -345,6 +345,7 @@ enum class SyntaxNodeClass : std::uint64_t {
     DeclarationGroupCallable = 1ull << 52,
     DeclarationGroupObject = 1ull << 53,
     DeclarationGroupAlias = 1ull << 54,
+    KeywordOwnedValue = 1ull << 55,
 };
 
 enum class SyntaxWrapperRole : std::uint8_t {

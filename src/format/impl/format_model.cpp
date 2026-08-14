@@ -532,7 +532,7 @@ constexpr auto kSyntaxKindMappings = std::to_array<SyntaxKindMapping>({
     Keyword(SyntaxNodeKind::KeywordRegister, "register"),
     Keyword(SyntaxNodeKind::KeywordReinterpretCast, "reinterpret_cast"),
     Keyword(SyntaxNodeKind::KeywordRequires, "requires"),
-    Keyword(SyntaxNodeKind::KeywordReturn, "return"),
+    Keyword(SyntaxNodeKind::KeywordReturn, "return", Bit(SyntaxNodeClass::KeywordOwnedValue)),
     Keyword(SyntaxNodeKind::KeywordShort, "short"),
     Keyword(SyntaxNodeKind::KeywordSigned, "signed"),
     Keyword(SyntaxNodeKind::KeywordSizeof, "sizeof"),
@@ -544,7 +544,7 @@ constexpr auto kSyntaxKindMappings = std::to_array<SyntaxKindMapping>({
     Keyword(SyntaxNodeKind::KeywordTemplate, "template"),
     Keyword(SyntaxNodeKind::KeywordThis, "this"),
     Keyword(SyntaxNodeKind::KeywordThreadLocal, "thread_local"),
-    Keyword(SyntaxNodeKind::KeywordThrow, "throw"),
+    Keyword(SyntaxNodeKind::KeywordThrow, "throw", Bit(SyntaxNodeClass::KeywordOwnedValue)),
     Keyword(SyntaxNodeKind::KeywordTrue, "true"),
     Keyword(SyntaxNodeKind::KeywordTry, "try"),
     Keyword(SyntaxNodeKind::KeywordTypedef, "typedef"),
@@ -563,8 +563,8 @@ constexpr auto kSyntaxKindMappings = std::to_array<SyntaxKindMapping>({
     Keyword(SyntaxNodeKind::KeywordCdecl, "__cdecl"),
     Keyword(SyntaxNodeKind::KeywordDeclspec, "__declspec"),
     Keyword(SyntaxNodeKind::KeywordCoAwait, "co_await"),
-    Keyword(SyntaxNodeKind::KeywordCoReturn, "co_return"),
-    Keyword(SyntaxNodeKind::KeywordCoYield, "co_yield")
+    Keyword(SyntaxNodeKind::KeywordCoReturn, "co_return", Bit(SyntaxNodeClass::KeywordOwnedValue)),
+    Keyword(SyntaxNodeKind::KeywordCoYield, "co_yield", Bit(SyntaxNodeClass::KeywordOwnedValue))
 });
 
 constexpr size_t KindIndex(SyntaxNodeKind kind) {
