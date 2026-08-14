@@ -4,6 +4,7 @@
 #include <chrono>
 #include <optional>
 #include <string>
+#include <unordered_set>
 #include <vector>
 
 #include "format/impl/format_break_model_builder.h"
@@ -22,6 +23,14 @@ enum class BraceRole {
     Enum,
     NamespaceLike,
     CaseBlock,
+};
+
+enum class DeclarationGroupKind {
+    None,
+    Type,
+    Callable,
+    Object,
+    Alias,
 };
 
 struct BraceFrame {
@@ -879,6 +888,7 @@ public:
 
     std::string Print(const std::vector<PrintToken>& tokens) {
         activeTokens_ = &tokens;
+        AnalyzeDeclarationGroups(tokens);
         output_.reserve(tokens.size() * 8);
         pendingTokens_.reserve(64);
         for (size_t index = 0; index < tokens.size(); ++index) {
@@ -928,6 +938,9 @@ private:
     std::vector<PreprocessorSplitListContext> preprocessorSplitListContexts_;
     std::vector<int> conditionalFunctionIndents_;
     std::optional<int> pendingIndentRestoreAfterFlush_;
+    std::unordered_set<const SyntaxNode*> isolatedDeclarationItems_;
+    const SyntaxNode* previousDeclarationItem_ = nullptr;
+    const SyntaxNode* preparedDeclarationItem_ = nullptr;
 
     static const PrintToken* PreviousToken(const std::vector<PrintToken>& tokens, size_t index) {
         while (index > 0) {
@@ -950,6 +963,299 @@ private:
 
     static const PrintToken* RawNextToken(const std::vector<PrintToken>& tokens, size_t index) {
         return index + 1 < tokens.size() ? &tokens[index + 1] : nullptr;
+    }
+
+    static const SyntaxNode* DeclarationScopeItem(const SyntaxNode* node) {
+        for (const SyntaxNode* cursor = node; cursor != nullptr && cursor->parent != nullptr; cursor = cursor->parent) {
+            if (SyntaxNodeHasClass(*cursor->parent, SyntaxNodeClass::DeclarationScope)) {
+                return cursor;
+            }
+        }
+        return nullptr;
+    }
+
+    static DeclarationGroupKind DeclarationGroup(const SyntaxNode* item) {
+        if (item == nullptr) {
+            return DeclarationGroupKind::None;
+        }
+        if (SyntaxNodeHasClass(*item, SyntaxNodeClass::DeclarationGroupType)) {
+            return DeclarationGroupKind::Type;
+        }
+        if (SyntaxNodeHasClass(*item, SyntaxNodeClass::DeclarationGroupCallable)) {
+            return DeclarationGroupKind::Callable;
+        }
+        if (SyntaxNodeHasClass(*item, SyntaxNodeClass::DeclarationGroupObject)) {
+            return DeclarationGroupKind::Object;
+        }
+        if (SyntaxNodeHasClass(*item, SyntaxNodeClass::DeclarationGroupAlias)) {
+            return DeclarationGroupKind::Alias;
+        }
+        return DeclarationGroupKind::None;
+    }
+
+    static const SyntaxNode* DirectChildContaining(const SyntaxNode& ancestor, const SyntaxNode* descendant) {
+        const SyntaxNode* child = descendant;
+        while (child != nullptr && child->parent != &ancestor) {
+            child = child->parent;
+        }
+        return child;
+    }
+
+    static bool DirectChildFollowsToken(
+        const SyntaxNode& owner,
+        const SyntaxNode* descendant,
+        SyntaxNodeKind tokenKind
+    ) {
+        const SyntaxNode* target = DirectChildContaining(owner, descendant);
+        bool sawToken = false;
+        for (const SyntaxNode* child : owner.children) {
+            if (child == nullptr) {
+                continue;
+            }
+            if (child == target) {
+                return sawToken;
+            }
+            sawToken = sawToken || child->kind == tokenKind;
+        }
+        return false;
+    }
+
+    static bool DelimiterBelongsToDeclarationIsolationTarget(
+        const SyntaxNode& declaration,
+        const SyntaxNode* delimiter
+    ) {
+        if (delimiter == nullptr) {
+            return false;
+        }
+        if (
+            declaration.kind == SyntaxNodeKind::AliasDeclaration ||
+            declaration.kind == SyntaxNodeKind::FunctionPointerAliasDeclaration
+        ) {
+            return DirectChildFollowsToken(declaration, delimiter, SyntaxNodeKind::Equal);
+        }
+        if (declaration.kind != SyntaxNodeKind::FieldDeclaration) {
+            return false;
+        }
+        for (const SyntaxNode* cursor = delimiter; cursor != nullptr && cursor != &declaration; cursor = cursor->parent) {
+            if (cursor->kind != SyntaxNodeKind::InitDeclarator) {
+                continue;
+            }
+            if (DirectChildFollowsToken(*cursor, delimiter, SyntaxNodeKind::Equal)) {
+                return true;
+            }
+            const SyntaxNode* target = DirectChildContaining(*cursor, delimiter);
+            return target != nullptr && (
+                target->kind == SyntaxNodeKind::InitializerList || target->kind == SyntaxNodeKind::ArgumentList
+            );
+        }
+        return DirectChildFollowsToken(declaration, delimiter, SyntaxNodeKind::Equal);
+    }
+
+    static bool ContainsDeclarationIsolationDelimiter(
+        const SyntaxNode& declaration,
+        const SyntaxNode& node,
+        bool root = true
+    ) {
+        if (
+            SyntaxNodeKindHasClass(node.kind, SyntaxNodeClass::OpeningDelimiter) &&
+            DelimiterBelongsToDeclarationIsolationTarget(declaration, &node)
+        ) {
+            return true;
+        }
+        if (!root && SyntaxNodeHasClass(node, SyntaxNodeClass::DeclarationScope)) {
+            return false;
+        }
+        return std::any_of(node.children.begin(), node.children.end(), [&](const SyntaxNode* child) {
+            return child != nullptr && ContainsDeclarationIsolationDelimiter(declaration, *child, false);
+        });
+    }
+
+    static bool IsSelectedDelimiterSplit(FormatBreakChoice choice) {
+        return choice == FormatBreakChoice::Split ||
+            choice == FormatBreakChoice::SplitAttachedOpen ||
+            choice == FormatBreakChoice::SplitDelimiterStack ||
+            choice == FormatBreakChoice::SplitDelimiterStackDetachedLeaf ||
+            choice == FormatBreakChoice::SplitDelimiterStackRun;
+    }
+
+    bool HasDeclarationIndentDelimiterSplit(
+        const FormatBreakModel& model,
+        const FormatBreakSolution& solution,
+        const SyntaxNode& declaration,
+        int declarationIndent
+    ) const {
+        if (model.nodes == nullptr) {
+            return false;
+        }
+        return std::any_of(model.nodes->begin(), model.nodes->end(), [&](const FormatBreakNode& node) {
+            const size_t index = static_cast<size_t>(node.id);
+            return node.kind == FormatBreakNodeKind::Delimited &&
+                index < solution.choices.size() &&
+                index < solution.indentLevels.size() &&
+                IsSelectedDelimiterSplit(solution.choices[index]) &&
+                solution.indentLevels[index] == declarationIndent &&
+                !node.children.empty() &&
+                node.children.front() != nullptr &&
+                DelimiterBelongsToDeclarationIsolationTarget(
+                    declaration,
+                    FormatBreakTokenValue(node.children.front()->token).node
+                );
+        });
+    }
+
+    static int DeclarationIndent(const SyntaxNode& item) {
+        int indent = 0;
+        for (const SyntaxNode* cursor = item.parent; cursor != nullptr; cursor = cursor->parent) {
+            if (cursor->kind == SyntaxNodeKind::FieldDeclarationList) {
+                ++indent;
+            }
+        }
+        return indent;
+    }
+
+    static const SyntaxNode* DeclarationIsolationOwner(const SyntaxNode& item, bool root = true) {
+        if (
+            item.kind == SyntaxNodeKind::FieldDeclaration ||
+            item.kind == SyntaxNodeKind::AliasDeclaration ||
+            item.kind == SyntaxNodeKind::FunctionPointerAliasDeclaration
+        ) {
+            return &item;
+        }
+        if (!root && SyntaxNodeHasClass(item, SyntaxNodeClass::DeclarationScope)) {
+            return nullptr;
+        }
+        for (const SyntaxNode* child : item.children) {
+            if (child != nullptr) {
+                if (const SyntaxNode* owner = DeclarationIsolationOwner(*child, false)) {
+                    return owner;
+                }
+            }
+        }
+        return nullptr;
+    }
+
+    void AnalyzeDeclarationGroups(const std::vector<PrintToken>& tokens) {
+        // A delimiter-owned declaration must be known before its first token is emitted so the mandatory blank
+        // line can precede it. Pre-solve only those declaration items with the ordinary break model and solver;
+        // isolation therefore follows the selected layout, not a width estimate or a printer-side break choice.
+        isolatedDeclarationItems_.clear();
+        std::unordered_set<const SyntaxNode*> analyzedItems;
+        for (size_t index = 0; index < tokens.size();) {
+            const SyntaxNode* item = DeclarationScopeItem(tokens[index].node);
+            if (item == nullptr || !analyzedItems.insert(item).second) {
+                ++index;
+                continue;
+            }
+            const SyntaxNode* isolationOwner =
+                DeclarationIsolationOwner(*item);
+            if (
+                isolationOwner == nullptr ||
+                !ContainsDeclarationIsolationDelimiter(*isolationOwner, *isolationOwner)
+            ) {
+                ++index;
+                continue;
+            }
+            size_t end = index + 1;
+            while (end < tokens.size() && SyntaxPathContains(tokens[end], item)) {
+                ++end;
+            }
+            FormatBreakModel model = BuildFormatBreakModel(std::span<const PrintToken>{tokens.data() + index, end - index});
+            const int declarationIndent = DeclarationIndent(*item);
+            FormatBreakSolution solution = SolveFormatBreaks(
+                config_,
+                model,
+                declarationIndent * indentWidth_,
+                declarationIndent,
+                indentWidth_,
+                0
+            );
+            if (
+                model.root != nullptr &&
+                HasDeclarationIndentDelimiterSplit(model, solution, *isolationOwner, declarationIndent)
+            ) {
+                isolatedDeclarationItems_.insert(item);
+            }
+            index = end;
+        }
+    }
+
+    bool RequiresDeclarationGroupSeparation(const SyntaxNode* left, const SyntaxNode* right) const {
+        if (
+            left == nullptr || right == nullptr ||
+            left->parent == nullptr || left->parent != right->parent ||
+            !SyntaxNodeHasClass(*left->parent, SyntaxNodeClass::DeclarationScope)
+        ) {
+            return false;
+        }
+        if (isolatedDeclarationItems_.contains(left) || isolatedDeclarationItems_.contains(right)) {
+            return true;
+        }
+        const DeclarationGroupKind leftGroup = DeclarationGroup(left);
+        const DeclarationGroupKind rightGroup = DeclarationGroup(right);
+        if (leftGroup == DeclarationGroupKind::None || rightGroup == DeclarationGroupKind::None) {
+            return false;
+        }
+        return leftGroup == DeclarationGroupKind::Type ||
+            rightGroup == DeclarationGroupKind::Type ||
+            leftGroup != rightGroup;
+    }
+
+    const SyntaxNode* NextDeclarationItem(size_t index) const {
+        if (activeTokens_ == nullptr) {
+            return nullptr;
+        }
+        for (++index; index < activeTokens_->size(); ++index) {
+            const SyntaxNode* item = DeclarationScopeItem((*activeTokens_)[index].node);
+            if (DeclarationGroup(item) != DeclarationGroupKind::None) {
+                return item;
+            }
+        }
+        return nullptr;
+    }
+
+    bool PrepareDeclarationGroupBoundary(const PrintToken& token) {
+        const SyntaxNode* item = DeclarationScopeItem(token.node);
+        const DeclarationGroupKind group = DeclarationGroup(item);
+        if (group != DeclarationGroupKind::None) {
+            if (item != previousDeclarationItem_) {
+                if (item != preparedDeclarationItem_ && RequiresDeclarationGroupSeparation(
+                    previousDeclarationItem_,
+                    item
+                )) {
+                    FlushPendingTokens();
+                    BlankLine();
+                }
+                previousDeclarationItem_ = item;
+                preparedDeclarationItem_ = nullptr;
+            }
+            return false;
+        }
+        if (item == nullptr || item->parent == nullptr || !SyntaxNodeHasClass(
+            *item->parent,
+            SyntaxNodeClass::DeclarationScope
+        )) {
+            return false;
+        }
+        // A declaration terminator may be a declaration-scope sibling when the parser flattens a bare
+        // class, struct, or enum declaration. It completes the preceding group item; it is not a prefix
+        // of the next declaration.
+        if (
+            token.kind == PrintTokenKind::TrailingComment ||
+            (token.node != nullptr && token.node->kind == SyntaxNodeKind::Semicolon)
+        ) {
+            return false;
+        }
+
+        const SyntaxNode* nextItem = NextDeclarationItem(currentTokenIndex_);
+        const bool prefixesNextItem = nextItem != nullptr && nextItem->parent == item->parent;
+        const bool separates = prefixesNextItem &&
+            RequiresDeclarationGroupSeparation(previousDeclarationItem_, nextItem);
+        if (separates && preparedDeclarationItem_ != nextItem) {
+            FlushPendingTokens();
+            BlankLine();
+            preparedDeclarationItem_ = nextItem;
+        }
+        return false;
     }
 
     static bool SyntaxPathContains(const PrintToken& token, const SyntaxNode* node) {
@@ -2520,6 +2826,9 @@ private:
         const PrintToken* next,
         const PrintToken* rawNext
     ) {
+        if (PrepareDeclarationGroupBoundary(token)) {
+            return;
+        }
         PrepareMacroBoundary(rawPrevious, token);
         if (token.kind == PrintTokenKind::BlankLine) {
             FlushPendingTokens();

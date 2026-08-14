@@ -214,6 +214,7 @@ struct ChoiceTree {
     const ChoiceTree* left = nullptr;
     const ChoiceTree* right = nullptr;
     int nodeId = 0;
+    int indentLevel = -1;
     FormatBreakChoice choice = FormatBreakChoice::Compact;
     bool leaf = false;
 };
@@ -342,8 +343,10 @@ private:
         };
     }
 
-    const ChoiceTree* MakeChoice(int nodeId, FormatBreakChoice choice) {
-        choiceArena_.push_back(ChoiceTree{.nodeId = nodeId, .choice = choice, .leaf = true});
+    const ChoiceTree* MakeChoice(int nodeId, FormatBreakChoice choice, int indentLevel) {
+        choiceArena_.push_back(
+            ChoiceTree{.nodeId = nodeId, .indentLevel = indentLevel, .choice = choice, .leaf = true}
+        );
         return &choiceArena_.back();
     }
 
@@ -358,8 +361,8 @@ private:
         return &choiceArena_.back();
     }
 
-    void AddChoice(NodeResult& result, int nodeId, FormatBreakChoice choice) {
-        result.choices = ConcatChoices(result.choices, MakeChoice(nodeId, choice));
+    void AddChoice(NodeResult& result, int nodeId, FormatBreakChoice choice, int indentLevel = -1) {
+        result.choices = ConcatChoices(result.choices, MakeChoice(nodeId, choice, indentLevel));
     }
 
     void Merge(NodeResult& left, const NodeResult& right) {
@@ -1041,7 +1044,7 @@ private:
     {
         NodeResult
             result{.valid = true, .endColumn = column, .endIndentLevel = indentLevel, .endLineHasText = lineHasText};
-        AddChoice(result, node.id, FormatBreakChoice::Compact);
+        AddChoice(result, node.id, FormatBreakChoice::Compact, indentLevel);
         result = AddToken(result, node.children[0]->token);
         NodeResults current{result};
         for (size_t index = 0; index < node.items.size(); ++index) {
@@ -1100,7 +1103,7 @@ private:
         }
         NodeResult
             result{.valid = true, .endColumn = column, .endIndentLevel = indentLevel, .endLineHasText = lineHasText};
-        AddChoice(result, node.id, FormatBreakChoice::Split);
+        AddChoice(result, node.id, FormatBreakChoice::Split, indentLevel);
         result = AddToken(result, node.children[0]->token);
         result = AddListBreak(result, indentLevel + 1, node.structuralDepth, HasBlankLineBeforeItem(node, 0));
         for (size_t index = 0; index < node.items.size(); ++index) {
@@ -1131,7 +1134,7 @@ private:
             result{.valid = true, .endColumn = column, .endIndentLevel = indentLevel, .endLineHasText = lineHasText};
         for (size_t index = firstDelimiter; index < stack.delimiters.size(); ++index) {
             const FormatBreakNode* delimiter = stack.delimiters[index];
-            AddChoice(result, delimiter->id, FormatBreakChoice::Compact);
+            AddChoice(result, delimiter->id, FormatBreakChoice::Compact, indentLevel);
             result = AddToken(result, delimiter->children.front()->token);
         }
         NodeResult leaf = Solve(*stack.leaf, result.endColumn, result.endIndentLevel, result.endLineHasText);
@@ -1154,7 +1157,7 @@ private:
     ) {
         NodeResult
             result{.valid = true, .endColumn = column, .endIndentLevel = indentLevel, .endLineHasText = lineHasText};
-        AddChoice(result, node.id, FormatBreakChoice::Split);
+        AddChoice(result, node.id, FormatBreakChoice::Split, indentLevel);
         result = AddToken(result, node.children.front()->token);
         result = AddListBreak(result, indentLevel + 1, node.structuralDepth, HasBlankLineBeforeItem(node, 0));
         NodeResult suffix = SolveTransparentDelimiterStackSuffix(
@@ -1284,7 +1287,8 @@ private:
             result,
             node.id,
             detachLeaf ? FormatBreakChoice::SplitDelimiterStackDetachedLeaf :
-                FormatBreakChoice::SplitDelimiterStack
+                FormatBreakChoice::SplitDelimiterStack,
+            indentLevel
         );
 
         int currentLineIndent = indentLevel;
@@ -1354,7 +1358,8 @@ private:
             result,
             node.id,
             detachLeaf ? FormatBreakChoice::SplitDelimiterStackDetachedLeaf :
-                FormatBreakChoice::SplitDelimiterStack
+                FormatBreakChoice::SplitDelimiterStack,
+            indentLevel
         );
 
         int currentLineIndent = indentLevel;
@@ -1661,7 +1666,8 @@ private:
             best.result,
             node.id,
             detachLeaf ? FormatBreakChoice::SplitDelimiterStackDetachedLeaf :
-                FormatBreakChoice::SplitDelimiterStack
+                FormatBreakChoice::SplitDelimiterStack,
+            indentLevel
         );
         AddDelimiterStackPartitionChoices(best.result, stack, best.path);
         return best.result;
@@ -2530,7 +2536,7 @@ private:
         if (node.kind != FormatBreakNodeKind::Delimited || node.items.empty()) {
             return {};
         }
-        AddChoice(result, node.id, FormatBreakChoice::SplitAttachedOpen);
+        AddChoice(result, node.id, FormatBreakChoice::SplitAttachedOpen, baseIndent);
         result = AddToken(result, node.children[0]->token);
         result = AddListBreak(result, baseIndent + 1, node.structuralDepth, HasBlankLineBeforeItem(node, 0));
         for (size_t index = 0; index < node.items.size(); ++index) {
@@ -2908,20 +2914,26 @@ private:
     }
 };
 
-void AppendChoices(const ChoiceTree* tree, std::vector<FormatBreakChoice>& output, std::vector<bool>& assigned) {
+void AppendChoices(
+    const ChoiceTree* tree,
+    std::vector<FormatBreakChoice>& choices,
+    std::vector<int>& indentLevels,
+    std::vector<bool>& assigned
+) {
     if (tree == nullptr) {
         return;
     }
     if (tree->leaf) {
         const size_t index = static_cast<size_t>(tree->nodeId);
-        if (index < output.size() && !assigned[index]) {
-            output[index] = tree->choice;
+        if (index < choices.size() && !assigned[index]) {
+            choices[index] = tree->choice;
+            indentLevels[index] = tree->indentLevel;
             assigned[index] = true;
         }
         return;
     }
-    AppendChoices(tree->left, output, assigned);
-    AppendChoices(tree->right, output, assigned);
+    AppendChoices(tree->left, choices, indentLevels, assigned);
+    AppendChoices(tree->right, choices, indentLevels, assigned);
 }
 
 }  // namespace
@@ -2945,7 +2957,8 @@ FormatBreakSolution SolveFormatBreaks(
     }
     const size_t choiceCount = model.nodes == nullptr ? 0 : model.nodes->size() + 1;
     solution.choices.assign(choiceCount, FormatBreakChoice::Compact);
+    solution.indentLevels.assign(choiceCount, -1);
     std::vector<bool> assigned(choiceCount, false);
-    AppendChoices(result.choices, solution.choices, assigned);
+    AppendChoices(result.choices, solution.choices, solution.indentLevels, assigned);
     return solution;
 }
