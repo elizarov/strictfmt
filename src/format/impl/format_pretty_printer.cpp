@@ -1745,11 +1745,9 @@ private:
         for (size_t index = 0; index < stack->delimiters.size(); ++index) {
             const FormatBreakNode* delimiter = stack->delimiters[index];
             const FormatBreakToken& open = delimiter->children.front()->token;
-            const int space = open.spaceBefore && !atLineStart_ ? 1 : 0;
             if (
-                !atLineStart_ &&
-                CurrentColumn() <= config_.columnLimit &&
-                CurrentColumn() + space + FormatTokenWidth(FormatBreakTokenValue(open)) > config_.columnLimit
+                ChoiceFor(solution, delimiter->children.front()->id) ==
+                FormatBreakChoice::SplitDelimiterStackRun
             ) {
                 currentLineIndent = nextOpenIndent;
                 NewLineWithIndent(currentLineIndent);

@@ -57,4 +57,15 @@ Transparent single-item delimiter stacks are an indent-economy specialization. T
 - Split stack layout with a detached leaf is a separate candidate.
 - The solver chooses among those candidates with `Better`; leaf detachment is not decided by overflow or child-choice heuristics.
 
-The opener-run construction may be specialized for speed only when it preserves the best legal layout under the break-selection cost.
+The opener-run construction uses a greedy zero-overflow fast path. It delays each run boundary until the next opener would overflow. If the completed candidate has zero overflow, this is optimal under the normal cost:
+
+- Zero is the minimum possible maximum overflow and overflowing-line count.
+- By induction over runs, breaking earlier leaves at least as many openers for a line at the same or deeper indentation, so it cannot use fewer runs.
+- Each extra run adds an opener line and a matching closer line. The minimum-run partition therefore minimizes line count.
+- Among equal-run partitions, the latest boundaries are the source-order-stable compact choice and leave the final run no wider than an earlier partition.
+
+For a detached leaf, the same proof applies when only the leaf overflows but every delimiter line fits: the minimum run count gives the shallowest leaf indentation, and another run cannot improve the leaf layout.
+
+The proof does not apply when a delimiter line overflows. An extra run can then reduce maximum overflow even though it adds lines. The solver uses exact partition DP for that case and compares the complete candidates with `Better`. A zero-overflow attached-leaf search uses the same minimum-run invariant to restrict its prefix search without discarding a winning layout.
+
+Every selected opener-run boundary is stored as `SplitDelimiterStackRun` on the corresponding opener node. The pretty printer reads those choices; it does not repeat the threshold calculation.
