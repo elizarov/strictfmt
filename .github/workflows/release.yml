@@ -42,7 +42,7 @@ jobs:
       - name: Check out sources
         uses: actions/checkout@v6
         with:
-          submodules: recursive
+          submodules: true
 
       - name: Verify runner architecture
         run: test "$(uname -m)" = x86_64
@@ -73,7 +73,7 @@ jobs:
       - name: Check out sources
         uses: actions/checkout@v6
         with:
-          submodules: recursive
+          submodules: true
 
       - name: Verify Unix runner architecture
         if: runner.os != 'Windows'
