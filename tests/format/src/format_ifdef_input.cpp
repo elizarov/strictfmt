@@ -142,6 +142,13 @@ std::string_view label,
 #endif
 int last);
 
+template <std::size_t I, class T>
+constexpr decltype(auto) ConditionalLeadingParameter(T& val
+#if !FORMAT_USERVER_USE_CPP17 && !FORMAT_USERVER_USE_CPP26
+, std::enable_if_t<std::is_assignable<T, T>::value>* = nullptr
+#endif
+) noexcept;
+
 template <
 typename Value,
 #if FORMAT_USERVER_EXTRA_TEMPLATE_PARAMETER

@@ -787,6 +787,9 @@ module.exports = grammar(C, {
     ...preprocIf('_in_parameter_list', $ => {
       return seq($._parameter_list_item, optional(','));
     }, 3, PREPROC_IFDEF, false),
+    ...preprocIf('_in_parameter_list_leading_comma', $ => {
+      return seq(',', $._parameter_list_item, optional(','));
+    }, 4, PREPROC_IFDEF, false),
 
     ...preprocIf('_in_template_parameter_list', $ => {
       return seq(optional(','), $._preproc_template_parameter_list_item, optional(','));
@@ -1322,7 +1325,13 @@ module.exports = grammar(C, {
 
     parameter_list: $ => seq(
       '(',
-      commaSepWithPreproc($, $._parameter_list_item, '_in_parameter_list', PREPROC_IFDEF),
+      commaSepWithSeparateLeadingPreproc(
+        $,
+        $._parameter_list_item,
+        '_in_parameter_list',
+        '_in_parameter_list_leading_comma',
+        PREPROC_IFDEF,
+      ),
       ')',
     ),
 
@@ -3679,6 +3688,20 @@ function commaSepWithLeadingPreproc($, rule, suffix, forms = PREPROC_ALL_BRANCH_
       rule,
       preprocListItem($, suffix, forms),
       repeat(choice(seq(',', rule), preprocListItem($, suffix, forms))),
+    ),
+  );
+}
+
+function commaSepWithSeparateLeadingPreproc($, rule, suffix, leadingSuffix, forms = PREPROC_ALL_BRANCH_FORMS) {
+  const preprocItem = preprocListItem($, suffix, forms);
+  const leadingPreprocItem = preprocListItem($, leadingSuffix, forms);
+  return choice(
+    commaSepWithPreproc($, rule, suffix, forms),
+    seq(
+      repeat(seq(rule, ',')),
+      rule,
+      leadingPreprocItem,
+      repeat(choice(seq(',', rule), preprocItem, leadingPreprocItem)),
     ),
   );
 }
