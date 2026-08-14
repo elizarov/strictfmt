@@ -338,6 +338,8 @@ enum class SyntaxNodeClass : std::uint64_t {
     SupportedPreprocessorPlacement = 1ull << 45,
     PreserveTrailingComma = 1ull << 46,
     ConditionalFunctionHeader = 1ull << 47,
+    LeadingStreamOperatorChain = 1ull << 48,
+    ConditionalStreamOperatorChain = 1ull << 49,
 };
 
 enum class SyntaxWrapperRole : std::uint8_t {

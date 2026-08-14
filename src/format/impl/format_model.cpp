@@ -92,7 +92,9 @@ constexpr std::uint64_t kSymbolLocalClasses =
     Bit(SyntaxNodeClass::DeclarationModifierPreprocessor) |
     Bit(SyntaxNodeClass::ConditionalRhsPreprocessor) |
     Bit(SyntaxNodeClass::PreserveTrailingComma) |
-    Bit(SyntaxNodeClass::ConditionalFunctionHeader);
+    Bit(SyntaxNodeClass::ConditionalFunctionHeader) |
+    Bit(SyntaxNodeClass::LeadingStreamOperatorChain) |
+    Bit(SyntaxNodeClass::ConditionalStreamOperatorChain);
 
 constexpr auto kSyntaxKindMappings = std::to_array<SyntaxKindMapping>({
     Kind(SyntaxNodeKind::Tree, Bit(SyntaxNodeClass::Tree)),
@@ -288,6 +290,14 @@ constexpr auto kSyntaxKindMappings = std::to_array<SyntaxKindMapping>({
          kSupportedPreprocessorPlacementClasses),
     Tree(SyntaxNodeKind::PreprocElse, "preproc_else_in_function_return_type",
          kSupportedPreprocessorPlacementClasses),
+    Tree(SyntaxNodeKind::PreprocIf, "preproc_if_in_stream_operator_chain",
+         kSupportedPreprocessorPlacementClasses),
+    Tree(SyntaxNodeKind::PreprocIfdef, "preproc_ifdef_in_stream_operator_chain",
+         kSupportedPreprocessorPlacementClasses),
+    Tree(SyntaxNodeKind::PreprocElse, "preproc_else_in_stream_operator_chain",
+         kSupportedPreprocessorPlacementClasses),
+    Tree(SyntaxNodeKind::BinaryExpression, "stream_operator_chain_suffix",
+         Bit(SyntaxNodeClass::LeadingStreamOperatorChain)),
     Tree(SyntaxNodeKind::PreprocElif, "preproc_elifdef"),
     Tree(SyntaxNodeKind::BinaryExpression, "binary_expression"),
     Tree(SyntaxNodeKind::UnaryExpression, "unary_expression"),

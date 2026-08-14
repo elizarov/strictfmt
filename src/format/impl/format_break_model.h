@@ -83,6 +83,7 @@ struct FormatBreakNode {
     bool bodyHeaderRequiresDetachedBody = false;
     bool bodyHeaderSplitAtParentIndentWhenLineStarts = false;
     bool chainPrefersSplitWhenCompactBreaks = false;
+    bool chainStartsWithOperator = false;
     bool splitTrailingBodyHeaderAtParentIndent = false;
     std::span<FormatBreakNode*> children;
     std::vector<FormatBreakListItem> items;
@@ -145,6 +146,7 @@ struct FormatBreakModelContext {
     const SyntaxNode* virtualDelimiterOpen = nullptr;
     FormatBreakToken virtualDelimiterClose;
     bool forceSplitVirtualDelimiter = false;
+    bool forceSplitStreamChain = false;
 };
 
 bool FormatBreakLeadingNameMatches(const FormatBreakNode& node, std::string_view candidate);

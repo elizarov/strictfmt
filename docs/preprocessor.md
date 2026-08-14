@@ -19,6 +19,7 @@ This is the closed list of placements that are explicitly supported.
 - **Conditional right-hand sides after `=`**: conditionals may select branch bodies for variable declarations, assignment statements, alias declarations, and concept definitions. Each branch body must supply its own terminating semicolon.
 - **Selected `if` statements**: a single `#if`, `#ifdef`, or `#ifndef` block with an optional `#else` branch may select complete unbraced `if` headers when the following statement starts after the `#endif`.
 - **Conditional `else if` branches**: conditionals may select complete `else if` branches inside an `if`/`else if` chain.
+- **Stream-shift chain links**: `#if`, `#ifdef`, or `#ifndef` blocks with an optional `#else` may select one or more complete leading `<< operand` or `>> operand` links in a shared stream-shift chain. These blocks may nest, the receiver must precede the outer conditional, and further shared links and the terminating semicolon may follow it. `#elif` is unsupported in this placement.
 - **Guarded `extern "C"` group delimiters**: `#if`, `#ifdef`, or `#ifndef` blocks may guard an `extern "C" {` opener or its matching closing brace as file-scope grouping items.
 - **Concatenated string fragments**: conditionals may select complete adjacent string-literal fragments inside a concatenated string literal, including fragments interleaved with identifier-like string macros.
 - **Local includes**: local `#include` directives may stand where the parser accepts them as complete items.
@@ -35,6 +36,7 @@ Specialized contextual placements do not support `#elifdef` or `#elifndef` alter
 - Conditional declaration-prefix modifiers force a break before the rest of the declaration. Comments, attributes, and modifier lines inside the conditional use the indentation of the declaration that follows.
 - Conditional function return types and their shared declarator each start on their own line. Selected return types use the function declaration's indentation while directive lines stay at column zero.
 - For conditional right-hand sides after `=`, the formatter always breaks after the `=` and formats branch contents with one continuation indent relative to the line that contains the `=`.
+- A conditional stream-shift chain separates its receiver from the shifted tail. Branch-owned links and shared links after the conditional use the stream chain's continuation indentation; multiple links within one branch otherwise follow the ordinary stream-chain rules in [format.md](format.md#operator-chains).
 
 ## Examples
 

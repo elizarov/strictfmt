@@ -260,6 +260,29 @@ void ConditionalArgumentFragment() {
     );
 }
 
+void ConditionalStreamChains(std::ostream& out, std::istream& in, int value, int extra) {
+    out
+        << "always"
+#ifdef FORMAT_STREAM_VALUE
+        << "value: " << value << '\n'
+#if FORMAT_STREAM_DETAIL
+        << "detail: " << Detail()
+#endif
+#else
+        << "fallback"
+#endif
+#ifndef FORMAT_STREAM_SKIP_LABEL
+        << "label"
+#endif
+        << "done";
+    in
+        >> value
+#ifdef FORMAT_STREAM_EXTRA_INPUT
+        >> extra
+#endif
+    ;
+}
+
 auto PreprocessorSelectedListItem() {
     return TimestampToJsonFailureTestParam{
         TimestampMessageData{0, kMaxTimestampNanos + 1},

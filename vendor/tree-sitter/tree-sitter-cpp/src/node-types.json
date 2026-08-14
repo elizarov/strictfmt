@@ -1467,11 +1467,19 @@
       }
     },
     "children": {
-      "multiple": false,
+      "multiple": true,
       "required": false,
       "types": [
         {
           "type": "preproc_argument_fragment",
+          "named": true
+        },
+        {
+          "type": "preproc_if",
+          "named": true
+        },
+        {
+          "type": "preproc_ifdef",
           "named": true
         },
         {
@@ -1480,6 +1488,10 @@
         },
         {
           "type": "preproc_logical_tail_expression_fragment",
+          "named": true
+        },
+        {
+          "type": "stream_operator_chain_suffix",
           "named": true
         }
       ]
@@ -9208,6 +9220,10 @@
           "named": true
         },
         {
+          "type": "stream_operator_chain_suffix",
+          "named": true
+        },
+        {
           "type": "template_declaration",
           "named": true
         },
@@ -9713,6 +9729,10 @@
         },
         {
           "type": "storage_class_specifier",
+          "named": true
+        },
+        {
+          "type": "stream_operator_chain_suffix",
           "named": true
         },
         {
@@ -10269,6 +10289,10 @@
         },
         {
           "type": "storage_class_specifier",
+          "named": true
+        },
+        {
+          "type": "stream_operator_chain_suffix",
           "named": true
         },
         {
@@ -11500,6 +11524,36 @@
     "type": "storage_class_specifier",
     "named": true,
     "fields": {}
+  },
+  {
+    "type": "stream_operator_chain_suffix",
+    "named": true,
+    "fields": {
+      "operator": {
+        "multiple": true,
+        "required": true,
+        "types": [
+          {
+            "type": "<<",
+            "named": false
+          },
+          {
+            "type": ">>",
+            "named": false
+          }
+        ]
+      },
+      "right": {
+        "multiple": true,
+        "required": true,
+        "types": [
+          {
+            "type": "expression",
+            "named": true
+          }
+        ]
+      }
+    }
   },
   {
     "type": "string_literal",

@@ -1040,6 +1040,15 @@ private:
         return false;
     }
 
+    static bool SyntaxPathContainsClass(const PrintToken& token, SyntaxNodeClass syntaxNodeClass) {
+        for (const SyntaxNode* cursor = token.node; cursor != nullptr; cursor = cursor->parent) {
+            if (SyntaxNodeHasClass(*cursor, syntaxNodeClass)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
     static const SyntaxNode* DirectTokenChild(const SyntaxNode& node, SyntaxNodeKind known) {
         for (const SyntaxNode* child : node.children) {
             if (child && child->kind == known) {
@@ -1504,6 +1513,8 @@ private:
                 token.breakBeforeMacroValue ||
                 token.macroDefinition != nullptr ||
                 SyntaxPathContainsKind(token, SyntaxNodeKind::MacroStatementSequence) ||
+                SyntaxPathContainsClass(token, SyntaxNodeClass::LeadingStreamOperatorChain) ||
+                SyntaxPathContainsClass(token, SyntaxNodeClass::ConditionalStreamOperatorChain) ||
                 (stringLike && previousStringLike) ||
                 token.parentKind == SyntaxNodeKind::FieldInitializerList ||
                 token.grandParentKind == SyntaxNodeKind::FieldInitializerList
@@ -1983,8 +1994,14 @@ private:
         }
 
         if (node.chainKind == FormatBreakChainKind::StreamBeforeOperator) {
-            EmitBreakNode(*node.operands.front(), solution, baseIndent);
-            NewLineWithIndent(baseIndent + 1);
+            if (!node.chainStartsWithOperator) {
+                EmitBreakNode(*node.operands.front(), solution, baseIndent);
+            }
+            if (node.chainStartsWithOperator && atLineStart_) {
+                pendingIndentLevel_ = baseIndent + 1;
+            } else {
+                NewLineWithIndent(baseIndent + 1);
+            }
             for (size_t index = 0; index < node.operators.size(); ++index) {
                 WriteBreakToken(node.operators[index]);
                 EmitBreakNode(*node.operands[index + 1], solution, baseIndent + 1);
@@ -2134,7 +2151,15 @@ private:
             return false;
         }
         const auto modelStart = std::chrono::steady_clock::now();
-        FormatBreakModel model = BuildFormatBreakModel(pendingTokens_, context);
+        FormatBreakModelContext effectiveContext = context;
+        effectiveContext.forceSplitStreamChain = effectiveContext.forceSplitStreamChain || std::any_of(
+            pendingTokens_.begin(),
+            pendingTokens_.end(),
+            [](const PrintToken& token) {
+                return SyntaxPathContainsClass(token, SyntaxNodeClass::ConditionalStreamOperatorChain);
+            }
+        );
+        FormatBreakModel model = BuildFormatBreakModel(pendingTokens_, effectiveContext);
         if (stats_ != nullptr) {
             stats_->breakModel += std::chrono::steady_clock::now() - modelStart;
         }
