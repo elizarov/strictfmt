@@ -678,6 +678,9 @@ bool RequiresParenthesizedContinuation = (requires {
     typename T::value_type;
 });
 
+template <typename T>
+bool EmptyRequiresTernaryContinuation = requires {} ? Enabled<T> : false;
+
 void ConsumeMultilineRequiresItem() {
     Consume(
         first,
@@ -688,6 +691,22 @@ void ConsumeMultilineRequiresItem() {
         third
     );
 }
+
+void InvokeEmptyAndNonemptyLambdas() {
+    []() {}();
+    []() {
+        First();
+        Second();
+    }();
+}
+
+struct EmptyDeclaredType {} emptyDeclaredType;
+
+enum class EmptyDeclaredEnum {} emptyDeclaredEnum;
+
+struct NonemptyDeclaredType {
+    int value;
+} nonemptyDeclaredType;
 
 using ConfigMetricAvailabilityResolver = bool (*)(std::string_view metricRef);
 using RuntimeConfigDynamicItemVisitor = void (*)(void* context, std::string_view key, const void* item);

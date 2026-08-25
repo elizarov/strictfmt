@@ -352,7 +352,7 @@ constexpr auto kSyntaxKindMappings = std::to_array<SyntaxKindMapping>({
     Tree(SyntaxNodeKind::TemplateDeclaration, "template_declaration", Bit(SyntaxNodeClass::MacroDeclarationFragment)),
     Tree(SyntaxNodeKind::RequiresClause, "requires_clause"),
     Tree(SyntaxNodeKind::RequiresExpression, "requires_expression"),
-    Tree(SyntaxNodeKind::RequirementSeq, "requirement_seq"),
+    Tree(SyntaxNodeKind::RequirementSeq, "requirement_seq", Bit(SyntaxNodeClass::CompoundBlock)),
     Tree(SyntaxNodeKind::NestedRequirement, "nested_requirement"),
     Tree(SyntaxNodeKind::RefQualifier, "ref_qualifier"),
     Tree(SyntaxNodeKind::LambdaExpression, "lambda_expression"),

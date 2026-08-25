@@ -939,7 +939,7 @@ private:
     const std::vector<PrintToken>* activeTokens_ = nullptr;
     size_t currentTokenIndex_ = 0;
     std::optional<int> pendingIndentLevel_;
-    int compactRightBraceSkips_ = 0;
+    std::vector<BraceRole> compactRightBraceRoles_;
     int switchDepth_ = 0;
     int parenDepth_ = 0;
     int bracketDepth_ = 0;
@@ -1421,23 +1421,6 @@ private:
         return DirectTokenChild(node, known) != nullptr;
     }
 
-    static bool RightParenClosesCompoundExpression(const PrintToken& token, const PrintToken& next) {
-        if (token.parentKind != SyntaxNodeKind::CompoundStatement || next.syntaxKind != SyntaxNodeKind::RightParen) {
-            return false;
-        }
-        const SyntaxNode* compound = token.node != nullptr ? token.node->parent : nullptr;
-        const SyntaxNode* closeParent = next.node != nullptr ? next.node->parent : nullptr;
-        if (compound == nullptr || compound->kind != SyntaxNodeKind::CompoundStatement || closeParent == nullptr) {
-            return false;
-        }
-        for (const SyntaxNode* cursor = compound->parent; cursor != nullptr; cursor = cursor->parent) {
-            if (cursor == closeParent) {
-                return true;
-            }
-        }
-        return false;
-    }
-
     static bool ContinuesBlockExpression(const PrintToken& token, const PrintToken& next) {
         if (token.node == nullptr || next.node == nullptr || token.node->parent == nullptr) {
             return false;
@@ -1445,6 +1428,9 @@ private:
         const SyntaxNode* blockExpression = token.node->parent->parent;
         if (blockExpression == nullptr || !SyntaxNodeHasClass(*blockExpression, SyntaxNodeClass::Expression)) {
             return false;
+        }
+        if (SyntaxPathContains(next, blockExpression)) {
+            return true;
         }
 
         for (const SyntaxNode* ancestor = blockExpression->parent; ancestor != nullptr; ancestor = ancestor->parent) {
@@ -1456,14 +1442,71 @@ private:
             }
         }
 
+        const SyntaxNode* continuation = SyntaxNodeHasClass(
+            *next.node,
+            SyntaxNodeClass::SemanticDelimitedParent
+        ) ? next.node : next.node->parent;
+        if (continuation == nullptr || !SyntaxNodeHasClass(
+            *continuation,
+            SyntaxNodeClass::SemanticDelimitedParent
+        )) {
+            return false;
+        }
+
         // Call and subscript expression wrappers are flattened. Their semantic list
         // remains a following sibling of the expression being invoked or indexed.
-        const SyntaxNode* continuation = next.node->parent;
-        return
-            SyntaxNodeKindHasClass(next.syntaxKind, SyntaxNodeClass::OpeningDelimiter) &&
-            continuation != nullptr &&
-            SyntaxNodeHasClass(*continuation, SyntaxNodeClass::SemanticDelimitedParent) &&
-            continuation->parent == blockExpression->parent;
+        if (
+            (
+                continuation == next.node ||
+                SyntaxNodeKindHasClass(next.syntaxKind, SyntaxNodeClass::OpeningDelimiter)
+            ) &&
+            continuation->parent == blockExpression->parent
+        ) {
+            return true;
+        }
+        return false;
+    }
+
+    static bool AttachesToFollowingBlockKeyword(const PrintToken& token, const PrintToken& next) {
+        if (next.kind != PrintTokenKind::Known) {
+            return false;
+        }
+        if (
+            SyntaxNodeKindHasClass(next.syntaxKind, SyntaxNodeClass::AttachAfterBlockKeyword) &&
+            next.syntaxKind != SyntaxNodeKind::KeywordWhile
+        ) {
+            return true;
+        }
+        return next.syntaxKind == SyntaxNodeKind::KeywordWhile && next.parentKind == SyntaxNodeKind::DoStatement;
+    }
+
+    static bool ClosesDeclaredTypeBody(const PrintToken& token) {
+        return (
+            token.parentKind == SyntaxNodeKind::FieldDeclarationList && (
+                token.grandParentKind == SyntaxNodeKind::StructSpecifier ||
+                token.grandParentKind == SyntaxNodeKind::ClassSpecifier
+            )
+        ) || (
+            token.parentKind == SyntaxNodeKind::EnumeratorList &&
+            token.grandParentKind == SyntaxNodeKind::EnumSpecifier
+        );
+    }
+
+    static bool ShouldAttachAfterBlockClose(const PrintToken& token, const PrintToken* next) {
+        if (next == nullptr) {
+            return false;
+        }
+        if (ContinuesBlockExpression(token, *next) || ClosesContainingDelimiter(token, *next)) {
+            return true;
+        }
+        if (next->kind == PrintTokenKind::Known && (
+            next->syntaxKind == SyntaxNodeKind::Semicolon ||
+            next->syntaxKind == SyntaxNodeKind::Comma ||
+            AttachesToFollowingBlockKeyword(token, *next)
+        )) {
+            return true;
+        }
+        return ClosesDeclaredTypeBody(token);
     }
 
     static SyntaxNodeKind MatchingClosingDelimiterToken(SyntaxNodeKind kind) {
@@ -1494,6 +1537,18 @@ private:
         const SyntaxNodeKind closingKind =
             open == nullptr ? SyntaxNodeKind::Unknown : MatchingClosingDelimiterToken(open->kind);
         return closingKind == SyntaxNodeKind::Unknown ? nullptr : DirectTokenChild(node, closingKind);
+    }
+
+    static bool ClosesContainingDelimiter(const PrintToken& token, const PrintToken& next) {
+        if (token.node == nullptr || next.node == nullptr || next.node->parent == nullptr) {
+            return false;
+        }
+        const SyntaxNode* container = next.node->parent;
+        if (!SyntaxNodeHasClass(*container, SyntaxNodeClass::SemanticDelimitedParent)) {
+            return false;
+        }
+        return SyntaxPathContains(token, container) &&
+            DirectMatchingClosingDelimiterChild(*container, DirectOpeningDelimiterChild(*container)) == next.node;
     }
 
     static const SyntaxNode* NearestDelimitedListAncestorBefore(const PrintToken& token, const SyntaxNode* before) {
@@ -2741,24 +2796,6 @@ private:
         return &(*activeTokens_)[currentTokenIndex_ + offset];
     }
 
-    bool ShouldBreakAfterCompactEmptyBlock(const PrintToken& token, const PrintToken* afterClose) const {
-        if (RoleForBrace(token) != BraceRole::Block) {
-            return false;
-        }
-        if (afterClose == nullptr) {
-            return false;
-        }
-        if (afterClose->kind != PrintTokenKind::Known) {
-            return true;
-        }
-        const bool closesLambdaArgument = token.parentKind == SyntaxNodeKind::CompoundStatement &&
-            token.grandParentKind == SyntaxNodeKind::LambdaExpression &&
-            afterClose->syntaxKind == SyntaxNodeKind::RightParen;
-        return afterClose->syntaxKind != SyntaxNodeKind::Semicolon &&
-            afterClose->syntaxKind != SyntaxNodeKind::Comma &&
-            !closesLambdaArgument;
-    }
-
     MandatoryBlockSplitListContext* ActiveMandatoryBlockSplitListContext() {
         return mandatoryBlockSplitListContexts_.empty() ? nullptr : &mandatoryBlockSplitListContexts_.back();
     }
@@ -3454,12 +3491,7 @@ private:
             compact.syntaxKind = SyntaxNodeKind::Unknown;
             compact.text = "{}";
             BufferToken(compact);
-            ++compactRightBraceSkips_;
-            const PrintToken* afterClose = RawTokenAfterCurrent(2);
-            if (ShouldBreakAfterCompactEmptyBlock(token, afterClose)) {
-                FlushPendingTokens();
-                NewLine(ShouldContinueMacroLine(token, afterClose));
-            }
+            compactRightBraceRoles_.push_back(role);
             return;
         }
         const std::optional<MandatoryBlockSplitListPlan> splitListPlan = BuildMandatoryBlockSplitListPlan(token);
@@ -3509,8 +3541,23 @@ private:
     }
 
     void PrintRightBrace(const PrintToken& token, const PrintToken* next, const PrintToken* rawNext) {
-        if (compactRightBraceSkips_ > 0) {
-            --compactRightBraceSkips_;
+        if (!compactRightBraceRoles_.empty()) {
+            const BraceRole role = compactRightBraceRoles_.back();
+            compactRightBraceRoles_.pop_back();
+            if (role == BraceRole::Compact) {
+                return;
+            }
+            if (
+                role != BraceRole::CaseBlock &&
+                !(next != nullptr && AttachesToFollowingBlockKeyword(token, *next)) &&
+                ShouldAttachAfterBlockClose(token, next)
+            ) {
+                return;
+            }
+            FlushPendingTokens();
+            if (rawNext == nullptr || rawNext->kind != PrintTokenKind::TrailingComment) {
+                NewLine(ShouldContinueMacroLine(token, next));
+            }
             return;
         }
         if (
@@ -3591,40 +3638,8 @@ private:
             if (isSwitchBody) {
                 switchDepth_ = std::max(0, switchDepth_ - 1);
             }
-            if (next != nullptr && next->kind == PrintTokenKind::Known) {
-                const bool closesLambdaArgument = token.parentKind == SyntaxNodeKind::CompoundStatement &&
-                    token.grandParentKind == SyntaxNodeKind::LambdaExpression &&
-                    next->syntaxKind == SyntaxNodeKind::RightParen;
-                const bool closesCompoundExpression = RightParenClosesCompoundExpression(token, *next);
-                const bool continuesBlockExpression = ContinuesBlockExpression(token, *next);
-                const bool attachesToFollowingKeyword =
-                    SyntaxNodeKindHasClass(next->syntaxKind, SyntaxNodeClass::AttachAfterBlockKeyword) &&
-                        next->syntaxKind != SyntaxNodeKind::KeywordWhile;
-                const bool closesDoWhile =
-                    next->syntaxKind == SyntaxNodeKind::KeywordWhile && next->parentKind == SyntaxNodeKind::DoStatement;
-                if (
-                    next->syntaxKind == SyntaxNodeKind::Semicolon ||
-                    next->syntaxKind == SyntaxNodeKind::Comma ||
-                    closesLambdaArgument ||
-                    continuesBlockExpression ||
-                    closesCompoundExpression ||
-                    attachesToFollowingKeyword ||
-                    closesDoWhile
-                ) {
-                    return;
-                }
-            }
-            if (next != nullptr) {
-                const bool closesStructOrClassBody = token.parentKind == SyntaxNodeKind::FieldDeclarationList && (
-                    token.grandParentKind == SyntaxNodeKind::StructSpecifier ||
-                    token.grandParentKind == SyntaxNodeKind::ClassSpecifier
-                );
-                const bool closesEnumBody =
-                    token.parentKind == SyntaxNodeKind::EnumeratorList &&
-                    token.grandParentKind == SyntaxNodeKind::EnumSpecifier;
-                if (closesStructOrClassBody || closesEnumBody) {
-                    return;
-                }
+            if (ShouldAttachAfterBlockClose(token, next)) {
+                return;
             }
             FlushPendingTokens();
             NewLine(ShouldContinueMacroLine(token, next));
