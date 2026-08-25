@@ -309,6 +309,10 @@ private:
         return index < node.items.size() && IsCommentToken(FormatBreakTokenKind(node.items[index].trailingComment));
     }
 
+    static bool HasLeadingTrailingComment(const FormatBreakNode& node) {
+        return IsCommentToken(FormatBreakTokenKind(node.leadingTrailingComment));
+    }
+
     static bool HasBlankLineBeforeItem(const FormatBreakNode& node, size_t index) {
         return index < node.items.size() && node.items[index].blankLineBefore;
     }
@@ -882,6 +886,9 @@ private:
                 if (node.children.size() < 2 || !AppendCompactOneLine(*node.children[0], result)) {
                     return false;
                 }
+                if (HasLeadingTrailingComment(node)) {
+                    return false;
+                }
                 for (size_t index = 0; index < node.items.size(); ++index) {
                     const FormatBreakListItem& item = node.items[index];
                     if (item.node != nullptr && !AppendCompactOneLine(*item.node, result)) {
@@ -900,6 +907,9 @@ private:
                 return AppendCompactOneLine(*node.children[1], result);
             case FormatBreakNodeKind::PrefixList:
                 if (node.children.empty() || !AppendCompactOneLine(*node.children[0], result)) {
+                    return false;
+                }
+                if (HasLeadingTrailingComment(node)) {
                     return false;
                 }
                 for (size_t index = 0; index < node.items.size(); ++index) {
@@ -1096,6 +1106,9 @@ private:
             result{.valid = true, .endColumn = column, .endIndentLevel = indentLevel, .endLineHasText = lineHasText};
         AddChoice(result, node.id, FormatBreakChoice::Compact, indentLevel);
         result = AddToken(result, node.children[0]->token);
+        if (HasLeadingTrailingComment(node)) {
+            result = AddToken(result, node.leadingTrailingComment);
+        }
         NodeResults current{result};
         for (size_t index = 0; index < node.items.size(); ++index) {
             const FormatBreakListItem& listItem = node.items[index];
@@ -1155,6 +1168,9 @@ private:
             result{.valid = true, .endColumn = column, .endIndentLevel = indentLevel, .endLineHasText = lineHasText};
         AddChoice(result, node.id, FormatBreakChoice::Split, indentLevel);
         result = AddToken(result, node.children[0]->token);
+        if (HasLeadingTrailingComment(node)) {
+            result = AddToken(result, node.leadingTrailingComment);
+        }
         result = AddListBreak(result, indentLevel + 1, node.structuralDepth, HasBlankLineBeforeItem(node, 0));
         for (size_t index = 0; index < node.items.size(); ++index) {
             const FormatBreakListItem& listItem = node.items[index];
@@ -2060,6 +2076,9 @@ private:
             result{.valid = true, .endColumn = column, .endIndentLevel = indentLevel, .endLineHasText = lineHasText};
         AddChoice(result, node.id, FormatBreakChoice::Compact);
         result = AddToken(result, node.children[0]->token);
+        if (HasLeadingTrailingComment(node)) {
+            result = AddToken(result, node.leadingTrailingComment);
+        }
         for (size_t index = 0; index < node.items.size(); ++index) {
             const FormatBreakListItem& listItem = node.items[index];
             NodeResult item =
@@ -2074,6 +2093,9 @@ private:
             result{.valid = true, .endColumn = column, .endIndentLevel = indentLevel, .endLineHasText = lineHasText};
         AddChoice(result, node.id, FormatBreakChoice::Split);
         result = AddToken(result, node.children[0]->token);
+        if (HasLeadingTrailingComment(node)) {
+            result = AddToken(result, node.leadingTrailingComment);
+        }
         result = AddListBreak(result, indentLevel + 1, node.structuralDepth, HasBlankLineBeforeItem(node, 0));
         for (size_t index = 0; index < node.items.size(); ++index) {
             const FormatBreakListItem& listItem = node.items[index];
@@ -2588,6 +2610,9 @@ private:
         }
         AddChoice(result, node.id, FormatBreakChoice::SplitAttachedOpen, baseIndent);
         result = AddToken(result, node.children[0]->token);
+        if (HasLeadingTrailingComment(node)) {
+            result = AddToken(result, node.leadingTrailingComment);
+        }
         result = AddListBreak(result, baseIndent + 1, node.structuralDepth, HasBlankLineBeforeItem(node, 0));
         for (size_t index = 0; index < node.items.size(); ++index) {
             const FormatBreakListItem& listItem = node.items[index];
