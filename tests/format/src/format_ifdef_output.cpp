@@ -160,14 +160,16 @@ template <
     typename Allocator,
 #endif
     typename Result
-> struct ConditionalTemplateParameters {};
+>
+struct ConditionalTemplateParameters {};
 
 template <
     typename Value
 #ifdef FORMAT_USERVER_EXTRA_LEADING_TEMPLATE_PARAMETER
     , typename std::enable_if<!HasStringify<Value>::value, int>::type = 0
 #endif
-> struct ConditionalLeadingTemplateParameter {};
+>
+struct ConditionalLeadingTemplateParameter {};
 
 struct ConditionalLeadingFieldInitializers {
     ConditionalLeadingFieldInitializers() : size(0), sp(0)

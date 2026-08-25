@@ -463,6 +463,14 @@ requires(ExtremelyLongConceptNameWithoutLogicalOperatorsThatStillNeedsSubordinat
     value.Use();
 }
 
+template<typename T>
+requires C<T>
+void CompactRequiresPrefix();
+
+template<typename T>
+requires requires{typename T::type;}
+struct ForcedRequiresPrefix;
+
 using ConfigMetricAvailabilityResolver = bool (*)(std::string_view metricRef);
 using RuntimeConfigDynamicItemVisitor = void (*)(void* context, std::string_view key, const void* item);
 using RuntimeConfigEnsureDynamicItem = void* (*)(AppConfig& config, std::string_view key);

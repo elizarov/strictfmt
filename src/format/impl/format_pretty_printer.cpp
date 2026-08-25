@@ -1872,6 +1872,7 @@ private:
                 SyntaxPathContainsKind(token, SyntaxNodeKind::MacroStatementSequence) ||
                 SyntaxPathContainsClass(token, SyntaxNodeClass::LeadingStreamOperatorChain) ||
                 SyntaxPathContainsClass(token, SyntaxNodeClass::ConditionalStreamOperatorChain) ||
+                token.inTemplateDeclaration ||
                 (stringLike && previousStringLike) ||
                 token.parentKind == SyntaxNodeKind::FieldInitializerList ||
                 token.grandParentKind == SyntaxNodeKind::FieldInitializerList
@@ -3446,10 +3447,17 @@ private:
         }
         const bool functionBlock = token.parentKind == SyntaxNodeKind::CompoundStatement &&
             token.grandParentKind == SyntaxNodeKind::FunctionDefinition;
-        const int openLineIndent = splitListPlan && splitList ? splitListPlan->deferredContext.itemIndent : (
+        int openLineIndent = splitListPlan && splitList ? splitListPlan->deferredContext.itemIndent : (
             token.inMacroValue || functionBlock ?
                 indentLevel_ : (lineHasText_ ? CurrentLineIndentLevel() : indentLevel_)
         );
+        if (
+            token.parentKind == SyntaxNodeKind::RequirementSeq &&
+            token.inTemplateDeclaration &&
+            token.inRequiresClause
+        ) {
+            openLineIndent = std::max(openLineIndent, indentLevel_ + 1);
+        }
         braceStack_.push_back({
             .role = role,
             .parenDepth = parenDepth_,
