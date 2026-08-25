@@ -41,30 +41,26 @@ This document specifies the source layout produced by `strictfmt`.
 - Preserve LF, CRLF, or CR line endings when the source uses one style. For mixed line endings, use the current platform default.
 - Use 4 spaces per indent level. Do not emit tabs.
 - Preserve comments in source order. A trailing comment stays trailing only when it was trailing in source. A standalone comment stays standalone.
-- Preserve one source blank line when it separates already closed declarations or statements at the same structural level. Collapse multiple blank lines to one.
-- Treat empty lines only as separators between neighboring source items. Do not emit empty lines at the beginning or end of a file.
+- Preserve one source blank line when it separates declarations or statements at the same structural level. Collapse multiple blank lines to one.
+- Empty lines are separators. Do not emit empty lines at the beginning or end of a file.
 - Drop blank lines at the beginning of a block and immediately before a closing brace.
-- Insert required structural blank lines only when they separate neighboring source items.
-- Atomic preprocessor directives do not create blank-line groups based on directive spelling. Preserve source-authored blank-line grouping around them. Formatter-owned separation may still follow a modeled structural role, such as declaration grouping, a complete conditional source item, or configured grouping within an include run, but never separates a directive from source it directly governs.
-- Remove trailing commas except in enum bodies. A comma before an empty final `PreprocessorArgumentMacros` argument is an argument separator, not a trailing comma, and is preserved. When the final item is selected by a conditional preprocessor branch, remove the branch-owned terminal comma from every final branch as part of the same normalization.
-- Structured macro definitions use formatter-owned replacement whitespace and continuation lines. Raw macro definitions configured with `RawMacroDefinitions` intentionally preserve raw replacement line structure as specified in [macro.md](macro.md).
+- Remove trailing commas except in enum bodies. When the final item is selected by a conditional preprocessor branch, remove the branch-owned terminal comma from every final branch as part of the same normalization.
+- Structured macro definitions use formatter-owned replacement whitespace and continuation lines. Raw macro definitions intentionally preserve raw replacement line structure as specified in [macro.md](macro.md).
 
 ## Mandatory Line Breaks
 
 Mandatory line breaks are structural boundaries. The break is always taken before optional wrapping is considered.
 
 - Break between complete statements and declarations, including after each statement-terminating semicolon.
-- The single-statement lambda is a deliberate exception only when the whole lambda stays on one physical line. It is specifically designed to keep short single-return predicates, projections, and adapters compact inside collection algorithms and stream pipelines, where forcing a multiline block would fragment the surrounding expression flow. Lambdas participate in expression layouts even though their bodies contain statements; ordinary statement and callable bodies retain their structural breaks.
-- Keep an empty control body compact as `{}` because splitting an empty pair adds visual bulk without exposing statement structure. Finish its control-body line before a following attachment keyword, including the `while` of a do-while statement.
-- Compact rendering of an empty brace pair changes only the pair's internal layout. Its closer follows the same structural continuation and attachment rules as a nonempty closer, except for the preceding mandatory empty-control-body break.
+  - Except single-statement lambda for the case when the whole lambda stays on one physical line. It is a deliberate exception that is designed to keep short single-statement lambdas compact, since they participate in compact expressions.
 - Put block-opening braces at the end of the introducing line, then break.
-- Break after a statement or declaration code-block closing brace unless the following token is `else`, `catch`, `finally`, or the `while` that closes a do-while statement. A block-shaped expression remains part of its enclosing expression: its closing brace stays attached to following expression syntax, and only the ordinary solver-owned opportunities inside that expression may break.
-- Treat a standalone braced statement block as a block. Its closing brace does not attach to the following statement.
+  - Except an empty control body, keep it compact as `{}`.
+- Break multi-statement lambda bodies after `{`, format each body statement with normal mandatory statement breaks, and put the closing `}` on its own line.
+- Break after a statement or declaration code-block closing brace unless the following token is `else`, `catch`, `finally`, or the `while` that closes a do-while statement.
 - Break around preprocessor directives and macro continuation lines.
 - Break structured macro definitions and top-level replacement call-unit sequences where required by [macro.md](macro.md).
 - Break between enum enumerators; enum bodies keep one enumerator per line.
 - Break between declaration groups where declaration-scope separation rules require a blank line.
-- Break multi-statement lambda bodies after `{`, format each body statement with normal mandatory statement breaks, and put the closing `}` on its own line.
 - Preserve a standalone line comment on its own line.
 
 ```cpp
