@@ -738,7 +738,12 @@ private:
         return signature;
     }
 
-    FormatBreakNode* BuildOwnedValue(FormatBreakNode* owner, FormatBreakNode* value, int depth) {
+    FormatBreakNode* BuildOwnedValue(
+        FormatBreakNode* owner,
+        FormatBreakNode* value,
+        int depth,
+        bool splitTrailingBodyHeaderAtParentIndent = true
+    ) {
         if (owner == nullptr || value == nullptr) {
             return nullptr;
         }
@@ -746,7 +751,7 @@ private:
         result->operands = StoreNodePointers({owner, value});
         result->operators = StoreTokens({{}});
         MarkForceSplitAdjacentStringsFlat(*value);
-        if (EndsWithBodyHeader(*value)) {
+        if (splitTrailingBodyHeaderAtParentIndent && EndsWithBodyHeader(*value)) {
             result->splitTrailingBodyHeaderAtParentIndent = true;
             MarkBodyHeaderSplitAtParentIndentWhenLineStarts(*value);
         }
@@ -818,7 +823,7 @@ private:
         if (value == nullptr) {
             value = BuildSyntaxNode(replacement, depth + 1);
         }
-        FormatBreakNode* definition = BuildOwnedValue(owner, value, depth);
+        FormatBreakNode* definition = BuildOwnedValue(owner, value, depth, false);
         if (definition != nullptr) {
             // The structured-macro grammar has only two header-level forms: one physical line, or a break after
             // the complete definition header. A later mandatory formatting segment makes the one-line form
