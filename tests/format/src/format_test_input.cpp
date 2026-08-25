@@ -1809,3 +1809,14 @@ void operator!=(T, T) = delete;
 struct FriendOperators {
 [[maybe_unused]] friend bool operator==(const char* lhs, FriendOperators) { return *lhs == '\0'; }[[maybe_unused]] friend bool operator!=(const char* lhs, FriendOperators) { return *lhs != '\0'; }
 };
+
+int CommentedValues[] = {
+/** one */
+1,
+};
+
+void TrailingBlockComment() {
+if (Ready()) {  // keep
+Run();
+}
+}

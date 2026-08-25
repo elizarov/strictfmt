@@ -2517,8 +2517,7 @@ void FormatterSuspiciousDiffRegressionCases() {
         Use(negativeDuration);
     }
     Call(1 /*count*/, "x" /*name*/);
-    auto lambda = [] {
-        // starts
+    auto lambda = [] {  // starts
         Work();
     };
     auto binary = T{} + i;
@@ -2576,3 +2575,14 @@ struct FriendOperators {
     [[maybe_unused]] friend bool operator==(const char* lhs, FriendOperators) { return *lhs == '\0'; }
     [[maybe_unused]] friend bool operator!=(const char* lhs, FriendOperators) { return *lhs != '\0'; }
 };
+
+int CommentedValues[] = {
+    /** one */
+    1
+};
+
+void TrailingBlockComment() {
+    if (Ready()) {  // keep
+        Run();
+    }
+}
