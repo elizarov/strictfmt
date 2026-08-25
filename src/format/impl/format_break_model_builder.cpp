@@ -469,6 +469,19 @@ private:
         });
     }
 
+    static bool ContainsNonemptyRequirementSequence(const SyntaxNode& node) {
+        if (node.kind == SyntaxNodeKind::RequirementSeq) {
+            return std::any_of(node.children.begin(), node.children.end(), [](const SyntaxNode* child) {
+                return child != nullptr &&
+                    child->kind != SyntaxNodeKind::LeftBrace &&
+                    child->kind != SyntaxNodeKind::RightBrace;
+            });
+        }
+        return std::any_of(node.children.begin(), node.children.end(), [](const SyntaxNode* child) {
+            return child != nullptr && ContainsNonemptyRequirementSequence(*child);
+        });
+    }
+
     static bool ContainsFunctionPointerDeclarator(const SyntaxNode& node) {
         return ContainsSyntaxKind(node, SyntaxNodeKind::PointerDeclarator) ||
             ContainsSyntaxKind(node, SyntaxNodeKind::AbstractPointerDeclarator) ||
@@ -983,6 +996,7 @@ private:
         prefix->operands = StoreNodePointers({templateHead, requiresClause});
         prefix->operators = StoreTokens({{}});
         prefix->chainPrefersSplitWhenCompactBreaks = true;
+        prefix->forceSplit = ContainsNonemptyRequirementSequence(*requiresNode);
         return prefix;
     }
 
@@ -1066,6 +1080,9 @@ private:
         }
 
         FormatBreakNode* prefix = BuildTemplatePrefix(templateHeadChildren, requiresNode, depth + 1);
+        if (declaration == nullptr && introduced != nullptr && !ContainsSelected(*introduced)) {
+            return prefix;
+        }
         return BuildDetachedTemplateDeclaration(prefix, declaration, depth);
     }
 
@@ -1159,6 +1176,9 @@ private:
 
         FormatBreakNode* prefix = BuildTemplatePrefix(templateHeadChildren, requiresNode, depth + 1);
         after = declarationIndex + 1;
+        if (declaration == nullptr && introduced != nullptr && !ContainsSelected(*introduced)) {
+            return prefix;
+        }
         return BuildDetachedTemplateDeclaration(prefix, declaration, depth);
     }
 
