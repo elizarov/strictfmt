@@ -655,6 +655,58 @@ private:
         }
     }
 
+    static bool ChainOperatorsMatch(const FormatBreakNode& chain, std::optional<SyntaxNodeKind> operatorKind) {
+        return !operatorKind || std::all_of(
+            chain.operators.begin(),
+            chain.operators.end(),
+            [operatorKind](const FormatBreakToken& token) {
+                return FormatBreakTokenSyntaxKind(token) == *operatorKind;
+            }
+        );
+    }
+
+    static FormatBreakNode* MatchingChain(
+        FormatBreakNode* node,
+        FormatBreakChainKind chainKind,
+        std::optional<SyntaxNodeKind> operatorKind = std::nullopt
+    ) {
+        if (node == nullptr || node->kind != FormatBreakNodeKind::Chain) {
+            return nullptr;
+        }
+        return node->chainKind == chainKind && ChainOperatorsMatch(*node, operatorKind) ? node : nullptr;
+    }
+
+    static std::vector<FormatBreakToken> DetachTrailingStandaloneComments(FormatBreakNode*& node) {
+        std::vector<FormatBreakToken> comments;
+        if (node == nullptr || node->kind != FormatBreakNodeKind::Sequence) {
+            return comments;
+        }
+        size_t commentBegin = node->children.size();
+        while (commentBegin > 0) {
+            const FormatBreakNode* child = node->children[commentBegin - 1];
+            if (
+                child == nullptr ||
+                child->kind != FormatBreakNodeKind::Token ||
+                FormatBreakTokenKind(child->token) != PrintTokenKind::Comment
+            ) {
+                break;
+            }
+            --commentBegin;
+        }
+        if (commentBegin == node->children.size()) {
+            return comments;
+        }
+        comments.reserve(node->children.size() - commentBegin);
+        for (size_t index = commentBegin; index < node->children.size(); ++index) {
+            comments.push_back(node->children[index]->token);
+        }
+        node->children = node->children.first(commentBegin);
+        if (node->children.size() == 1) {
+            node = node->children.front();
+        }
+        return comments;
+    }
+
     FormatBreakNode* BuildFunctionPointerAliasDeclaration(const SyntaxNode& node, int depth) {
         std::optional<size_t> operatorIndex;
         std::optional<size_t> declaratorIndex;
@@ -1662,24 +1714,32 @@ private:
             return nullptr;
         }
 
+        std::vector<FormatBreakToken> commentsBeforeOperator = DetachTrailingStandaloneComments(left);
+        FormatBreakNode* leftChain = MatchingChain(left, FormatBreakChainKind::MemberBeforeOperator);
         std::vector<FormatBreakNode*> operands;
         std::vector<FormatBreakToken> operators;
-        if (
-            left->kind == FormatBreakNodeKind::Chain &&
-            left->chainKind == FormatBreakChainKind::MemberBeforeOperator
-        ) {
-            operands.insert(operands.end(), left->operands.begin(), left->operands.end());
-            operators.insert(operators.end(), left->operators.begin(), left->operators.end());
+        std::vector<std::vector<FormatBreakToken>> commentsBeforeOperators;
+        if (leftChain != nullptr) {
+            operands.insert(operands.end(), leftChain->operands.begin(), leftChain->operands.end());
+            operators.insert(operators.end(), leftChain->operators.begin(), leftChain->operators.end());
+            commentsBeforeOperators = leftChain->commentsBeforeOperators;
         } else {
             operands.push_back(left);
         }
         operators.push_back(*op);
+        commentsBeforeOperators.push_back(std::move(commentsBeforeOperator));
         operands.push_back(right);
 
         auto chain = MakeNode(FormatBreakNodeKind::Chain, depth);
         chain->chainKind = FormatBreakChainKind::MemberBeforeOperator;
+        chain->chainPrefersSplitWhenCompactBreaks = std::any_of(
+            commentsBeforeOperators.begin(),
+            commentsBeforeOperators.end(),
+            [](const std::vector<FormatBreakToken>& comments) { return !comments.empty(); }
+        );
         chain->operands = StoreNodePointers(operands);
         chain->operators = StoreTokens(operators);
+        chain->commentsBeforeOperators = std::move(commentsBeforeOperators);
         return chain;
     }
 
@@ -1804,14 +1864,16 @@ private:
         return token && FormatBreakTokenSyntaxKind(*token) == op;
     }
 
-    void AppendBinaryChainOperand(
+    std::vector<FormatBreakToken> AppendBinaryChainOperand(
         std::vector<FormatBreakNode*>& operands,
         std::vector<FormatBreakToken>& operators,
+        std::vector<std::vector<FormatBreakToken>>& commentsBeforeOperators,
         const ::SyntaxChildList& children,
         size_t begin,
         size_t end,
         SyntaxNodeKind op,
-        int depth
+        int depth,
+        bool detachTrailingComments
     ) {
         if (
             end == begin + 1 &&
@@ -1819,10 +1881,29 @@ private:
             SyntaxNodeKindHasClass(op, SyntaxNodeClass::ChainOperator) &&
             HasSameDirectBinaryOperator(*children[begin], op)
         ) {
-            AppendBinaryChain(*children[begin], op, operands, operators, depth);
-            return;
+            AppendBinaryChain(*children[begin], op, operands, operators, commentsBeforeOperators, depth);
+            return {};
         }
-        operands.push_back(BuildSequenceFromChildren(children, begin, end, depth + 1));
+        FormatBreakNode* operand = BuildSequenceFromChildren(children, begin, end, depth + 1);
+        std::vector<FormatBreakToken> trailingComments;
+        if (detachTrailingComments) {
+            trailingComments = DetachTrailingStandaloneComments(operand);
+        }
+        const FormatBreakChainKind chainKind = op == SyntaxNodeKind::LessLess || op == SyntaxNodeKind::GreaterGreater ?
+            FormatBreakChainKind::StreamBeforeOperator : FormatBreakChainKind::AfterOperator;
+        FormatBreakNode* prefix = MatchingChain(operand, chainKind, op);
+        if (prefix != nullptr) {
+            operands.insert(operands.end(), prefix->operands.begin(), prefix->operands.end());
+            operators.insert(operators.end(), prefix->operators.begin(), prefix->operators.end());
+            commentsBeforeOperators.insert(
+                commentsBeforeOperators.end(),
+                prefix->commentsBeforeOperators.begin(),
+                prefix->commentsBeforeOperators.end()
+            );
+            return trailingComments;
+        }
+        operands.push_back(operand);
+        return trailingComments;
     }
 
     void AppendBinaryChain(
@@ -1830,6 +1911,7 @@ private:
         SyntaxNodeKind op,
         std::vector<FormatBreakNode*>& operands,
         std::vector<FormatBreakToken>& operators,
+        std::vector<std::vector<FormatBreakToken>>& commentsBeforeOperators,
         int depth
     ) {
         const std::optional<size_t> opIndex = DirectOperatorIndex(node);
@@ -1838,11 +1920,33 @@ private:
             return;
         }
 
-        AppendBinaryChainOperand(operands, operators, node.children, 0, *opIndex, op, depth);
+        const bool streamChain = op == SyntaxNodeKind::LessLess || op == SyntaxNodeKind::GreaterGreater;
+        std::vector<FormatBreakToken> commentsBeforeOperator = AppendBinaryChainOperand(
+            operands,
+            operators,
+            commentsBeforeOperators,
+            node.children,
+            0,
+            *opIndex,
+            op,
+            depth,
+            streamChain
+        );
         if (std::optional<FormatBreakToken> token = TokenForNode(*node.children[*opIndex])) {
             operators.push_back(*token);
+            commentsBeforeOperators.push_back(std::move(commentsBeforeOperator));
         }
-        AppendBinaryChainOperand(operands, operators, node.children, *opIndex + 1, node.children.size(), op, depth);
+        AppendBinaryChainOperand(
+            operands,
+            operators,
+            commentsBeforeOperators,
+            node.children,
+            *opIndex + 1,
+            node.children.size(),
+            op,
+            depth,
+            false
+        );
     }
 
     FormatBreakNode* BuildLeadingStreamOperatorChain(const SyntaxNode& node, int depth) {
@@ -1869,24 +1973,29 @@ private:
 
         std::vector<FormatBreakNode*> operands;
         std::vector<FormatBreakToken> operators;
+        std::vector<std::vector<FormatBreakToken>> commentsBeforeOperators;
+        std::vector<FormatBreakToken> pendingComments;
         auto emptyReceiver = MakeNode(FormatBreakNodeKind::Sequence, depth + 1);
         operands.push_back(emptyReceiver);
         for (size_t index = 0; index < operatorIndices.size(); ++index) {
             operators.push_back(directOperators[index]);
+            commentsBeforeOperators.push_back(std::move(pendingComments));
             const size_t operandBegin = operatorIndices[index] + 1;
             const size_t operandEnd = index + 1 < operatorIndices.size() ?
                 operatorIndices[index + 1] : node.children.size();
             if (operandBegin >= operandEnd) {
                 return nullptr;
             }
-            AppendBinaryChainOperand(
+            pendingComments = AppendBinaryChainOperand(
                 operands,
                 operators,
+                commentsBeforeOperators,
                 node.children,
                 operandBegin,
                 operandEnd,
                 FormatBreakTokenSyntaxKind(directOperators[index]),
-                depth
+                depth,
+                index + 1 < operatorIndices.size()
             );
         }
         if (operands.size() != operators.size() + 1) {
@@ -1898,6 +2007,7 @@ private:
         chain->chainStartsWithOperator = true;
         chain->operands = StoreNodePointers(operands);
         chain->operators = StoreTokens(operators);
+        chain->commentsBeforeOperators = std::move(commentsBeforeOperators);
         return chain;
     }
 
@@ -1957,16 +2067,23 @@ private:
         ) {
             std::vector<FormatBreakNode*> operands;
             std::vector<FormatBreakToken> operators;
+            std::vector<std::vector<FormatBreakToken>> commentsBeforeOperators;
             operands.reserve(2);
             operators.reserve(1);
-            AppendBinaryChain(node, operatorKind, operands, operators, depth);
+            AppendBinaryChain(node, operatorKind, operands, operators, commentsBeforeOperators, depth);
             for (size_t index = 1; index < operands.size(); ++index) {
                 if (operands[index] != nullptr) {
                     MarkForceSplitAdjacentStringsFlat(*operands[index]);
                 }
             }
+            chain->chainPrefersSplitWhenCompactBreaks = std::any_of(
+                commentsBeforeOperators.begin(),
+                commentsBeforeOperators.end(),
+                [](const std::vector<FormatBreakToken>& comments) { return !comments.empty(); }
+            );
             chain->operands = StoreNodePointers(operands);
             chain->operators = StoreTokens(operators);
+            chain->commentsBeforeOperators = std::move(commentsBeforeOperators);
             return chain;
         }
 

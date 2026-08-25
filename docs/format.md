@@ -307,7 +307,7 @@ int ratio = (
 - Nested ordinary binary operators still introduce continuation indentation.
 - Transparent single-item parenthesis pairs are considered independently. A pair may stay compact only when the expression it encloses has no selected breaks. If the enclosed expression breaks, that pair is broken and follows ordinary delimiter placement.
 - Unary operators and declarator `*` or `&` are token facts, not chain break points.
-- An end-of-line comment attached to one chain part forces the chain into split form.
+- An end-of-line comment attached to one chain part, or a standalone comment between chain links, forces the chain into split form. A standalone chain comment uses the chain-item indentation of the following link.
 
 ## Break Selection
 

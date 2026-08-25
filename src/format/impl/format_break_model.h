@@ -92,6 +92,7 @@ struct FormatBreakNode {
     std::vector<FormatBreakListItem> items;
     std::span<FormatBreakNode*> operands;
     std::span<FormatBreakToken> operators;
+    std::vector<std::vector<FormatBreakToken>> commentsBeforeOperators;
 };
 
 template <typename T>

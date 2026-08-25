@@ -1049,6 +1049,9 @@ private:
                     if (node.operands[index] != nullptr && !AppendCompactOneLine(*node.operands[index], result)) {
                         return false;
                     }
+                    if (index < node.commentsBeforeOperators.size() && !node.commentsBeforeOperators[index].empty()) {
+                        return false;
+                    }
                     if (index < node.operators.size() && !AddCompactToken(result, node.operators[index])) {
                         return false;
                     }
@@ -2745,6 +2748,16 @@ private:
         return best;
     }
 
+    NodeResult AddCommentsBeforeChainOperator(const FormatBreakNode& node, size_t index, NodeResult result) {
+        if (index >= node.commentsBeforeOperators.size()) {
+            return result;
+        }
+        for (const FormatBreakToken& comment : node.commentsBeforeOperators[index]) {
+            result = AddToken(result, comment);
+        }
+        return result;
+    }
+
     NodeResults
         SolveChainCompactAlternatives(const FormatBreakNode& node, int column, int indentLevel, bool lineHasText)
     {
@@ -2773,6 +2786,7 @@ private:
                         AddDeclarationValueContinuationLines(next, node.id, operand.extraLines);
                     }
                     if (index < node.operators.size()) {
+                        next = AddCommentsBeforeChainOperator(node, index, next);
                         next = AddToken(next, node.operators[index]);
                     }
                     AddPrunedResult(nextByState, std::move(next));
@@ -2920,6 +2934,7 @@ private:
         Merge(result, receiver);
         for (size_t index = 0; index < node.operators.size(); ++index) {
             result = AddBreak(result, indentLevel + 1, node.structuralDepth);
+            result = AddCommentsBeforeChainOperator(node, index, result);
             result = AddToken(result, node.operators[index]);
             NodeResult operand =
                 Solve(*node.operands[index + 1], result.endColumn, result.endIndentLevel, result.endLineHasText);
@@ -2945,6 +2960,7 @@ private:
         Merge(result, receiver);
         result = AddBreak(result, indentLevel + 1, node.structuralDepth);
         for (size_t index = 0; index < node.operators.size(); ++index) {
+            result = AddCommentsBeforeChainOperator(node, index, result);
             result = AddToken(result, node.operators[index]);
             const bool finalOperand = index + 1 == node.operands.size() - 1;
             NodeResult operand = finalOperand ?
@@ -3009,7 +3025,8 @@ private:
         for (size_t index = 0; index < node.operators.size(); ++index) {
             NodeResults next;
             for (const NodeResult& prefix : current) {
-                NodeResult withOperator = AddToken(prefix, node.operators[index]);
+                NodeResult withOperator = AddCommentsBeforeChainOperator(node, index, prefix);
+                withOperator = AddToken(withOperator, node.operators[index]);
                 NodeResults operands;
                 if (choice == FormatBreakChoice::StreamCompactTail) {
                     operands.push_back(SolveNodeWithoutBreaks(

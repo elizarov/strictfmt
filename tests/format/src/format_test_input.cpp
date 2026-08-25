@@ -1820,3 +1820,10 @@ if (Ready()) {  // keep
 Run();
 }
 }
+
+X CommentSeparatedChain() {
+return X()
+.A()
+// next group
+.B();
+}
