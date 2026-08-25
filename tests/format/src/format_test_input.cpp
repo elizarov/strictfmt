@@ -1609,6 +1609,11 @@ struct FormatterPureVirtualRegression {
 virtual ~FormatterPureVirtualRegression() = 0;
 };
 
+struct RefQualifiedNoexceptSpacing {
+void Lvalue() & noexcept;
+void Rvalue() && noexcept(false);
+};
+
 struct FormatterMacroTrailingCommentRegression {
 FORMAT_FIXTURE_DECLARE_OPTION(set_ssh_key_function, void*); // TODO curl_sshkeycallback?
 };
