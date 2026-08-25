@@ -2593,3 +2593,5 @@ X CommentSeparatedChain() {
         // next group
         .B();
 }
+
+auto rawStringSuffix = R"(value)"sv;

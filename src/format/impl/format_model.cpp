@@ -397,6 +397,7 @@ constexpr auto kSyntaxKindMappings = std::to_array<SyntaxKindMapping>({
     Tree(SyntaxNodeKind::FreeToken, "virtual_specifier", Bit(SyntaxNodeClass::WholeNodeAsFreeToken)),
     Tree(SyntaxNodeKind::Identifier, "macro_initializer", Bit(SyntaxNodeClass::WholeNodeAsFreeToken)),
     Tree(SyntaxNodeKind::ConcatenatedString, "concatenated_string", Bit(SyntaxNodeClass::StringLike)),
+    Tree(SyntaxNodeKind::UserDefinedLiteral, "user_defined_literal"),
     Tree(SyntaxNodeKind::StringLiteral, "suffixed_string_literal", kStringLikeClasses),
     Tree(SyntaxNodeKind::RawStringLiteral, "raw_string_literal", kStringLikeClasses),
     Tree(SyntaxNodeKind::StringLiteral, "string_literal", kStringLikeClasses),
@@ -1123,6 +1124,8 @@ std::string_view SyntaxNodeKindName(SyntaxNodeKind kind) {
             return "RawStringLiteral";
         case SyntaxNodeKind::StringLiteral:
             return "StringLiteral";
+        case SyntaxNodeKind::UserDefinedLiteral:
+            return "UserDefinedLiteral";
         case SyntaxNodeKind::SystemLibString:
             return "SystemLibString";
         case SyntaxNodeKind::CharacterLiteral:
