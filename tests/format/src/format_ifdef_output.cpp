@@ -35,6 +35,7 @@
 FORMAT_API_ int FormatMain(int argc, TCHAR** argv) {
 #else
 #include "format_userver/portable_main.hpp"
+
 FORMAT_API_ int FormatMain(int argc, char** argv) {
 #endif
     UseMain(argc, argv);

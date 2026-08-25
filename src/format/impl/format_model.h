@@ -323,7 +323,7 @@ enum class SyntaxNodeClass : std::uint64_t {
     AllowedListPreprocessorContainer = 1ull << 29,
     ConditionalPreprocessorTree = 1ull << 30,
     ConditionalPreprocessorOpen = 1ull << 31,
-    PreserveBlankLineParent = 1ull << 32,
+    SourceItemScope = 1ull << 32,
     ListForceSplitMarker = 1ull << 33,
     PrefixList = 1ull << 34,
     DeclarationNode = 1ull << 35,

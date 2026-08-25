@@ -548,6 +548,20 @@ template<typename T>
 concept GroupedConcept=true;
 using AfterGroupedConcept=int;
 
+void PreserveSiblingBlankLines(int value) {
+First();
+
+Second();
+switch(value){case 1:First();
+
+Second();break;}
+}
+
+template<typename T>
+concept PreserveRequirementBlankLines=requires{typename T::first;
+
+typename T::second;};
+
 using ConfigMetricAvailabilityResolver = bool (*)(std::string_view metricRef);
 using RuntimeConfigDynamicItemVisitor = void (*)(void* context, std::string_view key, const void* item);
 using RuntimeConfigEnsureDynamicItem = void* (*)(AppConfig& config, std::string_view key);
