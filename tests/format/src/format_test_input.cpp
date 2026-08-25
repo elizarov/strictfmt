@@ -460,6 +460,10 @@ InitializerGeneralityWidget::InitializerGeneralityWidget(int value, int other, i
     Touch();
 }
 
+ConstructorBodyEconomyWidget::ConstructorBodyEconomyWidget(FirstExtremelyLongParameterType first,SecondExtremelyLongParameterType second) : first_(first),second_(second) {
+    Use(first_,second_);
+}
+
 StringColumn::StringColumn(ColumnRef column)
     : ClickhouseColumn{impl::GetTypedColumn<StringColumn, NativeTyp>(column)}
 {}
