@@ -208,7 +208,7 @@ enum class ValueFormat : std::uint8_t {
 };
 ```
 
-When a class, struct, or enum body is followed by a declarator for the declared type, keep the declarator attached to the closing brace.
+When a class, struct, union, or enum body is followed by a declarator for the declared type, keep the declarator attached to the closing brace.
 
 ```cpp
 struct Context {

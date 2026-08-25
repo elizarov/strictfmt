@@ -50,6 +50,7 @@ enum class SyntaxNodeKind : std::uint16_t {
     EnumSpecifier,
     ClassSpecifier,
     StructSpecifier,
+    UnionSpecifier,
     BaseClassClause,
     AccessSpecifier,
     IfStatement,
@@ -347,6 +348,7 @@ enum class SyntaxNodeClass : std::uint64_t {
     DeclarationGroupAlias = 1ull << 54,
     KeywordOwnedValue = 1ull << 55,
     Expression = 1ull << 56,
+    DeclaredTypeSpecifier = 1ull << 57,
 };
 
 enum class SyntaxWrapperRole : std::uint8_t {
