@@ -214,6 +214,8 @@ constexpr auto kSyntaxKindMappings = std::to_array<SyntaxKindMapping>({
     Tree(SyntaxNodeKind::RawMacroReplacement, "raw_macro_replacement", Bit(SyntaxNodeClass::WholeNodeAsFreeToken)),
     Tree(SyntaxNodeKind::Tree, "macro_arrow_chain"),
     Tree(SyntaxNodeKind::Tree, "top_level_call_statement"),
+    Tree(SyntaxNodeKind::BareMacroItem, "top_level_item_macro"),
+    Tree(SyntaxNodeKind::BareMacroItem, "bare_macro_statement"),
     Tree(SyntaxNodeKind::MacroCallItem, "block_macro_call_line_item"),
     Tree(SyntaxNodeKind::MacroCallItem, "block_macro_call_statement_item"),
     Tree(SyntaxNodeKind::MacroCallItem, "top_level_macro_call_line_item"),
@@ -1105,6 +1107,8 @@ std::string_view SyntaxNodeKindName(SyntaxNodeKind kind) {
             return "AttributedStatement";
         case SyntaxNodeKind::MacroCallItem:
             return "MacroCallItem";
+        case SyntaxNodeKind::BareMacroItem:
+            return "BareMacroItem";
         case SyntaxNodeKind::MacroStatementSequence:
             return "MacroStatementSequence";
         case SyntaxNodeKind::MsCallModifier:

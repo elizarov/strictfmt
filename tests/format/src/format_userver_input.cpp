@@ -493,3 +493,6 @@ using CommentPreservingAlias=std::conditional_t<std::is_same_v<T,A>,A,std::condi
 std::is_same_v<T,B>,B,std::conditional_t<std::is_convertible_v<T,std::string_view>,std::string_view,T>>>;
 
 }  // namespace format_userver_fixture
+
+FORMAT_USERVER_NAMESPACE_BEGIN
+void FormatUserverBareMacroItem();
