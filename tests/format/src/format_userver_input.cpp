@@ -425,4 +425,67 @@ enum class [[nodiscard]] FormatStatus : bool {kNo=false,kYes=true};
 
 enum CurlNamespaceStatus {kOptional = CURL_FORMAT_USERVER_NAMESPACE kOptionalValue};
 
+void Consumer::RunConsuming(ConsumerScope::Callback callback) {
+    consumer_ = std::make_unique<ConsumerImpl>(name_, conf_, topics_, execution_params_, rebalance_callback_, stats_);
+    consumer_->StartConsuming();
+
+    LOG_INFO("Started messages polling");
+
+    while (!engine::current_task::ShouldCancel()) {
+        auto polled_messages = consumer_->PollBatch(
+            execution_params_.max_batch_size,
+            engine::Deadline::FromDuration(execution_params_.poll_timeout)
+        );
+
+        if (engine::current_task::ShouldCancel()) {
+            LOG_DEBUG("Stopping consuming because of cancel");
+            break;
+        }
+        if (polled_messages.empty()) {
+            continue;
+        }
+        const engine::TaskCancellationBlocker cancelation_blocker;
+
+        TESTPOINT(fmt::format("tp_{}_polled", name_), {});
+
+        auto batch_processing_task =
+            utils::Async(main_task_processor_, "messages_processing", callback, utils::span{polled_messages});
+        const utils::ScopeGuard callback_duration_notifier{
+            CreateDurationNotifier(execution_params_.max_callback_duration)
+        };
+
+        try {
+            batch_processing_task.Get();
+
+            consumer_->AccountMessageBatchProcessingSucceeded(polled_messages);
+            TESTPOINT(fmt::format("tp_{}", name_), {});
+        } catch (const std::exception& e) {
+            LOG_ERROR("Messages processing failed in consumer into client callback: {}", e.what());
+            consumer_->AccountMessageBatchProcessingFailed(polled_messages);
+
+            using Key = std::pair<utils::zstring_view, std::uint32_t>;
+            std::map<Key, std::uint64_t> min_offset_by_partition;
+            for (const auto& msg : polled_messages) {
+                Key key{msg.GetTopic(), static_cast<std::uint32_t>(msg.GetPartition())};
+                const auto offset = static_cast<std::uint64_t>(msg.GetOffset());
+                auto it = min_offset_by_partition.find(key);
+                if (it == min_offset_by_partition.end()) {
+                    min_offset_by_partition[key] = offset;
+                } else {
+                    it->second = std::min(it->second, offset);
+                }
+            }
+            std::vector<SeekParams> seek_params;
+            seek_params.reserve(min_offset_by_partition.size());
+            for (const auto& [key, offset] : min_offset_by_partition) {
+                seek_params.push_back({key.first, key.second, offset});
+            }
+            constexpr auto kSeekAfterFailureTimeout = std::chrono::seconds(20);
+            MultiSeek(seek_params, kSeekAfterFailureTimeout);
+            LOG_WARNING("Sought back to reprocess failed batch");
+            CallErrorTestpoint(fmt::format("tp_error_{}", name_), e.what());
+        }
+    }
+}
+
 }  // namespace format_userver_fixture

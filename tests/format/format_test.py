@@ -565,6 +565,33 @@ class FormatCommandTests(unittest.TestCase):
             )
             self.assertRegex(result.stderr, r"Formatted 2 files, 2 LOC in (?:\d+ms|\d+\.\d{3}s)\.\s*$")
 
+    def test_verbose_reports_each_file_start_and_completion(self) -> None:
+        build_dir = TEST_TEMP_ROOT
+        build_dir.mkdir(exist_ok=True)
+
+        with tempfile.TemporaryDirectory(prefix="format_verbose_", dir=build_dir) as temp_dir:
+            root = Path(temp_dir)
+            shutil.copyfile(STRICTFMT_ROOT / ".cpp-format", root / ".cpp-format")
+            write_empty_ignore(root)
+            first = root / "first.cpp"
+            second = root / "second.cpp"
+            first.write_text("int first(){return 1;}\n", encoding="utf-8")
+            second.write_text("int second(){return 2;}\n", encoding="utf-8")
+
+            result = native_format("--verbose", "--concurrency", "1", str(first), str(second), cwd=root)
+
+            self.assertEqual(0, result.returncode, msg=f"stdout:\n{result.stdout}\n\nstderr:\n{result.stderr}")
+            escaped_first = re.escape(str(first.resolve()))
+            escaped_second = re.escape(str(second.resolve()))
+            self.assertRegex(
+                result.stderr,
+                rf"^\[1/2\] Formatting {escaped_first}\n"
+                rf"\[1/2\] Finished {escaped_first} in (?:\d+ms|\d+\.\d{{3}}s)\n"
+                rf"\[2/2\] Formatting {escaped_second}\n"
+                rf"\[2/2\] Finished {escaped_second} in (?:\d+ms|\d+\.\d{{3}}s)\n"
+                rf"Formatted 2 files, 2 LOC in (?:\d+ms|\d+\.\d{{3}}s)\.\s*$",
+            )
+
     def test_in_place_formats_file(self) -> None:
         build_dir = TEST_TEMP_ROOT
         build_dir.mkdir(exist_ok=True)

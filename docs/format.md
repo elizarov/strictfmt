@@ -402,6 +402,7 @@ Grouping determines where structural empty-line separators are required. It does
 - Separate a field or type alias from neighbors when the solver-selected layout makes its initializer or alias target own a multi-line delimiter list whose closing delimiter returns to declaration indentation. A continuation-only owner/value break does not isolate the declaration.
 - Separate fields from neighboring methods with one empty line.
 - Keep consecutive method declarations in one method group.
+- A declaration inside a nested compound scope does not affect grouping or delimiter-based isolation of the declaration item that owns that scope.
 
 Access specifiers are class-level labels. Members under them stay one indent level deeper.
 
