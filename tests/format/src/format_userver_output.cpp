@@ -346,10 +346,14 @@ public:
 };
 
 void MacroCompoundArgument() {
-    UEXPECT_THROW_MSG({
-        GetConn()->SetParameter("invalid", "parameter", Scope::kSession);
-        auto res = GetConn()->Execute("select 1");
-    }, pg::AccessRuleViolation, "invalid parameter");
+    UEXPECT_THROW_MSG(
+        {
+            GetConn()->SetParameter("invalid", "parameter", Scope::kSession);
+            auto res = GetConn()->Execute("select 1");
+        },
+        pg::AccessRuleViolation,
+        "invalid parameter"
+    );
     UEXPECT_NO_THROW({
         const auto result = coll.Distinct("type", mongo::options::Comment("test distinct operation"));
         EXPECT_EQ(2, result.size());

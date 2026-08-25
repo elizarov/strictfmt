@@ -862,18 +862,18 @@ std::string FormatConditionalAssignmentPrefix(std::string_view text) {
     return result;
 }
 
-struct DeferredSplitListContext {
+struct MandatoryBlockSplitListContext {
     const SyntaxNode* list = nullptr;
-    const SyntaxNode* lambdaRightBrace = nullptr;
+    const SyntaxNode* itemRightBrace = nullptr;
     const SyntaxNode* closeToken = nullptr;
     int itemIndent = 0;
     int closeIndent = 0;
-    bool afterLambdaClose = false;
+    bool afterItemClose = false;
 };
 
-struct LambdaSplitListPlan {
+struct MandatoryBlockSplitListPlan {
     FormatBreakModelContext breakContext;
-    DeferredSplitListContext deferredContext;
+    MandatoryBlockSplitListContext deferredContext;
 };
 
 struct PreprocessorSplitListContext {
@@ -945,7 +945,7 @@ private:
     int bracketDepth_ = 0;
     std::vector<BraceFrame> braceStack_;
     std::vector<int> activeCaseBodySwitchDepths_;
-    std::vector<DeferredSplitListContext> deferredSplitListContexts_;
+    std::vector<MandatoryBlockSplitListContext> mandatoryBlockSplitListContexts_;
     std::vector<PreprocessorSplitListContext> preprocessorSplitListContexts_;
     std::vector<int> conditionalFunctionIndents_;
     std::optional<int> pendingIndentRestoreAfterFlush_;
@@ -2589,61 +2589,63 @@ private:
         return lineHasText_ || !pendingTokens_.empty();
     }
 
-    std::optional<LambdaSplitListPlan> BuildLambdaSplitListPlan(const PrintToken& token) const {
+    std::optional<MandatoryBlockSplitListPlan> BuildMandatoryBlockSplitListPlan(const PrintToken& token) const {
         if (
             activeTokens_ == nullptr ||
             token.kind != PrintTokenKind::Known ||
             token.syntaxKind != SyntaxNodeKind::LeftBrace ||
-            token.inSingleStatementLambdaBody ||
-            token.parentKind != SyntaxNodeKind::CompoundStatement ||
-            token.grandParentKind != SyntaxNodeKind::LambdaExpression
+            RoleForBrace(token) != BraceRole::Block ||
+            token.node == nullptr ||
+            token.node->parent == nullptr
         ) {
             return std::nullopt;
         }
-        const SyntaxNode* compound = NearestAncestor(token, SyntaxNodeKind::CompoundStatement);
-        const SyntaxNode* lambda = NearestAncestor(token, SyntaxNodeKind::LambdaExpression);
-        if (compound == nullptr || lambda == nullptr) {
-            return std::nullopt;
-        }
-        const SyntaxNode* list = NearestDelimitedListAncestorBefore(token, lambda);
+        const SyntaxNode* block = token.node->parent;
+        const SyntaxNode* list = NearestDelimitedListAncestorBefore(token, block);
         if (list == nullptr) {
             return std::nullopt;
         }
+        for (const SyntaxNode* ancestor = block->parent; ancestor != nullptr && ancestor != list; ancestor = ancestor->parent) {
+            if (RoleForBraceParent(ancestor->kind) == BraceRole::Block) {
+                return std::nullopt;
+            }
+        }
         const SyntaxNode* listOpen = DirectOpeningDelimiterChild(*list);
         const SyntaxNode* listClose = DirectMatchingClosingDelimiterChild(*list, listOpen);
-        const SyntaxNode* lambdaClose = DirectTokenChild(*compound, SyntaxNodeKind::RightBrace);
-        if (listOpen == nullptr || listClose == nullptr || lambdaClose == nullptr) {
+        const SyntaxNode* itemClose = DirectTokenChild(*block, SyntaxNodeKind::RightBrace);
+        if (listOpen == nullptr || listClose == nullptr || itemClose == nullptr) {
             return std::nullopt;
         }
         const std::optional<size_t> closeIndex = FindTokenIndex(listClose, currentTokenIndex_ + 1);
-        const std::optional<size_t> lambdaCloseIndex = FindTokenIndex(lambdaClose, currentTokenIndex_ + 1);
-        if (!closeIndex || !lambdaCloseIndex || *lambdaCloseIndex >= *closeIndex) {
+        const std::optional<size_t> itemCloseIndex = FindTokenIndex(itemClose, currentTokenIndex_ + 1);
+        if (!closeIndex || !itemCloseIndex || *itemCloseIndex >= *closeIndex) {
             return std::nullopt;
         }
         FormatBreakToken virtualClose{&(*activeTokens_)[*closeIndex], false, true};
         const int baseIndentLevel = pendingIndentLevel_.value_or(indentLevel_);
-        bool hasCommaAfterLambda = false;
-        for (size_t index = *lambdaCloseIndex + 1; index < *closeIndex; ++index) {
+        bool hasFollowingListItem = false;
+        for (size_t index = *itemCloseIndex + 1; index < *closeIndex; ++index) {
             const PrintToken& candidate = (*activeTokens_)[index];
             if (
                 candidate.kind == PrintTokenKind::Known &&
                 candidate.syntaxKind == SyntaxNodeKind::Comma &&
-                SyntaxPathContains(candidate, list)
+                candidate.node != nullptr &&
+                candidate.node->parent == list
             ) {
-                hasCommaAfterLambda = true;
+                hasFollowingListItem = true;
                 break;
             }
         }
 
-        return LambdaSplitListPlan{
+        return MandatoryBlockSplitListPlan{
             .breakContext = {
                 .virtualDelimiterOpen = listOpen,
                 .virtualDelimiterClose = virtualClose,
-                .forceSplitVirtualDelimiter = hasCommaAfterLambda || HasDirectCommentChild(*list)
+                .forceSplitVirtualDelimiter = hasFollowingListItem || HasDirectCommentChild(*list)
             },
             .deferredContext = {
                 .list = list,
-                .lambdaRightBrace = lambdaClose,
+                .itemRightBrace = itemClose,
                 .closeToken = listClose,
                 .itemIndent = baseIndentLevel + 1,
                 .closeIndent = baseIndentLevel
@@ -2737,8 +2739,8 @@ private:
             next.parentKind == SyntaxNodeKind::ArgumentList;
     }
 
-    DeferredSplitListContext* ActiveDeferredSplitListContext() {
-        return deferredSplitListContexts_.empty() ? nullptr : &deferredSplitListContexts_.back();
+    MandatoryBlockSplitListContext* ActiveMandatoryBlockSplitListContext() {
+        return mandatoryBlockSplitListContexts_.empty() ? nullptr : &mandatoryBlockSplitListContexts_.back();
     }
 
     PreprocessorSplitListContext* ActivePreprocessorSplitListContextFor(const PrintToken& token) {
@@ -2869,21 +2871,22 @@ private:
         return true;
     }
 
-    void MarkDeferredSplitLambdaClosed(const PrintToken& token) {
-        DeferredSplitListContext* context = ActiveDeferredSplitListContext();
-        if (context != nullptr && context->lambdaRightBrace == token.node) {
-            context->afterLambdaClose = true;
+    void MarkMandatoryBlockSplitListItemClosed(const PrintToken& token) {
+        MandatoryBlockSplitListContext* context = ActiveMandatoryBlockSplitListContext();
+        if (context != nullptr && context->itemRightBrace == token.node) {
+            context->afterItemClose = true;
         }
     }
 
     bool TryPrintDeferredSplitListComma(const PrintToken& token) {
-        DeferredSplitListContext* context = ActiveDeferredSplitListContext();
+        MandatoryBlockSplitListContext* context = ActiveMandatoryBlockSplitListContext();
         if (
             context == nullptr ||
-            !context->afterLambdaClose ||
+            !context->afterItemClose ||
             token.kind != PrintTokenKind::Known ||
             token.syntaxKind != SyntaxNodeKind::Comma ||
-            !SyntaxPathContains(token, context->list)
+            token.node == nullptr ||
+            token.node->parent != context->list
         ) {
             return false;
         }
@@ -2894,10 +2897,10 @@ private:
     }
 
     bool TryPrintDeferredSplitListClose(const PrintToken& token) {
-        DeferredSplitListContext* context = ActiveDeferredSplitListContext();
+        MandatoryBlockSplitListContext* context = ActiveMandatoryBlockSplitListContext();
         if (
             context == nullptr ||
-            !context->afterLambdaClose ||
+            !context->afterItemClose ||
             token.kind != PrintTokenKind::Known ||
             context->closeToken != token.node
         ) {
@@ -2908,7 +2911,7 @@ private:
         }
         NewLineWithIndent(context->closeIndent);
         BufferToken(token);
-        deferredSplitListContexts_.pop_back();
+        mandatoryBlockSplitListContexts_.pop_back();
         return true;
     }
 
@@ -3439,7 +3442,7 @@ private:
             }
             return;
         }
-        const std::optional<LambdaSplitListPlan> splitListPlan = BuildLambdaSplitListPlan(token);
+        const std::optional<MandatoryBlockSplitListPlan> splitListPlan = BuildMandatoryBlockSplitListPlan(token);
         BufferToken(token);
         if (role == BraceRole::Compact) {
             return;
@@ -3447,7 +3450,7 @@ private:
         const bool splitList =
             FlushPendingTokens(splitListPlan ? splitListPlan->breakContext : FormatBreakModelContext{});
         if (splitListPlan && splitList) {
-            deferredSplitListContexts_.push_back(splitListPlan->deferredContext);
+            mandatoryBlockSplitListContexts_.push_back(splitListPlan->deferredContext);
         }
         const bool functionBlock = token.parentKind == SyntaxNodeKind::CompoundStatement &&
             token.grandParentKind == SyntaxNodeKind::FunctionDefinition;
@@ -3564,7 +3567,7 @@ private:
                 pendingIndentRestoreAfterFlush_ = *restoreIndent;
             }
             BufferToken(token);
-            MarkDeferredSplitLambdaClosed(token);
+            MarkMandatoryBlockSplitListItemClosed(token);
             if (isSwitchBody) {
                 switchDepth_ = std::max(0, switchDepth_ - 1);
             }
