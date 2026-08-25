@@ -536,6 +536,13 @@ struct EmptyDeclaredType{}emptyDeclaredType;
 enum class EmptyDeclaredEnum{}emptyDeclaredEnum;
 struct NonemptyDeclaredType{int value;}nonemptyDeclaredType;
 
+struct FirstDeclaredStruct{};
+struct SecondDeclaredStruct{};
+union FirstDeclaredUnion{};
+union SecondDeclaredUnion{};
+struct DeclaredStructValue{int number;}declaredStructValue;
+union DeclaredUnionValue{int number;float decimal;}declaredUnionValue;
+
 using ConfigMetricAvailabilityResolver = bool (*)(std::string_view metricRef);
 using RuntimeConfigDynamicItemVisitor = void (*)(void* context, std::string_view key, const void* item);
 using RuntimeConfigEnsureDynamicItem = void* (*)(AppConfig& config, std::string_view key);

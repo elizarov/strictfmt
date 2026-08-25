@@ -544,9 +544,7 @@ bool ContainsCallableDeclarator(const SyntaxNode& node, bool root = true) {
 }
 
 bool IsTypeSpecifier(const SyntaxNode& node) {
-    return node.kind == SyntaxNodeKind::ClassSpecifier ||
-        node.kind == SyntaxNodeKind::StructSpecifier ||
-        node.kind == SyntaxNodeKind::EnumSpecifier;
+    return SyntaxNodeHasClass(node, SyntaxNodeClass::DeclaredTypeSpecifier);
 }
 
 bool TypeSpecifierHasDefinitionBody(const SyntaxNode& node) {

@@ -152,9 +152,18 @@ constexpr auto kSyntaxKindMappings = std::to_array<SyntaxKindMapping>({
         Bit(SyntaxNodeClass::DeclarationScope)),
     Tree(SyntaxNodeKind::NamespaceDefinition, "namespace_definition"),
     Tree(SyntaxNodeKind::LinkageSpecification, "linkage_specification"),
-    Tree(SyntaxNodeKind::EnumSpecifier, "enum_specifier", Bit(SyntaxNodeClass::MacroDeclarationFragment)),
-    Tree(SyntaxNodeKind::ClassSpecifier, "class_specifier", Bit(SyntaxNodeClass::MacroDeclarationFragment)),
-    Tree(SyntaxNodeKind::StructSpecifier, "struct_specifier", Bit(SyntaxNodeClass::MacroDeclarationFragment)),
+    Tree(SyntaxNodeKind::EnumSpecifier, "enum_specifier", Bit(SyntaxNodeClass::MacroDeclarationFragment) | Bit(
+        SyntaxNodeClass::DeclaredTypeSpecifier
+    )),
+    Tree(SyntaxNodeKind::ClassSpecifier, "class_specifier", Bit(SyntaxNodeClass::MacroDeclarationFragment) | Bit(
+        SyntaxNodeClass::DeclaredTypeSpecifier
+    )),
+    Tree(SyntaxNodeKind::StructSpecifier, "struct_specifier", Bit(SyntaxNodeClass::MacroDeclarationFragment) | Bit(
+        SyntaxNodeClass::DeclaredTypeSpecifier
+    )),
+    Tree(SyntaxNodeKind::UnionSpecifier, "union_specifier", Bit(SyntaxNodeClass::MacroDeclarationFragment) | Bit(
+        SyntaxNodeClass::DeclaredTypeSpecifier
+    )),
     Tree(SyntaxNodeKind::BaseClassClause, "base_class_clause", Bit(SyntaxNodeClass::PrefixList)),
     Tree(SyntaxNodeKind::AccessSpecifier, "access_specifier"),
     Tree(SyntaxNodeKind::AccessSpecifier, "access_specifier_label"),
@@ -953,6 +962,8 @@ std::string_view SyntaxNodeKindName(SyntaxNodeKind kind) {
             return "ClassSpecifier";
         case SyntaxNodeKind::StructSpecifier:
             return "StructSpecifier";
+        case SyntaxNodeKind::UnionSpecifier:
+            return "UnionSpecifier";
         case SyntaxNodeKind::BaseClassClause:
             return "BaseClassClause";
         case SyntaxNodeKind::AccessSpecifier:
