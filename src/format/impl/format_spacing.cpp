@@ -611,6 +611,9 @@ bool FormatTokenNeedsSpace(const PrintToken* previous, const PrintToken& current
         }
         return false;
     }
+    if (previous->parentKind == SyntaxNodeKind::RefQualifier) {
+        return true;
+    }
     if (prev == SyntaxNodeKind::LeftBrace && previous->inSingleStatementLambdaBody) {
         return true;
     }
