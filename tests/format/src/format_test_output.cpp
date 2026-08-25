@@ -582,6 +582,49 @@ InitializerGeneralityWidget::InitializerGeneralityWidget(int value, int other, i
     Touch();
 }
 
+StringColumn::StringColumn(ColumnRef column) :
+    ClickhouseColumn{impl::GetTypedColumn<StringColumn, NativeTyp>(column)} {}
+
+struct OverflowDeclaration {
+    FunctionPtr destroy,
+        writev,
+        readv,
+        setsockopt,
+        get_base_stream,
+        check_closed,
+        poll,
+        failed,
+        timed_out,
+        should_retry;
+};
+
+void FormatOverflowStream() {
+    LOG()
+        << "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+            "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb";
+}
+
+void FormatOverflowRawString() {
+    EXPECT_EQ(
+        formats::json::FromString(utils::statistics::ToSolomonFormat(GetStorage(), {})),
+        formats::json::FromString(
+            R"(
+aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+)"
+        )
+    );
+}
+
+enum class OverflowEnum {
+    kAaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa,  //!< x
+    /** @name Class 27 — Triggered Data Change Violation */
+    kTriggeredDataChangeViolation = static_cast<std::int64_t>(SqlStateClass::kTriggeredDataChangeViolation),  //!< 27000
+    /** @name Class 28 — Invalid Authorization Specification */
+    kInvalidAuthorizationSpecification = static_cast<std::int64_t>(
+        SqlStateClass::kInvalidAuthorizationSpecification
+    ),  //!< 28000
+};
+
 template <typename T> requires(HasValue<T>)
 void UseShortRequires(T& value) {
     value.Use();
@@ -1759,8 +1802,8 @@ void TraceCaptureChanged(HWND hwnd, LPARAM lParam, bool handled) {
         TracePrefix::LayoutEditUi,
         "wm_capturechanged",
         "new_owner=\"%s\" handled=\"%s\"",
-        reinterpret_cast<HWND>(lParam) == nullptr ?
-            "none" : (reinterpret_cast<HWND>(lParam) == hwnd ? "dashboard" : "other"),
+        reinterpret_cast<HWND>(lParam) == nullptr ? "none" :
+            (reinterpret_cast<HWND>(lParam) == hwnd ? "dashboard" : "other"),
         firstValueWithLongName +
             secondValueWithLongName +
             thirdValueWithLongName +

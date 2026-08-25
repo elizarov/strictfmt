@@ -856,6 +856,11 @@ private:
             }
         }
         if (SyntaxNodeKindHasClass(node.kind, SyntaxNodeClass::DeclarationNode)) {
+            if (auto declaration = BuildCommaSeparatedDeclaration(node, depth)) {
+                return declaration;
+            }
+        }
+        if (SyntaxNodeKindHasClass(node.kind, SyntaxNodeClass::DeclarationNode)) {
             if (auto declaration = BuildDirectInitializedDeclaration(node, depth)) {
                 return declaration;
             }
@@ -1383,6 +1388,43 @@ private:
     static bool IsAssignmentOperatorNode(const SyntaxNode& node) {
         return SyntaxNodeKindHasClass(node.kind, SyntaxNodeClass::Known) &&
             SyntaxNodeKindHasClass(node.kind, SyntaxNodeClass::AssignmentOperator);
+    }
+
+    FormatBreakNode* BuildCommaSeparatedDeclaration(const SyntaxNode& node, int depth) {
+        std::vector<FormatBreakNode*> operands;
+        std::vector<FormatBreakToken> operators;
+        size_t operandBegin = 0;
+        for (size_t index = 0; index < node.children.size(); ++index) {
+            const SyntaxNode* child = node.children[index];
+            if (child == nullptr || child->kind != SyntaxNodeKind::Comma) {
+                continue;
+            }
+            const std::optional<FormatBreakToken> comma = TokenForNode(*child);
+            if (!comma) {
+                continue;
+            }
+            FormatBreakNode* operand = BuildSequenceFromChildren(node.children, operandBegin, index, depth + 1);
+            if (operand == nullptr) {
+                return nullptr;
+            }
+            operands.push_back(operand);
+            operators.push_back(*comma);
+            operandBegin = index + 1;
+        }
+        if (operators.empty()) {
+            return nullptr;
+        }
+        FormatBreakNode* tail =
+            BuildSequenceFromChildren(node.children, operandBegin, node.children.size(), depth + 1);
+        if (tail == nullptr) {
+            return nullptr;
+        }
+        operands.push_back(tail);
+
+        auto chain = MakeNode(FormatBreakNodeKind::Chain, depth);
+        chain->operands = StoreNodePointers(operands);
+        chain->operators = StoreTokens(operators);
+        return chain;
     }
 
     std::optional<size_t> DirectInitializedDeclaratorIndex(const SyntaxNode& node) const {

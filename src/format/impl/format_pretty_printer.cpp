@@ -2981,6 +2981,14 @@ private:
                 BufferToken(token);
                 return;
             }
+            if (
+                token.kind == PrintTokenKind::TrailingComment &&
+                !CanAttachToPreviousPreprocessorLine(token, rawPrevious)
+            ) {
+                BufferToken(token);
+                FlushPendingTokens();
+                return;
+            }
             FlushPendingTokens();
             if (CanAttachToPreviousPreprocessorLine(token, rawPrevious)) {
                 ReopenLastOutputLine();

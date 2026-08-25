@@ -21,6 +21,10 @@ Each node kind exposes legal layout candidates through `SolveAlternatives`:
 
 The solver compares complete candidates with `Better`. Intermediate candidate sets may be pruned only when the removed candidate cannot win any continuation under the same solver contract.
 
+Composite candidates retain nondominated child layouts until all following children and suffix tokens have been costed. A locally best child is not sufficient when a later separator, comment, closer, or statement terminator can make another child layout win.
+
+Token candidates account for their complete physical rendering. Newlines embedded in token text contribute physical lines and reset the continuation column. Comment tokens also include the mandatory newline emitted after the comment and reset the continuation to the current indentation. These line transitions participate in the same overflow and line-count cost as selected break choices.
+
 Owner/value syntax uses one generic after-owner candidate shape. A structured macro definition is built as its header owner plus its complete replacement value. Its compact chain candidate is legal only when the whole definition fits on one physical line; all other candidates split after the owner and solve the complete replacement recursively. A replacement parsed as multiple top-level call units is represented by a force-split statement sequence inside that value, so its required unit boundaries compose with the required header boundary without printer inference. The solver's break-line suffix width accounts for text emitted only on taken breaks; structured macros use it for the trailing ` \`, including that physical suffix in overflow cost without making it a break heuristic.
 
 ## Choice Fidelity
