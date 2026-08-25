@@ -2255,6 +2255,10 @@ void IifeCallSplit() {
     Use(value);
 }
 
+auto CompactLambdaNestedInitializer(int x) {
+    return [x]() { return T{x}; };
+}
+
 void TemplateAngleSpacing() {
     chaotic::Validate<Validators...>(arr, value);
     return std::get<0>(key_or_result_);

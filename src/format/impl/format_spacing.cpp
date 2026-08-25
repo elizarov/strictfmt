@@ -326,6 +326,13 @@ bool IsCompactEmptyBraceToken(const PrintToken& token) {
     return token.kind == PrintTokenKind::Free && token.text == "{}";
 }
 
+bool IsSingleStatementLambdaBodyBrace(const PrintToken& token, SyntaxNodeKind kind) {
+    return token.syntaxKind == kind &&
+        token.inSingleStatementLambdaBody &&
+        token.parentKind == SyntaxNodeKind::CompoundStatement &&
+        token.grandParentKind == SyntaxNodeKind::LambdaExpression;
+}
+
 bool IsAttributeCloseToken(const PrintToken& token) {
     return token.kind == PrintTokenKind::Free && token.text == "]]" && (
         token.parentKind == SyntaxNodeKind::AttributeSpecifier ||
@@ -588,7 +595,7 @@ bool FormatTokenNeedsSpace(const PrintToken* previous, const PrintToken& current
     ) {
         return true;
     }
-    if (cur == SyntaxNodeKind::RightBrace && current.inSingleStatementLambdaBody) {
+    if (IsSingleStatementLambdaBodyBrace(current, SyntaxNodeKind::RightBrace)) {
         return true;
     }
     if (
@@ -614,7 +621,7 @@ bool FormatTokenNeedsSpace(const PrintToken* previous, const PrintToken& current
     if (previous->parentKind == SyntaxNodeKind::RefQualifier) {
         return true;
     }
-    if (prev == SyntaxNodeKind::LeftBrace && previous->inSingleStatementLambdaBody) {
+    if (IsSingleStatementLambdaBodyBrace(*previous, SyntaxNodeKind::LeftBrace)) {
         return true;
     }
     if (
