@@ -490,9 +490,6 @@ void AppendTokens(
     const bool childInMacroValue = inMacroValue || nodeKind == SyntaxNodeKind::MacroReplacementList;
 
     if (nodeKind == SyntaxNodeKind::BlankLine) {
-        if (!SyntaxNodeKindHasClass(parentKind, SyntaxNodeClass::PreserveBlankLineParent)) {
-            return;
-        }
         tokens.push_back({
             .kind = PrintTokenKind::BlankLine,
             .inMacroValue = childInMacroValue,
@@ -1283,7 +1280,7 @@ private:
             cursor != nullptr && cursor->parent != nullptr;
             cursor = cursor->parent
         ) {
-            if (SyntaxNodeHasClass(*cursor->parent, SyntaxNodeClass::PreserveBlankLineParent)) {
+            if (SyntaxNodeHasClass(*cursor->parent, SyntaxNodeClass::SourceItemScope)) {
                 return cursor;
             }
         }
@@ -3010,6 +3007,51 @@ private:
             SyntaxNodeKindHasClass(rawPrevious->syntaxKind, SyntaxNodeClass::EndifDirective);
     }
 
+    static const SyntaxNode* DirectChildAtLevel(const SyntaxNode* node, const SyntaxNode* parent) {
+        for (const SyntaxNode* cursor = node; cursor != nullptr; cursor = cursor->parent) {
+            if (cursor->parent == parent) {
+                return cursor;
+            }
+        }
+        return nullptr;
+    }
+
+    bool ShouldPreserveSourceBlankLine(
+        const PrintToken& token,
+        const PrintToken* previous,
+        const PrintToken* next
+    ) const {
+        if (
+            HasBufferedLineText() ||
+            token.node == nullptr ||
+            token.node->parent == nullptr ||
+            previous == nullptr ||
+            previous->node == nullptr ||
+            next == nullptr ||
+            next->node == nullptr
+        ) {
+            return false;
+        }
+        const SyntaxNode* level = token.node->parent;
+        const SyntaxNode* previousItem = DirectChildAtLevel(previous->node, level);
+        const SyntaxNode* nextItem = DirectChildAtLevel(next->node, level);
+        if (previousItem == nullptr || nextItem == nullptr || previousItem == nextItem) {
+            return false;
+        }
+        if (previous->kind == PrintTokenKind::Known && (
+            SyntaxNodeKindHasClass(previous->syntaxKind, SyntaxNodeClass::OpeningDelimiter) ||
+            previous->syntaxKind == SyntaxNodeKind::Colon
+        )) {
+            return false;
+        }
+        return next->kind != PrintTokenKind::Known || (
+            next->syntaxKind != SyntaxNodeKind::RightParen &&
+            next->syntaxKind != SyntaxNodeKind::RightBracket &&
+            next->syntaxKind != SyntaxNodeKind::RightBrace &&
+            next->syntaxKind != SyntaxNodeKind::Greater
+        );
+    }
+
     void PrintOne(
         const PrintToken& token,
         const PrintToken* previous,
@@ -3023,8 +3065,13 @@ private:
         PreparePreprocessorGroupBoundary(token, previous, next);
         PrepareMacroBoundary(rawPrevious, token);
         if (token.kind == PrintTokenKind::BlankLine) {
-            FlushPendingTokens();
-            BlankLine();
+            const PrintToken* sourcePrevious = rawPrevious != nullptr && rawPrevious->kind != PrintTokenKind::BlankLine ?
+                rawPrevious : previous;
+            const PrintToken* sourceNext = rawNext != nullptr && rawNext->kind != PrintTokenKind::BlankLine ?
+                rawNext : next;
+            if (ShouldPreserveSourceBlankLine(token, sourcePrevious, sourceNext)) {
+                BlankLine();
+            }
             return;
         }
         if (IsCommentToken(token.kind)) {
