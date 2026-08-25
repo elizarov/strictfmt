@@ -2337,4 +2337,8 @@ void ControlInitializerDeclaratorBinding() {
     if (T&& rvalueReference = g()) {}
 }
 
+void ControlInitializerTemplateType() {
+    if (A<B> value = g()) {}
+}
+
 }
