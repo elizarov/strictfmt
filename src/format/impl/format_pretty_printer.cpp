@@ -423,11 +423,27 @@ bool HasSeparatedListAncestor(const SyntaxNode* node) {
     return false;
 }
 
-bool KeepsListCommentInBreakModel(const PrintToken& token) {
+bool IsFormatterOwnedChain(const SyntaxNode& node) {
+    if (node.kind != SyntaxNodeKind::FieldExpression && node.kind != SyntaxNodeKind::BinaryExpression) {
+        return false;
+    }
+    return std::any_of(node.children.begin(), node.children.end(), [&node](const SyntaxNode* child) {
+        return child != nullptr && (
+            SyntaxNodeKindHasClass(child->kind, SyntaxNodeClass::ChainOperator) || (
+                node.kind == SyntaxNodeKind::FieldExpression &&
+                (child->kind == SyntaxNodeKind::Dot || child->kind == SyntaxNodeKind::Arrow)
+            )
+        );
+    });
+}
+
+bool KeepsStructuralCommentInBreakModel(const PrintToken& token) {
     if (!IsCommentToken(token.kind)) {
         return false;
     }
-    return HasSeparatedListAncestor(token.node);
+    return HasSeparatedListAncestor(token.node) || (
+        token.node != nullptr && token.node->parent != nullptr && IsFormatterOwnedChain(*token.node->parent)
+    );
 }
 
 void AppendPreprocessorPrintToken(
@@ -1793,11 +1809,12 @@ private:
             pendingIndentLevel_.reset();
         }
         if (printToken.kind == PrintTokenKind::Comment) {
+            const int commentIndent = atLineStart_ ? CurrentColumn() / indentWidth_ : CurrentLineIndentLevel();
             if (!atLineStart_) {
-                NewLine(false);
+                NewLineWithIndent(commentIndent);
             }
             Write(FormatTokenText(printToken));
-            NewLine(false);
+            NewLineWithIndent(commentIndent);
             return;
         }
         if (printToken.kind == PrintTokenKind::TrailingComment) {
@@ -2216,12 +2233,22 @@ private:
         EmitBreakNode(*node.children[1], solution, bodyIndent);
     }
 
+    void EmitCommentsBeforeChainOperator(const FormatBreakNode& node, size_t index) {
+        if (index >= node.commentsBeforeOperators.size()) {
+            return;
+        }
+        for (const FormatBreakToken& comment : node.commentsBeforeOperators[index]) {
+            WriteBreakToken(comment);
+        }
+    }
+
     void EmitChainNode(const FormatBreakNode& node, const FormatBreakSolution& solution, int baseIndent) {
         const FormatBreakChoice choice = ChoiceFor(solution, node.id);
         if (choice == FormatBreakChoice::Compact) {
             for (size_t index = 0; index < node.operands.size(); ++index) {
                 EmitBreakNode(*node.operands[index], solution, baseIndent);
                 if (index < node.operators.size()) {
+                    EmitCommentsBeforeChainOperator(node, index);
                     WriteBreakToken(node.operators[index]);
                 }
             }
@@ -2238,6 +2265,7 @@ private:
                 NewLineWithIndent(baseIndent + 1);
             }
             for (size_t index = 0; index < node.operators.size(); ++index) {
+                EmitCommentsBeforeChainOperator(node, index);
                 WriteBreakToken(node.operators[index]);
                 EmitBreakNode(*node.operands[index + 1], solution, baseIndent + 1);
                 if (
@@ -2259,6 +2287,7 @@ private:
             if (choice == FormatBreakChoice::MemberCompactTail) {
                 NewLineWithIndent(baseIndent + 1);
                 for (size_t index = 0; index < node.operators.size(); ++index) {
+                    EmitCommentsBeforeChainOperator(node, index);
                     WriteBreakToken(node.operators[index]);
                     EmitBreakNode(*node.operands[index + 1], solution, baseIndent + 1);
                 }
@@ -2266,6 +2295,7 @@ private:
             }
             for (size_t index = 0; index < node.operators.size(); ++index) {
                 NewLineWithIndent(baseIndent + 1);
+                EmitCommentsBeforeChainOperator(node, index);
                 WriteBreakToken(node.operators[index]);
                 EmitBreakNode(*node.operands[index + 1], solution, baseIndent + 1);
             }
@@ -2885,7 +2915,7 @@ private:
             return;
         }
         if (IsCommentToken(token.kind)) {
-            if (KeepsListCommentInBreakModel(token)) {
+            if (KeepsStructuralCommentInBreakModel(token)) {
                 BufferToken(token);
                 return;
             }

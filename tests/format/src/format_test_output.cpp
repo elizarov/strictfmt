@@ -2586,3 +2586,10 @@ void TrailingBlockComment() {
         Run();
     }
 }
+
+X CommentSeparatedChain() {
+    return X()
+        .A()
+        // next group
+        .B();
+}
