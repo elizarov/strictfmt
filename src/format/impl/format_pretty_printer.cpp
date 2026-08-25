@@ -413,7 +413,10 @@ bool HasSeparatedListAncestor(const SyntaxNode* node) {
         cursor != nullptr;
         cursor = cursor->parent
     ) {
-        if (IsSeparatedListContainer(*cursor)) {
+        if (
+            SyntaxNodeHasClass(*cursor, SyntaxNodeClass::SemanticDelimitedParent) ||
+            IsSeparatedListContainer(*cursor)
+        ) {
             return true;
         }
     }
@@ -1789,7 +1792,15 @@ private:
             forceColumnZeroLine_ = true;
             pendingIndentLevel_.reset();
         }
-        if (IsCommentToken(printToken.kind)) {
+        if (printToken.kind == PrintTokenKind::Comment) {
+            if (!atLineStart_) {
+                NewLine(false);
+            }
+            Write(FormatTokenText(printToken));
+            NewLine(false);
+            return;
+        }
+        if (printToken.kind == PrintTokenKind::TrailingComment) {
             if (!atLineStart_) {
                 Space();
                 output_.push_back(' ');
@@ -2890,7 +2901,7 @@ private:
             if (CanAttachToPreviousPreprocessorLine(token, rawPrevious)) {
                 ReopenLastOutputLine();
             }
-            PrintComment(token, next);
+            PrintComment(token, rawPrevious, next);
             return;
         }
         if (token.kind == PrintTokenKind::Preprocessor) {
@@ -2961,13 +2972,21 @@ private:
         NewLine();
     }
 
-    void PrintComment(const PrintToken& token, const PrintToken* next) {
+    void PrintComment(const PrintToken& token, const PrintToken* previous, const PrintToken* next) {
         if (token.kind == PrintTokenKind::TrailingComment && lineHasText_) {
             Space();
             output_.push_back(' ');
             ++currentColumn_;
             Write(token.text);
             NewLine(ShouldContinueMacroLine(token, next));
+            if (
+                previous != nullptr &&
+                previous->kind == PrintTokenKind::Known &&
+                previous->syntaxKind == SyntaxNodeKind::LeftBrace &&
+                RoleForBrace(*previous) == BraceRole::NamespaceLike
+            ) {
+                BlankLine();
+            }
             return;
         }
         if (lineHasText_) {
@@ -3278,7 +3297,9 @@ private:
                     SyntaxNodeKindHasClass(previous->syntaxKind, SyntaxNodeClass::AccessKeyword)
                 )) {
                     FlushPendingTokens();
-                    NewLine(ShouldContinueMacroLine(token, next));
+                    if (rawNext == nullptr || rawNext->kind != PrintTokenKind::TrailingComment) {
+                        NewLine(ShouldContinueMacroLine(token, next));
+                    }
                 }
                 return;
             default:
@@ -3296,10 +3317,13 @@ private:
     }
 
     void PrintLeftBrace(const PrintToken& token, const PrintToken* previous, const PrintToken* rawNext) {
+        const bool followedByTrailingComment = rawNext != nullptr && rawNext->kind == PrintTokenKind::TrailingComment;
         if (IsWithinConditionalFunctionHeader(token)) {
             BufferToken(token);
             FlushPendingTokens();
-            NewLine(ShouldContinueMacroLine(token, rawNext));
+            if (!followedByTrailingComment) {
+                NewLine(ShouldContinueMacroLine(token, rawNext));
+            }
             return;
         }
         const bool isEmptyBracePair = rawNext != nullptr &&
@@ -3359,11 +3383,15 @@ private:
         }
         if (role == BraceRole::Block || role == BraceRole::Enum) {
             indentLevel_ = std::max(indentLevel_, openLineIndent) + 1;
-            NewLine(ShouldContinueMacroLine(token, rawNext));
+            if (!followedByTrailingComment) {
+                NewLine(ShouldContinueMacroLine(token, rawNext));
+            }
         } else if (role == BraceRole::NamespaceLike || role == BraceRole::CaseBlock) {
-            NewLine(ShouldContinueMacroLine(token, rawNext));
-            if (role == BraceRole::NamespaceLike) {
-                BlankLine();
+            if (!followedByTrailingComment) {
+                NewLine(ShouldContinueMacroLine(token, rawNext));
+                if (role == BraceRole::NamespaceLike) {
+                    BlankLine();
+                }
             }
         }
     }
@@ -3404,7 +3432,7 @@ private:
             conditionalFunctionIndents_.pop_back();
             BufferToken(token);
             FlushPendingTokens();
-            if (next != nullptr && next->kind == PrintTokenKind::TrailingComment) {
+            if (rawNext != nullptr && rawNext->kind == PrintTokenKind::TrailingComment) {
                 return;
             }
             NewLine(ShouldContinueMacroLine(token, next));
@@ -3445,7 +3473,9 @@ private:
                 NewLine(token.inMacroValue);
             }
             WriteWithIndentOffset("}", -1);
-            NewLine(ShouldContinueMacroLine(token, next));
+            if (rawNext == nullptr || rawNext->kind != PrintTokenKind::TrailingComment) {
+                NewLine(ShouldContinueMacroLine(token, next));
+            }
             return;
         }
         if (role != BraceRole::Compact) {
@@ -3470,7 +3500,9 @@ private:
                 return;
             }
             FlushPendingTokens();
-            NewLine(ShouldContinueMacroLine(token, next));
+            if (rawNext == nullptr || rawNext->kind != PrintTokenKind::TrailingComment) {
+                NewLine(ShouldContinueMacroLine(token, next));
+            }
             return;
         }
     }

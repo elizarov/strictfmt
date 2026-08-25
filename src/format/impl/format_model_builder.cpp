@@ -207,21 +207,6 @@ bool SyntaxNodeHasClass(const SyntaxNode& node, SyntaxNodeClass syntaxNodeClass)
         SyntaxNodeKindHasClass(node.kind, syntaxNodeClass);
 }
 
-bool KeepsBlockCommentInlineInParent(SyntaxNodeKind kind) {
-    switch (kind) {
-        case SyntaxNodeKind::ArgumentList:
-        case SyntaxNodeKind::InitializerList:
-        case SyntaxNodeKind::FieldInitializerList:
-        case SyntaxNodeKind::ParameterList:
-        case SyntaxNodeKind::SubscriptArgumentList:
-        case SyntaxNodeKind::TemplateArgumentList:
-        case SyntaxNodeKind::TemplateParameterList:
-            return true;
-        default:
-            return false;
-    }
-}
-
 std::optional<size_t> PreviousNonTriviaChildIndex(const SyntaxChildList& children, size_t before) {
     while (before > 0) {
         --before;
@@ -358,14 +343,22 @@ void WrapControlBody(FormatModel& model, SyntaxNode& node, size_t childIndex) {
     )) {
         --firstBodyIndex;
     }
+    size_t lastBodyIndex = childIndex;
+    while (
+        lastBodyIndex + 1 < node.children.size() &&
+        node.children[lastBodyIndex + 1] != nullptr &&
+        node.children[lastBodyIndex + 1]->kind == SyntaxNodeKind::TrailingComment
+    ) {
+        ++lastBodyIndex;
+    }
 
     SyntaxNode* compound = MakeNode(model);
     compound->kind = SyntaxNodeKind::CompoundStatement;
     compound->parent = &node;
     compound->depth = node.depth + 1;
-    compound->children.reserve(childIndex - firstBodyIndex + 3);
+    compound->children.reserve(lastBodyIndex - firstBodyIndex + 3);
     AppendChild(*compound, MakeTokenNode(model, SyntaxNodeKind::LeftBrace));
-    for (size_t index = firstBodyIndex; index <= childIndex; ++index) {
+    for (size_t index = firstBodyIndex; index <= lastBodyIndex; ++index) {
         if (emptyStatementBody && index == childIndex) {
             continue;
         }
@@ -375,7 +368,7 @@ void WrapControlBody(FormatModel& model, SyntaxNode& node, size_t childIndex) {
 
     node.children.erase(
         node.children.begin() + static_cast<std::ptrdiff_t>(firstBodyIndex),
-        node.children.begin() + static_cast<std::ptrdiff_t>(childIndex + 1)
+        node.children.begin() + static_cast<std::ptrdiff_t>(lastBodyIndex + 1)
     );
     node.children.insert(node.children.begin() + static_cast<std::ptrdiff_t>(firstBodyIndex), compound);
 }
@@ -848,11 +841,10 @@ inline void AppendTsChild(
     const bool isComment = childSyntax.kind == SyntaxNodeKind::Comment;
     const bool isBlock = isComment && IsBlockComment(source, childStart);
     const bool consumesLineTail = !isComment || CommentConsumesLineTail(source, childStart, childEnd);
-    const bool keepBlockInline = isBlock && KeepsBlockCommentInlineInParent(parent.kind);
     const bool isTrailingComment =
-        isComment && !keepBlockInline && hasPreviousSibling && previousEndRow == childStartRow &&
+        isComment && hasPreviousSibling && previousEndRow == childStartRow &&
         previousEndColumn > 0 && consumesLineTail;
-    const bool isInlineBlockComment = isBlock && (keepBlockInline || !consumesLineTail);
+    const bool isInlineBlockComment = isBlock && !consumesLineTail;
     AppendTsNode(model, child, source, parent, childSyntax, isTrailingComment, isInlineBlockComment);
     previousEnd = childEnd;
     previousEndRow = childEndRow;
