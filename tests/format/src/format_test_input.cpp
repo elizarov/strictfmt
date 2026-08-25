@@ -22,6 +22,7 @@
         (thirdValue))
 #define FORMAT_FIXTURE_SHORT_MACRO(value) (value)
 #define FORMAT_FIXTURE_MUCH_LONGER_MACRO(value) (value)
+#define FORMAT_FIXTURE_STRUCTURED_LAMBDA [](){a();b();}
 #define FORMAT_FIXTURE_DECLARE_OPTION(name,type) void name(type)
 #define FORMAT_FIXTURE_LOAD_OPTIONAL(function,name) \
 function=reinterpret_cast<decltype(function)>(GetProcAddress(module_,name))
