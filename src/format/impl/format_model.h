@@ -128,6 +128,7 @@ enum class SyntaxNodeKind : std::uint16_t {
     ConcatenatedString,
     RawStringLiteral,
     StringLiteral,
+    UserDefinedLiteral,
     SystemLibString,
     CharacterLiteral,
     NumberLiteral,

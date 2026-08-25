@@ -291,7 +291,12 @@ bool IsBinaryOperatorSpacingContext(const PrintToken& token) {
 }
 
 bool IsUserDefinedLiteralSuffix(const PrintToken& previous, const PrintToken& current) {
-    return previous.syntaxKind == SyntaxNodeKind::NumberLiteral &&
+    return previous.parentKind == SyntaxNodeKind::UserDefinedLiteral &&
+        current.parentKind == SyntaxNodeKind::UserDefinedLiteral &&
+        previous.node != nullptr &&
+        current.node != nullptr &&
+        previous.node->parent == current.node->parent &&
+        SyntaxNodeKindHasClass(previous.syntaxKind, SyntaxNodeClass::Literal) &&
         current.kind == PrintTokenKind::Free &&
         !current.text.empty() && (
             (current.text.front() >= 'A' && current.text.front() <= 'Z') ||

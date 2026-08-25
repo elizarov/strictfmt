@@ -1827,3 +1827,5 @@ return X()
 // next group
 .B();
 }
+
+auto rawStringSuffix = R"(value)"sv;
