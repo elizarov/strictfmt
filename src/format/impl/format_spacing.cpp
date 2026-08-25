@@ -355,11 +355,28 @@ bool IsInlineBlockCommentToken(const PrintToken& token) {
     return token.kind == PrintTokenKind::Free && token.text.size() >= 4 && token.text.substr(0, 2) == "/*";
 }
 
+bool IsMemberPointerDeclaratorStar(const PrintToken& token) {
+    if (
+        token.syntaxKind != SyntaxNodeKind::Star ||
+        token.node == nullptr ||
+        token.node->parent == nullptr
+    ) {
+        return false;
+    }
+    const SyntaxNode& parent = *token.node->parent;
+    const size_t tokenIndex = DirectTokenChildIndex(parent, token.node);
+    const SyntaxNode* previous = PreviousNonTriviaChild(parent, tokenIndex);
+    return previous != nullptr && previous->kind == SyntaxNodeKind::ColonColon;
+}
+
 bool IsTemplateArgumentExpressionOperator(const PrintToken& token) {
     return token.kind == PrintTokenKind::Known &&
         IsTemplateDelimiterContext(token) &&
-        IsBinaryContext(token) &&
         SyntaxNodeKindHasClass(token.syntaxKind, SyntaxNodeClass::BinaryOperator) &&
+        !IsDeclaratorBindingToken(token) &&
+        !IsMemberPointerDeclaratorStar(token) &&
+        !IsUnaryContext(token) &&
+        !IsOperatorSpellingContext(token) &&
         token.syntaxKind != SyntaxNodeKind::Less &&
         token.syntaxKind != SyntaxNodeKind::Greater;
 }

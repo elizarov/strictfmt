@@ -2264,6 +2264,13 @@ void TemplateAngleSpacing() {
     return std::get<0>(key_or_result_);
 }
 
+using TemplateArgumentBinary = A<N + 1>;
+template <class... T>
+using TemplateArgumentFold = A<(T::value && ...)>;
+using TemplateArgumentPointer = A<T*>;
+using TemplateArgumentReference = A<T&&>;
+using TemplateArgumentUnary = A<-1>;
+
 void FallthroughSpaceBeforeSemicolon(int value) {
     switch (value) {
         case 0:
