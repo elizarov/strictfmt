@@ -588,9 +588,15 @@ InitializerGeneralityWidget::InitializerGeneralityWidget(int value, int other) :
 InitializerGeneralityWidget::InitializerGeneralityWidget(int value, int other, int third) :
     first_(value),
     second_(other),
-    third_(third)
-{
+    third_(third) {
     Touch();
+}
+
+ConstructorBodyEconomyWidget::ConstructorBodyEconomyWidget(
+    FirstExtremelyLongParameterType first,
+    SecondExtremelyLongParameterType second
+) : first_(first), second_(second) {
+    Use(first_, second_);
 }
 
 StringColumn::StringColumn(ColumnRef column) :
@@ -899,8 +905,7 @@ DashboardApp::DashboardApp(const DiagnosticsOptions& diagnosticsOptions, bool br
     diagnosticsOptions_(diagnosticsOptions),
     layoutEditController_(*this),
     shellUi_(std::make_unique<DashboardShellUi>(*this)),
-    bringToFrontOnRun_(bringToFrontOnRun)
-{
+    bringToFrontOnRun_(bringToFrontOnRun) {
     renderer_.SetLiveAnimationEnabled(true);
 }
 

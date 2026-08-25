@@ -2547,7 +2547,7 @@ private:
         if (
             !node.bodyHeaderRequiresDetachedBody &&
             compact.valid &&
-            !(header.valid && header.extraLines > 0) &&
+            !(node.bodyHeaderSingleStatementBody && header.valid && header.extraLines > 0) &&
             !lineStartParentIndentBody
         ) {
             alternatives.push_back(compact);
@@ -2730,19 +2730,14 @@ private:
         const bool lineStartParentIndentBody = !lineHasText &&
             node.bodyHeaderSplitAtParentIndentWhenLineStarts &&
             (!node.bodyHeaderSingleStatementBody || (header.valid && header.extraLines > 0));
-        if (header.valid && header.extraLines > 0 && detached.valid) {
-            return detached;
-        }
         if (lineStartParentIndentBody && parentIndent.valid) {
             return parentIndent;
         }
-        if (compact.valid && split.valid && header.valid && header.extraLines > 0) {
+        if (node.bodyHeaderSingleStatementBody && header.valid && header.extraLines > 0 && split.valid) {
             return split;
         }
-        if (compact.valid && split.valid && CompactLineEndsOverLimit(compact) && split.maxOverflow == 0) {
-            return split;
-        }
-        return Better(split, compact) ? split : compact;
+        NodeResult best = Better(split, compact) ? split : compact;
+        return Better(detached, best) ? detached : best;
     }
 
     NodeResult SolveChainCompact(const FormatBreakNode& node, int column, int indentLevel, bool lineHasText) {
