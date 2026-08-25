@@ -2331,4 +2331,10 @@ auto CompactListPrefixPruningRegression() {
     );
 }
 
+void ControlInitializerDeclaratorBinding() {
+    if (T* pointer = g()) {}
+    if (T& reference = g()) {}
+    if (T&& rvalueReference = g()) {}
+}
+
 }

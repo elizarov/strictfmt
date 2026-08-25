@@ -7,9 +7,13 @@ bool IsReferenceToken(const PrintToken& token) {
         SyntaxNodeKindHasClass(token.syntaxKind, SyntaxNodeClass::DeclaratorReferenceToken);
 }
 
+bool IsConditionDeclarationBindingToken(const PrintToken& token);
+
 bool IsDeclaratorBindingToken(const PrintToken& token) {
-    return SyntaxNodeKindHasClass(token.parentKind, SyntaxNodeClass::DeclaratorReferenceParent) &&
-        IsReferenceToken(token);
+    return IsReferenceToken(token) && (
+        SyntaxNodeKindHasClass(token.parentKind, SyntaxNodeClass::DeclaratorReferenceParent) ||
+        IsConditionDeclarationBindingToken(token)
+    );
 }
 
 bool IsUnaryContext(const PrintToken& token) {
@@ -100,6 +104,24 @@ size_t DirectTokenKindIndex(const SyntaxNode& node, SyntaxNodeKind kind) {
         }
     }
     return node.children.size();
+}
+
+bool IsConditionDeclarationBindingToken(const PrintToken& token) {
+    if (!IsReferenceToken(token) || token.node == nullptr) {
+        return false;
+    }
+    const SyntaxNode* expression = token.node->parent;
+    if (
+        expression == nullptr ||
+        expression->kind != SyntaxNodeKind::BinaryExpression ||
+        expression->parent == nullptr ||
+        expression->parent->kind != SyntaxNodeKind::ConditionClause
+    ) {
+        return false;
+    }
+    const size_t tokenIndex = DirectTokenChildIndex(*expression, token.node);
+    const SyntaxNode* declaratorAssignment = NextNonTriviaChild(*expression, tokenIndex + 1);
+    return declaratorAssignment != nullptr && declaratorAssignment->kind == SyntaxNodeKind::AssignmentExpression;
 }
 
 bool HasCallableTemplateLessShape(const SyntaxNode& node) {
@@ -194,6 +216,7 @@ bool IsBinaryOperatorSpacingContext(const PrintToken& token) {
     if (
         token.kind != PrintTokenKind::Known ||
         !SyntaxNodeKindHasClass(token.syntaxKind, SyntaxNodeClass::BinaryOperator) ||
+        IsConditionDeclarationBindingToken(token) ||
         IsUnaryContext(token) ||
         ((token.syntaxKind == SyntaxNodeKind::Less || token.syntaxKind == SyntaxNodeKind::Greater) &&
             IsTemplateAnglePrintToken(token)) ||
