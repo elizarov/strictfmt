@@ -512,12 +512,7 @@ bool FormatTokenNeedsSpace(const PrintToken* previous, const PrintToken& current
         return true;
     }
     if (current.kind == PrintTokenKind::Free && current.text == "{}") {
-        if (
-            current.parentKind == SyntaxNodeKind::CompoundStatement ||
-            current.parentKind == SyntaxNodeKind::FieldDeclarationList ||
-            current.parentKind == SyntaxNodeKind::DeclarationList ||
-            current.parentKind == SyntaxNodeKind::EnumeratorList
-        ) {
+        if (SyntaxNodeKindHasClass(current.parentKind, SyntaxNodeClass::CompoundBlock)) {
             return true;
         }
         return previous->kind == PrintTokenKind::Known && (
@@ -560,6 +555,9 @@ bool FormatTokenNeedsSpace(const PrintToken* previous, const PrintToken& current
         return true;
     }
     if (IsFunctionSuffixMacro(current)) {
+        return true;
+    }
+    if (IsCompactEmptyBraceToken(*previous) && IsWordLike(current)) {
         return true;
     }
     if (IsCompactEmptyBraceToken(*previous) && current.kind == PrintTokenKind::Known) {
