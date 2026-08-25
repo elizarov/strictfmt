@@ -99,7 +99,8 @@ constexpr std::uint64_t kSymbolLocalClasses =
     Bit(SyntaxNodeClass::DeclarationGroupType) |
     Bit(SyntaxNodeClass::DeclarationGroupCallable) |
     Bit(SyntaxNodeClass::DeclarationGroupObject) |
-    Bit(SyntaxNodeClass::DeclarationGroupAlias);
+    Bit(SyntaxNodeClass::DeclarationGroupAlias) |
+    Bit(SyntaxNodeClass::Expression);
 
 constexpr auto kSyntaxKindMappings = std::to_array<SyntaxKindMapping>({
     Kind(SyntaxNodeKind::Tree, Bit(SyntaxNodeClass::Tree)),
@@ -660,6 +661,14 @@ void StoreTokenSymbolInfo(
     }
 }
 
+void StoreTreeSymbolClasses(SymbolInfoTable& table, std::string_view name, std::uint64_t classes) {
+    const TSSymbol symbol =
+        ts_language_symbol_for_name(tree_sitter_cpp(), name.data(), static_cast<uint32_t>(name.size()), true);
+    if (static_cast<size_t>(symbol) < table.size()) {
+        table[symbol].classes |= classes;
+    }
+}
+
 void StoreSymbolInfoRole(SymbolInfoTable& table, std::string_view name, SyntaxWrapperRole role) {
     const TSSymbol symbol =
         ts_language_symbol_for_name(tree_sitter_cpp(), name.data(), static_cast<uint32_t>(name.size()), true);
@@ -679,6 +688,64 @@ const SymbolInfoTable& SyntaxInfoBySymbol() {
                 StoreTokenSymbolInfo(result, mapping.tokenText, false, mapping.kind, mapping.classes);
                 StoreTokenSymbolInfo(result, mapping.tokenText, true, mapping.kind, mapping.classes);
             }
+        }
+        // Keep the grammar's expression supertype as one formatter category even when
+        // individual expression wrappers are flattened in the format model.
+        constexpr std::string_view expressionNames[] = {
+            "alignof_expression",
+            "assignment_expression",
+            "binary_expression",
+            "call_expression",
+            "cast_expression",
+            "char_literal",
+            "co_await_expression",
+            "compound_literal_expression",
+            "concatenated_string",
+            "conditional_expression",
+            "cpp_cast_expression",
+            "delete_array_expression",
+            "delete_expression",
+            "extension_expression",
+            "false",
+            "field_expression",
+            "fold_expression",
+            "gcnew_expression",
+            "generic_expression",
+            "gnu_asm_expression",
+            "identifier",
+            "lambda_expression",
+            "macro_call_expression",
+            "macro_qualified_identifier",
+            "new_expression",
+            "null",
+            "number_literal",
+            "offsetof_expression",
+            "parameter_pack_expansion",
+            "parenthesized_expression",
+            "pointer_expression",
+            "preprocessing_token_macro_call",
+            "qualified_address_expression",
+            "qualified_identifier",
+            "raw_string_literal",
+            "reflect_expression",
+            "requires_clause",
+            "requires_expression",
+            "sizeof_expression",
+            "splice_specifier",
+            "string_literal",
+            "subscript_expression",
+            "suffixed_string_literal",
+            "template_function",
+            "this",
+            "throw_expression",
+            "true",
+            "typeid_expression",
+            "unary_expression",
+            "update_expression",
+            "user_defined_literal"
+        };
+        for (const std::string_view name : expressionNames) {
+            StoreTreeSymbolClasses(result, name, Bit(SyntaxNodeClass::Expression));
         }
         StoreTreeSymbolInfo(result, "comment", SyntaxNodeKind::Comment, kCommentClasses);
 

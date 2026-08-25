@@ -1438,6 +1438,34 @@ private:
         return false;
     }
 
+    static bool ContinuesBlockExpression(const PrintToken& token, const PrintToken& next) {
+        if (token.node == nullptr || next.node == nullptr || token.node->parent == nullptr) {
+            return false;
+        }
+        const SyntaxNode* blockExpression = token.node->parent->parent;
+        if (blockExpression == nullptr || !SyntaxNodeHasClass(*blockExpression, SyntaxNodeClass::Expression)) {
+            return false;
+        }
+
+        for (const SyntaxNode* ancestor = blockExpression->parent; ancestor != nullptr; ancestor = ancestor->parent) {
+            if (SyntaxPathContains(next, ancestor)) {
+                if (SyntaxNodeHasClass(*ancestor, SyntaxNodeClass::Expression)) {
+                    return true;
+                }
+                break;
+            }
+        }
+
+        // Call and subscript expression wrappers are flattened. Their semantic list
+        // remains a following sibling of the expression being invoked or indexed.
+        const SyntaxNode* continuation = next.node->parent;
+        return
+            SyntaxNodeKindHasClass(next.syntaxKind, SyntaxNodeClass::OpeningDelimiter) &&
+            continuation != nullptr &&
+            SyntaxNodeHasClass(*continuation, SyntaxNodeClass::SemanticDelimitedParent) &&
+            continuation->parent == blockExpression->parent;
+    }
+
     static SyntaxNodeKind MatchingClosingDelimiterToken(SyntaxNodeKind kind) {
         switch (kind) {
             case SyntaxNodeKind::LeftParen:
@@ -2731,14 +2759,6 @@ private:
             !closesLambdaArgument;
     }
 
-    static bool ClosesImmediatelyInvokedLambda(const PrintToken& token, const PrintToken& next) {
-        return token.parentKind == SyntaxNodeKind::CompoundStatement &&
-            token.grandParentKind == SyntaxNodeKind::LambdaExpression &&
-            next.kind == PrintTokenKind::Known &&
-            next.syntaxKind == SyntaxNodeKind::LeftParen &&
-            next.parentKind == SyntaxNodeKind::ArgumentList;
-    }
-
     MandatoryBlockSplitListContext* ActiveMandatoryBlockSplitListContext() {
         return mandatoryBlockSplitListContexts_.empty() ? nullptr : &mandatoryBlockSplitListContexts_.back();
     }
@@ -3576,6 +3596,7 @@ private:
                     token.grandParentKind == SyntaxNodeKind::LambdaExpression &&
                     next->syntaxKind == SyntaxNodeKind::RightParen;
                 const bool closesCompoundExpression = RightParenClosesCompoundExpression(token, *next);
+                const bool continuesBlockExpression = ContinuesBlockExpression(token, *next);
                 const bool attachesToFollowingKeyword =
                     SyntaxNodeKindHasClass(next->syntaxKind, SyntaxNodeClass::AttachAfterBlockKeyword) &&
                         next->syntaxKind != SyntaxNodeKind::KeywordWhile;
@@ -3583,12 +3604,9 @@ private:
                     next->syntaxKind == SyntaxNodeKind::KeywordWhile && next->parentKind == SyntaxNodeKind::DoStatement;
                 if (
                     next->syntaxKind == SyntaxNodeKind::Semicolon ||
-                    next->syntaxKind == SyntaxNodeKind::Comma || (
-                        token.parentKind == SyntaxNodeKind::RequirementSeq &&
-                        SyntaxNodeKindHasClass(next->syntaxKind, SyntaxNodeClass::BinaryOperator)
-                    ) ||
+                    next->syntaxKind == SyntaxNodeKind::Comma ||
                     closesLambdaArgument ||
-                    ClosesImmediatelyInvokedLambda(token, *next) ||
+                    continuesBlockExpression ||
                     closesCompoundExpression ||
                     attachesToFollowingKeyword ||
                     closesDoWhile
