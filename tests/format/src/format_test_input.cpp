@@ -1414,6 +1414,11 @@ const char* ReturnForcedAdjacentString() {
 return "first line\n" "second line";
 }
 
+const char* ActiveAdjacentNewlineEscape="first\n" "second";
+const char* ActiveAdjacentCrLfEscape="first\r\n" "second";
+const char* EscapedAdjacentNewlineText="first\\n" "second";
+const char* EscapedAdjacentCrLfText="first\\r\\n" "second";
+
 Task CoReturnForcedAdjacentString() {
 co_return "first line\n" "second line";
 }
