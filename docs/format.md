@@ -45,7 +45,7 @@ This document specifies the source layout produced by `strictfmt`.
 - Treat empty lines only as separators between neighboring source items. Do not emit empty lines at the beginning or end of a file.
 - Drop blank lines at the beginning of a block and immediately before a closing brace.
 - Insert required structural blank lines only when they separate neighboring source items.
-- Consecutive `#pragma` directives form a pragma group, and consecutive `#undef` directives form an undef group. Separate either group from a neighboring source item of another kind with one empty line. A leading standalone comment attaches to the following item for this grouping. Other preprocessor directives receive no grouping classification and continue through the existing formatting paths, including include sorting.
+- Atomic preprocessor directives do not create blank-line groups based on directive spelling. Preserve source-authored blank-line grouping around them. Formatter-owned separation may still follow a modeled structural role, such as declaration grouping, a complete conditional source item, or configured grouping within an include run, but never separates a directive from source it directly governs.
 - Remove trailing commas except in enum bodies. A comma before an empty final `PreprocessorArgumentMacros` argument is an argument separator, not a trailing comma, and is preserved. When the final item is selected by a conditional preprocessor branch, remove the branch-owned terminal comma from every final branch as part of the same normalization.
 - Structured macro definitions use formatter-owned replacement whitespace and continuation lines. Raw macro definitions configured with `RawMacroDefinitions` intentionally preserve raw replacement line structure as specified in [macro.md](macro.md).
 
@@ -601,7 +601,7 @@ Include sorting is enabled when include groups are configured. Sorting may move 
 
 When include groups are absent, include sorting is disabled. Include directives are normalized and emitted in source order, and blank-separated include blocks are preserved.
 
-Opening include blocks follow the same include run formatting path after a pragma group and inside `#ifndef`/`#define` guarded headers, so configured include groups control sorting or preservation for both forms.
+Opening include blocks follow the same include run formatting path at file scope and inside `#ifndef`/`#define` guarded headers, so configured include groups control sorting or preservation for both forms. A blank line before an opening include block is source-authored rather than inferred from the spelling of the preceding directive.
 
 Comments inside an include area bound the sortable include run around them.
 
