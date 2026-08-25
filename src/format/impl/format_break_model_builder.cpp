@@ -132,13 +132,14 @@ bool IsChainOperatorToken(const FormatBreakToken& token) {
 
 bool EndsWithEscapedLineFragment(std::string_view text) {
     const size_t quote = text.rfind('"');
-    if (quote == std::string_view::npos || quote == 0) {
+    if (quote == std::string_view::npos || quote < 2 || text[quote - 1] != 'n') {
         return false;
     }
-    if (quote >= 2 && text.substr(quote - 2, 2) == "\\n") {
-        return true;
+    size_t backslashCount = 0;
+    for (size_t index = quote - 1; index > 0 && text[index - 1] == '\\'; --index) {
+        ++backslashCount;
     }
-    return quote >= 4 && text.substr(quote - 4, 4) == "\\r\\n";
+    return backslashCount % 2 == 1;
 }
 
 bool ForcesStringBoundarySplit(const FormatBreakToken& token) {
