@@ -690,7 +690,6 @@ private:
         }
 
         auto signature = MakeNode(FormatBreakNodeKind::FunctionSignature, depth + 1);
-        signature->functionSignaturePrefersOuterSplit = true;
         signature->children = StoreNodePointers({returnType, declarator});
 
         auto chain = MakeNode(FormatBreakNodeKind::Chain, depth);
@@ -724,7 +723,6 @@ private:
         }
 
         auto signature = MakeNode(FormatBreakNodeKind::FunctionSignature, depth);
-        signature->functionSignaturePrefersOuterSplit = true;
         std::array<FormatBreakNode*, 3> signatureChildren{returnType, declarator, nullptr};
         size_t signatureChildCount = 2;
         if (*declaratorIndex + 1 < node.children.size()) {
