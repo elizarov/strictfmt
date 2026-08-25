@@ -54,7 +54,7 @@ This document specifies the source layout produced by `strictfmt`.
 Mandatory line breaks are structural boundaries. The break is always taken before optional wrapping is considered.
 
 - Break between complete statements and declarations, including after each statement-terminating semicolon.
-- The single-statement lambda is an exception only when the whole lambda stays on one physical line. Lambdas participate in expression layouts even though their bodies contain statements, so this exception lets a compact lambda remain an inline expression; ordinary statement and callable bodies retain their structural breaks.
+- The single-statement lambda is a deliberate exception only when the whole lambda stays on one physical line. It is specifically designed to keep short single-return predicates, projections, and adapters compact inside collection algorithms and stream pipelines, where forcing a multiline block would fragment the surrounding expression flow. Lambdas participate in expression layouts even though their bodies contain statements; ordinary statement and callable bodies retain their structural breaks.
 - Keep an empty control body compact as `{}` because splitting an empty pair adds visual bulk without exposing statement structure. Finish its control-body line before a following attachment keyword, including the `while` of a do-while statement.
 - Put block-opening braces at the end of the introducing line, then break.
 - Break after a code-block closing brace unless the following token is `else`, `catch`, `finally`, or the `while` that closes a do-while statement.
