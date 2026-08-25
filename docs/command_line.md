@@ -56,7 +56,7 @@ are specified in [config.md](config.md).
 ## Execution Options
 
 - `--concurrency <n>` limits worker threads for file formatting. The value must be a positive integer. When omitted, `strictfmt` uses hardware concurrency, falling back to `4` workers when the platform does not report a value. The effective worker count is capped by the number of files.
-- `-v` and `--verbose` are accepted and reserved for verbose progress output. Final summaries are printed regardless of this flag.
+- `-v` and `--verbose` print one line before and after each file is formatted. Each line includes the file's index in the input list and its absolute path; the completion line also includes that file's elapsed formatting time. Verbose progress uses the summary stream and replaces the terminal's in-place aggregate progress line. With multiple workers, lines reflect actual worker start and completion order. Final summaries are printed regardless of this flag.
 - `--version` prints `strictfmt <version>` to stdout and exits with code `0` without loading configuration or formatting inputs. Release executables print the release tag version without its leading `v`.
 - `-h` and `--help` print usage help to stdout and exit with code `0`.
 

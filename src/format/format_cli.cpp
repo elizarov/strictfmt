@@ -1,6 +1,7 @@
 #include <algorithm>
 #include <chrono>
 #include <cstdio>
+#include <mutex>
 #include <optional>
 #include <string>
 #include <string_view>
@@ -83,6 +84,33 @@ void PrintSourceWarnings(FILE* output, std::string_view file, const std::vector<
     for (const std::string& warning : warnings) {
         std::fprintf(output, "%.*s: %s\n", static_cast<int>(file.size()), file.data(), warning.c_str());
     }
+}
+
+void PrintVerboseFileProgress(
+    FILE* output,
+    std::mutex& outputMutex,
+    size_t fileIndex,
+    size_t totalFiles,
+    std::string_view action,
+    std::string_view file,
+    std::optional<std::chrono::steady_clock::duration> elapsed = std::nullopt
+) {
+    std::lock_guard<std::mutex> lock(outputMutex);
+    std::fprintf(
+        output,
+        "[%zu/%zu] %.*s %.*s",
+        fileIndex + 1,
+        totalFiles,
+        static_cast<int>(action.size()),
+        action.data(),
+        static_cast<int>(file.size()),
+        file.data()
+    );
+    if (elapsed.has_value()) {
+        std::fprintf(output, " in %s", FormatToolElapsed(*elapsed).c_str());
+    }
+    std::fprintf(output, "\n");
+    std::fflush(output);
 }
 
 std::string CompletedFileText(int completedCount, size_t totalCount) {
@@ -286,9 +314,14 @@ int RunFormat(int argc, char** argv) {
     }
 
     std::vector<CompletedFileFormat> completed(work.size());
-    ToolFileProgress progress(summary, "format", work.size(), start, true);
+    std::mutex verboseOutputMutex;
+    ToolFileProgress progress(summary, "format", work.size(), start, !options.verbose);
     RunToolParallelFor(work.size(), options.concurrency, &progress, [&](size_t index) {
         const ResolvedFileFormat& item = work[index];
+        if (options.verbose) {
+            PrintVerboseFileProgress(summary, verboseOutputMutex, index, work.size(), "Formatting", item.file);
+        }
+        const auto fileStart = std::chrono::steady_clock::now();
         CompletedFileFormat result;
         result.pending.file = item.file;
         std::optional<std::string> text = ReadFileBinary(item.file);
@@ -301,6 +334,17 @@ int RunFormat(int argc, char** argv) {
             result.pending.result = FormatSourceText(*text, *item.config, item.file);
         }
         completed[index] = std::move(result);
+        if (options.verbose) {
+            PrintVerboseFileProgress(
+                summary,
+                verboseOutputMutex,
+                index,
+                work.size(),
+                "Finished",
+                item.file,
+                std::chrono::steady_clock::now() - fileStart
+            );
+        }
     });
 
     for (CompletedFileFormat& completedFormat : completed) {

@@ -1063,6 +1063,13 @@ private:
         return DirectChildFollowsToken(declaration, delimiter, SyntaxNodeKind::Equal);
     }
 
+    static bool IsNestedDeclarationIsolationBoundary(const SyntaxNode& node, bool root) {
+        return !root && (
+            SyntaxNodeHasClass(node, SyntaxNodeClass::DeclarationScope) ||
+            SyntaxNodeHasClass(node, SyntaxNodeClass::CompoundBlock)
+        );
+    }
+
     static bool ContainsDeclarationIsolationDelimiter(
         const SyntaxNode& declaration,
         const SyntaxNode& node,
@@ -1074,7 +1081,7 @@ private:
         ) {
             return true;
         }
-        if (!root && SyntaxNodeHasClass(node, SyntaxNodeClass::DeclarationScope)) {
+        if (IsNestedDeclarationIsolationBoundary(node, root)) {
             return false;
         }
         return std::any_of(node.children.begin(), node.children.end(), [&](const SyntaxNode* child) {
@@ -1133,7 +1140,7 @@ private:
         ) {
             return &item;
         }
-        if (!root && SyntaxNodeHasClass(item, SyntaxNodeClass::DeclarationScope)) {
+        if (IsNestedDeclarationIsolationBoundary(item, root)) {
             return nullptr;
         }
         for (const SyntaxNode* child : item.children) {
