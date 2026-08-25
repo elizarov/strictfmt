@@ -2762,6 +2762,22 @@ private:
         }
     }
 
+    void PrepareBareMacroItemBoundary(const PrintToken* previous, const PrintToken& current) {
+        if (
+            previous == nullptr ||
+            current.kind == PrintTokenKind::TrailingComment ||
+            !SyntaxPathContainsKind(*previous, SyntaxNodeKind::BareMacroItem)
+        ) {
+            return;
+        }
+        if (HasBufferedLineText()) {
+            FlushPendingTokens();
+        }
+        if (lineHasText_) {
+            NewLine(ShouldContinueMacroLine(*previous, &current));
+        }
+    }
+
     bool CanAttachToPreviousPreprocessorLine(const PrintToken& token, const PrintToken* rawPrevious) const {
         return token.kind == PrintTokenKind::TrailingComment &&
             rawPrevious != nullptr &&
@@ -2824,6 +2840,7 @@ private:
         if (PrepareDeclarationGroupBoundary(token)) {
             return;
         }
+        PrepareBareMacroItemBoundary(rawPrevious, token);
         PrepareMacroBoundary(rawPrevious, token);
         if (token.kind == PrintTokenKind::BlankLine) {
             const PrintToken* sourcePrevious = rawPrevious != nullptr && rawPrevious->kind != PrintTokenKind::BlankLine ?

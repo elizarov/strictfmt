@@ -511,3 +511,6 @@ using CommentPreservingAlias = std::conditional_t<std::is_same_v<T, A>, A, std::
 >>;
 
 }  // namespace format_userver_fixture
+
+FORMAT_USERVER_NAMESPACE_BEGIN
+void FormatUserverBareMacroItem();
