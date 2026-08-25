@@ -2144,6 +2144,10 @@ private:
         return index < node.items.size() && IsCommentToken(FormatBreakTokenKind(node.items[index].trailingComment));
     }
 
+    static bool HasLeadingTrailingComment(const FormatBreakNode& node) {
+        return IsCommentToken(FormatBreakTokenKind(node.leadingTrailingComment));
+    }
+
     static bool HasBlankLineBeforeItem(const FormatBreakNode& node, size_t index) {
         return index < node.items.size() && node.items[index].blankLineBefore;
     }
@@ -2159,6 +2163,9 @@ private:
         }
         if (!IsSplitChoice(choice) || node.items.empty()) {
             EmitBreakNode(*node.children[0], solution, baseIndent);
+            if (HasLeadingTrailingComment(node)) {
+                WriteBreakToken(node.leadingTrailingComment);
+            }
             for (size_t index = 0; index < node.items.size(); ++index) {
                 const FormatBreakListItem& item = node.items[index];
                 if (node.suppressCompactDelimiterPadding && index == 0) {
@@ -2180,6 +2187,9 @@ private:
         }
 
         EmitBreakNode(*node.children[0], solution, baseIndent);
+        if (HasLeadingTrailingComment(node)) {
+            WriteBreakToken(node.leadingTrailingComment);
+        }
         const bool closesInContext = node.children.size() > 1 &&
             node.children[1]->kind == FormatBreakNodeKind::Token &&
             node.children[1]->token.contextOnly;
@@ -2213,6 +2223,9 @@ private:
         const FormatBreakChoice choice = ChoiceFor(solution, node.id);
         if (choice != FormatBreakChoice::Split) {
             EmitBreakNode(*node.children[0], solution, baseIndent);
+            if (HasLeadingTrailingComment(node)) {
+                WriteBreakToken(node.leadingTrailingComment);
+            }
             for (size_t index = 0; index < node.items.size(); ++index) {
                 const FormatBreakListItem& item = node.items[index];
                 EmitBreakNode(*item.node, solution, baseIndent);
@@ -2227,6 +2240,9 @@ private:
         }
 
         EmitBreakNode(*node.children[0], solution, baseIndent);
+        if (HasLeadingTrailingComment(node)) {
+            WriteBreakToken(node.leadingTrailingComment);
+        }
         BreakListLine(baseIndent + 1, HasBlankLineBeforeItem(node, 0));
         for (size_t index = 0; index < node.items.size(); ++index) {
             const FormatBreakListItem& item = node.items[index];
@@ -2266,6 +2282,9 @@ private:
         int baseIndent
     ) {
         EmitBreakNode(*node.children[0], solution, baseIndent);
+        if (HasLeadingTrailingComment(node)) {
+            WriteBreakToken(node.leadingTrailingComment);
+        }
         const bool closesInContext = node.children.size() > 1 &&
             node.children[1]->kind == FormatBreakNodeKind::Token &&
             node.children[1]->token.contextOnly;

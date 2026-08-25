@@ -87,6 +87,7 @@ struct FormatBreakNode {
     bool chainCompactRequiresFitOnOneLine = false;
     bool chainStartsWithOperator = false;
     bool splitTrailingBodyHeaderAtParentIndent = false;
+    FormatBreakToken leadingTrailingComment;
     std::span<FormatBreakNode*> children;
     std::vector<FormatBreakListItem> items;
     std::span<FormatBreakNode*> operands;

@@ -435,6 +435,7 @@ private:
 
     void AttachTrailingCommentToPreviousItem(FormatBreakNode& list, const FormatBreakToken& comment) {
         if (list.items.empty()) {
+            list.leadingTrailingComment = comment;
             return;
         }
         list.items.back().trailingComment = comment;
