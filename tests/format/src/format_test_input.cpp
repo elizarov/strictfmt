@@ -1628,6 +1628,12 @@ auto CompactLambdaNestedInitializer(int x){return [x](){return T{x};};}
 
 void TemplateAngleSpacing(){chaotic::Validate<Validators...>(arr,value);return std::get<0>(key_or_result_);}
 
+using TemplateArgumentBinary=A<N + 1>;
+template<class... T> using TemplateArgumentFold=A<(T::value && ...)>;
+using TemplateArgumentPointer=A<T*>;
+using TemplateArgumentReference=A<T&&>;
+using TemplateArgumentUnary=A<-1>;
+
 void FallthroughSpaceBeforeSemicolon(int value){switch(value){case 0:[[fallthrough]];case 1:break;}}
 
 void ForEmptyInitSpacingOrBody(size_t count){size_t len=0;for(;(1UL << len) < count;++len);}
