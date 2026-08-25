@@ -1,5 +1,6 @@
 #pragma once
 #pragma strictfmt_fixture
+
 #include <windows.h>
 #include <chrono> // formatter spacing regression include
 #include "zeta/thing.h"

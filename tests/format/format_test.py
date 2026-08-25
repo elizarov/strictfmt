@@ -812,27 +812,29 @@ class FormatCommandTests(unittest.TestCase):
             result.stdout,
         )
 
-    def test_final_undef_does_not_emit_trailing_empty_line(self) -> None:
+    def test_atomic_preprocessor_directives_do_not_create_groups(self) -> None:
         result = native_format(
             "--stdin",
             input_text=(
                 "#define VALUE 1\n"
                 "int value;\n"
                 "#undef VALUE\n"
+                "#line 200\n"
+                "int remapped;\n"
             ),
         )
 
         self.assertEqual(0, result.returncode, msg=f"stdout:\n{result.stdout}\n\nstderr:\n{result.stderr}")
         self.assertEqual(
             "#define VALUE 1\n"
-            "\n"
             "int value;\n"
-            "\n"
-            "#undef VALUE\n",
+            "#undef VALUE\n"
+            "#line 200\n"
+            "int remapped;\n",
             result.stdout,
         )
 
-    def test_pragma_and_undef_form_preprocessor_groups(self) -> None:
+    def test_atomic_preprocessor_directives_preserve_source_grouping(self) -> None:
         result = native_format(
             "--stdin",
             input_text=(
@@ -840,11 +842,13 @@ class FormatCommandTests(unittest.TestCase):
                 "#pragma first\n"
                 "// attached to the next pragma\n"
                 "#pragma second\n"
+                "\n"
                 "// attached to the definition\n"
                 "#define VALUE 1\n"
                 "#undef VALUE\n"
                 "#undef OTHER\n"
                 "#define OTHER 2\n"
+                "\n"
                 "int after;\n"
             ),
         )
@@ -852,33 +856,33 @@ class FormatCommandTests(unittest.TestCase):
         self.assertEqual(0, result.returncode, msg=f"stdout:\n{result.stdout}\n\nstderr:\n{result.stderr}")
         self.assertEqual(
             "int before;  // attached to previous item\n"
-            "\n"
             "#pragma first\n"
             "// attached to the next pragma\n"
             "#pragma second\n"
             "\n"
             "// attached to the definition\n"
             "#define VALUE 1\n"
-            "\n"
             "#undef VALUE\n"
             "#undef OTHER\n"
-            "\n"
             "#define OTHER 2\n"
             "\n"
             "int after;\n",
             result.stdout,
         )
 
-    def test_preprocessor_groups_do_not_pad_structural_boundaries(self) -> None:
+    def test_atomic_preprocessor_directives_stay_attached_to_context(self) -> None:
         result = native_format(
             "--stdin",
             input_text=(
                 "void f(){\n"
-                "#pragma first\n"
+                "#pragma omp parallel for\n"
+                "for(int index=0;index<4;++index){use(index);}\n"
+                "#define VALUE 1\n"
                 "int value;\n"
                 "#undef VALUE\n"
                 "}\n"
-                "#pragma after_function\n"
+                "#line 200\n"
+                "int remapped;\n"
                 "#if FLAG\n"
                 "#pragma second\n"
                 "int other;\n"
@@ -891,23 +895,22 @@ class FormatCommandTests(unittest.TestCase):
         self.assertEqual(0, result.returncode, msg=f"stdout:\n{result.stdout}\n\nstderr:\n{result.stderr}")
         self.assertEqual(
             "void f() {\n"
-            "#pragma first\n"
-            "\n"
+            "#pragma omp parallel for\n"
+            "    for (int index = 0; index < 4; ++index) {\n"
+            "        use(index);\n"
+            "    }\n"
+            "#define VALUE 1\n"
             "    int value;\n"
-            "\n"
             "#undef VALUE\n"
             "}\n"
             "\n"
-            "#pragma after_function\n"
-            "\n"
+            "#line 200\n"
+            "int remapped;\n"
             "#if FLAG\n"
             "#pragma second\n"
-            "\n"
             "int other;\n"
-            "\n"
             "#undef OTHER\n"
             "#endif\n"
-            "\n"
             "#undef AFTER_CONDITIONAL\n",
             result.stdout,
         )
