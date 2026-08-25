@@ -1624,6 +1624,8 @@ FormatBreakNode* BuildTemplatePrefix(const ConstSyntaxChildList& templateHeadChi
 
 void IifeCallSplit(){auto value=[](){return 1;}();Use(value);}
 
+auto CompactLambdaNestedInitializer(int x){return [x](){return T{x};};}
+
 void TemplateAngleSpacing(){chaotic::Validate<Validators...>(arr,value);return std::get<0>(key_or_result_);}
 
 void FallthroughSpaceBeforeSemicolon(int value){switch(value){case 0:[[fallthrough]];case 1:break;}}
