@@ -1656,4 +1656,6 @@ auto CompactListPrefixPruningRegression(){return make_tuple_of_references(workar
 
 void ControlInitializerDeclaratorBinding(){if(T* pointer=g()){}if(T& reference=g()){}if(T&& rvalueReference=g()){}}
 
+void ControlInitializerTemplateType(){if(A<B> value=g()){}}
+
 }

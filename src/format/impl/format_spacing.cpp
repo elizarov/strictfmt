@@ -159,6 +159,30 @@ bool HasCallableTemplateGreaterShape(const SyntaxNode& node, const SyntaxNode* g
         HasCallArgumentGroupShape(*right);
 }
 
+bool HasConditionDeclarationTemplateGreaterShape(
+    const SyntaxNode& node,
+    const SyntaxNode* greaterToken = nullptr
+) {
+    if (node.kind != SyntaxNodeKind::BinaryExpression || node.parent == nullptr) {
+        return false;
+    }
+    const size_t greaterIndex =
+        greaterToken == nullptr ? DirectTokenKindIndex(node, SyntaxNodeKind::Greater) : DirectTokenChildIndex(
+            node,
+            greaterToken
+        );
+    if (greaterIndex >= node.children.size()) {
+        return false;
+    }
+    const SyntaxNode* left = PreviousNonTriviaChild(node, greaterIndex);
+    const SyntaxNode* right = NextNonTriviaChild(node, greaterIndex + 1);
+    return node.parent->kind == SyntaxNodeKind::ConditionClause &&
+        left != nullptr &&
+        right != nullptr &&
+        HasCallableTemplateLessShape(*left) &&
+        right->kind == SyntaxNodeKind::AssignmentExpression;
+}
+
 bool IsCallableTemplateLessToken(const PrintToken& token) {
     if (token.node == nullptr || token.syntaxKind != SyntaxNodeKind::Less) {
         return false;
@@ -182,6 +206,31 @@ bool IsCallableTemplateGreaterToken(const PrintToken& token) {
     }
     const SyntaxNode* expression = token.node->parent;
     return expression != nullptr && HasCallableTemplateGreaterShape(*expression, token.node);
+}
+
+bool IsConditionDeclarationTemplateLessToken(const PrintToken& token) {
+    if (token.node == nullptr || token.syntaxKind != SyntaxNodeKind::Less) {
+        return false;
+    }
+    const SyntaxNode* lessExpression = token.node->parent;
+    if (lessExpression == nullptr || lessExpression->kind != SyntaxNodeKind::BinaryExpression) {
+        return false;
+    }
+    const SyntaxNode* expression = lessExpression;
+    const SyntaxNode* parent = expression->parent;
+    while (parent != nullptr && parent->kind == SyntaxNodeKind::Tree && HasCallableTemplateLessShape(*parent)) {
+        expression = parent;
+        parent = parent->parent;
+    }
+    return parent != nullptr && HasConditionDeclarationTemplateGreaterShape(*parent);
+}
+
+bool IsConditionDeclarationTemplateGreaterToken(const PrintToken& token) {
+    if (token.node == nullptr || token.syntaxKind != SyntaxNodeKind::Greater) {
+        return false;
+    }
+    const SyntaxNode* expression = token.node->parent;
+    return expression != nullptr && HasConditionDeclarationTemplateGreaterShape(*expression, token.node);
 }
 
 bool IsCallableTemplateCallOpenToken(const PrintToken& token) {
@@ -419,7 +468,9 @@ bool IsTemplateAnglePrintToken(const PrintToken& token) {
     }
     return IsTemplateDelimiterContext(token) ||
         (token.syntaxKind == SyntaxNodeKind::Less ? IsCallableTemplateLessToken(token) :
-            IsCallableTemplateGreaterToken(token));
+            IsCallableTemplateGreaterToken(token)) ||
+        (token.syntaxKind == SyntaxNodeKind::Less ? IsConditionDeclarationTemplateLessToken(token) :
+            IsConditionDeclarationTemplateGreaterToken(token));
 }
 
 bool FormatTokenNeedsSpace(const PrintToken* previous, const PrintToken& current) {
