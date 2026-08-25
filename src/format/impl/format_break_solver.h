@@ -9,6 +9,8 @@ struct FormatBreakSolution {
     std::vector<FormatBreakChoice> choices;
     // Selected delimiter choices record their render base; other entries remain -1.
     std::vector<int> indentLevels;
+    // Declaration owner/value nodes record the selected number of continuation lines in their value.
+    std::vector<int> declarationValueContinuationLines;
 };
 
 FormatBreakSolution SolveFormatBreaks(

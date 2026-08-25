@@ -4,7 +4,7 @@ This document owns developer-facing details of the break solver in `src/format/i
 
 ## Solver Contract
 
-The solver receives a `FormatBreakModel` for one formatted segment and returns a `FormatBreakSolution`, which records the selected `FormatBreakChoice` for each break model node and the render base indentation for delimiter choices. The pretty printer must emit exactly the selected choices; it must not re-run local layout decisions or infer hidden choices from child nodes. Declaration grouping uses the recorded delimiter indentation to recognize a selected list whose closer returns to declaration indentation.
+The solver receives a `FormatBreakModel` for one formatted segment and returns a `FormatBreakSolution`, which records the selected `FormatBreakChoice` for each break model node and the render base indentation for delimiter choices. It also records the selected continuation-line count for declaration owner/value nodes because declaration grouping depends on the physical size of the selected value layout. The pretty printer must emit exactly the selected choices; it must not re-run local layout decisions or infer hidden choices from child nodes.
 
 `Better` implements the break-selection cost from [format.md].
 

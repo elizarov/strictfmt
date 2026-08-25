@@ -1002,120 +1002,20 @@ private:
         return DeclarationGroupKind::None;
     }
 
-    static const SyntaxNode* DirectChildContaining(const SyntaxNode& ancestor, const SyntaxNode* descendant) {
-        const SyntaxNode* child = descendant;
-        while (child != nullptr && child->parent != &ancestor) {
-            child = child->parent;
-        }
-        return child;
-    }
-
-    static bool DirectChildFollowsToken(
-        const SyntaxNode& owner,
-        const SyntaxNode* descendant,
-        SyntaxNodeKind tokenKind
-    ) {
-        const SyntaxNode* target = DirectChildContaining(owner, descendant);
-        bool sawToken = false;
-        for (const SyntaxNode* child : owner.children) {
-            if (child == nullptr) {
-                continue;
-            }
-            if (child == target) {
-                return sawToken;
-            }
-            sawToken = sawToken || child->kind == tokenKind;
-        }
-        return false;
-    }
-
-    static bool DelimiterBelongsToDeclarationIsolationTarget(
-        const SyntaxNode& declaration,
-        const SyntaxNode* delimiter
-    ) {
-        if (delimiter == nullptr) {
-            return false;
-        }
-        if (
-            declaration.kind == SyntaxNodeKind::AliasDeclaration ||
-            declaration.kind == SyntaxNodeKind::FunctionPointerAliasDeclaration
-        ) {
-            return DirectChildFollowsToken(declaration, delimiter, SyntaxNodeKind::Equal);
-        }
-        if (declaration.kind != SyntaxNodeKind::FieldDeclaration) {
-            return false;
-        }
-        for (const SyntaxNode* cursor = delimiter; cursor != nullptr && cursor != &declaration; cursor = cursor->parent) {
-            if (cursor->kind != SyntaxNodeKind::InitDeclarator) {
-                continue;
-            }
-            if (DirectChildFollowsToken(*cursor, delimiter, SyntaxNodeKind::Equal)) {
-                return true;
-            }
-            const SyntaxNode* target = DirectChildContaining(*cursor, delimiter);
-            return target != nullptr && (
-                target->kind == SyntaxNodeKind::InitializerList || target->kind == SyntaxNodeKind::ArgumentList
-            );
-        }
-        return DirectChildFollowsToken(declaration, delimiter, SyntaxNodeKind::Equal);
-    }
-
-    static bool IsNestedDeclarationIsolationBoundary(const SyntaxNode& node, bool root) {
-        return !root && (
-            SyntaxNodeHasClass(node, SyntaxNodeClass::DeclarationScope) ||
-            SyntaxNodeHasClass(node, SyntaxNodeClass::CompoundBlock)
-        );
-    }
-
-    static bool ContainsDeclarationIsolationDelimiter(
-        const SyntaxNode& declaration,
-        const SyntaxNode& node,
-        bool root = true
-    ) {
-        if (
-            SyntaxNodeKindHasClass(node.kind, SyntaxNodeClass::OpeningDelimiter) &&
-            DelimiterBelongsToDeclarationIsolationTarget(declaration, &node)
-        ) {
-            return true;
-        }
-        if (IsNestedDeclarationIsolationBoundary(node, root)) {
-            return false;
-        }
-        return std::any_of(node.children.begin(), node.children.end(), [&](const SyntaxNode* child) {
-            return child != nullptr && ContainsDeclarationIsolationDelimiter(declaration, *child, false);
-        });
-    }
-
-    static bool IsSelectedDelimiterSplit(FormatBreakChoice choice) {
-        return choice == FormatBreakChoice::Split ||
-            choice == FormatBreakChoice::SplitAttachedOpen ||
-            choice == FormatBreakChoice::SplitDelimiterStack ||
-            choice == FormatBreakChoice::SplitDelimiterStackDetachedLeaf ||
-            choice == FormatBreakChoice::SplitDelimiterStackRun;
-    }
-
-    bool HasDeclarationIndentDelimiterSplit(
+    bool HasLargeDeclarationValue(
         const FormatBreakModel& model,
         const FormatBreakSolution& solution,
-        const SyntaxNode& declaration,
-        int declarationIndent
+        const SyntaxNode& item
     ) const {
         if (model.nodes == nullptr) {
             return false;
         }
         return std::any_of(model.nodes->begin(), model.nodes->end(), [&](const FormatBreakNode& node) {
             const size_t index = static_cast<size_t>(node.id);
-            return node.kind == FormatBreakNodeKind::Delimited &&
-                index < solution.choices.size() &&
-                index < solution.indentLevels.size() &&
-                IsSelectedDelimiterSplit(solution.choices[index]) &&
-                solution.indentLevels[index] == declarationIndent &&
-                !node.children.empty() &&
-                node.children.front() != nullptr &&
-                DelimiterBelongsToDeclarationIsolationTarget(
-                    declaration,
-                    FormatBreakTokenValue(node.children.front()->token).node
-                );
+            return node.declarationValueOwner != nullptr &&
+                DeclarationScopeItem(node.declarationValueOwner) == &item &&
+                index < solution.declarationValueContinuationLines.size() &&
+                solution.declarationValueContinuationLines[index] > 1;
         });
     }
 
@@ -1129,31 +1029,10 @@ private:
         return indent;
     }
 
-    static const SyntaxNode* DeclarationIsolationOwner(const SyntaxNode& item, bool root = true) {
-        if (
-            item.kind == SyntaxNodeKind::FieldDeclaration ||
-            item.kind == SyntaxNodeKind::AliasDeclaration ||
-            item.kind == SyntaxNodeKind::FunctionPointerAliasDeclaration
-        ) {
-            return &item;
-        }
-        if (IsNestedDeclarationIsolationBoundary(item, root)) {
-            return nullptr;
-        }
-        for (const SyntaxNode* child : item.children) {
-            if (child != nullptr) {
-                if (const SyntaxNode* owner = DeclarationIsolationOwner(*child, false)) {
-                    return owner;
-                }
-            }
-        }
-        return nullptr;
-    }
-
     void AnalyzeDeclarationGroups(const std::vector<PrintToken>& tokens) {
-        // A delimiter-owned declaration must be known before its first token is emitted so the mandatory blank
-        // line can precede it. Pre-solve only those declaration items with the ordinary break model and solver;
-        // isolation therefore follows the selected layout, not a width estimate or a printer-side break choice.
+        // A large declaration value must be known before its first token is emitted so the mandatory blank line
+        // can precede it. Pre-solving uses the ordinary break model and solver; the printer only observes the
+        // number of continuation lines selected for each declaration owner/value relation.
         isolatedDeclarationItems_.clear();
         std::unordered_set<const SyntaxNode*> analyzedItems;
         for (size_t index = 0; index < tokens.size();) {
@@ -1162,12 +1041,8 @@ private:
                 ++index;
                 continue;
             }
-            const SyntaxNode* isolationOwner =
-                DeclarationIsolationOwner(*item);
-            if (
-                isolationOwner == nullptr ||
-                !ContainsDeclarationIsolationDelimiter(*isolationOwner, *isolationOwner)
-            ) {
+            const DeclarationGroupKind group = DeclarationGroup(item);
+            if (group != DeclarationGroupKind::Object && group != DeclarationGroupKind::Alias) {
                 ++index;
                 continue;
             }
@@ -1176,6 +1051,15 @@ private:
                 ++end;
             }
             FormatBreakModel model = BuildFormatBreakModel(std::span<const PrintToken>{tokens.data() + index, end - index});
+            const bool hasDeclarationValue = model.nodes != nullptr &&
+                std::any_of(model.nodes->begin(), model.nodes->end(), [&](const FormatBreakNode& node) {
+                    return node.declarationValueOwner != nullptr &&
+                        DeclarationScopeItem(node.declarationValueOwner) == item;
+                });
+            if (!hasDeclarationValue || model.root == nullptr) {
+                ++index;
+                continue;
+            }
             const int declarationIndent = DeclarationIndent(*item);
             FormatBreakSolution solution = SolveFormatBreaks(
                 config_,
@@ -1185,13 +1069,10 @@ private:
                 indentWidth_,
                 0
             );
-            if (
-                model.root != nullptr &&
-                HasDeclarationIndentDelimiterSplit(model, solution, *isolationOwner, declarationIndent)
-            ) {
+            if (HasLargeDeclarationValue(model, solution, *item)) {
                 isolatedDeclarationItems_.insert(item);
             }
-            index = end;
+            ++index;
         }
     }
 
