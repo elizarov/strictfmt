@@ -389,6 +389,10 @@ private:
                 if (std::optional<DelimiterStackView> stack = CollectDelimiterStack(node)) {
                     return SolveTransparentDelimiterStackAlternatives(node, *stack, column, indentLevel, lineHasText);
                 }
+                NodeResult split = SolveDelimitedSplit(node, column, indentLevel, lineHasText);
+                if (CanSkipDelimitedCompact(node, split, column, indentLevel, lineHasText)) {
+                    return {split};
+                }
                 NodeResults alternatives;
                 for (NodeResult compact : SolveDelimitedCompactAlternatives(node, column, indentLevel, lineHasText)) {
                     if (!node.forceSplit && !(compact.valid && compact.extraLines > 0 && (
@@ -399,7 +403,6 @@ private:
                         alternatives.push_back(std::move(compact));
                     }
                 }
-                NodeResult split = SolveDelimitedSplit(node, column, indentLevel, lineHasText);
                 if (split.valid) {
                     alternatives.push_back(split);
                 }
@@ -956,6 +959,53 @@ private:
         return false;
     }
 
+    bool DelimitedCompactPrefixRequiresOverflowOrBreak(
+        const FormatBreakNode& node,
+        int column,
+        int indentLevel,
+        bool lineHasText
+    ) const {
+        if (node.children.empty() || node.items.size() < 2) {
+            return false;
+        }
+        NodeResult
+            prefix{.valid = true, .endColumn = column, .endIndentLevel = indentLevel, .endLineHasText = lineHasText};
+        if (!AppendCompactOneLine(*node.children.front(), prefix)) {
+            return true;
+        }
+        for (size_t index = 0; index + 1 < node.items.size(); ++index) {
+            const FormatBreakListItem& item = node.items[index];
+            if (item.node == nullptr || !AppendCompactOneLine(*item.node, prefix)) {
+                return true;
+            }
+            if (
+                FormatBreakTokenKind(item.separator) == PrintTokenKind::Known &&
+                !AddCompactToken(prefix, item.separator)
+            ) {
+                return true;
+            }
+            if (HasTrailingComment(node, index)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    bool CanSkipDelimitedCompact(
+        const FormatBreakNode& node,
+        const NodeResult& split,
+        int column,
+        int indentLevel,
+        bool lineHasText
+    ) const {
+        return split.valid && (
+            node.forceSplit || (
+                split.maxOverflow == 0 &&
+                DelimitedCompactPrefixRequiresOverflowOrBreak(node, column, indentLevel, lineHasText)
+            )
+        );
+    }
+
     static bool HasRealSeparators(const FormatBreakNode& node) {
         return std::any_of(node.items.begin(), node.items.end(), [](const FormatBreakListItem& item) {
             return FormatBreakTokenKind(item.separator) == PrintTokenKind::Known;
@@ -1224,11 +1274,11 @@ private:
         if (std::optional<DelimiterStackView> stack = CollectDelimiterStack(node)) {
             return SolveTransparentDelimiterStack(node, *stack, column, indentLevel, lineHasText);
         }
-        NodeResult compact = SolveDelimitedCompact(node, column, indentLevel, lineHasText);
         NodeResult split = SolveDelimitedSplit(node, column, indentLevel, lineHasText);
-        if (node.forceSplit && split.valid) {
+        if (CanSkipDelimitedCompact(node, split, column, indentLevel, lineHasText)) {
             return split;
         }
+        NodeResult compact = SolveDelimitedCompact(node, column, indentLevel, lineHasText);
         if (!lineHasText && compact.valid && split.valid && compact.extraLines > 0) {
             return split;
         }
