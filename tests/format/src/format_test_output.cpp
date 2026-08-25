@@ -439,6 +439,12 @@ enum class ValueFormat : std::uint8_t {
     CardBorder,
 };
 
+enum class NestedEnumCommaValue {
+    FromParen = MakePair(1, 2).value,
+    FromBrace = MakePair{1, 2}.value,
+    FromTemplate = Pick<int, double>::value,
+};
+
 enum RuntimeMode {
     Default,
 };

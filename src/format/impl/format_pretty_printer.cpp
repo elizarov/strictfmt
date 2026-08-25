@@ -2693,10 +2693,6 @@ private:
         };
     }
 
-    bool InEnumBody() const {
-        return !braceStack_.empty() && braceStack_.back().role == BraceRole::Enum;
-    }
-
     bool ShouldBreakAfterSemicolon() const {
         if (braceStack_.empty()) {
             return parenDepth_ == 0;
@@ -3363,7 +3359,7 @@ private:
                     return;
                 }
                 BufferToken(token);
-                if (InEnumBody() && parenDepth_ == 0 && bracketDepth_ == 0 && !(
+                if (token.parentKind == SyntaxNodeKind::EnumeratorList && !(
                     rawNext != nullptr && rawNext->kind == PrintTokenKind::TrailingComment
                 )) {
                     FlushPendingTokens();
