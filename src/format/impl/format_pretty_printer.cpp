@@ -326,17 +326,21 @@ std::string_view PreprocEndifLine(const SyntaxNode& node) {
     return node.text.empty() ? SyntaxNodeKindTokenText(node.kind) : TrimSourceLine(FirstSourceLine(node.text));
 }
 
-bool IsRawStatementToken(const PrintToken& token) {
-    if (token.kind != PrintTokenKind::Free || ContainsSourceLineBreak(token.text)) {
+bool IsRawCompleteItemToken(const PrintToken& token) {
+    if (
+        token.kind != PrintTokenKind::Free ||
+        !SyntaxNodeKindHasClass(token.parentKind, SyntaxNodeClass::SourceItemScope)
+    ) {
         return false;
     }
-    const SyntaxNodeKind parent = token.parentKind;
-    return (
-        parent == SyntaxNodeKind::TranslationUnit ||
-        parent == SyntaxNodeKind::DeclarationList ||
-        parent == SyntaxNodeKind::FieldDeclarationList ||
-        parent == SyntaxNodeKind::CompoundStatement
-    ) && EndsWith(TrimSourceLine(token.text), ";");
+    const std::string_view text = TrimSourceLine(token.text);
+    return EndsWith(text, ";") || EndsWith(text, "}");
+}
+
+bool IsRawStatementToken(const PrintToken& token) {
+    return IsRawCompleteItemToken(token) &&
+        !ContainsSourceLineBreak(token.text) &&
+        EndsWith(TrimSourceLine(token.text), ";");
 }
 
 SyntaxNodeKind MatchingListCloseToken(SyntaxNodeKind kind) {
@@ -2778,6 +2782,22 @@ private:
         }
     }
 
+    void PrepareRawCompleteItemBoundary(const PrintToken* previous, const PrintToken& current) {
+        if (
+            previous == nullptr ||
+            current.kind == PrintTokenKind::TrailingComment ||
+            !IsRawCompleteItemToken(*previous)
+        ) {
+            return;
+        }
+        if (HasBufferedLineText()) {
+            FlushPendingTokens();
+        }
+        if (lineHasText_) {
+            NewLine(ShouldContinueMacroLine(*previous, &current));
+        }
+    }
+
     bool CanAttachToPreviousPreprocessorLine(const PrintToken& token, const PrintToken* rawPrevious) const {
         return token.kind == PrintTokenKind::TrailingComment &&
             rawPrevious != nullptr &&
@@ -2840,6 +2860,7 @@ private:
         if (PrepareDeclarationGroupBoundary(token)) {
             return;
         }
+        PrepareRawCompleteItemBoundary(rawPrevious, token);
         PrepareBareMacroItemBoundary(rawPrevious, token);
         PrepareMacroBoundary(rawPrevious, token);
         if (token.kind == PrintTokenKind::BlankLine) {

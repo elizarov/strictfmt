@@ -1604,7 +1604,7 @@ module.exports = grammar(C, {
 
     attributed_friend_operator_declaration: _ => token(prec(
       1,
-      /\[\[[^\]\n]+\]\][ \t]+friend[ \t]+bool[ \t]+operator(?:==|!=)\([^\n]*\)[ \t]*\{[^\n]*\}/,
+      /\[\[[^\]\n]+\]\][ \t]+friend[ \t]+bool[ \t]+operator(?:==|!=)\([^\)\n]*\)[ \t]*\{[^}\n]*\}/,
     )),
 
     using_operator_pack_declaration: _ => token(prec(1, /using[ \t]+[A-Za-z_]\w*::operator\(\)\.\.\.;/)),
