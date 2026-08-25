@@ -693,6 +693,7 @@ private:
         signature->children = StoreNodePointers({returnType, declarator});
 
         auto chain = MakeNode(FormatBreakNodeKind::Chain, depth);
+        chain->declarationValueOwner = &node;
         chain->operands = StoreNodePointers({left, signature});
         chain->operators = StoreTokens({*op});
         return chain;
@@ -1457,6 +1458,7 @@ private:
         }
 
         auto chain = MakeNode(FormatBreakNodeKind::Chain, depth);
+        chain->declarationValueOwner = &node;
         FormatBreakNode* left = BuildSequenceFromChildren(node.children, 0, *declaratorIndex, depth + 1);
         FormatBreakNode* right =
             BuildSequenceFromChildren(node.children, *declaratorIndex, node.children.size(), depth + 1);
@@ -1509,6 +1511,7 @@ private:
         }
 
         auto chain = MakeNode(FormatBreakNodeKind::Chain, depth);
+        chain->declarationValueOwner = &node;
         FormatBreakNode* left = BuildSequenceFromPointers(leftChildren, depth + 1);
         FormatBreakNode* right =
             BuildSequenceFromChildren(declarator.children, *operatorIndex + 1, declarator.children.size(), depth + 1);
@@ -1931,6 +1934,15 @@ private:
         }
 
         auto chain = MakeNode(FormatBreakNodeKind::Chain, depth);
+        if (
+            node.kind == SyntaxNodeKind::Declaration ||
+            node.kind == SyntaxNodeKind::FieldDeclaration ||
+            node.kind == SyntaxNodeKind::AliasDeclaration ||
+            node.kind == SyntaxNodeKind::FunctionPointerAliasDeclaration ||
+            node.kind == SyntaxNodeKind::InitDeclarator
+        ) {
+            chain->declarationValueOwner = &node;
+        }
         const SyntaxNodeKind operatorKind = FormatBreakTokenSyntaxKind(*token);
         chain->chainKind = (
             operatorKind == SyntaxNodeKind::LessLess || operatorKind == SyntaxNodeKind::GreaterGreater

@@ -228,6 +228,16 @@ class DeclarationGroupingRules {
     VeryLongDeclarationGroupingValueTypeName wrappedOnlyMovesInitializerToContinuation =
         declarationGroupingInitializerValueWithLongName;
     int fieldFollowingWrappedInitializer;
+    int fieldBeforeLargeOperatorInitializer;
+
+    int largeOperatorInitializer = firstVeryLongDeclarationGroupingOperand +
+        secondVeryLongDeclarationGroupingOperand +
+        thirdVeryLongDeclarationGroupingOperand +
+        fourthVeryLongDeclarationGroupingOperand +
+        fifthVeryLongDeclarationGroupingOperand +
+        sixthVeryLongDeclarationGroupingOperand;
+
+    int fieldAfterLargeOperatorInitializer;
 
     std::array<DeclarationGroupingValue, 5> isolatedValues = {
         firstDeclarationGroupingValue,
@@ -1874,9 +1884,11 @@ const char* ReturnForcedAdjacentString() {
 const char* ActiveAdjacentNewlineEscape =
     "first\n"
     "second";
+
 const char* ActiveAdjacentCrLfEscape =
     "first\r\n"
     "second";
+
 const char* EscapedAdjacentNewlineText = "first\\n" "second";
 const char* EscapedAdjacentCrLfText = "first\\r\\n" "second";
 

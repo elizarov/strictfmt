@@ -216,6 +216,7 @@ struct ChoiceTree {
     const ChoiceTree* right = nullptr;
     int nodeId = 0;
     int indentLevel = -1;
+    int declarationValueContinuationLines = -1;
     FormatBreakChoice choice = FormatBreakChoice::Compact;
     bool leaf = false;
 };
@@ -393,6 +394,15 @@ private:
 
     void AddChoice(NodeResult& result, int nodeId, FormatBreakChoice choice, int indentLevel = -1) {
         result.choices = ConcatChoices(result.choices, MakeChoice(nodeId, choice, indentLevel));
+    }
+
+    void AddDeclarationValueContinuationLines(NodeResult& result, int nodeId, int continuationLines) {
+        choiceArena_.push_back(ChoiceTree{
+            .nodeId = nodeId,
+            .declarationValueContinuationLines = continuationLines,
+            .leaf = true
+        });
+        result.choices = ConcatChoices(result.choices, &choiceArena_.back());
     }
 
     void Merge(NodeResult& left, const NodeResult& right) {
@@ -2759,6 +2769,9 @@ private:
                     }
                     NodeResult next = prefix;
                     Merge(next, operand);
+                    if (node.declarationValueOwner != nullptr && index + 1 == node.operands.size()) {
+                        AddDeclarationValueContinuationLines(next, node.id, operand.extraLines);
+                    }
                     if (index < node.operators.size()) {
                         next = AddToken(next, node.operators[index]);
                     }
@@ -2875,6 +2888,9 @@ private:
                 }
             }
             Merge(normal, operand);
+            if (node.declarationValueOwner != nullptr && index + 2 == node.operands.size()) {
+                AddDeclarationValueContinuationLines(normal, node.id, operand.extraLines + 1);
+            }
 
             NodeResult attached;
             if (CanAttachSplitOpenAfterOperator(node.operators[index], *node.operands[index + 1])) {
@@ -3246,6 +3262,21 @@ void AppendChoices(
     AppendChoices(tree->right, choices, indentLevels, assigned);
 }
 
+void AppendDeclarationValueContinuationLines(const ChoiceTree* tree, std::vector<int>& continuationLines) {
+    if (tree == nullptr) {
+        return;
+    }
+    if (tree->leaf) {
+        const size_t index = static_cast<size_t>(tree->nodeId);
+        if (index < continuationLines.size() && tree->declarationValueContinuationLines >= 0) {
+            continuationLines[index] = tree->declarationValueContinuationLines;
+        }
+        return;
+    }
+    AppendDeclarationValueContinuationLines(tree->left, continuationLines);
+    AppendDeclarationValueContinuationLines(tree->right, continuationLines);
+}
+
 }  // namespace
 
 FormatBreakSolution SolveFormatBreaks(
@@ -3268,7 +3299,9 @@ FormatBreakSolution SolveFormatBreaks(
     const size_t choiceCount = model.nodes == nullptr ? 0 : model.nodes->size() + 1;
     solution.choices.assign(choiceCount, FormatBreakChoice::Compact);
     solution.indentLevels.assign(choiceCount, -1);
+    solution.declarationValueContinuationLines.assign(choiceCount, -1);
     std::vector<bool> assigned(choiceCount, false);
     AppendChoices(result.choices, solution.choices, solution.indentLevels, assigned);
+    AppendDeclarationValueContinuationLines(result.choices, solution.declarationValueContinuationLines);
     return solution;
 }
