@@ -562,6 +562,9 @@ concept PreserveRequirementBlankLines=requires{typename T::first;
 
 typename T::second;};
 
+ExtremelyLongQualifiedNamespace::ExtremelyLongTemplate<FirstLongTemplateArgument,SecondLongTemplateArgument,ThirdLongTemplateArgument> storedSignatureComparisonValue;
+ExtremelyLongQualifiedNamespace::ExtremelyLongTemplate<FirstLongTemplateArgument,SecondLongTemplateArgument,ThirdLongTemplateArgument> BuildSignatureComparisonValue();
+
 using ConfigMetricAvailabilityResolver = bool (*)(std::string_view metricRef);
 using RuntimeConfigDynamicItemVisitor = void (*)(void* context, std::string_view key, const void* item);
 using RuntimeConfigEnsureDynamicItem = void* (*)(AppConfig& config, std::string_view key);

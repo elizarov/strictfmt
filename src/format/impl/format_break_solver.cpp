@@ -2481,9 +2481,7 @@ private:
         NodeResult splitParameters =
             SolveFunctionSignatureCompactWithSplitParameters(node, column, indentLevel, lineHasText);
         NodeResult split = SolveFunctionSignatureSplit(node, column, indentLevel, lineHasText);
-        if (compact.valid && !(node.functionSignaturePrefersOuterSplit && split.valid && (
-            compact.extraLines > 0 || compact.maxOverflow > 0
-        ))) {
+        if (compact.valid) {
             alternatives.push_back(compact);
         }
         if (splitParameters.valid) {
@@ -2500,19 +2498,6 @@ private:
         NodeResult splitParameters =
             SolveFunctionSignatureCompactWithSplitParameters(node, column, indentLevel, lineHasText);
         NodeResult split = SolveFunctionSignatureSplit(node, column, indentLevel, lineHasText);
-        NodeResult returnType =
-            node.children.empty() ? NodeResult{} : Solve(*node.children[0], column, indentLevel, lineHasText);
-        if (compact.valid && split.valid && node.functionSignaturePrefersOuterSplit && (
-            compact.extraLines > 0 || compact.maxOverflow > 0
-        )) {
-            return split;
-        }
-        if (compact.valid && split.valid && returnType.valid && returnType.extraLines > 0) {
-            return split;
-        }
-        if (compact.valid && split.valid && CompactLineEndsOverLimit(compact) && split.maxOverflow == 0) {
-            return Better(splitParameters, split) ? splitParameters : split;
-        }
         NodeResult best = compact;
         if (Better(splitParameters, best)) {
             best = splitParameters;
