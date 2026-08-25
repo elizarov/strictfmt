@@ -1651,4 +1651,7 @@ StartFormattingCallbacks(
 );
 }
 
+// Compact-list prefix pruning: every non-final nested call must remain on the opener line.
+auto CompactListPrefixPruningRegression(){return make_tuple_of_references(workaround_cast<T,decltype(field01)>(field01),workaround_cast<T,decltype(field02)>(field02),workaround_cast<T,decltype(field03)>(field03),workaround_cast<T,decltype(field04)>(field04),workaround_cast<T,decltype(field05)>(field05),workaround_cast<T,decltype(field06)>(field06),workaround_cast<T,decltype(field07)>(field07),workaround_cast<T,decltype(field08)>(field08),workaround_cast<T,decltype(field09)>(field09),workaround_cast<T,decltype(field10)>(field10),workaround_cast<T,decltype(field11)>(field11),workaround_cast<T,decltype(field12)>(field12));}
+
 }
