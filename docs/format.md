@@ -392,7 +392,7 @@ update(
 
 Declaration separation applies only in declaration scopes.
 
-The declaration grouping kinds are type declarations, callable declarations or definitions, object or field declarations, and type aliases. Classification follows the declared entity rather than incidental type syntax: an elaborated type specifier with a declarator is an object declaration, while a callable that returns a function pointer is a callable declaration. A declaration wrapper, such as a template or friend declaration, has the kind of the single declaration it introduces. Access specifiers and leading standalone comments attach to the following member group.
+The declaration grouping kinds are type declarations, callable declarations or definitions, object or field declarations, and type aliases. Concept declarations map to the type-declaration group. Classification follows the declared entity rather than incidental type syntax: an elaborated type specifier with a declarator is an object declaration, while a callable that returns a function pointer is a callable declaration. A declaration wrapper, such as a template or friend declaration, has the kind of the single declaration it introduces. Access specifiers and leading standalone comments attach to the following member group.
 
 Grouping determines where structural empty-line separators are required. It does not remove an existing source empty-line separator preserved by **Line Hygiene**.
 

@@ -543,6 +543,11 @@ union SecondDeclaredUnion{};
 struct DeclaredStructValue{int number;}declaredStructValue;
 union DeclaredUnionValue{int number;float decimal;}declaredUnionValue;
 
+using BeforeGroupedConcept=int;
+template<typename T>
+concept GroupedConcept=true;
+using AfterGroupedConcept=int;
+
 using ConfigMetricAvailabilityResolver = bool (*)(std::string_view metricRef);
 using RuntimeConfigDynamicItemVisitor = void (*)(void* context, std::string_view key, const void* item);
 using RuntimeConfigEnsureDynamicItem = void* (*)(AppConfig& config, std::string_view key);
