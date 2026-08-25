@@ -1362,6 +1362,23 @@ Generator CoYieldForcedAdjacentString() {
 co_yield "first line\n" "second line";
 }
 
+Task KeywordOwnedCoReturnSpacing() {
+co_return(value);
+co_return[](){return value;};
+co_return::qualifiedValue;
+}
+
+void KeywordOwnedThrowSpacing() {
+throw(failure);
+throw::qualifiedFailure;
+}
+
+Generator KeywordOwnedCoYieldSpacing() {
+co_yield(item);
+co_yield[]{return item;}();
+co_yield::qualifiedItem;
+}
+
 void CallForcedAdjacentString() {
 Log("first line\n" "second line");
 }

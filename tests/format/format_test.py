@@ -1391,7 +1391,7 @@ class FormatCommandTests(unittest.TestCase):
                 "    if (a) {\n"
                 "        if (b) {\n"
                 "            if (c) {\n"
-                "                throw(((((((((\n"
+                "                throw (((((((((\n"
                 "                    ((((((((((\n"
                 "                        (value)\n"
                 "                    ))))))))))\n"

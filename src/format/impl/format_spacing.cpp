@@ -7,6 +7,11 @@ bool IsReferenceToken(const PrintToken& token) {
         SyntaxNodeKindHasClass(token.syntaxKind, SyntaxNodeClass::DeclaratorReferenceToken);
 }
 
+bool IsKeywordOwnedValueToken(const PrintToken& token) {
+    return token.kind == PrintTokenKind::Known &&
+        SyntaxNodeKindHasClass(token.syntaxKind, SyntaxNodeClass::KeywordOwnedValue);
+}
+
 bool IsConditionDeclarationBindingToken(const PrintToken& token);
 
 bool IsDeclaratorBindingToken(const PrintToken& token) {
@@ -518,7 +523,7 @@ bool FormatTokenNeedsSpace(const PrintToken* previous, const PrintToken& current
         return previous->kind == PrintTokenKind::Known && (
             SyntaxNodeKindHasClass(previous->syntaxKind, SyntaxNodeClass::AssignmentOperator) ||
             previous->syntaxKind == SyntaxNodeKind::Comma ||
-            previous->syntaxKind == SyntaxNodeKind::KeywordReturn ||
+            IsKeywordOwnedValueToken(*previous) ||
             previous->syntaxKind == SyntaxNodeKind::Colon ||
             previous->syntaxKind == SyntaxNodeKind::Question
         );
@@ -578,6 +583,10 @@ bool FormatTokenNeedsSpace(const PrintToken* previous, const PrintToken& current
         previous->kind == PrintTokenKind::Known ? previous->syntaxKind : SyntaxNodeKind::Unknown;
     const SyntaxNodeKind cur = current.kind == PrintTokenKind::Known ? current.syntaxKind : SyntaxNodeKind::Unknown;
 
+    if (IsKeywordOwnedValueToken(*previous) && cur != SyntaxNodeKind::Semicolon) {
+        return true;
+    }
+
     if (
         cur == SyntaxNodeKind::LeftBrace &&
         NodeOrAncestorHasClass(current.node, SyntaxNodeClass::ConditionalFunctionHeader)
@@ -628,8 +637,7 @@ bool FormatTokenNeedsSpace(const PrintToken* previous, const PrintToken& current
     ) {
         if (cur == SyntaxNodeKind::ColonColon && (
             SyntaxNodeKindHasClass(prev, SyntaxNodeClass::Keyword) ||
-            SyntaxNodeKindHasClass(prev, SyntaxNodeClass::AssignmentOperator) ||
-            prev == SyntaxNodeKind::KeywordReturn
+            SyntaxNodeKindHasClass(prev, SyntaxNodeClass::AssignmentOperator)
         )) {
             return true;
         }
@@ -703,7 +711,6 @@ bool FormatTokenNeedsSpace(const PrintToken* previous, const PrintToken& current
             (SyntaxNodeKindHasClass(prev, SyntaxNodeClass::BinaryOperator) && IsBinaryContext(*previous)) ||
             prev == SyntaxNodeKind::Comma ||
             prev == SyntaxNodeKind::Semicolon ||
-            prev == SyntaxNodeKind::KeywordReturn ||
             (prev == SyntaxNodeKind::Colon && previous->parentKind == SyntaxNodeKind::ConditionalExpression) ||
             prev == SyntaxNodeKind::Question
         )) {
@@ -716,7 +723,6 @@ bool FormatTokenNeedsSpace(const PrintToken* previous, const PrintToken& current
             return previous->kind == PrintTokenKind::Known && (
                 SyntaxNodeKindHasClass(prev, SyntaxNodeClass::AssignmentOperator) ||
                 prev == SyntaxNodeKind::Comma ||
-                prev == SyntaxNodeKind::KeywordReturn ||
                 prev == SyntaxNodeKind::KeywordTypename ||
                 prev == SyntaxNodeKind::Question ||
                 (prev == SyntaxNodeKind::Colon && previous->parentKind == SyntaxNodeKind::ConditionalExpression)
@@ -729,7 +735,6 @@ bool FormatTokenNeedsSpace(const PrintToken* previous, const PrintToken& current
             return previous->kind == PrintTokenKind::Known && (
                 SyntaxNodeKindHasClass(prev, SyntaxNodeClass::AssignmentOperator) ||
                 prev == SyntaxNodeKind::Comma ||
-                prev == SyntaxNodeKind::KeywordReturn ||
                 prev == SyntaxNodeKind::Question ||
                 (prev == SyntaxNodeKind::Colon && previous->parentKind == SyntaxNodeKind::ConditionalExpression)
             );
@@ -744,7 +749,6 @@ bool FormatTokenNeedsSpace(const PrintToken* previous, const PrintToken& current
             return previous->kind == PrintTokenKind::Known && (
                 SyntaxNodeKindHasClass(prev, SyntaxNodeClass::AssignmentOperator) ||
                 prev == SyntaxNodeKind::Comma ||
-                prev == SyntaxNodeKind::KeywordReturn ||
                 prev == SyntaxNodeKind::Question ||
                 prev == SyntaxNodeKind::Colon
             );
@@ -757,7 +761,7 @@ bool FormatTokenNeedsSpace(const PrintToken* previous, const PrintToken& current
         ) {
             return true;
         }
-        return prev == SyntaxNodeKind::KeywordReturn;
+        return false;
     }
     if (
         prev == SyntaxNodeKind::Semicolon &&
@@ -768,9 +772,6 @@ bool FormatTokenNeedsSpace(const PrintToken* previous, const PrintToken& current
         return false;
     }
     if (prev == SyntaxNodeKind::Comma || prev == SyntaxNodeKind::Semicolon || prev == SyntaxNodeKind::Question) {
-        return true;
-    }
-    if (prev == SyntaxNodeKind::KeywordReturn) {
         return true;
     }
     if (prev == SyntaxNodeKind::Ellipsis && IsWordLike(current)) {
@@ -812,12 +813,6 @@ bool FormatTokenNeedsSpace(const PrintToken* previous, const PrintToken& current
                 !IsDeclaratorBindingToken(current);
         }
         return !IsDeclaratorBindingToken(current);
-    }
-    if (prev == SyntaxNodeKind::KeywordReturn && current.kind == PrintTokenKind::Known && SyntaxNodeKindHasClass(
-        cur,
-        SyntaxNodeClass::UnaryOperator
-    )) {
-        return true;
     }
     if (current.kind == PrintTokenKind::Known && (SyntaxNodeKindHasClass(cur, SyntaxNodeClass::AssignmentOperator) || (
         SyntaxNodeKindHasClass(cur, SyntaxNodeClass::BinaryOperator) && IsBinaryOperatorSpacingContext(current)
