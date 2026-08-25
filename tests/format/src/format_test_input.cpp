@@ -504,6 +504,18 @@ template<typename T>
 requires requires{typename T::type;}
 struct ForcedRequiresPrefix;
 
+template<typename T>
+bool RequiresTernaryContinuation=requires{typename T::value_type;}?Enabled<T>:false;
+
+template<typename T>
+auto RequiresCallContinuation=requires{typename T::value_type;}(value);
+
+template<typename T>
+bool RequiresNestedContinuation=outer?requires{typename T::value_type;}?Enabled<T>:false:fallback;
+
+template<typename T>
+bool RequiresParenthesizedContinuation=(requires{typename T::value_type;});
+
 void ConsumeMultilineRequiresItem() {
 Consume(first,requires{first+second;typename Type::value_type;},third);
 }
