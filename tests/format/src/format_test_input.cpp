@@ -504,6 +504,10 @@ template<typename T>
 requires requires{typename T::type;}
 struct ForcedRequiresPrefix;
 
+void ConsumeMultilineRequiresItem() {
+Consume(first,requires{first+second;typename Type::value_type;},third);
+}
+
 using ConfigMetricAvailabilityResolver = bool (*)(std::string_view metricRef);
 using RuntimeConfigDynamicItemVisitor = void (*)(void* context, std::string_view key, const void* item);
 using RuntimeConfigEnsureDynamicItem = void* (*)(AppConfig& config, std::string_view key);
