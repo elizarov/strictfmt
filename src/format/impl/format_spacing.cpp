@@ -183,19 +183,31 @@ bool HasCallArgumentGroupShape(const SyntaxNode& node) {
         HasDirectTokenChild(node, SyntaxNodeKind::LeftParen) && HasDirectTokenChild(node, SyntaxNodeKind::RightParen);
 }
 
-bool HasCallableTemplateGreaterShape(const SyntaxNode& node, const SyntaxNode* greaterToken = nullptr) {
+const SyntaxNode* LeadingCallArgumentGroup(const SyntaxNode& node) {
+    if (HasCallArgumentGroupShape(node)) {
+        return &node;
+    }
+    const SyntaxNode* first = NextNonTriviaChild(node, 0);
+    return first == nullptr ? nullptr : LeadingCallArgumentGroup(*first);
+}
+
+const SyntaxNode* CallableTemplateCallArgumentGroup(const SyntaxNode& node, const SyntaxNode* greaterToken = nullptr) {
     if (node.kind != SyntaxNodeKind::BinaryExpression) {
-        return false;
+        return nullptr;
     }
     const size_t greaterIndex = greaterToken == nullptr ? DirectTokenKindIndex(node, SyntaxNodeKind::Greater) :
         DirectTokenChildIndex(node, greaterToken);
     if (greaterIndex >= node.children.size()) {
-        return false;
+        return nullptr;
     }
     const SyntaxNode* left = PreviousNonTriviaChild(node, greaterIndex);
     const SyntaxNode* right = NextNonTriviaChild(node, greaterIndex + 1);
-    return
-        left != nullptr && right != nullptr && HasCallableTemplateLessShape(*left) && HasCallArgumentGroupShape(*right);
+    return left != nullptr && right != nullptr && HasCallableTemplateLessShape(*left) ?
+        LeadingCallArgumentGroup(*right) : nullptr;
+}
+
+bool HasCallableTemplateGreaterShape(const SyntaxNode& node, const SyntaxNode* greaterToken = nullptr) {
+    return CallableTemplateCallArgumentGroup(node, greaterToken) != nullptr;
 }
 
 bool HasConditionDeclarationTemplateGreaterShape(const SyntaxNode& node, const SyntaxNode* greaterToken = nullptr) {
@@ -271,8 +283,18 @@ bool IsCallableTemplateCallOpenToken(const PrintToken& token) {
         return false;
     }
     const SyntaxNode* argumentGroup = token.node->parent;
-    const SyntaxNode* expression = argumentGroup == nullptr ? nullptr : argumentGroup->parent;
-    return expression != nullptr && HasCallableTemplateGreaterShape(*expression);
+    if (argumentGroup == nullptr) {
+        return false;
+    }
+    for (const SyntaxNode* expression = argumentGroup->parent; expression != nullptr; expression = expression->parent) {
+        if (CallableTemplateCallArgumentGroup(*expression) == argumentGroup) {
+            return true;
+        }
+        if (LeadingCallArgumentGroup(*expression) != argumentGroup) {
+            return false;
+        }
+    }
+    return false;
 }
 
 bool IsTemplateDelimiterContext(const PrintToken& token) {
