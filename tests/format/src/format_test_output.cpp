@@ -888,6 +888,18 @@ void ClearHistoryKeyIndexes(SystemSnapshot& snapshot) {
     }
 }
 
+void test() {
+    for (SpeexPreprocessState* state : preprocessStates) {
+        speex_preprocess_state_destroy(state);
+    }
+}
+
+void ManagedForEachLoop() {
+    for each (SpeexPreprocessState* state in preprocessStates) {
+        speex_preprocess_state_destroy(state);
+    }
+}
+
 void ManagedReferenceSpacing(
     NativeType& nativeRef,
     NativeType&& nativeRvalueRef,

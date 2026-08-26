@@ -212,6 +212,8 @@ constexpr auto kSyntaxKindMappings = std::to_array<SyntaxKindMapping>({
     )),
     Tree(SyntaxNodeKind::ElseClause, "else_clause"),
     Tree(SyntaxNodeKind::ForStatement, "for_statement", Bit(SyntaxNodeClass::ControlHeader)),
+    Tree(SyntaxNodeKind::ForStatement, "for_range_loop", Bit(SyntaxNodeClass::ControlHeader)),
+    Tree(SyntaxNodeKind::ForStatement, "for_each_statement", Bit(SyntaxNodeClass::ControlHeader)),
     Tree(SyntaxNodeKind::WhileStatement, "while_statement", Bit(SyntaxNodeClass::ControlHeader) | Bit(
         SyntaxNodeClass::FlatLogicalHeader
     )),
