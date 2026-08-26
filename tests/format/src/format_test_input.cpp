@@ -1790,6 +1790,8 @@ auto CompactLambdaNestedInitializer(int x){return [x](){return T{x};};}
 
 void TemplateAngleSpacing(){chaotic::Validate<Validators...>(arr,value);return std::get<0>(key_or_result_);}
 
+auto QualifiedCallableTemplateInNestedCall(const Item& item){return decimal64::ToStringTrailingZeros(decimal64::Decimal<3>(item.weight())/kGramInKgInt);}
+
 bool AlternativeBinaryOperatorSpacing(bool first,bool second,bool third){return first and (!second or third);}
 
 bool AlternativeBinaryOperatorBeforeUnary(bool first,bool second){return first and !second;}
