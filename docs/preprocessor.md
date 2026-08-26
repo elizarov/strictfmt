@@ -82,6 +82,11 @@ public:
 
 Selected common-body ordinary function start with a branch-local include:
 
+<!-- .cpp-format
+MacroCategories:
+  DeclarationPrefixMacros:
+    - API_EXPORT
+-->
 ```cpp
 #ifdef PLATFORM_WINDOWS
 #include <tchar.h>

@@ -55,6 +55,11 @@ Runtime macro category lookup is implemented by the custom scanner; see [scanner
 
 `RawMacroDefinitions` accepts both object-like and function-like `#define` identifiers.
 
+<!-- .cpp-format
+MacroCategories:
+  RawMacroDefinitions:
+    - UPROTO_ONEOF_HEADER
+-->
 ```cpp
 #define UPROTO_ONEOF_HEADER(oneof_type)                                                   \
     private:                                                                                  \
@@ -63,6 +68,11 @@ Runtime macro category lookup is implemented by the custom scanner; see [scanner
         using Base::Base;
 ```
 
+<!-- .cpp-format
+MacroCategories:
+  RawMacroDefinitions:
+    - USERVER_IMPL_FORCE_INLINE
+-->
 ```cpp
 #define USERVER_IMPL_FORCE_INLINE [[gnu::always_inline]] inline
 ```
@@ -71,11 +81,22 @@ Runtime macro category lookup is implemented by the custom scanner; see [scanner
 
 `DeclarationPrefixMacros` names macro identifiers that prefix a declaration, definition, class-field declaration, or declaration-like macro call as attribute, inline, export, or sanitizer-control tokens. A declaration-prefix modifier may be followed by a macro argument list when the macro spelling is function-like but the use-site role is still a modifier rather than a standalone macro call.
 
+<!-- .cpp-format
+MacroCategories:
+  DeclarationPrefixMacros:
+    - ATTRIBUTE_NO_SANITIZE_UNDEFINED
+-->
 ```cpp
 ATTRIBUTE_NO_SANITIZE_UNDEFINED std::size_t AttributePrefixedFunction(const BoundsBlock& block, float value) noexcept;
+```
 
-GTEST_INTERNAL_DEPRECATE_AND_INLINE("Use NewApi() instead")
-int OldApi();
+<!-- .cpp-format
+MacroCategories:
+  DeclarationPrefixMacros:
+    - GTEST_INTERNAL_DEPRECATE_AND_INLINE
+-->
+```cpp
+GTEST_INTERNAL_DEPRECATE_AND_INLINE("Use NewApi() instead") int OldApi();
 ```
 
 ### BareIdentifierMacros
@@ -84,12 +105,23 @@ int OldApi();
 
 **Calling-convention modifier:** the macro appears in a declarator where a platform calling-convention token is expected.
 
+<!-- .cpp-format
+MacroCategories:
+  BareIdentifierMacros:
+    - WINAPI
+-->
 ```cpp
 typedef PDH_STATUS (WINAPI* PdhAddEnglishCounterAFn)(PDH_HQUERY, LPCSTR, DWORD_PTR, PDH_HCOUNTER*);
 ```
 
 Post-type declarator annotation: the macro appears after the declared type and before the normal declarator or abstract type suffix.
 
+<!-- .cpp-format
+MacroCategories:
+  BareIdentifierMacros:
+    - ALIGN
+    - USERVER_MOVE_ONLY_FUNCTION_INVOKE_QUALS
+-->
 ```cpp
 static const unsigned char ALIGN(16) lookup_table[];
 
@@ -98,15 +130,25 @@ auto value = static_cast<Functor USERVER_MOVE_ONLY_FUNCTION_INVOKE_QUALS>(*slot)
 
 **Complete declaration-level item:** the macro stands as a full top-level declaration item, such as namespace wrappers.
 
+<!-- .cpp-format
+MacroCategories:
+  BareIdentifierMacros:
+    - USERVER_NAMESPACE_BEGIN
+    - USERVER_NAMESPACE_END
+-->
 ```cpp
 USERVER_NAMESPACE_BEGIN
-namespace utils {
-}  // namespace utils
+void UseNamespace();
 USERVER_NAMESPACE_END
 ```
 
 **Qualified-identifier prefix:** the macro supplies an optional namespace qualifier before an identifier.
 
+<!-- .cpp-format
+MacroCategories:
+  BareIdentifierMacros:
+    - CURL_8_13_NAMESPACE
+-->
 ```cpp
 enum netrc_t {
     netrc_optional = CURL_8_13_NAMESPACE CURL_NETRC_OPTIONAL,
@@ -115,22 +157,40 @@ enum netrc_t {
 
 Function suffix macro: the macro appears after a function declarator where an attribute-like suffix is expected.
 
+<!-- .cpp-format
+MacroCategories:
+  BareIdentifierMacros:
+    - FORMAT_USERVER_LIFETIME_BOUND
+    - GTEST_LOCK_EXCLUDED_
+-->
 ```cpp
-Data& operator*() & FORMAT_USERVER_LIFETIME_BOUND {
-    return data_;
-}
+class DataView {
+    Data& operator*() & FORMAT_USERVER_LIFETIME_BOUND;
 
-void Verify() GTEST_LOCK_EXCLUDED_(mutex);
+    void Verify() GTEST_LOCK_EXCLUDED_(mutex);
+};
 ```
 
 Parameter-list item: the macro appears as a complete parameter-list item, usually to inject an implementation-specific SFINAE or attribute parameter.
 
+<!-- .cpp-format
+MacroCategories:
+  BareIdentifierMacros:
+    - ENABLE_IF
+-->
 ```cpp
-explicit Value(T value, ENABLE_IF((std::is_integral_v<T>))) noexcept;
+class Value {
+    explicit Value(T value, ENABLE_IF(std::is_integral_v<T>)) noexcept;
+};
 ```
 
 Template-argument fragment: the macro expands to one or more template arguments and any separators needed before the next visible argument.
 
+<!-- .cpp-format
+MacroCategories:
+  BareIdentifierMacros:
+    - GTEST_FLAT_TUPLE_INT256
+-->
 ```cpp
 FlatTuple<GTEST_FLAT_TUPLE_INT256 int> tuple;
 ```
@@ -143,14 +203,22 @@ Do not add a macro to `CallSyntaxMacros` merely because its spelling is uppercas
 
 Use `CallSyntaxMacros` when the invocation appears in an expression-like position but its argument list is not a C++ argument list, for example because it contains type fragments.
 
+<!-- .cpp-format
+MacroCategories:
+  CallSyntaxMacros:
+    - CHECK_ASSIGNABLE
+-->
 ```cpp
-if (CHECK_ASSIGNABLE(T, T&&, value = std::move(other))) {
-    return true;
-}
+bool assignable = CHECK_ASSIGNABLE(T, T&&, value = std::move(other));
 ```
 
 Macro function definition: the macro call header is followed by a compound statement body.
 
+<!-- .cpp-format
+MacroCategories:
+  CallSyntaxMacros:
+    - UTEST_MT
+-->
 ```cpp
 UTEST_MT(FormatterMacroFixture, KeepsThreads, 2) {
     RunThreadedTest();
@@ -159,6 +227,11 @@ UTEST_MT(FormatterMacroFixture, KeepsThreads, 2) {
 
 Macro function definition with trailing C++ parameters: the macro call is followed by a normal parameter list before the body.
 
+<!-- .cpp-format
+MacroCategories:
+  CallSyntaxMacros:
+    - BENCHMARK_DEFINE_F
+-->
 ```cpp
 BENCHMARK_DEFINE_F(FormatterBenchmark, Inline)(benchmark::State& state) {
     UseBenchmarkState(state);
@@ -167,36 +240,69 @@ BENCHMARK_DEFINE_F(FormatterBenchmark, Inline)(benchmark::State& state) {
 
 Namespace-scope macro call statement: the whole call, optional configured bare-macro suffix, and optional `->` chain are formatted as one declaration item.
 
+<!-- .cpp-format
+MacroCategories:
+  CallSyntaxMacros:
+    - BENCHMARK_TEMPLATE
+-->
 ```cpp
 BENCHMARK_TEMPLATE(RecentPeriodOfPercentilesAccountBenchmark, DefaultClock)->ThreadRange(1, 16);
 ```
 
 Declaration-prefixed macro call: declaration modifiers may precede a configured call-syntax macro when the macro itself supplies the declaration body.
 
+<!-- .cpp-format
+MacroCategories:
+  DeclarationPrefixMacros:
+    - API_EXPORT
+  CallSyntaxMacros:
+    - DEFINE_MUTEX
+-->
 ```cpp
-static DEFINE_MUTEX(global_mutex);
+API_EXPORT DEFINE_MUTEX(global_mutex);
 ```
 
 Class member declaration macro: the macro call expands to a method declaration inside class scope.
 
+<!-- .cpp-format
+MacroCategories:
+  CallSyntaxMacros:
+    - MOCK_METHOD
+-->
 ```cpp
-MOCK_METHOD(void, SetValue, (std::string_view, std::string&&), (override));
+class MockValue {
+    MOCK_METHOD(void, SetValue, (std::string_view, std::string&&), (override));
+};
 ```
 
 ### SemicolonlessCallMacros
 
 `SemicolonlessCallMacros` names function-like macro invocations that occupy a complete physical line at namespace or block scope without a trailing semicolon. This narrow category is separate from `CallSyntaxMacros` because ordinary declaration-like call macros must not greedily consume later source lines as one run of semicolonless calls.
 
+<!-- .cpp-format
+MacroCategories:
+  SemicolonlessCallMacros:
+    - GTEST_DISABLE_DEPRECATED_PUSH_
+    - GTEST_DISABLE_DEPRECATED_POP_
+-->
 ```cpp
-GTEST_DISABLE_DEPRECATED_PUSH_(/* getenv: deprecated */)
-UseDeprecatedApi();
-GTEST_DISABLE_DEPRECATED_POP_()
+void UseDeprecated() {
+    GTEST_DISABLE_DEPRECATED_PUSH_(/* getenv: deprecated */)
+    UseDeprecatedApi();
+    GTEST_DISABLE_DEPRECATED_POP_()
+}
 ```
 
 ### TypeSpecifierMacros
 
 `TypeSpecifierMacros` names function-like macro identifiers that produce a C++ type specifier at the use site. They compose after declaration modifiers and after `typename` in a dependent type.
 
+<!-- .cpp-format
+MacroCategories:
+  TypeSpecifierMacros:
+    - GTEST_REMOVE_REFERENCE_AND_CONST_
+    - GTEST_BIND_
+-->
 ```cpp
 typedef GTEST_REMOVE_REFERENCE_AND_CONST_(Container) RawContainer;
 typedef typename GTEST_BIND_(Selector, Type) BoundTest;
@@ -208,12 +314,22 @@ typedef typename GTEST_BIND_(Selector, Type) BoundTest;
 
 The outer call remains structured: top-level commas separate arguments and the formatter can split the argument list. The complete call composes in expression and type-specifier positions, allowing a configured token generator to occupy a template-argument slot. Within each argument, recursively nested parentheses are recognized, while the complete argument text is preserved as one formatter atom. This accepts operators, adjacent identifiers or calls, empty arguments, string and character literals, raw strings, comments, and other preprocessing tokens. Separator commas around empty arguments are semantic preprocessing syntax and are preserved, including a comma immediately before the closing parenthesis. In accordance with function-like macro invocation rules, only parentheses protect an inner comma from separating outer arguments; brackets, braces, and angle brackets do not.
 
+<!-- .cpp-format
+MacroCategories:
+  PreprocessorArgumentMacros:
+    - EXPECT_EXPANSION
+    - GMOCK_PP_HAS_COMMA
+    - GMOCK_PP_FOR_EACH
+-->
 ```cpp
-EXPECT_EXPANSION("+=", GMOCK_PP_CAT(+, =));
-EXPECT_EXPANSION("1", GMOCK_PP_HAS_COMMA(, ));
-EXPECT_EXPANSION("0", GMOCK_PP_IS_BEGIN_PARENS(sss() sss));
-GMOCK_PP_HAS_COMMA(value, );
-Test<GMOCK_PP_FOR_EACH(TYPE_ELEMENT, ~, (int, float))>;
+void CheckExpansions() {
+    EXPECT_EXPANSION("+=", GMOCK_PP_CAT(+, =));
+    EXPECT_EXPANSION("1", GMOCK_PP_HAS_COMMA(, ));
+    EXPECT_EXPANSION("0", GMOCK_PP_IS_BEGIN_PARENS(sss() sss));
+    GMOCK_PP_HAS_COMMA(value, );
+}
+
+using Types = Test<GMOCK_PP_FOR_EACH(TYPE_ELEMENT, ~, (int, float))>;
 ```
 
 ### StatementArgumentMacros
@@ -222,10 +338,24 @@ Test<GMOCK_PP_FOR_EACH(TYPE_ELEMENT, ~, (int, float))>;
 
 Macros that look like plain function calls and whose arguments are all normal expressions do not belong here. Use this category for assertion-style macros where the documented argument is a statement, such as throw, no-throw, death, or fatal-failure assertions.
 
+<!-- .cpp-format
+MacroCategories:
+  StatementArgumentMacros:
+    - UEXPECT_THROW
+    - UASSERT_NO_THROW
+    - EXPECT_DEATH
+-->
 ```cpp
-UEXPECT_THROW([[maybe_unused]] auto bytes_read = source.ReadSome(kBuffer, kDeadline), IoTimeout);
+void CheckReads() {
+    UEXPECT_THROW([[maybe_unused]] auto bytes_read = source.ReadSome(kBuffer, kDeadline), IoTimeout);
 
-UASSERT_NO_THROW(ydb::TopicWriter writer("test-writer", MakeWriterSettings(topic)));
+    UASSERT_NO_THROW(ydb::TopicWriter writer("test-writer", MakeWriterSettings(topic)));
 
-EXPECT_DEATH({ RunChildProcess(); }, "signal");
+    EXPECT_DEATH(
+        {
+            RunChildProcess();
+        },
+        "signal"
+    );
+}
 ```

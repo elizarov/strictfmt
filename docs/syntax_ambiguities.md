@@ -16,6 +16,7 @@ Use parenthesized initialization only when braces have different C++ semantics, 
 
 ```cpp
 std::vector<int> values(count);  // vector with count values
+
 std::vector<int> oneValue{count};  // vector with one value
 ```
 
@@ -30,8 +31,9 @@ std::vector<int> values((n * m));  // use iff parenthesized initialization must 
 C++ expressions and templates can have the same token shape:
 
 ```cpp
-value < (min)(a, b) && value > (max)(a, b);  // expression
-function<(min)(a, b) && flag>(max)(a, b);  // template function call
+bool inRange = value < (min)(a, b) && value > (max)(a, b);  // expression
+
+auto result = function<((min)(a, b) && flag)>((max)(a, b));  // template function call
 ```
 
 Formatter parses expressions and templates using the following rules:
@@ -49,7 +51,7 @@ using X = Box<(Size(A * B))>;  // value as template argument
 Parenthesize expression chains that look like callable templates:
 
 ```cpp
-return (a < b) > (c);  // expression
+bool ordered = (a < b) > (c);  // expression
 ```
 
 Without those parentheses, `a < b > (c)` is parsed as the template call `a<b>(c)`.

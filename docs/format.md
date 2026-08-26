@@ -84,20 +84,31 @@ For any broken delimiter stack:
 
 This allows wrapper and nested delimiter groups to share indentation:
 
+<!-- .cpp-format
+ColumnLimit: 26
+-->
 ```cpp
-render(transform(
+auto r = render(transform(
     first,
     second
 ));
+```
 
+<!-- .cpp-format
+ColumnLimit: 32
+-->
+```cpp
 Widget rows[] = {{
-    first,
-    second
+    firstLongValue,
+    secondLongValue
 }};
 ```
 
 A broken delimiter body puts a line-start opener on a separate line before item content:
 
+<!-- .cpp-format
+ColumnLimit: 25
+-->
 ```cpp
 POINT points[] = {
     {
@@ -117,9 +128,14 @@ Delimiter item boundaries may coalesce generically only for direct close-comma-o
 Lists use compact or split form.
 
 ```cpp
-call(first, second, third);
+auto compact = call(first, second, third);
+```
 
-call(
+<!-- .cpp-format
+ColumnLimit: 30
+-->
+```cpp
+auto split = call(
     first,
     second,
     third
@@ -132,8 +148,11 @@ Parenthesized comma expressions that represent list-like syntax, such as macro s
 
 Compact comma-separated lists may keep leading items on the opener line while the final item uses an indent-economy delimiter expansion. The final item may be any expression, such as a braced initializer or call. If any earlier item splits, or if the final item only splits at an operator, the whole list uses split form.
 
+<!-- .cpp-format
+ColumnLimit: 60
+-->
 ```cpp
-call(first, second, [](int value) {
+auto result = call(first, second, [](int value) {
     return value + 1;
 });
 ```
@@ -147,6 +166,9 @@ C++ designated initializer elements accept both equal-initializer form
 normal recursive initializer list, including when it contains further
 designated initializer elements.
 
+<!-- .cpp-format
+ColumnLimit: 34
+-->
 ```cpp
 Widget rows[] = {
     {first, second},
@@ -200,17 +222,30 @@ Binary chain operators are the operators whose usual source meaning is an associ
 - Chain parts use the chain item indentation, not an additional continuation indentation.
 - If an outer context applies continuation indentation, that context defines the chain's base indentation.
 
+<!-- .cpp-format
+ColumnLimit: 35
+-->
 ```cpp
 int total = (
     firstLongValue +
     secondLongValue
 );
+```
 
+<!-- .cpp-format
+ColumnLimit: 36
+-->
+```cpp
 bool ready = (
     firstCondition &&
     secondCondition
 );
+```
 
+<!-- .cpp-format
+ColumnLimit: 50
+-->
+```cpp
 int total = first + second + BuildValue(
     firstLongArgument,
     secondLongArgument
@@ -227,17 +262,30 @@ int total = first + second + BuildValue(
 - Member-call chains have three forms: compact form breaks before no `.` or `->`; receiver-separated form breaks once before the first member operator and keeps the member tail compact; split form breaks before every member operator.
 - In compact and receiver-separated forms, every top-level member operator must occur on the same physical line. The receiver may expand before the first operator, and the final chain operand may expand after the last operator. An intermediate operand may not expand because that would place the operators before and after it on different lines.
 
+<!-- .cpp-format
+ColumnLimit: 60
+-->
 ```cpp
-EXPECT_CALL(mock, GetSize())
+auto expectation = EXPECT_CALL(mock, GetSize())
     .WillOnce(Return(0))
     .WillOnce(Return(1))
     .WillOnce(Return(0));
+```
 
-return internal::GetUnitTestImpl()
+<!-- .cpp-format
+ColumnLimit: 45
+-->
+```cpp
+auto failure = internal::GetUnitTestImpl()
     ->current_test_result()
     ->HasNonfatalFailure();
+```
 
-return RenderPoint{firstCoordinate + secondCoordinate + thirdCoordinate, y}
+<!-- .cpp-format
+ColumnLimit: 90
+-->
+```cpp
+auto x = RenderPoint{firstCoordinate + secondCoordinate + thirdCoordinate, y}
     .OffsetBy(deltaX, deltaY).x;
 ```
 
@@ -248,6 +296,9 @@ return RenderPoint{firstCoordinate + secondCoordinate + thirdCoordinate, y}
 - A nested ternary chain either breaks after every `:` or stays compact.
 - A single ternary may break after `?`, after `:`, after both, or inside either branch while keeping the selected branch attached to its `?` or `:` marker.
 
+<!-- .cpp-format
+ColumnLimit: 70
+-->
 ```cpp
 const char* key = firstCondition ? firstKey :
     secondCondition ? secondKey :
@@ -256,12 +307,20 @@ const char* key = firstCondition ? firstKey :
 
 - Ordinary binary operators use continuation indentation for the right operand when they split, including inside `(...)`.
 
+<!-- .cpp-format
+ColumnLimit: 95
+-->
 ```cpp
 bool installed = (
     RegEnumKeyExA(key, index, name, &nameLength, nullptr, nullptr, nullptr, nullptr) ==
         ERROR_SUCCESS
 );
+```
 
+<!-- .cpp-format
+ColumnLimit: 30
+-->
+```cpp
 int ratio = (
     firstLongValue /
         secondLongValue
@@ -298,19 +357,18 @@ Among legal layouts, the break optimizer chooses the layout with the best cost:
 
 Function signatures may break after the complete return type before breaking inside the return type. The function name is indented one continuation level. Split parameters may keep the return type and function name together when that line fits.
 
+<!-- .cpp-format
+ColumnLimit: 80
+-->
 ```cpp
 std::vector<std::string>
     ParseItems(const std::vector<ConfigLine>& lines, size_t& index);
+```
 
-std::vector<std::string>
-    ParseItems(
-        const std::vector<ConfigLine>& lines,
-        size_t& index
-    )
-{
-    return {};
-}
-
+<!-- .cpp-format
+ColumnLimit: 80
+-->
+```cpp
 std::set<std::string> RequireSuffixGroup(
     const std::map<std::string, std::set<std::string>>& suffixGroups,
     std::string_view configPath,
@@ -318,8 +376,13 @@ std::set<std::string> RequireSuffixGroup(
 ) {
     return {};
 }
+```
 
-render(
+<!-- .cpp-format
+ColumnLimit: 40
+-->
+```cpp
+auto result = render(
     first,
     transform(
         veryLongInputA,
@@ -345,7 +408,7 @@ Defaulted, deleted, and pure-virtual method markers stay with the declaration ta
 An end-of-line comment attached to one list element forces the owning list into split form. A source blank line or standalone comment between list elements also forces the owning list into split form. Lists still split all top-level comma opportunities together, and a single empty line directly before or after a standalone list comment is preserved.
 
 ```cpp
-update(
+auto result = update(
     first,
     second,  // note
     third
@@ -432,6 +495,9 @@ concept HasNonEmptyName = requires {
 
 Constructor initializer lists use compact or split form. A long initializer list keeps `) :` on the header line, or `) noexcept :` when a trailing qualifier is present. Initializer count alone does not force the constructor parameter list to split.
 
+<!-- .cpp-format
+ColumnLimit: 80
+-->
 ```cpp
 Widget::Widget(int value) : value_(value) {}
 
@@ -450,48 +516,64 @@ DashboardApp::DashboardApp(
 Control-brace normalization makes every `if`, `else`, `for`, `while`, `do`, and `switch` body a braced block. It also emits an `else` block whose only statement is an `if` statement as a direct `else if` chain. An empty control body finishes its own control-body line before a following block-attachment keyword.
 
 ```cpp
-if (ready) {
-    return;
-} else if (pending) {
-    Queue();
-} else {
-    Reset();
+void HandleState() {
+    if (ready) {
+        return;
+    } else if (pending) {
+        Queue();
+    } else {
+        Reset();
+    }
 }
 ```
 
 Control headers use list layout. Headers with init-statements split at top-level semicolons before nested calls.
 
+<!-- .cpp-format
+ColumnLimit: 40
+-->
 ```cpp
-for (
-    int index = 0;
-    index < limit;
-    ++index
-) {
-    Run(index);
+void RunItems() {
+    for (
+        int index = 0;
+        index < limit;
+        ++index
+    ) {
+        Run(index);
+    }
 }
+```
 
-if (
-    const auto current = FindCurrentValue(config);
-    current.has_value() && *current != nullptr
-) {
-    Use(*current);
+<!-- .cpp-format
+ColumnLimit: 80
+-->
+```cpp
+void UseCurrent() {
+    if (
+        const auto current = FindCurrentValue(config);
+        current.has_value() && *current != nullptr
+    ) {
+        Use(*current);
+    }
 }
 ```
 
 Break after a non-empty statement or declaration block's closing brace. The attachment exceptions are `else`, `catch`, `finally`, and the `while` that closes a do-while statement.
 
 ```cpp
-try {
-    Run();
-} catch (const std::exception& exception) {
-    Report(exception);
-} finally {
-    Cleanup();
-}
+void RunSafely() {
+    try {
+        Run();
+    } catch (const std::exception& exception) {
+        Report(exception);
+    } finally {
+        Cleanup();
+    }
 
-do {
-    Poll();
-} while (running);
+    do {
+        Poll();
+    } while (running);
+}
 ```
 
 ## Labels And Switches
@@ -499,15 +581,17 @@ do {
 Switch labels are inside the switch block. Statements under a `case` or `default` label are indented one level deeper. A scoped case keeps `{` on the label line and aligns `}` with the label.
 
 ```cpp
-switch (value) {
-    case 1:
-        return one;
-    case 2: {
-        int local = two;
-        return local;
+int Select(int value) {
+    switch (value) {
+        case 1:
+            return one;
+        case 2: {
+            int local = two;
+            return local;
+        }
+        default:
+            return fallback;
     }
-    default:
-        return fallback;
 }
 ```
 
@@ -521,6 +605,9 @@ Single-statement lambda bodies may keep their braces and statement compact only 
 
 Lambda captures and lambda parameters are separate break opportunities. Captures and parameters use the same compact-or-split optimization as other delimiter groups.
 
+<!-- .cpp-format
+ColumnLimit: 72
+-->
 ```cpp
 const auto updateKey = [&](
     const std::string& sectionName,

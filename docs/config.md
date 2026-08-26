@@ -72,8 +72,14 @@ StreamShift:
 
 `StreamShift.ConfigurationMethods` lists manipulators that bind to the following shifted value. The formatter keeps the configured manipulator sequence and its value together instead of choosing a break between them.
 
+<!-- .cpp-format
+StreamShift:
+  ConfigurationMethods:
+    - std::boolalpha
+    - std::setw
+-->
 ```cpp
-stream << std::boolalpha << enabled << std::setw(8) << value;
+auto configured = stream << std::boolalpha << enabled << std::setw(8) << value;
 ```
 
 ## .cpp-format-ignore
