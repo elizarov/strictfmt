@@ -13,12 +13,13 @@ bool IsKeywordOwnedValueToken(const PrintToken& token) {
 }
 
 bool IsConditionDeclarationBindingToken(const PrintToken& token);
+bool IsDeclaratorPackEllipsisToken(const PrintToken& token);
 
 bool IsDeclaratorBindingToken(const PrintToken& token) {
-    return IsReferenceToken(token) && (
+    return IsDeclaratorPackEllipsisToken(token) || (IsReferenceToken(token) && (
         SyntaxNodeKindHasClass(token.parentKind, SyntaxNodeClass::DeclaratorReferenceParent) ||
         IsConditionDeclarationBindingToken(token)
-    );
+    ));
 }
 
 bool IsUnaryContext(const PrintToken& token) {
@@ -83,6 +84,28 @@ const SyntaxNode* NextNonTriviaChild(const SyntaxNode& node, size_t after) {
         }
     }
     return nullptr;
+}
+
+bool IsDeclaratorPackEllipsisToken(const PrintToken& token) {
+    if (
+        token.kind != PrintTokenKind::Known ||
+        token.syntaxKind != SyntaxNodeKind::Ellipsis ||
+        token.node == nullptr ||
+        token.node->parent == nullptr ||
+        token.node->parent->parent == nullptr ||
+        !SyntaxNodeKindHasClass(token.node->parent->parent->kind, SyntaxNodeClass::DeclaratorReferenceParent)
+    ) {
+        return false;
+    }
+    const SyntaxNode& pack = *token.node->parent;
+    for (size_t index = 0; index < pack.children.size(); ++index) {
+        if (pack.children[index] != token.node) {
+            continue;
+        }
+        const SyntaxNode* identifier = NextNonTriviaChild(pack, index + 1);
+        return identifier != nullptr && identifier->kind == SyntaxNodeKind::Identifier;
+    }
+    return false;
 }
 
 const SyntaxNode* SingleNonEllipsisChild(const SyntaxNode& node) {
