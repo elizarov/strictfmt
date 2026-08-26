@@ -4,14 +4,11 @@ This document specifies the macro configuration and macro formatting for `strict
 
 ## Definition-side vs use-side
 
-Definition-side macro categories and use-side macro categories are independent:
-
-- `RawMacroDefinitions` affects only how a `#define` replacement is parsed and printed.
-- `BareIdentifierMacros`, `DeclarationPrefixMacros`, `CallSyntaxMacros`, `SemicolonlessCallMacros`, `StatementArgumentMacros`, `TypeSpecifierMacros`, and `PreprocessorArgumentMacros` affect only how macro identifiers are parsed when they are used elsewhere in source.
+Definition-side and use-side macro categories are independent. `RawMacroDefinitions` affects only how a `#define` replacement is parsed and printed; every other macro category affects only how macro identifiers are parsed when used elsewhere in source.
 
 ## Macro Replacements
 
-Structured macro definitions are the default. Their replacement parses as a structured token stream and parse tree, and the formatter owns replacement whitespace, continuation backslashes, continuation newlines, and line-limit wrapping. Macro replacement lists that form declaration fragments are recursively formatted before continuation backslashes are added.
+Structured macro definitions are the default. Their replacement parses as a structured token stream and parse tree, and the formatter owns its complete layout. Macro replacement lists that form declaration fragments are recursively formatted before continuation backslashes are added.
 
 Token pasting, nested macro calls whose arguments are preprocessing-token sequences, and balanced parenthesized preprocessing tokens remain explicit recursive grammar nodes. They may use token-level rather than C++ expression-level structure because macro expansion determines their eventual C++ role, but they must not be collapsed into an opaque formatter leaf.
 
@@ -79,7 +76,7 @@ MacroCategories:
 
 ### DeclarationPrefixMacros
 
-`DeclarationPrefixMacros` names macro identifiers that prefix a declaration, definition, class-field declaration, or declaration-like macro call as attribute, inline, export, or sanitizer-control tokens. A declaration-prefix modifier may be followed by a macro argument list when the macro spelling is function-like but the use-site role is still a modifier rather than a standalone macro call.
+`DeclarationPrefixMacros` names macro identifiers used as modifiers before [declaration-like items](glossary.md#declaration-like-item). A declaration-prefix modifier may have a macro argument list when its spelling is function-like but its use-site role is still a modifier rather than a standalone macro call.
 
 <!-- .cpp-format
 MacroCategories:
@@ -101,7 +98,7 @@ GTEST_INTERNAL_DEPRECATE_AND_INLINE("Use NewApi() instead") int OldApi();
 
 ### BareIdentifierMacros
 
-`BareIdentifierMacros` names macro identifiers that the grammar consumes on the use side as bare tokens in non-call positions. This category owns calling-convention and post-type declarator annotations, complete declaration-level items, qualified-identifier prefixes, top-level call-statement suffix macros, declaration suffix macros, initializer macros, ordinary expression atoms, parameter-list items, and template-argument fragments. A configured token remains valid as an expression atom when the same project also passes it as a normal call argument or binary-expression operand.
+`BareIdentifierMacros` names macro identifiers used as bare tokens in supported non-call positions. A configured token remains valid as an expression atom when the same project also passes it as a normal call argument or binary-expression operand.
 
 **Calling-convention modifier:** the macro appears in a declarator where a platform calling-convention token is expected.
 
@@ -197,11 +194,7 @@ FlatTuple<GTEST_FLAT_TUPLE_INT256 int> tuple;
 
 ### CallSyntaxMacros
 
-`CallSyntaxMacros` names macro identifiers whose supported use-side grammar roles start with a macro-style call but are not ordinary C++ expression calls in that placement. This category owns macro function definitions, macro function definitions with trailing C++ parameter lists, namespace-scope macro calls with optional configured bare-macro suffixes or chained `->` tails, declaration-prefixed macro calls, parameter-list items, and class-field method declaration macros.
-
-Do not add a macro to `CallSyntaxMacros` merely because its spelling is uppercase or function-like. A macro invocation that looks like a plain function call and appears where a normal C++ function call expression is syntactically valid needs no special macro configuration. The regular C++ expression grammar handles those calls, including normal argument expressions, larger expressions that contain the call, and ordinary expression operators after the call.
-
-Use `CallSyntaxMacros` when the invocation appears in an expression-like position but its argument list is not a C++ argument list, for example because it contains type fragments.
+`CallSyntaxMacros` names macro identifiers used as macro-style calls where an ordinary C++ expression call does not fit. Configure them for syntax differences such as argument lists containing type fragments, not merely for uppercase or function-like spelling.
 
 <!-- .cpp-format
 MacroCategories:
@@ -310,9 +303,9 @@ typedef typename GTEST_BIND_(Selector, Type) BoundTest;
 
 ### PreprocessorArgumentMacros
 
-`PreprocessorArgumentMacros` names function-like macros whose arguments are preprocessing-token sequences rather than C++ expressions, types, declarations, or statements. Use it only when the invocation deliberately inspects or transforms its arguments as tokens, for example a test helper that stringizes an unexpanded macro invocation.
+`PreprocessorArgumentMacros` names function-like macros whose arguments are preprocessing-token sequences rather than C++ syntax. Use it only when the invocation deliberately inspects or transforms its arguments as tokens, for example a test helper that stringizes an unexpanded macro invocation.
 
-The outer call remains structured: top-level commas separate arguments and the formatter can split the argument list. The complete call composes in expression and type-specifier positions, allowing a configured token generator to occupy a template-argument slot. Within each argument, recursively nested parentheses are recognized, while the complete argument text is preserved as one formatter atom. This accepts operators, adjacent identifiers or calls, empty arguments, string and character literals, raw strings, comments, and other preprocessing tokens. Separator commas around empty arguments are semantic preprocessing syntax and are preserved, including a comma immediately before the closing parenthesis. In accordance with function-like macro invocation rules, only parentheses protect an inner comma from separating outer arguments; brackets, braces, and angle brackets do not.
+The outer call remains a structured list that the formatter can split. The complete call composes in expression and type-specifier positions. Within each argument, recursively nested parentheses are recognized while the complete preprocessing-token sequence is preserved as one formatter atom. Separator commas around empty arguments are preserved, including a comma immediately before the closing parenthesis. Only parentheses protect an inner comma from separating outer arguments.
 
 <!-- .cpp-format
 MacroCategories:
@@ -334,9 +327,9 @@ using Types = Test<GMOCK_PP_FOR_EACH(TYPE_ELEMENT, ~, (int, float))>;
 
 ### StatementArgumentMacros
 
-`StatementArgumentMacros` names macro identifiers whose call syntax parses the first argument as a declaration, block, or statement sequence without requiring that argument to be a C++ expression. Declarations retain normal C++ initializer forms, including `=`, braced, and parenthesized direct initialization. Remaining arguments are parsed as ordinary macro arguments.
+`StatementArgumentMacros` names macro identifiers whose call syntax parses the first argument as a [source-item](glossary.md#source-item) sequence rather than requiring a C++ expression. Declarations retain normal initializer syntax. Remaining arguments are parsed as ordinary macro arguments.
 
-Macros that look like plain function calls and whose arguments are all normal expressions do not belong here. Use this category for assertion-style macros where the documented argument is a statement, such as throw, no-throw, death, or fatal-failure assertions.
+Macros that look like plain function calls and whose arguments are all normal expressions do not belong here. Use this category for assertion-style macros whose documented argument is a statement.
 
 <!-- .cpp-format
 MacroCategories:

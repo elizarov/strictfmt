@@ -5,8 +5,8 @@ This document specifies the source layout produced by `strictfmt`.
 ## Spacing Rules
 
 - Put one space between a control keyword and `(`, e.g. `if (`.
-- Put no space between a call, macro-like call, declaration name, constructor, destructor, or operator name and `(`, e.g. `Run(`.
-- Put no padding inside parentheses, brackets, template angle brackets, or one-line initializer braces, e.g. `call(value)`.
+- Put no space between the name and `(` in [call-like syntax](glossary.md#call-like-syntax), e.g. `Run(`.
+- Put no padding inside compact [delimiter groups](glossary.md#delimiter-group), e.g. `call(value)`.
 - Keep empty braces as `{}`, e.g. `return {};`.
 - Put one space before a code-block `{`, e.g. `if (ok) {`.
 - Put spaces around lambda trailing-return arrows, e.g. `[]() -> int`.
@@ -30,7 +30,7 @@ This document specifies the source layout produced by `strictfmt`.
 - Put no space between a C-style cast and the expression it prefixes, e.g. `(void)value`.
 - Put spaces around range-for and constructor-initializer colons, e.g. `for (auto item : items)`.
 - Put no space before access-specifier, label, or `case` colons, e.g. `public:`.
-- Put no spaces around namespace, member-access, or pointer-member-access operators, e.g. `std::string`.
+- Put no spaces around qualification or member-access operators, e.g. `std::string`.
 - Put two spaces before a trailing `//` comment after code, e.g. `value;  // note`.
 - Put no space between `#` and any preprocessor directive keyword, e.g. `#if` and `#include`.
 - Put one space after a preprocessor directive keyword before its operand, e.g. `#pragma once`.
@@ -38,12 +38,11 @@ This document specifies the source layout produced by `strictfmt`.
 ## Line Hygiene
 
 - Remove trailing whitespace from every line.
-- Preserve LF, CRLF, or CR line endings when the source uses one style. For mixed line endings, use the current platform default.
+- Preserve the source [line-ending style](glossary.md#line-ending-style). For mixed line endings, use the current platform default.
 - Use spaces for indentation and never emit tabs. `IndentWidth` in [config.md](config.md) selects the number of spaces per indentation level.
 - Preserve comments in source order. A trailing comment stays trailing only when it was trailing in source. A standalone comment stays standalone.
-- Preserve one source blank line when it separates declarations or statements at the same structural level. Collapse multiple blank lines to one.
-- Empty lines are separators. Do not emit empty lines at the beginning or end of a file.
-- Drop blank lines at the beginning of a block and immediately before a closing brace.
+- Preserve a source blank-line separator between declarations or statements at the same structural level, collapsing each run to one line.
+- Do not emit empty lines at the beginning or end of a file or block.
 - Remove trailing commas except in enum bodies. When the final item is selected by a conditional preprocessor branch, remove the branch-owned terminal comma from every final branch as part of the same normalization.
 - Apply the structured and raw replacement whitespace rules specified in [macro.md](macro.md).
 
@@ -64,15 +63,15 @@ Mandatory line breaks are structural boundaries. The break is always taken befor
 Line break opportunities are optional boundaries that the break optimizer may take when formatting one formatted segment between mandatory line breaks. See **Break Selection** for the optimization objective and constraints.
 
 - After assignment operators and after binary or ternary operators.
-- After delimiter openers and before matching closers for `()`, `[]`, `{}`, and template `<>`.
-- After commas in lists, including call arguments, declaration parameters, template arguments, braced initializer elements, subscript lists, base-class lists, and enum bodies.
-- Between a declaration type and its direct-initialized declarator value, whether the initializer is braced or parenthesized and whether the declaration is local or a field.
-- After semicolons inside `for` and control headers.
-- Around lambda captures, lambda parameter lists, lambda bodies, constructor initializer lists, and adjacent string literal sequences.
+- After delimiter-group openers and before their matching closers.
+- After commas in any [list](glossary.md#list).
+- Between a declaration type and its direct-initialized declarator value.
+- After semicolons inside control-statement headers.
+- At callable-structure boundaries and between adjacent string literals.
 
 ## Indent Economy
 
-Indent economy lets nested delimiter groups share one body indentation level when their opener and closer placement stays visually unambiguous. It applies to broken `()`, `[]`, `{}`, and parsed template `<>` delimiter groups. It is a legality rule for candidate layouts; the break optimizer still chooses among legal layouts with the normal break-selection objective.
+Indent economy lets nested delimiter groups share one body indentation level when their opener and closer placement stays visually unambiguous. It applies to every broken delimiter group. It is a legality rule for candidate layouts; the break optimizer still chooses among legal layouts with the normal break-selection objective.
 
 For any broken delimiter stack:
 
@@ -125,7 +124,7 @@ Delimiter item boundaries may coalesce generically only for direct close-comma-o
 
 ## Lists
 
-Lists use compact or split form.
+A list uses compact or split form.
 
 ```cpp
 auto compact = call(first, second, third);
@@ -142,11 +141,9 @@ auto split = call(
 );
 ```
 
-The rule applies to function arguments, template arguments, braced initializer lists, subscript lists, declaration parameter lists, base-class lists, enum bodies, and similar comma-separated syntax.
-
 Parenthesized comma expressions that represent list-like syntax, such as macro signature arguments, use the same single compact-or-split list decision.
 
-Compact comma-separated lists may keep leading items on the opener line while the final item uses an indent-economy delimiter expansion. The final item may be any expression, such as a braced initializer or call. If any earlier item splits, or if the final item only splits at an operator, the whole list uses split form.
+Compact comma-separated lists may keep leading items on the opener line while the final item uses an indent-economy delimiter expansion. The final item may be any expression. If any earlier item splits, or if the final item only splits at an operator, the whole list uses split form.
 
 <!-- .cpp-format
 ColumnLimit: 60
@@ -159,7 +156,7 @@ auto result = call(first, second, [](int value) {
 
 When a template list wraps, `<` stays with the owner and each top-level argument occupies one line.
 
-Nested braced initializer and braced constructor elements are independent structural parts. Each nested element uses the same compact-or-split optimization as any other segment and follows indent-economy delimiter placement.
+Nested initializer elements are independent structural parts. Each uses the normal compact-or-split optimization and indent-economy delimiter placement.
 
 C++ designated initializer elements accept both equal-initializer form
 (`.field = value`) and direct braced form (`.field{value}`). A braced value is a
@@ -196,7 +193,7 @@ enum class ValueFormat : std::uint8_t {
 };
 ```
 
-When a class, struct, union, or enum body is followed by a declarator for the declared type, keep the declarator attached to the closing brace.
+When a type-declaration body is followed by a declarator for the declared type, keep the declarator attached to the closing brace.
 
 ```cpp
 struct Context {
@@ -290,8 +287,8 @@ auto x = RenderPoint{firstCoordinate + secondCoordinate + thirdCoordinate, y}
 ```
 
 - Adjacent string literals are an implicit concatenation chain. A line-fragment boundary defined under [Token Preservation](#token-preservation) is mandatory; other preserved fragment boundaries may remain on one physical line.
-- `return`, `co_return`, `throw`, and `co_yield` are one keyword-owned-value category. The boundary between the keyword and its value is an ordinary break opportunity selected by the optimizer.
-- When a forced multi-line string-fragment sequence stays split, it follows the same indentation rule as other chains. In single-value contexts, such as after `=`, after a value-owning keyword, or inside one plain parenthesis group, fragments align at the expression indentation. In multi-element contexts, such as call argument lists, declaration parameter lists, subscript argument lists, template argument lists, and initializer lists, continued fragments use one continuation indentation level so the string chain stays visually separate from neighboring elements.
+- The boundary between a [value-owning keyword](glossary.md#value-owning-keyword) and its value is an ordinary break opportunity selected by the optimizer.
+- When a forced multi-line string-fragment sequence stays split, it follows the same indentation rule as other chains. In single-value contexts, fragments align at the expression indentation. In list contexts, continued fragments use one continuation indentation level so the string chain stays visually separate from neighboring elements.
 - Ternary chains are flat chains.
 - A nested ternary chain either breaks after every `:` or stays compact.
 - A single ternary may break after `?`, after `:`, after both, or inside either branch while keeping the selected branch attached to its `?` or `:` marker.
@@ -327,9 +324,7 @@ int ratio = (
 );
 ```
 
-- Plain non-call parentheses contain one expression group.
-- A plain non-call parenthesis group adds only body indentation.
-- Lists and formatter-owned chain parts inside that group keep their elements at that body level.
+- Plain non-call parentheses form one expression delimiter group and add only body indentation. Nested lists and formatter-owned chain parts keep their elements at that body level.
 - Assignment continuations are not flattened. A break after an assignment operator, or between a condition declaration's type/pointer prefix and its assigned declarator, adds one continuation indentation level.
 - Nested ordinary binary operators still introduce continuation indentation.
 - Unary operators and declarator `*` or `&` are token facts, not chain break points.
@@ -344,7 +339,7 @@ A legal layout must satisfy all constraints in this document:
 - Preserve source token order, supported comments, and the file line-ending style.
 - Take all mandatory line breaks.
 - Take optional line breaks only at listed line break opportunities.
-- Obey spacing, indentation, list, delimiter, chain, declaration, macro, and preprocessor rules.
+- Obey all applicable structural rules.
 - Obey indent-economy legality for delimiter groups.
 
 Among legal layouts, the break optimizer chooses the layout with the best cost:
@@ -392,7 +387,7 @@ auto result = render(
 );
 ```
 
-Do not split inside empty delimiter pairs, function-pointer declarator groups, parenthesized callees, compiler declaration prefix groups, `__declspec` groups, operator function names, or template-angle tokens that are not template argument lists.
+Do not split inside [atomic groups](glossary.md#atomic-group).
 
 Function-pointer aliases, typedefs, and declarations keep a space between the return type and a compact `(*)` declarator. Long forms may break at that return-type/declarator space before breaking inside the function-pointer declarator group.
 
@@ -513,7 +508,7 @@ DashboardApp::DashboardApp(
 }
 ```
 
-Control-brace normalization makes every `if`, `else`, `for`, `while`, `do`, and `switch` body a braced block. It also emits an `else` block whose only statement is an `if` statement as a direct `else if` chain. An empty control body finishes its own control-body line before a following block-attachment keyword.
+Control-brace normalization makes every [control-statement](glossary.md#control-statement) body a braced block. It also emits an `else` block whose only statement is an `if` statement as a direct `else if` chain. An empty control body finishes its own control-body line before a following block-attachment keyword.
 
 ```cpp
 void HandleState() {
@@ -599,9 +594,9 @@ Nested switches restore the enclosing switch case indentation after the inner sw
 
 ## Lambdas
 
-Lambdas intentionally format like functions. A lambda is a callable for all header/body placement decisions: the capture list, parameter list, and optional trailing return type form the callable header, and an owner prefix such as `const auto name =` or `return` behaves like a function return-type prefix.
+Lambdas intentionally format like functions. The complete [callable header](glossary.md#callable-header) follows the same placement as a function header, and an owner prefix behaves like a function return-type prefix.
 
-Single-statement lambda bodies may keep their braces and statement compact only when the complete lambda capture, parameter list, optional trailing return type, and body fit on one physical line. The compact single-statement form is limited to statements whose subtree contains no compound block, so a statement such as `if (condition) { work(); }` uses the same broken-body form as other block-bearing lambda bodies. If a lambda breaks anywhere, its body breaks after `{`, formats the body one indentation step deeper than the lambda header's render base, and aligns the closing brace with that base. Multi-statement lambda bodies always use that broken-body form.
+Single-statement lambda bodies may stay compact only when the complete lambda fits on one physical line. The compact form is limited to statements whose subtree contains no compound block, so a statement such as `if (condition) { work(); }` uses the same broken-body form as other block-bearing lambda bodies. If a lambda breaks anywhere, its body breaks after `{`, formats the body one indentation step deeper than the lambda header's render base, and aligns the closing brace with that base. Multi-statement lambda bodies always use that broken-body form.
 
 Lambda captures and lambda parameters are separate break opportunities. Captures and parameters use the same compact-or-split optimization as other delimiter groups.
 
@@ -626,7 +621,7 @@ const auto findValue =
 
 ## Include Sorting
 
-Include sorting is enabled when include groups are configured. Sorting may move `#include` lines within sortable include blocks. It does not add includes, remove includes, rewrite include spelling, or move comments.
+Include sorting is enabled when include groups are configured. It only reorders `#include` lines within sortable include blocks, preserving the include set, spelling, and comments.
 
 When include groups are absent, include sorting is disabled. Include directives are normalized and emitted in source order, and blank-separated include blocks are preserved.
 
