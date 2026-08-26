@@ -991,6 +991,18 @@ const bool found=model.nodes!=nullptr&&std::any_of(model.nodes->begin(),model.no
 const bool matched=context.currentValue==expectedValue||std::any_of(context.values->begin(),context.values->end(),[&](const FormatBreakNode& node){return node.declarationValueOwner!=nullptr&&DeclarationScopeItem(node.declarationValueOwner)==item;});
 }
 
+bool StructuralLogicalBreak() {
+return node.kind==SyntaxNodeKind::PreprocCall&&SyntaxNodeKindFromPreprocessorDirectiveLine(TrimLeadingWhitespace(node.text))==SyntaxNodeKind::PreprocessorDirectivePragma;
+}
+
+void StructuralAssignmentBreak() {
+if(condition){chain->chainKind=(operatorKind==SyntaxNodeKind::LessLess||operatorKind==SyntaxNodeKind::GreaterGreater)?FormatBreakChainKind::StreamBeforeOperator:FormatBreakChainKind::AfterOperator;}
+}
+
+void StructuralMemberChainBreak() {
+if(condition){bucket.events.erase(bucket.events.begin(),bucket.events.begin()+static_cast<std::ptrdiff_t>(bucket.firstEvent));}
+}
+
 constexpr int kPrimaryFlag = 1;
 constexpr int kSecondaryFlag = 2;
 constexpr int kTertiaryFlag = 4;

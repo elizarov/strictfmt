@@ -47,8 +47,6 @@ struct NodeResult {
     int extraLines = 0;
     int maxOverflow = 0;
     int overflowLines = 0;
-    int memberChainBreaks = 0;
-    int deepestBreakIndent = -1;
     int deepestBreakDepth = -1;
     int totalBreakDepth = 0;
     const struct ChoiceTree* choices = nullptr;
@@ -414,8 +412,6 @@ private:
         left.extraLines += right.extraLines;
         left.maxOverflow = std::max(left.maxOverflow, right.maxOverflow);
         left.overflowLines += right.overflowLines;
-        left.memberChainBreaks += right.memberChainBreaks;
-        left.deepestBreakIndent = std::max(left.deepestBreakIndent, right.deepestBreakIndent);
         left.deepestBreakDepth = std::max(left.deepestBreakDepth, right.deepestBreakDepth);
         left.totalBreakDepth += right.totalBreakDepth;
         left.choices = ConcatChoices(left.choices, right.choices);
@@ -649,7 +645,6 @@ private:
         result.endIndentLevel = indentLevel;
         result.endColumn = IndentColumn(indentLevel);
         result.endLineHasText = false;
-        result.deepestBreakIndent = std::max(result.deepestBreakIndent, result.endColumn);
         result.deepestBreakDepth = std::max(result.deepestBreakDepth, structuralDepth);
         result.totalBreakDepth += structuralDepth;
         return result;
@@ -782,12 +777,6 @@ private:
         if (candidate.extraLines != incumbent.extraLines) {
             return candidate.extraLines < incumbent.extraLines;
         }
-        if (candidate.memberChainBreaks != incumbent.memberChainBreaks) {
-            return candidate.memberChainBreaks < incumbent.memberChainBreaks;
-        }
-        if (candidate.deepestBreakIndent != incumbent.deepestBreakIndent) {
-            return candidate.deepestBreakIndent < incumbent.deepestBreakIndent;
-        }
         if (candidate.deepestBreakDepth != incumbent.deepestBreakDepth) {
             return candidate.deepestBreakDepth < incumbent.deepestBreakDepth;
         }
@@ -814,8 +803,6 @@ private:
             left.maxOverflow > right.maxOverflow ||
             left.overflowLines > right.overflowLines ||
             left.extraLines > right.extraLines ||
-            left.memberChainBreaks > right.memberChainBreaks ||
-            left.deepestBreakIndent > right.deepestBreakIndent ||
             left.deepestBreakDepth > right.deepestBreakDepth ||
             left.totalBreakDepth > right.totalBreakDepth
         ) {
@@ -824,8 +811,6 @@ private:
         return left.maxOverflow < right.maxOverflow ||
             left.overflowLines < right.overflowLines ||
             left.extraLines < right.extraLines ||
-            left.memberChainBreaks < right.memberChainBreaks ||
-            left.deepestBreakIndent < right.deepestBreakIndent ||
             left.deepestBreakDepth < right.deepestBreakDepth ||
             left.totalBreakDepth < right.totalBreakDepth;
     }
@@ -2932,7 +2917,6 @@ private:
         NodeResult
             result{.valid = true, .endColumn = column, .endIndentLevel = indentLevel, .endLineHasText = lineHasText};
         AddChoice(result, node.id, FormatBreakChoice::Split, indentLevel);
-        result.memberChainBreaks += static_cast<int>(node.operators.size());
         if (node.operands.empty()) {
             return result;
         }
@@ -2955,7 +2939,6 @@ private:
         NodeResult
             result{.valid = true, .endColumn = column, .endIndentLevel = indentLevel, .endLineHasText = lineHasText};
         AddChoice(result, node.id, FormatBreakChoice::MemberCompactTail, indentLevel);
-        result.memberChainBreaks = 1;
         if (node.operands.empty()) {
             return result;
         }

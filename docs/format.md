@@ -327,9 +327,7 @@ Among legal layouts, the break optimizer chooses the layout with the best cost:
 - Minimize the largest overflow beyond the configured column limit; layouts with no overflowing physical line have zero overflow.
 - On equal maximum overflow, minimize the number of physical lines that overflow.
 - On equal overflow cost, minimize the physical line count.
-- On equal line count, prefer fewer member-chain breaks so they do not merely replace an equal number of operand-internal breaks.
-- Then prefer the layout whose deepest taken break renders at the shallower indentation level.
-- If still tied, prefer the structurally shallower deepest taken break.
+- On equal line count, prefer the structurally shallower deepest taken break.
 - If common deeper breaks make those costs equal, minimize the sum of structural depths of all taken breaks so a distinguishing break closer to the expression root wins, then use source-order-stable compact behavior.
 
 Function signatures may break after the complete return type before breaking inside the return type. The function name is indented one continuation level. Split parameters may keep the return type and function name together when that line fits. Functions and lambdas deliberately share one callable-header model. Function definitions whose return-type prefix is split away from the function name start the body `{` on its own line at declaration indentation. Lambda body headers whose header itself splits keep the body opener attached as `) {`; when only the owner prefix splits away and the lambda header remains compact, the body opener may start at owner indentation.
