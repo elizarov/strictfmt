@@ -669,13 +669,10 @@ private:
     }
 
     static bool ChainOperatorsMatch(const FormatBreakNode& chain, std::optional<SyntaxNodeKind> operatorKind) {
-        return !operatorKind || std::all_of(
-            chain.operators.begin(),
-            chain.operators.end(),
-            [operatorKind](const FormatBreakToken& token) {
+        return !operatorKind ||
+            std::all_of(chain.operators.begin(), chain.operators.end(), [operatorKind](const FormatBreakToken& token) {
                 return FormatBreakTokenSyntaxKind(token) == *operatorKind;
-            }
-        );
+            });
     }
 
     static FormatBreakNode* MatchingChain(
@@ -1075,11 +1072,9 @@ private:
         return prefix;
     }
 
-    FormatBreakNode* BuildDetachedTemplateDeclaration(
-        FormatBreakNode* prefix,
-        FormatBreakNode* declaration,
-        int depth
-    ) {
+    FormatBreakNode*
+        BuildDetachedTemplateDeclaration(FormatBreakNode* prefix, FormatBreakNode* declaration, int depth)
+    {
         if (prefix == nullptr || declaration == nullptr) {
             return nullptr;
         }
@@ -1209,8 +1204,7 @@ private:
 
         size_t declarationIndex = index + 1;
         while (declarationIndex < end && (
-            children[declarationIndex] == nullptr ||
-            !ContainsSelected(*children[declarationIndex])
+            children[declarationIndex] == nullptr || !ContainsSelected(*children[declarationIndex])
         )) {
             ++declarationIndex;
         }
@@ -1355,8 +1349,12 @@ private:
         }
 
         FormatBreakNode* returnType = BuildSequenceFromPointers(returnTypeChildren, depth + 1);
-        FormatBreakNode* declarator =
-            BuildSequenceFromChildren(wrapper->children, functionDeclaratorIndex, functionDeclaratorIndex + 1, depth + 1);
+        FormatBreakNode* declarator = BuildSequenceFromChildren(
+            wrapper->children,
+            functionDeclaratorIndex,
+            functionDeclaratorIndex + 1,
+            depth + 1
+        );
         if (!returnType || !declarator) {
             return nullptr;
         }
@@ -1484,8 +1482,7 @@ private:
         if (operators.empty()) {
             return nullptr;
         }
-        FormatBreakNode* tail =
-            BuildSequenceFromChildren(node.children, operandBegin, node.children.size(), depth + 1);
+        FormatBreakNode* tail = BuildSequenceFromChildren(node.children, operandBegin, node.children.size(), depth + 1);
         if (tail == nullptr) {
             return nullptr;
         }
@@ -1640,9 +1637,10 @@ private:
                 continue;
             }
             size_t afterTemplate = index;
-            if (FormatBreakNode* templated =
-                BuildAdjacentTemplateDeclaration(children, index, end, depth + 1, afterTemplate))
-            {
+            if (
+                FormatBreakNode*
+                    templated = BuildAdjacentTemplateDeclaration(children, index, end, depth + 1, afterTemplate)
+            ) {
                 builtChildren.push_back(templated);
                 index = afterTemplate;
                 continue;
@@ -1820,14 +1818,20 @@ private:
             return false;
         }
         AttachSeparatorToPreviousItem(list, *separator);
-        return AppendCommaExpressionListOperand(list, node.children, *opIndex + 1, node.children.size(), open, depth, false);
+        return AppendCommaExpressionListOperand(
+            list,
+            node.children,
+            *opIndex + 1,
+            node.children.size(),
+            open,
+            depth,
+            false
+        );
     }
 
-    const SyntaxNode* DirectDelimitedCommaExpressionBody(
-        const ::SyntaxChildList& children,
-        size_t openIndex,
-        size_t closeIndex
-    ) const {
+    const SyntaxNode*
+        DirectDelimitedCommaExpressionBody(const ::SyntaxChildList& children, size_t openIndex, size_t closeIndex) const
+    {
         const SyntaxNode* body = nullptr;
         for (size_t index = openIndex + 1; index < closeIndex; ++index) {
             const SyntaxNode* child = children[index];
@@ -1994,8 +1998,8 @@ private:
             operators.push_back(directOperators[index]);
             commentsBeforeOperators.push_back(std::move(pendingComments));
             const size_t operandBegin = operatorIndices[index] + 1;
-            const size_t operandEnd = index + 1 < operatorIndices.size() ?
-                operatorIndices[index + 1] : node.children.size();
+            const size_t operandEnd =
+                index + 1 < operatorIndices.size() ? operatorIndices[index + 1] : node.children.size();
             if (operandBegin >= operandEnd) {
                 return nullptr;
             }
@@ -2039,12 +2043,10 @@ private:
     }
 
     FormatBreakNode* BuildBinaryOrAssignmentExpression(const SyntaxNode& node, int depth) {
-        if (
-            SyntaxNodeHasLocalClass(node, SyntaxNodeClass::LeadingStreamOperatorChain) || (
-                SyntaxNodeHasLocalClass(node, SyntaxNodeClass::ConditionalStreamOperatorChain) &&
-                SelectionStartsWithDirectStreamOperator(node)
-            )
-        ) {
+        if (SyntaxNodeHasLocalClass(node, SyntaxNodeClass::LeadingStreamOperatorChain) || (
+            SyntaxNodeHasLocalClass(node, SyntaxNodeClass::ConditionalStreamOperatorChain) &&
+            SelectionStartsWithDirectStreamOperator(node)
+        )) {
             return BuildLeadingStreamOperatorChain(node, depth);
         }
         const std::optional<size_t> opIndex = DirectOperatorIndex(node);
@@ -2067,11 +2069,10 @@ private:
             chain->declarationValueOwner = &node;
         }
         const SyntaxNodeKind operatorKind = FormatBreakTokenSyntaxKind(*token);
-        chain->chainKind = (
-            operatorKind == SyntaxNodeKind::LessLess || operatorKind == SyntaxNodeKind::GreaterGreater
-        ) ? FormatBreakChainKind::StreamBeforeOperator : FormatBreakChainKind::AfterOperator;
-        chain->forceSplit =
-            chain->chainKind == FormatBreakChainKind::StreamBeforeOperator &&
+        chain->chainKind =
+            (operatorKind == SyntaxNodeKind::LessLess || operatorKind == SyntaxNodeKind::GreaterGreater) ?
+                FormatBreakChainKind::StreamBeforeOperator : FormatBreakChainKind::AfterOperator;
+        chain->forceSplit = chain->chainKind == FormatBreakChainKind::StreamBeforeOperator &&
             context_.forceSplitStreamChain &&
             root_ == &node;
         if (
@@ -2392,7 +2393,9 @@ private:
         delimited->children = StoreNodePointers({BuildToken(*open, depth + 1), BuildToken(*close, depth + 1)});
 
         if (delimiter == FormatBreakDelimiterKind::Paren) {
-            if (const SyntaxNode* commaExpression = DirectDelimitedCommaExpressionBody(children, openIndex, closeIndex)) {
+            if (
+                const SyntaxNode* commaExpression = DirectDelimitedCommaExpressionBody(children, openIndex, closeIndex)
+            ) {
                 if (AppendCommaExpressionListItems(*delimited, *commaExpression, *open, depth, false)) {
                     delimited->forceSplit =
                         delimited->forceSplit || (hasVirtualClose && context_.forceSplitVirtualDelimiter);

@@ -5,6 +5,7 @@
 #include <vector>
 
 struct FormatterConfig;
+
 struct SyntaxNode;
 
 std::string

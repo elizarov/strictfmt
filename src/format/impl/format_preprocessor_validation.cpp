@@ -131,9 +131,11 @@ bool IsSupportedConditionalPlacement(const SyntaxNode& node) {
             !BranchBeforeDirectiveHasIncompleteTail(node.text);
     }
 
-    if (HasClass(node, SyntaxNodeClass::ConditionalPreprocessorTree) ||
+    if (
+        HasClass(node, SyntaxNodeClass::ConditionalPreprocessorTree) ||
         HasClass(node, SyntaxNodeClass::DeclarationModifierPreprocessor) ||
-        HasClass(node, SyntaxNodeClass::ConditionalRhsPreprocessor)) {
+        HasClass(node, SyntaxNodeClass::ConditionalRhsPreprocessor)
+    ) {
         return true;
     }
 
