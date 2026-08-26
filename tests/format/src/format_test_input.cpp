@@ -478,6 +478,8 @@ ConstructorBodyEconomyWidget::ConstructorBodyEconomyWidget(FirstExtremelyLongPar
     Use(first_,second_);
 }
 
+Widget::Widget(int first,int second,int third,int fourth):first_(first),second_(second),third_(third),fourth_(fourth){Use();}
+
 StringColumn::StringColumn(ColumnRef column)
     : ClickhouseColumn{impl::GetTypedColumn<StringColumn, NativeTyp>(column)}
 {}

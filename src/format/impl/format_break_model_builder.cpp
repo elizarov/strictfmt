@@ -1256,6 +1256,15 @@ private:
         return BuildDetachedTemplateDeclaration(prefix, declaration, depth);
     }
 
+    FormatBreakNode*
+        BuildCodeBlockBodyHeader(const SyntaxNode& bodyNode, FormatBreakNode* header, FormatBreakNode* body, int depth)
+    {
+        auto result = MakeNode(FormatBreakNodeKind::BodyHeader, depth);
+        result->bodyHeaderDetachBodyAfterExpandedHeader = !IsEmptyCompoundBlock(bodyNode);
+        result->children = StoreNodePointers({header, body});
+        return result;
+    }
+
     FormatBreakNode* BuildBodyHeader(const SyntaxNode& node, int depth) {
         std::optional<size_t> bodyIndex;
         for (size_t index = 0; index < node.children.size(); ++index) {
@@ -1273,10 +1282,9 @@ private:
             return nullptr;
         }
 
-        auto result = MakeNode(FormatBreakNodeKind::BodyHeader, depth);
+        FormatBreakNode* result = BuildCodeBlockBodyHeader(*node.children[*bodyIndex], header, body, depth);
         result->bodyHeaderSingleStatementBody =
             LambdaBodyAllowsCompactSingleStatementForm(*node.children[*bodyIndex], node.kind);
-        result->children = StoreNodePointers({header, body});
         return result;
     }
 
@@ -1299,10 +1307,7 @@ private:
             return nullptr;
         }
 
-        auto result = MakeNode(FormatBreakNodeKind::BodyHeader, depth);
-        result->bodyHeaderForcesDetachedBodyAfterExpandedHeader = !IsEmptyCompoundBlock(*node.children[*bodyIndex]);
-        result->children = StoreNodePointers({header, body});
-        return result;
+        return BuildCodeBlockBodyHeader(*node.children[*bodyIndex], header, body, depth);
     }
 
     FormatBreakNode* BuildInitializerListBodyHeader(const SyntaxNode& node, int depth) {
@@ -1329,10 +1334,7 @@ private:
             return nullptr;
         }
 
-        auto result = MakeNode(FormatBreakNodeKind::BodyHeader, depth);
-        result->bodyHeaderDetachBodyAfterExpandedHeader = !IsEmptyCompoundBlock(*node.children[*bodyIndex]);
-        result->children = StoreNodePointers({header, body});
-        return result;
+        return BuildCodeBlockBodyHeader(*node.children[*bodyIndex], header, body, depth);
     }
 
     static std::optional<size_t> DirectFunctionDeclaratorChildIndex(const SyntaxNode& node) {

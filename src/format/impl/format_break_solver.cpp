@@ -2428,6 +2428,15 @@ private:
         return best;
     }
 
+    static bool
+        ExpandedBodyHeaderNeedsDetachedBody(const FormatBreakNode& node, const NodeResult& header, int ownerIndentLevel)
+    {
+        return node.bodyHeaderDetachBodyAfterExpandedHeader &&
+            header.valid &&
+            header.extraLines > 0 &&
+            header.endIndentLevel == ownerIndentLevel + 1;
+    }
+
     NodeResults
         SolveBodyHeaderAlternatives(const FormatBreakNode& node, int column, int indentLevel, bool lineHasText)
     {
@@ -2435,8 +2444,7 @@ private:
         NodeResult compact = SolveBodyHeaderCompact(node, column, indentLevel, lineHasText);
         NodeResult header =
             node.children.empty() ? NodeResult{} : Solve(*node.children[0], column, indentLevel, lineHasText);
-        const bool expandedHeaderRequiresDetachedBody =
-            node.bodyHeaderForcesDetachedBodyAfterExpandedHeader && header.valid && header.extraLines > 0;
+        const bool expandedHeaderRequiresDetachedBody = ExpandedBodyHeaderNeedsDetachedBody(node, header, indentLevel);
         const bool lineStartParentIndentBody = !lineHasText &&
             node.bodyHeaderSplitAtParentIndentWhenLineStarts &&
             (!node.bodyHeaderSingleStatementBody || (header.valid && header.extraLines > 0));
@@ -2453,11 +2461,7 @@ private:
         if (!node.bodyHeaderRequiresDetachedBody && !expandedHeaderRequiresDetachedBody && split.valid) {
             alternatives.push_back(split);
         }
-        if (
-            node.bodyHeaderDetachBodyAfterExpandedHeader ||
-            node.bodyHeaderForcesDetachedBodyAfterExpandedHeader ||
-            node.bodyHeaderRequiresDetachedBody
-        ) {
+        if (node.bodyHeaderDetachBodyAfterExpandedHeader || node.bodyHeaderRequiresDetachedBody) {
             NodeResult detached = SolveBodyHeaderDetachedBody(node, column, indentLevel, lineHasText);
             if (detached.valid) {
                 alternatives.push_back(detached);
@@ -2616,9 +2620,8 @@ private:
     NodeResult SolveBodyHeader(const FormatBreakNode& node, int column, int indentLevel, bool lineHasText) {
         NodeResult compact = SolveBodyHeaderCompact(node, column, indentLevel, lineHasText);
         NodeResult split = SolveBodyHeaderSplit(node, column, indentLevel, lineHasText);
-        NodeResult detached =
-            (node.bodyHeaderDetachBodyAfterExpandedHeader || node.bodyHeaderForcesDetachedBodyAfterExpandedHeader) ?
-                SolveBodyHeaderDetachedBody(node, column, indentLevel, lineHasText) : NodeResult{};
+        NodeResult detached = node.bodyHeaderDetachBodyAfterExpandedHeader ?
+            SolveBodyHeaderDetachedBody(node, column, indentLevel, lineHasText) : NodeResult{};
         if (node.bodyHeaderRequiresDetachedBody) {
             return SolveBodyHeaderDetachedBody(node, column, indentLevel, lineHasText);
         }
@@ -2629,12 +2632,7 @@ private:
         }
         NodeResult header =
             node.children.empty() ? NodeResult{} : Solve(*node.children[0], column, indentLevel, lineHasText);
-        if (
-            node.bodyHeaderForcesDetachedBodyAfterExpandedHeader &&
-            header.valid &&
-            header.extraLines > 0 &&
-            detached.valid
-        ) {
+        if (ExpandedBodyHeaderNeedsDetachedBody(node, header, indentLevel) && detached.valid) {
             return detached;
         }
         const bool lineStartParentIndentBody = !lineHasText &&
