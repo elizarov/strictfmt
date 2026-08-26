@@ -1217,6 +1217,24 @@ void LambdaGeneralityCases(int left, int right) {
     Use(twoParameterLambda, twoCaptureLambda, splitParameterSingleStatementLambda, callbacks);
 }
 
+bool NestedLambdaContinuationIndent() {
+    return firstOperandWithAnExtremelyLongNameThatNearlyConsumesTheEntireConfiguredLineWidthAllByItselfAndKeepsGoing !=
+        nullptr && call(firstArgumentWithEnoughLength, secondArgumentWithEnoughLength, [&](const Node& node) {
+            return node.member != nullptr;
+        });
+}
+
+void PreferRootBreakBeforeNestedLambda() {
+    const bool found = model.nodes != nullptr &&
+        std::any_of(model.nodes->begin(), model.nodes->end(), [&](const FormatBreakNode& node) {
+            return node.declarationValueOwner != nullptr && DeclarationScopeItem(node.declarationValueOwner) == item;
+        });
+    const bool matched = context.currentValue == expectedValue ||
+        std::any_of(context.values->begin(), context.values->end(), [&](const FormatBreakNode& node) {
+            return node.declarationValueOwner != nullptr && DeclarationScopeItem(node.declarationValueOwner) == item;
+        });
+}
+
 constexpr int kPrimaryFlag = 1;
 constexpr int kSecondaryFlag = 2;
 constexpr int kTertiaryFlag = 4;

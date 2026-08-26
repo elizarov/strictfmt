@@ -1802,6 +1802,13 @@ private:
     }
 
     void EmitBreakNode(const FormatBreakNode& node, const FormatBreakSolution& solution, int baseIndent) {
+        if (
+            node.id >= 0 &&
+            static_cast<size_t>(node.id) < solution.indentLevels.size() &&
+            solution.indentLevels[static_cast<size_t>(node.id)] >= 0
+        ) {
+            baseIndent = solution.indentLevels[static_cast<size_t>(node.id)];
+        }
         switch (node.kind) {
             case FormatBreakNodeKind::Token:
                 WriteBreakToken(node.token);

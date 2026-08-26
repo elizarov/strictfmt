@@ -4,9 +4,11 @@ This document owns developer-facing details of the break solver in `src/format/i
 
 ## Solver Contract
 
-The solver receives a `FormatBreakModel` for one formatted segment and returns a `FormatBreakSolution`, which records the selected `FormatBreakChoice` for each break model node and the render base indentation for delimiter choices. It also records the selected continuation-line count for declaration owner/value nodes because declaration grouping depends on the physical size of the selected value layout. The pretty printer must emit exactly the selected choices; it must not re-run local layout decisions or infer hidden choices from child nodes.
+The solver receives a `FormatBreakModel` for one formatted segment and returns a `FormatBreakSolution`, which records the selected `FormatBreakChoice` and render base indentation for each selected structural break-model node. Recording every structural render base is necessary because a compact parent may contain an earlier child that changes the current indentation before a later child is emitted. The solution also records the selected continuation-line count for declaration owner/value nodes because declaration grouping depends on the physical size of the selected value layout. The pretty printer must emit exactly the selected choices and render bases; it must not re-run local layout decisions or infer hidden choices from child nodes.
 
 `Better` implements the break-selection cost from [format.md].
+
+The structural tie-break keeps both the maximum taken-break depth and the sum of all taken-break depths. The maximum preserves the preference against introducing any unusually deep break. The sum refines equal maxima: shared deep breaks, such as the body breaks of a nested lambda, contribute equally to both layouts, leaving a shallower distinguishing operator break cheaper than a deeper one. Both components are additive or monotone, so they participate in the normal composite-candidate dominance checks.
 
 ## Search Shape
 

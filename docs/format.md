@@ -327,7 +327,10 @@ Among legal layouts, the break optimizer chooses the layout with the best cost:
 - Minimize the largest overflow beyond the configured column limit; layouts with no overflowing physical line have zero overflow.
 - On equal maximum overflow, minimize the number of physical lines that overflow.
 - On equal overflow cost, minimize the physical line count.
-- On equal line count, prefer fewer member-chain breaks so they do not merely replace an equal number of operand-internal breaks. Then prefer the layout whose deepest taken break renders at the shallower indentation level; if still tied, prefer the structurally shallower deepest taken break, then source-order-stable compact behavior.
+- On equal line count, prefer fewer member-chain breaks so they do not merely replace an equal number of operand-internal breaks.
+- Then prefer the layout whose deepest taken break renders at the shallower indentation level.
+- If still tied, prefer the structurally shallower deepest taken break.
+- If common deeper breaks make those costs equal, minimize the sum of structural depths of all taken breaks so a distinguishing break closer to the expression root wins, then use source-order-stable compact behavior.
 
 Function signatures may break after the complete return type before breaking inside the return type. The function name is indented one continuation level. Split parameters may keep the return type and function name together when that line fits. Functions and lambdas deliberately share one callable-header model. Function definitions whose return-type prefix is split away from the function name start the body `{` on its own line at declaration indentation. Lambda body headers whose header itself splits keep the body opener attached as `) {`; when only the owner prefix splits away and the lambda header remains compact, the body opener may start at owner indentation.
 
@@ -568,7 +571,7 @@ Nested switches restore the enclosing switch case indentation after the inner sw
 
 Lambdas intentionally format like functions. A lambda is a callable for all header/body placement decisions: the capture list, parameter list, and optional trailing return type form the callable header, and an owner prefix such as `const auto name =` or `return` behaves like a function return-type prefix.
 
-Single-statement lambda bodies may keep their braces and statement compact only when the complete lambda capture, parameter list, optional trailing return type, and body fit on one physical line. The compact single-statement form is limited to statements whose subtree contains no compound block, so a statement such as `if (condition) { work(); }` uses the same broken-body form as other block-bearing lambda bodies. If a lambda breaks anywhere, its body breaks after `{`, formats the body one indentation step deeper than the declaration, and closes on its own line. Multi-statement lambda bodies always use that broken-body form. Any delimited list containing a broken lambda body splits like any other list containing a multi-line item.
+Single-statement lambda bodies may keep their braces and statement compact only when the complete lambda capture, parameter list, optional trailing return type, and body fit on one physical line. The compact single-statement form is limited to statements whose subtree contains no compound block, so a statement such as `if (condition) { work(); }` uses the same broken-body form as other block-bearing lambda bodies. If a lambda breaks anywhere, its body breaks after `{`, formats the body one indentation step deeper than the lambda header's render base, and aligns the closing brace with that base. Multi-statement lambda bodies always use that broken-body form.
 
 When a lambda header itself splits, a broken lambda body keeps the body opener attached as `) {`, matching function definitions whose parameter list is the visible separator. When only an owner prefix such as `const auto name =` or `return` splits away and the lambda header stays compact, the body opener may start on its own line at owner indentation.
 
