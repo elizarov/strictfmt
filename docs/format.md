@@ -39,51 +39,25 @@ This document specifies the source layout produced by `strictfmt`.
 
 - Remove trailing whitespace from every line.
 - Preserve LF, CRLF, or CR line endings when the source uses one style. For mixed line endings, use the current platform default.
-- Use 4 spaces per indent level. Do not emit tabs.
+- Use spaces for indentation and never emit tabs. `IndentWidth` in [config.md](config.md) selects the number of spaces per indentation level.
 - Preserve comments in source order. A trailing comment stays trailing only when it was trailing in source. A standalone comment stays standalone.
 - Preserve one source blank line when it separates declarations or statements at the same structural level. Collapse multiple blank lines to one.
 - Empty lines are separators. Do not emit empty lines at the beginning or end of a file.
 - Drop blank lines at the beginning of a block and immediately before a closing brace.
 - Remove trailing commas except in enum bodies. When the final item is selected by a conditional preprocessor branch, remove the branch-owned terminal comma from every final branch as part of the same normalization.
-- Structured macro definitions use formatter-owned replacement whitespace and continuation lines. Raw macro definitions intentionally preserve raw replacement line structure as specified in [macro.md](macro.md).
+- Apply the structured and raw replacement whitespace rules specified in [macro.md](macro.md).
 
 ## Mandatory Line Breaks
 
 Mandatory line breaks are structural boundaries. The break is always taken before optional wrapping is considered.
 
-- Break between complete statements and declarations, including after each statement-terminating semicolon.
-  - Except single-statement lambda for the case when the whole lambda stays on one physical line. It is a deliberate exception that is designed to keep short single-statement lambdas compact, since they participate in compact expressions.
+- Break between complete statements and declarations, including after each statement-terminating semicolon. The only exception is an eligible compact single-statement lambda body described under [Lambdas](#lambdas).
 - Put block-opening braces at the end of the introducing line, then break.
   - For every non-empty code block, regardless of its owner, the opener must visually separate a multiline introducing header from the block contents: if the header's last line is at the same indentation as the block contents, put `{` on its own line at the block owner's indentation. An owner-indented line containing only closing delimiters before `{`, such as `) {`, already provides that separation.
-  - Except an empty control body, keep it compact as `{}`.
-- Break multi-statement lambda bodies after `{`, format each body statement with normal mandatory statement breaks, and put the closing `}` on its own line.
-- Break after a statement or declaration code-block closing brace unless the following token is `else`, `catch`, `finally`, or the `while` that closes a do-while statement.
-- Break around preprocessor directives and macro continuation lines.
-- Break structured macro definitions and top-level replacement call-unit sequences where required by [macro.md](macro.md).
-- Break between enum enumerators; enum bodies keep one enumerator per line.
-- Break between declaration groups where declaration-scope separation rules require a blank line.
-- Preserve a standalone line comment on its own line.
-
-```cpp
-if (ready) {
-    return;
-} else {
-    Reset();
-}
-
-do {
-    Poll();
-} while (running);
-
-{
-    const Lock lock(mutex);
-    value = next;
-}
-
-if (value != next) {
-    Update(value);
-}
-```
+- Keep an empty code block as `{}` without a body break.
+- Apply the closing-brace attachment rules under [Declaration And Control Headers](#declaration-and-control-headers).
+- Break around preprocessor directives and apply the structured macro breaks and continuation lines specified in [macro.md](macro.md).
+- Apply the mandatory separators specified under [Declaration Groups](#declaration-groups).
 
 ## Line Break Opportunities
 
@@ -122,17 +96,7 @@ Widget rows[] = {{
 }};
 ```
 
-A broken delimiter body cannot put item content after a line-start opener:
-
-```cpp
-POINT points[] = {
-    {rect.left,
-        rect.top
-    }
-};
-```
-
-The formatter produces a separate opener line instead:
+A broken delimiter body puts a line-start opener on a separate line before item content:
 
 ```cpp
 POINT points[] = {
@@ -200,7 +164,7 @@ Widget rows[] = {
 };
 ```
 
-Enum bodies always split one enumerator per line and keep a trailing comma on the final syntactic item. The item's internal shape does not change this rule; a macro-call-shaped item receives the same trailing comma as an ordinary enumerator.
+Enum bodies always split one enumerator per line. This layout and the enum exception under **Line Hygiene** are independent of the enumerator's internal expression shape, including macro-call syntax.
 
 ```cpp
 enum class ValueFormat : std::uint8_t {
@@ -223,7 +187,6 @@ struct Context {
 
 Binary chain operators are the operators whose usual source meaning is an associative, mostly commutative aggregation. Formatting them as a chain avoids implying that the first operand owns a subordinate "rest of expression" branch. Stream shifts and comma expressions are also chain-shaped because their syntax is a repeated separator sequence, but they do not use the associativity rationale.
 
-- Chain operators are the operators listed below.
 - Binary chain operators are `+`, `*`, `&`, `|`, `^`, `&&`, and `||`.
 - Comma is a chain operator only in comma expressions.
 - Stream-shift chain operators are `<<` and `>>`.
@@ -249,7 +212,7 @@ bool ready = (
 );
 
 int total = first + second + BuildValue(
-    firstLongArgument, 
+    firstLongArgument,
     secondLongArgument
 );
 ```
@@ -278,11 +241,9 @@ return RenderPoint{firstCoordinate + secondCoordinate + thirdCoordinate, y}
     .OffsetBy(deltaX, deltaY).x;
 ```
 
-- Adjacent string literals are an implicit concatenation chain.
+- Adjacent string literals are an implicit concatenation chain. A line-fragment boundary defined under [Token Preservation](#token-preservation) is mandatory; other preserved fragment boundaries may remain on one physical line.
 - `return`, `co_return`, `throw`, and `co_yield` are one keyword-owned-value category. The boundary between the keyword and its value is an ordinary break opportunity selected by the optimizer.
 - When a forced multi-line string-fragment sequence stays split, it follows the same indentation rule as other chains. In single-value contexts, such as after `=`, after a value-owning keyword, or inside one plain parenthesis group, fragments align at the expression indentation. In multi-element contexts, such as call argument lists, declaration parameter lists, subscript argument lists, template argument lists, and initializer lists, continued fragments use one continuation indentation level so the string chain stays visually separate from neighboring elements.
-- An adjacent-literal boundary after a line-fragment string ending with escaped `\n` or `\r\n` is mandatory. It preserves the authored line structure of multi-line help, diagnostic, and similar text instead of allowing the optimizer to collapse the fragments onto one source line.
-- A boundary such as `"\xB0" "C"` stays token-separated to preserve escape parsing, but it may remain on one physical line when the adjacent-literal chain fits.
 - Ternary chains are flat chains.
 - A nested ternary chain either breaks after every `:` or stays compact.
 - A single ternary may break after `?`, after `:`, after both, or inside either branch while keeping the selected branch attached to its `?` or `:` marker.
@@ -312,7 +273,6 @@ int ratio = (
 - Lists and formatter-owned chain parts inside that group keep their elements at that body level.
 - Assignment continuations are not flattened. A break after an assignment operator, or between a condition declaration's type/pointer prefix and its assigned declarator, adds one continuation indentation level.
 - Nested ordinary binary operators still introduce continuation indentation.
-- Transparent single-item parenthesis pairs are considered independently. A pair may stay compact only when the expression it encloses has no selected breaks. If the enclosed expression breaks, that pair is broken and follows ordinary delimiter placement.
 - Unary operators and declarator `*` or `&` are token facts, not chain break points.
 - An end-of-line comment attached to one chain part, or a standalone comment between chain links, forces the chain into split form. A standalone chain comment uses the chain-item indentation of the following link.
 
@@ -336,7 +296,7 @@ Among legal layouts, the break optimizer chooses the layout with the best cost:
 - On equal line count, prefer the structurally shallower deepest taken break.
 - If common deeper breaks make those costs equal, minimize the sum of structural depths of all taken breaks so a distinguishing break closer to the expression root wins, then use source-order-stable compact behavior.
 
-Function signatures may break after the complete return type before breaking inside the return type. The function name is indented one continuation level. Split parameters may keep the return type and function name together when that line fits. Functions and lambdas deliberately share one callable-header model.
+Function signatures may break after the complete return type before breaking inside the return type. The function name is indented one continuation level. Split parameters may keep the return type and function name together when that line fits.
 
 ```cpp
 std::vector<std::string>
@@ -426,10 +386,7 @@ Namespaces are grouping syntax, not indentation syntax. Declarations inside a na
 ```cpp
 namespace app {
 
-class Widget {
-public:
-    void Paint();
-};
+void PaintWidget();
 
 }
 ```
@@ -449,21 +406,6 @@ int RuntimeEntryPoint(int value);
 ```
 
 ## Declaration And Control Headers
-
-Function and method declarations use list layout for parameters.
-
-```cpp
-void Func(int x) {
-    Run(x);
-}
-
-void FuncLong(
-    LongTypeA veryLongA,
-    LongTypeB veryLongB
-) {
-    Run(veryLongA, veryLongB);
-}
-```
 
 Template prefixes are emitted before the introduced declaration, and the introduced declaration always starts on a separate physical line from the template prefix. A `requires` clause stays on the same line as `template <...>` only when the complete template prefix and compact clause fit on that line. Otherwise, including when the clause owns a forced break, the `requires` clause moves to a subordinate line and wraps structurally.
 
@@ -488,7 +430,7 @@ concept HasNonEmptyName = requires {
 };
 ```
 
-Constructor initializer lists use compact or split form. A long initializer list keeps `) :` on the header line, or `) noexcept :` when a trailing qualifier is present. Initializer count alone does not force the constructor parameter list to split. Empty bodies keep `{}` compact.
+Constructor initializer lists use compact or split form. A long initializer list keeps `) :` on the header line, or `) noexcept :` when a trailing qualifier is present. Initializer count alone does not force the constructor parameter list to split.
 
 ```cpp
 Widget::Widget(int value) : value_(value) {}
@@ -505,7 +447,7 @@ DashboardApp::DashboardApp(
 }
 ```
 
-Control-brace normalization makes every `if`, `else`, `for`, `while`, `do`, and `switch` body a braced block. It also emits an `else` block whose only statement is an `if` statement as a direct `else if` chain. Compact empty control bodies stay `{}` and finish their own control-body line before a following block-attachment keyword.
+Control-brace normalization makes every `if`, `else`, `for`, `while`, `do`, and `switch` body a braced block. It also emits an `else` block whose only statement is an `if` statement as a direct `else if` chain. An empty control body finishes its own control-body line before a following block-attachment keyword.
 
 ```cpp
 if (ready) {
@@ -536,7 +478,7 @@ if (
 }
 ```
 
-For non-empty bodies, `else`, `catch`, `finally`, and do-while `while` attach to the preceding closing block brace.
+Break after a non-empty statement or declaration block's closing brace. The attachment exceptions are `else`, `catch`, `finally`, and the `while` that closes a do-while statement.
 
 ```cpp
 try {
@@ -595,8 +537,6 @@ const auto findValue =
 };
 ```
 
-Multi-parameter lambda parameter lists and capture lists split all-or-nothing.
-
 ## Include Sorting
 
 Include sorting is enabled when include groups are configured. Sorting may move `#include` lines within sortable include blocks. It does not add includes, remove includes, rewrite include spelling, or move comments.
@@ -634,7 +574,7 @@ The formatter preserves source token order except for:
 - control-brace normalization
 - safe adjacent ordinary string-literal concatenation
 
-String literals ending with escaped `\n` or `\r\n` are line-fragment boundaries and are not joined with the following literal. A trailing escape such as `\xB0` that would consume the next fragment's first character after textual joining also prevents joining.
+String literals ending with escaped `\n` or `\r\n` are line-fragment boundaries: they are not joined with the following literal, and their adjacent-literal boundary is mandatory. A trailing escape such as `\xB0` that would consume the next fragment's first character after textual joining also prevents joining, while the token-separated fragments may remain on one physical line.
 
 Outside the listed changes, the formatter changes only spaces and line breaks.
 
