@@ -8,7 +8,7 @@ The solver receives a `FormatBreakModel` for one formatted segment and returns a
 
 `Better` implements the break-selection cost from [format.md].
 
-The structural tie-break keeps both the maximum taken-break depth and the sum of all taken-break depths. The maximum preserves the preference against introducing any unusually deep break. The sum refines equal maxima: shared deep breaks, such as the body breaks of a nested lambda, contribute equally to both layouts, leaving a shallower distinguishing operator break cheaper than a deeper one. Both components are additive or monotone, so they participate in the normal composite-candidate dominance checks.
+After line count, the structural tie-break keeps both the maximum taken-break depth and the sum of all taken-break depths. The maximum prefers the layout whose structurally deepest break is shallower. The sum refines equal maxima: shared deep breaks, such as the body breaks of a nested lambda, contribute equally to both layouts, leaving a shallower distinguishing operator break cheaper than a deeper one. Both components are additive or monotone, so they participate in the normal composite-candidate dominance checks.
 
 ## Search Shape
 
