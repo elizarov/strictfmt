@@ -76,8 +76,7 @@ public:
 #else
     consteval
 #endif
-    StringLiteral(const char* literal) noexcept
-        : zstring_view{literal} {}
+    StringLiteral(const char* literal) noexcept : zstring_view{literal} {}
 };
 ```
 

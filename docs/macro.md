@@ -2,11 +2,11 @@
 
 This document specifies the macro configuration and macro formatting for `strictfmt`.
 
-## Definition-side vs use-side 
+## Definition-side vs use-side
 
 Definition-side macro categories and use-side macro categories are independent:
 
-- `RawMacroDefinitions` affects only how a `#define` replacement is parsed and printed. 
+- `RawMacroDefinitions` affects only how a `#define` replacement is parsed and printed.
 - `BareIdentifierMacros`, `DeclarationPrefixMacros`, `CallSyntaxMacros`, `SemicolonlessCallMacros`, `StatementArgumentMacros`, `TypeSpecifierMacros`, and `PreprocessorArgumentMacros` affect only how macro identifiers are parsed when they are used elsewhere in source.
 
 ## Macro Replacements
@@ -53,14 +53,14 @@ Runtime macro category lookup is implemented by the custom scanner; see [scanner
 
 ### RawMacroDefinitions
 
-`RawMacroDefinitions` names object-like or function-like `#define` identifiers whose replacement should be parsed as raw text. Use it for macro families whose replacement lists are not supported structured C++ fragments.
+`RawMacroDefinitions` accepts both object-like and function-like `#define` identifiers.
 
 ```cpp
 #define UPROTO_ONEOF_HEADER(oneof_type)                                                   \
-private:                                                                                  \
-    enum { kCounterStart = __COUNTER__ + 1 }; /* An inline constant would violate odr. */ \
-public:                                                                                   \
-    using Base::Base;
+    private:                                                                                  \
+        enum { kCounterStart = __COUNTER__ + 1 }; /* An inline constant would violate odr. */ \
+    public:                                                                                   \
+        using Base::Base;
 ```
 
 ```cpp
@@ -215,8 +215,6 @@ EXPECT_EXPANSION("0", GMOCK_PP_IS_BEGIN_PARENS(sss() sss));
 GMOCK_PP_HAS_COMMA(value, );
 Test<GMOCK_PP_FOR_EACH(TYPE_ELEMENT, ~, (int, float))>;
 ```
-
-Do not use this category for calls whose arguments are valid C++ syntax. Those calls should retain structural formatting through the ordinary expression grammar or another narrower use-side category.
 
 ### StatementArgumentMacros
 
