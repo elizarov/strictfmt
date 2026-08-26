@@ -1788,6 +1788,10 @@ auto CompactLambdaNestedInitializer(int x){return [x](){return T{x};};}
 
 void TemplateAngleSpacing(){chaotic::Validate<Validators...>(arr,value);return std::get<0>(key_or_result_);}
 
+bool AlternativeBinaryOperatorSpacing(bool first,bool second,bool third){return first and (!second or third);}
+
+bool AlternativeBinaryOperatorBeforeUnary(bool first,bool second){return first and !second;}
+
 using TemplateArgumentBinary=A<N + 1>;
 template<class... T> using TemplateArgumentFold=A<(T::value && ...)>;
 using TemplateArgumentPointer=A<T*>;
