@@ -1811,6 +1811,11 @@ void ForEmptyInitSpacingOrBody(size_t count){size_t len=0;for(;(1UL << len) < co
 void StandaloneOrTrailingCommentsMoved(int command){switch(command){case 67: /* command complete */
  Complete(); break;}}
 
+void StandaloneCommentBeforeSwitchLabel(int value){switch(value){case 1:Use();break;
+
+// fallback
+case 2:break;}}
+
 void EnumDeclaratorDetached(){enum{kChar,kPercent,kKey}state=kChar;Use(state);}
 
 struct FormatterEmptyBlockBreakRegression { FormatterEmptyBlockBreakRegression() {}int value; };

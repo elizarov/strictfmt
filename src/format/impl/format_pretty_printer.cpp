@@ -2888,6 +2888,9 @@ private:
                 return;
             }
             FlushPendingTokens();
+            if (token.kind == PrintTokenKind::Comment && atLineStart_ && next != nullptr && IsCaseLabelKeyword(*next)) {
+                CloseCaseBodyIndentIfNeeded();
+            }
             if (CanAttachToPreviousPreprocessorLine(token, rawPrevious)) {
                 ReopenLastOutputLine();
             }
