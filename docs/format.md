@@ -54,6 +54,7 @@ Mandatory line breaks are structural boundaries. The break is always taken befor
 - Break between complete statements and declarations, including after each statement-terminating semicolon.
   - Except single-statement lambda for the case when the whole lambda stays on one physical line. It is a deliberate exception that is designed to keep short single-statement lambdas compact, since they participate in compact expressions.
 - Put block-opening braces at the end of the introducing line, then break.
+  - If the final introducing header part would otherwise stay at the same indentation as the block body, put `{` on its own line at the block owner's indentation so the boundary between those parts remains explicit. A structural closing-delimiter line such as `) {` already provides that separation.
   - Except an empty control body, keep it compact as `{}`.
 - Break multi-statement lambda bodies after `{`, format each body statement with normal mandatory statement breaks, and put the closing `}` on its own line.
 - Break after a statement or declaration code-block closing brace unless the following token is `else`, `catch`, `finally`, or the `while` that closes a do-while statement.

@@ -2324,6 +2324,12 @@ class BaseClassListCommentDerived :
     public BaseClassListCommentRootB,
     public BaseClassListCommentRootC {};
 
+struct Derived final :
+    FormatterReviewExtremelyLongBaseClassNameThatForcesTheInheritanceClauseToRemainBrokenAcrossLines<Derived>
+{
+    using Request = int;
+};
+
 void RegisterSubscriptListComment() {
     value = matrix[
         firstReallyLongIndexForFormatterGenerality,  // selected row

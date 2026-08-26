@@ -80,6 +80,7 @@ struct FormatBreakNode {
     bool functionSignatureHasBody = false;
     bool bodyHeaderSingleStatementBody = false;
     bool bodyHeaderDetachBodyAfterExpandedHeader = false;
+    bool bodyHeaderForcesDetachedBodyAfterExpandedHeader = false;
     bool bodyHeaderRequiresDetachedBody = false;
     bool bodyHeaderSplitAtParentIndentWhenLineStarts = false;
     bool chainPrefersSplitWhenCompactBreaks = false;

@@ -1667,6 +1667,9 @@ std::vector<DisplayPlacementMenuBitmapPixel> pixels((kBitmapSize * kBitmapSize))
 class BaseClassListCommentDerived : public BaseClassListCommentRootA,  // primary
 public BaseClassListCommentRootB, public BaseClassListCommentRootC {};
 
+struct Derived final :
+FormatterReviewExtremelyLongBaseClassNameThatForcesTheInheritanceClauseToRemainBrokenAcrossLines<Derived> {using Request=int;};
+
 void RegisterSubscriptListComment() {
 value = matrix[firstReallyLongIndexForFormatterGenerality,  // selected row
 secondReallyLongIndexForFormatterGenerality, thirdReallyLongIndexForFormatterGenerality];
