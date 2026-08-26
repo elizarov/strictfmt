@@ -14,6 +14,7 @@ struct ParseResult {
 };
 
 struct PrintToken;
+
 struct SyntaxNode;
 
 using SyntaxChildList = std::pmr::vector<SyntaxNode*>;

@@ -88,8 +88,7 @@ SyntaxNode* MakeTokenNode(FormatModel& model, SyntaxNodeKind token) {
 void SetKnownTokenNode(SyntaxNode& node, SyntaxNodeKind token, std::string_view text) {
     node.kind = token;
     if (
-        text != SyntaxNodeKindTokenText(token) &&
-        !SyntaxNodeKindHasClass(token, SyntaxNodeClass::PreprocessorDirective)
+        text != SyntaxNodeKindTokenText(token) && !SyntaxNodeKindHasClass(token, SyntaxNodeClass::PreprocessorDirective)
     ) {
         node.text = text;
     }
@@ -167,12 +166,10 @@ void RemoveTerminalConditionalListCommas(SyntaxNode& node) {
     SyntaxChildList& children = node.children;
     for (size_t index = children.size(); index > 0; --index) {
         SyntaxNode* child = children[index - 1];
-        if (
-            child != nullptr && (
-                SyntaxNodeKindHasClass(child->kind, SyntaxNodeClass::ConditionalPreprocessorTree) ||
-                SyntaxNodeKindHasClass(child->kind, SyntaxNodeClass::EndifDirective)
-            )
-        ) {
+        if (child != nullptr && (
+            SyntaxNodeKindHasClass(child->kind, SyntaxNodeClass::ConditionalPreprocessorTree) ||
+            SyntaxNodeKindHasClass(child->kind, SyntaxNodeClass::EndifDirective)
+        )) {
             RemovePreviousComma(children, index - 1);
         }
     }
@@ -406,8 +403,7 @@ void NormalizeControlBodies(FormatModel& model, SyntaxNode& node) {
     }
 }
 
-constexpr std::uint64_t kDeclarationGroupClasses =
-    static_cast<std::uint64_t>(SyntaxNodeClass::DeclarationGroupType) |
+constexpr std::uint64_t kDeclarationGroupClasses = static_cast<std::uint64_t>(SyntaxNodeClass::DeclarationGroupType) |
     static_cast<std::uint64_t>(SyntaxNodeClass::DeclarationGroupCallable) |
     static_cast<std::uint64_t>(SyntaxNodeClass::DeclarationGroupObject) |
     static_cast<std::uint64_t>(SyntaxNodeClass::DeclarationGroupAlias);
@@ -435,10 +431,7 @@ const SyntaxNode* FirstNonTriviaChild(const SyntaxNode& node) {
 
 void ClassifyKeywordOwnedValue(SyntaxNode& node) {
     const SyntaxNode* first = FirstNonTriviaChild(node);
-    if (
-        first != nullptr &&
-        SyntaxNodeKindHasClass(first->kind, SyntaxNodeClass::KeywordOwnedValue)
-    ) {
+    if (first != nullptr && SyntaxNodeKindHasClass(first->kind, SyntaxNodeClass::KeywordOwnedValue)) {
         node.classes |= static_cast<std::uint64_t>(SyntaxNodeClass::KeywordOwnedValue);
     }
 }
@@ -449,7 +442,8 @@ bool ContainsCallableDeclarator(const SyntaxNode& node, bool root = true) {
     }
     if (node.kind == SyntaxNodeKind::FunctionDeclarator) {
         const SyntaxNode* target = FirstNonTriviaChild(node);
-        if (target != nullptr &&
+        if (
+            target != nullptr &&
             target->kind != SyntaxNodeKind::ParenthesizedDeclarator &&
             target->kind != SyntaxNodeKind::AbstractParenthesizedDeclarator
         ) {
@@ -526,10 +520,7 @@ void ClassifyDeclarationGroup(SyntaxNode& node) {
         node.classes |= static_cast<std::uint64_t>(SyntaxNodeClass::DeclarationGroupType);
         return;
     }
-    if (
-        node.kind == SyntaxNodeKind::AliasDeclaration ||
-        node.kind == SyntaxNodeKind::FunctionPointerAliasDeclaration
-    ) {
+    if (node.kind == SyntaxNodeKind::AliasDeclaration || node.kind == SyntaxNodeKind::FunctionPointerAliasDeclaration) {
         node.classes |= static_cast<std::uint64_t>(SyntaxNodeClass::DeclarationGroupAlias);
         return;
     }
@@ -571,25 +562,17 @@ void NormalizeSyntaxNode(FormatModel& model, SyntaxNode& node) {
             static_cast<std::uint64_t>(SyntaxNodeClass::DeclarationModifierPreprocessor);
     }
     if (node.kind == SyntaxNodeKind::BinaryExpression) {
-        const bool startsConditionalStream = std::any_of(
-            node.children.begin(),
-            node.children.end(),
-            [](const SyntaxNode* child) {
+        const bool startsConditionalStream =
+            std::any_of(node.children.begin(), node.children.end(), [](const SyntaxNode* child) {
                 return child != nullptr && SyntaxNodeHasClass(*child, SyntaxNodeClass::ConditionalPreprocessorTree);
-            }
-        );
-        const bool continuesConditionalStream = std::any_of(
-            node.children.begin(),
-            node.children.end(),
-            [](const SyntaxNode* child) {
+            });
+        const bool continuesConditionalStream =
+            std::any_of(node.children.begin(), node.children.end(), [](const SyntaxNode* child) {
+                return child != nullptr && SyntaxNodeHasClass(*child, SyntaxNodeClass::ConditionalStreamOperatorChain);
+            }) && std::any_of(node.children.begin(), node.children.end(), [](const SyntaxNode* child) {
                 return child != nullptr &&
-                    SyntaxNodeHasClass(*child, SyntaxNodeClass::ConditionalStreamOperatorChain);
-            }
-        ) && std::any_of(node.children.begin(), node.children.end(), [](const SyntaxNode* child) {
-            return child != nullptr && (
-                child->kind == SyntaxNodeKind::LessLess || child->kind == SyntaxNodeKind::GreaterGreater
-            );
-        });
+                    (child->kind == SyntaxNodeKind::LessLess || child->kind == SyntaxNodeKind::GreaterGreater);
+            });
         if (startsConditionalStream || continuesConditionalStream) {
             node.classes |= static_cast<std::uint64_t>(SyntaxNodeClass::ConditionalStreamOperatorChain);
         }
@@ -632,13 +615,9 @@ void AppendTsChildren(
     uint32_t childCount
 );
 
-SyntaxNode* BuildNode(
-    FormatModel& model,
-    TSNode tsNode,
-    std::string_view source,
-    const SyntaxNode* parent,
-    TsNodeSyntax syntax
-) {
+SyntaxNode*
+    BuildNode(FormatModel& model, TSNode tsNode, std::string_view source, const SyntaxNode* parent, TsNodeSyntax syntax)
+{
     SyntaxNode* node = MakeNode(model);
     node->parent = parent;
     node->depth = parent == nullptr ? 0 : parent->depth + 1;
@@ -764,8 +743,7 @@ inline void AppendTsChild(
     const bool isBlock = isComment && IsBlockComment(source, childStart);
     const bool consumesLineTail = !isComment || CommentConsumesLineTail(source, childStart, childEnd);
     const bool isTrailingComment =
-        isComment && hasPreviousSibling && previousEndRow == childStartRow &&
-        previousEndColumn > 0 && consumesLineTail;
+        isComment && hasPreviousSibling && previousEndRow == childStartRow && previousEndColumn > 0 && consumesLineTail;
     const bool isInlineBlockComment = isBlock && !consumesLineTail;
     AppendTsNode(model, child, source, parent, childSyntax, isTrailingComment, isInlineBlockComment);
     previousEnd = childEnd;
