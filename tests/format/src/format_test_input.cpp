@@ -1799,6 +1799,11 @@ void ControlInitializerDeclaratorBinding(){if(T* pointer=g()){}if(T& reference=g
 
 void ControlInitializerTemplateType(){if(A<B> value=g()){}}
 
+void ControlInitializerContinuationIndent(){
+while(ready){if(FormatBreakNode* templated=BuildAdjacentTemplateDeclaration(children,index,end,depth+1,afterTemplate)){Use(templated);}}
+if(veryLongAssignmentTargetNameThatMustStayWithItsOperator=BuildAdjacentTemplateDeclaration(children,index,end,depth+1,afterTemplate)){Use(veryLongAssignmentTargetNameThatMustStayWithItsOperator);}
+}
+
 }
 
 template <typename T>
