@@ -1782,6 +1782,8 @@ template<class... T> using TemplateArgumentFold=A<(T::value && ...)>;
 using TemplateArgumentPointer=A<T*>;
 using TemplateArgumentReference=A<T&&>;
 using TemplateArgumentUnary=A<-1>;
+using TemplateArgumentQualifiedAddress=A<& ::T::value>;
+using TemplateArgumentPointerDereference=A<* ::pointer>;
 
 void FallthroughSpaceBeforeSemicolon(int value){switch(value){case 0:[[fallthrough]];case 1:break;}}
 

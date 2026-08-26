@@ -370,6 +370,8 @@ constexpr auto kSyntaxKindMappings = std::to_array<SyntaxKindMapping>({
     Tree(SyntaxNodeKind::PreprocElif, "preproc_elifdef"),
     Tree(SyntaxNodeKind::BinaryExpression, "binary_expression"),
     Tree(SyntaxNodeKind::UnaryExpression, "unary_expression"),
+    Tree(SyntaxNodeKind::UnaryExpression, "pointer_expression"),
+    Tree(SyntaxNodeKind::UnaryExpression, "qualified_address_expression"),
     Tree(SyntaxNodeKind::ConditionalExpression, "conditional_expression"),
     Tree(SyntaxNodeKind::CommaExpression, "comma_expression"),
     Tree(SyntaxNodeKind::AssignmentExpression, "assignment_expression"),
