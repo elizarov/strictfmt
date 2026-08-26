@@ -54,7 +54,7 @@ Mandatory line breaks are structural boundaries. The break is always taken befor
 - Break between complete statements and declarations, including after each statement-terminating semicolon.
   - Except single-statement lambda for the case when the whole lambda stays on one physical line. It is a deliberate exception that is designed to keep short single-statement lambdas compact, since they participate in compact expressions.
 - Put block-opening braces at the end of the introducing line, then break.
-  - If the final introducing header part would otherwise stay at the same indentation as the block body, put `{` on its own line at the block owner's indentation so the boundary between those parts remains explicit. A structural closing-delimiter line such as `) {` already provides that separation.
+  - For every non-empty code block, regardless of its owner, the opener must visually separate a multiline introducing header from the block contents: if the header's last line is at the same indentation as the block contents, put `{` on its own line at the block owner's indentation. An owner-indented line containing only closing delimiters before `{`, such as `) {`, already provides that separation.
   - Except an empty control body, keep it compact as `{}`.
 - Break multi-statement lambda bodies after `{`, format each body statement with normal mandatory statement breaks, and put the closing `}` on its own line.
 - Break after a statement or declaration code-block closing brace unless the following token is `else`, `catch`, `finally`, or the `while` that closes a do-while statement.
@@ -336,7 +336,7 @@ Among legal layouts, the break optimizer chooses the layout with the best cost:
 - On equal line count, prefer the structurally shallower deepest taken break.
 - If common deeper breaks make those costs equal, minimize the sum of structural depths of all taken breaks so a distinguishing break closer to the expression root wins, then use source-order-stable compact behavior.
 
-Function signatures may break after the complete return type before breaking inside the return type. The function name is indented one continuation level. Split parameters may keep the return type and function name together when that line fits. Functions and lambdas deliberately share one callable-header model. Function definitions whose return-type prefix is split away from the function name start the body `{` on its own line at declaration indentation. Lambda body headers whose header itself splits keep the body opener attached as `) {`; when only the owner prefix splits away and the lambda header remains compact, the body opener may start at owner indentation.
+Function signatures may break after the complete return type before breaking inside the return type. The function name is indented one continuation level. Split parameters may keep the return type and function name together when that line fits. Functions and lambdas deliberately share one callable-header model.
 
 ```cpp
 std::vector<std::string>
@@ -488,7 +488,7 @@ concept HasNonEmptyName = requires {
 };
 ```
 
-Constructor initializer lists use compact or split form. A long initializer list keeps `) :` on the header line, or `) noexcept :` when a trailing qualifier is present. Initializer count alone does not force the constructor parameter list to split. Non-empty bodies keep the opening body brace with the initializer list when the complete line fits; otherwise the brace moves to its own line after the initializer list. Empty bodies keep `{}` compact.
+Constructor initializer lists use compact or split form. A long initializer list keeps `) :` on the header line, or `) noexcept :` when a trailing qualifier is present. Initializer count alone does not force the constructor parameter list to split. Empty bodies keep `{}` compact.
 
 ```cpp
 Widget::Widget(int value) : value_(value) {}
@@ -576,8 +576,6 @@ Nested switches restore the enclosing switch case indentation after the inner sw
 Lambdas intentionally format like functions. A lambda is a callable for all header/body placement decisions: the capture list, parameter list, and optional trailing return type form the callable header, and an owner prefix such as `const auto name =` or `return` behaves like a function return-type prefix.
 
 Single-statement lambda bodies may keep their braces and statement compact only when the complete lambda capture, parameter list, optional trailing return type, and body fit on one physical line. The compact single-statement form is limited to statements whose subtree contains no compound block, so a statement such as `if (condition) { work(); }` uses the same broken-body form as other block-bearing lambda bodies. If a lambda breaks anywhere, its body breaks after `{`, formats the body one indentation step deeper than the lambda header's render base, and aligns the closing brace with that base. Multi-statement lambda bodies always use that broken-body form.
-
-When a lambda header itself splits, a broken lambda body keeps the body opener attached as `) {`, matching function definitions whose parameter list is the visible separator. When only an owner prefix such as `const auto name =` or `return` splits away and the lambda header stays compact, the body opener may start on its own line at owner indentation.
 
 Lambda captures and lambda parameters are separate break opportunities. Captures and parameters use the same compact-or-split optimization as other delimiter groups.
 
