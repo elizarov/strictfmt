@@ -597,8 +597,8 @@ private:
         }
     }
 
-    static bool IsEmptyCompoundStatement(const SyntaxNode& node) {
-        if (node.kind != SyntaxNodeKind::CompoundStatement) {
+    static bool IsEmptyCompoundBlock(const SyntaxNode& node) {
+        if (!SyntaxNodeKindHasClass(node.kind, SyntaxNodeClass::CompoundBlock)) {
             return false;
         }
         for (const SyntaxNode* child : node.children) {
@@ -962,6 +962,11 @@ private:
                 return header;
             }
         }
+        if (SyntaxNodeHasLocalClass(node, SyntaxNodeClass::DeclaredTypeSpecifier)) {
+            if (auto header = BuildDeclaredTypeBodyHeader(node, depth)) {
+                return header;
+            }
+        }
         if (
             node.kind == SyntaxNodeKind::BinaryExpression ||
             node.kind == SyntaxNodeKind::AssignmentExpression ||
@@ -1275,6 +1280,31 @@ private:
         return result;
     }
 
+    FormatBreakNode* BuildDeclaredTypeBodyHeader(const SyntaxNode& node, int depth) {
+        std::optional<size_t> bodyIndex;
+        for (size_t index = 0; index < node.children.size(); ++index) {
+            const SyntaxNode* child = node.children[index];
+            if (child != nullptr && SyntaxNodeKindHasClass(child->kind, SyntaxNodeClass::CompoundBlock)) {
+                bodyIndex = index;
+                break;
+            }
+        }
+        if (!bodyIndex || *bodyIndex == 0 || !ContainsSelected(*node.children[*bodyIndex])) {
+            return nullptr;
+        }
+
+        FormatBreakNode* header = BuildSequenceFromChildren(node.children, 0, *bodyIndex, depth + 1);
+        FormatBreakNode* body = BuildSequenceFromChildren(node.children, *bodyIndex, node.children.size(), depth + 1);
+        if (header == nullptr || body == nullptr) {
+            return nullptr;
+        }
+
+        auto result = MakeNode(FormatBreakNodeKind::BodyHeader, depth);
+        result->bodyHeaderForcesDetachedBodyAfterExpandedHeader = !IsEmptyCompoundBlock(*node.children[*bodyIndex]);
+        result->children = StoreNodePointers({header, body});
+        return result;
+    }
+
     FormatBreakNode* BuildInitializerListBodyHeader(const SyntaxNode& node, int depth) {
         std::optional<size_t> bodyIndex;
         bool hasInitializerList = false;
@@ -1300,7 +1330,7 @@ private:
         }
 
         auto result = MakeNode(FormatBreakNodeKind::BodyHeader, depth);
-        result->bodyHeaderDetachBodyAfterExpandedHeader = !IsEmptyCompoundStatement(*node.children[*bodyIndex]);
+        result->bodyHeaderDetachBodyAfterExpandedHeader = !IsEmptyCompoundBlock(*node.children[*bodyIndex]);
         result->children = StoreNodePointers({header, body});
         return result;
     }
