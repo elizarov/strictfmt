@@ -7,7 +7,7 @@
 
 struct FormatBreakSolution {
     std::vector<FormatBreakChoice> choices;
-    // Selected delimiter choices record their render base; other entries remain -1.
+    // Selected structural choices record the render base used to solve their node.
     std::vector<int> indentLevels;
     // Declaration owner/value nodes record the selected number of continuation lines in their value.
     std::vector<int> declarationValueContinuationLines;

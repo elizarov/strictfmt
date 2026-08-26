@@ -50,6 +50,7 @@ struct NodeResult {
     int memberChainBreaks = 0;
     int deepestBreakIndent = -1;
     int deepestBreakDepth = -1;
+    int totalBreakDepth = 0;
     const struct ChoiceTree* choices = nullptr;
 };
 
@@ -416,6 +417,7 @@ private:
         left.memberChainBreaks += right.memberChainBreaks;
         left.deepestBreakIndent = std::max(left.deepestBreakIndent, right.deepestBreakIndent);
         left.deepestBreakDepth = std::max(left.deepestBreakDepth, right.deepestBreakDepth);
+        left.totalBreakDepth += right.totalBreakDepth;
         left.choices = ConcatChoices(left.choices, right.choices);
     }
 
@@ -649,6 +651,7 @@ private:
         result.endLineHasText = false;
         result.deepestBreakIndent = std::max(result.deepestBreakIndent, result.endColumn);
         result.deepestBreakDepth = std::max(result.deepestBreakDepth, structuralDepth);
+        result.totalBreakDepth += structuralDepth;
         return result;
     }
 
@@ -788,6 +791,9 @@ private:
         if (candidate.deepestBreakDepth != incumbent.deepestBreakDepth) {
             return candidate.deepestBreakDepth < incumbent.deepestBreakDepth;
         }
+        if (candidate.totalBreakDepth != incumbent.totalBreakDepth) {
+            return candidate.totalBreakDepth < incumbent.totalBreakDepth;
+        }
         return false;
     }
 
@@ -810,7 +816,8 @@ private:
             left.extraLines > right.extraLines ||
             left.memberChainBreaks > right.memberChainBreaks ||
             left.deepestBreakIndent > right.deepestBreakIndent ||
-            left.deepestBreakDepth > right.deepestBreakDepth
+            left.deepestBreakDepth > right.deepestBreakDepth ||
+            left.totalBreakDepth > right.totalBreakDepth
         ) {
             return false;
         }
@@ -819,7 +826,8 @@ private:
             left.extraLines < right.extraLines ||
             left.memberChainBreaks < right.memberChainBreaks ||
             left.deepestBreakIndent < right.deepestBreakIndent ||
-            left.deepestBreakDepth < right.deepestBreakDepth;
+            left.deepestBreakDepth < right.deepestBreakDepth ||
+            left.totalBreakDepth < right.totalBreakDepth;
     }
 
     static bool ResultStateLess(const NodeResult& left, const NodeResult& right) {
@@ -2185,7 +2193,7 @@ private:
     ) {
         NodeResult
             result{.valid = true, .endColumn = column, .endIndentLevel = indentLevel, .endLineHasText = lineHasText};
-        AddChoice(result, node.id, FormatBreakChoice::Compact);
+        AddChoice(result, node.id, FormatBreakChoice::Compact, indentLevel);
         result = AddToken(result, node.children[0]->token);
         if (HasLeadingTrailingComment(node)) {
             result = AddToken(result, node.leadingTrailingComment);
@@ -2235,7 +2243,7 @@ private:
     ) {
         NodeResult
             result{.valid = true, .endColumn = column, .endIndentLevel = indentLevel, .endLineHasText = lineHasText};
-        AddChoice(result, node.id, FormatBreakChoice::Split);
+        AddChoice(result, node.id, FormatBreakChoice::Split, indentLevel);
         result = AddToken(result, node.children[0]->token);
         if (HasLeadingTrailingComment(node)) {
             result = AddToken(result, node.leadingTrailingComment);
@@ -2313,7 +2321,7 @@ private:
     {
         NodeResult
             result{.valid = true, .endColumn = column, .endIndentLevel = indentLevel, .endLineHasText = lineHasText};
-        AddChoice(result, node.id, FormatBreakChoice::Compact);
+        AddChoice(result, node.id, FormatBreakChoice::Compact, indentLevel);
         for (size_t index = 0; index < node.items.size(); ++index) {
             const FormatBreakListItem& listItem = node.items[index];
             NodeResult item =
@@ -2326,7 +2334,7 @@ private:
     NodeResult SolveStatementSequenceSplit(const FormatBreakNode& node, int column, int indentLevel, bool lineHasText) {
         NodeResult
             result{.valid = true, .endColumn = column, .endIndentLevel = indentLevel, .endLineHasText = lineHasText};
-        AddChoice(result, node.id, FormatBreakChoice::Split);
+        AddChoice(result, node.id, FormatBreakChoice::Split, indentLevel);
         for (size_t index = 0; index < node.items.size(); ++index) {
             if (index > 0) {
                 result = AddListBreakAfterOptionalComment(
@@ -2362,7 +2370,7 @@ private:
         }
         NodeResult
             result{.valid = true, .endColumn = column, .endIndentLevel = indentLevel, .endLineHasText = lineHasText};
-        AddChoice(result, node.id, FormatBreakChoice::Compact);
+        AddChoice(result, node.id, FormatBreakChoice::Compact, indentLevel);
         for (const FormatBreakNode* child : node.children) {
             NodeResult item = Solve(*child, result.endColumn, result.endIndentLevel, result.endLineHasText);
             Merge(result, item);
@@ -2433,7 +2441,7 @@ private:
         }
         NodeResult
             result{.valid = true, .endColumn = column, .endIndentLevel = indentLevel, .endLineHasText = lineHasText};
-        AddChoice(result, node.id, FormatBreakChoice::Compact);
+        AddChoice(result, node.id, FormatBreakChoice::Compact, indentLevel);
         NodeResult returnType =
             Solve(*node.children[0], result.endColumn, result.endIndentLevel, result.endLineHasText);
         if (!returnType.valid) {
@@ -2468,7 +2476,7 @@ private:
         }
         NodeResult
             result{.valid = true, .endColumn = column, .endIndentLevel = indentLevel, .endLineHasText = lineHasText};
-        AddChoice(result, node.id, FormatBreakChoice::Split);
+        AddChoice(result, node.id, FormatBreakChoice::Split, indentLevel);
         NodeResult returnType =
             Solve(*node.children[0], result.endColumn, result.endIndentLevel, result.endLineHasText);
         Merge(result, returnType);
@@ -2524,7 +2532,7 @@ private:
         }
         NodeResult best;
         for (NodeResult candidate : SolveChildrenAlternatives(node.children, column, indentLevel, lineHasText)) {
-            AddChoice(candidate, node.id, FormatBreakChoice::Compact);
+            AddChoice(candidate, node.id, FormatBreakChoice::Compact, indentLevel);
             if (Better(candidate, best)) {
                 best = std::move(candidate);
             }
@@ -2588,7 +2596,7 @@ private:
                 .endIndentLevel = indentLevel,
                 .endLineHasText = lineHasText
             };
-            AddChoice(result, node.id, choice);
+            AddChoice(result, node.id, choice, indentLevel);
             Merge(result, header);
             if (
                 choice == FormatBreakChoice::BodyHeaderSplitAtParentIndent ||
@@ -2766,7 +2774,7 @@ private:
         }
         NodeResult
             result{.valid = true, .endColumn = column, .endIndentLevel = indentLevel, .endLineHasText = lineHasText};
-        AddChoice(result, node.id, FormatBreakChoice::Compact);
+        AddChoice(result, node.id, FormatBreakChoice::Compact, indentLevel);
         NodeResults current{result};
         for (size_t index = 0; index < node.operands.size(); ++index) {
             NodeResults nextByState;
@@ -2852,7 +2860,7 @@ private:
         const int continuationIndent = node.flatSplitIndent ? indentLevel : indentLevel + 1;
         NodeResult
             result{.valid = true, .endColumn = column, .endIndentLevel = indentLevel, .endLineHasText = lineHasText};
-        AddChoice(result, node.id, FormatBreakChoice::Split);
+        AddChoice(result, node.id, FormatBreakChoice::Split, indentLevel);
         if (node.operands.empty()) {
             return result;
         }
@@ -2923,7 +2931,7 @@ private:
     {
         NodeResult
             result{.valid = true, .endColumn = column, .endIndentLevel = indentLevel, .endLineHasText = lineHasText};
-        AddChoice(result, node.id, FormatBreakChoice::Split);
+        AddChoice(result, node.id, FormatBreakChoice::Split, indentLevel);
         result.memberChainBreaks += static_cast<int>(node.operators.size());
         if (node.operands.empty()) {
             return result;
@@ -2946,7 +2954,7 @@ private:
     NodeResult SolveMemberCompactTail(const FormatBreakNode& node, int column, int indentLevel, bool lineHasText) {
         NodeResult
             result{.valid = true, .endColumn = column, .endIndentLevel = indentLevel, .endLineHasText = lineHasText};
-        AddChoice(result, node.id, FormatBreakChoice::MemberCompactTail);
+        AddChoice(result, node.id, FormatBreakChoice::MemberCompactTail, indentLevel);
         result.memberChainBreaks = 1;
         if (node.operands.empty()) {
             return result;
@@ -2992,7 +3000,7 @@ private:
             .endIndentLevel = indentLevel,
             .endLineHasText = lineHasText
         };
-        AddChoice(initial, node.id, choice);
+        AddChoice(initial, node.id, choice, indentLevel);
         NodeResults current{initial};
         if (!node.chainStartsWithOperator) {
             NodeResults next;
@@ -3093,7 +3101,7 @@ private:
     NodeResult SolveTernaryChainSplit(const FormatBreakNode& node, int column, int indentLevel, bool lineHasText) {
         NodeResult
             result{.valid = true, .endColumn = column, .endIndentLevel = indentLevel, .endLineHasText = lineHasText};
-        AddChoice(result, node.id, FormatBreakChoice::Split);
+        AddChoice(result, node.id, FormatBreakChoice::Split, indentLevel);
         for (size_t index = 0; index < node.operands.size(); ++index) {
             NodeResult operand =
                 Solve(*node.operands[index], result.endColumn, result.endIndentLevel, result.endLineHasText);
@@ -3125,7 +3133,7 @@ private:
         const int continuationIndent = node.flatSplitIndent ? indentLevel : indentLevel + 1;
         NodeResult
             result{.valid = true, .endColumn = column, .endIndentLevel = indentLevel, .endLineHasText = lineHasText};
-        AddChoice(result, node.id, choice);
+        AddChoice(result, node.id, choice, indentLevel);
         for (size_t index = 0; index < node.operands.size(); ++index) {
             NodeResult operand =
                 Solve(*node.operands[index], result.endColumn, result.endIndentLevel, result.endLineHasText);
@@ -3223,7 +3231,7 @@ private:
     NodeResult SolveAdjacentStringsCompact(const FormatBreakNode& node, int column, int indentLevel, bool lineHasText) {
         NodeResult
             result{.valid = true, .endColumn = column, .endIndentLevel = indentLevel, .endLineHasText = lineHasText};
-        AddChoice(result, node.id, FormatBreakChoice::Compact);
+        AddChoice(result, node.id, FormatBreakChoice::Compact, indentLevel);
         for (const FormatBreakNode* operand : node.operands) {
             NodeResult item = Solve(*operand, result.endColumn, result.endIndentLevel, result.endLineHasText);
             Merge(result, item);
@@ -3234,7 +3242,7 @@ private:
     NodeResult SolveAdjacentStringsSplit(const FormatBreakNode& node, int column, int indentLevel, bool lineHasText) {
         NodeResult
             result{.valid = true, .endColumn = column, .endIndentLevel = indentLevel, .endLineHasText = lineHasText};
-        AddChoice(result, node.id, FormatBreakChoice::Split);
+        AddChoice(result, node.id, FormatBreakChoice::Split, indentLevel);
         const int continuationIndent = node.flatSplitIndent ? indentLevel : indentLevel + 1;
         for (size_t index = 0; index < node.operands.size(); ++index) {
             if (index > 0) {
