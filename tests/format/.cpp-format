@@ -28,6 +28,7 @@ MacroCategories:
     - ENUM_STRING_DECLARE
     - FORMAT_FIXTURE_DECLARE_OPTION
   SemicolonlessCallMacros:
+    - FORMAT_FIXTURE_CREATE_METRIC
     - FORMAT_FIXTURE_REGISTER_TYPE
 
 StreamShift:

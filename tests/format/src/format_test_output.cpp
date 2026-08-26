@@ -65,6 +65,14 @@
 
 ENUM_STRING_DECLARE(FormatFixtureEnum, FORMAT_FIXTURE_ENUM_ITEMS);
 FORMAT_FIXTURE_REGISTER_TYPE(unsigned char, 1)
+FORMAT_FIXTURE_CREATE_METRIC(
+    Metrics,
+    Tag,
+    "path",
+    (first, "First")  //
+    (second, "Second")  //
+    (third, "Third")  //
+)
 #undef FORMAT_FIXTURE_ENUM_ITEMS
 #undef FORMAT_FIXTURE_ENUM_ITEMS_AUX
 #define FORMAT_FIXTURE_TEMP_MACRO(value) (value)

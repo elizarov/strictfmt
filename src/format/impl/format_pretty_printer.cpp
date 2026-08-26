@@ -393,6 +393,27 @@ bool HasDirectCommentChild(const SyntaxNode& node) {
     return false;
 }
 
+bool TrailingCommentReturnsToStructuralIndent(const PrintToken& token) {
+    if (token.node == nullptr || token.node->parent == nullptr) {
+        return false;
+    }
+    if (SyntaxNodeKindHasClass(token.node->parent->kind, SyntaxNodeClass::CompoundBlock)) {
+        return true;
+    }
+    const SyntaxNode* previous = nullptr;
+    for (const SyntaxNode* child : token.node->parent->children) {
+        if (child == token.node) {
+            break;
+        }
+        if (child != nullptr && child->kind != SyntaxNodeKind::Comment) {
+            previous = child;
+        }
+    }
+    return previous != nullptr && (previous->kind == SyntaxNodeKind::LeftBrace || (
+        previous->kind == SyntaxNodeKind::Colon && token.node->parent->kind == SyntaxNodeKind::CaseStatement
+    ));
+}
+
 bool HasSeparatedListAncestor(const SyntaxNode* node) {
     for (
         const SyntaxNode* cursor = node == nullptr ? nullptr : node->parent;
@@ -1743,7 +1764,7 @@ private:
             choice == FormatBreakChoice::BodyHeaderDetachedBody;
     }
 
-    void WriteBreakToken(const FormatBreakToken& token) {
+    void WriteBreakToken(const FormatBreakToken& token, std::optional<int> continuationBaseIndent = std::nullopt) {
         const bool suppressSpace = suppressNextBreakTokenSpace_;
         suppressNextBreakTokenSpace_ = false;
         if (token.contextOnly) {
@@ -1766,12 +1787,19 @@ private:
             return;
         }
         if (printToken.kind == PrintTokenKind::TrailingComment) {
+            const int breakModelContinuationIndent = continuationBaseIndent ?
+                *continuationBaseIndent + (*continuationBaseIndent == indentLevel_ ? 1 : 0) : 0;
+            const int continuationIndent = std::max(CurrentLineIndentLevel(), breakModelContinuationIndent);
             if (!atLineStart_) {
                 Space();
                 output_.push_back(' ');
             }
             Write(FormatTokenText(printToken));
-            NewLine(false);
+            if (TrailingCommentReturnsToStructuralIndent(printToken)) {
+                NewLine(false);
+            } else {
+                NewLineWithIndent(continuationIndent);
+            }
             return;
         }
         if (token.spaceBefore && !suppressSpace && !atLineStart_) {
@@ -1788,9 +1816,12 @@ private:
         ) {
             baseIndent = solution.indentLevels[static_cast<size_t>(node.id)];
         }
+        if (atLineStart_ && pendingIndentLevel_) {
+            baseIndent = std::max(baseIndent, *pendingIndentLevel_);
+        }
         switch (node.kind) {
             case FormatBreakNodeKind::Token:
-                WriteBreakToken(node.token);
+                WriteBreakToken(node.token, baseIndent);
                 return;
             case FormatBreakNodeKind::Sequence:
                 for (const FormatBreakNode* child : node.children) {
