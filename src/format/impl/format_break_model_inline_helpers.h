@@ -8,7 +8,7 @@ inline const PrintToken& FormatBreakTokenValue(const FormatBreakToken& token) {
 }
 
 inline PrintTokenKind FormatBreakTokenKind(const FormatBreakToken& token) {
-    return token.token == nullptr ? PrintTokenKind::Free : token.token->kind;
+    return token.token == nullptr ? PrintTokenKind::Text : token.token->kind;
 }
 
 inline SyntaxNodeKind FormatBreakTokenSyntaxKind(const FormatBreakToken& token) {

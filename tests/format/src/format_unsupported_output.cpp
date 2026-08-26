@@ -7,30 +7,30 @@
 namespace format_unsupported_fixture {
 
 void ExpressionFragment() {
-    constexpr int kOptmask = ARES_OPT_FLAGS | ARES_OPT_TIMEOUTMS | ARES_OPT_TRIES | ARES_OPT_DOMAINS |
+    constexpr int kOptmask =
+        ARES_OPT_FLAGS | ARES_OPT_TIMEOUTMS | ARES_OPT_TRIES | ARES_OPT_DOMAINS |
 #if ARES_VERSION < 0x011400
         ARES_OPT_SOCK_STATE_CB |
 #endif
-    ARES_OPT_LOOKUPS;
+        ARES_OPT_LOOKUPS;
 }
 
 template <typename T>
-concept FormatUserverConvertible = requires(T& value) {
-    FormatUserverConvert(value);
-} &&
+concept FormatUserverConvertible =
+    requires(T& value) { FormatUserverConvert(value); } &&
 #if FORMAT_USERVER_OLD_LIB
     // Old libraries reject long double here.
     !std::same_as<T, long double>
 #else
     true
 #endif
-;
+    ;
 
 extern int* ConditionalDeclarationSuffix(void)
 #ifdef FORMAT_USERVER_THROW
     FORMAT_USERVER_THROW
 #endif
-;
+    ;
 
 bool ConditionalLogicalFragment(int error_code) {
     if (error_code == kWouldBlock
@@ -62,7 +62,7 @@ if (conn->pipelineStatus == kPipelineOff)
 if (Flush(conn) < 0)
 #endif
     goto sendFailed;
-    sendFailed:;
+sendFailed:;
 }
 
 void PreprocessorSelectedBracedIf(Connection* conn, std::string& status) {
@@ -118,7 +118,7 @@ const char* ConditionalStringLiteral() {
 #else
         "GMT "
 #endif
-    "suffix";
+        "suffix";
 }
 
 }  // namespace format_unsupported_fixture

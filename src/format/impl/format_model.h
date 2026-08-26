@@ -22,7 +22,7 @@ enum class SyntaxNodeKind : std::uint16_t {
     // Structural nodes.
     Unknown,
     Tree,
-    FreeToken,
+    LexicalToken,
     Comment,
     TrailingComment,
     BlankLine,
@@ -64,7 +64,6 @@ enum class SyntaxNodeKind : std::uint16_t {
     CoReturnStatement,
     ConditionClause,
     InitStatement,
-    PreprocAssignmentStatement,
     PreprocCall,
     MacroDefinition,
     PreprocInclude,
@@ -125,6 +124,7 @@ enum class SyntaxNodeKind : std::uint16_t {
     MsCallModifier,
     MsDeclspecModifier,
     FunctionSuffixMacro,
+    PureVirtualClause,
     ConcatenatedString,
     RawStringLiteral,
     StringLiteral,
@@ -306,7 +306,7 @@ enum class SyntaxNodeClass : std::uint64_t {
     Tree = 1ull << 10,
     Literal = 1ull << 11,
     StringLike = 1ull << 12,
-    WholeNodeAsFreeToken = 1ull << 13,
+    OpaqueSource = 1ull << 13,
     AtomicPreprocessor = 1ull << 14,
     MacroDefinition = 1ull << 15,
     MacroDeclarationFragment = 1ull << 16,
@@ -351,15 +351,13 @@ enum class SyntaxNodeClass : std::uint64_t {
     KeywordOwnedValue = 1ull << 55,
     Expression = 1ull << 56,
     DeclaredTypeSpecifier = 1ull << 57,
+    LexicalAtom = 1ull << 58,
 };
 
 enum class SyntaxWrapperRole : std::uint8_t {
     None,
     Flatten,
-    WholeToken,
-    WholeAtom,
-    WholeFieldAtom,
-    CompactEmptyDelimited,
+    LexicalWrapper,
 };
 
 struct SyntaxSymbolInfo {

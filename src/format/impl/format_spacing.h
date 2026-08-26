@@ -6,7 +6,7 @@
 
 enum class PrintTokenKind {
     Known,
-    Free,
+    Text,
     Comment,
     TrailingComment,
     BlankLine,
@@ -15,7 +15,7 @@ enum class PrintTokenKind {
 };
 
 struct PrintToken {
-    PrintTokenKind kind = PrintTokenKind::Free;
+    PrintTokenKind kind = PrintTokenKind::Text;
     SyntaxNodeKind syntaxKind = SyntaxNodeKind::Unknown;
     std::string_view text;
     SyntaxNodeKind parentKind = SyntaxNodeKind::Unknown;

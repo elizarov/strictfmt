@@ -95,78 +95,6 @@ void SetKnownTokenNode(SyntaxNode& node, SyntaxNodeKind token, std::string_view 
     }
 }
 
-bool ContainsWholeAtomDelimiter(std::string_view text) {
-    // Whole-atom wrappers are safe to keep as one text node only when the text has no structural separators.
-    // Examples that take the shortcut: `name`, `ns::Type`, `*ptr`, `++index`.
-    // Examples that must still expose children: `call(arg)`, `array[i]`, `T<U>`, `x + y`.
-    for (const char ch : text) {
-        switch (ch) {
-            case '\t':
-            case '\n':
-            case '\r':
-            case ' ':
-            case '(':
-            case ')':
-            case '[':
-            case ']':
-            case '{':
-            case '}':
-            case '<':
-            case '>':
-            case ',':
-            case ';':
-            case '"':
-            case '\'':
-                return true;
-            default:
-                break;
-        }
-    }
-    return false;
-}
-
-bool ContainsWholeFieldAtomDelimiter(std::string_view text) {
-    // Expose member operators so the break model can build member-call chains.
-    for (size_t index = 0; index < text.size(); ++index) {
-        switch (text[index]) {
-            case '\t':
-            case '\n':
-            case '\r':
-            case ' ':
-            case '(':
-            case ')':
-            case '[':
-            case ']':
-            case '{':
-            case '}':
-            case '<':
-            case ',':
-            case ';':
-            case '"':
-            case '\'':
-            case '.':
-                return true;
-            case '-':
-                if (index + 1 < text.size() && text[index + 1] == '>') {
-                    return true;
-                }
-                break;
-            case '>':
-                if (index == 0 || text[index - 1] != '-') {
-                    return true;
-                }
-                break;
-            default:
-                break;
-        }
-    }
-    return false;
-}
-
-bool CompactEmptyDelimitedText(std::string_view text) {
-    return text == "()" || text == "[]" || text == "<>" || text == "{}";
-}
-
 bool CommentConsumesLineTail(std::string_view source, uint32_t commentStart, uint32_t commentEnd) {
     if (commentStart + 1 >= source.size()) {
         return true;
@@ -632,6 +560,16 @@ void ClassifyDeclarationGroup(SyntaxNode& node) {
 }
 
 void NormalizeSyntaxNode(FormatModel& model, SyntaxNode& node) {
+    if (
+        SyntaxNodeHasClass(node, SyntaxNodeClass::ConditionalPreprocessorTree) &&
+        std::any_of(node.children.begin(), node.children.end(), [](const SyntaxNode* child) {
+            return child != nullptr && SyntaxNodeHasClass(*child, SyntaxNodeClass::DeclarationModifierPreprocessor);
+        })
+    ) {
+        node.classes |= static_cast<std::uint64_t>(SyntaxNodeClass::AtomicPreprocessor) |
+            static_cast<std::uint64_t>(SyntaxNodeClass::SupportedPreprocessorPlacement) |
+            static_cast<std::uint64_t>(SyntaxNodeClass::DeclarationModifierPreprocessor);
+    }
     if (node.kind == SyntaxNodeKind::BinaryExpression) {
         const bool startsConditionalStream = std::any_of(
             node.children.begin(),
@@ -731,36 +669,17 @@ SyntaxNode* BuildNode(
         return node;
     }
 
-    if (syntax.wrapperRole == SyntaxWrapperRole::CompactEmptyDelimited) {
-        const std::string_view text = NodeText(tsNode, source);
-        if (CompactEmptyDelimitedText(text)) {
-            node->kind = syntax.kind == SyntaxNodeKind::Unknown ? SyntaxNodeKind::FreeToken : syntax.kind;
-            node->text = text;
-            return node;
-        }
-    }
-    if (syntax.wrapperRole == SyntaxWrapperRole::WholeToken) {
+    if (syntax.wrapperRole == SyntaxWrapperRole::LexicalWrapper) {
         const std::string_view text = NodeText(tsNode, source);
         const SyntaxNodeKind known = SyntaxNodeKindFromTokenText(text);
         if (known != SyntaxNodeKind::Unknown) {
             SetKnownTokenNode(*node, known, text);
             return node;
         }
-    } else if (
-        syntax.wrapperRole == SyntaxWrapperRole::WholeAtom || syntax.wrapperRole == SyntaxWrapperRole::WholeFieldAtom
-    ) {
-        const std::string_view text = NodeText(tsNode, source);
-        if ((syntax.wrapperRole == SyntaxWrapperRole::WholeAtom && !ContainsWholeAtomDelimiter(text)) || (
-            syntax.wrapperRole == SyntaxWrapperRole::WholeFieldAtom && !ContainsWholeFieldAtomDelimiter(text)
-        )) {
-            node->kind = syntax.kind == SyntaxNodeKind::Unknown ? SyntaxNodeKind::FreeToken : syntax.kind;
-            node->text = text;
-            return node;
-        }
     }
     if (
-        TsNodeSyntaxHasClass(syntax, SyntaxNodeClass::WholeNodeAsFreeToken) ||
-        TsNodeSyntaxHasClass(syntax, SyntaxNodeClass::AtomicPreprocessor)
+        TsNodeSyntaxHasClass(syntax, SyntaxNodeClass::OpaqueSource) ||
+        TsNodeSyntaxHasClass(syntax, SyntaxNodeClass::LexicalAtom)
     ) {
         node->kind = syntax.kind;
         node->text = NodeText(tsNode, source);
@@ -780,13 +699,16 @@ SyntaxNode* BuildNode(
             SetKnownTokenNode(*node, knownFromText, text);
             return node;
         }
-        node->kind = syntax.kind == SyntaxNodeKind::Unknown ? SyntaxNodeKind::FreeToken : syntax.kind;
+        node->kind = syntax.kind == SyntaxNodeKind::Unknown ? SyntaxNodeKind::LexicalToken : syntax.kind;
         node->text = text;
         return node;
     }
 
     node->kind = syntax.kind == SyntaxNodeKind::Unknown ? SyntaxNodeKind::Tree : syntax.kind;
-    if (SyntaxNodeKindHasClass(node->kind, SyntaxNodeClass::ConditionalPreprocessorTree)) {
+    if (
+        TsNodeSyntaxHasClass(syntax, SyntaxNodeClass::AtomicPreprocessor) ||
+        SyntaxNodeKindHasClass(node->kind, SyntaxNodeClass::ConditionalPreprocessorTree)
+    ) {
         node->text = NodeText(tsNode, source);
     }
     node->children.reserve(childCount);
@@ -812,7 +734,7 @@ inline void AppendTsNode(
     if (isTrailingComment && childNode->kind == SyntaxNodeKind::Comment) {
         childNode->kind = SyntaxNodeKind::TrailingComment;
     } else if (isInlineBlockComment && childNode->kind == SyntaxNodeKind::Comment) {
-        childNode->kind = SyntaxNodeKind::FreeToken;
+        childNode->kind = SyntaxNodeKind::LexicalToken;
     }
     parent.children.push_back(childNode);
 }
@@ -964,7 +886,7 @@ bool IsPragmaNode(const SyntaxNode& node) {
 }
 
 bool IsPreprocessorConditionHeaderNode(const SyntaxNode& node) {
-    return node.kind == SyntaxNodeKind::FreeToken ||
+    return node.kind == SyntaxNodeKind::LexicalToken ||
         node.kind == SyntaxNodeKind::Identifier ||
         SyntaxNodeKindHasClass(node.kind, SyntaxNodeClass::PreprocessorDirective);
 }

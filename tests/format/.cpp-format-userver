@@ -58,8 +58,6 @@ MacroCategories:
     - MOCK_METHOD
     - MATCHER_P
     - TEST_COMMAND
-    - GTEST_REPEATER_METHOD_
-    - GTEST_REVERSE_REPEATER_METHOD_
     - INSTANTIATE_UTEST_SUITE_P
     - TYPED_UTEST_MT
     - TYPED_UTEST_P_MT
@@ -67,6 +65,8 @@ MacroCategories:
   SemicolonlessCallMacros:
     - GTEST_DISABLE_DEPRECATED_*
     - GTEST_DISABLE_MSC_WARNINGS_*
+    - GTEST_REPEATER_METHOD_
+    - GTEST_REVERSE_REPEATER_METHOD_
     - RET_NAME
   StatementArgumentMacros:
     - UEXPECT_THROW

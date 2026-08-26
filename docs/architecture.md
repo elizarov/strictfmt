@@ -56,4 +56,6 @@ Grammar must model C++ constructs generically, following the shape of the C++ la
 
 Project-specific tokens are used only for intentionally non-C++ macro fragments or scanner-owned lexical features documented in [scanner.md](scanner.md) and are taken from configuration, not hard-coded. Otherwise, structured grammar productions compose with existing C++ declarators, type names, expressions, and statements.
 
+Composite syntax must remain recursive in both the tree-sitter tree and the formatter model. A grammar token or formatter leaf must not hide a declaration, statement, expression, type, attribute, delimiter pair, preprocessor construct, or any other composite source span. The replacement text of a macro explicitly configured under `RawMacroDefinitions` is the sole opaque-source exception. Ordinary lexical tokens remain leaves; they are not unstructured composite syntax.
+
 Formatter behavior follows the same principle: rules use shared structural or configured semantic categories and apply at every supported recursion depth. Source spelling, incidental parser wrappers, and golden-fixture shape must not create one-off formatting categories.

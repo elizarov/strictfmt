@@ -302,7 +302,7 @@ Value ConditionalThrowExpression(bool enabled) {
 }
 
 void ThrowFoldExpression(ErrorContext context, std::size_t processed_bytes) {
-    throw (IoCancelled(/*bytes_transferred =*/processed_bytes) << ... << context);
+    throw (IoCancelled(/*bytes_transferred =*/ processed_bytes) << ... << context);
 }
 
 void QualifiedOperatorCall(Task& task) {
