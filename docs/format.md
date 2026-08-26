@@ -304,6 +304,7 @@ int ratio = (
 - Plain non-call parentheses contain one expression group.
 - A plain non-call parenthesis group adds only body indentation.
 - Lists and formatter-owned chain parts inside that group keep their elements at that body level.
+- Assignment continuations are not flattened. A break after an assignment operator, or between a condition declaration's type/pointer prefix and its assigned declarator, adds one continuation indentation level.
 - Nested ordinary binary operators still introduce continuation indentation.
 - Transparent single-item parenthesis pairs are considered independently. A pair may stay compact only when the expression it encloses has no selected breaks. If the enclosed expression breaks, that pair is broken and follows ordinary delimiter placement.
 - Unary operators and declarator `*` or `&` are token facts, not chain break points.

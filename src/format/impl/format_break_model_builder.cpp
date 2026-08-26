@@ -172,6 +172,18 @@ bool IsFlatParenthesizedChain(const FormatBreakNode& node) {
         std::all_of(node.operators.begin(), node.operators.end(), IsFlatChainOperator);
 }
 
+bool IsAssignmentChain(const FormatBreakNode& node) {
+    return node.kind == FormatBreakNodeKind::Chain &&
+        std::any_of(node.operators.begin(), node.operators.end(), IsAssignmentOperatorForNode);
+}
+
+bool HasAssignmentContinuation(const FormatBreakNode& node) {
+    return IsAssignmentChain(node) ||
+        std::any_of(node.operands.begin(), node.operands.end(), [](const FormatBreakNode* operand) {
+            return operand != nullptr && IsAssignmentChain(*operand);
+        });
+}
+
 bool UsesFlatLogicalContinuation(const FormatBreakToken& open, const FormatBreakNode& item) {
     if (!IsLogicalChain(item)) {
         return false;
@@ -409,7 +421,8 @@ private:
             delimited.delimiterKind == FormatBreakDelimiterKind::Paren &&
             item &&
             item->kind == FormatBreakNodeKind::Chain &&
-            item->chainKind != FormatBreakChainKind::Ternary && (
+            item->chainKind != FormatBreakChainKind::Ternary &&
+            !HasAssignmentContinuation(*item) && (
                 virtualDelimiter || (IsFlatParenthesizedChain(*item) && (
                     UsesFlatLogicalContinuation(open, *item) || UsesFlatNonCallParenthesisContinuation(open)
                 ))
