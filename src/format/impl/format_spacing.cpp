@@ -707,6 +707,9 @@ bool FormatTokenNeedsSpace(const PrintToken* previous, const PrintToken& current
         if (IsFunctionPointerDeclaratorGroupOpen(current)) {
             return true;
         }
+        if (current.parentKind == SyntaxNodeKind::ForStatement) {
+            return true;
+        }
         if (
             previous->parentKind == SyntaxNodeKind::OperatorName || previous->parentKind == SyntaxNodeKind::OperatorCast
         ) {
