@@ -2670,3 +2670,16 @@ X CommentSeparatedChain() {
 }
 
 auto rawStringSuffix = R"(value)"sv;
+
+struct DesignatedBraceInner {
+    int value;
+};
+
+struct DesignatedBraceOuter {
+    int first;
+    DesignatedBraceInner inner;
+};
+
+DesignatedBraceOuter MakeDesignatedBraceOuter() {
+    return {.first{1}, .inner{.value{2}}};
+}

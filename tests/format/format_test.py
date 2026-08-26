@@ -1631,6 +1631,7 @@ class FormatCommandTests(unittest.TestCase):
             "struct IncludeGroup {\n"
             "    int priority;\n"
             "};\n"
+            "\n"
             "void SortIncludeGroups(std::vector<IncludeGroup>& groups) {\n"
             "    std::sort(groups.begin(), groups.end(), [](const IncludeGroup& left, const IncludeGroup& right) {\n"
             "        return left.priority < right.priority;\n"

@@ -177,6 +177,11 @@ When a template list wraps, `<` stays with the owner and each top-level argument
 
 Nested braced initializer and braced constructor elements are independent structural parts. Each nested element uses the same compact-or-split optimization as any other segment and follows indent-economy delimiter placement.
 
+C++ designated initializer elements accept both equal-initializer form
+(`.field = value`) and direct braced form (`.field{value}`). A braced value is a
+normal recursive initializer list, including when it contains further
+designated initializer elements.
+
 ```cpp
 Widget rows[] = {
     {first, second},

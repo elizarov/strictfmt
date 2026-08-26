@@ -4,6 +4,7 @@
 #include <chrono>
 #include <optional>
 #include <string>
+#include <unordered_map>
 #include <unordered_set>
 #include <vector>
 
@@ -31,6 +32,11 @@ enum class DeclarationGroupKind {
     Callable,
     Object,
     Alias,
+};
+
+struct DeclarationGroupState {
+    const SyntaxNode* previousItem = nullptr;
+    const SyntaxNode* preparedItem = nullptr;
 };
 
 struct BraceFrame {
@@ -921,8 +927,7 @@ private:
     std::vector<int> conditionalFunctionIndents_;
     std::optional<int> pendingIndentRestoreAfterFlush_;
     std::unordered_set<const SyntaxNode*> isolatedDeclarationItems_;
-    const SyntaxNode* previousDeclarationItem_ = nullptr;
-    const SyntaxNode* preparedDeclarationItem_ = nullptr;
+    std::unordered_map<const SyntaxNode*, DeclarationGroupState> declarationGroupStates_;
 
     static const PrintToken* PreviousToken(const std::vector<PrintToken>& tokens, size_t index) {
         while (index > 0) {
@@ -1007,6 +1012,7 @@ private:
         // can precede it. Pre-solving uses the ordinary break model and solver; the printer only observes the
         // number of continuation lines selected for each declaration owner/value relation.
         isolatedDeclarationItems_.clear();
+        declarationGroupStates_.clear();
         std::unordered_set<const SyntaxNode*> analyzedItems;
         for (size_t index = 0; index < tokens.size();) {
             const SyntaxNode* item = DeclarationScopeItem(tokens[index].node);
@@ -1084,16 +1090,14 @@ private:
         const SyntaxNode* item = DeclarationScopeItem(token.node);
         const DeclarationGroupKind group = DeclarationGroup(item);
         if (group != DeclarationGroupKind::None) {
-            if (item != previousDeclarationItem_) {
-                if (
-                    item != preparedDeclarationItem_ &&
-                    RequiresDeclarationGroupSeparation(previousDeclarationItem_, item)
-                ) {
+            DeclarationGroupState& state = declarationGroupStates_[item->parent];
+            if (item != state.previousItem) {
+                if (item != state.preparedItem && RequiresDeclarationGroupSeparation(state.previousItem, item)) {
                     FlushPendingTokens();
                     BlankLine();
                 }
-                previousDeclarationItem_ = item;
-                preparedDeclarationItem_ = nullptr;
+                state.previousItem = item;
+                state.preparedItem = nullptr;
             }
             return false;
         }
@@ -1112,14 +1116,14 @@ private:
             return false;
         }
 
+        DeclarationGroupState& state = declarationGroupStates_[item->parent];
         const SyntaxNode* nextItem = NextDeclarationItem(currentTokenIndex_);
         const bool prefixesNextItem = nextItem != nullptr && nextItem->parent == item->parent;
-        const bool separates =
-            prefixesNextItem && RequiresDeclarationGroupSeparation(previousDeclarationItem_, nextItem);
-        if (separates && preparedDeclarationItem_ != nextItem) {
+        const bool separates = prefixesNextItem && RequiresDeclarationGroupSeparation(state.previousItem, nextItem);
+        if (separates && state.preparedItem != nextItem) {
             FlushPendingTokens();
             BlankLine();
-            preparedDeclarationItem_ = nextItem;
+            state.preparedItem = nextItem;
         }
         return false;
     }
