@@ -2575,6 +2575,18 @@ void StandaloneOrTrailingCommentsMoved(int command) {
     }
 }
 
+void StandaloneCommentBeforeSwitchLabel(int value) {
+    switch (value) {
+        case 1:
+            Use();
+            break;
+
+        // fallback
+        case 2:
+            break;
+    }
+}
+
 void EnumDeclaratorDetached() {
     enum {
         kChar,
