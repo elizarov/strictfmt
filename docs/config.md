@@ -2,8 +2,7 @@
 
 This document specifies formatter configuration and ignore files consumed by `strictfmt`.
 
-Formatter configuration is intentionally narrow and does not expose style policy knobs. Brace behavior, wrapping behavior, spacing, alignment behavior, and other layout decisions are fixed in formatter source and
-are documented in [format.md](format.md).
+Formatter configuration is intentionally narrow and does not expose style policy knobs. Layout decisions are fixed in formatter source and documented in [format.md](format.md).
 
 ## Discovery and inheritance
 
