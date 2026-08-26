@@ -31,6 +31,21 @@ bool IsBinaryContext(const PrintToken& token) {
         token.parentKind == SyntaxNodeKind::ConditionalExpression;
 }
 
+bool IsAlternativeBinaryOperatorToken(const PrintToken& token) {
+    if (token.kind != PrintTokenKind::Text || !IsBinaryContext(token)) {
+        return false;
+    }
+    return token.text == "and" ||
+        token.text == "and_eq" ||
+        token.text == "bitand" ||
+        token.text == "bitor" ||
+        token.text == "not_eq" ||
+        token.text == "or" ||
+        token.text == "or_eq" ||
+        token.text == "xor" ||
+        token.text == "xor_eq";
+}
+
 bool IsTemplateListKind(SyntaxNodeKind kind) {
     return kind == SyntaxNodeKind::TemplateArgumentList || kind == SyntaxNodeKind::TemplateParameterList;
 }
@@ -265,6 +280,9 @@ bool IsLeadingGlobalScopeToken(const PrintToken& token) {
 }
 
 bool IsBinaryOperatorSpacingContext(const PrintToken& token) {
+    if (IsAlternativeBinaryOperatorToken(token)) {
+        return true;
+    }
     if (
         token.kind != PrintTokenKind::Known ||
         !SyntaxNodeKindHasClass(token.syntaxKind, SyntaxNodeClass::BinaryOperator) ||
@@ -722,14 +740,13 @@ bool FormatTokenNeedsSpace(const PrintToken* previous, const PrintToken& current
         )) {
             return true;
         }
-        if (previous->kind == PrintTokenKind::Known && (
+        if (IsBinaryOperatorSpacingContext(*previous) || (previous->kind == PrintTokenKind::Known && (
             SyntaxNodeKindHasClass(prev, SyntaxNodeClass::AssignmentOperator) ||
-            (SyntaxNodeKindHasClass(prev, SyntaxNodeClass::BinaryOperator) && IsBinaryContext(*previous)) ||
             prev == SyntaxNodeKind::Comma ||
             prev == SyntaxNodeKind::Semicolon ||
             (prev == SyntaxNodeKind::Colon && previous->parentKind == SyntaxNodeKind::ConditionalExpression) ||
             prev == SyntaxNodeKind::Question
-        )) {
+        ))) {
             return true;
         }
         return previous->kind == PrintTokenKind::Known && SyntaxNodeKindHasClass(prev, SyntaxNodeClass::ControlKeyword);
@@ -830,15 +847,17 @@ bool FormatTokenNeedsSpace(const PrintToken* previous, const PrintToken& current
         }
         return !IsDeclaratorBindingToken(current);
     }
-    if (current.kind == PrintTokenKind::Known && (SyntaxNodeKindHasClass(cur, SyntaxNodeClass::AssignmentOperator) || (
-        SyntaxNodeKindHasClass(cur, SyntaxNodeClass::BinaryOperator) && IsBinaryOperatorSpacingContext(current)
-    ))) {
+    if (
+        (current.kind == PrintTokenKind::Known && SyntaxNodeKindHasClass(cur, SyntaxNodeClass::AssignmentOperator)) ||
+        IsBinaryOperatorSpacingContext(current)
+    ) {
         return true;
     }
-    if (previous->kind == PrintTokenKind::Known && (
-        SyntaxNodeKindHasClass(prev, SyntaxNodeClass::AssignmentOperator) ||
-        (SyntaxNodeKindHasClass(prev, SyntaxNodeClass::BinaryOperator) && IsBinaryOperatorSpacingContext(*previous))
-    )) {
+    if (
+        (
+            previous->kind == PrintTokenKind::Known && SyntaxNodeKindHasClass(prev, SyntaxNodeClass::AssignmentOperator)
+        ) || IsBinaryOperatorSpacingContext(*previous)
+    ) {
         return true;
     }
     if (
