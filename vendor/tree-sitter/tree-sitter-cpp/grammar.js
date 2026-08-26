@@ -3071,6 +3071,14 @@ module.exports = grammar(C, {
       );
     },
 
+    initializer_pair: ($, original) => choice(
+      original,
+      seq(
+        field('designator', $.field_designator),
+        field('value', $.initializer_list),
+      ),
+    ),
+
     _initializer_list_with_preproc: $ => {
       const item = choice(
         $.initializer_pair,
