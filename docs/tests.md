@@ -4,7 +4,7 @@ This document owns the general testing strategy and test file placement for `str
 
 ## Strategy
 
-Formatter tests are driven by `tests/format/format_test.py` through the `strictfmt_tests` CMake target and the `scripts/test.sh|cmd` wrappers described in [build.md](build.md). 
+Formatter tests are driven by `tests/format/format_test.py` through the `strictfmt_tests` CMake target and the `scripts/test.sh|cmd` wrappers described in [build.md](build.md).
 The Python runner uses verbose `unittest` output with compact method names, so
 test logs list each test with its pass/fail status instead of dot-only progress.
 
@@ -19,6 +19,36 @@ looks correct once but cannot be accepted as stable input.
 The project sources under `src/` must already be formatted with the repository
 configuration. The suite enforces this invariant with a recursive dry run of the
 built formatter.
+
+Every C or C++ fenced code block in the root `README.md` and `docs/*.md` must be
+complete enough for `strictfmt` to parse and must already be canonical formatter
+output. The suite extracts each block, formats it with the repository
+configuration, rejects unsupported-placement warnings, and requires
+byte-for-byte equality. Other fence languages, such as `sh`, `bat`, `yaml`, and
+`text`, are not source-format examples and are ignored by this check.
+
+A concise example that relies on a different column limit or macro category may
+put its `.cpp-format` contents in an HTML comment immediately before the fence:
+
+````markdown
+<!-- .cpp-format
+ColumnLimit: 40
+MacroCategories:
+  CallSyntaxMacros:
+    - TEST_CASE
+-->
+```cpp
+TEST_CASE(
+    LongFixtureName,
+    LongTestName
+) {
+    Run();
+}
+```
+````
+
+The comment applies only to the following fence. Keep examples on the default
+configuration when they do not need an override.
 
 The suite also invokes the grammar's structure-only validator so an unreviewed
 named terminal or external token cannot bypass the structural-genericity rule.

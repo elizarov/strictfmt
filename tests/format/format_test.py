@@ -8,6 +8,7 @@ import sys
 import tempfile
 import unittest
 from contextlib import contextmanager
+from dataclasses import dataclass
 from pathlib import Path
 
 
@@ -21,6 +22,13 @@ PLATFORM_LINE_ENDING = os.linesep.encode("ascii")
 PRETTY_PRINTER_SOURCE = STRICTFMT_ROOT / "src" / "format" / "impl" / "format_pretty_printer.cpp"
 GRAMMAR_REGENERATOR = STRICTFMT_ROOT / "tools" / "regenerate_tree_sitter_grammar.py"
 EXTERNAL_ROOT = STRICTFMT_ROOT / "external"
+DOCS_ROOT = STRICTFMT_ROOT / "docs"
+DOCUMENTATION_CONFIG_START = "<!-- .cpp-format"
+DOCUMENTATION_CONFIG_END = "-->"
+DOCUMENTATION_CPP_LANGUAGES = frozenset(
+    ("c", "c++", "cc", "cpp", "cxx", "h", "h++", "hh", "hpp", "hxx")
+)
+MARKDOWN_FENCE_PATTERN = re.compile(r"^(?P<fence>`{3,}|~{3,})(?P<info>.*)$")
 SOURCE_SUFFIXES = {
     ".c",
     ".cc",
@@ -55,6 +63,80 @@ FORMATTED_GOLDEN_OUTPUTS = (
     ("ifdef", IFDEF_OUTPUT_FIXTURE, USERVER_FORMAT_CONFIG),
     ("unsupported", UNSUPPORTED_OUTPUT_FIXTURE, USERVER_FORMAT_CONFIG),
 )
+
+
+@dataclass(frozen=True)
+class DocumentationCodeExample:
+    document: Path
+    fence_line: int
+    source: str
+    config: str | None
+
+
+def markdown_fence_end(lines: list[str], start: int, fence: str, document: Path) -> int:
+    fence_character = re.escape(fence[0])
+    closing_pattern = re.compile(rf"^{fence_character}{{{len(fence)},}}[ \t]*$")
+    for index in range(start + 1, len(lines)):
+        if closing_pattern.fullmatch(lines[index].rstrip("\r\n")):
+            return index
+    raise AssertionError(f"{document.relative_to(STRICTFMT_ROOT)}:{start + 1}: unclosed Markdown fence")
+
+
+def documentation_code_examples() -> list[DocumentationCodeExample]:
+    examples = []
+    documents = (STRICTFMT_ROOT / "README.md", *sorted(DOCS_ROOT.glob("*.md")))
+    for document in documents:
+        with document.open(encoding="utf-8", newline="") as source:
+            lines = source.read().splitlines(keepends=True)
+        index = 0
+        while index < len(lines):
+            config = None
+            if lines[index].rstrip("\r\n") == DOCUMENTATION_CONFIG_START:
+                config_start = index
+                index += 1
+                config_lines = []
+                while index < len(lines) and lines[index].rstrip("\r\n") != DOCUMENTATION_CONFIG_END:
+                    config_lines.append(lines[index])
+                    index += 1
+                if index == len(lines):
+                    relative = document.relative_to(STRICTFMT_ROOT)
+                    raise AssertionError(f"{relative}:{config_start + 1}: unclosed .cpp-format comment")
+                config = "".join(config_lines)
+                index += 1
+                if index == len(lines):
+                    relative = document.relative_to(STRICTFMT_ROOT)
+                    raise AssertionError(f"{relative}:{config_start + 1}: .cpp-format comment has no code fence")
+
+            opening = MARKDOWN_FENCE_PATTERN.fullmatch(lines[index].rstrip("\r\n"))
+            if opening is None:
+                if config is not None:
+                    relative = document.relative_to(STRICTFMT_ROOT)
+                    raise AssertionError(
+                        f"{relative}:{config_start + 1}: .cpp-format comment must immediately precede a code fence"
+                    )
+                index += 1
+                continue
+
+            fence = opening.group("fence")
+            fence_end = markdown_fence_end(lines, index, fence, document)
+            info = opening.group("info").strip().lower()
+            language = info.split(maxsplit=1)[0] if info else ""
+            if config is not None and language not in DOCUMENTATION_CPP_LANGUAGES:
+                relative = document.relative_to(STRICTFMT_ROOT)
+                raise AssertionError(
+                    f"{relative}:{config_start + 1}: .cpp-format comment precedes non-C/C++ fence {language!r}"
+                )
+            if language in DOCUMENTATION_CPP_LANGUAGES:
+                examples.append(
+                    DocumentationCodeExample(
+                        document=document,
+                        fence_line=index + 1,
+                        source="".join(lines[index + 1:fence_end]),
+                        config=config,
+                    )
+                )
+            index = fence_end + 1
+    return examples
 
 
 def native_format(
@@ -189,6 +271,37 @@ class FormatCommandTests(unittest.TestCase):
 
         self.assertEqual(0, result.returncode, msg=f"stdout:\n{result.stdout}\n\nstderr:\n{result.stderr}")
         self.assertEqual("", result.stderr)
+
+    def test_documentation_code_examples_are_canonically_formatted(self) -> None:
+        examples = documentation_code_examples()
+        self.assertGreater(len(examples), 0)
+
+        TEST_TEMP_ROOT.mkdir(exist_ok=True)
+        with tempfile.TemporaryDirectory(prefix="format_documentation_", dir=TEST_TEMP_ROOT) as temp_dir:
+            temp_root = Path(temp_dir)
+            for number, example in enumerate(examples):
+                relative = example.document.relative_to(STRICTFMT_ROOT)
+                location = f"{relative}:{example.fence_line}"
+                with self.subTest(location=location):
+                    args = ["--stdin"]
+                    if example.config is not None:
+                        config = temp_root / f"example-{number}.cpp-format"
+                        config.write_bytes(example.config.encode("utf-8"))
+                        args.extend(("--style", str(config)))
+
+                    expected = example.source.encode("utf-8")
+                    result = native_format_bytes(*args, input_bytes=expected)
+
+                    self.assertEqual(
+                        0,
+                        result.returncode,
+                        msg=(
+                            f"{location}\nstdout:\n{result.stdout.decode('utf-8', errors='replace')}\n\n"
+                            f"stderr:\n{result.stderr.decode('utf-8', errors='replace')}"
+                        ),
+                    )
+                    self.assertNotIn(b": warning at ", result.stderr)
+                    self.assertEqual(expected, result.stdout, msg=location)
 
     def assert_external_project_sources_parse_without_warnings_and_format_idempotently(
         self,
