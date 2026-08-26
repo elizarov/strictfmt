@@ -444,6 +444,8 @@ private:
     Result (*invoke_)(void*, Args...) = nullptr;
 };
 
+template<typename... Args> void Forward(Args&&...args);
+
 struct InitializerGeneralityWidget {
     InitializerGeneralityWidget(int value, int other);
     InitializerGeneralityWidget(int value, int other, int third);
