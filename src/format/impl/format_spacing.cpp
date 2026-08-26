@@ -266,6 +266,13 @@ bool IsOperatorSpellingContext(const PrintToken& token) {
         token.grandParentKind == SyntaxNodeKind::OperatorCast;
 }
 
+bool IsLeadingGlobalScopeToken(const PrintToken& token) {
+    if (token.syntaxKind != SyntaxNodeKind::ColonColon || token.node == nullptr || token.node->parent == nullptr) {
+        return false;
+    }
+    return PreviousNonTriviaChild(*token.node->parent, DirectTokenChildIndex(*token.node->parent, token.node)) == nullptr;
+}
+
 bool IsBinaryOperatorSpacingContext(const PrintToken& token) {
     if (
         token.kind != PrintTokenKind::Known ||
@@ -297,7 +304,7 @@ bool IsUserDefinedLiteralSuffix(const PrintToken& previous, const PrintToken& cu
         current.node != nullptr &&
         previous.node->parent == current.node->parent &&
         SyntaxNodeKindHasClass(previous.syntaxKind, SyntaxNodeClass::Literal) &&
-        current.kind == PrintTokenKind::Free &&
+        current.kind == PrintTokenKind::Text &&
         !current.text.empty() && (
             (current.text.front() >= 'A' && current.text.front() <= 'Z') ||
             (current.text.front() >= 'a' && current.text.front() <= 'z') ||
@@ -333,7 +340,7 @@ const SyntaxNode* GrandParentNode(const PrintToken& token) {
 }
 
 bool IsCompactEmptyBraceToken(const PrintToken& token) {
-    return token.kind == PrintTokenKind::Free && token.text == "{}";
+    return token.kind == PrintTokenKind::Text && token.text == "{}";
 }
 
 bool IsSingleStatementLambdaBodyBrace(const PrintToken& token, SyntaxNodeKind kind) {
@@ -344,14 +351,14 @@ bool IsSingleStatementLambdaBodyBrace(const PrintToken& token, SyntaxNodeKind ki
 }
 
 bool IsAttributeCloseToken(const PrintToken& token) {
-    return token.kind == PrintTokenKind::Free && token.text == "]]" && (
+    return token.kind == PrintTokenKind::Text && token.text == "]]" && (
         token.parentKind == SyntaxNodeKind::AttributeSpecifier ||
         token.parentKind == SyntaxNodeKind::AttributeDeclaration
     );
 }
 
 bool IsAttributeOpenToken(const PrintToken& token) {
-    return token.kind == PrintTokenKind::Free && token.text == "[[" && (
+    return token.kind == PrintTokenKind::Text && token.text == "[[" && (
         token.parentKind == SyntaxNodeKind::AttributeSpecifier ||
         token.parentKind == SyntaxNodeKind::AttributeDeclaration
     );
@@ -362,7 +369,7 @@ bool IsFunctionSuffixMacro(const PrintToken& token) {
 }
 
 bool IsInlineBlockCommentToken(const PrintToken& token) {
-    return token.kind == PrintTokenKind::Free && token.text.size() >= 4 && token.text.substr(0, 2) == "/*";
+    return token.kind == PrintTokenKind::Text && token.text.size() >= 4 && token.text.substr(0, 2) == "/*";
 }
 
 bool IsMemberPointerDeclaratorStar(const PrintToken& token) {
@@ -445,7 +452,7 @@ bool IsFunctionPointerDeclaratorGroupOpen(const PrintToken& token) {
         }
         hasPointerMarker = hasPointerMarker ||
             child->kind == SyntaxNodeKind::Star ||
-            (child->kind == SyntaxNodeKind::FreeToken && child->text.find('*') != std::string_view::npos);
+            (child->kind == SyntaxNodeKind::LexicalToken && child->text.find('*') != std::string_view::npos);
     }
     return false;
 }
@@ -465,7 +472,7 @@ bool IsCommentToken(PrintTokenKind kind) {
 }
 
 bool IsWordLike(const PrintToken& token) {
-    if (token.kind == PrintTokenKind::Free) {
+    if (token.kind == PrintTokenKind::Text) {
         return !token.text.empty() && (IsWordBoundaryChar(token.text.front()) || IsWordBoundaryChar(token.text.back()));
     }
     return token.kind == PrintTokenKind::Known && SyntaxNodeKindHasClass(token.syntaxKind, SyntaxNodeClass::Keyword);
@@ -473,7 +480,7 @@ bool IsWordLike(const PrintToken& token) {
 
 bool IsStringLike(const PrintToken& token) {
     return SyntaxNodeKindHasClass(token.syntaxKind, SyntaxNodeClass::StringLike) ||
-        (token.kind == PrintTokenKind::Free && LooksLikeStringLiteral(token.text));
+        (token.kind == PrintTokenKind::Text && LooksLikeStringLiteral(token.text));
 }
 
 bool IsAccessKeyword(const PrintToken& token) {
@@ -516,7 +523,7 @@ bool FormatTokenNeedsSpace(const PrintToken* previous, const PrintToken& current
     if (current.inMacroValue && !previous->inMacroValue && FormatTokensShareMacroDefinition(previous, &current)) {
         return true;
     }
-    if (current.kind == PrintTokenKind::Free && current.text == "{}") {
+    if (current.kind == PrintTokenKind::Text && current.text == "{}") {
         if (SyntaxNodeKindHasClass(current.parentKind, SyntaxNodeClass::CompoundBlock)) {
             return true;
         }
@@ -544,7 +551,7 @@ bool FormatTokenNeedsSpace(const PrintToken* previous, const PrintToken& current
     if (IsInlineBlockCommentToken(*previous) && IsWordLike(current)) {
         return true;
     }
-    if (current.kind == PrintTokenKind::Free && !current.text.empty() && current.text.front() == '=') {
+    if (current.kind == PrintTokenKind::Text && !current.text.empty() && current.text.front() == '=') {
         return true;
     }
     if (IsAttributeCloseToken(*previous)) {
@@ -638,6 +645,16 @@ bool FormatTokenNeedsSpace(const PrintToken* previous, const PrintToken& current
         cur == SyntaxNodeKind::DotStar ||
         cur == SyntaxNodeKind::ArrowStar
     ) {
+        if (cur == SyntaxNodeKind::ColonColon && IsLeadingGlobalScopeToken(current) && (
+            prev == SyntaxNodeKind::Comma ||
+            prev == SyntaxNodeKind::Semicolon ||
+            prev == SyntaxNodeKind::Question ||
+            prev == SyntaxNodeKind::Colon ||
+            SyntaxNodeKindHasClass(prev, SyntaxNodeClass::AssignmentOperator) ||
+            IsBinaryOperatorSpacingContext(*previous)
+        )) {
+            return true;
+        }
         if (cur == SyntaxNodeKind::ColonColon && (
             SyntaxNodeKindHasClass(prev, SyntaxNodeClass::Keyword) ||
             SyntaxNodeKindHasClass(prev, SyntaxNodeClass::AssignmentOperator)

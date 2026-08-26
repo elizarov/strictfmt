@@ -4,6 +4,7 @@ import os
 import re
 import shutil
 import subprocess
+import sys
 import tempfile
 import unittest
 from contextlib import contextmanager
@@ -18,6 +19,7 @@ FORMAT_EXE_ARGS = os.environ.get("STRICTFMT_EXE_ARGS", "").split()
 EXPECTED_VERSION = os.environ.get("STRICTFMT_EXPECTED_VERSION")
 PLATFORM_LINE_ENDING = os.linesep.encode("ascii")
 PRETTY_PRINTER_SOURCE = STRICTFMT_ROOT / "src" / "format" / "impl" / "format_pretty_printer.cpp"
+GRAMMAR_REGENERATOR = STRICTFMT_ROOT / "tools" / "regenerate_tree_sitter_grammar.py"
 EXTERNAL_ROOT = STRICTFMT_ROOT / "external"
 SOURCE_SUFFIXES = {
     ".c",
@@ -658,6 +660,17 @@ class FormatCommandTests(unittest.TestCase):
 
         self.assertNotIn('"\\r\\n"', pretty_printer)
 
+    def test_grammar_has_only_reviewed_lexical_terminals(self) -> None:
+        result = subprocess.run(
+            [sys.executable, str(GRAMMAR_REGENERATOR), "--validate-structure-only"],
+            cwd=STRICTFMT_ROOT,
+            check=False,
+            capture_output=True,
+            text=True,
+        )
+
+        self.assertEqual(0, result.returncode, msg=f"stdout:\n{result.stdout}\n\nstderr:\n{result.stderr}")
+
     def test_dump_prints_format_model_for_small_source(self) -> None:
         build_dir = TEST_TEMP_ROOT
         build_dir.mkdir(exist_ok=True)
@@ -676,6 +689,37 @@ class FormatCommandTests(unittest.TestCase):
             self.assertIn("- kind: FunctionDefinition\n", result.stdout)
             self.assertIn("text: \"main\"", result.stdout)
             self.assertIn("- kind: KeywordReturn\n", result.stdout)
+
+    def test_friend_operator_bodies_remain_structured(self) -> None:
+        source = (
+            "struct FriendOperators {\n"
+            "[[maybe_unused]] friend bool operator==(const char* lhs, FriendOperators) "
+            "{ return *lhs == '\\0'; }\n"
+            "[[maybe_unused]] friend bool operator!=(const char* lhs, FriendOperators) "
+            "{ return *lhs != '\\0'; }\n"
+            "};\n"
+        )
+        dump = native_format("--stdin", "--dump", input_text=source)
+
+        self.assertEqual(0, dump.returncode, msg=f"stdout:\n{dump.stdout}\n\nstderr:\n{dump.stderr}")
+        self.assertEqual(2, dump.stdout.count("- kind: FunctionDefinition\n"))
+        self.assertEqual(2, dump.stdout.count("- kind: CompoundStatement\n"))
+        self.assertEqual(2, dump.stdout.count("- kind: ReturnStatement\n"))
+        self.assertNotIn("RawMacroReplacement", dump.stdout)
+
+        formatted = native_format("--stdin", input_text=source)
+        self.assertEqual(0, formatted.returncode, msg=f"stdout:\n{formatted.stdout}\n\nstderr:\n{formatted.stderr}")
+        self.assertEqual(
+            "struct FriendOperators {\n"
+            "    [[maybe_unused]] friend bool operator==(const char* lhs, FriendOperators) {\n"
+            "        return *lhs == '\\0';\n"
+            "    }\n"
+            "    [[maybe_unused]] friend bool operator!=(const char* lhs, FriendOperators) {\n"
+            "        return *lhs != '\\0';\n"
+            "    }\n"
+            "};\n",
+            formatted.stdout,
+        )
 
     def test_dump_reads_stdin_source(self) -> None:
         result = native_format("--stdin", "--dump", input_text="int value(){return 2;}\n")
@@ -1164,13 +1208,26 @@ class FormatCommandTests(unittest.TestCase):
             self.assertNotIn("PreprocDef", dump.stdout)
             self.assertNotIn("PreprocFunctionDef", dump.stdout)
 
-    def test_token_paste_macro_requires_raw_definition_configuration(self) -> None:
+    def test_token_paste_macro_is_structured_unless_configured_raw(self) -> None:
         source = "#define HASH_JOIN(first,second) first ## second\n"
-        failed = native_format("--stdin", input_text=source)
+        structured = native_format("--stdin", input_text=source)
 
-        self.assertEqual(1, failed.returncode, msg=f"stdout:\n{failed.stdout}\n\nstderr:\n{failed.stderr}")
-        self.assertEqual("", failed.stdout)
-        self.assertIn("parse failed", failed.stderr)
+        self.assertEqual(
+            0,
+            structured.returncode,
+            msg=f"stdout:\n{structured.stdout}\n\nstderr:\n{structured.stderr}",
+        )
+        self.assertEqual("#define HASH_JOIN(first, second) first##second\n", structured.stdout)
+
+        structured_dump = native_format("--stdin", "--dump", input_text=source)
+
+        self.assertEqual(
+            0,
+            structured_dump.returncode,
+            msg=f"stdout:\n{structured_dump.stdout}\n\nstderr:\n{structured_dump.stderr}",
+        )
+        self.assertIn("- kind: MacroReplacementList\n", structured_dump.stdout)
+        self.assertNotIn("RawMacroReplacement", structured_dump.stdout)
 
         build_dir = TEST_TEMP_ROOT
         build_dir.mkdir(exist_ok=True)

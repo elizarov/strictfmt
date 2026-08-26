@@ -21,7 +21,7 @@ This is the closed list of placements that are explicitly supported.
 - **Conditional `else if` branches**: conditionals may select complete `else if` branches inside an `if`/`else if` chain.
 - **Stream-shift chain links**: `#if`, `#ifdef`, or `#ifndef` blocks with an optional `#else` may select one or more complete leading `<< operand` or `>> operand` links in a shared stream-shift chain. These blocks may nest, the receiver must precede the outer conditional, and further shared links and the terminating semicolon may follow it. `#elif` is unsupported in this placement.
 - **Guarded `extern "C"` group delimiters**: `#if`, `#ifdef`, or `#ifndef` blocks may guard an `extern "C" {` opener or its matching closing brace as file-scope grouping items.
-- **Concatenated string fragments**: conditionals may select complete adjacent string-literal fragments inside a concatenated string literal, including fragments interleaved with identifier-like string macros.
+- **Concatenated string fragments**: conditionals may select complete adjacent string-literal fragments inside a concatenated string literal, including an initializer that begins with a conditional, multiple conditional groups in one concatenation, `#elif` alternatives, and fragments interleaved with identifier-like or function-like string macros.
 - **Local includes**: local `#include` directives may stand where the parser accepts them as complete items.
 
 All other places are not supported and may result in parsing errors or produce misformatted output if the parser manages to recover without errors.

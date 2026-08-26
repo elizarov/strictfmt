@@ -241,7 +241,7 @@ std::string_view ContinuedPreprocessorHeader(std::string_view text) {
 }
 
 bool IsPreprocHeaderSeparator(const SyntaxNode& node) {
-    return node.kind == SyntaxNodeKind::FreeToken && ContainsSourceLineBreak(node.text);
+    return node.kind == SyntaxNodeKind::LexicalToken && ContainsSourceLineBreak(node.text);
 }
 
 bool IsPreprocIfdefHeaderChild(const SyntaxNode& node, size_t index) {
@@ -324,23 +324,6 @@ bool IsFirstConditionalBranchChild(const SyntaxNode& node) {
 
 std::string_view PreprocEndifLine(const SyntaxNode& node) {
     return node.text.empty() ? SyntaxNodeKindTokenText(node.kind) : TrimSourceLine(FirstSourceLine(node.text));
-}
-
-bool IsRawCompleteItemToken(const PrintToken& token) {
-    if (
-        token.kind != PrintTokenKind::Free ||
-        !SyntaxNodeKindHasClass(token.parentKind, SyntaxNodeClass::SourceItemScope)
-    ) {
-        return false;
-    }
-    const std::string_view text = TrimSourceLine(token.text);
-    return EndsWith(text, ";") || EndsWith(text, "}");
-}
-
-bool IsRawStatementToken(const PrintToken& token) {
-    return IsRawCompleteItemToken(token) &&
-        !ContainsSourceLineBreak(token.text) &&
-        EndsWith(TrimSourceLine(token.text), ";");
 }
 
 SyntaxNodeKind MatchingListCloseToken(SyntaxNodeKind kind) {
@@ -664,9 +647,9 @@ void AppendTokens(
         });
         return;
     }
-    if (nodeKind == SyntaxNodeKind::FreeToken || node.children.empty()) {
+    if (nodeKind == SyntaxNodeKind::LexicalToken || node.children.empty()) {
         tokens.push_back({
-            .kind = PrintTokenKind::Free,
+            .kind = PrintTokenKind::Text,
             .syntaxKind = nodeKind,
             .text = node.text,
             .parentKind = parentKind,
@@ -854,20 +837,6 @@ std::string FormatConditionalRhsPreprocessorLines(std::string_view text, int con
         }
         start = end + 1;
     }
-    return result;
-}
-
-std::string FormatConditionalAssignmentPrefix(std::string_view text) {
-    const size_t equals = text.rfind('=');
-    if (equals == std::string_view::npos) {
-        return NormalizeTrailingLineCommentSpacing(CollapseSourceWhitespace(TrimSourceLine(text)));
-    }
-    std::string_view left = text.substr(0, equals);
-    while (!left.empty() && (left.back() == ' ' || left.back() == '\t' || left.back() == '\r' || left.back() == '\n')) {
-        left.remove_suffix(1);
-    }
-    std::string result = CollapseSourceWhitespace(TrimSourceLine(left));
-    result += " =";
     return result;
 }
 
@@ -1442,7 +1411,7 @@ private:
         bool& previousStringLike,
         bool allowFieldInitializerList = false
     ) const {
-        if (token.kind != PrintTokenKind::Known && token.kind != PrintTokenKind::Free) {
+        if (token.kind != PrintTokenKind::Known && token.kind != PrintTokenKind::Text) {
             return false;
         }
         const bool stringLike = IsStringLike(token);
@@ -1725,7 +1694,7 @@ private:
         const PrintToken* previous = nullptr;
         bool previousStringLike = false;
         for (const PrintToken& token : pendingTokens_) {
-            if (token.kind != PrintTokenKind::Known && token.kind != PrintTokenKind::Free) {
+            if (token.kind != PrintTokenKind::Known && token.kind != PrintTokenKind::Text) {
                 return false;
             }
             const bool stringLike = IsStringLike(token);
@@ -2823,22 +2792,6 @@ private:
         }
     }
 
-    void PrepareRawCompleteItemBoundary(const PrintToken* previous, const PrintToken& current) {
-        if (
-            previous == nullptr ||
-            current.kind == PrintTokenKind::TrailingComment ||
-            !IsRawCompleteItemToken(*previous)
-        ) {
-            return;
-        }
-        if (HasBufferedLineText()) {
-            FlushPendingTokens();
-        }
-        if (lineHasText_) {
-            NewLine(ShouldContinueMacroLine(*previous, &current));
-        }
-    }
-
     bool CanAttachToPreviousPreprocessorLine(const PrintToken& token, const PrintToken* rawPrevious) const {
         return token.kind == PrintTokenKind::TrailingComment &&
             rawPrevious != nullptr &&
@@ -2901,7 +2854,6 @@ private:
         if (PrepareDeclarationGroupBoundary(token)) {
             return;
         }
-        PrepareRawCompleteItemBoundary(rawPrevious, token);
         PrepareBareMacroItemBoundary(rawPrevious, token);
         PrepareMacroBoundary(rawPrevious, token);
         if (token.kind == PrintTokenKind::BlankLine) {
@@ -2944,14 +2896,6 @@ private:
             PrintIncludeRun(token, next);
             return;
         }
-        if (
-            token.kind == PrintTokenKind::Free &&
-            token.syntaxKind == SyntaxNodeKind::PreprocAssignmentStatement
-        ) {
-            FlushPendingTokens();
-            PrintPreprocessorAssignmentStatement(token);
-            return;
-        }
         if (token.kind == PrintTokenKind::Known) {
             PrintKnown(token, previous, next, rawNext);
             return;
@@ -2962,44 +2906,7 @@ private:
             NewLine();
             return;
         }
-        if (IsRawStatementToken(token)) {
-            FlushPendingTokens();
-            if (lineHasText_) {
-                NewLine();
-            }
-            Write(CollapseSourceWhitespace(token.text));
-            if (!(rawNext != nullptr && rawNext->kind == PrintTokenKind::TrailingComment)) {
-                NewLine(ShouldContinueMacroLine(token, next));
-            }
-            return;
-        }
         BufferToken(token);
-    }
-
-    void PrintPreprocessorAssignmentStatement(const PrintToken& token) {
-        if (lineHasText_) {
-            NewLine();
-        }
-        const std::string normalized = PreserveSourceLines(token.text);
-        const size_t conditionalStart = normalized.find('#');
-        if (conditionalStart == std::string::npos) {
-            Write(NormalizeTrailingLineCommentSpacing(CollapseSourceWhitespace(TrimSourceLine(normalized))));
-            NewLine();
-            return;
-        }
-        Write(FormatConditionalAssignmentPrefix(std::string_view(normalized).substr(0, conditionalStart)));
-        const int continuationIndent = CurrentLineIndentLevel() + 1;
-        NewLine();
-        const std::string outputLine = FormatConditionalRhsPreprocessorLines(
-            std::string_view(normalized).substr(conditionalStart),
-            continuationIndent,
-            indentWidth_
-        );
-        output_.append(outputLine);
-        AdvanceCurrentColumn(outputLine);
-        lineHasText_ = true;
-        atLineStart_ = false;
-        NewLine();
     }
 
     void PrintComment(const PrintToken& token, const PrintToken* previous, const PrintToken* next) {
@@ -3369,7 +3276,7 @@ private:
         }
         if (isEmptyBracePair) {
             PrintToken compact = token;
-            compact.kind = PrintTokenKind::Free;
+            compact.kind = PrintTokenKind::Text;
             compact.syntaxKind = SyntaxNodeKind::Unknown;
             compact.text = "{}";
             BufferToken(compact);

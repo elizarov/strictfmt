@@ -5,7 +5,7 @@
 namespace {
 
 bool IsLeadingNameToken(const FormatBreakToken& token) {
-    return FormatBreakTokenKind(token) == PrintTokenKind::Free || (
+    return FormatBreakTokenKind(token) == PrintTokenKind::Text || (
         FormatBreakTokenKind(token) == PrintTokenKind::Known &&
         FormatBreakTokenSyntaxKind(token) == SyntaxNodeKind::ColonColon
     );

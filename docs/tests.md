@@ -16,6 +16,9 @@ golden output fixtures are also reparsed with their owning style and must format
 back to the same text. This idempotence check catches formatter output that
 looks correct once but cannot be accepted as stable input.
 
+The suite also invokes the grammar's structure-only validator so an unreviewed
+named terminal or external token cannot bypass the structural-genericity rule.
+
 Tests write transient files under `STRICTFMT_TEST_TEMP_ROOT`, defaulting to the
 build tree. Golden fixtures are copied before mutation, so tests do not edit
 tracked fixtures in place.

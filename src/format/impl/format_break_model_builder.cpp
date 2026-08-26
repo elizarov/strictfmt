@@ -2269,6 +2269,22 @@ private:
         auto sequence = MakeNode(FormatBreakNodeKind::StatementSequence, depth);
         sequence->forceSplit = true;
 
+        const auto childEndsWithSemicolon = [](const SyntaxNode& child) {
+            for (auto iterator = child.children.rbegin(); iterator != child.children.rend(); ++iterator) {
+                const SyntaxNode* tail = *iterator;
+                if (
+                    tail == nullptr ||
+                    tail->kind == SyntaxNodeKind::Comment ||
+                    tail->kind == SyntaxNodeKind::TrailingComment ||
+                    tail->kind == SyntaxNodeKind::BlankLine
+                ) {
+                    continue;
+                }
+                return tail->kind == SyntaxNodeKind::Semicolon;
+            }
+            return false;
+        };
+
         ConstSyntaxChildList itemChildren;
         for (const SyntaxNode* child : node.children) {
             if (child == nullptr || !ContainsSelected(*child)) {
@@ -2288,6 +2304,10 @@ private:
                 continue;
             }
             itemChildren.push_back(child);
+            if (childEndsWithSemicolon(*child)) {
+                AppendListItem(*sequence, BuildSequenceFromPointers(itemChildren, depth + 1), false);
+                itemChildren.clear();
+            }
         }
         if (!itemChildren.empty()) {
             AppendListItem(*sequence, BuildSequenceFromPointers(itemChildren, depth + 1), false);

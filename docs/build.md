@@ -72,6 +72,9 @@ The build uses the vendored static tree-sitter runtime under
 governed by the hard [upstream tree-sitter runtime constraint](architecture.md#upstream-tree-sitter-runtime).
 
 The vendored C++ grammar also compiles a custom external scanner; see [scanner.md](scanner.md).
+Grammar regeneration and the formatter test suite validate the closed set of lexical terminals and external tokens,
+enforcing the composite-syntax rule owned by [architecture.md](architecture.md#structural-genericity). Run the validation
+alone with `python3 tools/regenerate_tree_sitter_grammar.py --validate-structure-only`.
 
 ## Versions
 
