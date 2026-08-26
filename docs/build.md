@@ -65,6 +65,24 @@ Unix state under an OS-specific subdirectory (either `build/linux/` or `build/ma
 
 Windows and Linux builds can coexist in the same checkout because their generated state lives under separate subdirectories.
 
+## Formatting Project Sources
+
+Before committing changes, build the current formatter and format all project
+sources under `src/` in place. On Unix, run:
+
+```sh
+scripts/format_src.sh
+```
+
+On Windows, run from an x64 Visual Studio build environment:
+
+```bat
+scripts\format_src.cmd
+```
+
+Each script runs the platform build script first, then uses the newly built
+executable with the repository configuration.
+
 ## Tree-sitter
 
 The build uses the vendored static tree-sitter runtime under

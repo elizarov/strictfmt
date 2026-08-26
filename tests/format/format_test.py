@@ -184,6 +184,12 @@ class FormatCommandTests(unittest.TestCase):
         else:
             self.assertEqual(f"strictfmt {EXPECTED_VERSION}\n", result.stdout)
 
+    def test_strictfmt_sources_are_formatted(self) -> None:
+        result = native_format("--dry-run", "-r", "src")
+
+        self.assertEqual(0, result.returncode, msg=f"stdout:\n{result.stdout}\n\nstderr:\n{result.stderr}")
+        self.assertEqual("", result.stderr)
+
     def assert_external_project_sources_parse_without_warnings_and_format_idempotently(
         self,
         name: str,

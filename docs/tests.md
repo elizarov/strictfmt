@@ -16,6 +16,10 @@ golden output fixtures are also reparsed with their owning style and must format
 back to the same text. This idempotence check catches formatter output that
 looks correct once but cannot be accepted as stable input.
 
+The project sources under `src/` must already be formatted with the repository
+configuration. The suite enforces this invariant with a recursive dry run of the
+built formatter.
+
 The suite also invokes the grammar's structure-only validator so an unreviewed
 named terminal or external token cannot bypass the structural-genericity rule.
 
