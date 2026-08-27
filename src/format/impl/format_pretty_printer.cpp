@@ -1704,6 +1704,9 @@ private:
             if (token.kind != PrintTokenKind::Known && token.kind != PrintTokenKind::Text) {
                 return false;
             }
+            if (ContainsSourceLineBreak(FormatTokenText(token))) {
+                return false;
+            }
             const bool stringLike = IsStringLike(token);
             if (
                 token.inMacroValue ||

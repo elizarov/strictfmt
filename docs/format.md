@@ -101,6 +101,8 @@ For any broken delimiter stack:
 - For every delimiter pair that selects broken layout, its closer starts a closing delimiter line. A closer for a broken pair must not be attached to body text; placements like `value)` are forbidden for that broken pair.
 - Transparent single-item parentheses do not have separate placement rules. Each parenthesis pair independently selects compact or broken layout. A pair may stay compact only when the expression it encloses has no selected breaks. If the enclosed expression breaks, that pair is broken and follows the same opener and closer placement rules as any other broken delimiter group.
 
+Newlines contained within a multiline literal token do not by themselves put an enclosing delimiter group into split form. When the literal lies in the otherwise compact tail of the final item, keep the group opener on its first physical line and the closer on its last physical line.
+
 This allows wrapper and nested delimiter groups to share indentation:
 
 <!-- .cpp-format

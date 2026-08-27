@@ -736,14 +736,31 @@ void FormatOverflowStream() {
             "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbcccccccccccccccccccc";
 }
 
+void FormatMultilineLiteralTail() {
+    const auto source = std::string{R"q4(
+line one
+line two
+)q4"};
+    Use(prefix, std::string{R"q4(
+final tail
+)q4"});
+    Use(
+        R"q4(
+non-final
+)q4",
+        suffix
+    );
+    auto nested = ((R"q4(
+nested
+)q4"));
+}
+
 void FormatOverflowRawString() {
     EXPECT_EQ(
         formats::json::FromString(utils::statistics::ToSolomonFormat(GetStorage(), {})),
-        formats::json::FromString(
-            R"(
+        formats::json::FromString(R"(
 aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
-)"
-        )
+)")
     );
 }
 
