@@ -126,6 +126,17 @@ bool IsForHeaderDelimiter(const FormatBreakToken& open) {
         printToken.grandParentKind == SyntaxNodeKind::ForStatement;
 }
 
+bool IsMultiItemDesignatedInitializer(const FormatBreakNode& delimited, const FormatBreakToken& open) {
+    const PrintToken& printToken = FormatBreakTokenValue(open);
+    const SyntaxNode* initializer = printToken.node == nullptr ? nullptr : printToken.node->parent;
+    return delimited.items.size() > 1 &&
+        printToken.parentKind == SyntaxNodeKind::InitializerList &&
+        initializer != nullptr &&
+        std::any_of(initializer->children.begin(), initializer->children.end(), [](const SyntaxNode* child) {
+            return child != nullptr && child->kind == SyntaxNodeKind::FieldDesignator;
+        });
+}
+
 bool IsChainOperatorToken(const FormatBreakToken& token) {
     return FormatBreakTokenKind(token) == PrintTokenKind::Known &&
         SyntaxNodeKindHasClass(FormatBreakTokenSyntaxKind(token), SyntaxNodeClass::ChainOperator);
@@ -2822,6 +2833,7 @@ private:
         ) {
             AppendEmptyDelimitedItem(*delimited, depth);
         }
+        delimited->compactRequiresUnbrokenItems = IsMultiItemDesignatedInitializer(*delimited, *open);
         delimited->forceSplit = delimited->forceSplit || (hasVirtualClose && virtualDelimiter->forceSplit);
         afterDelimited = hasVirtualClose ? end : closeIndex + 1;
         return delimited;
