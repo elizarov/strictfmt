@@ -251,6 +251,21 @@ void ExpectJoinedHexEscapeFragment() {
     );
 }
 
+void JoinAdjacentStringLiterals(){
+ThrowError(
+"The operation could not be completed because "
+"the selected calculation is missing"
+);
+Use("first " "second " "third");
+Use(L"wide " "text");
+Use("view " "text"sv);
+Use("\x41" "B");
+Use("\x41" "G");
+Use("\1" "7");
+Use("\123" "7");
+Use(R"(raw)" "tail");
+}
+
 void WriteLongTraceStringFragments(TraceLog& trace, const char* adapterName) {
     trace.WriteFmt(
         TracePrefix::GpuVendor,
@@ -519,7 +534,7 @@ struct OverflowDeclaration {
 };
 
 void FormatOverflowStream() {
-    LOG()<<"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa" "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb";
+    LOG()<<"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa" "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbcccccccccccccccccccc";
 }
 
 void FormatOverflowRawString() {

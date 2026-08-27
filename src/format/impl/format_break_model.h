@@ -93,6 +93,8 @@ struct FormatBreakNode {
     std::span<FormatBreakNode*> operands;
     std::span<FormatBreakToken> operators;
     std::vector<std::vector<FormatBreakToken>> commentsBeforeOperators;
+    // AdjacentStrings compact spelling by operand. Empty entries are absorbed into the preceding non-empty run.
+    std::vector<std::string> compactStringTexts;
 };
 
 template <typename T>
