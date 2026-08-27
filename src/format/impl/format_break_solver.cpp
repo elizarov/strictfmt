@@ -1961,9 +1961,12 @@ private:
         if (node.items.empty()) {
             return false;
         }
+        const FormatBreakNode* tail = node.items.back().node;
+        if (tail == nullptr || TrailingBodyHeaderHeaderHasSelectedBreak(*tail, compact)) {
+            return false;
+        }
         if (node.items.size() == 1 && !HasRealSeparators(node)) {
-            const FormatBreakNode* item = node.items.front().node;
-            return item != nullptr && CanKeepCompactPrefixEndingInTailExpansion(*item, compact);
+            return CanKeepCompactPrefixEndingInTailExpansion(*tail, compact);
         }
         if (!HasRealSeparators(node)) {
             return false;
@@ -1972,10 +1975,6 @@ private:
             if (node.items[index].node != nullptr && HasSelectedBreak(*node.items[index].node, compact)) {
                 return false;
             }
-        }
-        const FormatBreakNode* tail = node.items.back().node;
-        if (tail == nullptr) {
-            return false;
         }
         return CanKeepCompactPrefixEndingInTailExpansion(*tail, compact);
     }
