@@ -353,6 +353,7 @@ enum class SyntaxNodeClass : std::uint64_t {
     Expression = 1ull << 56,
     DeclaredTypeSpecifier = 1ull << 57,
     LexicalAtom = 1ull << 58,
+    QualifiedName = 1ull << 59,
 };
 
 enum class SyntaxWrapperRole : std::uint8_t {

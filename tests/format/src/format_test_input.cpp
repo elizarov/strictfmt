@@ -483,6 +483,11 @@ defs::internal::psp_pricer::BatchedOrderRoutePriceCorrectionRequirementNames Con
 return {};
 }
 
+void UseGlobalQualifiedName(const ::first_global_qualification_namespace_with_long_name::second_global_qualification_namespace_with_long_name::FinalGlobalQualifiedTypeName& value);
+void UseQualifiedTemplateName(const first_template_qualification_namespace_with_long_name::second_template_qualification_namespace_with_long_name::QualifiedTemplate<FirstTemplateArgument>& value);
+void UseMultipleQualifiedBreaks(const first_qualification_namespace_with_extremely_long_name::second_qualification_namespace_with_extremely_long_name::third_qualification_namespace_with_extremely_long_name::FinalType& value);
+using QualifiedMemberPointerAlias=int FirstMemberPointerNamespaceWithLongName::SecondMemberPointerClassWithLongName::*;
+
 void TemplatedCallArgumentOverflow(){
 mock.SetConfigValue<experiments3::CargoPricingBatchedOrderRoutePriceCorrectionWithSpecificExtendedExperimentConfiguration>({.requirement_names=experiments3::BatchedOrderRoutePriceCorrectionRequirementParamsWithSpecificExtendedConfiguration{}});
 }

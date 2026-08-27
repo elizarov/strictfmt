@@ -625,11 +625,29 @@ void DesignatedInitializerAssignmentBreak() {
 
 defs::internal::psp_pricer::BatchedOrderRoutePriceCorrectionRequirementNames
     ConvertRoutePriceCorrectionRequirementNames(
-        const experiments3::cargo_pricing_batched_order_route_price_correction::BatchedOrderRoutePriceCorrectionRequirementNames& exp_value
+        const experiments3::cargo_pricing_batched_order_route_price_correction::
+            BatchedOrderRoutePriceCorrectionRequirementNames& exp_value
     )
 {
     return {};
 }
+
+void UseGlobalQualifiedName(
+    const ::first_global_qualification_namespace_with_long_name::second_global_qualification_namespace_with_long_name::
+        FinalGlobalQualifiedTypeName& value
+);
+void UseQualifiedTemplateName(
+    const first_template_qualification_namespace_with_long_name::
+        second_template_qualification_namespace_with_long_name::QualifiedTemplate<FirstTemplateArgument>& value
+);
+void UseMultipleQualifiedBreaks(
+    const first_qualification_namespace_with_extremely_long_name::
+        second_qualification_namespace_with_extremely_long_name::
+        third_qualification_namespace_with_extremely_long_name::FinalType& value
+);
+
+using QualifiedMemberPointerAlias =
+    int FirstMemberPointerNamespaceWithLongName::SecondMemberPointerClassWithLongName::*;
 
 void TemplatedCallArgumentOverflow() {
     mock.SetConfigValue<
