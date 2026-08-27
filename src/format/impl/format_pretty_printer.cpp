@@ -29,6 +29,7 @@ enum class BraceRole {
 enum class DeclarationGroupKind {
     None,
     Type,
+    ForwardType,
     Callable,
     Object,
     Alias,
@@ -991,6 +992,9 @@ private:
         if (SyntaxNodeHasClass(*item, SyntaxNodeClass::DeclarationGroupType)) {
             return DeclarationGroupKind::Type;
         }
+        if (SyntaxNodeHasClass(*item, SyntaxNodeClass::DeclarationGroupForwardType)) {
+            return DeclarationGroupKind::ForwardType;
+        }
         if (SyntaxNodeHasClass(*item, SyntaxNodeClass::DeclarationGroupCallable)) {
             return DeclarationGroupKind::Callable;
         }
@@ -1091,8 +1095,13 @@ private:
         if (leftGroup == DeclarationGroupKind::None || rightGroup == DeclarationGroupKind::None) {
             return false;
         }
+        if (leftGroup == DeclarationGroupKind::ForwardType && rightGroup == DeclarationGroupKind::ForwardType) {
+            return false;
+        }
         return leftGroup == DeclarationGroupKind::Type ||
+            leftGroup == DeclarationGroupKind::ForwardType ||
             rightGroup == DeclarationGroupKind::Type ||
+            rightGroup == DeclarationGroupKind::ForwardType ||
             leftGroup != rightGroup;
     }
 

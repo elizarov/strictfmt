@@ -103,6 +103,7 @@ constexpr std::uint64_t kSymbolLocalClasses = Bit(SyntaxNodeClass::OpaqueSource)
     Bit(SyntaxNodeClass::ConditionalStreamOperatorChain) |
     Bit(SyntaxNodeClass::DeclarationScope) |
     Bit(SyntaxNodeClass::DeclarationGroupType) |
+    Bit(SyntaxNodeClass::DeclarationGroupForwardType) |
     Bit(SyntaxNodeClass::DeclarationGroupCallable) |
     Bit(SyntaxNodeClass::DeclarationGroupObject) |
     Bit(SyntaxNodeClass::DeclarationGroupAlias) |
@@ -418,6 +419,7 @@ constexpr auto kSyntaxKindMappings = std::to_array<SyntaxKindMapping>({
     Tree(SyntaxNodeKind::TemplateParameterList, "template_parameter_list", kPreprocessorSplitListClasses),
     Tree(SyntaxNodeKind::TemplateArgumentList, "template_argument_list", kPreprocessorSplitListClasses),
     Tree(SyntaxNodeKind::TemplateDeclaration, "template_declaration", Bit(SyntaxNodeClass::MacroDeclarationFragment)),
+    Tree(SyntaxNodeKind::TemplateInstantiation, "template_instantiation"),
     Tree(SyntaxNodeKind::RequiresClause, "requires_clause"),
     Tree(SyntaxNodeKind::RequiresExpression, "requires_expression"),
     Tree(SyntaxNodeKind::RequirementSeq, "requirement_seq", Bit(SyntaxNodeClass::CompoundBlock)),
@@ -1131,6 +1133,8 @@ std::string_view SyntaxNodeKindName(SyntaxNodeKind kind) {
             return "TemplateArgumentList";
         case SyntaxNodeKind::TemplateDeclaration:
             return "TemplateDeclaration";
+        case SyntaxNodeKind::TemplateInstantiation:
+            return "TemplateInstantiation";
         case SyntaxNodeKind::RequiresClause:
             return "RequiresClause";
         case SyntaxNodeKind::RequiresExpression:
