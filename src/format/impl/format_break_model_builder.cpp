@@ -1429,6 +1429,14 @@ private:
         if (!declaratorIndex || *declaratorIndex == 0) {
             return nullptr;
         }
+        for (size_t index = 0; index < *declaratorIndex; ++index) {
+            if (
+                node.children[index] != nullptr &&
+                ContainsSyntaxKind(*node.children[index], SyntaxNodeKind::KeywordExplicit)
+            ) {
+                return nullptr;
+            }
+        }
         if (nestedFunctionDeclaratorIndex) {
             return BuildNestedFunctionSignature(node, *declaratorIndex, *nestedFunctionDeclaratorIndex, depth);
         }
