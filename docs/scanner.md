@@ -51,6 +51,17 @@ The scanner reads a normal C/C++ identifier and then asks the formatter configur
 
 The scanner classifies identifiers by configured macro category. [macro.md](macro.md) specifies the categories and their supported grammar uses. For `PreprocessorArgumentMacros`, the scanner owns only the configured identifier token; the grammar recursively balances the invocation's parentheses and separates its preprocessing-token arguments.
 
+### Token-Paste Prefixes
+
+`macro_token_paste_identifier_prefix` and `macro_token_paste_number_prefix` recognize a normal
+identifier or preprocessing number only when the next preprocessing operator is `##`. Each token
+ends before that operator; the grammar still represents every `##` and every pasted operand as
+separate structured syntax. This narrow lexical lookahead distinguishes a pasted function name such
+as `Get##name##Location` from an ordinary macro-generated declarator such as
+`CONCAT_TOKEN(a, b)(...)`. Requiring the same lookahead for a numeric prefix prevents a C++
+user-defined literal such as `10ms` from becoming an incomplete paste candidate. Neither token makes
+the whole pasted name opaque to the formatter.
+
 ### Whitespace And Preprocessor Directive Newlines
 
 `_preproc_directive_end` and `_line_break_whitespace` split scanner-visible whitespace into two roles:
@@ -69,6 +80,7 @@ Raw macro replacements are the exception. They are scanned as raw replacement te
 The tree-sitter generated lexer is excellent for static token rules, but these scanner features are not static:
 
 - Macro categories depend on the active `.cpp-format` configuration, so identifier classification requires a runtime callback.
+- A token-paste prefix requires lookahead past an identifier or preprocessing number while keeping the following `##` as a separate grammar token.
 - Raw string parsing needs scanner payload state shared between delimiter and content tokens.
 - Preprocessor line breaks must be hidden whitespace in normal code but visible directive-ending tokens in specific parser states.
 

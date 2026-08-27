@@ -5680,6 +5680,10 @@
           "named": true
         },
         {
+          "type": "macro_token_paste_call_expression",
+          "named": true
+        },
+        {
           "type": "preproc_if",
           "named": true
         },
@@ -6102,6 +6106,10 @@
           {
             "type": "identifier",
             "named": true
+          },
+          {
+            "type": "macro_token_paste_expression",
+            "named": true
           }
         ]
       }
@@ -6337,9 +6345,19 @@
     "type": "macro_declaration_fragment",
     "named": true,
     "fields": {
+      "body": {
+        "multiple": false,
+        "required": false,
+        "types": [
+          {
+            "type": "compound_statement",
+            "named": true
+          }
+        ]
+      },
       "declarator": {
         "multiple": false,
-        "required": true,
+        "required": false,
         "types": [
           {
             "type": "=",
@@ -6377,7 +6395,7 @@
       },
       "type": {
         "multiple": false,
-        "required": true,
+        "required": false,
         "types": [
           {
             "type": "placeholder_type_specifier",
@@ -6404,6 +6422,10 @@
         },
         {
           "type": "function_prefix_macro",
+          "named": true
+        },
+        {
+          "type": "macro_qualified_token_paste_function_fragment",
           "named": true
         },
         {
@@ -7012,6 +7034,76 @@
     }
   },
   {
+    "type": "macro_qualified_token_paste_function_fragment",
+    "named": true,
+    "fields": {
+      "body": {
+        "multiple": false,
+        "required": true,
+        "types": [
+          {
+            "type": "compound_statement",
+            "named": true
+          }
+        ]
+      },
+      "declarator": {
+        "multiple": false,
+        "required": true,
+        "types": [
+          {
+            "type": "macro_token_paste_call_declarator_fragment",
+            "named": true
+          }
+        ]
+      },
+      "type": {
+        "multiple": false,
+        "required": true,
+        "types": [
+          {
+            "type": "qualified_identifier",
+            "named": true
+          }
+        ]
+      }
+    },
+    "children": {
+      "multiple": true,
+      "required": false,
+      "types": [
+        {
+          "type": "attribute_declaration",
+          "named": true
+        },
+        {
+          "type": "attribute_specifier",
+          "named": true
+        },
+        {
+          "type": "function_prefix_macro",
+          "named": true
+        },
+        {
+          "type": "ms_declspec_modifier",
+          "named": true
+        },
+        {
+          "type": "post_type_macro_annotation",
+          "named": true
+        },
+        {
+          "type": "storage_class_specifier",
+          "named": true
+        },
+        {
+          "type": "type_qualifier",
+          "named": true
+        }
+      ]
+    }
+  },
+  {
     "type": "macro_replacement_list",
     "named": true,
     "fields": {},
@@ -7376,6 +7468,58 @@
           "named": true
         }
       ]
+    }
+  },
+  {
+    "type": "macro_token_paste_call_declarator_fragment",
+    "named": true,
+    "fields": {
+      "arguments": {
+        "multiple": false,
+        "required": true,
+        "types": [
+          {
+            "type": "macro_argument_list",
+            "named": true
+          }
+        ]
+      },
+      "name": {
+        "multiple": false,
+        "required": true,
+        "types": [
+          {
+            "type": "macro_token_paste_expression",
+            "named": true
+          }
+        ]
+      }
+    }
+  },
+  {
+    "type": "macro_token_paste_call_expression",
+    "named": true,
+    "fields": {
+      "arguments": {
+        "multiple": false,
+        "required": true,
+        "types": [
+          {
+            "type": "argument_list",
+            "named": true
+          }
+        ]
+      },
+      "function": {
+        "multiple": false,
+        "required": true,
+        "types": [
+          {
+            "type": "macro_token_paste_expression",
+            "named": true
+          }
+        ]
+      }
     }
   },
   {
