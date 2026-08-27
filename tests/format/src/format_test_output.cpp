@@ -650,6 +650,43 @@ void DesignatedInitializerAssignmentBreak() {
     Use(deps);
 }
 
+auto CompactDesignatedInitializerList() {
+    return DesignatedPair{.first = Convert(first), .second = Convert(second)};
+}
+
+auto DesignatedInitializerMultilineLiteral() {
+    return TextPair{.first = "prefix", .second = R"q7(
+line
+)q7"};
+}
+
+auto SplitDesignatedInitializerListAtFieldBoundaries() {
+    return DesignatedPair{
+        .first = Convert(first),
+        .second = ConvertLongValue(
+            secondDesignatedInitializerArgument,
+            designatedInitializerConfiguration,
+            designatedInitializerContext
+        )
+    };
+}
+
+auto SingleDesignatedInitializerTailExpansion() {
+    return SingleDesignatedValue{.value = ConvertLongValue(
+        firstSingleDesignatedInitializerArgument,
+        secondSingleDesignatedInitializerArgument,
+        thirdSingleDesignatedInitializerArgument
+    )};
+}
+
+auto PositionalInitializerTailExpansion() {
+    return PositionalPair{Convert(first), ConvertLongValue(
+        firstPositionalInitializerArgument,
+        secondPositionalInitializerArgument,
+        thirdPositionalInitializerArgument
+    )};
+}
+
 defs::internal::psp_pricer::BatchedOrderRoutePriceCorrectionRequirementNames
     ConvertRoutePriceCorrectionRequirementNames(
         const experiments3::cargo_pricing_batched_order_route_price_correction::

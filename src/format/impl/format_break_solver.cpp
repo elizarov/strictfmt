@@ -1220,6 +1220,9 @@ private:
                     if (!item.valid) {
                         continue;
                     }
+                    if (node.compactRequiresUnbrokenItems && HasSelectedBreak(*listItem.node, item)) {
+                        continue;
+                    }
                     if (!canKeepMultilineItem && item.extraLines > 0) {
                         continue;
                     }

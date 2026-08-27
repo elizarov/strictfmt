@@ -167,6 +167,8 @@ Parenthesized comma expressions that represent list-like syntax, such as macro s
 
 Compact comma-separated lists may keep leading items on the opener line while the final item uses an indent-economy delimiter expansion. The final item may be any expression. If any earlier item splits, or if the final item only splits at an operator, the whole list uses split form.
 
+A multi-item designated-initializer list may stay compact only when none of its items contains a selected line break; otherwise, the list uses split form.
+
 A final lambda may use this exception only with an unbroken callable header; otherwise the list splits first. Outer item boundaries preserve more structure than breaks inside a callable header.
 
 Angle-delimited lists do not use this exception; top-level type structure should stay visible.
