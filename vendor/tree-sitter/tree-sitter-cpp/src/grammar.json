@@ -11431,6 +11431,10 @@
                       "members": [
                         {
                           "type": "SYMBOL",
+                          "name": "macro_token_paste_call_expression"
+                        },
+                        {
+                          "type": "SYMBOL",
                           "name": "initializer_pair"
                         },
                         {
@@ -11455,6 +11459,10 @@
                           {
                             "type": "CHOICE",
                             "members": [
+                              {
+                                "type": "SYMBOL",
+                                "name": "macro_token_paste_call_expression"
+                              },
                               {
                                 "type": "SYMBOL",
                                 "name": "initializer_pair"
@@ -13358,6 +13366,10 @@
       "members": [
         {
           "type": "SYMBOL",
+          "name": "_macro_replacement_function_header_sequence"
+        },
+        {
+          "type": "SYMBOL",
           "name": "_macro_replacement_call_sequence"
         },
         {
@@ -13403,6 +13415,10 @@
         },
         {
           "type": "SYMBOL",
+          "name": "initializer_list"
+        },
+        {
+          "type": "SYMBOL",
           "name": "expression_statement"
         },
         {
@@ -13410,6 +13426,40 @@
           "name": "ms_call_modifier"
         }
       ]
+    },
+    "_macro_replacement_function_header_sequence": {
+      "type": "PREC_DYNAMIC",
+      "value": 30,
+      "content": {
+        "type": "PREC_RIGHT",
+        "value": 0,
+        "content": {
+          "type": "SEQ",
+          "members": [
+            {
+              "type": "SYMBOL",
+              "name": "macro_function_header_fragment"
+            },
+            {
+              "type": "STRING",
+              "value": ";"
+            },
+            {
+              "type": "CHOICE",
+              "members": [
+                {
+                  "type": "SYMBOL",
+                  "name": "macro_declaration_fragment"
+                },
+                {
+                  "type": "SYMBOL",
+                  "name": "_macro_replacement_function_header_sequence"
+                }
+              ]
+            }
+          ]
+        }
+      }
     },
     "_macro_replacement_statement_item": {
       "type": "CHOICE",
@@ -13545,6 +13595,10 @@
       "type": "CHOICE",
       "members": [
         {
+          "type": "SYMBOL",
+          "name": "macro_qualified_token_paste_function_fragment"
+        },
+        {
           "type": "PREC",
           "value": 17,
           "content": {
@@ -13561,6 +13615,22 @@
                   "type": "SYMBOL",
                   "name": "macro_call_declarator_fragment"
                 }
+              },
+              {
+                "type": "CHOICE",
+                "members": [
+                  {
+                    "type": "FIELD",
+                    "name": "body",
+                    "content": {
+                      "type": "SYMBOL",
+                      "name": "compound_statement"
+                    }
+                  },
+                  {
+                    "type": "BLANK"
+                  }
+                ]
               }
             ]
           }
@@ -13691,8 +13761,88 @@
           "type": "FIELD",
           "name": "name",
           "content": {
+            "type": "CHOICE",
+            "members": [
+              {
+                "type": "SYMBOL",
+                "name": "identifier"
+              },
+              {
+                "type": "SYMBOL",
+                "name": "macro_token_paste_expression"
+              }
+            ]
+          }
+        },
+        {
+          "type": "FIELD",
+          "name": "arguments",
+          "content": {
             "type": "SYMBOL",
-            "name": "identifier"
+            "name": "macro_argument_list"
+          }
+        }
+      ]
+    },
+    "macro_qualified_token_paste_function_fragment": {
+      "type": "SEQ",
+      "members": [
+        {
+          "type": "REPEAT",
+          "content": {
+            "type": "SYMBOL",
+            "name": "_declaration_modifiers"
+          }
+        },
+        {
+          "type": "FIELD",
+          "name": "type",
+          "content": {
+            "type": "SYMBOL",
+            "name": "_qualified_declaration_type"
+          }
+        },
+        {
+          "type": "REPEAT",
+          "content": {
+            "type": "SYMBOL",
+            "name": "_declaration_modifiers"
+          }
+        },
+        {
+          "type": "REPEAT",
+          "content": {
+            "type": "SYMBOL",
+            "name": "post_type_macro_annotation"
+          }
+        },
+        {
+          "type": "FIELD",
+          "name": "declarator",
+          "content": {
+            "type": "SYMBOL",
+            "name": "macro_token_paste_call_declarator_fragment"
+          }
+        },
+        {
+          "type": "FIELD",
+          "name": "body",
+          "content": {
+            "type": "SYMBOL",
+            "name": "compound_statement"
+          }
+        }
+      ]
+    },
+    "macro_token_paste_call_declarator_fragment": {
+      "type": "SEQ",
+      "members": [
+        {
+          "type": "FIELD",
+          "name": "name",
+          "content": {
+            "type": "SYMBOL",
+            "name": "macro_token_paste_expression"
           }
         },
         {
@@ -27529,12 +27679,22 @@
               "type": "CHOICE",
               "members": [
                 {
-                  "type": "SYMBOL",
-                  "name": "identifier"
+                  "type": "ALIAS",
+                  "content": {
+                    "type": "SYMBOL",
+                    "name": "macro_token_paste_identifier_prefix"
+                  },
+                  "named": true,
+                  "value": "identifier"
                 },
                 {
-                  "type": "SYMBOL",
-                  "name": "preprocessing_number"
+                  "type": "ALIAS",
+                  "content": {
+                    "type": "SYMBOL",
+                    "name": "macro_token_paste_number_prefix"
+                  },
+                  "named": true,
+                  "value": "preprocessing_number"
                 }
               ]
             }
@@ -27570,6 +27730,31 @@
                   }
                 }
               ]
+            }
+          }
+        ]
+      }
+    },
+    "macro_token_paste_call_expression": {
+      "type": "PREC",
+      "value": 20,
+      "content": {
+        "type": "SEQ",
+        "members": [
+          {
+            "type": "FIELD",
+            "name": "function",
+            "content": {
+              "type": "SYMBOL",
+              "name": "macro_token_paste_expression"
+            }
+          },
+          {
+            "type": "FIELD",
+            "name": "arguments",
+            "content": {
+              "type": "SYMBOL",
+              "name": "argument_list"
             }
           }
         ]
@@ -27964,6 +28149,10 @@
                   "members": [
                     {
                       "type": "SYMBOL",
+                      "name": "macro_token_paste_call_expression"
+                    },
+                    {
+                      "type": "SYMBOL",
                       "name": "initializer_pair"
                     },
                     {
@@ -28042,6 +28231,10 @@
                       "members": [
                         {
                           "type": "SYMBOL",
+                          "name": "macro_token_paste_call_expression"
+                        },
+                        {
+                          "type": "SYMBOL",
                           "name": "initializer_pair"
                         },
                         {
@@ -28066,6 +28259,10 @@
                     {
                       "type": "CHOICE",
                       "members": [
+                        {
+                          "type": "SYMBOL",
+                          "name": "macro_token_paste_call_expression"
+                        },
                         {
                           "type": "SYMBOL",
                           "name": "initializer_pair"
@@ -28126,6 +28323,10 @@
               {
                 "type": "CHOICE",
                 "members": [
+                  {
+                    "type": "SYMBOL",
+                    "name": "macro_token_paste_call_expression"
+                  },
                   {
                     "type": "SYMBOL",
                     "name": "initializer_pair"
@@ -34790,6 +34991,14 @@
     {
       "type": "SYMBOL",
       "name": "raw_macro_replacement"
+    },
+    {
+      "type": "SYMBOL",
+      "name": "macro_token_paste_identifier_prefix"
+    },
+    {
+      "type": "SYMBOL",
+      "name": "macro_token_paste_number_prefix"
     },
     {
       "type": "SYMBOL",

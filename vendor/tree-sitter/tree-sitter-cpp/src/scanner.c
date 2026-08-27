@@ -12,6 +12,8 @@ enum TokenType {
     RAW_STRING_CONTENT,
     RAW_MACRO_DEFINITION_IDENTIFIER,
     RAW_MACRO_REPLACEMENT,
+    MACRO_TOKEN_PASTE_IDENTIFIER_PREFIX,
+    MACRO_TOKEN_PASTE_NUMBER_PREFIX,
     BARE_MACRO_IDENTIFIER,
     DECLARATION_PREFIX_MACRO_IDENTIFIER,
     CALL_SYNTAX_MACRO_IDENTIFIER,
@@ -108,6 +110,30 @@ static bool scan_identifier(TSLexer *lexer, char *name, unsigned *length) {
     return true;
 }
 
+static bool scan_preprocessing_number(TSLexer *lexer) {
+    if (lexer->lookahead == '.') {
+        advance(lexer);
+        if (lexer->lookahead < '0' || lexer->lookahead > '9') {
+            return false;
+        }
+    } else if (lexer->lookahead < '0' || lexer->lookahead > '9') {
+        return false;
+    }
+
+    for (;;) {
+        const int32_t ch = lexer->lookahead;
+        if (is_identifier_continue(ch) || ch == '.' || ch == '\'') {
+            advance(lexer);
+            if ((ch == 'e' || ch == 'E' || ch == 'p' || ch == 'P') &&
+                (lexer->lookahead == '+' || lexer->lookahead == '-')) {
+                advance(lexer);
+            }
+            continue;
+        }
+        return true;
+    }
+}
+
 static bool scan_macro_identifier(TSLexer *lexer, enum MacroCategory category) {
     char name[MAX_MACRO_NAME_LENGTH];
     unsigned length = 0;
@@ -116,6 +142,21 @@ static bool scan_macro_identifier(TSLexer *lexer, enum MacroCategory category) {
     }
     lexer->mark_end(lexer);
     return strictfmt_tree_sitter_cpp_macro_category_matches(category, name, length);
+}
+
+static bool has_following_token_paste(TSLexer *lexer) {
+    while (lexer->lookahead == ' ' || lexer->lookahead == '\t' || lexer->lookahead == '\f') {
+        advance(lexer);
+    }
+    if (lexer->lookahead != '#') {
+        return false;
+    }
+    advance(lexer);
+    return lexer->lookahead == '#';
+}
+
+static bool has_token_paste_number_prefix(TSLexer *lexer) {
+    return scan_preprocessing_number(lexer) && has_following_token_paste(lexer);
 }
 
 static bool has_following_argument_list(TSLexer *lexer) {
@@ -181,6 +222,10 @@ static bool has_valid_macro_identifier(
     unsigned length = 0;
     if (!scan_identifier(lexer, name, &length)) {
         return false;
+    }
+
+    if (valid_symbols[MACRO_TOKEN_PASTE_IDENTIFIER_PREFIX] && has_following_token_paste(lexer)) {
+        return true;
     }
 
     if (valid_symbols[TYPE_SPECIFIER_MACRO_IDENTIFIER] &&
@@ -301,6 +346,7 @@ static void skip_spaces_tabs(TSLexer *lexer) {
 
 static bool scan_macro_identifier_token(
     TSLexer *lexer,
+    bool allow_token_paste_prefix,
     bool allow_call,
     bool allow_statement_argument,
     bool allow_type_specifier,
@@ -315,6 +361,11 @@ static bool scan_macro_identifier_token(
         return false;
     }
     lexer->mark_end(lexer);
+
+    if (allow_token_paste_prefix && has_following_token_paste(lexer)) {
+        lexer->result_symbol = MACRO_TOKEN_PASTE_IDENTIFIER_PREFIX;
+        return true;
+    }
 
     return classify_macro_identifier_token(
         lexer,
@@ -343,13 +394,6 @@ static bool scan_newline(TSLexer *lexer) {
         return true;
     }
     return false;
-}
-
-static bool scan_horizontal_whitespace_then_newline(TSLexer *lexer) {
-    while (lexer->lookahead == ' ' || lexer->lookahead == '\t' || lexer->lookahead == '\f') {
-        advance(lexer);
-    }
-    return scan_newline(lexer);
 }
 
 static bool scan_horizontal_whitespace(TSLexer *lexer) {
@@ -477,8 +521,22 @@ bool tree_sitter_cpp_external_scanner_scan(void *payload, TSLexer *lexer, const 
     if (valid_symbols[PREPROC_DIRECTIVE_END] &&
         (lexer->lookahead == ' ' || lexer->lookahead == '\t' || lexer->lookahead == '\f' ||
          lexer->lookahead == '\r' || lexer->lookahead == '\n')) {
-        lexer->result_symbol = PREPROC_DIRECTIVE_END;
-        return scan_horizontal_whitespace_then_newline(lexer);
+        const bool horizontal = scan_horizontal_whitespace(lexer);
+        if (horizontal) {
+            lexer->mark_end(lexer);
+        }
+        if (scan_newline(lexer)) {
+            lexer->result_symbol = PREPROC_DIRECTIVE_END;
+            return true;
+        }
+        if (horizontal && valid_symbols[LINE_BREAK_WHITESPACE] &&
+            !valid_symbols[RAW_MACRO_DEFINITION_IDENTIFIER] &&
+            (has_valid_macro_identifier(lexer, valid_symbols, false) ||
+             (valid_symbols[MACRO_TOKEN_PASTE_NUMBER_PREFIX] && has_token_paste_number_prefix(lexer)))) {
+            lexer->result_symbol = LINE_BREAK_WHITESPACE;
+            return true;
+        }
+        return false;
     }
 
     if (valid_symbols[LINE_BREAK_WHITESPACE] &&
@@ -503,7 +561,8 @@ bool tree_sitter_cpp_external_scanner_scan(void *payload, TSLexer *lexer, const 
         }
 
         if (horizontal && !valid_symbols[RAW_MACRO_DEFINITION_IDENTIFIER] &&
-            has_valid_macro_identifier(lexer, valid_symbols, at_line_start)) {
+            (has_valid_macro_identifier(lexer, valid_symbols, at_line_start) ||
+             (valid_symbols[MACRO_TOKEN_PASTE_NUMBER_PREFIX] && has_token_paste_number_prefix(lexer)))) {
             lexer->result_symbol = LINE_BREAK_WHITESPACE;
             return true;
         }
@@ -511,7 +570,9 @@ bool tree_sitter_cpp_external_scanner_scan(void *payload, TSLexer *lexer, const 
         return false;
     }
 
-    if (valid_symbols[RAW_MACRO_DEFINITION_IDENTIFIER] || valid_symbols[BARE_MACRO_IDENTIFIER] ||
+    if (valid_symbols[RAW_MACRO_DEFINITION_IDENTIFIER] || valid_symbols[MACRO_TOKEN_PASTE_IDENTIFIER_PREFIX] ||
+        valid_symbols[MACRO_TOKEN_PASTE_NUMBER_PREFIX] ||
+        valid_symbols[BARE_MACRO_IDENTIFIER] ||
         valid_symbols[DECLARATION_PREFIX_MACRO_IDENTIFIER] || valid_symbols[CALL_SYNTAX_MACRO_IDENTIFIER] ||
         valid_symbols[STATEMENT_ARGUMENT_MACRO_IDENTIFIER] || valid_symbols[TYPE_SPECIFIER_MACRO_IDENTIFIER] ||
         valid_symbols[PREPROCESSOR_ARGUMENT_MACRO_IDENTIFIER] ||
@@ -524,13 +585,28 @@ bool tree_sitter_cpp_external_scanner_scan(void *payload, TSLexer *lexer, const 
         return scan_macro_identifier(lexer, MACRO_CATEGORY_RAW_DEFINITION);
     }
 
-    if ((valid_symbols[CALL_SYNTAX_MACRO_IDENTIFIER] || valid_symbols[DECLARATION_PREFIX_MACRO_IDENTIFIER] ||
+    if (valid_symbols[MACRO_TOKEN_PASTE_NUMBER_PREFIX] &&
+        (lexer->lookahead == '.' || (lexer->lookahead >= '0' && lexer->lookahead <= '9'))) {
+        if (!scan_preprocessing_number(lexer)) {
+            return false;
+        }
+        lexer->mark_end(lexer);
+        if (has_following_token_paste(lexer)) {
+            lexer->result_symbol = MACRO_TOKEN_PASTE_NUMBER_PREFIX;
+            return true;
+        }
+        return false;
+    }
+
+    if ((valid_symbols[MACRO_TOKEN_PASTE_IDENTIFIER_PREFIX] || valid_symbols[CALL_SYNTAX_MACRO_IDENTIFIER] ||
+         valid_symbols[DECLARATION_PREFIX_MACRO_IDENTIFIER] ||
          valid_symbols[STATEMENT_ARGUMENT_MACRO_IDENTIFIER] || valid_symbols[TYPE_SPECIFIER_MACRO_IDENTIFIER] ||
          valid_symbols[BARE_MACRO_IDENTIFIER] || valid_symbols[PREPROCESSOR_ARGUMENT_MACRO_IDENTIFIER] ||
          valid_symbols[SEMICOLONLESS_CALL_MACRO_IDENTIFIER]) &&
         is_identifier_start(lexer->lookahead)) {
         return scan_macro_identifier_token(
             lexer,
+            valid_symbols[MACRO_TOKEN_PASTE_IDENTIFIER_PREFIX],
             valid_symbols[CALL_SYNTAX_MACRO_IDENTIFIER],
             valid_symbols[STATEMENT_ARGUMENT_MACRO_IDENTIFIER],
             valid_symbols[TYPE_SPECIFIER_MACRO_IDENTIFIER],

@@ -48,6 +48,8 @@ LEXICAL_EXTERNAL_TOKENS = frozenset({
     "bare_macro_identifier",
     "call_syntax_macro_identifier",
     "declaration_prefix_macro_identifier",
+    "macro_token_paste_identifier_prefix",
+    "macro_token_paste_number_prefix",
     "preprocessor_argument_macro_identifier",
     "raw_macro_definition_identifier",
     "raw_string_content",

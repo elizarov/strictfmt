@@ -92,6 +92,8 @@ module.exports = grammar(C, {
     $.raw_string_content,
     $.raw_macro_definition_identifier,
     $.raw_macro_replacement,
+    $.macro_token_paste_identifier_prefix,
+    $.macro_token_paste_number_prefix,
     $.bare_macro_identifier,
     $.declaration_prefix_macro_identifier,
     $.call_syntax_macro_identifier,
@@ -600,6 +602,7 @@ module.exports = grammar(C, {
     )),
 
     _macro_replacement_fragment_sequence: $ => choice(
+      $._macro_replacement_function_header_sequence,
       $._macro_replacement_call_sequence,
       $.macro_token_paste_expression,
       $.macro_string_replacement_item,
@@ -610,9 +613,19 @@ module.exports = grammar(C, {
       ),
       $.macro_declaration_fragment,
       $.macro_arrow_chain,
+      $.initializer_list,
       $.expression_statement,
       $.ms_call_modifier,
     ),
+
+    _macro_replacement_function_header_sequence: $ => prec.dynamic(30, prec.right(seq(
+      $.macro_function_header_fragment,
+      ';',
+      choice(
+        $.macro_declaration_fragment,
+        $._macro_replacement_function_header_sequence,
+      ),
+    ))),
 
     _macro_replacement_statement_item: $ => choice(
       alias($.macro_do_statement, $.do_statement),
@@ -645,9 +658,11 @@ module.exports = grammar(C, {
     )),
 
     macro_declaration_fragment: $ => choice(
+      $.macro_qualified_token_paste_function_fragment,
       prec(PREC.CALL + 2, seq(
         $._macro_declaration_fragment_type,
         field('declarator', $.macro_call_declarator_fragment),
+        optional(field('body', $.compound_statement)),
       )),
       prec(1, seq(
         $._macro_declaration_fragment_type,
@@ -670,7 +685,21 @@ module.exports = grammar(C, {
     )),
 
     macro_call_declarator_fragment: $ => seq(
-      field('name', $.identifier),
+      field('name', choice($.identifier, $.macro_token_paste_expression)),
+      field('arguments', $.macro_argument_list),
+    ),
+
+    macro_qualified_token_paste_function_fragment: $ => seq(
+      repeat($._declaration_modifiers),
+      field('type', $._qualified_declaration_type),
+      repeat($._declaration_modifiers),
+      repeat($.post_type_macro_annotation),
+      field('declarator', $.macro_token_paste_call_declarator_fragment),
+      field('body', $.compound_statement),
+    ),
+
+    macro_token_paste_call_declarator_fragment: $ => seq(
+      field('name', $.macro_token_paste_expression),
       field('arguments', $.macro_argument_list),
     ),
 
@@ -2923,11 +2952,19 @@ module.exports = grammar(C, {
     ),
 
     macro_token_paste_expression: $ => prec(PREC.CALL + 4, seq(
-      field('left', choice($.identifier, $.preprocessing_number)),
+      field('left', choice(
+        alias($.macro_token_paste_identifier_prefix, $.identifier),
+        alias($.macro_token_paste_number_prefix, $.preprocessing_number),
+      )),
       repeat1(seq(
         field('operator', '##'),
         field('right', choice($.identifier, $.preprocessing_number)),
       )),
+    )),
+
+    macro_token_paste_call_expression: $ => prec(PREC.CALL + 5, seq(
+      field('function', $.macro_token_paste_expression),
+      field('arguments', $.argument_list),
     )),
 
     macro_preprocessing_token_sequence_argument: $ => {
@@ -3056,6 +3093,7 @@ module.exports = grammar(C, {
 
     initializer_list: $ => {
       const item = choice(
+        $.macro_token_paste_call_expression,
         $.initializer_pair,
         $.expression,
         $.initializer_list,
@@ -3081,6 +3119,7 @@ module.exports = grammar(C, {
 
     _initializer_list_with_preproc: $ => {
       const item = choice(
+        $.macro_token_paste_call_expression,
         $.initializer_pair,
         $.expression,
         $.initializer_list,

@@ -43,6 +43,12 @@
     callback();
 #define FORMAT_FIXTURE_TOKEN_PASTE(prefix, suffix) \
     prefix ## suffix
+#define FORMAT_PASTED_FN(name) \
+    inline int Get##name##Value() { \
+        return 0; \
+    }
+#define FORMAT_PASTED_INIT(name) {(name), Get##name##Value()}
+#define FORMAT_PASTED_NUMBER(suffix) 10##suffix
 #define FORMAT_FIXTURE_STRINGIZE(value) \
     #value
 #define FORMAT_FIXTURE_FILEPATH FORMAT_NAMESPACE::logging::impl::CutFilePath(__builtin_FILE())
