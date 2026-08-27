@@ -1262,6 +1262,23 @@ void LambdaGeneralityCases(int left, int right) {
     Use(twoParameterLambda, twoCaptureLambda, splitParameterSingleStatementLambda, callbacks);
 }
 
+auto FinalLambdaHeaderBreakEscalates(const handlers::PriceFor& priceFor) -> const Sequence& {
+    return variant::Visit(
+        plan,
+        [](const Sequence& sequence) -> const Sequence& { return sequence; },
+        [&](const AgentPlan& agentPlan) -> const Sequence& {
+            switch (priceFor) {
+                case handlers::PriceFor::kPerformer: {
+                    return agentPlan.performerSequence;
+                }
+                case handlers::PriceFor::kClient: {
+                    return agentPlan.clientSequence;
+                }
+            }
+        }
+    );
+}
+
 bool NestedLambdaContinuationIndent() {
     return firstOperandWithAnExtremelyLongNameThatNearlyConsumesTheEntireConfiguredLineWidthAllByItselfAndKeepsGoing !=
         nullptr && call(firstArgumentWithEnoughLength, secondArgumentWithEnoughLength, [&](const Node& node) {
