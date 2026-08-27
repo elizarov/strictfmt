@@ -145,6 +145,8 @@ Parenthesized comma expressions that represent list-like syntax, such as macro s
 
 Compact comma-separated lists may keep leading items on the opener line while the final item uses an indent-economy delimiter expansion. The final item may be any expression. If any earlier item splits, or if the final item only splits at an operator, the whole list uses split form.
 
+Angle-delimited lists do not use this exception; top-level type structure should stay visible.
+
 <!-- .cpp-format
 ColumnLimit: 60
 -->

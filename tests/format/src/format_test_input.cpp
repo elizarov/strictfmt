@@ -583,6 +583,7 @@ typename T::second;};
 
 ExtremelyLongQualifiedNamespace::ExtremelyLongTemplate<FirstLongTemplateArgument,SecondLongTemplateArgument,ThirdLongTemplateArgument> storedSignatureComparisonValue;
 ExtremelyLongQualifiedNamespace::ExtremelyLongTemplate<FirstLongTemplateArgument,SecondLongTemplateArgument,ThirdLongTemplateArgument> BuildSignatureComparisonValue();
+static const auto kPricesTransformsToSkip=std::unordered_map<std::string,std::unordered_set<std::string>>{{"price1",{"transform1","transform2"}},{"price2",{}},{"price3",{"transform3","unexisting"}}};
 
 using ConfigMetricAvailabilityResolver = bool (*)(std::string_view metricRef);
 using RuntimeConfigDynamicItemVisitor = void (*)(void* context, std::string_view key, const void* item);

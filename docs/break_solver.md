@@ -56,7 +56,7 @@ Not allowed:
 
 When adding a speedup whose proof is not obvious from the code, document the invariant in this file or with a short code comment near the pruning site.
 
-For a compact delimited list with at least two items, every non-final item is constrained to remain on the opener's physical line. Before enumerating compact candidates, the solver probes the opener, the non-final items, and their separators with the one-line renderer. If that prefix cannot remain legal and within the column limit while the split candidate has zero maximum overflow, every compact candidate is either illegal or worse on the primary overflow cost, so the solver returns the split candidate without enumerating compact layouts. The final item is excluded from the probe because compact layout may legally give it a multiline tail.
+For a compact delimited list with at least two items, every non-final item is constrained to remain on the opener's physical line. Before enumerating compact candidates, the solver probes the opener, the non-final items, and their separators with the one-line renderer. If that prefix cannot remain legal and within the column limit while the split candidate has zero maximum overflow, every compact candidate is either illegal or worse on the primary overflow cost, so the solver returns the split candidate without enumerating compact layouts. The final item is excluded from the probe because eligible non-angle layout may give it a multiline tail; angle lists reject that candidate later.
 
 ## Delimiter Stacks
 
