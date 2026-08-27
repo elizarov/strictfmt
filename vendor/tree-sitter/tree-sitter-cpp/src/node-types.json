@@ -15455,6 +15455,10 @@
         "required": true,
         "types": [
           {
+            "type": "attributed_statement",
+            "named": true
+          },
+          {
             "type": "case_statement",
             "named": true
           },

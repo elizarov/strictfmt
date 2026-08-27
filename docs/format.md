@@ -505,6 +505,20 @@ DashboardApp::DashboardApp(
 
 Control-brace normalization makes every [control-statement](glossary.md#control-statement) body a braced block. It also emits an `else` block whose only statement is an `if` statement as a direct `else if` chain. An empty control body finishes its own control-body line before a following block-attachment keyword.
 
+An attribute sequence between a control header and a compound statement belongs to that already-braced body. Keep the attributes between the header and `{` without adding a redundant outer block.
+
+```cpp
+void CheckValue(int value) {
+    if (value < 0) [[unlikely]] {
+        ReportFailure();
+    }
+    switch (value) [[likely]] {
+        default:
+            break;
+    }
+}
+```
+
 ```cpp
 void HandleState() {
     if (ready) {

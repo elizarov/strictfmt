@@ -2495,7 +2495,11 @@ module.exports = grammar(C, {
     switch_statement: $ => seq(
       'switch',
       field('condition', $.condition_clause),
-      field('body', choice($.compound_statement, $.case_statement)),
+      field('body', choice(
+        $.compound_statement,
+        $.case_statement,
+        $.attributed_statement,
+      )),
     ),
 
     preproc_case_label_fragment: $ => seq(

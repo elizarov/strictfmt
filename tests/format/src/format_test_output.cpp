@@ -2264,6 +2264,27 @@ void ControlFlowVariety(int* values, int count) {
     } while (index > 0);
 }
 
+void AttributedCompoundControlBodies(int count) {
+    if (count < 0) [[unlikely]] {
+        Use(count);
+    } else [[likely]] {
+        Use(-count);
+    }
+    while (count > 0) [[likely]] {
+        --count;
+    }
+    for (int index = 0; index < count; ++index) [[likely]] {
+        Use(index);
+    }
+    do [[unlikely]] {
+        ++count;
+    } while (count < 0);
+    switch (count) [[likely]] {
+        default:
+            break;
+    }
+}
+
 void EmptyElseIfSpacing(bool first, bool second, bool third) {
     if (first) {}
     else if (second) {}

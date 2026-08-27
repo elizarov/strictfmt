@@ -1609,6 +1609,15 @@ if(count==0)values[0]=0;else if(count==1)values[0]=1;else{if(count==2){values[0]
     } while (index > 0);
 }
 
+void AttributedCompoundControlBodies(int count){
+if(count<0) [[unlikely]] { Use(count); }
+else [[likely]] { Use(-count); }
+while(count>0) [[likely]] { --count; }
+for(int index=0;index<count;++index) [[likely]] { Use(index); }
+do [[unlikely]] { ++count; } while(count<0);
+switch(count) [[likely]] { default: break; }
+}
+
 void EmptyElseIfSpacing(bool first,bool second,bool third){
 if(first){}else if(second){}else if(third){Use(third);}
 }
