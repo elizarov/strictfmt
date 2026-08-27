@@ -631,6 +631,15 @@ defs::internal::psp_pricer::BatchedOrderRoutePriceCorrectionRequirementNames
     return {};
 }
 
+void TemplatedCallArgumentOverflow() {
+    mock.SetConfigValue<
+        experiments3::CargoPricingBatchedOrderRoutePriceCorrectionWithSpecificExtendedExperimentConfiguration
+    >({
+        .requirement_names =
+            experiments3::BatchedOrderRoutePriceCorrectionRequirementParamsWithSpecificExtendedConfiguration{}
+    });
+}
+
 InitializerGeneralityWidget::InitializerGeneralityWidget(int value, int other) : first_(value), second_(other) {
     Touch();
 }
