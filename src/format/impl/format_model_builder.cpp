@@ -253,9 +253,22 @@ bool IsEmptyStatementNode(const SyntaxNode& node) {
     return content != nullptr && content->kind == SyntaxNodeKind::Semicolon;
 }
 
+bool IsBracedControlBody(const SyntaxNode& node) {
+    if (node.kind == SyntaxNodeKind::CompoundStatement) {
+        return true;
+    }
+    if (node.kind != SyntaxNodeKind::AttributedStatement) {
+        return false;
+    }
+    const std::optional<size_t> statementIndex = PreviousNonTriviaChildIndex(node.children, node.children.size());
+    return statementIndex &&
+        node.children[*statementIndex] != nullptr &&
+        IsBracedControlBody(*node.children[*statementIndex]);
+}
+
 void WrapControlBody(FormatModel& model, SyntaxNode& node, size_t childIndex) {
     if (childIndex >= node.children.size() || (
-        node.children[childIndex] != nullptr && node.children[childIndex]->kind == SyntaxNodeKind::CompoundStatement
+        node.children[childIndex] != nullptr && IsBracedControlBody(*node.children[childIndex])
     )) {
         return;
     }

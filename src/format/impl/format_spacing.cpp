@@ -611,8 +611,18 @@ bool FormatTokenNeedsSpace(const PrintToken* previous, const PrintToken& current
     if (IsAttributeCloseToken(*previous)) {
         return current.kind != PrintTokenKind::Known || current.syntaxKind != SyntaxNodeKind::Semicolon;
     }
-    if (IsAttributeOpenToken(current) && IsWordLike(*previous)) {
-        return true;
+    if (IsAttributeOpenToken(current)) {
+        if (IsWordLike(*previous)) {
+            return true;
+        }
+        if (previous->kind == PrintTokenKind::Known && (
+            previous->syntaxKind == SyntaxNodeKind::RightParen ||
+            previous->syntaxKind == SyntaxNodeKind::RightBracket ||
+            previous->syntaxKind == SyntaxNodeKind::RightBrace ||
+            previous->syntaxKind == SyntaxNodeKind::Greater
+        )) {
+            return true;
+        }
     }
     if ((IsStringLike(*previous) && IsWordLike(current)) || (IsWordLike(*previous) && IsStringLike(current))) {
         return true;

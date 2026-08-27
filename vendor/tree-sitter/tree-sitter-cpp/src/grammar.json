@@ -7732,6 +7732,10 @@
               {
                 "type": "SYMBOL",
                 "name": "case_statement"
+              },
+              {
+                "type": "SYMBOL",
+                "name": "attributed_statement"
               }
             ]
           }
