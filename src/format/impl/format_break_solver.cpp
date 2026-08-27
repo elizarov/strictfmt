@@ -2259,8 +2259,16 @@ private:
         NodeResult
             result{.valid = true, .endColumn = column, .endIndentLevel = indentLevel, .endLineHasText = lineHasText};
         AddChoice(result, node.id, FormatBreakChoice::Compact, indentLevel);
-        for (const FormatBreakNode* child : node.children) {
+        for (size_t index = 0; index < node.children.size(); ++index) {
+            const FormatBreakNode* child = node.children[index];
             NodeResult item = Solve(*child, result.endColumn, result.endIndentLevel, result.endLineHasText);
+            if (
+                index == 1 &&
+                item.extraLines > 0 &&
+                !FunctionSignatureCompactPrefixFits(node, column, indentLevel, lineHasText)
+            ) {
+                return {};
+            }
             Merge(result, item);
         }
         return result;
@@ -2280,15 +2288,44 @@ private:
         return open.parentKind == SyntaxNodeKind::ParameterList;
     }
 
+    bool
+        FunctionSignatureCompactPrefixFits(const FormatBreakNode& node, int column, int indentLevel, bool lineHasText)
+    {
+        if (node.children.size() < 2) {
+            return false;
+        }
+        NodeResult
+            result{.valid = true, .endColumn = column, .endIndentLevel = indentLevel, .endLineHasText = lineHasText};
+        NodeResult returnType = Solve(*node.children[0], column, indentLevel, lineHasText);
+        if (!returnType.valid) {
+            return false;
+        }
+        Merge(result, returnType);
+        bool splitParameterList = false;
+        bool compactHeaderFits = true;
+        NodeResult declarator = SolveWithFirstParameterListSplit(
+            *node.children[1],
+            result.endColumn,
+            result.endIndentLevel,
+            result.endLineHasText,
+            splitParameterList,
+            compactHeaderFits
+        );
+        return splitParameterList && compactHeaderFits && declarator.valid;
+    }
+
     NodeResult SolveWithFirstParameterListSplit(
         const FormatBreakNode& node,
         int column,
         int indentLevel,
         bool lineHasText,
-        bool& splitParameterList
+        bool& splitParameterList,
+        bool& compactHeaderFits
     ) {
         if (IsParameterListDelimited(node) && !splitParameterList) {
             splitParameterList = true;
+            const NodeResult open = SolveToken(node.children.front()->token, column, indentLevel, lineHasText);
+            compactHeaderFits = open.valid && open.endColumn <= config_.columnLimit;
             return SolveDelimitedSplit(node, column, indentLevel, lineHasText);
         }
         if (node.kind != FormatBreakNodeKind::Sequence && node.kind != FormatBreakNodeKind::FunctionSignature) {
@@ -2308,7 +2345,8 @@ private:
                 result.endColumn,
                 result.endIndentLevel,
                 result.endLineHasText,
-                splitParameterList
+                splitParameterList,
+                compactHeaderFits
             );
             if (!item.valid) {
                 return {};
@@ -2337,14 +2375,16 @@ private:
         }
         Merge(result, returnType);
         bool splitParameterList = false;
+        bool compactHeaderFits = true;
         NodeResult declarator = SolveWithFirstParameterListSplit(
             *node.children[1],
             result.endColumn,
             result.endIndentLevel,
             result.endLineHasText,
-            splitParameterList
+            splitParameterList,
+            compactHeaderFits
         );
-        if (!splitParameterList || !declarator.valid) {
+        if (!splitParameterList || !compactHeaderFits || !declarator.valid) {
             return {};
         }
         Merge(result, declarator);

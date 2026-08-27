@@ -623,6 +623,14 @@ void DesignatedInitializerAssignmentBreak() {
     Use(deps);
 }
 
+defs::internal::psp_pricer::BatchedOrderRoutePriceCorrectionRequirementNames
+    ConvertRoutePriceCorrectionRequirementNames(
+        const experiments3::cargo_pricing_batched_order_route_price_correction::BatchedOrderRoutePriceCorrectionRequirementNames& exp_value
+    )
+{
+    return {};
+}
+
 InitializerGeneralityWidget::InitializerGeneralityWidget(int value, int other) : first_(value), second_(other) {
     Touch();
 }
