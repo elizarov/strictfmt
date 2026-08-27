@@ -146,10 +146,14 @@ struct FormatBreakModel {
     FormatBreakNode* root = nullptr;
 };
 
+struct FormatBreakVirtualDelimiter {
+    const SyntaxNode* open = nullptr;
+    FormatBreakToken close;
+    bool forceSplit = false;
+};
+
 struct FormatBreakModelContext {
-    const SyntaxNode* virtualDelimiterOpen = nullptr;
-    FormatBreakToken virtualDelimiterClose;
-    bool forceSplitVirtualDelimiter = false;
+    std::vector<FormatBreakVirtualDelimiter> virtualDelimiters;
     bool forceSplitStreamChain = false;
 };
 

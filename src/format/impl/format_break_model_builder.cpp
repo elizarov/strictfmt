@@ -2452,22 +2452,30 @@ private:
         }
         const std::optional<std::pair<size_t, FormatBreakDelimiterKind>> closeMatch =
             FindDirectClose(children, openIndex, end, delimiter);
-        const bool hasVirtualClose = !closeMatch &&
-            context_.virtualDelimiterOpen != nullptr &&
-            context_.virtualDelimiterOpen == FormatBreakTokenValue(*open).node &&
-            ClosingDelimiter(context_.virtualDelimiterClose) == delimiter;
+        const auto virtualDelimiter = std::find_if(
+            context_.virtualDelimiters.begin(),
+            context_.virtualDelimiters.end(),
+            [&](const FormatBreakVirtualDelimiter& candidate) {
+                return candidate.open == FormatBreakTokenValue(*open).node &&
+                    ClosingDelimiter(candidate.close) == delimiter;
+            }
+        );
+        const bool hasVirtualClose = !closeMatch && virtualDelimiter != context_.virtualDelimiters.end();
         if (!closeMatch && !hasVirtualClose) {
             return nullptr;
         }
         const size_t closeIndex = closeMatch ? closeMatch->first : end;
         std::optional<FormatBreakToken> closeToken;
-        const FormatBreakToken* close = &context_.virtualDelimiterClose;
+        const FormatBreakToken* close = hasVirtualClose ? &virtualDelimiter->close : nullptr;
         if (closeMatch) {
             closeToken = TokenForNode(*children[closeIndex]);
             if (!closeToken) {
                 return nullptr;
             }
             close = &*closeToken;
+        }
+        if (close == nullptr) {
+            return nullptr;
         }
 
         auto delimited = MakeNode(FormatBreakNodeKind::Delimited, depth);
@@ -2481,8 +2489,7 @@ private:
                 const SyntaxNode* commaExpression = DirectDelimitedCommaExpressionBody(children, openIndex, closeIndex)
             ) {
                 if (AppendCommaExpressionListItems(*delimited, *commaExpression, *open, depth, false)) {
-                    delimited->forceSplit =
-                        delimited->forceSplit || (hasVirtualClose && context_.forceSplitVirtualDelimiter);
+                    delimited->forceSplit = delimited->forceSplit || (hasVirtualClose && virtualDelimiter->forceSplit);
                     afterDelimited = hasVirtualClose ? end : closeIndex + 1;
                     return delimited;
                 }
@@ -2572,7 +2579,7 @@ private:
         ) {
             AppendEmptyDelimitedItem(*delimited, depth);
         }
-        delimited->forceSplit = delimited->forceSplit || (hasVirtualClose && context_.forceSplitVirtualDelimiter);
+        delimited->forceSplit = delimited->forceSplit || (hasVirtualClose && virtualDelimiter->forceSplit);
         afterDelimited = hasVirtualClose ? end : closeIndex + 1;
         return delimited;
     }

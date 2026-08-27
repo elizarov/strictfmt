@@ -25,6 +25,8 @@ The solver compares complete candidates with `Better`. Intermediate candidate se
 
 Composite candidates retain nondominated child layouts until all following children and suffix tokens have been costed. A locally best child is not sufficient when a later separator, comment, closer, or statement terminator can make another child layout win.
 
+When a mandatory block flushes pending tokens from inside nested comma lists, the break model supplies a virtual closer for every enclosing list up to the containing block. The solver therefore records each enclosing compact-or-split choice before any opener is emitted. Deferred comma and closer emission follows exactly the lists whose virtual delimiters selected split form; it does not infer an outer-list layout after the prefix has already been printed.
+
 The function-signature candidate that keeps the return type and function name together while splitting the parameter list is legal only when the physical prefix through the parameter opener fits the column limit. A later unavoidable overflow, such as an atomic parameter type, does not make an additional avoidable prefix overflow legal.
 
 Token candidates account for their complete physical rendering. Newlines embedded in token text contribute physical lines and reset the continuation column. Comment tokens also include the mandatory newline emitted after the comment and reset the continuation to the current indentation. A standalone comment between formatter-owned chain links remains in that chain model and is associated with the following operator, so both solving and emission use the chain-item indentation. These line transitions participate in the same overflow and line-count cost as selected break choices.

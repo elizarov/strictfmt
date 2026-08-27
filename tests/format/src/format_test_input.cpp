@@ -487,6 +487,10 @@ void TemplatedCallArgumentOverflow(){
 mock.SetConfigValue<experiments3::CargoPricingBatchedOrderRoutePriceCorrectionWithSpecificExtendedExperimentConfiguration>({.requirement_names=experiments3::BatchedOrderRoutePriceCorrectionRequirementParamsWithSpecificExtendedConfiguration{}});
 }
 
+auto CommentAnnotatedAggregateItems(){
+return {{.a=Make([]{First();Second();Third();}),.b=value},/*client_tariff_prices=*/client_tariff_prices,/*performer_tariff_prices=*/performer_tariff_prices,/*client_pricing_rules_exps=*/client_pricing_rules_exps};
+}
+
 InitializerGeneralityWidget::InitializerGeneralityWidget(int value, int other) : first_(value), second_(other) {
     Touch();
 }
