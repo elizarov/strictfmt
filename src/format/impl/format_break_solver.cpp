@@ -1173,7 +1173,8 @@ private:
         for (size_t index = 0; index < node.items.size(); ++index) {
             const FormatBreakListItem& listItem = node.items[index];
             NodeResults nextByState;
-            const bool canKeepMultilineItem = node.items.size() == 1 || index + 1 == node.items.size();
+            const bool canKeepMultilineItem = node.items.size() == 1 ||
+                (index + 1 == node.items.size() && node.delimiterKind != FormatBreakDelimiterKind::Angle);
             for (const NodeResult& prefix : current) {
                 for (const NodeResult& item : SolveDelimitedCompactItemAlternatives(
                     *listItem.node,

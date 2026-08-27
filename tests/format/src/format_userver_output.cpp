@@ -154,9 +154,12 @@ void DependentTemplateMemberCall(DependentStorage& storage) {
 void GeneratedDependentTemplateMemberCall(Value value) {
     VariableTypeRaw res{
         .timeout_ms = value["timeout_ms"].template As<std::optional<USERVER_NAMESPACE::chaotic::WithType<
-            USERVER_NAMESPACE::chaotic::Primitive<std::int64_t, USERVER_NAMESPACE::chaotic::Minimum<
-                ::dynamic_config::feature_flags::VariableTypeRaw::kTimeout_MsMinimum
-            >>,
+            USERVER_NAMESPACE::chaotic::Primitive<
+                std::int64_t,
+                USERVER_NAMESPACE::chaotic::Minimum<
+                    ::dynamic_config::feature_flags::VariableTypeRaw::kTimeout_MsMinimum
+                >
+            >,
             std::chrono::milliseconds
         >>>()
     };
@@ -325,10 +328,11 @@ concept HasNonEmptyName = requires {
 template <typename T>
 struct DetectedBufferCategory : decltype(DetectBufferCategory<T>()) {};
 
-template <typename RedisRequestType, typename... Args, typename M = RedisRequestType (storages::redis::Client::*)(
-    Args...,
-    const redis::CommandControl&
-)>
+template <
+    typename RedisRequestType,
+    typename... Args,
+    typename M = RedisRequestType (storages::redis::Client::*)(Args..., const redis::CommandControl&)
+>
 HedgedRedisRequest<RedisRequestType> MakeHedgedRedisRequestAsync(M method, Args... args);
 
 template <typename StringViews, typename DistanceFunc = std::size_t (*)(std::string_view, std::string_view)>
@@ -504,11 +508,15 @@ void Consumer::RunConsuming(ConsumerScope::Callback callback) {
 }
 
 template <class T>
-using CommentPreservingAlias = std::conditional_t<std::is_same_v<T, A>, A, std::conditional_t<  // keep
-    std::is_same_v<T, B>,
-    B,
-    std::conditional_t<std::is_convertible_v<T, std::string_view>, std::string_view, T>
->>;
+using CommentPreservingAlias = std::conditional_t<
+    std::is_same_v<T, A>,
+    A,
+    std::conditional_t<  // keep
+        std::is_same_v<T, B>,
+        B,
+        std::conditional_t<std::is_convertible_v<T, std::string_view>, std::string_view, T>
+    >
+>;
 
 }  // namespace format_userver_fixture
 
