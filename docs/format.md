@@ -320,7 +320,7 @@ int ratio = (
 ```
 
 - Plain non-call parentheses form one expression delimiter group and add only body indentation. Nested lists and formatter-owned chain parts keep their elements at that body level.
-- Assignment continuations are not flattened. A break after an assignment operator, or between a condition declaration's type/pointer prefix and its assigned declarator, adds one continuation indentation level.
+- Assignment continuations are not flattened. A break after an assignment operator, including a designated-initializer assignment, or between a condition declaration's type/pointer prefix and its assigned declarator, adds one continuation indentation level.
 - Nested ordinary binary operators still introduce continuation indentation.
 - Unary operators and declarator `*` or `&` are token facts, not chain break points.
 - An end-of-line comment attached to one chain part, or a standalone comment between chain links, forces the chain into split form. A standalone chain comment uses the chain-item indentation of the following link.

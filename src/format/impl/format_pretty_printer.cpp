@@ -515,8 +515,8 @@ void AppendTokens(
     }
     if (nodeKind == SyntaxNodeKind::Comment || nodeKind == SyntaxNodeKind::TrailingComment) {
         tokens.push_back({
-            .kind = nodeKind == SyntaxNodeKind::TrailingComment ? PrintTokenKind::TrailingComment :
-                PrintTokenKind::Comment,
+            .kind =
+                nodeKind == SyntaxNodeKind::TrailingComment ? PrintTokenKind::TrailingComment : PrintTokenKind::Comment,
             .syntaxKind = nodeKind,
             .text = node.text,
             .parentKind = parentKind,
