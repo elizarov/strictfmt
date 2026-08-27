@@ -106,7 +106,8 @@ constexpr std::uint64_t kSymbolLocalClasses = Bit(SyntaxNodeClass::OpaqueSource)
     Bit(SyntaxNodeClass::DeclarationGroupCallable) |
     Bit(SyntaxNodeClass::DeclarationGroupObject) |
     Bit(SyntaxNodeClass::DeclarationGroupAlias) |
-    Bit(SyntaxNodeClass::Expression);
+    Bit(SyntaxNodeClass::Expression) |
+    Bit(SyntaxNodeClass::QualifiedName);
 
 constexpr auto kSyntaxKindMappings = std::to_array<SyntaxKindMapping>({
     Kind(SyntaxNodeKind::Tree, Bit(SyntaxNodeClass::Tree)),
@@ -467,8 +468,8 @@ constexpr auto kSyntaxKindMappings = std::to_array<SyntaxKindMapping>({
     Tree(SyntaxNodeKind::Identifier, "field_identifier"),
     Tree(SyntaxNodeKind::Identifier, "namespace_identifier"),
     Tree(SyntaxNodeKind::Identifier, "type_identifier"),
-    Tree(SyntaxNodeKind::Identifier, "qualified_identifier"),
-    Tree(SyntaxNodeKind::Identifier, "macro_qualified_identifier"),
+    Tree(SyntaxNodeKind::Identifier, "qualified_identifier", Bit(SyntaxNodeClass::QualifiedName)),
+    Tree(SyntaxNodeKind::Identifier, "macro_qualified_identifier", Bit(SyntaxNodeClass::QualifiedName)),
     Token(SyntaxNodeKind::PreprocessorDirectiveInclude, "#include", kCheckedPreprocessorDirectiveClasses | Bit(
         SyntaxNodeClass::IncludeDirective
     )),

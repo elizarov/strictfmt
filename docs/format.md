@@ -62,12 +62,32 @@ Mandatory line breaks are structural boundaries. The break is always taken befor
 
 Line break opportunities are optional boundaries that the break optimizer may take when formatting one formatted segment between mandatory line breaks. See **Break Selection** for the optimization objective and constraints.
 
-- After assignment operators and after binary or ternary operators.
+- After assignment operators, qualification operators, and binary or ternary operators.
 - After delimiter-group openers and before their matching closers.
 - After commas in any [list](glossary.md#list).
 - Between a declaration type and its direct-initialized declarator value.
 - After semicolons inside control-statement headers.
 - At callable-structure boundaries and between adjacent string literals.
+
+## Qualified Names
+
+A nested qualified name containing at least two non-leading `::` operators makes each of those operators an
+after-operator break opportunity. A selected break keeps `::` on the owning line and puts its subordinate right
+component one continuation indentation level deeper. A leading global-scope `::` is part of the first component and
+is not a break opportunity. The scope portion of a pointer-to-member declarator, such as `Type::*`, is not a
+qualified-name break opportunity. A single qualification, such as `std::string`, stays cohesive.
+
+Qualification is left-associated for layout selection, independently of the parser's tree shape. The final `::` is
+therefore the structurally shallowest qualification break. When overflow, physical-line count, and the other earlier
+cost components are equal, the normal structural cost prefers a later `::`. Each qualification boundary makes an
+independent compact-or-split choice, so an exceptionally long qualified name may take more than one break.
+
+```cpp
+void Convert(
+    const experiments3::cargo_pricing_batched_order_route_price_correction::
+        BatchedOrderRoutePriceCorrectionRequirementNames& value
+);
+```
 
 ## Indent Economy
 

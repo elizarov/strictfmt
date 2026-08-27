@@ -911,6 +911,11 @@ private:
         if (!SyntaxNodeKindHasClass(node.kind, SyntaxNodeClass::Tree)) {
             return nullptr;
         }
+        if (SyntaxNodeHasLocalClass(node, SyntaxNodeClass::QualifiedName)) {
+            if (auto qualifiedName = BuildQualifiedName(node, depth)) {
+                return qualifiedName;
+            }
+        }
         if (SyntaxNodeKindHasClass(node.kind, SyntaxNodeClass::MacroDefinition)) {
             if (auto definition = BuildMacroDefinition(node, depth)) {
                 return definition;
@@ -1000,6 +1005,122 @@ private:
             }
         }
         return BuildSequenceFromChildren(node.children, 0, node.children.size(), depth);
+    }
+
+    struct QualifiedNameParts {
+        std::vector<ConstSyntaxChildList> operands;
+        std::vector<FormatBreakToken> operators;
+    };
+
+    bool CollectQualifiedNameParts(const SyntaxNode& node, QualifiedNameParts& result) const {
+        QualifiedNameParts local;
+        ConstSyntaxChildList pendingOperand;
+        for (const SyntaxNode* child : node.children) {
+            if (child == nullptr || !ContainsSelected(*child)) {
+                continue;
+            }
+            if (SyntaxNodeHasLocalClass(*child, SyntaxNodeClass::QualifiedName)) {
+                QualifiedNameParts nested;
+                if (!CollectQualifiedNameParts(*child, nested) || nested.operands.empty()) {
+                    return false;
+                }
+                if (!pendingOperand.empty()) {
+                    if (!local.operands.empty() || !local.operators.empty()) {
+                        return false;
+                    }
+                    nested
+                        .operands
+                        .front()
+                        .insert(nested.operands.front().begin(), pendingOperand.begin(), pendingOperand.end());
+                    pendingOperand.clear();
+                }
+                if (local.operands.size() != local.operators.size()) {
+                    return false;
+                }
+                local.operands.insert(local.operands.end(), nested.operands.begin(), nested.operands.end());
+                local.operators.insert(local.operators.end(), nested.operators.begin(), nested.operators.end());
+                continue;
+            }
+            const std::optional<FormatBreakToken> token = TokenForNode(*child);
+            if (token && FormatBreakTokenSyntaxKind(*token) == SyntaxNodeKind::ColonColon) {
+                if (pendingOperand.empty() && local.operands.empty() && local.operators.empty()) {
+                    // A leading global-scope operator is part of the first operand and is not breakable.
+                    pendingOperand.push_back(child);
+                    continue;
+                }
+                if (pendingOperand.empty() || local.operands.size() != local.operators.size()) {
+                    return false;
+                }
+                local.operands.push_back(std::move(pendingOperand));
+                pendingOperand.clear();
+                local.operators.push_back(*token);
+                continue;
+            }
+            if (!local.operands.empty() && local.operands.size() > local.operators.size()) {
+                return false;
+            }
+            pendingOperand.push_back(child);
+        }
+        if (!pendingOperand.empty()) {
+            if (local.operands.size() != local.operators.size()) {
+                return false;
+            }
+            local.operands.push_back(std::move(pendingOperand));
+        }
+        if (local.operands.empty() || local.operands.size() != local.operators.size() + 1) {
+            return false;
+        }
+        result.operands.insert(result.operands.end(), local.operands.begin(), local.operands.end());
+        result.operators.insert(result.operators.end(), local.operators.begin(), local.operators.end());
+        return true;
+    }
+
+    static bool StartsWithMemberPointerStar(const ConstSyntaxChildList& operand) {
+        for (const SyntaxNode* child : operand) {
+            if (child == nullptr || SyntaxNodeKindHasClass(child->kind, SyntaxNodeClass::Trivia)) {
+                continue;
+            }
+            if (child->kind == SyntaxNodeKind::Star) {
+                return true;
+            }
+            if (child->kind != SyntaxNodeKind::Tree) {
+                return false;
+            }
+            for (const SyntaxNode* nested : child->children) {
+                if (nested == nullptr || SyntaxNodeKindHasClass(nested->kind, SyntaxNodeClass::Trivia)) {
+                    continue;
+                }
+                return nested->kind == SyntaxNodeKind::Star;
+            }
+            return false;
+        }
+        return false;
+    }
+
+    FormatBreakNode* BuildQualifiedNamePrefix(const QualifiedNameParts& parts, size_t operandCount, int depth) {
+        if (operandCount == 1) {
+            return BuildSequenceFromPointers(parts.operands.front(), depth);
+        }
+        FormatBreakNode* left = BuildQualifiedNamePrefix(parts, operandCount - 1, depth + 1);
+        FormatBreakNode* right = BuildSequenceFromPointers(parts.operands[operandCount - 1], depth + 1);
+        if (left == nullptr || right == nullptr) {
+            return nullptr;
+        }
+        auto binary = MakeNode(FormatBreakNodeKind::Chain, depth);
+        binary->operands = StoreNodePointers({left, right});
+        binary->operators = StoreTokens({parts.operators[operandCount - 2]});
+        return binary;
+    }
+
+    FormatBreakNode* BuildQualifiedName(const SyntaxNode& node, int depth) {
+        QualifiedNameParts parts;
+        if (!CollectQualifiedNameParts(node, parts)) {
+            return nullptr;
+        }
+        if (parts.operators.size() < 2 || StartsWithMemberPointerStar(parts.operands.back())) {
+            return nullptr;
+        }
+        return BuildQualifiedNamePrefix(parts, parts.operands.size(), depth);
     }
 
     FormatBreakNode* BuildKeywordOwnedValue(const SyntaxNode& node, int depth) {
