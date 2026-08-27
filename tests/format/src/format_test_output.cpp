@@ -591,6 +591,16 @@ struct InitializerGeneralityWidget {
     int third_ = 0;
 };
 
+class FetcherWithGroupingImplementation {
+public:
+    explicit FetcherWithGroupingImplementation(
+        const two_phase::PrivateTicket& private_ticket,
+        mem::SPtr<IRequester> shared_requester
+    ) :
+        ExtremelyLongBaseInterfaceNameForFetcher{private_ticket},
+        shared_requester_with_grouping_and_caching_(std::move(shared_requester)) {}
+};
+
 struct DirectInitializedDeclarationGenerality {
     ExtremelyLongDirectInitializerTypeNameForFormatterGeneralityAndMemberCoverage
         fieldWithBracedDirectInitializerName{value};

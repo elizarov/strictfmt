@@ -483,7 +483,7 @@ concept HasNonEmptyName = requires {
 };
 ```
 
-Constructor initializer lists use compact or split form. A long initializer list keeps `) :` on the header line, or `) noexcept :` when a trailing qualifier is present. Initializer count alone does not force the constructor parameter list to split.
+Constructor initializer lists use compact or split form. An `explicit` specifier stays attached to the constructor declarator. A long initializer list keeps `) :` on the header line, or `) noexcept :` when a trailing qualifier is present. Initializer count alone does not force the constructor parameter list to split.
 
 <!-- .cpp-format
 ColumnLimit: 80
