@@ -94,7 +94,8 @@ bool IsAssignmentOperatorForNode(const FormatBreakToken& token) {
             printToken.parentKind == SyntaxNodeKind::InitDeclarator ||
             printToken.parentKind == SyntaxNodeKind::FieldDeclaration ||
             printToken.parentKind == SyntaxNodeKind::AliasDeclaration ||
-            printToken.parentKind == SyntaxNodeKind::FunctionPointerAliasDeclaration
+            printToken.parentKind == SyntaxNodeKind::FunctionPointerAliasDeclaration ||
+            printToken.parentKind == SyntaxNodeKind::InitializerList
         );
 }
 
@@ -415,7 +416,10 @@ private:
         if (itemChildren.empty()) {
             return;
         }
-        FormatBreakNode* item = BuildSequenceFromPointers(itemChildren, depth + 1);
+        FormatBreakNode* item = BuildDelimitedAssignmentItem(itemChildren, depth + 1);
+        if (item == nullptr) {
+            item = BuildSequenceFromPointers(itemChildren, depth + 1);
+        }
         const bool virtualDelimiter = FormatBreakTokenValue(open).parentKind == SyntaxNodeKind::Unknown;
         if (
             delimited.delimiterKind == FormatBreakDelimiterKind::Paren &&
@@ -2226,6 +2230,46 @@ private:
             return BuildConditionalExpression(node, depth);
         }
         return BuildBinaryOrAssignmentExpression(node, depth);
+    }
+
+    FormatBreakNode* BuildDelimitedAssignmentItem(const ConstSyntaxChildList& children, int depth) {
+        std::optional<size_t> operatorIndex;
+        std::optional<FormatBreakToken> op;
+        for (size_t index = 0; index < children.size(); ++index) {
+            if (children[index] == nullptr) {
+                continue;
+            }
+            const std::optional<FormatBreakToken> token = TokenForNode(*children[index]);
+            if (!token || !IsAssignmentOperatorForNode(*token)) {
+                continue;
+            }
+            if (operatorIndex) {
+                return nullptr;
+            }
+            operatorIndex = index;
+            op = token;
+        }
+        if (!operatorIndex || !op) {
+            return nullptr;
+        }
+
+        ConstSyntaxChildList leftChildren(children.begin(), children.begin() + *operatorIndex);
+        ConstSyntaxChildList rightChildren(children.begin() + *operatorIndex + 1, children.end());
+        FormatBreakNode* left = BuildSequenceFromPointers(leftChildren, depth + 1);
+        FormatBreakNode* right = BuildSequenceFromPointers(rightChildren, depth + 1);
+        if (left == nullptr || right == nullptr) {
+            return nullptr;
+        }
+        MarkForceSplitAdjacentStringsFlat(*right);
+
+        auto chain = MakeNode(FormatBreakNodeKind::Chain, depth);
+        if (EndsWithBodyHeader(*right)) {
+            chain->splitTrailingBodyHeaderAtParentIndent = true;
+            MarkBodyHeaderSplitAtParentIndentWhenLineStarts(*right);
+        }
+        chain->operands = StoreNodePointers({left, right});
+        chain->operators = StoreTokens({*op});
+        return chain;
     }
 
     FormatBreakNode* BuildPrefixList(const SyntaxNode& node, int depth) {

@@ -615,6 +615,14 @@ void DirectInitializedDeclarationGeneralityLocals() {
         localWithExtraParenDirectInitializerName((value));
 }
 
+void DesignatedInitializerAssignmentBreak() {
+    auto deps = Dependencies{{
+        .delivery_corp_client_traits_fetcher =
+            internal::delivery_corp_client_traits::MakeDeliveryCorpClientTraitsFetcher(dependencies)
+    }};
+    Use(deps);
+}
+
 InitializerGeneralityWidget::InitializerGeneralityWidget(int value, int other) : first_(value), second_(other) {
     Touch();
 }
