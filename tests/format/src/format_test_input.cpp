@@ -168,6 +168,16 @@ struct ColorMixExpression {
     bool operator==(const ColorMixExpression& other) const = default;
 };
 
+namespace forward_declaration_grouping {
+class Client;
+struct Request;
+template<typename T>
+class Box;
+class Definition{};
+class AfterDefinition;
+struct ElaboratedObject* object;
+}
+
 struct FirstTopLevelDeclarationGroupingType{};
 enum class SecondTopLevelDeclarationGroupingType{Only,};
 int topLevelDeclarationGroupingObject;

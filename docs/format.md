@@ -436,7 +436,8 @@ The declaration grouping kinds are type declarations, callable declarations or d
 Grouping determines where structural empty-line separators are required. It does not remove an existing source empty-line separator preserved by **Line Hygiene**.
 
 - Separate top-level logical groups with one empty line.
-- Separate neighboring type declarations from siblings with one empty line.
+- Keep consecutive forward type declarations in one group.
+- Separate every other type declaration from its declaration siblings with one empty line.
 - Separate neighboring declarations of different kinds with one empty line.
 - Keep consecutive fields grouped when wrapping only moves an initializer to a continuation line.
 - Separate an object declaration or type alias from neighbors when its solver-selected initializer or alias target needs more than one continuation line, regardless of the expression shape that creates those lines.

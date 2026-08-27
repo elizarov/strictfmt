@@ -417,6 +417,7 @@ void NormalizeControlBodies(FormatModel& model, SyntaxNode& node) {
 }
 
 constexpr std::uint64_t kDeclarationGroupClasses = static_cast<std::uint64_t>(SyntaxNodeClass::DeclarationGroupType) |
+    static_cast<std::uint64_t>(SyntaxNodeClass::DeclarationGroupForwardType) |
     static_cast<std::uint64_t>(SyntaxNodeClass::DeclarationGroupCallable) |
     static_cast<std::uint64_t>(SyntaxNodeClass::DeclarationGroupObject) |
     static_cast<std::uint64_t>(SyntaxNodeClass::DeclarationGroupAlias);
@@ -484,14 +485,20 @@ bool TypeSpecifierHasDefinitionBody(const SyntaxNode& node) {
     });
 }
 
-bool DirectlyDeclaresType(const SyntaxNode& declaration) {
+enum class DirectTypeDeclarationKind {
+    None,
+    Forward,
+    Definition,
+};
+
+DirectTypeDeclarationKind DirectTypeDeclaration(const SyntaxNode& declaration) {
     for (size_t index = 0; index < declaration.children.size(); ++index) {
         const SyntaxNode* child = declaration.children[index];
         if (child == nullptr || !IsTypeSpecifier(*child)) {
             continue;
         }
         if (TypeSpecifierHasDefinitionBody(*child)) {
-            return true;
+            return DirectTypeDeclarationKind::Definition;
         }
         const bool hasDeclarator = std::any_of(
             declaration.children.begin() + static_cast<std::ptrdiff_t>(index + 1),
@@ -502,9 +509,9 @@ bool DirectlyDeclaresType(const SyntaxNode& declaration) {
                     suffix->kind != SyntaxNodeKind::Semicolon;
             }
         );
-        return !hasDeclarator;
+        return hasDeclarator ? DirectTypeDeclarationKind::None : DirectTypeDeclarationKind::Forward;
     }
-    return false;
+    return DirectTypeDeclarationKind::None;
 }
 
 std::uint64_t SingleIntroducedDeclarationGroup(const SyntaxNode& node) {
@@ -530,7 +537,9 @@ void ClassifyDeclarationGroup(SyntaxNode& node) {
         return;
     }
     if (IsTypeSpecifier(node)) {
-        node.classes |= static_cast<std::uint64_t>(SyntaxNodeClass::DeclarationGroupType);
+        const SyntaxNodeClass group = TypeSpecifierHasDefinitionBody(node) ? SyntaxNodeClass::DeclarationGroupType :
+            SyntaxNodeClass::DeclarationGroupForwardType;
+        node.classes |= static_cast<std::uint64_t>(group);
         return;
     }
     if (node.kind == SyntaxNodeKind::AliasDeclaration || node.kind == SyntaxNodeKind::FunctionPointerAliasDeclaration) {
@@ -543,8 +552,11 @@ void ClassifyDeclarationGroup(SyntaxNode& node) {
     }
     if (node.kind == SyntaxNodeKind::Declaration || node.kind == SyntaxNodeKind::FieldDeclaration) {
         SyntaxNodeClass group = SyntaxNodeClass::DeclarationGroupObject;
-        if (DirectlyDeclaresType(node)) {
+        const DirectTypeDeclarationKind typeDeclaration = DirectTypeDeclaration(node);
+        if (typeDeclaration == DirectTypeDeclarationKind::Definition) {
             group = SyntaxNodeClass::DeclarationGroupType;
+        } else if (typeDeclaration == DirectTypeDeclarationKind::Forward) {
+            group = SyntaxNodeClass::DeclarationGroupForwardType;
         } else if (ContainsDeclarationSyntaxKind(node, SyntaxNodeKind::KeywordTypedef)) {
             group = SyntaxNodeClass::DeclarationGroupAlias;
         } else if (ContainsCallableDeclarator(node)) {
@@ -560,7 +572,13 @@ void ClassifyDeclarationGroup(SyntaxNode& node) {
     ) {
         return;
     }
-    node.classes |= SingleIntroducedDeclarationGroup(node);
+    std::uint64_t group = SingleIntroducedDeclarationGroup(node);
+    if (node.kind == SyntaxNodeKind::TemplateInstantiation && group == static_cast<std::uint64_t>(
+        SyntaxNodeClass::DeclarationGroupForwardType
+    )) {
+        group = static_cast<std::uint64_t>(SyntaxNodeClass::DeclarationGroupType);
+    }
+    node.classes |= group;
 }
 
 void NormalizeSyntaxNode(FormatModel& model, SyntaxNode& node) {

@@ -100,6 +100,7 @@ enum class SyntaxNodeKind : std::uint16_t {
     TemplateParameterList,
     TemplateArgumentList,
     TemplateDeclaration,
+    TemplateInstantiation,
     RequiresClause,
     RequiresExpression,
     RequirementSeq,
@@ -354,6 +355,7 @@ enum class SyntaxNodeClass : std::uint64_t {
     DeclaredTypeSpecifier = 1ull << 57,
     LexicalAtom = 1ull << 58,
     QualifiedName = 1ull << 59,
+    DeclarationGroupForwardType = 1ull << 60,
 };
 
 enum class SyntaxWrapperRole : std::uint8_t {
