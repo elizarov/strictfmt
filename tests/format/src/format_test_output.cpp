@@ -316,6 +316,18 @@ void ExpectJoinedHexEscapeFragment() {
     EXPECT_THAT(output, testing::HasSubstr("gpu.temp = 100,\xC2\xB0" "C,Core Temp\r\n"));
 }
 
+void JoinAdjacentStringLiterals() {
+    ThrowError("The operation could not be completed because the selected calculation is missing");
+    Use("first second third");
+    Use(L"wide text");
+    Use("view text"sv);
+    Use("\x41" "B");
+    Use("\x41G");
+    Use("\1" "7");
+    Use("\1237");
+    Use(R"(raw)" "tail");
+}
+
 void WriteLongTraceStringFragments(TraceLog& trace, const char* adapterName) {
     trace.WriteFmt(
         TracePrefix::GpuVendor,
@@ -721,7 +733,7 @@ struct OverflowDeclaration {
 void FormatOverflowStream() {
     LOG()
         << "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
-            "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb";
+            "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbcccccccccccccccccccc";
 }
 
 void FormatOverflowRawString() {
@@ -2057,8 +2069,8 @@ const char* ActiveAdjacentCrLfEscape =
     "first\r\n"
     "second";
 
-const char* EscapedAdjacentNewlineText = "first\\n" "second";
-const char* EscapedAdjacentCrLfText = "first\\r\\n" "second";
+const char* EscapedAdjacentNewlineText = "first\\nsecond";
+const char* EscapedAdjacentCrLfText = "first\\r\\nsecond";
 
 Task CoReturnForcedAdjacentString() {
     co_return

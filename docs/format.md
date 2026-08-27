@@ -301,7 +301,7 @@ auto x = RenderPoint{firstCoordinate + secondCoordinate + thirdCoordinate, y}
     .OffsetBy(deltaX, deltaY).x;
 ```
 
-- Adjacent string literals are an implicit concatenation chain. A line-fragment boundary defined under [Token Preservation](#token-preservation) is mandatory; other preserved fragment boundaries may remain on one physical line.
+- Adjacent string literals are an implicit concatenation chain. Adjacent ordinary literals selected onto the same physical line are joined when allowed under [Token Preservation](#token-preservation). A line-fragment boundary is mandatory; other unsafe-to-join fragment boundaries may remain on one physical line.
 - The boundary between a [value-owning keyword](glossary.md#value-owning-keyword) and its value is an ordinary break opportunity selected by the optimizer.
 - When a forced multi-line string-fragment sequence stays split, it follows the same indentation rule as other chains. In single-value contexts, fragments align at the expression indentation. In list contexts, continued fragments use one continuation indentation level so the string chain stays visually separate from neighboring elements.
 - Ternary chains are flat chains.
@@ -683,9 +683,11 @@ The formatter preserves source token order except for:
 - include sorting when include groups are configured
 - trailing-comma normalization
 - control-brace normalization
-- safe adjacent ordinary string-literal concatenation
+- safe joining of adjacent ordinary string-literal tokens selected onto the same physical line
 
-String literals ending with escaped `\n` or `\r\n` are line-fragment boundaries: they are not joined with the following literal, and their adjacent-literal boundary is mandatory. A trailing escape such as `\xB0` that would consume the next fragment's first character after textual joining also prevents joining, while the token-separated fragments may remain on one physical line.
+This joining exception removes the closing quote, inter-token whitespace, and next opening quote while preserving the combined literal's compatible encoding prefix and user-defined suffix. It applies only to ordinary literals in compact layout; raw literals and literals separated by a selected line break retain their token boundary. Joining is forbidden when the prefixes or suffixes are incompatible or when removing the seam could extend an escape at the end of the first body. In particular, a hexadecimal escape such as `\xB0` remains separated when the next body starts with a hexadecimal digit, and a one- or two-digit octal escape remains separated when the next body starts with an octal digit.
+
+String literals ending with escaped `\n` or `\r\n` are line-fragment boundaries: they are not joined with the following literal, and their adjacent-literal boundary is mandatory. Other unsafe-to-join token-separated fragments may remain on one physical line.
 
 Outside the listed changes, the formatter changes only spaces and line breaks.
 

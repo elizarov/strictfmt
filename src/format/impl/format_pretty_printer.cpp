@@ -1768,7 +1768,11 @@ private:
             choice == FormatBreakChoice::BodyHeaderDetachedBody;
     }
 
-    void WriteBreakToken(const FormatBreakToken& token, std::optional<int> continuationBaseIndent = std::nullopt) {
+    void WriteBreakTokenText(
+        const FormatBreakToken& token,
+        std::string_view text,
+        std::optional<int> continuationBaseIndent = std::nullopt
+    ) {
         const bool suppressSpace = suppressNextBreakTokenSpace_;
         suppressNextBreakTokenSpace_ = false;
         if (token.contextOnly) {
@@ -1786,7 +1790,7 @@ private:
             if (!atLineStart_) {
                 NewLineWithIndent(commentIndent);
             }
-            Write(FormatTokenText(printToken));
+            Write(text);
             NewLineWithIndent(commentIndent);
             return;
         }
@@ -1798,7 +1802,7 @@ private:
                 Space();
                 output_.push_back(' ');
             }
-            Write(FormatTokenText(printToken));
+            Write(text);
             if (TrailingCommentReturnsToStructuralIndent(printToken)) {
                 NewLine(false);
             } else {
@@ -1809,7 +1813,11 @@ private:
         if (token.spaceBefore && !suppressSpace && !atLineStart_) {
             Space();
         }
-        Write(FormatTokenText(printToken));
+        Write(text);
+    }
+
+    void WriteBreakToken(const FormatBreakToken& token, std::optional<int> continuationBaseIndent = std::nullopt) {
+        WriteBreakTokenText(token, FormatTokenText(FormatBreakTokenValue(token)), continuationBaseIndent);
     }
 
     void EmitBreakNode(const FormatBreakNode& node, const FormatBreakSolution& solution, int baseIndent) {
@@ -2353,6 +2361,19 @@ private:
     void EmitAdjacentStringsNode(const FormatBreakNode& node, const FormatBreakSolution& solution, int baseIndent) {
         const FormatBreakChoice choice = ChoiceFor(solution, node.id);
         const int continuationIndent = node.flatSplitIndent ? baseIndent : baseIndent + 1;
+        const bool hasCompactTexts = node.compactStringTexts.size() == node.operands.size() &&
+            std::all_of(node.operands.begin(), node.operands.end(), [](const FormatBreakNode* operand) {
+                return operand != nullptr && operand->kind == FormatBreakNodeKind::Token;
+            });
+        if (choice == FormatBreakChoice::Compact && hasCompactTexts) {
+            for (size_t index = 0; index < node.operands.size(); ++index) {
+                if (node.compactStringTexts[index].empty()) {
+                    continue;
+                }
+                WriteBreakTokenText(node.operands[index]->token, node.compactStringTexts[index]);
+            }
+            return;
+        }
         for (size_t index = 0; index < node.operands.size(); ++index) {
             if (choice == FormatBreakChoice::Split && index > 0) {
                 NewLineWithIndent(continuationIndent);

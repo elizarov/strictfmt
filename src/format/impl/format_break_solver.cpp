@@ -328,12 +328,17 @@ private:
         return token.spaceBefore ? 1 : 0;
     }
 
-    NodeResult SolveToken(const FormatBreakToken& token, int column, int indentLevel, bool lineHasText) const {
+    NodeResult SolveTokenText(
+        const FormatBreakToken& token,
+        std::string_view text,
+        int column,
+        int indentLevel,
+        bool lineHasText
+    ) const {
         if (token.contextOnly) {
             return {.valid = true, .endColumn = column, .endIndentLevel = indentLevel, .endLineHasText = lineHasText};
         }
         const int space = SpaceBeforeToken(token, lineHasText);
-        const std::string_view text = FormatTokenText(FormatBreakTokenValue(token));
         NodeResult result{
             .valid = true,
             .endColumn = column + space,
@@ -371,6 +376,10 @@ private:
             result.endLineHasText = false;
         }
         return result;
+    }
+
+    NodeResult SolveToken(const FormatBreakToken& token, int column, int indentLevel, bool lineHasText) const {
+        return SolveTokenText(token, FormatTokenText(FormatBreakTokenValue(token)), column, indentLevel, lineHasText);
     }
 
     const ChoiceTree* MakeChoice(int nodeId, FormatBreakChoice choice, int indentLevel) {
@@ -902,6 +911,10 @@ private:
     }
 
     bool AddCompactToken(NodeResult& result, const FormatBreakToken& token) const {
+        return AddCompactTokenText(result, token, FormatTokenText(FormatBreakTokenValue(token)));
+    }
+
+    bool AddCompactTokenText(NodeResult& result, const FormatBreakToken& token, std::string_view text) const {
         if (token.contextOnly) {
             return true;
         }
@@ -910,7 +923,7 @@ private:
             return false;
         }
         const int space = SpaceBeforeToken(token, result.endLineHasText);
-        const int width = FormatTokenWidth(printToken);
+        const int width = static_cast<int>(text.size());
         result.endColumn += space + width;
         result.endLineHasText = result.endLineHasText || width > 0;
         return !result.endLineHasText || result.endColumn <= config_.columnLimit;
@@ -1021,8 +1034,19 @@ private:
                 }
                 return true;
             case FormatBreakNodeKind::AdjacentStrings:
-                for (const FormatBreakNode* operand : node.operands) {
-                    if (operand != nullptr && !AppendCompactOneLine(*operand, result)) {
+                if (node.compactStringTexts.size() != node.operands.size()) {
+                    return false;
+                }
+                for (size_t index = 0; index < node.operands.size(); ++index) {
+                    if (node.compactStringTexts[index].empty()) {
+                        continue;
+                    }
+                    const FormatBreakNode* operand = node.operands[index];
+                    if (
+                        operand == nullptr ||
+                        operand->kind != FormatBreakNodeKind::Token ||
+                        !AddCompactTokenText(result, operand->token, node.compactStringTexts[index])
+                    ) {
                         return false;
                     }
                 }
@@ -3164,8 +3188,24 @@ private:
         NodeResult
             result{.valid = true, .endColumn = column, .endIndentLevel = indentLevel, .endLineHasText = lineHasText};
         AddChoice(result, node.id, FormatBreakChoice::Compact, indentLevel);
-        for (const FormatBreakNode* operand : node.operands) {
-            NodeResult item = Solve(*operand, result.endColumn, result.endIndentLevel, result.endLineHasText);
+        if (node.compactStringTexts.size() != node.operands.size()) {
+            return {};
+        }
+        for (size_t index = 0; index < node.operands.size(); ++index) {
+            if (node.compactStringTexts[index].empty()) {
+                continue;
+            }
+            const FormatBreakNode* operand = node.operands[index];
+            if (operand == nullptr || operand->kind != FormatBreakNodeKind::Token) {
+                return {};
+            }
+            NodeResult item = SolveTokenText(
+                operand->token,
+                node.compactStringTexts[index],
+                result.endColumn,
+                result.endIndentLevel,
+                result.endLineHasText
+            );
             Merge(result, item);
         }
         return result;
