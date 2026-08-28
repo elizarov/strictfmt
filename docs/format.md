@@ -261,6 +261,7 @@ Binary chain operators are the operators whose usual source meaning is an associ
 - Split chains take every top-level chain opportunity.
 - Chain parts use the chain item indentation, not an additional continuation indentation.
 - If an outer context applies continuation indentation, that context defines the chain's base indentation.
+- A mandatory line break in an intermediate operand forces a multi-link chain into split form, including links on the other side of the mandatory boundary.
 
 <!-- .cpp-format
 ColumnLimit: 35

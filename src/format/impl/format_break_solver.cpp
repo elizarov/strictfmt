@@ -464,6 +464,41 @@ private:
             case FormatBreakNodeKind::BodyHeader:
                 return SolveBodyHeaderAlternatives(node, column, indentLevel, lineHasText);
             case FormatBreakNodeKind::Chain: {
+                if (node.forceSplit) {
+                    if (node.chainKind == FormatBreakChainKind::StreamBeforeOperator) {
+                        return SolveStreamSplitAlternatives(
+                            node,
+                            column,
+                            indentLevel,
+                            lineHasText,
+                            FormatBreakChoice::Split
+                        );
+                    }
+                    if (node.chainKind == FormatBreakChainKind::MemberBeforeOperator) {
+                        return {SolveChainSplitBeforeOperator(node, column, indentLevel, lineHasText)};
+                    }
+                    if (node.chainKind == FormatBreakChainKind::Ternary && node.operators.size() > 2) {
+                        return {SolveTernaryChainSplit(node, column, indentLevel, lineHasText)};
+                    }
+                    if (node.chainKind == FormatBreakChainKind::Ternary && node.operators.size() == 2) {
+                        return {SolveSingleTernary(node, column, indentLevel, lineHasText, FormatBreakChoice::Split)};
+                    }
+                    return {SolveChainSplitAfterOperator(node, column, indentLevel, lineHasText)};
+                }
+                if (node.ternaryRequiresColonBreaks) {
+                    if (node.operators.size() > 2) {
+                        return {SolveTernaryChainSplit(node, column, indentLevel, lineHasText)};
+                    }
+                    if (node.operators.size() == 2) {
+                        return {SolveSingleTernary(
+                            node,
+                            column,
+                            indentLevel,
+                            lineHasText,
+                            FormatBreakChoice::TernaryBreakAfterColon
+                        )};
+                    }
+                }
                 NodeResults alternatives;
                 for (NodeResult compact : SolveChainCompactAlternatives(node, column, indentLevel, lineHasText)) {
                     if (node.chainCompactRequiresFitOnOneLine && (compact.extraLines > 0 || compact.maxOverflow > 0)) {
@@ -913,7 +948,7 @@ private:
     }
 
     bool AppendCompactOneLine(const FormatBreakNode& node, NodeResult& result) const {
-        if (node.forceSplit) {
+        if (node.forceSplit || node.ternaryRequiresColonBreaks) {
             return false;
         }
         switch (node.kind) {
@@ -2883,10 +2918,11 @@ private:
     NodeResult
         SolveChainSplitAfterOperator(const FormatBreakNode& node, int column, int indentLevel, bool lineHasText)
     {
-        const int continuationIndent = node.flatSplitIndent ? indentLevel : indentLevel + 1;
+        const int splitBaseIndent = node.requiredChainBreakBaseIndent.value_or(indentLevel);
+        const int continuationIndent = node.flatSplitIndent ? splitBaseIndent : splitBaseIndent + 1;
         NodeResult
             result{.valid = true, .endColumn = column, .endIndentLevel = indentLevel, .endLineHasText = lineHasText};
-        AddChoice(result, node.id, FormatBreakChoice::Split, indentLevel);
+        AddChoice(result, node.id, FormatBreakChoice::Split, splitBaseIndent);
         if (node.operands.empty()) {
             return result;
         }
@@ -2955,9 +2991,10 @@ private:
     NodeResult
         SolveChainSplitBeforeOperator(const FormatBreakNode& node, int column, int indentLevel, bool lineHasText)
     {
+        const int splitBaseIndent = node.requiredChainBreakBaseIndent.value_or(indentLevel);
         NodeResult
             result{.valid = true, .endColumn = column, .endIndentLevel = indentLevel, .endLineHasText = lineHasText};
-        AddChoice(result, node.id, FormatBreakChoice::Split, indentLevel);
+        AddChoice(result, node.id, FormatBreakChoice::Split, splitBaseIndent);
         if (node.operands.empty()) {
             return result;
         }
@@ -2966,7 +3003,7 @@ private:
             Solve(*node.operands.front(), result.endColumn, result.endIndentLevel, result.endLineHasText);
         Merge(result, receiver);
         for (size_t index = 0; index < node.operators.size(); ++index) {
-            result = AddBreak(result, indentLevel + 1, node.structuralDepth);
+            result = AddBreak(result, splitBaseIndent + 1, node.structuralDepth);
             result = AddCommentsBeforeChainOperator(node, index, result);
             result = AddToken(result, node.operators[index]);
             NodeResult operand =
@@ -3018,9 +3055,10 @@ private:
         bool lineHasText,
         FormatBreakChoice choice
     ) {
+        const int splitBaseIndent = node.requiredChainBreakBaseIndent.value_or(indentLevel);
         NodeResult
             initial{.valid = true, .endColumn = column, .endIndentLevel = indentLevel, .endLineHasText = lineHasText};
-        AddChoice(initial, node.id, choice, indentLevel);
+        AddChoice(initial, node.id, choice, splitBaseIndent);
         NodeResults current{initial};
         if (!node.chainStartsWithOperator) {
             NodeResults next;
@@ -3044,10 +3082,10 @@ private:
         }
         for (NodeResult& prefix : current) {
             if (node.chainStartsWithOperator && !prefix.endLineHasText) {
-                prefix.endIndentLevel = indentLevel + 1;
+                prefix.endIndentLevel = splitBaseIndent + 1;
                 prefix.endColumn = IndentColumn(prefix.endIndentLevel);
             } else {
-                prefix = AddBreak(prefix, indentLevel + 1, node.structuralDepth);
+                prefix = AddBreak(prefix, splitBaseIndent + 1, node.structuralDepth);
             }
         }
         for (size_t index = 0; index < node.operators.size(); ++index) {
@@ -3085,7 +3123,7 @@ private:
                             config_.streamShiftConfigurationMethods
                         )
                     ) {
-                        candidate = AddBreak(candidate, indentLevel + 1, node.structuralDepth);
+                        candidate = AddBreak(candidate, splitBaseIndent + 1, node.structuralDepth);
                     }
                     AddPrunedResult(next, std::move(candidate));
                 }
@@ -3115,9 +3153,10 @@ private:
     }
 
     NodeResult SolveTernaryChainSplit(const FormatBreakNode& node, int column, int indentLevel, bool lineHasText) {
+        const int splitBaseIndent = node.requiredChainBreakBaseIndent.value_or(indentLevel);
         NodeResult
             result{.valid = true, .endColumn = column, .endIndentLevel = indentLevel, .endLineHasText = lineHasText};
-        AddChoice(result, node.id, FormatBreakChoice::Split, indentLevel);
+        AddChoice(result, node.id, FormatBreakChoice::Split, splitBaseIndent);
         for (size_t index = 0; index < node.operands.size(); ++index) {
             NodeResult operand =
                 Solve(*node.operands[index], result.endColumn, result.endIndentLevel, result.endLineHasText);
@@ -3128,7 +3167,7 @@ private:
                     FormatBreakTokenKind(node.operators[index]) == PrintTokenKind::Known &&
                     FormatBreakTokenSyntaxKind(node.operators[index]) == SyntaxNodeKind::Colon
                 ) {
-                    result = AddBreak(result, indentLevel + 1, node.structuralDepth);
+                    result = AddBreak(result, splitBaseIndent + 1, node.structuralDepth);
                 }
             }
         }
@@ -3142,14 +3181,15 @@ private:
         bool lineHasText,
         FormatBreakChoice choice
     ) {
+        const int splitBaseIndent = node.requiredChainBreakBaseIndent.value_or(indentLevel);
         const bool breakAfterQuestion =
             choice == FormatBreakChoice::TernaryBreakAfterQuestion || choice == FormatBreakChoice::Split;
         const bool breakAfterColon =
             choice == FormatBreakChoice::TernaryBreakAfterColon || choice == FormatBreakChoice::Split;
-        const int continuationIndent = node.flatSplitIndent ? indentLevel : indentLevel + 1;
+        const int continuationIndent = node.flatSplitIndent ? splitBaseIndent : splitBaseIndent + 1;
         NodeResult
             result{.valid = true, .endColumn = column, .endIndentLevel = indentLevel, .endLineHasText = lineHasText};
-        AddChoice(result, node.id, choice, indentLevel);
+        AddChoice(result, node.id, choice, splitBaseIndent);
         for (size_t index = 0; index < node.operands.size(); ++index) {
             NodeResult operand =
                 Solve(*node.operands[index], result.endColumn, result.endIndentLevel, result.endLineHasText);
@@ -3165,6 +3205,35 @@ private:
     }
 
     NodeResult SolveChain(const FormatBreakNode& node, int column, int indentLevel, bool lineHasText) {
+        if (node.forceSplit) {
+            if (node.chainKind == FormatBreakChainKind::StreamBeforeOperator) {
+                return SolveStreamSplit(node, column, indentLevel, lineHasText, FormatBreakChoice::Split);
+            }
+            if (node.chainKind == FormatBreakChainKind::MemberBeforeOperator) {
+                return SolveChainSplitBeforeOperator(node, column, indentLevel, lineHasText);
+            }
+            if (node.chainKind == FormatBreakChainKind::Ternary && node.operators.size() > 2) {
+                return SolveTernaryChainSplit(node, column, indentLevel, lineHasText);
+            }
+            if (node.chainKind == FormatBreakChainKind::Ternary && node.operators.size() == 2) {
+                return SolveSingleTernary(node, column, indentLevel, lineHasText, FormatBreakChoice::Split);
+            }
+            return SolveChainSplitAfterOperator(node, column, indentLevel, lineHasText);
+        }
+        if (node.ternaryRequiresColonBreaks) {
+            if (node.operators.size() > 2) {
+                return SolveTernaryChainSplit(node, column, indentLevel, lineHasText);
+            }
+            if (node.operators.size() == 2) {
+                return SolveSingleTernary(
+                    node,
+                    column,
+                    indentLevel,
+                    lineHasText,
+                    FormatBreakChoice::TernaryBreakAfterColon
+                );
+            }
+        }
         NodeResult compact = SolveChainCompact(node, column, indentLevel, lineHasText);
         if (
             compact.valid &&

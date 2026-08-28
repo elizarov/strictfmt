@@ -359,6 +359,7 @@ public:
         if (!model_.root) {
             model_.root = MakeNode(FormatBreakNodeKind::Sequence, 0);
         }
+        ApplyRequiredChainBreaks(*model_.root);
         return std::move(model_);
     }
 
@@ -416,6 +417,51 @@ private:
     }
 
     bool ContainsSelected(const SyntaxNode& node) const { return node.formatSelectionMark == selectionMark_; }
+
+    bool RequiresChainBreak(const FormatBreakToken& token) const {
+        return context_.requiredChainBreakOperators != nullptr &&
+            FormatBreakTokenValue(token).node != nullptr &&
+            context_.requiredChainBreakOperators->contains(FormatBreakTokenValue(token).node);
+    }
+
+    void ApplyRequiredChainBreaks(FormatBreakNode& node) {
+        if (node.kind == FormatBreakNodeKind::Chain && std::any_of(
+            node.operators.begin(),
+            node.operators.end(),
+            [this](const FormatBreakToken& token) { return RequiresChainBreak(token); }
+        )) {
+            if (node.chainKind == FormatBreakChainKind::Ternary) {
+                node.ternaryRequiresColonBreaks = true;
+            } else {
+                node.forceSplit = true;
+            }
+            if (context_.requiredChainBreakBaseIndents != nullptr) {
+                for (const FormatBreakToken& token : node.operators) {
+                    const SyntaxNode* operatorNode = FormatBreakTokenValue(token).node;
+                    const auto base = context_.requiredChainBreakBaseIndents->find(operatorNode);
+                    if (base != context_.requiredChainBreakBaseIndents->end()) {
+                        node.requiredChainBreakBaseIndent = base->second;
+                        break;
+                    }
+                }
+            }
+        }
+        for (FormatBreakNode* child : node.children) {
+            if (child != nullptr) {
+                ApplyRequiredChainBreaks(*child);
+            }
+        }
+        for (FormatBreakListItem& item : node.items) {
+            if (item.node != nullptr) {
+                ApplyRequiredChainBreaks(*item.node);
+            }
+        }
+        for (FormatBreakNode* operand : node.operands) {
+            if (operand != nullptr) {
+                ApplyRequiredChainBreaks(*operand);
+            }
+        }
+    }
 
     bool ContainsUnselectedSourceLeaf(const SyntaxNode& node) const {
         if (node.children.empty()) {
@@ -888,6 +934,50 @@ private:
             chain->operands.back() = call;
             children.erase(children.begin() + static_cast<std::ptrdiff_t>(index + 1));
         }
+    }
+
+    FormatBreakNode* BuildRequiredTernarySuffix(std::vector<FormatBreakNode*>& children, int depth) {
+        std::vector<size_t> operatorIndices;
+        for (size_t index = 0; index < children.size(); ++index) {
+            const FormatBreakToken* token = TokenChild(children[index]);
+            if (token != nullptr && FormatBreakTokenSyntaxKind(*token) == SyntaxNodeKind::Colon && RequiresChainBreak(
+                *token
+            )) {
+                operatorIndices.push_back(index);
+            }
+        }
+        if (operatorIndices.empty()) {
+            return nullptr;
+        }
+        const auto buildOperand = [&](size_t begin, size_t end) {
+            if (begin == end) {
+                return MakeNode(FormatBreakNodeKind::Sequence, depth + 1);
+            }
+            if (begin + 1 == end) {
+                return children[begin];
+            }
+            auto sequence = MakeNode(FormatBreakNodeKind::Sequence, depth + 1);
+            sequence->children =
+                StoreNodePointers(std::span<FormatBreakNode* const>{children.data() + begin, end - begin});
+            return sequence;
+        };
+
+        std::vector<FormatBreakNode*> operands;
+        std::vector<FormatBreakToken> operators;
+        size_t operandBegin = 0;
+        for (size_t operatorIndex : operatorIndices) {
+            operands.push_back(buildOperand(operandBegin, operatorIndex));
+            operators.push_back(*TokenChild(children[operatorIndex]));
+            operandBegin = operatorIndex + 1;
+        }
+        operands.push_back(buildOperand(operandBegin, children.size()));
+
+        auto chain = MakeNode(FormatBreakNodeKind::Chain, depth);
+        chain->forceSplit = true;
+        chain->chainKind = FormatBreakChainKind::AfterOperator;
+        chain->operands = StoreNodePointers(operands);
+        chain->operators = StoreTokens(operators);
+        return chain;
     }
 
     static bool ChainOperatorsMatch(const FormatBreakNode& chain, std::optional<SyntaxNodeKind> operatorKind) {
@@ -2076,6 +2166,9 @@ private:
             }
         }
         GroupMemberCallArguments(builtChildren, depth);
+        if (FormatBreakNode* suffix = BuildRequiredTernarySuffix(builtChildren, depth)) {
+            return suffix;
+        }
         if (builtChildren.size() == 1) {
             return builtChildren.front();
         }
@@ -2114,6 +2207,9 @@ private:
             ++index;
         }
         GroupMemberCallArguments(builtChildren, depth);
+        if (FormatBreakNode* suffix = BuildRequiredTernarySuffix(builtChildren, depth)) {
+            return suffix;
+        }
         if (builtChildren.size() == 1) {
             return builtChildren.front();
         }
