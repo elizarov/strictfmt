@@ -2493,6 +2493,66 @@ void UseNamespaceTrailingComment() {}
 
 }  // namespace trailing_comment_fixture
 
+namespace trailing_semicolon_fixture {
+
+void UseNamespaceTrailingSemicolon();
+
+}  // namespace trailing_semicolon_fixture
+
+namespace {
+
+void UseAnonymousNamespaceTrailingSemicolon();
+
+}
+
+extern "C" {
+
+void UseLinkageTrailingSemicolon();
+
+}  // extern "C"
+
+int nullDeclarationTerminator = 0;
+
+int commentedNullDeclarationTerminator = 0;  // optional terminator
+
+void FunctionNullDeclarationTerminator() {
+    Run();
+}
+
+struct RepeatedDeclarationTerminator {
+    int value;
+};
+
+void NullStatementTerminators(bool ready) {
+    Run();
+    if (ready) {
+        Run();
+    }
+    {
+        Run();
+    }
+    switch (ready) {
+        case true: {
+            Run();
+        }
+        case false:
+            Run();
+    }
+}
+
+void LeadingNullStatement() {
+    Run();
+}
+
+void OnlyNullStatement() {}
+
+namespace only_null_declaration_fixture {}
+
+void RequiredNullStatementBodies(bool ready) {
+    if (ready) {}
+    while (ready) {}
+}
+
 void LongComment() {
     // This deliberately long comment should remain as one physical line because ReflowComments is false even though it is beyond the configured column limit for the fixture.
 }

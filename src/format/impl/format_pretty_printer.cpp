@@ -2855,6 +2855,110 @@ private:
         return nullptr;
     }
 
+    bool IsRemovableNullTerminator(const PrintToken& token, const PrintToken* previous) const {
+        if (
+            token.kind != PrintTokenKind::Known ||
+            token.syntaxKind != SyntaxNodeKind::Semicolon ||
+            token.node == nullptr ||
+            token.node->parent == nullptr
+        ) {
+            return false;
+        }
+        const SyntaxNode* nullItem = token.node;
+        while (
+            nullItem->parent != nullptr &&
+            nullItem->parent->children.size() == 1 &&
+            nullItem->parent->children.front() == nullItem
+        ) {
+            nullItem = nullItem->parent;
+        }
+        const SyntaxNode* level = nullItem->parent;
+        if (level == nullptr) {
+            return false;
+        }
+        const bool sourceItem = SyntaxNodeHasClass(*level, SyntaxNodeClass::SourceItemScope);
+        if (nullItem == token.node && !sourceItem) {
+            return false;
+        }
+        const bool requiredDeclaredTypeTerminator = previous != nullptr &&
+            previous->kind == PrintTokenKind::Known &&
+            previous->syntaxKind == SyntaxNodeKind::RightBrace &&
+            ClosesDeclaredTypeBody(*previous);
+        if (sourceItem) {
+            if (previous == nullptr) {
+                return true;
+            }
+            if (previous->kind == PrintTokenKind::Preprocessor || previous->kind == PrintTokenKind::IncludeRun) {
+                return false;
+            }
+            if (
+                ClosesStatementPositionMacroCallItem(*previous) ||
+                SyntaxPathContainsKind(*previous, SyntaxNodeKind::BareMacroItem)
+            ) {
+                return true;
+            }
+            if (previous->kind != PrintTokenKind::Known) {
+                return false;
+            }
+            if (
+                previous->syntaxKind == SyntaxNodeKind::Semicolon ||
+                SyntaxNodeKindHasClass(previous->syntaxKind, SyntaxNodeClass::OpeningDelimiter) ||
+                previous->syntaxKind == SyntaxNodeKind::Colon
+            ) {
+                return true;
+            }
+            return previous->syntaxKind == SyntaxNodeKind::RightBrace && !requiredDeclaredTypeTerminator;
+        }
+        if (previous == nullptr || previous->node == nullptr) {
+            return false;
+        }
+        const bool followsCompleteItem = (previous->kind == PrintTokenKind::Known && (
+            previous->syntaxKind == SyntaxNodeKind::Semicolon || previous->syntaxKind == SyntaxNodeKind::RightBrace
+        )) ||
+            ClosesStatementPositionMacroCallItem(*previous) ||
+            SyntaxPathContainsKind(*previous, SyntaxNodeKind::BareMacroItem);
+        if (!followsCompleteItem) {
+            return false;
+        }
+        const SyntaxNode* previousItem = DirectChildAtLevel(previous->node, level);
+        if (previousItem == nullptr || previousItem == nullItem || SyntaxNodeHasClass(
+            *previousItem,
+            SyntaxNodeClass::PreprocessorDirective
+        )) {
+            return false;
+        }
+        return !requiredDeclaredTypeTerminator;
+    }
+
+    static bool BecomesEmptyAfterNullItemRemoval(const PrintToken& token) {
+        if (token.node == nullptr || token.node->parent == nullptr) {
+            return false;
+        }
+        bool hasNullItem = false;
+        for (const SyntaxNode* child : token.node->parent->children) {
+            if (child == nullptr) {
+                continue;
+            }
+            if (
+                child->kind == SyntaxNodeKind::LeftBrace ||
+                child->kind == SyntaxNodeKind::RightBrace ||
+                child->kind == SyntaxNodeKind::BlankLine
+            ) {
+                continue;
+            }
+            const SyntaxNode* item = child;
+            while (item->children.size() == 1 && item->children.front() != nullptr) {
+                item = item->children.front();
+            }
+            if (item->kind == SyntaxNodeKind::Semicolon) {
+                hasNullItem = true;
+                continue;
+            }
+            return false;
+        }
+        return hasNullItem;
+    }
+
     bool
         ShouldPreserveSourceBlankLine(const PrintToken& token, const PrintToken* previous, const PrintToken* next) const
     {
@@ -3231,6 +3335,18 @@ private:
                 PrintRightBrace(token, next, rawNext);
                 return;
             case SyntaxNodeKind::Semicolon:
+                if (IsRemovableNullTerminator(token, previous)) {
+                    if (rawNext != nullptr && rawNext->kind == PrintTokenKind::TrailingComment) {
+                        if (!HasBufferedLineText() && atLineStart_) {
+                            TrimTrailingBlankLines();
+                            ReopenLastOutputLine();
+                        }
+                    } else if (HasBufferedLineText()) {
+                        FlushPendingTokens();
+                        NewLine(ShouldContinueMacroLine(token, next));
+                    }
+                    return;
+                }
                 BufferToken(token);
                 if (!token.inSingleStatementLambdaBody && ShouldBreakAfterSemicolon() && !(
                     rawNext != nullptr && rawNext->kind == PrintTokenKind::TrailingComment
@@ -3310,9 +3426,11 @@ private:
             }
             return;
         }
-        const bool isEmptyBracePair = rawNext != nullptr &&
+        const bool isEmptyBracePair = (
+            rawNext != nullptr &&
             rawNext->kind == PrintTokenKind::Known &&
-            rawNext->syntaxKind == SyntaxNodeKind::RightBrace;
+            rawNext->syntaxKind == SyntaxNodeKind::RightBrace
+        ) || BecomesEmptyAfterNullItemRemoval(token);
         const bool isCaseBlock = previous != nullptr &&
             previous->kind == PrintTokenKind::Known &&
             previous->syntaxKind == SyntaxNodeKind::Colon &&
