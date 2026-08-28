@@ -22,9 +22,7 @@ bool IsDeclaratorBindingToken(const PrintToken& token) {
     ));
 }
 
-bool IsUnaryContext(const PrintToken& token) {
-    return token.parentKind == SyntaxNodeKind::UnaryExpression;
-}
+bool IsUnaryContext(const PrintToken& token) { return token.parentKind == SyntaxNodeKind::UnaryExpression; }
 
 bool IsBinaryContext(const PrintToken& token) {
     return token.parentKind == SyntaxNodeKind::BinaryExpression ||
@@ -381,13 +379,9 @@ bool IsWordBoundaryChar(char ch) {
     return (ch >= 'A' && ch <= 'Z') || (ch >= 'a' && ch <= 'z') || (ch >= '0' && ch <= '9') || ch == '_';
 }
 
-bool LooksLikeStringLiteral(std::string_view text) {
-    return text.find('"') != std::string_view::npos;
-}
+bool LooksLikeStringLiteral(std::string_view text) { return text.find('"') != std::string_view::npos; }
 
-const SyntaxNode* ParentNode(const PrintToken& token) {
-    return token.node != nullptr ? token.node->parent : nullptr;
-}
+const SyntaxNode* ParentNode(const PrintToken& token) { return token.node != nullptr ? token.node->parent : nullptr; }
 
 const SyntaxNode* GrandParentNode(const PrintToken& token) {
     const SyntaxNode* parent = ParentNode(token);
@@ -398,11 +392,13 @@ bool IsCompactEmptyBraceToken(const PrintToken& token) {
     return token.kind == PrintTokenKind::Text && token.text == "{}";
 }
 
-bool IsSingleStatementLambdaBodyBrace(const PrintToken& token, SyntaxNodeKind kind) {
+bool IsCompactSingleStatementBodyBrace(const PrintToken& token, SyntaxNodeKind kind) {
     return token.syntaxKind == kind &&
-        token.inSingleStatementLambdaBody &&
-        token.parentKind == SyntaxNodeKind::CompoundStatement &&
-        token.grandParentKind == SyntaxNodeKind::LambdaExpression;
+        token.inCompactSingleStatementBody &&
+        token.parentKind == SyntaxNodeKind::CompoundStatement && (
+            token.grandParentKind == SyntaxNodeKind::FunctionDefinition ||
+            token.grandParentKind == SyntaxNodeKind::LambdaExpression
+        );
 }
 
 bool IsAttributeCloseToken(const PrintToken& token) {
@@ -419,9 +415,7 @@ bool IsAttributeOpenToken(const PrintToken& token) {
     );
 }
 
-bool IsFunctionSuffixMacro(const PrintToken& token) {
-    return token.syntaxKind == SyntaxNodeKind::FunctionSuffixMacro;
-}
+bool IsFunctionSuffixMacro(const PrintToken& token) { return token.syntaxKind == SyntaxNodeKind::FunctionSuffixMacro; }
 
 bool IsInlineBlockCommentToken(const PrintToken& token) {
     return token.kind == PrintTokenKind::Text && token.text.size() >= 4 && token.text.substr(0, 2) == "/*";
@@ -695,7 +689,7 @@ bool FormatTokenNeedsSpace(const PrintToken* previous, const PrintToken& current
     ) {
         return true;
     }
-    if (IsSingleStatementLambdaBodyBrace(current, SyntaxNodeKind::RightBrace)) {
+    if (IsCompactSingleStatementBodyBrace(current, SyntaxNodeKind::RightBrace)) {
         return true;
     }
     if (
@@ -730,7 +724,7 @@ bool FormatTokenNeedsSpace(const PrintToken* previous, const PrintToken& current
     if (previous->parentKind == SyntaxNodeKind::RefQualifier) {
         return true;
     }
-    if (IsSingleStatementLambdaBodyBrace(*previous, SyntaxNodeKind::LeftBrace)) {
+    if (IsCompactSingleStatementBodyBrace(*previous, SyntaxNodeKind::LeftBrace)) {
         return true;
     }
     if (
@@ -960,6 +954,4 @@ std::string_view FormatTokenText(const PrintToken& token) {
         token.text;
 }
 
-int FormatTokenWidth(const PrintToken& token) {
-    return static_cast<int>(FormatTokenText(token).size());
-}
+int FormatTokenWidth(const PrintToken& token) { return static_cast<int>(FormatTokenText(token).size()); }

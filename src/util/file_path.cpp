@@ -10,9 +10,7 @@ namespace {
 
 namespace fs = std::filesystem;
 
-bool IsSeparator(char ch) {
-    return ch == '\\' || ch == '/';
-}
+bool IsSeparator(char ch) { return ch == '\\' || ch == '/'; }
 
 bool HasDrivePrefix(std::string_view path) {
     return path.size() >= 2 &&
@@ -43,13 +41,9 @@ std::string TrimTrailingSeparators(std::string path) {
     return path;
 }
 
-fs::path NativePath(std::string_view path) {
-    return fs::path(std::string(path));
-}
+fs::path NativePath(std::string_view path) { return fs::path(std::string(path)); }
 
-std::string PathText(const fs::path& path) {
-    return path.generic_string();
-}
+std::string PathText(const fs::path& path) { return path.generic_string(); }
 
 }  // namespace
 
@@ -59,29 +53,17 @@ FilePath::FilePath(std::string path) : path_(std::move(path)) {}
 
 FilePath::FilePath(std::string_view path) : path_(path) {}
 
-bool FilePath::Empty() const {
-    return path_.empty();
-}
+bool FilePath::Empty() const { return path_.empty(); }
 
-bool FilePath::empty() const {
-    return Empty();
-}
+bool FilePath::empty() const { return Empty(); }
 
-bool FilePath::IsAbsolute() const {
-    return NativePath(path_).is_absolute();
-}
+bool FilePath::IsAbsolute() const { return NativePath(path_).is_absolute(); }
 
-bool FilePath::is_absolute() const {
-    return IsAbsolute();
-}
+bool FilePath::is_absolute() const { return IsAbsolute(); }
 
-bool FilePath::HasParentPath() const {
-    return !ParentPath().Empty();
-}
+bool FilePath::HasParentPath() const { return !ParentPath().Empty(); }
 
-bool FilePath::has_parent_path() const {
-    return HasParentPath();
-}
+bool FilePath::has_parent_path() const { return HasParentPath(); }
 
 FilePath FilePath::ParentPath() const {
     if (path_.empty()) {
@@ -94,13 +76,9 @@ FilePath FilePath::ParentPath() const {
     return FilePath(PathText(parent));
 }
 
-FilePath FilePath::parent_path() const {
-    return ParentPath();
-}
+FilePath FilePath::parent_path() const { return ParentPath(); }
 
-std::string FilePath::string() const {
-    return path_;
-}
+std::string FilePath::string() const { return path_; }
 
 FilePath JoinPath(const FilePath& base, const FilePath& child) {
     if (base.Empty() || child.IsAbsolute()) {
@@ -112,17 +90,11 @@ FilePath JoinPath(const FilePath& base, const FilePath& child) {
     return FilePath(PathText(NativePath(base.string()) / NativePath(child.string())));
 }
 
-FilePath JoinPath(const FilePath& base, const char* child) {
-    return JoinPath(base, FilePath(child));
-}
+FilePath JoinPath(const FilePath& base, const char* child) { return JoinPath(base, FilePath(child)); }
 
-FilePath operator/(const FilePath& base, const FilePath& child) {
-    return JoinPath(base, child);
-}
+FilePath operator/(const FilePath& base, const FilePath& child) { return JoinPath(base, child); }
 
-FilePath operator/(const FilePath& base, const char* child) {
-    return JoinPath(base, child);
-}
+FilePath operator/(const FilePath& base, const char* child) { return JoinPath(base, child); }
 
 FilePath CurrentDirectoryPath() {
     std::error_code error;

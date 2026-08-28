@@ -12,9 +12,7 @@ namespace {
 
 namespace fs = std::filesystem;
 
-bool IsSeparator(char ch) {
-    return ch == '\\' || ch == '/';
-}
+bool IsSeparator(char ch) { return ch == '\\' || ch == '/'; }
 
 bool IsDrivePrefix(std::string_view path) {
     return path.size() >= 2 &&
@@ -32,13 +30,9 @@ std::string TrimTrailingSeparators(std::string value) {
     return value;
 }
 
-fs::path NativePath(std::string_view path) {
-    return fs::path(std::string(path));
-}
+fs::path NativePath(std::string_view path) { return fs::path(std::string(path)); }
 
-std::string PathText(const fs::path& path) {
-    return path.generic_string();
-}
+std::string PathText(const fs::path& path) { return path.generic_string(); }
 
 void RecursiveFilesInto(std::string_view root, std::vector<std::string>& files) {
     std::error_code error;
@@ -129,9 +123,7 @@ std::string NormalizeSeparators(std::string value) {
     return value;
 }
 
-std::string NormalizePathKey(std::string_view path) {
-    return ToLower(NormalizeSeparators(AbsolutePath(path)));
-}
+std::string NormalizePathKey(std::string_view path) { return ToLower(NormalizeSeparators(AbsolutePath(path))); }
 
 std::string Extension(std::string_view path) {
     const size_t slash = path.find_last_of("\\/");
@@ -238,9 +230,7 @@ bool EndsWith(std::string_view value, std::string_view suffix) {
     return value.size() >= suffix.size() && value.substr(value.size() - suffix.size()) == suffix;
 }
 
-bool Contains(std::string_view value, std::string_view needle) {
-    return value.find(needle) != std::string_view::npos;
-}
+bool Contains(std::string_view value, std::string_view needle) { return value.find(needle) != std::string_view::npos; }
 
 std::string NormalizeTrailingLineCommentSpacing(std::string_view line) {
     bool inString = false;
@@ -339,9 +329,7 @@ std::string CollapseWhitespace(const std::vector<std::string>& parts) {
     return result;
 }
 
-std::string NormalizeInclude(std::string value) {
-    return NormalizeSeparators(std::move(value));
-}
+std::string NormalizeInclude(std::string value) { return NormalizeSeparators(std::move(value)); }
 
 bool HasRoot(std::string_view relative, const std::vector<std::string>& roots) {
     for (const std::string& root : roots) {

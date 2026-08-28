@@ -99,7 +99,7 @@ bool IsNamespaceLikeBrace(const PrintToken& token) {
 
 BraceRole RoleForBrace(const PrintToken& token) {
     if (
-        token.inSingleStatementLambdaBody &&
+        token.inCompactSingleStatementBody &&
         token.parentKind == SyntaxNodeKind::CompoundStatement &&
         token.grandParentKind == SyntaxNodeKind::LambdaExpression
     ) {
@@ -109,6 +109,12 @@ BraceRole RoleForBrace(const PrintToken& token) {
         return BraceRole::NamespaceLike;
     }
     return RoleForBraceParent(token.parentKind);
+}
+
+bool IsCompactSingleStatementFunctionBodyBrace(const PrintToken& token) {
+    return token.inCompactSingleStatementBody &&
+        token.parentKind == SyntaxNodeKind::CompoundStatement &&
+        token.grandParentKind == SyntaxNodeKind::FunctionDefinition;
 }
 
 bool IsWithinConditionalFunctionHeader(const PrintToken& token) {
@@ -200,9 +206,7 @@ bool IsStructuredConditionalPreprocessorNode(const SyntaxNode& node) {
     return SyntaxNodeKindHasClass(node.kind, SyntaxNodeClass::ConditionalPreprocessorTree) && !IsPreprocessorNode(node);
 }
 
-bool IsSourceLineBreak(char ch) {
-    return ch == '\r' || ch == '\n';
-}
+bool IsSourceLineBreak(char ch) { return ch == '\r' || ch == '\n'; }
 
 size_t FindSourceLineBreak(std::string_view text, size_t start = 0) {
     for (size_t index = start; index < text.size(); ++index) {
@@ -213,9 +217,7 @@ size_t FindSourceLineBreak(std::string_view text, size_t start = 0) {
     return std::string_view::npos;
 }
 
-bool ContainsSourceLineBreak(std::string_view text) {
-    return FindSourceLineBreak(text) != std::string_view::npos;
-}
+bool ContainsSourceLineBreak(std::string_view text) { return FindSourceLineBreak(text) != std::string_view::npos; }
 
 std::string_view FirstSourceLine(std::string_view text) {
     const size_t end = FindSourceLineBreak(text);
@@ -372,9 +374,7 @@ bool HasDirectDelimiterPair(const SyntaxNode& node, SyntaxNodeKind openKind) {
     return HasDirectKnownChild(node, openKind) && HasDirectKnownChild(node, MatchingListCloseToken(openKind));
 }
 
-bool HasDirectListPrefix(const SyntaxNode& node) {
-    return HasDirectKnownChild(node, SyntaxNodeKind::Colon);
-}
+bool HasDirectListPrefix(const SyntaxNode& node) { return HasDirectKnownChild(node, SyntaxNodeKind::Colon); }
 
 bool IsSeparatedListContainer(const SyntaxNode& node) {
     if (HasDirectKnownChild(node, SyntaxNodeKind::Comma)) {
@@ -459,7 +459,7 @@ void AppendPreprocessorPrintToken(
     bool inTemplateDeclaration,
     bool inRequiresClause,
     bool inCompilerCallModifier,
-    bool inSingleStatementLambdaBody,
+    bool inCompactSingleStatementBody,
     bool inMacroValue,
     bool structuredPreprocessor,
     const SyntaxNode* macroDefinition,
@@ -474,7 +474,7 @@ void AppendPreprocessorPrintToken(
         .inTemplateDeclaration = inTemplateDeclaration,
         .inRequiresClause = inRequiresClause,
         .inCompilerCallModifier = inCompilerCallModifier,
-        .inSingleStatementLambdaBody = inSingleStatementLambdaBody,
+        .inCompactSingleStatementBody = inCompactSingleStatementBody,
         .structuredPreprocessor = structuredPreprocessor,
         .inMacroValue = inMacroValue,
         .node = &node,
@@ -489,7 +489,7 @@ void AppendTokens(
     bool inTemplateDeclaration,
     bool inRequiresClause,
     bool inCompilerCallModifier,
-    bool inSingleStatementLambdaBody,
+    bool inCompactSingleStatementBody,
     const SyntaxNode* macroDefinition,
     bool inMacroValue,
     std::vector<PrintToken>& tokens
@@ -500,8 +500,8 @@ void AppendTokens(
     const bool childInCompilerCallModifier = inCompilerCallModifier ||
         nodeKind == SyntaxNodeKind::MsCallModifier ||
         nodeKind == SyntaxNodeKind::MsDeclspecModifier;
-    const bool childInSingleStatementLambdaBody =
-        inSingleStatementLambdaBody || LambdaBodyAllowsCompactSingleStatementForm(node, parentKind);
+    const bool childInCompactSingleStatementBody =
+        inCompactSingleStatementBody || CallableBodyAllowsCompactSingleStatementForm(node, parentKind);
     const SyntaxNode* childMacroDefinition = macroDefinition != nullptr ? macroDefinition :
         (SyntaxNodeKindHasClass(nodeKind, SyntaxNodeClass::MacroDefinition) ? &node : nullptr);
     const bool childInMacroValue = inMacroValue || nodeKind == SyntaxNodeKind::MacroReplacementList;
@@ -526,7 +526,7 @@ void AppendTokens(
             .inTemplateDeclaration = childInTemplateDeclaration,
             .inRequiresClause = childInRequiresClause,
             .inCompilerCallModifier = childInCompilerCallModifier,
-            .inSingleStatementLambdaBody = childInSingleStatementLambdaBody,
+            .inCompactSingleStatementBody = childInCompactSingleStatementBody,
             .inMacroValue = childInMacroValue,
             .node = &node,
             .macroDefinition = childMacroDefinition
@@ -543,7 +543,7 @@ void AppendTokens(
             .inTemplateDeclaration = childInTemplateDeclaration,
             .inRequiresClause = childInRequiresClause,
             .inCompilerCallModifier = childInCompilerCallModifier,
-            .inSingleStatementLambdaBody = childInSingleStatementLambdaBody,
+            .inCompactSingleStatementBody = childInCompactSingleStatementBody,
             .inMacroValue = childInMacroValue,
             .node = &node,
             .macroDefinition = childMacroDefinition
@@ -559,7 +559,7 @@ void AppendTokens(
             childInTemplateDeclaration,
             childInRequiresClause,
             childInCompilerCallModifier,
-            childInSingleStatementLambdaBody,
+            childInCompactSingleStatementBody,
             childInMacroValue,
             true,
             childMacroDefinition,
@@ -581,7 +581,7 @@ void AppendTokens(
                     childInTemplateDeclaration,
                     childInRequiresClause,
                     childInCompilerCallModifier,
-                    childInSingleStatementLambdaBody,
+                    childInCompactSingleStatementBody,
                     childInMacroValue,
                     true,
                     childMacroDefinition,
@@ -611,7 +611,7 @@ void AppendTokens(
                 childInTemplateDeclaration,
                 childInRequiresClause,
                 childInCompilerCallModifier,
-                childInSingleStatementLambdaBody,
+                childInCompactSingleStatementBody,
                 childMacroDefinition,
                 childInMacroValue,
                 tokens
@@ -629,7 +629,7 @@ void AppendTokens(
             .inTemplateDeclaration = childInTemplateDeclaration,
             .inRequiresClause = childInRequiresClause,
             .inCompilerCallModifier = childInCompilerCallModifier,
-            .inSingleStatementLambdaBody = childInSingleStatementLambdaBody,
+            .inCompactSingleStatementBody = childInCompactSingleStatementBody,
             .inMacroValue = childInMacroValue,
             .node = &node,
             .macroDefinition = childMacroDefinition
@@ -645,7 +645,7 @@ void AppendTokens(
             .inTemplateDeclaration = childInTemplateDeclaration,
             .inRequiresClause = childInRequiresClause,
             .inCompilerCallModifier = childInCompilerCallModifier,
-            .inSingleStatementLambdaBody = childInSingleStatementLambdaBody,
+            .inCompactSingleStatementBody = childInCompactSingleStatementBody,
             .inMacroValue = childInMacroValue,
             .node = &node,
             .macroDefinition = childMacroDefinition
@@ -662,7 +662,7 @@ void AppendTokens(
             .inTemplateDeclaration = childInTemplateDeclaration,
             .inRequiresClause = childInRequiresClause,
             .inCompilerCallModifier = childInCompilerCallModifier,
-            .inSingleStatementLambdaBody = childInSingleStatementLambdaBody,
+            .inCompactSingleStatementBody = childInCompactSingleStatementBody,
             .inMacroValue = childInMacroValue,
             .node = &node,
             .macroDefinition = childMacroDefinition
@@ -679,7 +679,7 @@ void AppendTokens(
             .inTemplateDeclaration = childInTemplateDeclaration,
             .inRequiresClause = childInRequiresClause,
             .inCompilerCallModifier = childInCompilerCallModifier,
-            .inSingleStatementLambdaBody = childInSingleStatementLambdaBody,
+            .inCompactSingleStatementBody = childInCompactSingleStatementBody,
             .inMacroValue = childInMacroValue,
             .node = &node,
             .macroDefinition = childMacroDefinition
@@ -695,7 +695,7 @@ void AppendTokens(
                 childInTemplateDeclaration,
                 childInRequiresClause,
                 childInCompilerCallModifier,
-                childInSingleStatementLambdaBody,
+                childInCompactSingleStatementBody,
                 childMacroDefinition,
                 true,
                 tokens
@@ -712,7 +712,7 @@ void AppendTokens(
                 childInTemplateDeclaration,
                 childInRequiresClause,
                 childInCompilerCallModifier,
-                childInSingleStatementLambdaBody,
+                childInCompactSingleStatementBody,
                 childMacroDefinition,
                 childInMacroValue,
                 tokens
@@ -1534,9 +1534,7 @@ private:
         return false;
     }
 
-    void FinishLine() {
-        TrimTrailingSpaces();
-    }
+    void FinishLine() { TrimTrailingSpaces(); }
 
     void TrimTrailingBlankLines() {
         while (output_.size() >= 2 && output_.back() == '\n' && output_[output_.size() - 2] == '\n') {
@@ -1834,9 +1832,7 @@ private:
         pendingTokens_.clear();
     }
 
-    void BufferToken(const PrintToken& token) {
-        pendingTokens_.push_back(token);
-    }
+    void BufferToken(const PrintToken& token) { pendingTokens_.push_back(token); }
 
     FormatBreakChoice ChoiceFor(const FormatBreakSolution& solution, int nodeId) const {
         if (nodeId < 0 || static_cast<size_t>(nodeId) >= solution.choices.size()) {
@@ -2569,9 +2565,7 @@ private:
         return splitContextOpens;
     }
 
-    bool HasBufferedLineText() const {
-        return lineHasText_ || !pendingTokens_.empty();
-    }
+    bool HasBufferedLineText() const { return lineHasText_ || !pendingTokens_.empty(); }
 
     std::optional<MandatoryBlockSplitListPlan> BuildMandatoryBlockSplitListPlan(const PrintToken& token) const {
         if (
@@ -3418,14 +3412,14 @@ private:
                             TrimTrailingBlankLines();
                             ReopenLastOutputLine();
                         }
-                    } else if (HasBufferedLineText()) {
+                    } else if (!token.inCompactSingleStatementBody && HasBufferedLineText()) {
                         FlushPendingTokens();
                         NewLine(ShouldContinueMacroLine(token, next));
                     }
                     return;
                 }
                 BufferToken(token);
-                if (!token.inSingleStatementLambdaBody && ShouldBreakAfterSemicolon() && !(
+                if (!token.inCompactSingleStatementBody && ShouldBreakAfterSemicolon() && !(
                     rawNext != nullptr && rawNext->kind == PrintTokenKind::TrailingComment
                 )) {
                     FlushPendingTokens();
@@ -3527,7 +3521,7 @@ private:
         }
         std::optional<MandatoryBlockSplitListPlan> splitListPlan = BuildMandatoryBlockSplitListPlan(token);
         BufferToken(token);
-        if (role == BraceRole::Compact) {
+        if (role == BraceRole::Compact || IsCompactSingleStatementFunctionBodyBrace(token)) {
             return;
         }
         const std::vector<const SyntaxNode*> splitContextOpens =
@@ -3632,6 +3626,14 @@ private:
                 return;
             }
             NewLine(ShouldContinueMacroLine(token, next));
+            return;
+        }
+        if (IsCompactSingleStatementFunctionBodyBrace(token)) {
+            BufferToken(token);
+            FlushPendingTokens();
+            if (rawNext == nullptr || rawNext->kind != PrintTokenKind::TrailingComment) {
+                NewLine(ShouldContinueMacroLine(token, next));
+            }
             return;
         }
         const BraceRole tokenRole = RoleForBrace(token);

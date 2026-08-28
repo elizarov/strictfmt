@@ -11,9 +11,7 @@ bool HasClass(const SyntaxNode& node, SyntaxNodeClass syntaxNodeClass) {
     return (node.classes & static_cast<std::uint64_t>(syntaxNodeClass)) != 0;
 }
 
-bool IsTrivia(const SyntaxNode& node) {
-    return HasClass(node, SyntaxNodeClass::Trivia);
-}
+bool IsTrivia(const SyntaxNode& node) { return HasClass(node, SyntaxNodeClass::Trivia); }
 
 bool IsConditionalPreprocessor(const SyntaxNode& node) {
     switch (node.kind) {

@@ -213,9 +213,7 @@ MacroCategories:
     - UTEST_MT
 -->
 ```cpp
-UTEST_MT(FormatterMacroFixture, KeepsThreads, 2) {
-    RunThreadedTest();
-}
+UTEST_MT(FormatterMacroFixture, KeepsThreads, 2) { RunThreadedTest(); }
 ```
 
 Macro function definition with trailing C++ parameters: the macro call is followed by a normal parameter list before the body.
@@ -226,9 +224,7 @@ MacroCategories:
     - BENCHMARK_DEFINE_F
 -->
 ```cpp
-BENCHMARK_DEFINE_F(FormatterBenchmark, Inline)(benchmark::State& state) {
-    UseBenchmarkState(state);
-}
+BENCHMARK_DEFINE_F(FormatterBenchmark, Inline)(benchmark::State& state) { UseBenchmarkState(state); }
 ```
 
 Namespace-scope macro call statement: the whole call, optional configured bare-macro suffix, and optional `->` chain are formatted as one declaration item.

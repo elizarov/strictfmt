@@ -60,12 +60,8 @@
 
 BENCHMARK_CAPTURE(FormatterBenchmark, Mode, kValue) BENCHMARK_THREAD_ARGS;
 BENCHMARK_INSTANTIATE_TEMPLATE_F(FormatterBenchmark, Value, int);
-BENCHMARK_DEFINE_TEMPLATE_F(FormatterBenchmark, Value)(benchmark::State& state) {
-    UseBenchmarkState(state);
-}
-BENCHMARK_DEFINE_F(FormatterBenchmark, Inline)(benchmark::State& state) {
-    UseBenchmarkState(state);
-}
+BENCHMARK_DEFINE_TEMPLATE_F(FormatterBenchmark, Value)(benchmark::State& state) { UseBenchmarkState(state); }
+BENCHMARK_DEFINE_F(FormatterBenchmark, Inline)(benchmark::State& state) { UseBenchmarkState(state); }
 
 #ifdef __cplusplus
 extern "C" {
@@ -85,14 +81,10 @@ void __rseq_percpu* FormatUserverPerCpuIdentity(void __rseq_percpu* pointer) {
 }
 
 template <typename Output>
-USERVER_IMPL_FORCE_INLINE Output FormatUserverInline(Output output) {
-    return output;
-}
+USERVER_IMPL_FORCE_INLINE Output FormatUserverInline(Output output) { return output; }
 
 template <typename Enum>
-Flags<Enum> FormatUserverFlagsOr(Flags<Enum> lhs) {
-    return Flags<Enum>{lhs} |= lhs;
-}
+Flags<Enum> FormatUserverFlagsOr(Flags<Enum> lhs) { return Flags<Enum>{lhs} |= lhs; }
 
 namespace macro_boundary_fixture {}
 
@@ -125,31 +117,21 @@ private:
     int value_ = 0;
 };
 
-UTEST_DEATH(FormatterMacroFixture, KeepsBody) {
-    RunDeathTest();
-}
+UTEST_DEATH(FormatterMacroFixture, KeepsBody) { RunDeathTest(); }
 
-UTEST_MT(FormatterMacroFixture, KeepsThreads, 2) {
-    RunThreadedTest();
-}
+UTEST_MT(FormatterMacroFixture, KeepsThreads, 2) { RunThreadedTest(); }
 
 TYPED_UTEST_SUITE_P(FormatterTypedFixture);
 
-TYPED_UTEST_P_MT(FormatterTypedFixture, KeepsTypedThreads, 2) {
-    RunTypedThreadedTest<TypeParam>();
-}
+TYPED_UTEST_P_MT(FormatterTypedFixture, KeepsTypedThreads, 2) { RunTypedThreadedTest<TypeParam>(); }
 
-TYPED_UTEST_MT(FormatterTypedFixture, KeepsDirectTypedThreads, 2) {
-    RunDirectTypedThreadedTest<TypeParam>();
-}
+TYPED_UTEST_MT(FormatterTypedFixture, KeepsDirectTypedThreads, 2) { RunDirectTypedThreadedTest<TypeParam>(); }
 
 INSTANTIATE_UTEST_SUITE_P(/* no prefix */, FormatterMacroFixture, testing::Values(true));
 
 BENCHMARK_TEMPLATE(FormatterBenchmark, std::string)->Range(1, 8);
 
-void DependentTemplateMemberCall(DependentStorage& storage) {
-    storage.template Emplace(tag, MakeValue());
-}
+void DependentTemplateMemberCall(DependentStorage& storage) { storage.template Emplace(tag, MakeValue()); }
 
 void GeneratedDependentTemplateMemberCall(Value value) {
     VariableTypeRaw res{
@@ -168,9 +150,7 @@ void DecltypeBracedSentinel(Iterator it) {
     for (; it != decltype(it){}; ++it) {}
 }
 
-void MacroConcatenatedString() {
-    throw Error("prefix " FORMAT_USERVER_VERSION " suffix");
-}
+void MacroConcatenatedString() { throw Error("prefix " FORMAT_USERVER_VERSION " suffix"); }
 
 void QualifiedTemplateCompoundLiteral(Token token, Writer& writer) {
     WriteToStream(
@@ -185,16 +165,12 @@ auto BracedLambdaCapture(std::vector<int> inputs, CaptureSettings settings) {
         [inputs{std::move(inputs)}, settings{std::move(settings)}]() mutable { return inputs.size() + settings.count; };
 }
 
-FORMAT_USERVER_NODEBUG_FUNC inline decltype(auto) PrefixedInlineFunction(Function&& function) {
-    return function();
-}
+FORMAT_USERVER_NODEBUG_FUNC inline decltype(auto) PrefixedInlineFunction(Function&& function) { return function(); }
 
 class PrefixedAttributeMethodFixture {
 public:
     template <typename T>
-    FORMAT_USERVER_PROTECTED_ATTR bool Compare(T& value) noexcept {
-        return value.Compare();
-    }
+    FORMAT_USERVER_PROTECTED_ATTR bool Compare(T& value) noexcept { return value.Compare(); }
 };
 
 Metric* ContextualRefIdentifier(Storage& storage) {
@@ -227,9 +203,7 @@ void SplitConstDeclarationMacroArgument(Source& source) {
     );
 }
 
-void ThrowExpressionMacroArgument() {
-    UEXPECT_THROW(throw ErrorType(), ErrorType);
-}
+void ThrowExpressionMacroArgument() { UEXPECT_THROW(throw ErrorType(), ErrorType); }
 
 void PlainDeclarationMacroArgument() {
     UEXPECT_THROW(auto future = Client().SayHello(request), std::runtime_error);
@@ -298,21 +272,15 @@ void StatementSequenceMacroArgument() {
     );
 }
 
-Value ConditionalThrowExpression(bool enabled) {
-    return enabled ? throw ErrorType() : Value{};
-}
+Value ConditionalThrowExpression(bool enabled) { return enabled ? throw ErrorType() : Value{}; }
 
 void ThrowFoldExpression(ErrorContext context, std::size_t processed_bytes) {
     throw (IoCancelled(/*bytes_transferred =*/ processed_bytes) << ... << context);
 }
 
-void QualifiedOperatorCall(Task& task) {
-    task.TaskBase::operator=(Task{});
-}
+void QualifiedOperatorCall(Task& task) { task.TaskBase::operator=(Task{}); }
 
-void CapitalizedHelperCall() {
-    SetHttpProxy(target, channel_args, factory.GetAuthType(), proxy_address);
-}
+void CapitalizedHelperCall() { SetHttpProxy(target, channel_args, factory.GetAuthType(), proxy_address); }
 
 DateParts OperatorConversionCall(DatePartsParts ymd) {
     return {ymd.year().operator int(), ymd.month().operator unsigned int()};
@@ -371,9 +339,7 @@ void MacroTrailingCommaArgument() {
     TEST_COMMAND("assert_matches('(running.*){1,4}', tasks_list_output)\n", test_in_coredump = True);
 }
 
-LockedChannelProxy<AMQP::Channel> GetChannel(engine::Deadline deadline) {
-    return DoGetChannel(channel, deadline);
-}
+LockedChannelProxy<AMQP::Channel> GetChannel(engine::Deadline deadline) { return DoGetChannel(channel, deadline); }
 
 LockedChannelProxy<AmqpConnection::ReliableChannel> GetReliableChannel(engine::Deadline deadline) {
     return DoGetChannel(*reliable, deadline);
@@ -390,9 +356,7 @@ ATTRIBUTE_NO_SANITIZE_UNDEFINED std::size_t AttributePrefixedFunction(const Boun
 }
 
 template <typename T>
-USERVER_IMPL_NODEBUG T NodebugPrefixedTemplate() {
-    return T{};
-}
+USERVER_IMPL_NODEBUG T NodebugPrefixedTemplate() { return T{}; }
 
 template <IsRange T>
 using IteratorType USERVER_IMPL_NODEBUG = decltype(begin(std::declval<T&>()));
@@ -406,17 +370,11 @@ FORMAT_USERVER_ALWAYS_INLINE_SIMD std::size_t PrefixMacroFunction(const BoundsBl
     return block.Find(value);
 }
 
-Value DependentTypenameBraced(Payload payload) {
-    return typename Value::Builder{payload.value}.ExtractValue();
-}
+Value DependentTypenameBraced(Payload payload) { return typename Value::Builder{payload.value}.ExtractValue(); }
 
-Value DependentTypenameCall(Item item) {
-    return typename Value::Builder(T{item});
-}
+Value DependentTypenameCall(Item item) { return typename Value::Builder(T{item}); }
 
-auto DecltypeValueInitialization(Func& func) {
-    return decltype(func())();
-}
+auto DecltypeValueInitialization(Func& func) { return decltype(func())(); }
 
 using MemberFunctionPointerArray = std::array<void (FieldSubparser::*)(), Count>;
 
@@ -429,9 +387,7 @@ PrepareUnaryCallProxy(
     const grpc::string&
 ) -> PrepareUnaryCallProxy<grpc::GenericStub, grpc::ByteBuffer, grpc::ByteBuffer>;
 
-Data& operator*() & FORMAT_USERVER_LIFETIME_BOUND {
-    return data_;
-}
+Data& operator*() & FORMAT_USERVER_LIFETIME_BOUND { return data_; }
 
 using std::chrono::duration, std::chrono::nanoseconds;
 

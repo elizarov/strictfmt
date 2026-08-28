@@ -61,7 +61,7 @@ struct Key {
 
 Mandatory line breaks are structural boundaries. The break is always taken before optional wrapping is considered.
 
-- Break between complete statements and declarations, including after each statement-terminating semicolon. An eligible compact single-statement lambda body described under [Lambdas](#lambdas) is the only exception for a non-null statement.
+- Break between complete statements and declarations, including after each statement-terminating semicolon, except inside a single-line function or lambda body.
 - Remove structurally optional null declarations and statements, including first items in a scope, while preserving their comments. Null statements required as bodies remain subject to control-brace normalization.
 - Put block-opening braces at the end of the introducing line, then break.
   - For every non-empty code block, regardless of its owner, the opener must visually separate a multiline introducing header from the block contents: if the header's last line is at the same indentation as the block contents, put `{` on its own line at the block owner's indentation. An owner-indented line containing only closing delimiters before `{`, such as `) {`, already provides that separation.
@@ -499,6 +499,8 @@ int RuntimeEntryPoint(int value);
 
 ## Declaration And Control Headers
 
+Functions and lambdas use the same body layout. A single-statement body stays on the callable-header line when the complete construct fits; otherwise it uses the ordinary block layout. Comments and statements containing a compound block prevent the single-line form.
+
 Template prefixes are emitted before the introduced declaration, and the introduced declaration always starts on a separate physical line from the template prefix. A `requires` clause stays on the same line as `template <...>` only when the complete template prefix and compact clause fit on that line. Otherwise, including when the clause owns a forced break, the `requires` clause moves to a subordinate line and wraps structurally.
 
 ```cpp
@@ -642,9 +644,7 @@ Nested switches restore the enclosing switch case indentation after the inner sw
 
 ## Lambdas
 
-Lambdas intentionally format like functions. The complete [callable header](glossary.md#callable-header) follows the same placement as a function header, and an owner prefix behaves like a function return-type prefix.
-
-Single-statement lambda bodies may stay compact only when the complete lambda fits on one physical line. The compact form is limited to statements whose subtree contains no compound block, so a statement such as `if (condition) { work(); }` uses the same broken-body form as other block-bearing lambda bodies. If a lambda breaks anywhere, its body breaks after `{`, formats the body one indentation step deeper than the lambda header's render base, and aligns the closing brace with that base. Multi-statement lambda bodies always use that broken-body form.
+The complete lambda [callable header](glossary.md#callable-header) follows function-header placement, and an owner prefix behaves like a function return-type prefix.
 
 Lambda captures are part of the callable prefix. Captures and parameters are separate break opportunities and use the same compact-or-split layouts as other delimiter groups. Breaks inside the callable prefix are structurally deeper than parameter-list breaks, so equal-cost wrapping splits parameters first.
 

@@ -26,19 +26,13 @@ enum class ScannerMacroCategory : unsigned {
 thread_local const FormatterConfig* g_parseConfig = nullptr;
 
 struct TSParserDeleter {
-    void operator()(TSParser* parser) const {
-        ts_parser_delete(parser);
-    }
+    void operator()(TSParser* parser) const { ts_parser_delete(parser); }
 };
 
 struct ParseConfigScope {
-    explicit ParseConfigScope(const FormatterConfig& config) : previous(g_parseConfig) {
-        g_parseConfig = &config;
-    }
+    explicit ParseConfigScope(const FormatterConfig& config) : previous(g_parseConfig) { g_parseConfig = &config; }
 
-    ~ParseConfigScope() {
-        g_parseConfig = previous;
-    }
+    ~ParseConfigScope() { g_parseConfig = previous; }
 
     const FormatterConfig* previous = nullptr;
 };

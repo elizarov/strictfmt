@@ -43,9 +43,7 @@ ToolFileProgress::ToolFileProgress(
     started_(started),
     enabled_(enabled && IsToolOutputTerminal(output)) {}
 
-ToolFileProgress::~ToolFileProgress() {
-    Clear();
-}
+ToolFileProgress::~ToolFileProgress() { Clear(); }
 
 void ToolFileProgress::Update(size_t completedFiles) {
     if (!enabled_) {

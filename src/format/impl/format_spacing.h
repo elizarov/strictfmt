@@ -23,7 +23,7 @@ struct PrintToken {
     bool inTemplateDeclaration = false;
     bool inRequiresClause = false;
     bool inCompilerCallModifier = false;
-    bool inSingleStatementLambdaBody = false;
+    bool inCompactSingleStatementBody = false;
     bool structuredPreprocessor = false;
     bool inMacroValue = false;
     const SyntaxNode* node = nullptr;
