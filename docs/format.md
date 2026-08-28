@@ -35,6 +35,17 @@ This document specifies the source layout produced by `strictfmt`.
 - Put no space between `#` and any preprocessor directive keyword, e.g. `#if` and `#include`.
 - Put one space after a preprocessor directive keyword before its operand, e.g. `#pragma once`.
 
+## Vertical Alignment
+
+Do not vertically align tokens across lines. As the sole exception, align a run of trailing `//` comments on consecutive lines in the same syntactic group when the aligned run fits within the line limit; otherwise use the ordinary two-space separation.
+
+```cpp
+struct Key {
+    std::string shard;  // shard key
+    int64_t id;         // primary key
+};
+```
+
 ## Line Hygiene
 
 - Remove trailing whitespace from every line.
