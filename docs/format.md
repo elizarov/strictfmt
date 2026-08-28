@@ -50,7 +50,8 @@ This document specifies the source layout produced by `strictfmt`.
 
 Mandatory line breaks are structural boundaries. The break is always taken before optional wrapping is considered.
 
-- Break between complete statements and declarations, including after each statement-terminating semicolon. The only exception is an eligible compact single-statement lambda body described under [Lambdas](#lambdas).
+- Break between complete statements and declarations, including after each statement-terminating semicolon. An eligible compact single-statement lambda body described under [Lambdas](#lambdas) is the only exception for a non-null statement.
+- Remove structurally optional null declarations and statements, including first items in a scope, while preserving their comments. Null statements required as bodies remain subject to control-brace normalization.
 - Put block-opening braces at the end of the introducing line, then break.
   - For every non-empty code block, regardless of its owner, the opener must visually separate a multiline introducing header from the block contents: if the header's last line is at the same indentation as the block contents, put `{` on its own line at the block owner's indentation. An owner-indented line containing only closing delimiters before `{`, such as `) {`, already provides that separation.
 - Keep an empty code block as `{}` without a body break.
@@ -589,7 +590,7 @@ void UseCurrent() {
 }
 ```
 
-Break after a non-empty statement or declaration block's closing brace. The attachment exceptions are `else`, `catch`, `finally`, and the `while` that closes a do-while statement.
+Break after a non-empty statement or declaration block's closing brace unless it is followed by attached punctuation or a block-attaching keyword: `else`, `catch`, `finally`, or the `while` that closes a do-while statement.
 
 ```cpp
 void RunSafely() {
@@ -690,6 +691,7 @@ The formatter preserves source token order except for:
 - include sorting when include groups are configured
 - trailing-comma normalization
 - control-brace normalization
+- removal of structurally optional null declarations and statements
 - safe joining of adjacent ordinary string-literal tokens selected onto the same physical line
 
 This joining exception removes the closing quote, inter-token whitespace, and next opening quote while preserving the combined literal's compatible encoding prefix and user-defined suffix. It applies only to ordinary literals in compact layout; raw literals and literals separated by a selected line break retain their token boundary. Joining is forbidden when the prefixes or suffixes are incompatible or when removing the seam could extend an escape at the end of the first body. In particular, a hexadecimal escape such as `\xB0` remains separated when the next body starts with a hexadecimal digit, and a one- or two-digit octal escape remains separated when the next body starts with an octal digit.
