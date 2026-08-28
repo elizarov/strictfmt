@@ -7,9 +7,7 @@
 
 namespace {
 
-bool IsNewline(char ch) {
-    return ch == '\r' || ch == '\n';
-}
+bool IsNewline(char ch) { return ch == '\r' || ch == '\n'; }
 
 bool StartsWithHorizontalSpace(std::string_view text) {
     return !text.empty() && (text.front() == ' ' || text.front() == '\t');

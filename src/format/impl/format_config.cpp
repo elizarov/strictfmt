@@ -132,13 +132,9 @@ std::vector<std::string>
     return values;
 }
 
-bool IsMacroNameStart(char ch) {
-    return ch == '_' || (ch >= 'A' && ch <= 'Z') || (ch >= 'a' && ch <= 'z');
-}
+bool IsMacroNameStart(char ch) { return ch == '_' || (ch >= 'A' && ch <= 'Z') || (ch >= 'a' && ch <= 'z'); }
 
-bool IsMacroNameContinue(char ch) {
-    return IsMacroNameStart(ch) || (ch >= '0' && ch <= '9');
-}
+bool IsMacroNameContinue(char ch) { return IsMacroNameStart(ch) || (ch >= '0' && ch <= '9'); }
 
 void ValidateMacroCategoryEntries(std::string_view configKey, const std::vector<std::string>& entries) {
     std::vector<std::string> sortedEntries = entries;

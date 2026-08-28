@@ -52,9 +52,7 @@ std::string_view TrimLeadingWhitespace(std::string_view value) {
     return value;
 }
 
-SyntaxNode* MakeNode(FormatModel& model) {
-    return &model.nodes.emplace_back(model.childStorage.get());
-}
+SyntaxNode* MakeNode(FormatModel& model) { return &model.nodes.emplace_back(model.childStorage.get()); }
 
 void SetParentRecursive(SyntaxNode& node, const SyntaxNode* parent) {
     node.parent = parent;

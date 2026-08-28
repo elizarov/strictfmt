@@ -19,13 +19,9 @@ struct SyntaxKindInfo {
     std::uint64_t classes = 0;
 };
 
-constexpr std::uint64_t Bit(SyntaxNodeClass syntaxNodeClass) {
-    return static_cast<std::uint64_t>(syntaxNodeClass);
-}
+constexpr std::uint64_t Bit(SyntaxNodeClass syntaxNodeClass) { return static_cast<std::uint64_t>(syntaxNodeClass); }
 
-constexpr SyntaxKindMapping Kind(SyntaxNodeKind kind, std::uint64_t classes = 0) {
-    return {kind, {}, {}, classes};
-}
+constexpr SyntaxKindMapping Kind(SyntaxNodeKind kind, std::uint64_t classes = 0) { return {kind, {}, {}, classes}; }
 
 constexpr SyntaxKindMapping Tree(SyntaxNodeKind kind, std::string_view treeType, std::uint64_t classes = 0) {
     return {kind, treeType, {}, Bit(SyntaxNodeClass::Tree) | classes};
@@ -677,9 +673,7 @@ static_assert(
     "Only lexical literals may suppress tree-sitter's internal lexical children"
 );
 
-constexpr size_t KindIndex(SyntaxNodeKind kind) {
-    return static_cast<size_t>(kind);
-}
+constexpr size_t KindIndex(SyntaxNodeKind kind) { return static_cast<size_t>(kind); }
 
 constexpr size_t kSyntaxNodeKindCount = KindIndex(SyntaxNodeKind::KeywordCoYield) + 1;
 
@@ -738,9 +732,7 @@ const std::unordered_map<std::string_view, SyntaxNodeKind>& SyntaxKindByTokenTex
 
 using SymbolInfoTable = std::vector<SyntaxSymbolInfo>;
 
-SymbolInfoTable MakeSymbolInfoTable() {
-    return SymbolInfoTable(ts_language_symbol_count(tree_sitter_cpp()));
-}
+SymbolInfoTable MakeSymbolInfoTable() { return SymbolInfoTable(ts_language_symbol_count(tree_sitter_cpp())); }
 
 void
     StoreTreeSymbolInfo(SymbolInfoTable& table, std::string_view name, SyntaxNodeKind kind, std::uint64_t classes = 0)
@@ -902,13 +894,23 @@ bool NodeOrDescendantHasClass(const SyntaxNode& node, SyntaxNodeClass syntaxNode
     return false;
 }
 
+bool IsNullItem(const SyntaxNode& node) {
+    const SyntaxNode* item = &node;
+    while (item->children.size() == 1 && item->children.front() != nullptr) {
+        item = item->children.front();
+    }
+    return item->kind == SyntaxNodeKind::Semicolon;
+}
+
 const SyntaxNode* OnlyContentChild(const SyntaxNode& node) {
     const SyntaxNode* contentChild = nullptr;
     for (const SyntaxNode* child : node.children) {
-        if (child == nullptr || SyntaxNodeKindHasClass(child->kind, SyntaxNodeClass::Trivia) || SyntaxNodeKindHasClass(
-            child->kind,
-            SyntaxNodeClass::Known
-        )) {
+        if (
+            child == nullptr ||
+            SyntaxNodeKindHasClass(child->kind, SyntaxNodeClass::Trivia) ||
+            SyntaxNodeKindHasClass(child->kind, SyntaxNodeClass::Known) ||
+            IsNullItem(*child)
+        ) {
             continue;
         }
         if (contentChild != nullptr) {
@@ -1521,15 +1523,20 @@ bool SyntaxNodeKindHasClass(SyntaxNodeKind kind, SyntaxNodeClass syntaxNodeClass
     return (kSyntaxKindInfoByKind[index].classes & Bit(syntaxNodeClass)) != 0;
 }
 
-bool LambdaBodyAllowsCompactSingleStatementForm(const SyntaxNode& node, SyntaxNodeKind parentKind) {
-    if (node.kind != SyntaxNodeKind::CompoundStatement || parentKind != SyntaxNodeKind::LambdaExpression) {
+bool CallableBodyAllowsCompactSingleStatementForm(const SyntaxNode& node, SyntaxNodeKind parentKind) {
+    const bool callableOwner =
+        parentKind == SyntaxNodeKind::FunctionDefinition || parentKind == SyntaxNodeKind::LambdaExpression;
+    if (node.kind != SyntaxNodeKind::CompoundStatement || !callableOwner) {
         return false;
     }
     if (NodeOrDescendantHasClass(node, SyntaxNodeClass::Comment)) {
         return false;
     }
+    if (node.parent != nullptr && NodeOrDescendantHasClass(*node.parent, SyntaxNodeClass::PreprocessorDirective)) {
+        return false;
+    }
     const SyntaxNode* statement = OnlyContentChild(node);
-    // Compact lambda spacing and body-header choices must agree. A lone statement that owns a
+    // Compact callable spacing and body-header choices must agree. A lone statement that owns a
     // compound block, such as if/switch/compound, needs normal block indentation for that subtree.
     return statement != nullptr && !NodeOrDescendantHasClass(*statement, SyntaxNodeClass::CompoundBlock);
 }

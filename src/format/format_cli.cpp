@@ -65,9 +65,7 @@ std::string ReadStdinText() {
     return text;
 }
 
-FILE* SummaryStream(const FormatOptions& options) {
-    return options.mode == FormatMode::Stdout ? stderr : stdout;
-}
+FILE* SummaryStream(const FormatOptions& options) { return options.mode == FormatMode::Stdout ? stderr : stdout; }
 
 void PrintSourceError(FILE* output, std::string_view file, std::string_view error) {
     const std::vector<std::string> lines = SplitLines(error);

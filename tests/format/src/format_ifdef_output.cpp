@@ -92,19 +92,13 @@ GTEST_REVERSE_REPEATER_METHOD_(OnTestProgramEnd, UnitTest)
 
 #if FORMAT_USERVER_LEGACY_FMT
 template <typename S>
-const S& LegacyRuntime(const S& s) {
-    return s;
-}
+const S& LegacyRuntime(const S& s) { return s; }
 #endif
 
 #if defined(FORMAT_USERVER_PLATFORM) && __has_include(<format_userver/header.hpp>)
-void HasIncludeGuardedFunction() {
-    UsePlatformHeader();
-}
+void HasIncludeGuardedFunction() { UsePlatformHeader(); }
 #else
-void HasIncludeGuardedFallback() {
-    UseFallbackHeader();
-}
+void HasIncludeGuardedFallback() { UseFallbackHeader(); }
 #endif
 
 void ConditionalStatementGuard() {

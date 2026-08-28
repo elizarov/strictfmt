@@ -36,9 +36,7 @@ struct IncludeSortContext {
     std::optional<std::regex> mainIncludeRegex;
 };
 
-bool IsWhitespace(char ch) {
-    return std::isspace(static_cast<unsigned char>(ch)) != 0;
-}
+bool IsWhitespace(char ch) { return std::isspace(static_cast<unsigned char>(ch)) != 0; }
 
 std::string_view TrimView(std::string_view value) {
     while (!value.empty() && IsWhitespace(value.front())) {
@@ -50,9 +48,7 @@ std::string_view TrimView(std::string_view value) {
     return value;
 }
 
-bool IsBlankSourceLine(std::string_view line) {
-    return TrimView(line).empty();
-}
+bool IsBlankSourceLine(std::string_view line) { return TrimView(line).empty(); }
 
 bool IsCommentSourceLine(std::string_view line) {
     const std::string_view trimmed = TrimView(line);
@@ -247,9 +243,7 @@ int IncludePriority(const IncludeSortContext& context, std::string_view target) 
     return kUnmatchedIncludePriority;
 }
 
-bool IsIncludeNode(const SyntaxNode& node) {
-    return node.kind == SyntaxNodeKind::PreprocInclude;
-}
+bool IsIncludeNode(const SyntaxNode& node) { return node.kind == SyntaxNodeKind::PreprocInclude; }
 
 std::string FormatIncludeTextsPreservingOrder(const std::vector<std::string>& includeTexts) {
     std::string result;

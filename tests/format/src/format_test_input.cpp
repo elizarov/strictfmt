@@ -1231,6 +1231,29 @@ int ShortNonEmpty() {
     return 1;
 }
 
+int CompactSingleStatementFunction(){return 1;}
+
+struct CompactCallableBodyFixture{
+CompactCallableBodyFixture(int value):value_(value){Initialize();}
+~CompactCallableBodyFixture(){Cleanup();}
+int Value() const{return value_;}
+int value_;
+};
+
+int VeryLongSingleStatementFunctionNameThatCannotKeepItsCompleteCallableHeaderAndBodyOnOnePhysicalLine(int value){return value;}
+
+void MultiStatementFunctionBody(){First();Second();}
+
+void BlockBearingSingleStatementFunctionBody(bool ready){if(ready){Run();}}
+
+void CommentedSingleStatementFunctionBody(){
+// body comment
+Run();
+}
+
+auto compactSingleStatementLambda=[](){return 1;};
+auto blockBearingSingleStatementLambda=[](){if(ready){Run();}};
+
 void EmptyFunction() {}
 void EmptyFunctionPairA() {} void EmptyFunctionPairB() {}
 

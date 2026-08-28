@@ -97,9 +97,7 @@ void WriteNode(FILE* output, const SyntaxNode& node, int indent, bool listItem) 
     }
 }
 
-void PrintUsage(FILE* output) {
-    std::fprintf(output, "Usage: format_model_dump <source-file>\n");
-}
+void PrintUsage(FILE* output) { std::fprintf(output, "Usage: format_model_dump <source-file>\n"); }
 
 }  // namespace
 

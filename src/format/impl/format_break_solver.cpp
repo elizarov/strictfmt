@@ -71,13 +71,9 @@ public:
         }
     }
 
-    NodeResults(NodeResults&& other) noexcept {
-        MoveFrom(std::move(other));
-    }
+    NodeResults(NodeResults&& other) noexcept { MoveFrom(std::move(other)); }
 
-    ~NodeResults() {
-        clear();
-    }
+    ~NodeResults() { clear(); }
 
     NodeResults& operator=(const NodeResults& other) {
         if (this != &other) {
@@ -99,37 +95,21 @@ public:
         return *this;
     }
 
-    iterator begin() {
-        return usingHeap_ ? heap_.data() : InlineData();
-    }
+    iterator begin() { return usingHeap_ ? heap_.data() : InlineData(); }
 
-    iterator end() {
-        return begin() + size();
-    }
+    iterator end() { return begin() + size(); }
 
-    const_iterator begin() const {
-        return usingHeap_ ? heap_.data() : InlineData();
-    }
+    const_iterator begin() const { return usingHeap_ ? heap_.data() : InlineData(); }
 
-    const_iterator end() const {
-        return begin() + size();
-    }
+    const_iterator end() const { return begin() + size(); }
 
-    bool empty() const {
-        return size() == 0;
-    }
+    bool empty() const { return size() == 0; }
 
-    size_t size() const {
-        return usingHeap_ ? heap_.size() : inlineSize_;
-    }
+    size_t size() const { return usingHeap_ ? heap_.size() : inlineSize_; }
 
-    NodeResult& operator[](size_t index) {
-        return begin()[index];
-    }
+    NodeResult& operator[](size_t index) { return begin()[index]; }
 
-    const NodeResult& operator[](size_t index) const {
-        return begin()[index];
-    }
+    const NodeResult& operator[](size_t index) const { return begin()[index]; }
 
     void push_back(NodeResult value) {
         if (usingHeap_) {
@@ -173,13 +153,9 @@ public:
 private:
     static constexpr size_t kInlineCapacity = 8;
 
-    NodeResult* InlineData() {
-        return std::launder(reinterpret_cast<NodeResult*>(inlineStorage_));
-    }
+    NodeResult* InlineData() { return std::launder(reinterpret_cast<NodeResult*>(inlineStorage_)); }
 
-    const NodeResult* InlineData() const {
-        return std::launder(reinterpret_cast<const NodeResult*>(inlineStorage_));
-    }
+    const NodeResult* InlineData() const { return std::launder(reinterpret_cast<const NodeResult*>(inlineStorage_)); }
 
     void MoveFrom(NodeResults&& other) {
         if (other.usingHeap_) {
@@ -308,9 +284,7 @@ private:
     std::deque<ChoiceTree> choiceArena_;
     std::deque<DelimiterStackPartitionPath> delimiterStackPartitionPathArena_;
 
-    int IndentColumn(int indentLevel) const {
-        return std::max(0, indentLevel) * indentWidth_;
-    }
+    int IndentColumn(int indentLevel) const { return std::max(0, indentLevel) * indentWidth_; }
 
     static bool HasTrailingComment(const FormatBreakNode& node, size_t index) {
         return index < node.items.size() && IsCommentToken(FormatBreakTokenKind(node.items[index].trailingComment));
@@ -895,9 +869,7 @@ private:
         candidates.push_back(std::move(candidate));
     }
 
-    static void SortPrunedResults(NodeResults& results) {
-        std::sort(results.begin(), results.end(), ResultStateLess);
-    }
+    static void SortPrunedResults(NodeResults& results) { std::sort(results.begin(), results.end(), ResultStateLess); }
 
     bool CompactLineEndsOverLimit(const NodeResult& compact) const {
         return compact.endLineHasText && compact.endColumn > config_.columnLimit;
@@ -1916,9 +1888,7 @@ private:
         return choice.value_or(FormatBreakChoice::Compact);
     }
 
-    static bool IsBreakingChoice(FormatBreakChoice choice) {
-        return choice != FormatBreakChoice::Compact;
-    }
+    static bool IsBreakingChoice(FormatBreakChoice choice) { return choice != FormatBreakChoice::Compact; }
 
     static std::optional<FormatBreakChoice> FindChoice(const ChoiceTree* tree, int nodeId) {
         if (tree == nullptr) {
@@ -2571,6 +2541,9 @@ private:
         }
         NodeResult best;
         for (NodeResult candidate : SolveChildrenAlternatives(node.children, column, indentLevel, lineHasText)) {
+            if (node.bodyHeaderSingleStatementBody && (candidate.extraLines > 0 || candidate.maxOverflow > 0)) {
+                continue;
+            }
             AddChoice(candidate, node.id, FormatBreakChoice::Compact, indentLevel);
             if (Better(candidate, best)) {
                 best = std::move(candidate);

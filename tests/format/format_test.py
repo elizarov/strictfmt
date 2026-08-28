@@ -676,12 +676,8 @@ class FormatCommandTests(unittest.TestCase):
 
             self.assertEqual(0, result.returncode, msg=f"stdout:\n{result.stdout}\n\nstderr:\n{result.stderr}")
             self.assertEqual(
-                "int second() {\n"
-                "    return 2;\n"
-                "}\n"
-                "int first() {\n"
-                "    return 1;\n"
-                "}\n",
+                "int second() { return 2; }\n"
+                "int first() { return 1; }\n",
                 result.stdout,
             )
             self.assertRegex(result.stderr, r"Formatted 2 files, 2 LOC in (?:\d+ms|\d+\.\d{3}s)\.\s*$")
@@ -727,7 +723,7 @@ class FormatCommandTests(unittest.TestCase):
             result = native_format("-i", str(source), cwd=root)
 
             self.assertEqual(0, result.returncode, msg=f"stdout:\n{result.stdout}\n\nstderr:\n{result.stderr}")
-            self.assertEqual("int main() {\n    return 1;\n}\n", source.read_text(encoding="utf-8").replace("\r\n", "\n"))
+            self.assertEqual("int main() { return 1; }\n", source.read_text(encoding="utf-8").replace("\r\n", "\n"))
             self.assertIn("Formatted 1 file, 1 LOC", result.stdout)
 
     def test_in_place_preserves_unambiguous_line_endings(self) -> None:
@@ -739,7 +735,7 @@ class FormatCommandTests(unittest.TestCase):
             shutil.copyfile(STRICTFMT_ROOT / ".cpp-format", root / ".cpp-format")
             write_empty_ignore(root)
             input_lines = [b"int main(){", b"return 1;", b"}"]
-            expected_lines = [b"int main() {", b"    return 1;", b"}"]
+            expected_lines = [b"int main() { return 1; }"]
             cases = [
                 ("lf", b"\n"),
                 ("crlf", b"\r\n"),
@@ -770,7 +766,7 @@ class FormatCommandTests(unittest.TestCase):
 
             self.assertEqual(0, result.returncode, msg=f"stdout:\n{result.stdout!r}\n\nstderr:\n{result.stderr!r}")
             self.assertEqual(
-                join_lines([b"int main() {", b"    return 1;", b"}"], PLATFORM_LINE_ENDING),
+                join_lines([b"int main() { return 1; }"], PLATFORM_LINE_ENDING),
                 source.read_bytes(),
             )
 
@@ -830,12 +826,8 @@ class FormatCommandTests(unittest.TestCase):
         self.assertEqual(0, formatted.returncode, msg=f"stdout:\n{formatted.stdout}\n\nstderr:\n{formatted.stderr}")
         self.assertEqual(
             "struct FriendOperators {\n"
-            "    [[maybe_unused]] friend bool operator==(const char* lhs, FriendOperators) {\n"
-            "        return *lhs == '\\0';\n"
-            "    }\n"
-            "    [[maybe_unused]] friend bool operator!=(const char* lhs, FriendOperators) {\n"
-            "        return *lhs != '\\0';\n"
-            "    }\n"
+            "    [[maybe_unused]] friend bool operator==(const char* lhs, FriendOperators) { return *lhs == '\\0'; }\n"
+            "    [[maybe_unused]] friend bool operator!=(const char* lhs, FriendOperators) { return *lhs != '\\0'; }\n"
             "};\n",
             formatted.stdout,
         )
@@ -951,9 +943,7 @@ class FormatCommandTests(unittest.TestCase):
             "\n"
             "int values[] = {1, 2};\n"
             "\n"
-            "void f() {\n"
-            "    Use({1, 2});\n"
-            "}\n",
+            "void f() { Use({1, 2}); }\n",
             result.stdout,
         )
 
@@ -1842,9 +1832,7 @@ class FormatCommandTests(unittest.TestCase):
                 "\n"
                 '#include "b.h"\n'
                 "\n"
-                "int main() {\n"
-                "  return 1;\n"
-                "}\n",
+                "int main() { return 1; }\n",
                 inherited.stdout,
             )
 
@@ -1867,9 +1855,7 @@ class FormatCommandTests(unittest.TestCase):
                 "\n"
                 "#include <a>\n"
                 "\n"
-                "int main() {\n"
-                "    return 1;\n"
-                "}\n",
+                "int main() { return 1; }\n",
                 overridden.stdout,
             )
 

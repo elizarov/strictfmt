@@ -53,12 +53,8 @@
     #value
 #define FORMAT_FIXTURE_FILEPATH FORMAT_NAMESPACE::logging::impl::CutFilePath(__builtin_FILE())
 #define FORMAT_FIXTURE_REGISTER_TYPE(Type, Index) \
-    constexpr std::size_t TypeToId(FormatFixtureIdentity<Type>) noexcept { \
-        return Index; \
-    } \
-    constexpr Type IdToType(FormatFixtureSize<Index>) noexcept { \
-        return FormatFixtureConstruct<Type>(); \
-    }
+    constexpr std::size_t TypeToId(FormatFixtureIdentity<Type>) noexcept { return Index; } \
+    constexpr Type IdToType(FormatFixtureSize<Index>) noexcept { return FormatFixtureConstruct<Type>(); }
 #define ENUM_STRING_DECLARE(EnumType, ItemsMacro) \
     enum class EnumType { \
         ItemsMacro(ENUM_STRING_DECLARE_ENUMERATOR), \
@@ -161,8 +157,7 @@ public:
     DialogRedrawScope& operator=(const DialogRedrawScope&) = delete;
 };
 
-__declspec(noinline) bool
-    DashboardController::FinishConfigMutation(DashboardShellHost& shell, bool refreshThemedIcons)
+__declspec(noinline) bool DashboardController::FinishConfigMutation(DashboardShellHost& shell, bool refreshThemedIcons)
 {
     return refreshThemedIcons;
 }
@@ -507,8 +502,7 @@ bool RuntimeConfigFieldEquals(const RuntimeConfigFieldDescriptor& field, const v
 // Implemented by generated file build/cmake/generated/config/config_meta.generated.cpp.
 std::span<const RuntimeConfigSectionDescriptor> RuntimeConfigSectionDescriptors();
 
-std::vector<std::string>
-    ParseIndentedStringList(const std::vector<ConfigLine>& lines, size_t& index, int parentIndent)
+std::vector<std::string> ParseIndentedStringList(const std::vector<ConfigLine>& lines, size_t& index, int parentIndent)
 {
     return {};
 }
@@ -596,9 +590,7 @@ public:
             return (*static_cast<std::remove_reference_t<Callable>*>(context))(std::forward<Args>(args)...);
         }) {}
 
-    Result operator()(Args... args) const {
-        return invoke_(context_, std::forward<Args>(args)...);
-    }
+    Result operator()(Args... args) const { return invoke_(context_, std::forward<Args>(args)...); }
 
 private:
     void* context_ = nullptr;
@@ -650,9 +642,7 @@ void DesignatedInitializerAssignmentBreak() {
     Use(deps);
 }
 
-auto CompactDesignatedInitializerList() {
-    return DesignatedPair{.first = Convert(first), .second = Convert(second)};
-}
+auto CompactDesignatedInitializerList() { return DesignatedPair{.first = Convert(first), .second = Convert(second)}; }
 
 auto DesignatedInitializerMultilineLiteral() {
     return TextPair{.first = "prefix", .second = R"q7(
@@ -827,17 +817,13 @@ enum class OverflowEnum {
 };
 
 template <typename T> requires(HasValue<T>)
-void UseShortRequires(T& value) {
-    value.Use();
-}
+void UseShortRequires(T& value) { value.Use(); }
 
 template <typename ExtremelyLongTemplateParameterNameForFormatterRequires>
     requires(ExtremelyLongConceptNameWithoutLogicalOperatorsThatStillNeedsSubordinateLine<
         ExtremelyLongTemplateParameterNameForFormatterRequires
     >)
-void UseLongRequires(ExtremelyLongTemplateParameterNameForFormatterRequires& value) {
-    value.Use();
-}
+void UseLongRequires(ExtremelyLongTemplateParameterNameForFormatterRequires& value) { value.Use(); }
 
 template <typename T> requires C<T>
 void CompactRequiresPrefix();
@@ -1049,9 +1035,7 @@ void StartLenovoSnapshot(void* contextPtr) {
 // Expression/template ambiguity: parenthesize value template arguments that could parse as type-like arguments.
 using TemplateValueWorkaround = Box<(Size(A * B))>;
 
-bool TemplateExpressionWorkaround() {
-    return (a < b) > (c);
-}
+bool TemplateExpressionWorkaround() { return (a < b) > (c); }
 
 HRESULT CreateWriteFactory(ComPtr<IDWriteFactory>& dwriteFactory_) {
     return DWriteCreateFactory(DWRITE_FACTORY_TYPE_SHARED, __uuidof(IDWriteFactory), reinterpret_cast<IUnknown**>(
@@ -1127,9 +1111,7 @@ struct NetworkFooterWidgetConfig {
     bool operator==(const NetworkFooterWidgetConfig& other) const = default;
 };
 
-ColorConfig EmptyColor() {
-    return {};
-}
+ColorConfig EmptyColor() { return {}; }
 
 std::string_view LayoutNodeFieldEditTitle(const LayoutNodeFieldEditKey& key) {
     const LayoutNodeFieldEditDescriptor* descriptor = FindLayoutNodeFieldEditDescriptor(key);
@@ -1172,9 +1154,7 @@ TraceTimingScope::TraceTimingScope(TraceTimingScope&& other) noexcept :
     operation_(std::exchange(other.operation_, nullptr)),
     startedAt_(std::exchange(other.startedAt_, 0)) {}
 
-int CardChromeWidget::PreferredHeight(const WidgetHost&) const {
-    return 0;
-}
+int CardChromeWidget::PreferredHeight(const WidgetHost&) const { return 0; }
 
 HANDLE OpenProbe(FilePath probePath) {
     HANDLE probe = CreateFileA(
@@ -1211,17 +1191,11 @@ double MaxSegmentGap(double totalSweep, double minSegmentSweep, int segmentCount
     return maxSegmentGap;
 }
 
-bool HasIdentifier(std::string identifier) {
-    return !identifier.empty();
-}
+bool HasIdentifier(std::string identifier) { return !identifier.empty(); }
 
-unsigned int PackedRgb(ColorConfig color) {
-    return (color.rgba >> 8) & 0xFFFFFFu;
-}
+unsigned int PackedRgb(ColorConfig color) { return (color.rgba >> 8) & 0xFFFFFFu; }
 
-void ReturnOnly() {
-    return;
-}
+void ReturnOnly() { return; }
 
 void BuildSearchContext() {
     struct SearchContext {
@@ -1254,9 +1228,7 @@ int UnarySigns(int value) {
     return value - -negative + +positive + (-negative) + (+positive);
 }
 
-void DiscardServiceResult(Service& service) {
-    (void)StopServiceIfRunning(service.Get());
-}
+void DiscardServiceResult(Service& service) { (void)StopServiceIfRunning(service.Get()); }
 
 void StructuredBindingLoop(const BoardSelections& resolvedSelections) {
     auto [parameterLine, descriptionLine] = SplitTooltipLines(tooltipText);
@@ -1292,9 +1264,7 @@ void PreserveWin32BooleanMacros() {
     bool standardTrue = true;
 }
 
-auto CompactEmptyBraceTernary(bool empty, std::string value) {
-    return empty ? std::string{} : value;
-}
+auto CompactEmptyBraceTernary(bool empty, std::string value) { return empty ? std::string{} : value; }
 
 bool InitializerPaddingInSplitContext(const LayoutEditOverlayOwner& owner, const DragState& drag) {
     return owner.childIndex == drag.currentIndex && MatchesLayoutContainerEditKey(
@@ -1596,9 +1566,44 @@ class BenchmarkLikeHost {
     }
 };
 
-int ShortNonEmpty() {
-    return 1;
+int ShortNonEmpty() { return 1; }
+
+int CompactSingleStatementFunction() { return 1; }
+
+struct CompactCallableBodyFixture {
+    CompactCallableBodyFixture(int value) : value_(value) { Initialize(); }
+    ~CompactCallableBodyFixture() { Cleanup(); }
+    int Value() const { return value_; }
+
+    int value_;
+};
+
+int VeryLongSingleStatementFunctionNameThatCannotKeepItsCompleteCallableHeaderAndBodyOnOnePhysicalLine(int value) {
+    return value;
 }
+
+void MultiStatementFunctionBody() {
+    First();
+    Second();
+}
+
+void BlockBearingSingleStatementFunctionBody(bool ready) {
+    if (ready) {
+        Run();
+    }
+}
+
+void CommentedSingleStatementFunctionBody() {
+    // body comment
+    Run();
+}
+
+auto compactSingleStatementLambda = []() { return 1; };
+auto blockBearingSingleStatementLambda = []() {
+    if (ready) {
+        Run();
+    }
+};
 
 void EmptyFunction() {}
 void EmptyFunctionPairA() {}
@@ -1910,9 +1915,7 @@ bool EqualStringVectors(const void* address, const void* compareAddress) {
         *reinterpret_cast<const std::vector<std::string>*>(compareAddress);
 }
 
-[[noreturn]] void FailWithAttribute(const char* message) {
-    throw Error(message);
-}
+[[noreturn]] void FailWithAttribute(const char* message) { throw Error(message); }
 
 void FormatterSelfBreakCases() {
     if (
@@ -2530,9 +2533,7 @@ int nullDeclarationTerminator = 0;
 
 int commentedNullDeclarationTerminator = 0;  // optional terminator
 
-void FunctionNullDeclarationTerminator() {
-    Run();
-}
+void FunctionNullDeclarationTerminator() { Run(); }
 
 struct RepeatedDeclarationTerminator {
     int value;
@@ -2555,9 +2556,7 @@ void NullStatementTerminators(bool ready) {
     }
 }
 
-void LeadingNullStatement() {
-    Run();
-}
+void LeadingNullStatement() { Run(); }
 
 void OnlyNullStatement() {}
 
@@ -2641,9 +2640,7 @@ int SplitSubtractionOperator() {
         secondReallyLongSubtrahendValueForOrdinarySubtractionOperatorSplit;
 }
 
-void AllocateBitmapPixels() {
-    std::vector<DisplayPlacementMenuBitmapPixel> pixels((kBitmapSize * kBitmapSize));
-}
+void AllocateBitmapPixels() { std::vector<DisplayPlacementMenuBitmapPixel> pixels((kBitmapSize * kBitmapSize)); }
 
 class BaseClassListCommentDerived :
     public BaseClassListCommentRootA,  // primary
@@ -2851,13 +2848,9 @@ auto QualifiedCallableTemplateInNestedCall(const Item& item) {
     return decimal64::ToStringTrailingZeros(decimal64::Decimal<3>(item.weight()) / kGramInKgInt);
 }
 
-bool AlternativeBinaryOperatorSpacing(bool first, bool second, bool third) {
-    return first and (!second or third);
-}
+bool AlternativeBinaryOperatorSpacing(bool first, bool second, bool third) { return first and (!second or third); }
 
-bool AlternativeBinaryOperatorBeforeUnary(bool first, bool second) {
-    return first and !second;
-}
+bool AlternativeBinaryOperatorBeforeUnary(bool first, bool second) { return first and !second; }
 
 using TemplateArgumentBinary = A<N + 1>;
 template <class... T>
@@ -2999,12 +2992,8 @@ template <typename T>
 void operator!=(T, T) = delete;
 
 struct FriendOperators {
-    [[maybe_unused]] friend bool operator==(const char* lhs, FriendOperators) {
-        return *lhs == '\0';
-    }
-    [[maybe_unused]] friend bool operator!=(const char* lhs, FriendOperators) {
-        return *lhs != '\0';
-    }
+    [[maybe_unused]] friend bool operator==(const char* lhs, FriendOperators) { return *lhs == '\0'; }
+    [[maybe_unused]] friend bool operator!=(const char* lhs, FriendOperators) { return *lhs != '\0'; }
 };
 
 int CommentedValues[] = {
@@ -3036,6 +3025,4 @@ struct DesignatedBraceOuter {
     DesignatedBraceInner inner;
 };
 
-DesignatedBraceOuter MakeDesignatedBraceOuter() {
-    return {.first{1}, .inner{.value{2}}};
-}
+DesignatedBraceOuter MakeDesignatedBraceOuter() { return {.first{1}, .inner{.value{2}}}; }
