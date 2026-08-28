@@ -1200,8 +1200,23 @@ inline constexpr std::array<ColorDialogControls, 4> kColorDialogControls = {{
 
 int kAlignedAssignment = 1;
 int kMuchLongerAlignedAssignment = 2;
-int kTrailingComment = 1;  // short
-int kMuchLongerTrailingComment = 2;  // long
+int kTrailingComment = 1;// short
+int kMuchLongerTrailingComment = 2;// long
+
+using AlignedTrailingCommentTypes=TypeList<//
+ShortType,//
+MuchLongerType//
+>;
+
+auto kAlignedTrailingCommentRows=RowList{
+{1,2},// first
+{100,200}// second
+};
+
+int kSingleTrailingComment=0;// single
+
+int kTrailingCommentOverflowAnchorWithAnIntentionallyLongDeclarationName=1;// x
+int kTrailingCommentOverflowShort=2;// this explanation prevents alignment within the line limit
 
 class BenchmarkLikeHost {
     bool ApplyMetricListOrder(

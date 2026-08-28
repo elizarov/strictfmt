@@ -2,6 +2,7 @@
 
 #include <algorithm>
 #include <chrono>
+#include <numeric>
 #include <optional>
 #include <string>
 #include <unordered_map>
@@ -889,6 +890,13 @@ struct PreprocessorSplitListPlan {
     PreprocessorSplitListContext deferredContext;
 };
 
+struct TrailingCommentPosition {
+    const SyntaxNode* owner = nullptr;
+    size_t commentOffset = 0;
+    int commentColumn = 0;
+    int commentWidth = 0;
+};
+
 class Printer {
 public:
     Printer(const FormatterConfig& config, std::string_view sourcePath, FormatModelTextStats* stats) :
@@ -918,6 +926,7 @@ public:
         if (!output_.empty() && output_.back() != '\n') {
             output_.push_back('\n');
         }
+        AlignTrailingCommentRuns();
         return output_;
     }
 
@@ -928,6 +937,7 @@ private:
     int indentWidth_ = 4;
     int tabWidth_ = 4;
     std::string output_;
+    std::vector<TrailingCommentPosition> trailingComments_;
     std::vector<PrintToken> pendingTokens_;
     int indentLevel_ = 0;
     bool atLineStart_ = true;
@@ -1643,6 +1653,76 @@ private:
         lineHasText_ = lineHasText_ || !text.empty();
     }
 
+    void WriteTrailingComment(const PrintToken& token, std::string_view text) {
+        Space();
+        output_.push_back(' ');
+        ++currentColumn_;
+        trailingComments_.push_back({
+            .owner = token.node == nullptr ? nullptr : token.node->parent,
+            .commentOffset = output_.size(),
+            .commentColumn = currentColumn_,
+            .commentWidth = static_cast<int>(text.size())
+        });
+        Write(text);
+    }
+
+    bool AreOnAdjacentLines(const TrailingCommentPosition& left, const TrailingCommentPosition& right) const {
+        return std::count(
+            output_.begin() + static_cast<std::ptrdiff_t>(left.commentOffset),
+            output_.begin() + static_cast<std::ptrdiff_t>(right.commentOffset),
+            '\n'
+        ) == 1;
+    }
+
+    void AlignTrailingCommentRuns() {
+        std::vector<int> padding(trailingComments_.size());
+        for (size_t begin = 0; begin < trailingComments_.size();) {
+            size_t end = begin + 1;
+            while (
+                end < trailingComments_.size() &&
+                trailingComments_[begin].owner != nullptr &&
+                trailingComments_[end].owner == trailingComments_[begin].owner &&
+                AreOnAdjacentLines(trailingComments_[end - 1], trailingComments_[end])
+            ) {
+                ++end;
+            }
+            if (end - begin >= 2) {
+                int alignedColumn = 0;
+                for (size_t index = begin; index < end; ++index) {
+                    alignedColumn = std::max(alignedColumn, trailingComments_[index].commentColumn);
+                }
+                bool fits = true;
+                for (size_t index = begin; index < end; ++index) {
+                    if (alignedColumn + trailingComments_[index].commentWidth > config_.columnLimit) {
+                        fits = false;
+                        break;
+                    }
+                }
+                if (fits) {
+                    for (size_t index = begin; index < end; ++index) {
+                        padding[index] = alignedColumn - trailingComments_[index].commentColumn;
+                    }
+                }
+            }
+            begin = end;
+        }
+        const size_t totalPadding = std::accumulate(padding.begin(), padding.end(), size_t{0});
+        if (totalPadding == 0) {
+            return;
+        }
+        std::string aligned;
+        aligned.reserve(output_.size() + totalPadding);
+        size_t copied = 0;
+        for (size_t index = 0; index < trailingComments_.size(); ++index) {
+            const size_t commentOffset = trailingComments_[index].commentOffset;
+            aligned.append(output_, copied, commentOffset - copied);
+            aligned.append(static_cast<size_t>(padding[index]), ' ');
+            copied = commentOffset;
+        }
+        aligned.append(output_, copied, output_.size() - copied);
+        output_ = std::move(aligned);
+    }
+
     void CloseCaseBodyIndentIfNeeded() {
         if (!activeCaseBodySwitchDepths_.empty() && activeCaseBodySwitchDepths_.back() == switchDepth_) {
             indentLevel_ = std::max(0, indentLevel_ - 1);
@@ -1811,10 +1891,10 @@ private:
                 *continuationBaseIndent + (*continuationBaseIndent == indentLevel_ ? 1 : 0) : 0;
             const int continuationIndent = std::max(CurrentLineIndentLevel(), breakModelContinuationIndent);
             if (!atLineStart_) {
-                Space();
-                output_.push_back(' ');
+                WriteTrailingComment(printToken, text);
+            } else {
+                Write(text);
             }
-            Write(text);
             if (TrailingCommentReturnsToStructuralIndent(printToken)) {
                 NewLine(false);
             } else {
@@ -3063,10 +3143,7 @@ private:
 
     void PrintComment(const PrintToken& token, const PrintToken* previous, const PrintToken* next) {
         if (token.kind == PrintTokenKind::TrailingComment && lineHasText_) {
-            Space();
-            output_.push_back(' ');
-            ++currentColumn_;
-            Write(token.text);
+            WriteTrailingComment(token, token.text);
             NewLine(ShouldContinueMacroLine(token, next));
             if (
                 previous != nullptr &&
