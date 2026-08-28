@@ -221,6 +221,18 @@ struct Context {
 } context{&config, 0};
 ```
 
+### Deliberate list expansion
+
+A list that fits on one line may become dense even when a vertical layout would be easier to read. This is intentional, since the formatter minimizes the number of lines. When vertical layout is absolutely needed for readability, attach an end-of-line comment to one item. An end-of-line comment attached to any list element forces the list into split form. A source blank line or standalone comment between list elements also forces split form.
+
+```cpp
+auto result = update(
+    first,
+    second,  // keep vertical
+    third
+);
+```
+
 ## Operator Chains
 
 Binary chain operators are the operators whose usual source meaning is an associative, mostly commutative aggregation. Formatting them as a chain avoids implying that the first operand owns a subordinate "rest of expression" branch. Stream shifts and comma expressions are also chain-shaped because their syntax is a repeated separator sequence, but they do not use the associativity rationale.
@@ -418,16 +430,6 @@ using GenericPrepareUnaryCall = std::unique_ptr<grpc::ClientAsyncResponseReader<
 ```
 
 Defaulted, deleted, and pure-virtual method markers stay with the declaration tail.
-
-An end-of-line comment attached to one list element forces the owning list into split form. A source blank line or standalone comment between list elements also forces the owning list into split form. Lists still split all top-level comma opportunities together, and a single empty line directly before or after a standalone list comment is preserved.
-
-```cpp
-auto result = update(
-    first,
-    second,  // note
-    third
-);
-```
 
 ## Declaration Groups
 
