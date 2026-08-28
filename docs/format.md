@@ -632,7 +632,7 @@ Lambdas intentionally format like functions. The complete [callable header](glos
 
 Single-statement lambda bodies may stay compact only when the complete lambda fits on one physical line. The compact form is limited to statements whose subtree contains no compound block, so a statement such as `if (condition) { work(); }` uses the same broken-body form as other block-bearing lambda bodies. If a lambda breaks anywhere, its body breaks after `{`, formats the body one indentation step deeper than the lambda header's render base, and aligns the closing brace with that base. Multi-statement lambda bodies always use that broken-body form.
 
-Lambda captures and lambda parameters are separate break opportunities. Captures and parameters use the same compact-or-split optimization as other delimiter groups.
+Lambda captures are part of the callable prefix. Captures and parameters are separate break opportunities and use the same compact-or-split layouts as other delimiter groups. Breaks inside the callable prefix are structurally deeper than parameter-list breaks, so equal-cost wrapping splits parameters first.
 
 <!-- .cpp-format
 ColumnLimit: 72

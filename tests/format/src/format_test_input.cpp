@@ -1096,6 +1096,15 @@ void LambdaGeneralityCases(int left, int right) {
     Use(twoParameterLambda, twoCaptureLambda, splitParameterSingleStatementLambda, callbacks);
 }
 
+void LambdaCapturePrefixDepthPreference(){
+Visit([&](const VeryLongQualifiedCalculationTypeForLambdaCaptureBreakPreferenceWithAdditionalSuffixMoreId& calculation){Use(calculation);});
+Visit([&context](const VeryLongQualifiedCalculationTypeForLambdaCaptureBreakPreferenceWithAdditionalSuffixMoreId& calculation){Use(calculation);});
+}
+
+void LongLambdaCapturePrefixMaySplit(){
+Visit([firstVeryLongLambdaCaptureName,secondVeryLongLambdaCaptureName,thirdVeryLongLambdaCaptureName,fourthVeryLongLambdaCaptureName](int value){Use(value);});
+}
+
 auto FinalLambdaHeaderBreakEscalates(const handlers::PriceFor& priceFor) -> const Sequence& {
 return variant::Visit(plan, [](const Sequence& sequence) -> const Sequence& { return sequence; }, [&](const AgentPlan& agentPlan) -> const Sequence& { switch (priceFor) { case handlers::PriceFor::kPerformer: { return agentPlan.performerSequence; } case handlers::PriceFor::kClient: { return agentPlan.clientSequence; } } });
 }
