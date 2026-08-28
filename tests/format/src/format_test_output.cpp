@@ -847,7 +847,9 @@ auto RequiresCallContinuation = requires {
 template <typename T>
 bool RequiresNestedContinuation = outer ? requires {
     typename T::value_type;
-} ? Enabled<T> : false : fallback;
+} ? Enabled<T> :
+    false :
+    fallback;
 
 template <typename T>
 bool RequiresParenthesizedContinuation = (requires {
@@ -1467,6 +1469,84 @@ void StructuralMemberChainBreak() {
             .events
             .erase(bucket.events.begin(), bucket.events.begin() + static_cast<std::ptrdiff_t>(bucket.firstEvent));
     }
+}
+
+auto CrossBlockMemberChain(auto source) {
+    return source
+        .and_then([&](auto kind) {
+            switch (kind) {
+                case 1:
+                    return 1;
+                default:
+                    return 0;
+            }
+        })
+        .value_or(0);
+}
+
+auto CrossBlockBinaryChain(auto first, auto last) {
+    return first +
+        Invoke([&] {
+            switch (first) {
+                case 1:
+                    return 1;
+                default:
+                    return 0;
+            }
+        }) +
+        last;
+}
+
+void CrossBlockStreamChain(auto& stream, auto tail) {
+    stream
+        << Invoke([&] {
+            switch (tail) {
+                case 1:
+                    return 1;
+                default:
+                    return 0;
+            }
+        })
+        << tail;
+}
+
+auto CrossBlockNestedTernaryChain(bool firstCondition, bool secondCondition, auto second, auto last) {
+    return firstCondition ? Invoke([&] {
+        switch (second) {
+            case 1:
+                return 1;
+            default:
+                return 0;
+        }
+    }) :
+        secondCondition ? second :
+        last;
+}
+
+auto CrossBlockSingleTernary(bool condition, auto last) {
+    return condition ? Invoke([&] {
+        switch (last) {
+            case 1:
+                return 1;
+            default:
+                return 0;
+        }
+    }) : last;
+}
+
+auto CrossBlockCommaChain(auto first, auto last) {
+    return (
+        first,
+        Invoke([&] {
+            switch (last) {
+                case 1:
+                    return 1;
+                default:
+                    return 0;
+            }
+        }),
+        last
+    );
 }
 
 constexpr int kPrimaryFlag = 1;

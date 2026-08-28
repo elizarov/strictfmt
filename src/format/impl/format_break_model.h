@@ -3,9 +3,12 @@
 #include <algorithm>
 #include <deque>
 #include <memory>
+#include <optional>
 #include <span>
 #include <string>
 #include <string_view>
+#include <unordered_map>
+#include <unordered_set>
 #include <vector>
 
 #include "format/impl/format_spacing.h"
@@ -86,7 +89,9 @@ struct FormatBreakNode {
     bool chainPrefersSplitWhenCompactBreaks = false;
     bool chainCompactRequiresFitOnOneLine = false;
     bool chainStartsWithOperator = false;
+    bool ternaryRequiresColonBreaks = false;
     bool splitTrailingBodyHeaderAtParentIndent = false;
+    std::optional<int> requiredChainBreakBaseIndent;
     const SyntaxNode* declarationValueOwner = nullptr;
     FormatBreakToken leadingTrailingComment;
     std::span<FormatBreakNode*> children;
@@ -157,6 +162,8 @@ struct FormatBreakVirtualDelimiter {
 
 struct FormatBreakModelContext {
     std::vector<FormatBreakVirtualDelimiter> virtualDelimiters;
+    const std::unordered_set<const SyntaxNode*>* requiredChainBreakOperators = nullptr;
+    const std::unordered_map<const SyntaxNode*, int>* requiredChainBreakBaseIndents = nullptr;
     bool forceSplitStreamChain = false;
 };
 

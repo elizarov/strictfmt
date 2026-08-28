@@ -962,6 +962,10 @@ private:
     std::optional<int> pendingIndentRestoreAfterFlush_;
     std::unordered_set<const SyntaxNode*> isolatedDeclarationItems_;
     std::unordered_map<const SyntaxNode*, DeclarationGroupState> declarationGroupStates_;
+    std::unordered_set<const SyntaxNode*> requiredChainBreakOperators_;
+    std::unordered_map<const SyntaxNode*, const SyntaxNode*> requiredChainBreakGroups_;
+    std::unordered_map<const SyntaxNode*, int> requiredChainBreakBaseIndents_;
+    std::unordered_set<const SyntaxNode*> pendingCrossBlockChainGroups_;
 
     static const PrintToken* PreviousToken(const std::vector<PrintToken>& tokens, size_t index) {
         while (index > 0) {
@@ -993,6 +997,146 @@ private:
             }
         }
         return nullptr;
+    }
+
+    static const SyntaxNode* CrossBlockSourceItem(const SyntaxNode* block) {
+        for (
+            const SyntaxNode* cursor = block;
+            cursor != nullptr && cursor->parent != nullptr;
+            cursor = cursor->parent
+        ) {
+            if (SyntaxNodeHasClass(*cursor->parent, SyntaxNodeClass::SourceItemScope)) {
+                return cursor;
+            }
+        }
+        return nullptr;
+    }
+
+    bool IsMandatoryBlockOpen(size_t index) const {
+        if (activeTokens_ == nullptr || index >= activeTokens_->size()) {
+            return false;
+        }
+        const PrintToken& token = (*activeTokens_)[index];
+        if (token.kind != PrintTokenKind::Known || token.syntaxKind != SyntaxNodeKind::LeftBrace) {
+            return false;
+        }
+        if (IsWithinConditionalFunctionHeader(token)) {
+            return true;
+        }
+        if (RoleForBrace(token) == BraceRole::Compact || IsCompactSingleStatementFunctionBodyBrace(token)) {
+            return false;
+        }
+        const PrintToken* next = index + 1 < activeTokens_->size() ? &(*activeTokens_)[index + 1] : nullptr;
+        return !(
+            next != nullptr && next->kind == PrintTokenKind::Known && next->syntaxKind == SyntaxNodeKind::RightBrace
+        ) && !BecomesEmptyAfterNullItemRemoval(token);
+    }
+
+    static bool HasUniformSplitForm(const FormatBreakNode& node) {
+        if (node.kind != FormatBreakNodeKind::Chain || node.operators.size() < 2) {
+            return false;
+        }
+        if (
+            node.chainKind == FormatBreakChainKind::MemberBeforeOperator ||
+            node.chainKind == FormatBreakChainKind::StreamBeforeOperator
+        ) {
+            return true;
+        }
+        if (node.chainKind == FormatBreakChainKind::Ternary) {
+            return node.operators.size() > 2;
+        }
+        return std::all_of(node.operators.begin(), node.operators.end(), [](const FormatBreakToken& token) {
+            return FormatBreakTokenKind(token) == PrintTokenKind::Known &&
+                SyntaxNodeKindHasClass(FormatBreakTokenSyntaxKind(token), SyntaxNodeClass::ChainOperator);
+        });
+    }
+
+    size_t ActiveTokenIndex(const FormatBreakToken& token) const {
+        if (activeTokens_ == nullptr || token.token == nullptr) {
+            return activeTokens_ == nullptr ? 0 : activeTokens_->size();
+        }
+        const PrintToken* begin = activeTokens_->data();
+        const PrintToken* end = begin + activeTokens_->size();
+        return token.token >= begin && token.token < end ? static_cast<size_t>(token.token - begin) :
+            activeTokens_->size();
+    }
+
+    void CollectCrossBlockChainBreaks(const FormatBreakNode& node, size_t blockIndex) {
+        if (HasUniformSplitForm(node)) {
+            size_t firstOperator = activeTokens_ == nullptr ? 0 : activeTokens_->size();
+            size_t lastOperator = 0;
+            for (const FormatBreakToken& token : node.operators) {
+                const size_t index = ActiveTokenIndex(token);
+                firstOperator = std::min(firstOperator, index);
+                lastOperator = std::max(lastOperator, index);
+            }
+            const bool crossesBlock = firstOperator < blockIndex && blockIndex < lastOperator;
+            if (crossesBlock) {
+                const SyntaxNode* group = FormatBreakTokenValue(node.operators.front()).node;
+                pendingCrossBlockChainGroups_.insert(group);
+                for (const FormatBreakToken& token : node.operators) {
+                    const PrintToken& printToken = FormatBreakTokenValue(token);
+                    if (printToken.node != nullptr) {
+                        requiredChainBreakGroups_.insert_or_assign(printToken.node, group);
+                        if (
+                            node.chainKind != FormatBreakChainKind::Ternary ||
+                            printToken.syntaxKind == SyntaxNodeKind::Colon
+                        ) {
+                            requiredChainBreakOperators_.insert(printToken.node);
+                        }
+                    }
+                }
+            }
+        }
+        for (const FormatBreakNode* child : node.children) {
+            if (child != nullptr) {
+                CollectCrossBlockChainBreaks(*child, blockIndex);
+            }
+        }
+        for (const FormatBreakListItem& listItem : node.items) {
+            if (listItem.node != nullptr) {
+                CollectCrossBlockChainBreaks(*listItem.node, blockIndex);
+            }
+        }
+        for (const FormatBreakNode* operand : node.operands) {
+            if (operand != nullptr) {
+                CollectCrossBlockChainBreaks(*operand, blockIndex);
+            }
+        }
+    }
+
+    void RecordCrossBlockChainBaseIndents(int baseIndent) {
+        for (const auto& [operatorNode, group] : requiredChainBreakGroups_) {
+            if (pendingCrossBlockChainGroups_.contains(group)) {
+                requiredChainBreakBaseIndents_.insert_or_assign(operatorNode, baseIndent);
+            }
+        }
+        pendingCrossBlockChainGroups_.clear();
+    }
+
+    void AnalyzeCrossBlockChains(const PrintToken& token) {
+        pendingCrossBlockChainGroups_.clear();
+        if (activeTokens_ == nullptr) {
+            return;
+        }
+        const SyntaxNode* block = token.node == nullptr ? nullptr : token.node->parent;
+        const SyntaxNode* item = CrossBlockSourceItem(block);
+        if (item == nullptr) {
+            return;
+        }
+        size_t begin = currentTokenIndex_;
+        while (begin > 0 && SyntaxPathContains((*activeTokens_)[begin - 1], item)) {
+            --begin;
+        }
+        size_t end = currentTokenIndex_ + 1;
+        while (end < activeTokens_->size() && SyntaxPathContains((*activeTokens_)[end], item)) {
+            ++end;
+        }
+        FormatBreakModel model =
+            BuildFormatBreakModel(std::span<const PrintToken>{activeTokens_->data() + begin, end - begin});
+        if (model.root != nullptr) {
+            CollectCrossBlockChainBreaks(*model.root, currentTokenIndex_);
+        }
     }
 
     static DeclarationGroupKind DeclarationGroup(const SyntaxNode* item) {
@@ -1338,11 +1482,13 @@ private:
                         break;
                     }
                     const SyntaxNode* open = DirectOpeningDelimiterChild(*cursor);
-                    if (
-                        open != nullptr &&
-                        DirectMatchingClosingDelimiterChild(*cursor, open) != nullptr &&
-                        HasDirectTokenChild(*cursor, SyntaxNodeKind::Comma)
-                    ) {
+                    const bool hasCommaExpressionBody =
+                        std::any_of(cursor->children.begin(), cursor->children.end(), [](const SyntaxNode* child) {
+                            return child != nullptr && child->kind == SyntaxNodeKind::CommaExpression;
+                        });
+                    if (open != nullptr && DirectMatchingClosingDelimiterChild(*cursor, open) != nullptr && (
+                        HasDirectTokenChild(*cursor, SyntaxNodeKind::Comma) || hasCommaExpressionBody
+                    )) {
                         result.push_back(cursor);
                     }
                 }
@@ -1780,7 +1926,12 @@ private:
     }
 
     bool CanFlushPendingTokensCompact(const FormatBreakModelContext& context) const {
-        if (!context.virtualDelimiters.empty()) {
+        if (!context.virtualDelimiters.empty() || (
+            context.requiredChainBreakOperators != nullptr &&
+            std::any_of(pendingTokens_.begin(), pendingTokens_.end(), [&](const PrintToken& token) {
+                return token.node != nullptr && context.requiredChainBreakOperators->contains(token.node);
+            })
+        )) {
             return false;
         }
         int width = 0;
@@ -2336,20 +2487,21 @@ private:
             }
             return;
         }
+        const int splitBaseIndent = node.requiredChainBreakBaseIndent.value_or(baseIndent);
 
         if (node.chainKind == FormatBreakChainKind::StreamBeforeOperator) {
             if (!node.chainStartsWithOperator) {
                 EmitBreakNode(*node.operands.front(), solution, baseIndent);
             }
             if (node.chainStartsWithOperator && atLineStart_) {
-                pendingIndentLevel_ = baseIndent + 1;
+                pendingIndentLevel_ = splitBaseIndent + 1;
             } else {
-                NewLineWithIndent(baseIndent + 1);
+                NewLineWithIndent(splitBaseIndent + 1);
             }
             for (size_t index = 0; index < node.operators.size(); ++index) {
                 EmitCommentsBeforeChainOperator(node, index);
                 WriteBreakToken(node.operators[index]);
-                EmitBreakNode(*node.operands[index + 1], solution, baseIndent + 1);
+                EmitBreakNode(*node.operands[index + 1], solution, splitBaseIndent + 1);
                 if (
                     choice == FormatBreakChoice::Split &&
                     index + 1 < node.operators.size() &&
@@ -2358,7 +2510,7 @@ private:
                         config_.streamShiftConfigurationMethods
                     )
                 ) {
-                    NewLineWithIndent(baseIndent + 1);
+                    NewLineWithIndent(splitBaseIndent + 1);
                 }
             }
             return;
@@ -2367,33 +2519,33 @@ private:
         if (node.chainKind == FormatBreakChainKind::MemberBeforeOperator) {
             EmitBreakNode(*node.operands.front(), solution, baseIndent);
             if (choice == FormatBreakChoice::MemberCompactTail) {
-                NewLineWithIndent(baseIndent + 1);
+                NewLineWithIndent(splitBaseIndent + 1);
                 for (size_t index = 0; index < node.operators.size(); ++index) {
                     EmitCommentsBeforeChainOperator(node, index);
                     WriteBreakToken(node.operators[index]);
-                    EmitBreakNode(*node.operands[index + 1], solution, baseIndent + 1);
+                    EmitBreakNode(*node.operands[index + 1], solution, splitBaseIndent + 1);
                 }
                 return;
             }
             for (size_t index = 0; index < node.operators.size(); ++index) {
-                NewLineWithIndent(baseIndent + 1);
+                NewLineWithIndent(splitBaseIndent + 1);
                 EmitCommentsBeforeChainOperator(node, index);
                 WriteBreakToken(node.operators[index]);
-                EmitBreakNode(*node.operands[index + 1], solution, baseIndent + 1);
+                EmitBreakNode(*node.operands[index + 1], solution, splitBaseIndent + 1);
             }
             return;
         }
 
         if (node.chainKind == FormatBreakChainKind::Ternary && node.operators.size() > 2) {
             for (size_t index = 0; index < node.operands.size(); ++index) {
-                EmitBreakNode(*node.operands[index], solution, index == 0 ? baseIndent : baseIndent + 1);
+                EmitBreakNode(*node.operands[index], solution, index == 0 ? baseIndent : splitBaseIndent + 1);
                 if (index < node.operators.size()) {
                     WriteBreakToken(node.operators[index]);
                     if (
                         FormatBreakTokenKind(node.operators[index]) == PrintTokenKind::Known &&
                         FormatBreakTokenSyntaxKind(node.operators[index]) == SyntaxNodeKind::Colon
                     ) {
-                        NewLineWithIndent(baseIndent + 1);
+                        NewLineWithIndent(splitBaseIndent + 1);
                     }
                 }
             }
@@ -2401,7 +2553,7 @@ private:
         }
 
         if (node.chainKind == FormatBreakChainKind::Ternary && node.operators.size() == 2) {
-            const int continuationIndent = node.flatSplitIndent ? baseIndent : baseIndent + 1;
+            const int continuationIndent = node.flatSplitIndent ? splitBaseIndent : splitBaseIndent + 1;
             const bool breakAfterQuestion =
                 choice == FormatBreakChoice::TernaryBreakAfterQuestion || choice == FormatBreakChoice::Split;
             const bool breakAfterColon =
@@ -2418,7 +2570,7 @@ private:
             return;
         }
 
-        const int continuationIndent = node.flatSplitIndent ? baseIndent : baseIndent + 1;
+        const int continuationIndent = node.flatSplitIndent ? splitBaseIndent : splitBaseIndent + 1;
         for (size_t index = 0; index < node.operands.size(); ++index) {
             EmitBreakNode(*node.operands[index], solution, index == 0 ? baseIndent : continuationIndent);
             if (index < node.operators.size()) {
@@ -2508,7 +2660,14 @@ private:
         if (pendingTokens_.empty()) {
             return {};
         }
-        if (CanFlushPendingTokensCompact(context)) {
+        FormatBreakModelContext effectiveContext = context;
+        if (!requiredChainBreakOperators_.empty()) {
+            effectiveContext.requiredChainBreakOperators = &requiredChainBreakOperators_;
+        }
+        if (!requiredChainBreakBaseIndents_.empty()) {
+            effectiveContext.requiredChainBreakBaseIndents = &requiredChainBreakBaseIndents_;
+        }
+        if (CanFlushPendingTokensCompact(effectiveContext)) {
             FlushPendingTokensCompact();
             if (pendingIndentRestoreAfterFlush_) {
                 indentLevel_ = *pendingIndentRestoreAfterFlush_;
@@ -2517,7 +2676,6 @@ private:
             return {};
         }
         const auto modelStart = std::chrono::steady_clock::now();
-        FormatBreakModelContext effectiveContext = context;
         effectiveContext.forceSplitStreamChain = effectiveContext.forceSplitStreamChain ||
             std::any_of(pendingTokens_.begin(), pendingTokens_.end(), [](const PrintToken& token) {
                 return SyntaxPathContainsClass(token, SyntaxNodeClass::ConditionalStreamOperatorChain);
@@ -2609,8 +2767,7 @@ private:
                 if (
                     candidate.kind == PrintTokenKind::Known &&
                     candidate.syntaxKind == SyntaxNodeKind::Comma &&
-                    candidate.node != nullptr &&
-                    candidate.node->parent == list
+                    SyntaxPathContains(candidate, list)
                 ) {
                     hasFollowingListItem = true;
                     break;
@@ -2835,8 +2992,7 @@ private:
             !context->afterItemClose ||
             token.kind != PrintTokenKind::Known ||
             token.syntaxKind != SyntaxNodeKind::Comma ||
-            token.node == nullptr ||
-            token.node->parent != context->list
+            !SyntaxPathContains(token, context->list)
         ) {
             return false;
         }
@@ -3488,10 +3644,15 @@ private:
     }
 
     void PrintLeftBrace(const PrintToken& token, const PrintToken* previous, const PrintToken* rawNext) {
+        if (IsMandatoryBlockOpen(currentTokenIndex_)) {
+            AnalyzeCrossBlockChains(token);
+        }
+        const int crossBlockFallbackBaseIndent = std::max(0, pendingIndentLevel_.value_or(indentLevel_));
         const bool followedByTrailingComment = rawNext != nullptr && rawNext->kind == PrintTokenKind::TrailingComment;
         if (IsWithinConditionalFunctionHeader(token)) {
             BufferToken(token);
             FlushPendingTokens();
+            RecordCrossBlockChainBaseIndents(crossBlockFallbackBaseIndent);
             if (!followedByTrailingComment) {
                 NewLine(ShouldContinueMacroLine(token, rawNext));
             }
@@ -3549,6 +3710,7 @@ private:
                 splitListItemIndent = itemIndent;
             }
         }
+        RecordCrossBlockChainBaseIndents(splitListItemIndent.value_or(crossBlockFallbackBaseIndent));
         const bool functionBlock = token.parentKind == SyntaxNodeKind::CompoundStatement &&
             token.grandParentKind == SyntaxNodeKind::FunctionDefinition;
         int openLineIndent = splitListItemIndent.value_or(token.inMacroValue || functionBlock ? indentLevel_ : (
