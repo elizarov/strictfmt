@@ -1690,9 +1690,9 @@ void PreferRootBreakBeforeNestedLambda() {
 }
 
 bool StructuralLogicalBreak() {
-    return node.kind == SyntaxNodeKind::PreprocCall &&
-        SyntaxNodeKindFromPreprocessorDirectiveLine(TrimLeadingWhitespace(node.text)) ==
-            SyntaxNodeKind::PreprocessorDirectivePragma;
+    return node.kind == SyntaxNodeKind::PreprocCall && SyntaxNodeKindFromPreprocessorDirectiveLine(
+        TrimLeadingWhitespace(node.text)
+    ) == SyntaxNodeKind::PreprocessorDirectivePragma;
 }
 
 void StructuralAssignmentBreak() {
@@ -3381,6 +3381,79 @@ void WeightedExpansionExamples() {
     output
         << firstLabel
         << BuildDetailedCargoOptions(request, [](const auto& cargo_options) { return json::Serialize(cargo_options); });
+}
+
+auto ExpansionCostArgumentList() {
+    return BuildResult(
+        firstLongValue,
+        secondLongValue,
+        thirdLongValue,
+        fourthLongValueWithSuffix,
+        BuildFinalValue(firstArgument, secondArgument)
+    );
+}
+
+auto ExpansionCostInitializerList() {
+    return Result{
+        firstLongValue,
+        secondLongValue,
+        thirdLongValue,
+        fourthLongValueWithSuffix,
+        BuildFinalValue(firstArgument, secondArgument)
+    };
+}
+
+auto ExpansionCostBinaryChain() {
+    return firstLongValue +
+        secondLongValue +
+        thirdLongValue +
+        fourthLongValue +
+        BuildFinalValue(firstArgument, secondArgument);
+}
+
+auto ExpansionCostCommaList() {
+    return (
+        firstLongValue,
+        secondLongValue,
+        thirdLongValue,
+        fourthLongValueWithSuffix,
+        BuildFinalValue(firstArgument, secondArgument)
+    );
+}
+
+auto ExpansionCostMemberChain() {
+    return CreateFirstValue()
+        .ApplyFirstOption()
+        .ApplySecondOptionWithSuffix()
+        .ApplyThirdOption()
+        .FinalizeResult(firstArgument, secondArgument);
+}
+
+void ExpansionCostStreamChain() {
+    output
+        << firstLongValue
+        << secondLongValue
+        << thirdLongValue
+        << fourthLongValue
+        << BuildFinalValue(firstArgument, secondArgument);
+}
+
+auto ExpansionCostTernaryChain() {
+    return firstCond ? firstVal :
+        secondCond ? secondVal :
+        thirdCond ? thirdVal :
+        fourthCond ? fourthVal :
+        BuildFinalValue(firstArgument, secondArgument);
+}
+
+auto ExpansionCostStringChain() {
+    return Log(
+        firstLongValue,
+        secondLongValue,
+        "This first fragment is part of a longer message. "
+            "This second fragment continues the same message. "
+            "This final fragment completes the message."
+    );
 }
 
 auto SingleLambdaArgumentKeepsTemplateName() {

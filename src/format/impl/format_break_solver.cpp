@@ -47,8 +47,8 @@ struct NodeResult {
     int extraLines = 0;
     int maxOverflow = 0;
     int overflowLines = 0;
-    int maxBreakCost = 0;
     int totalBreakCost = 0;
+    bool ownExpansionCharged = false;
     const struct ChoiceTree* choices = nullptr;
 };
 
@@ -390,8 +390,8 @@ private:
         left.extraLines += right.extraLines;
         left.maxOverflow = std::max(left.maxOverflow, right.maxOverflow);
         left.overflowLines += right.overflowLines;
-        left.maxBreakCost = std::max(left.maxBreakCost, right.maxBreakCost);
         left.totalBreakCost += right.totalBreakCost;
+        // A child's expansion charge does not pay for its parent's own breaks.
         left.choices = ConcatChoices(left.choices, right.choices);
     }
 
@@ -619,8 +619,10 @@ private:
         result.endIndentLevel = indentLevel;
         result.endColumn = IndentColumn(indentLevel);
         result.endLineHasText = false;
-        result.maxBreakCost = std::max(result.maxBreakCost, breakCost);
-        result.totalBreakCost += breakCost;
+        if (!result.ownExpansionCharged) {
+            result.totalBreakCost += breakCost;
+            result.ownExpansionCharged = true;
+        }
         return result;
     }
 
@@ -726,14 +728,11 @@ private:
         if (candidate.overflowLines != incumbent.overflowLines) {
             return candidate.overflowLines < incumbent.overflowLines;
         }
-        if (candidate.maxBreakCost != incumbent.maxBreakCost) {
-            return candidate.maxBreakCost < incumbent.maxBreakCost;
+        if (candidate.totalBreakCost != incumbent.totalBreakCost) {
+            return candidate.totalBreakCost < incumbent.totalBreakCost;
         }
         if (candidate.extraLines != incumbent.extraLines) {
             return candidate.extraLines < incumbent.extraLines;
-        }
-        if (candidate.totalBreakCost != incumbent.totalBreakCost) {
-            return candidate.totalBreakCost < incumbent.totalBreakCost;
         }
         return false;
     }
@@ -741,11 +740,16 @@ private:
     static bool SameResultState(const NodeResult& left, const NodeResult& right) {
         return left.endColumn == right.endColumn &&
             left.endIndentLevel == right.endIndentLevel &&
-            left.endLineHasText == right.endLineHasText;
+            left.endLineHasText == right.endLineHasText &&
+            left.ownExpansionCharged == right.ownExpansionCharged;
     }
 
     static bool DominatesResult(const NodeResult& left, const NodeResult& right) {
-        if (left.endIndentLevel != right.endIndentLevel || left.endLineHasText != right.endLineHasText) {
+        if (
+            left.endIndentLevel != right.endIndentLevel ||
+            left.endLineHasText != right.endLineHasText ||
+            left.ownExpansionCharged != right.ownExpansionCharged
+        ) {
             return false;
         }
         if (left.endColumn > right.endColumn) {
@@ -754,17 +758,15 @@ private:
         if (
             left.maxOverflow > right.maxOverflow ||
             left.overflowLines > right.overflowLines ||
-            left.extraLines > right.extraLines ||
-            left.maxBreakCost > right.maxBreakCost ||
-            left.totalBreakCost > right.totalBreakCost
+            left.totalBreakCost > right.totalBreakCost ||
+            left.extraLines > right.extraLines
         ) {
             return false;
         }
         return left.maxOverflow < right.maxOverflow ||
             left.overflowLines < right.overflowLines ||
-            left.extraLines < right.extraLines ||
-            left.maxBreakCost < right.maxBreakCost ||
-            left.totalBreakCost < right.totalBreakCost;
+            left.totalBreakCost < right.totalBreakCost ||
+            left.extraLines < right.extraLines;
     }
 
     static bool ResultStateLess(const NodeResult& left, const NodeResult& right) {
@@ -774,7 +776,10 @@ private:
         if (left.endIndentLevel != right.endIndentLevel) {
             return left.endIndentLevel < right.endIndentLevel;
         }
-        return left.endLineHasText < right.endLineHasText;
+        if (left.endLineHasText != right.endLineHasText) {
+            return left.endLineHasText < right.endLineHasText;
+        }
+        return left.ownExpansionCharged < right.ownExpansionCharged;
     }
 
     void AddPrunedResult(NodeResults& results, NodeResult candidate) const {
@@ -1191,17 +1196,17 @@ private:
             .valid = true,
             .endColumn = prefix.endColumn,
             .endIndentLevel = prefix.endIndentLevel,
-            .endLineHasText = false
+            .endLineHasText = false,
+            .ownExpansionCharged = prefix.ownExpansionCharged
         };
         if (DelimitedInlinePrefixRequiresOverflowOrBreak(node, start)) {
             return {};
         }
         NodeResults alternatives;
         for (const NodeResult& body : SolveDelimitedInlineItems(node, start)) {
-            if (!body.valid || (
-                body.extraLines > 0 &&
-                (ContainsForceSplitAdjacentStrings(node) || !CanKeepDelimitedCompactWithExtraLines(node, body))
-            )) {
+            if (!body.valid || (body.extraLines > 0 && (
+                ContainsForceSplitAdjacentStrings(node) || !CanKeepDelimitedCompactWithExtraLines(node, body)
+            ))) {
                 continue;
             }
             const NodeResult closedBody = AddBreak(body, indentLevel, node.breakCost);
@@ -2688,10 +2693,16 @@ private:
         return current;
     }
 
-    NodeResult SolveDelimitedSplitAttachedOpen(const FormatBreakNode& node, NodeResult result, int baseIndent) {
+    NodeResult SolveDelimitedSplitAttachedOpen(const FormatBreakNode& node, NodeResult prefix, int baseIndent) {
         if (node.kind != FormatBreakNodeKind::Delimited || node.items.empty()) {
             return {};
         }
+        NodeResult result{
+            .valid = true,
+            .endColumn = prefix.endColumn,
+            .endIndentLevel = prefix.endIndentLevel,
+            .endLineHasText = prefix.endLineHasText
+        };
         AddChoice(result, node.id, FormatBreakChoice::SplitAttachedOpen, baseIndent);
         result = AddToken(result, node.children[0]->token);
         if (HasLeadingTrailingComment(node)) {
@@ -2720,7 +2731,8 @@ private:
             );
         }
         result = AddToken(result, node.children[1]->token);
-        return result;
+        Merge(prefix, result);
+        return prefix;
     }
 
     static bool CanAttachSplitOpenAfterOperator(const FormatBreakToken& op, const FormatBreakNode& operand) {

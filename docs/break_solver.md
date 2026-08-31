@@ -8,7 +8,9 @@ The solver receives a `FormatBreakModel` for one formatted segment and returns a
 
 `Better` implements the break-selection cost from [format.md].
 
-Break cost keeps both the maximum taken-break cost and the sum of all taken-break costs. Shared expensive breaks can equalize maxima without equalizing sums. Componentwise dominance compares these separately from line count.
+Break cost is additive across expanded nodes. `AddBreak` charges the current node on its first break and records `ownExpansionCharged`; subsequent breaks only affect physical layout. `Merge` sums child costs without copying that flag, so a child cannot pay for its parent's expansion. Partial results include the flag in continuation-state comparison and dominance pruning because it changes the cost of a later break. Each independent subproblem starts uncharged; memoization needs no caller history. A shared surrounding contribution cannot change the break-cost ordering of alternatives.
+
+A packed list's separately evaluated body inherits the opener's charged flag, but not its accumulated cost. Attached-open solving starts a fresh child result before merging it into the operator prefix. Both paths therefore obey the same ownership rule as ordinary recursive solving.
 
 After building the complete break model, `NormalizeBreakCosts` initializes `breakCost` from `structuralDepth`, then applies the final-lambda discount specified in [format.md]. Lambda body headers carry syntax-derived identity. The pass finds the last non-comment delimiter item through single-child sequence wrappers and discounts only its body delimiter node, not its descendants or header. It does not follow expression tails into other calls or chain operands. Costs are fixed before solving, so memoization needs no layout-history state, and the pretty printer's choices and indentation rules are unchanged.
 
@@ -116,9 +118,9 @@ Transparent single-item delimiter stacks are an indent-economy specialization. T
 The opener-run construction uses a greedy zero-overflow fast path. It delays each run boundary until the next opener would overflow. If the completed candidate has zero overflow, this is optimal under the normal cost:
 
 - Zero is the minimum possible maximum overflow and overflowing-line count.
-- Every opener-run break has the stack root's break cost. Repartitioning cannot reduce that cost, and extra runs only reduce the space available to the leaf.
+- All opener-run and matching closer breaks belong to one stack-root expansion. Once charged, extra runs add no cost and only reduce the space available to the leaf.
 - By induction over runs, breaking earlier leaves at least as many openers for a line at the same or deeper indentation, so it cannot use fewer runs.
-- Each extra run adds an opener line and a matching closer line. The minimum-run partition therefore minimizes line count.
+- Each extra run adds an opener line and a matching closer line. Among equally charged expansions, the minimum-run partition therefore minimizes line count.
 - Among equal-run partitions, the latest boundaries are the source-order-stable compact choice and leave the final run no wider than an earlier partition.
 
 For a detached leaf, the same proof applies when only the leaf overflows but every delimiter line fits: the minimum run count gives the shallowest leaf indentation, and another run cannot improve the leaf layout.
