@@ -2292,6 +2292,22 @@ auto& component_block = wb_utils::AddCollapsible(builder, component_text).SetVal
 output << firstLabel << BuildDetailedCargoOptions(request, [](const auto& cargo_options) { return json::Serialize(cargo_options); });
 }
 
+auto ExpansionCostArgumentList(){return BuildResult(firstLongValue,secondLongValue,thirdLongValue,fourthLongValueWithSuffix,BuildFinalValue(firstArgument,secondArgument));}
+
+auto ExpansionCostInitializerList(){return Result{firstLongValue,secondLongValue,thirdLongValue,fourthLongValueWithSuffix,BuildFinalValue(firstArgument,secondArgument)};}
+
+auto ExpansionCostBinaryChain(){return firstLongValue+secondLongValue+thirdLongValue+fourthLongValue+BuildFinalValue(firstArgument,secondArgument);}
+
+auto ExpansionCostCommaList(){return (firstLongValue,secondLongValue,thirdLongValue,fourthLongValueWithSuffix,BuildFinalValue(firstArgument,secondArgument));}
+
+auto ExpansionCostMemberChain(){return CreateFirstValue().ApplyFirstOption().ApplySecondOptionWithSuffix().ApplyThirdOption().FinalizeResult(firstArgument,secondArgument);}
+
+void ExpansionCostStreamChain(){output<<firstLongValue<<secondLongValue<<thirdLongValue<<fourthLongValue<<BuildFinalValue(firstArgument,secondArgument);}
+
+auto ExpansionCostTernaryChain(){return firstCond?firstVal:secondCond?secondVal:thirdCond?thirdVal:fourthCond?fourthVal:BuildFinalValue(firstArgument,secondArgument);}
+
+auto ExpansionCostStringChain(){return Log(firstLongValue,secondLongValue,"This first fragment is part of a longer message. " "This second fragment continues the same message. " "This final fragment completes the message.");}
+
 auto SingleLambdaArgumentKeepsTemplateName() {
 return abstract_future::MakeSharedFutureFromCallOnceFunc<mem::SPtr<ExperimentsMap>>([used_tariff, request, avalon_tags_fut, opt_edges_fut, deps = deps_] {
 const auto avalon_tags = avalon_tags_fut.transform([](const auto& fut) { return fut.WaitAndGet(); });

@@ -883,9 +883,9 @@ void AppendIncludeRun(
 }
 
 bool IsPragmaNode(const SyntaxNode& node) {
-    return node.kind == SyntaxNodeKind::PreprocCall &&
-        SyntaxNodeKindFromPreprocessorDirectiveLine(TrimLeadingWhitespace(node.text)) ==
-            SyntaxNodeKind::PreprocessorDirectivePragma;
+    return node.kind == SyntaxNodeKind::PreprocCall && SyntaxNodeKindFromPreprocessorDirectiveLine(
+        TrimLeadingWhitespace(node.text)
+    ) == SyntaxNodeKind::PreprocessorDirectivePragma;
 }
 
 bool IsPreprocessorConditionHeaderNode(const SyntaxNode& node) {
