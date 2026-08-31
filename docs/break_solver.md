@@ -8,7 +8,9 @@ The solver receives a `FormatBreakModel` for one formatted segment and returns a
 
 `Better` implements the break-selection cost from [format.md].
 
-After line count, the structural tie-break keeps both the maximum taken-break depth and the sum of all taken-break depths. The maximum prefers the layout whose structurally deepest break is shallower. The sum refines equal maxima: shared deep breaks, such as the body breaks of a nested lambda, contribute equally to both layouts, leaving a shallower distinguishing operator break cheaper than a deeper one. Both components are additive or monotone, so they participate in the normal composite-candidate dominance checks.
+Break cost keeps both the maximum taken-break cost and the sum of all taken-break costs. Shared expensive breaks can equalize maxima without equalizing sums. Componentwise dominance compares these separately from line count.
+
+After building the complete break model, `NormalizeBreakCosts` initializes `breakCost` from `structuralDepth`, then applies the final-lambda discount specified in [format.md]. Lambda body headers carry syntax-derived identity. The pass finds the last non-comment delimiter item through single-child sequence wrappers and discounts only its body delimiter node, not its descendants or header. It does not follow expression tails into other calls or chain operands. Costs are fixed before solving, so memoization needs no layout-history state, and the pretty printer's choices and indentation rules are unchanged.
 
 ## Search Shape
 
@@ -19,7 +21,10 @@ Each node kind exposes legal layout candidates through `SolveAlternatives`:
 - Tokens produce one candidate.
 - Sequences combine child candidates left to right.
 - Delimited nodes expose compact, packed split, item-per-line split, and specialized indent-economy candidates.
+- Prefix lists expose compact, packed split, and item-per-line split through the same candidate enumeration used by both solving paths. Packed split records `SplitPacked`, prices the prefix break normally, and uses the shared compact-item probe at continuation indentation to require a single fitting item line. The following body is costed by its enclosing node.
 - Chains, function signatures, body headers, and adjacent strings expose their own compact and split forms.
+
+Syntax-local `PrefixList` metadata routes colon-prefixed lists through the same builder, including grammar nodes without a dedicated formatter kind. An empty list leaves its prefix token in the surrounding sequence.
 
 The solver compares complete candidates with `Better`. Intermediate candidate sets may be pruned only when the removed candidate cannot win any continuation under the same solver contract.
 
@@ -27,7 +32,7 @@ Composite candidates retain nondominated child layouts until all following child
 
 Qualified names are normalized into left-associated binary break nodes. Every node owns one non-leading `::` and uses the ordinary after-operator
 compact and split candidates. Consequently, the final qualification operator is closest to the break-model root and
-earlier operators are successively deeper. The standard structural-depth cost therefore prefers the latest
+earlier operators are successively deeper. The standard break cost therefore prefers the latest
 qualification boundary when all earlier cost components are equal, without a qualification-specific weight or solver
 tie-break. Independent binary choices also enumerate the layouts with multiple qualification breaks. The leading
 global-scope `::` remains attached to the first operand. Syntax metadata applies the same construction to scoped
@@ -39,7 +44,7 @@ The split candidate continues to solve and emit the original literal tokens. The
 compact spellings only when the compact choice is selected, so it neither repeats escape-boundary analysis nor joins
 tokens across a selected break.
 
-When a mandatory block flushes pending tokens from inside nested comma lists, the break model supplies a virtual closer for every enclosing list up to the containing block. The solver therefore records each enclosing compact-or-split choice before any opener is emitted. Deferred comma and closer emission follows exactly the lists whose virtual delimiters selected split form; it does not infer an outer-list layout after the prefix has already been printed.
+When a mandatory block flushes pending tokens from inside nested delimiter groups, the break model supplies a virtual closer for every enclosing group up to the containing block. Groups are identified by matched delimiters, regardless of item count. The solver therefore records each enclosing compact-or-split choice before any opener is emitted. Deferred comma and closer emission follows exactly the groups whose virtual delimiters selected split form; it does not infer an outer layout after the prefix has already been printed.
 
 Deferred list separators belong to their nearest enclosing delimiter group. The shared ownership check traverses delimiter-free syntax wrappers, including comma expressions and conditional branches, but stops at nested groups or blocks. Both following-item detection and deferred comma emission (including preprocessor lists) use this check, so an outer list cannot force breaks or indentation inside an item.
 
@@ -58,8 +63,8 @@ recorded from the selected chain layout before a mandatory block. Mandatory item
 Function-signature parameter-list expansion considers both split forms.
 
 Syntax metadata identifies lists attached to names. Their name-prefix break depths are normalized below the list's
-depth, including preceding calls in a callable expression. The existing structural cost then prefers list expansion to
-name-internal breaks without a new weight or a break between the name and opener.
+depth. Uniform-chain link boundaries are excluded from this shift: they describe expression layout, not name-internal
+wrapping. The cost pass preserves this distinction when preferring list expansion to name-internal breaks.
 
 Owner/value syntax uses one generic after-owner candidate shape.
 
@@ -111,6 +116,7 @@ Transparent single-item delimiter stacks are an indent-economy specialization. T
 The opener-run construction uses a greedy zero-overflow fast path. It delays each run boundary until the next opener would overflow. If the completed candidate has zero overflow, this is optimal under the normal cost:
 
 - Zero is the minimum possible maximum overflow and overflowing-line count.
+- Every opener-run break has the stack root's break cost. Repartitioning cannot reduce that cost, and extra runs only reduce the space available to the leaf.
 - By induction over runs, breaking earlier leaves at least as many openers for a line at the same or deeper indentation, so it cannot use fewer runs.
 - Each extra run adds an opener line and a matching closer line. The minimum-run partition therefore minimizes line count.
 - Among equal-run partitions, the latest boundaries are the source-order-stable compact choice and leave the final run no wider than an earlier partition.

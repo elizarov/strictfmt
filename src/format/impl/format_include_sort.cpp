@@ -153,9 +153,10 @@ bool HasHeaderDelimiter(std::string_view target, bool quote) {
 }
 
 std::string StripHeaderDelimiter(std::string_view target) {
-    if (target.size() >= 2 && (
-        (target.front() == '"' && target.back() == '"') || (target.front() == '<' && target.back() == '>')
-    )) {
+    if (
+        target.size() >= 2 &&
+        ((target.front() == '"' && target.back() == '"') || (target.front() == '<' && target.back() == '>'))
+    ) {
         target.remove_prefix(1);
         target.remove_suffix(1);
     }

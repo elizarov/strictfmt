@@ -645,6 +645,20 @@ ConstructorBodyEconomyWidget::ConstructorBodyEconomyWidget(FirstExtremelyLongPar
 
 Widget::Widget(int first,int second,int third,int fourth):first_(first),second_(second),third_(third),fourth_(fourth){Use();}
 
+PackedBracedInitializers::PackedBracedInitializers(int first,int second,int third) noexcept:first_{first},second_{second},third_{third}{Initialize();Verify();}
+
+CommentedInitializers::CommentedInitializers(int first,int second):first_(first), // preserve split
+second_(second){Use();}
+
+PrefixCommentInitializers::PrefixCommentInitializers(int first,int second): // preserve split
+first_(first),second_(second){Use();}
+
+WideConstructorInitializers::WideConstructorInitializers():first_(firstInitializerValueWithAnExtremelyLongName),second_(secondInitializerValueWithAnExtremelyLongName),third_(thirdInitializerValueWithAnExtremelyLongName){}
+
+PackedInitializerBodySuffix::PackedInitializerBodySuffix():firstValue_(firstInitializerValueWithAnExtremelyLongName),secondId_(secondInitializerValueWithAnExtremelyLongName){}
+
+ExpandedFinalInitializer::ExpandedFinalInitializer(int first):first_(first),second_(BuildValue(firstArgumentWithAnExtremelyLongNameForTheConstructorFixture,secondArgumentWithAnExtremelyLongNameForTheConstructorFixture)){Use();}
+
 StringColumn::StringColumn(ColumnRef column)
     : ClickhouseColumn{impl::GetTypedColumn<StringColumn, NativeTyp>(column)}
 {}
@@ -2015,11 +2029,42 @@ void AllocateBitmapPixels(){
 std::vector<DisplayPlacementMenuBitmapPixel> pixels((kBitmapSize * kBitmapSize));
 }
 
+struct CompactBaseList:First,Second{};
+
+class PackedBaseListWithLongClassName final:public FirstInterfaceWithLongName,protected SecondInterfaceWithLongName,private ThirdBase{void Run();};
+
+template<class... Bases> struct PackedTemplateBaseListWithLongClassName final:public GenericBase<FirstArgument,SecondArgument>,protected virtual Interface,Bases...{};
+
+struct InheritanceListHost{struct PackedNestedBaseListWithLongClassName:FirstInterfaceWithLongName,SecondInterfaceWithLongName,ThirdInterfaceWithLongName{};};
+
+struct WideBaseList:FirstInterfaceWithNameTooLongToShareALineWithTheOtherBaseClasses,SecondInterfaceWithNameTooLongToShareALineWithTheOtherBaseClasses,ThirdInterface{};
+
+struct PrefixCommentBaseList: // preserve split
+First,Second{};
+
+struct ExpandedTemplateBaseList:SimpleBase,GenericBase<FirstTemplateArgumentWithAnExtremelyLongNameForTestingBaseListExpansion,SecondTemplateArgumentWithAnExtremelyLongNameForTestingBaseListExpansion>{};
+
 class BaseClassListCommentDerived : public BaseClassListCommentRootA,  // primary
 public BaseClassListCommentRootB, public BaseClassListCommentRootC {};
 
 struct Derived final :
 FormatterReviewExtremelyLongBaseClassNameThatForcesTheInheritanceClauseToRemainBrokenAcrossLines<Derived> {using Request=int;};
+
+void AssemblyPrefixLists(){
+asm volatile("op" : "=r"(firstOutput),"=r"(secondOutput) : "r"(firstInput),"r"(secondInput) : "memory","cc");
+asm("instruction" : "=r"(firstOutputOperandWithLongDescriptiveName),"=r"(secondOutputOperandWithLongDescriptiveName));
+asm("another longer instruction" : : "r"(firstInputOperandWithLongDescriptiveName),"r"(secondInputOperandWithLongDescriptiveName));
+asm("instruction" : : : "first_clobbered_register_with_a_long_descriptive_name","second_clobbered_register_with_a_long_descriptive_name");
+asm goto("jmp %l0; nop; nop; nop" : : : : firstDestinationLabelWithLongDescriptiveName,secondDestinationLabelWithLongDescriptiveName);
+asm("instruction" : "=r"(firstOutputOperandWithAnExtremelyLongDescriptiveNameForTestingPrefixListWrapping),"=r"(secondOutputOperandWithAnExtremelyLongDescriptiveNameForTestingPrefixListWrapping));
+asm volatile("instruction" : // preserve split
+"=r"(firstOutput),"=r"(secondOutput));
+asm volatile("instruction" : : "r"(firstInput), // preserve split
+"r"(secondInput));
+asm volatile("op" : : :);
+firstDestinationLabelWithLongDescriptiveName:Use();
+secondDestinationLabelWithLongDescriptiveName:Use();
+}
 
 void RegisterSubscriptListComment() {
 value = matrix[firstReallyLongIndexForFormatterGenerality,  // selected row
@@ -2234,3 +2279,46 @@ auto rawStringSuffix = R"(value)"sv;
 struct DesignatedBraceInner { int value; };
 struct DesignatedBraceOuter { int first; DesignatedBraceInner inner; };
 DesignatedBraceOuter MakeDesignatedBraceOuter(){return {.first{1},.inner{.value{2}}};}
+
+void PreferShallowBreakOverFewerLines() {
+const auto same_point_pickup_coefficients = pickup_settings.same_point_pickup_coefficients | ranges::MapTo<std::vector>([](const auto& settings) { return psp_defs::PickupCoefficient{.coef = settings.ToDoubleInexact()}; });
+}
+
+void WeightedExpansionExamples() {
+optional::Map(request.cargo_options(), [&](const auto& cargo_options) { builder[fields::kCargoOptions] = json::Serialize(cargo_options); });
+auto result = BuildResult(request, TransformCargoOptions(request.cargo_options(), [&](const auto& cargo_options) { return json::Serialize(cargo_options); }));
+DispatchCargoOptions([&](const auto& cargo_options) { PrepareCargoOptions(cargo_options); return SerializeCargoOptions(cargo_options); }, request);
+auto& component_block = wb_utils::AddCollapsible(builder, component_text).SetValue<wb::BlockList>(/*orientation=*/ wb::Orientation::kVertical);
+output << firstLabel << BuildDetailedCargoOptions(request, [](const auto& cargo_options) { return json::Serialize(cargo_options); });
+}
+
+auto SingleLambdaArgumentKeepsTemplateName() {
+return abstract_future::MakeSharedFutureFromCallOnceFunc<mem::SPtr<ExperimentsMap>>([used_tariff, request, avalon_tags_fut, opt_edges_fut, deps = deps_] {
+const auto avalon_tags = avalon_tags_fut.transform([](const auto& fut) { return fut.WaitAndGet(); });
+const auto opt_edges = opt_edges_fut.transform([](const auto& fut) { return fut.WaitAndGet(); });
+const auto opt_router_distance_meter = opt_edges.transform([](const auto& edges) {
+const auto shortest_route = edges.at(routing::GetMinimalDistanceRouteIdx(edges));
+return static_cast<std::int64_t>(routing::GetRouteDistanceMeter(shortest_route));
+});
+return FetchPriceModificationsExperimentMap(used_tariff, request, /*driver_tags*/ std::nullopt, avalon_tags, opt_router_distance_meter, deps);
+});
+}
+
+auto SingleLambdaInitializerKeepsTemplateName() {
+return DeferredPriceModificationsCallback<mem::SPtr<ExperimentsMap>>{[used_tariff, request, avalon_tags_fut, opt_edges_fut, deps = deps_] { Prepare(); return Fetch(); }};
+}
+
+auto NestedSingleLambdaArgumentGroups() {
+return WrapCallback((abstract_future::MakeSharedFutureFromCallOnceFunc<mem::SPtr<ExperimentsMap>>([used_tariff, request, avalon_tags_fut, opt_edges_fut, deps = deps_] { Prepare(); return Fetch(); })));
+}
+
+void FinalLambdaDiscountExamples() {
+optional::Map([&](const auto& cargo_options) { builder[fields::kCargoOptions] = json::Serialize(cargo_options); }, request.cargo_options());
+CallbackConfig config{request.cargo_options(), [&](const auto& cargo_options) { builder[fields::kCargoOptions] = json::Serialize(cargo_options); }};
+CallbackConfig commented{request.cargo_options(), [&](const auto& cargo_options) { builder[fields::kCargoOptions] = json::Serialize(cargo_options); },
+/* callback */
+};
+optional::Map(request.cargo_options(), [&](const VeryLongCargoOptionsTypeName& cargo_options, const SerializationContextWithAdditionalCargoOptions& context) { return Serialize(cargo_options, context); });
+optional::Map(request.cargo_options(), [&](const auto& cargo_options) { return SerializeCargoOptionsWithContext(cargo_options, serialization_context, additional_serialization_options, serialization_fallback_policy); });
+auto callback = [&](const auto& cargo_options) { builder[fields::kCargoOptions] = json::Serialize(cargo_options); };
+}

@@ -28,7 +28,7 @@ This document specifies the source layout produced by `strictfmt`. Wrapping exam
 - Put one space after `operator` for conversion, allocation, and deallocation operators, e.g. `operator bool(`.
 - Treat destructor `~` plus the following type name as one function name, e.g. `~Widget(`.
 - Put no space between a C-style cast and the expression it prefixes, e.g. `(void)value`.
-- Put spaces around range-for and constructor-initializer colons, e.g. `for (auto item : items)`.
+- Put spaces around range-for and list-prefix colons, e.g. `for (auto item : items)`.
 - Put no space before access-specifier, label, or `case` colons, e.g. `public:`.
 - Put no spaces around qualification or member-access operators, e.g. `std::string`.
 - Put two spaces before a trailing `//` comment after code, e.g. `value;  // note`.
@@ -76,6 +76,7 @@ Optional breaks within a [formatted segment](glossary.md#formatted-segment) are 
 - After assignment, binary, or ternary operators.
 - After non-leading `::` in names. Qualification is left-associated; right components split first.
 - After delimiter-group openers and before their matching closers.
+- After a list's introducing `:`.
 - After commas in any [list](glossary.md#list).
 - Between a declaration type and its direct-initialized declarator value.
 - After semicolons inside control-statement headers.
@@ -291,13 +292,30 @@ const char* messages[] = {
 
 ## Break Selection
 
+### Break Cost
+
+A break's base cost is its structural depth in the formatted segment: zero at the root, increasing by one per nested level. Name-internal breaks are deeper than the attached list's breaks; chain links keep their expression depth.
+
+When a lambda is the final list item, breaks after its body's `{` and before its `}` receive a full discount: their cost is zero. Breaks in its header and body expressions retain their normal cost. Discounts change neither indentation nor permitted layouts.
+
+<!-- .cpp-format
+ColumnLimit: 50
+-->
+```cpp
+auto result = visit(items, [](const auto& item) {
+    return Serialize(item);
+});
+```
+
+### Optimization
+
 Within each formatted segment, choose a layout satisfying all these rules, minimizing in order:
 
 1. Maximum overflow beyond the column limit.
 2. Number of overflowing physical lines.
-3. Total physical line count.
-4. Structural depth of the deepest taken break.
-5. Sum of taken-break depths.
+3. Maximum taken-break cost.
+4. Total physical line count.
+5. Sum of taken-break costs.
 
 Remaining ties prefer compact choices in source order.
 
@@ -305,7 +323,7 @@ Remaining ties prefer compact choices in source order.
 
 A trailing comment on a list item or chain part, or a standalone comment between them, forces split form. A blank line between list items also forces split form. Standalone chain comments align with the following link.
 
-Since layout minimizes line count, use end-of-line comments when expansion is essential for readability.
+Layout minimizes lines after break cost; use end-of-line comments when expansion is essential for readability.
 
 ```cpp
 auto result = call(
@@ -386,7 +404,7 @@ auto update = [context, options](
 };
 ```
 
-### Templates and constructors
+### Templates
 
 A template prefix precedes the declaration on a separate line. Keep `requires` on the template line only when the complete prefix and compact clause fit; otherwise move it one indent deeper and wrap structurally.
 
@@ -408,18 +426,29 @@ concept Sized = requires(T value) {
 };
 ```
 
-Constructor initializer lists use compact or split form. Keep `explicit` attached to the declarator and `:` attached to the parameter closer or trailing qualifier. Initializer count alone does not force parameters to split.
+### Colon-prefixed lists
+
+Comma-separated lists introduced by `:`, such as constructor initializers and base classes, use these layouts, in increasing line count:
+
+- Compact: items follow `:` on the same line.
+- Packed split: all items share one continuation line that fits.
+- One item per line: each item starts on its own continuation line.
+
+Both split forms indent items one level. Keep `:` attached to the preceding syntax. In constructors, keep `explicit` attached to the declarator; initializer count alone does not force parameters to split.
 
 <!-- .cpp-format
-ColumnLimit: 40
+ColumnLimit: 48
 -->
 ```cpp
-Widget::Widget(int x, int y) :
-    firstValue_(x),
-    secondValue_(y)
-{
-    Init();
-}
+Compact::Compact() : first_(1), second_(2) {}
+
+struct PackedSplit :
+    FirstLongBase, SecondLongBase {};
+
+OnePerLine::OnePerLine() :
+    firstLongValue_(1),
+    secondLongValue_(2),
+    thirdLongValue_(3) {}
 ```
 
 ### Control flow
