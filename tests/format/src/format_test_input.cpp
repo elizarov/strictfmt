@@ -499,6 +499,75 @@ ExtremelyLongDirectInitializerTypeNameForFormatterGeneralityAndMemberCoverage lo
 ExtremelyLongDirectInitializerTypeNameForFormatterGeneralityAndMemberCoverage localWithExtraParenDirectInitializerName((value));
 }
 
+void PackedCommaSeparatedLists(){
+const auto corp_clients_counter=std::unordered_map<std::optional<CorpClientId>,std::size_t>{{std::nullopt,1},{CorpClientId{"corp1"},1},{CorpClientId{"corp2"},2}};
+const mem::SPtr<FetcherFromSlotUnusedOracle> fetcher=mem::MakeSPtr<impl::FetcherFromSlotUnusedOracle>(fetcher_from_slot,TwoPhaseFetcherCollector::CreateUnsafeNoneTwoPhase(fetcher_from_oracle));
+auto called=MakeGenericResult<FirstTemplateParameterWithLongName,SecondTemplateParameterWithLongName>(firstArgument,secondArgument);
+auto constructed=GenericResult<FirstTemplateParameterWithLongName,SecondTemplateParameterWithLongName>{firstArgument,secondArgument};
+auto allocated=new GenericResult<FirstTemplateParameterWithLongName,SecondTemplateParameterWithLongName>(firstArgument,secondArgument);
+MakeGenericCallable<FirstTemplateParameterWithLongName,SecondTemplateParameterWithLongName>(firstArgument)(secondArgument,thirdArgument);
+Widget anExtremelyLongDirectInitializedVariableName(MakeFirstValueWithLongName(),MakeSecondValueWithLongName(),thirdValue);
+Widget anExtremelyLongDirectInitializedVariableName{firstValueWithLongName,secondValueWithLongName,thirdValueWithLongName};
+receiver.MakeGenericResult<FirstTemplateParameterWithLongName,SecondTemplateParameterWithLongName>(firstArgument,secondArgument).Use();
+receiver->MakeGenericResult<FirstTemplateParameterWithLongName,SecondTemplateParameterWithLongName>(firstArgument,secondArgument)->Use();
+Outer(MakeGenericResult<FirstTemplateParameterWithLongName,SecondTemplateParameterWithLongName>(firstArgument,secondArgument),other);
+receiver.MakeGenericResult<FirstTemplateParameterWithLongName,SecondTemplateParameterWithLongName>(firstArgument,[](auto value){Prepare(value);return Finish(value);}).Use();
+AnExceptionallyLongCallableNameWhoseFinalIdentifierHasExactlyTheWidthNeededToLeaveNoSpaceForAnEmptyArgumentListRightHere();
+AnExceptionallyLongTypeNameWhoseFinalIdentifierHasExactlyTheWidthNeededToLeaveNoSpaceForAnEmptyBracedInitializerRightHere{};
+}
+
+auto PackedListReturnTailExpansion(){
+return TwoPhaseFetcher::Create<impl::TwoPhaseFetcherImpl>(common::exp_utils::Experiments3{deps.experiments3},pricing_handle,std::move(slot_discounts),std::move(requester));
+}
+
+bool CallableNameWithLongParameterList(const FirstParameterType& firstParameter,const SecondParameterType& secondParameter){
+Prepare();
+return Finish();
+}
+
+class PackedConstructorInitializers{
+PackedConstructorInitializers():GenericBase<FirstTemplateParameterWithLongName,SecondTemplateParameterWithLongName>(firstArgument,secondArgument),anExtremelyLongDirectInitializedMemberName{firstValueWithLongName,secondValueWithLongName,thirdValueWithLongName}{}
+};
+
+using PackedTemplateArguments=GenericContainerWithAnEspeciallyLongNameForTestingPackedTemplateArguments<FirstModeratelyLongTemplateArgument,SecondModeratelyLongTemplateArgument>;
+
+void PackedListKindsAndBarriers(){
+auto lambdaWithLongVariableName=[firstCapturedValueWithLongNameForPackedLayouts,secondCapturedValueWithLongName,thirdCapturedValueWithLongName]{return firstCapturedValueWithLongNameForPackedLayouts;};
+auto longCommaExpressionVariableName=(firstCommaValueWithAnExtendedNameToPack,secondCommaValueWithAnExtendedName,thirdCommaValueWithAnExtendedName);
+auto designatedValueWithLongVariableName=DesignatedValues{.first=firstValueWithLongName,.second=secondValueWithLongName,.third=thirdValueWithLongName};
+CallWithCommentBarrier(firstArgument, // keep items separate
+secondArgument,thirdArgument);
+CallWithOpenerCommentBarrier( // keep items separate
+firstArgument,
+secondArgument,thirdArgument);
+CallWithMultilineNonFinalItem([]{Prepare();Finish();},secondArgument,thirdArgument);
+CallWithOperatorOnlyFinalItem(firstArgument,secondArgument,firstValueWithLongName+secondValueWithLongName+thirdValueWithLongName+fourthValueWithLongName);
+CallWithPackedListTooWideToFit(firstArgumentWithExtremelyLongNameForThePackedListWidthTest,secondArgumentWithExtremelyLongNameForThePackedListWidthTest,thirdArgument);
+CallWithUnavoidablyOverflowingItem(firstArgument,AnUnavoidablyLongAtomicArgumentWhoseSpellingAloneExceedsTheConfiguredColumnLimitAndMustNotBecomeAPackedSplitEvenWithAShortFirstItem);
+}
+
+void DeferredListCommaOwnership(){
+Call([]{Prepare();Finish();},[](auto first,auto second){return first+second;},MakePair<First,Second>(first,second),Pair{first,second},(first,second),third);
+}
+
+auto DeferredListNestedLambdaBodies(){
+return ExtraParams{
+.first=[]{Prepare();Finish();},
+.service_fee_percent=extra_params.service_fee().and_then([](const auto& service_fee){
+return variant::Visit(service_fee,[](const tariff::ServiceFeePercent& percent)->std::optional<double>{return percent.fee_percent();},[](const auto&)->std::optional<double>{return std::nullopt;});
+}),
+.last=Call(first,second)
+};
+}
+
+void DeferredCommaExpressionOwnership(){
+([]{Prepare();Finish();}(),[]{return Call(first,second);}(),MakePair<First,Second>(first,second),Pair{first,second},(first,second),third);
+}
+
+void FinalBlockItemWithNestedCommaSuffix(){
+Call(first,[]{Prepare();return Build();}(second,third));
+}
+
 void DesignatedInitializerAssignmentBreak(){
 auto deps=Dependencies{{.delivery_corp_client_traits_fetcher=internal::delivery_corp_client_traits::MakeDeliveryCorpClientTraitsFetcher(dependencies)}};
 Use(deps);

@@ -126,11 +126,7 @@ int DumpFormatModel(
     const FormatterConfig* config = styleCache.ConfigForPath(path, configError);
     if (config == nullptr) {
         std::fprintf(
-            errorOutput,
-            "%.*s: %s\n",
-            static_cast<int>(commandName.size()),
-            commandName.data(),
-            configError.c_str()
+            errorOutput, "%.*s: %s\n", static_cast<int>(commandName.size()), commandName.data(), configError.c_str()
         );
         return 2;
     }
@@ -160,10 +156,7 @@ int DumpFormatModelText(
             return 1;
         }
         std::fprintf(
-            errorOutput,
-            "%.*s: parse produced no root node\n",
-            static_cast<int>(commandName.size()),
-            commandName.data()
+            errorOutput, "%.*s: parse produced no root node\n", static_cast<int>(commandName.size()), commandName.data()
         );
         return 1;
     }
@@ -174,11 +167,7 @@ int DumpFormatModelText(
     }
     const std::string error = model.parse.error.empty() ? std::string("parser setup failed") : model.parse.error;
     std::fprintf(
-        errorOutput,
-        "%.*s: parse failed: %s\n",
-        static_cast<int>(commandName.size()),
-        commandName.data(),
-        error.c_str()
+        errorOutput, "%.*s: parse failed: %s\n", static_cast<int>(commandName.size()), commandName.data(), error.c_str()
     );
     return 1;
 }

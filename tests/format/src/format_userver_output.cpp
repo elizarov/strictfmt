@@ -383,8 +383,7 @@ using GenericPrepareUnaryCall = std::unique_ptr<grpc::ClientAsyncResponseReader<
 using AuthCheckerFactoryFactory = utils::UniqueRef<AuthCheckerFactoryBase> (*)(const components::ComponentContext&);
 
 PrepareUnaryCallProxy(
-    GenericPrepareUnaryCall,
-    const grpc::string&
+    GenericPrepareUnaryCall, const grpc::string&
 ) -> PrepareUnaryCallProxy<grpc::GenericStub, grpc::ByteBuffer, grpc::ByteBuffer>;
 
 Data& operator*() & FORMAT_USERVER_LIFETIME_BOUND { return data_; }
@@ -407,9 +406,9 @@ void Consumer::RunConsuming(ConsumerScope::Callback callback) {
     LOG_INFO("Started messages polling");
 
     while (!engine::current_task::ShouldCancel()) {
-        auto polled_messages = consumer_->PollBatch(execution_params_.max_batch_size, engine::Deadline::FromDuration(
-            execution_params_.poll_timeout
-        ));
+        auto polled_messages = consumer_->PollBatch(
+            execution_params_.max_batch_size, engine::Deadline::FromDuration(execution_params_.poll_timeout)
+        );
 
         if (engine::current_task::ShouldCancel()) {
             LOG_DEBUG("Stopping consuming because of cancel");

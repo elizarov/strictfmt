@@ -31,11 +31,7 @@ bool IsToolOutputTerminal(FILE* output) {
 }
 
 ToolFileProgress::ToolFileProgress(
-    FILE* output,
-    std::string_view label,
-    size_t totalFiles,
-    std::chrono::steady_clock::time_point started,
-    bool enabled
+    FILE* output, std::string_view label, size_t totalFiles, std::chrono::steady_clock::time_point started, bool enabled
 ) :
     output_(output),
     label_(label),

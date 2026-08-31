@@ -139,9 +139,7 @@ class DashboardShellHost {
 public:
     virtual ~DashboardShellHost() = default;
     virtual std::optional<FilePath> PromptDiagnosticsSavePath(
-        std::string_view defaultFileName,
-        std::string_view filter,
-        std::string_view defaultExtension
+        std::string_view defaultFileName, std::string_view filter, std::string_view defaultExtension
     ) const = 0;
     virtual ::Renderer& Renderer() = 0;
     virtual const ::Renderer& Renderer() const = 0;
@@ -273,9 +271,7 @@ class DeclarationGroupingRules {
     using CompactDeclarationGroupingAlias = int;
 
     using IsolatedDeclarationGroupingAlias = std::variant<
-        FirstDeclarationGroupingAlternative,
-        SecondDeclarationGroupingAlternative,
-        ThirdDeclarationGroupingAlternative
+        FirstDeclarationGroupingAlternative, SecondDeclarationGroupingAlternative, ThirdDeclarationGroupingAlternative
     >;
 
     using FollowingDeclarationGroupingAlias = int;
@@ -443,9 +439,7 @@ struct OklabColor {
 
 OklabColor MixOklab(OklabColor from, OklabColor to, double amount) {
     return OklabColor{
-        from.l + (to.l - from.l) * amount,
-        from.a + (to.a - from.a) * amount,
-        from.b + (to.b - from.b) * amount
+        from.l + (to.l - from.l) * amount, from.a + (to.a - from.a) * amount, from.b + (to.b - from.b) * amount
     };
 }
 
@@ -552,10 +546,7 @@ struct ColorConfig {};
 
 template <typename UpdateKeyFn>
 void SaveBoardSectionDifferences(
-    const BoardConfig& board,
-    const BoardConfig* compareBoard,
-    const std::string& sectionName,
-    UpdateKeyFn& updateKey
+    const BoardConfig& board, const BoardConfig* compareBoard, const std::string& sectionName, UpdateKeyFn& updateKey
 ) {
     DynamicSectionSaveContext<UpdateKeyFn> context{&board, compareBoard, &updateKey};
     updateKey(board, compareBoard, sectionName);
@@ -580,10 +571,9 @@ template <typename Result, typename... Args>
 class FunctionRef<Result(Args...)> {
 public:
     template <typename Callable>
-        requires(
-            !std::is_same_v<std::remove_cvref_t<Callable>, FunctionRef> &&
-            std::is_invocable_r_v<Result, Callable&&, Args...>
-        )
+        requires(!std::is_same_v<std::remove_cvref_t<Callable>, FunctionRef> && std::is_invocable_r_v<
+            Result, Callable&&, Args...
+        >)
     FunctionRef(Callable&& callable) :
         context_(const_cast<void*>(static_cast<const void*>(std::addressof(callable)))),
         invoke_([](void* context, Args... args) -> Result {
@@ -613,8 +603,7 @@ struct InitializerGeneralityWidget {
 class FetcherWithGroupingImplementation {
 public:
     explicit FetcherWithGroupingImplementation(
-        const two_phase::PrivateTicket& private_ticket,
-        mem::SPtr<IRequester> shared_requester
+        const two_phase::PrivateTicket& private_ticket, mem::SPtr<IRequester> shared_requester
     ) :
         ExtremelyLongBaseInterfaceNameForFetcher{private_ticket},
         shared_requester_with_grouping_and_caching_(std::move(shared_requester)) {}
@@ -632,6 +621,186 @@ void DirectInitializedDeclarationGeneralityLocals() {
         localWithBracedDirectInitializerName{value};
     ExtremelyLongDirectInitializerTypeNameForFormatterGeneralityAndMemberCoverage
         localWithExtraParenDirectInitializerName((value));
+}
+
+void PackedCommaSeparatedLists() {
+    const auto corp_clients_counter = std::unordered_map<std::optional<CorpClientId>, std::size_t>{
+        {std::nullopt, 1}, {CorpClientId{"corp1"}, 1}, {CorpClientId{"corp2"}, 2}
+    };
+    const mem::SPtr<FetcherFromSlotUnusedOracle> fetcher = mem::MakeSPtr<impl::FetcherFromSlotUnusedOracle>(
+        fetcher_from_slot, TwoPhaseFetcherCollector::CreateUnsafeNoneTwoPhase(fetcher_from_oracle)
+    );
+    auto called = MakeGenericResult<FirstTemplateParameterWithLongName, SecondTemplateParameterWithLongName>(
+        firstArgument, secondArgument
+    );
+    auto constructed = GenericResult<FirstTemplateParameterWithLongName, SecondTemplateParameterWithLongName>{
+        firstArgument, secondArgument
+    };
+    auto allocated = new GenericResult<FirstTemplateParameterWithLongName, SecondTemplateParameterWithLongName>(
+        firstArgument, secondArgument
+    );
+    MakeGenericCallable<FirstTemplateParameterWithLongName, SecondTemplateParameterWithLongName>(firstArgument)(
+        secondArgument, thirdArgument
+    );
+    Widget anExtremelyLongDirectInitializedVariableName(
+        MakeFirstValueWithLongName(), MakeSecondValueWithLongName(), thirdValue
+    );
+    Widget anExtremelyLongDirectInitializedVariableName{
+        firstValueWithLongName, secondValueWithLongName, thirdValueWithLongName
+    };
+    receiver
+        .MakeGenericResult<FirstTemplateParameterWithLongName, SecondTemplateParameterWithLongName>(
+            firstArgument, secondArgument
+        )
+        .Use();
+    receiver
+        ->MakeGenericResult<FirstTemplateParameterWithLongName, SecondTemplateParameterWithLongName>(
+            firstArgument, secondArgument
+        )
+        ->Use();
+    Outer(
+        MakeGenericResult<FirstTemplateParameterWithLongName, SecondTemplateParameterWithLongName>(
+            firstArgument, secondArgument
+        ),
+        other
+    );
+    receiver
+        .MakeGenericResult<FirstTemplateParameterWithLongName, SecondTemplateParameterWithLongName>(
+            firstArgument, [](auto value) {
+                Prepare(value);
+                return Finish(value);
+            }
+        )
+        .Use();
+    AnExceptionallyLongCallableNameWhoseFinalIdentifierHasExactlyTheWidthNeededToLeaveNoSpaceForAnEmptyArgumentListRightHere();
+    AnExceptionallyLongTypeNameWhoseFinalIdentifierHasExactlyTheWidthNeededToLeaveNoSpaceForAnEmptyBracedInitializerRightHere{};
+}
+
+auto PackedListReturnTailExpansion() {
+    return TwoPhaseFetcher::Create<impl::TwoPhaseFetcherImpl>(
+        common::exp_utils::Experiments3{deps.experiments3}, pricing_handle, std::move(slot_discounts), std::move(
+            requester
+        )
+    );
+}
+
+bool CallableNameWithLongParameterList(
+    const FirstParameterType& firstParameter, const SecondParameterType& secondParameter
+) {
+    Prepare();
+    return Finish();
+}
+
+class PackedConstructorInitializers {
+    PackedConstructorInitializers() :
+        GenericBase<FirstTemplateParameterWithLongName, SecondTemplateParameterWithLongName>(
+            firstArgument, secondArgument
+        ),
+        anExtremelyLongDirectInitializedMemberName{
+            firstValueWithLongName, secondValueWithLongName, thirdValueWithLongName
+        } {}
+};
+
+using PackedTemplateArguments = GenericContainerWithAnEspeciallyLongNameForTestingPackedTemplateArguments<
+    FirstModeratelyLongTemplateArgument, SecondModeratelyLongTemplateArgument
+>;
+
+void PackedListKindsAndBarriers() {
+    auto lambdaWithLongVariableName = [
+        firstCapturedValueWithLongNameForPackedLayouts, secondCapturedValueWithLongName, thirdCapturedValueWithLongName
+    ] {
+        return firstCapturedValueWithLongNameForPackedLayouts;
+    };
+    auto longCommaExpressionVariableName = (
+        firstCommaValueWithAnExtendedNameToPack, secondCommaValueWithAnExtendedName, thirdCommaValueWithAnExtendedName
+    );
+    auto designatedValueWithLongVariableName = DesignatedValues{
+        .first = firstValueWithLongName, .second = secondValueWithLongName, .third = thirdValueWithLongName
+    };
+    CallWithCommentBarrier(
+        firstArgument,  // keep items separate
+        secondArgument,
+        thirdArgument
+    );
+    CallWithOpenerCommentBarrier(  // keep items separate
+        firstArgument,
+        secondArgument,
+        thirdArgument
+    );
+    CallWithMultilineNonFinalItem(
+        [] {
+            Prepare();
+            Finish();
+        },
+        secondArgument,
+        thirdArgument
+    );
+    CallWithOperatorOnlyFinalItem(
+        firstArgument,
+        secondArgument,
+        firstValueWithLongName + secondValueWithLongName + thirdValueWithLongName + fourthValueWithLongName
+    );
+    CallWithPackedListTooWideToFit(
+        firstArgumentWithExtremelyLongNameForThePackedListWidthTest,
+        secondArgumentWithExtremelyLongNameForThePackedListWidthTest,
+        thirdArgument
+    );
+    CallWithUnavoidablyOverflowingItem(
+        firstArgument,
+        AnUnavoidablyLongAtomicArgumentWhoseSpellingAloneExceedsTheConfiguredColumnLimitAndMustNotBecomeAPackedSplitEvenWithAShortFirstItem
+    );
+}
+
+void DeferredListCommaOwnership() {
+    Call(
+        [] {
+            Prepare();
+            Finish();
+        },
+        [](auto first, auto second) { return first + second; },
+        MakePair<First, Second>(first, second),
+        Pair{first, second},
+        (first, second),
+        third
+    );
+}
+
+auto DeferredListNestedLambdaBodies() {
+    return ExtraParams{
+        .first = [] {
+            Prepare();
+            Finish();
+        },
+        .service_fee_percent = extra_params.service_fee().and_then([](const auto& service_fee) {
+            return variant::Visit(
+                service_fee,
+                [](const tariff::ServiceFeePercent& percent) -> std::optional<double> { return percent.fee_percent(); },
+                [](const auto&) -> std::optional<double> { return std::nullopt; }
+            );
+        }),
+        .last = Call(first, second)
+    };
+}
+
+void DeferredCommaExpressionOwnership() {
+    (
+        [] {
+            Prepare();
+            Finish();
+        }(),
+        [] { return Call(first, second); }(),
+        MakePair<First, Second>(first, second),
+        Pair{first, second},
+        (first, second),
+        third
+    );
+}
+
+void FinalBlockItemWithNestedCommaSuffix() {
+    Call(first, [] {
+        Prepare();
+        return Build();
+    }(second, third));
 }
 
 void DesignatedInitializerAssignmentBreak() {
@@ -654,9 +823,7 @@ auto SplitDesignatedInitializerListAtFieldBoundaries() {
     return DesignatedPair{
         .first = Convert(first),
         .second = ConvertLongValue(
-            secondDesignatedInitializerArgument,
-            designatedInitializerConfiguration,
-            designatedInitializerContext
+            secondDesignatedInitializerArgument, designatedInitializerConfiguration, designatedInitializerContext
         )
     };
 }
@@ -671,9 +838,7 @@ auto SingleDesignatedInitializerTailExpansion() {
 
 auto PositionalInitializerTailExpansion() {
     return PositionalPair{Convert(first), ConvertLongValue(
-        firstPositionalInitializerArgument,
-        secondPositionalInitializerArgument,
-        thirdPositionalInitializerArgument
+        firstPositionalInitializerArgument, secondPositionalInitializerArgument, thirdPositionalInitializerArgument
     )};
 }
 
@@ -732,27 +897,21 @@ InitializerGeneralityWidget::InitializerGeneralityWidget(int value, int other) :
     Touch();
 }
 
-InitializerGeneralityWidget::InitializerGeneralityWidget(int value, int other, int third) :
-    first_(value),
-    second_(other),
-    third_(third)
-{
+InitializerGeneralityWidget::InitializerGeneralityWidget(
+    int value, int other, int third
+) : first_(value), second_(other), third_(third) {
     Touch();
 }
 
 ConstructorBodyEconomyWidget::ConstructorBodyEconomyWidget(
-    FirstExtremelyLongParameterType first,
-    SecondExtremelyLongParameterType second
+    FirstExtremelyLongParameterType first, SecondExtremelyLongParameterType second
 ) : first_(first), second_(second) {
     Use(first_, second_);
 }
 
-Widget::Widget(int first, int second, int third, int fourth) :
-    first_(first),
-    second_(second),
-    third_(third),
-    fourth_(fourth)
-{
+Widget::Widget(
+    int first, int second, int third, int fourth
+) : first_(first), second_(second), third_(third), fourth_(fourth) {
     Use();
 }
 
@@ -799,8 +958,7 @@ nested
 
 void FormatOverflowRawString() {
     EXPECT_EQ(
-        formats::json::FromString(utils::statistics::ToSolomonFormat(GetStorage(), {})),
-        formats::json::FromString(R"(
+        formats::json::FromString(utils::statistics::ToSolomonFormat(GetStorage(), {})), formats::json::FromString(R"(
 aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
 )")
     );
@@ -931,21 +1089,16 @@ concept PreserveRequirementBlankLines = requires {
 };
 
 ExtremelyLongQualifiedNamespace::ExtremelyLongTemplate<
-    FirstLongTemplateArgument,
-    SecondLongTemplateArgument,
-    ThirdLongTemplateArgument
+    FirstLongTemplateArgument, SecondLongTemplateArgument, ThirdLongTemplateArgument
 > storedSignatureComparisonValue;
 
 ExtremelyLongQualifiedNamespace::ExtremelyLongTemplate<
-    FirstLongTemplateArgument,
-    SecondLongTemplateArgument,
-    ThirdLongTemplateArgument
+    FirstLongTemplateArgument, SecondLongTemplateArgument, ThirdLongTemplateArgument
 > BuildSignatureComparisonValue();
 
-static const auto kPricesTransformsToSkip = std::unordered_map<
-    std::string,
-    std::unordered_set<std::string>
->{{"price1", {"transform1", "transform2"}}, {"price2", {}}, {"price3", {"transform3", "unexisting"}}};
+static const auto kPricesTransformsToSkip = std::unordered_map<std::string, std::unordered_set<std::string>>{
+    {"price1", {"transform1", "transform2"}}, {"price2", {}}, {"price3", {"transform3", "unexisting"}}
+};
 
 using ConfigMetricAvailabilityResolver = bool (*)(std::string_view metricRef);
 using RuntimeConfigDynamicItemVisitor = void (*)(void* context, std::string_view key, const void* item);
@@ -958,9 +1111,9 @@ using ZesInitFn = ZeResult (__cdecl*)(std::uint32_t);
 using SlowPathCompilerCallModifierSpacingReproducer =
     VeryLongLevelZeroResultTypeName (__cdecl*)(std::uint32_t, std::uint32_t, std::uint32_t, std::uint32_t);
 typedef PDH_STATUS (*PdhAddEnglishCounterAFn)(PDH_HQUERY, LPCSTR, DWORD_PTR, PDH_HCOUNTER*);
-typedef VeryLongReturnTypeNameForFunctionPointerGenerality (
-    *VeryLongTypedefCallbackNameForFunctionPointerGenerality
-)(const Config& config, std::string_view name, RuntimeConfigDynamicItemVisitor visitor);
+typedef VeryLongReturnTypeNameForFunctionPointerGenerality (*VeryLongTypedefCallbackNameForFunctionPointerGenerality)(
+    const Config& config, std::string_view name, RuntimeConfigDynamicItemVisitor visitor
+);
 using DumpValues = std::vector<std::pair<std::string, std::string>>;
 using LayoutEditParameter = ::LayoutEditParameter;
 using TextLayoutResult = ::TextLayoutResult;
@@ -1127,10 +1280,7 @@ void TrackCoveredParameters() {
 
 void TrackFeatureLevels() {
     const std::array<D3D_FEATURE_LEVEL, 4> preferredFeatureLevels{
-        D3D_FEATURE_LEVEL_11_1,
-        D3D_FEATURE_LEVEL_11_0,
-        D3D_FEATURE_LEVEL_10_1,
-        D3D_FEATURE_LEVEL_10_0
+        D3D_FEATURE_LEVEL_11_1, D3D_FEATURE_LEVEL_11_0, D3D_FEATURE_LEVEL_10_1, D3D_FEATURE_LEVEL_10_0
     };
     const std::array<D3D_FEATURE_LEVEL, 3>
         fallbackFeatureLevels{D3D_FEATURE_LEVEL_11_0, D3D_FEATURE_LEVEL_10_1, D3D_FEATURE_LEVEL_10_0};
@@ -1327,9 +1477,7 @@ const auto ensureSection = [&lines, &findSectionIndex, shape](const std::string&
 };
 
 const auto updateKey = [&lines, &ensureSection, &ensureSectionAfter, &findSectionEnd, shape](
-    const std::string& sectionName,
-    const std::string& key,
-    const std::string& value
+    const std::string& sectionName, const std::string& key, const std::string& value
 ) {
     Use(sectionName, key, value);
 };
@@ -1465,9 +1613,9 @@ void StructuralAssignmentBreak() {
 
 void StructuralMemberChainBreak() {
     if (condition) {
-        bucket
-            .events
-            .erase(bucket.events.begin(), bucket.events.begin() + static_cast<std::ptrdiff_t>(bucket.firstEvent));
+        bucket.events.erase(
+            bucket.events.begin(), bucket.events.begin() + static_cast<std::ptrdiff_t>(bucket.firstEvent)
+        );
     }
 }
 
@@ -1560,12 +1708,7 @@ inline constexpr double kTelemetryRefreshIntervalSeconds =
 constexpr std::string_view kRuntimePlaceholderMetricId = "nothing";
 
 const MetricDefinitionConfig kRuntimePlaceholderMetricDefinition{
-    std::string(kRuntimePlaceholderMetricId),
-    MetricDisplayStyle::Scalar,
-    false,
-    1.0,
-    "",
-    "Nothing"
+    std::string(kRuntimePlaceholderMetricId), MetricDisplayStyle::Scalar, false, 1.0, "", "Nothing"
 };
 
 constexpr FormatTableRow kFormatRows[] = {
@@ -1639,8 +1782,7 @@ int kTrailingCommentOverflowShort = 2;  // this explanation prevents alignment w
 
 class BenchmarkLikeHost {
     bool ApplyMetricListOrder(
-        const LayoutEditWidgetIdentity& widget,
-        const std_fixture::vector<std_fixture::string>& metricRefs
+        const LayoutEditWidgetIdentity& widget, const std_fixture::vector<std_fixture::string>& metricRefs
     ) override {
         return true;
     }
@@ -1820,17 +1962,11 @@ void CollectLayoutEditHighlights(const DashboardOverlayState& overlayState, cons
 
 void SplitOperatorChainPartsLineByLine() {
     const int metricValue = firstValue + builder.WithSource(sourceValue).BuildMetricValue(
-        firstArgumentWithLongName,
-        secondArgumentWithLongName,
-        thirdArgumentWithLongName,
-        fourthArgumentWithLongName
+        firstArgumentWithLongName, secondArgumentWithLongName, thirdArgumentWithLongName, fourthArgumentWithLongName
     );
     const int chainedMetricValue = firstValue +
         builder.WithSource(sourceValue).BuildMetricValue(
-            firstArgumentWithLongName,
-            secondArgumentWithLongName,
-            thirdArgumentWithLongName,
-            fourthArgumentWithLongName
+            firstArgumentWithLongName, secondArgumentWithLongName, thirdArgumentWithLongName, fourthArgumentWithLongName
         ) +
         finalValueWithLongName;
     const bool found = currentKey == layoutLookupTable[ComputeLayoutKeyIndex(
@@ -1851,10 +1987,7 @@ void SplitOperatorChainPartsLineByLine() {
     const bool loaded = !LoadString(values, DumpKey(historyPrefix, ".series_ref"), history.seriesRef, error) ||
         !LoadDoubleArrayField(values, DumpKey(historyPrefix, ".samples"), history.samples, error) ||
         !LoadDoubleArrayField(
-            values,
-            DumpKey(historyPrefix, ".throughput_live_samples"),
-            history.throughputLiveSamples,
-            error
+            values, DumpKey(historyPrefix, ".throughput_live_samples"), history.throughputLiveSamples, error
         ) ||
         !LoadDouble(values, DumpKey(historyPrefix, ".throughput_bucket_total"), history.throughputBucketTotal, error) ||
         !LoadUnsigned(
@@ -1874,9 +2007,9 @@ void GoogletestMemberCallChains() {
         .first;
     ::testing::UnitTest::GetInstance()
         ->parameterized_test_registry()
-        .GetTestSuitePatternHolder<
-            test_suite_name
-        >(GTEST_STRINGIFY_(test_suite_name), ::testing::internal::CodeLocation(__FILE__, __LINE__))
+        .GetTestSuitePatternHolder<test_suite_name>(
+            GTEST_STRINGIFY_(test_suite_name), ::testing::internal::CodeLocation(__FILE__, __LINE__)
+        )
         ->AddTestPattern(
             GTEST_STRINGIFY_(test_suite_name),
             GTEST_STRINGIFY_(test_name),
@@ -1887,23 +2020,14 @@ void GoogletestMemberCallChains() {
 
 void UniversalBreakSelectionCases() {
     const int singleBinaryValue = firstValue + BuildValue(
-        firstArgumentWithLongName,
-        secondArgumentWithLongName,
-        thirdArgumentWithLongName,
-        fourthArgumentWithLongName
+        firstArgumentWithLongName, secondArgumentWithLongName, thirdArgumentWithLongName, fourthArgumentWithLongName
     );
     const int tailCallChainValue = firstValue + secondValue + BuildValue(
-        firstArgumentWithLongName,
-        secondArgumentWithLongName,
-        thirdArgumentWithLongName,
-        fourthArgumentWithLongName
+        firstArgumentWithLongName, secondArgumentWithLongName, thirdArgumentWithLongName, fourthArgumentWithLongName
     );
     const int sameOperatorChainValue = firstValue +
         BuildValue(
-            firstArgumentWithLongName,
-            secondArgumentWithLongName,
-            thirdArgumentWithLongName,
-            fourthArgumentWithLongName
+            firstArgumentWithLongName, secondArgumentWithLongName, thirdArgumentWithLongName, fourthArgumentWithLongName
         ) +
         finalValueWithLongName;
     const int nestedTieValue = OuterValue(
@@ -1916,25 +2040,18 @@ void UniversalBreakSelectionCases() {
         fallbackValueWithLongName;
     const int ternaryChainValue = firstConditionWithLongName ? firstValueWithLongName :
         secondConditionWithLongName ? BuildValue(
-            firstArgumentWithLongName,
-            secondArgumentWithLongName,
-            thirdArgumentWithLongName
+            firstArgumentWithLongName, secondArgumentWithLongName, thirdArgumentWithLongName
         ) :
         fallbackValueWithLongName;
     const int tailTernaryChainValue = firstConditionWithLongName ? firstValueWithLongName : BuildValue(
-        firstArgumentWithLongName,
-        secondArgumentWithLongName,
-        thirdArgumentWithLongName,
-        fourthArgumentWithLongName
+        firstArgumentWithLongName, secondArgumentWithLongName, thirdArgumentWithLongName, fourthArgumentWithLongName
     );
     const int ternaryTrueBranchChainValue =
         firstConditionWithLongName ? secondConditionWithLongName ? firstValueWithLongName :
             secondValueWithLongName :
             fallbackValueWithLongName;
     UseTemplate<
-        FirstTemplateArgumentWithLongName,
-        SecondTemplateArgumentWithLongName,
-        ThirdTemplateArgumentWithLongName
+        FirstTemplateArgumentWithLongName, SecondTemplateArgumentWithLongName, ThirdTemplateArgumentWithLongName
     >();
     AppConfig config = extraTemplate.empty() ? LoadConfig(GetRuntimeConfigPath(), !options.defaultConfig, context) :
         LoadConfigWithExtraTemplate(GetRuntimeConfigPath(), !options.defaultConfig, context, extraTemplate);
@@ -1942,10 +2059,7 @@ void UniversalBreakSelectionCases() {
 
 void TrailingListExpansionCases() {
     UseTrailingListExpansion(firstValue, secondValue, BuildValue(
-        firstArgumentWithLongName,
-        secondArgumentWithLongName,
-        thirdArgumentWithLongName,
-        fourthArgumentWithLongName
+        firstArgumentWithLongName, secondArgumentWithLongName, thirdArgumentWithLongName, fourthArgumentWithLongName
     ));
     UseTrailingListExpansion(firstValue, secondValue, FormatTableRow{
         "tail.list.row.with.extra.detail",
@@ -1957,10 +2071,7 @@ void TrailingListExpansionCases() {
             fourthInitializerFlagWithVeryLongName
     });
     UseTrailingListExpansion(firstValue, secondValue, conditionWithLongName ? firstValueWithLongName : BuildValue(
-        firstArgumentWithLongName,
-        secondArgumentWithLongName,
-        thirdArgumentWithLongName,
-        fourthArgumentWithLongName
+        firstArgumentWithLongName, secondArgumentWithLongName, thirdArgumentWithLongName, fourthArgumentWithLongName
     ));
     UseTrailingListExpansion(
         firstValue,
@@ -1969,10 +2080,7 @@ void TrailingListExpansionCases() {
             secondReallyLongEqualityOperandForTrailingListExpansion
     );
     const int compactMaxTailExpansion = std::max(0, ComputeTrailingMaximumCandidate(
-        firstArgumentWithLongName,
-        secondArgumentWithLongName,
-        thirdArgumentWithLongName,
-        fourthArgumentWithLongName
+        firstArgumentWithLongName, secondArgumentWithLongName, thirdArgumentWithLongName, fourthArgumentWithLongName
     ));
 }
 
@@ -2034,17 +2142,10 @@ void ApplyLayoutEditColorExpression(AppConfig& config, const LayoutEditParameter
 }
 
 bool ConfigureDisplayGuard(
-    DisplayState& state,
-    DisplayOption option,
-    DashboardShellHost& shell,
-    UpdatedConfig updatedConfig
+    DisplayState& state, DisplayOption option, DashboardShellHost& shell, UpdatedConfig updatedConfig
 ) {
     if (!::ConfigureDisplay(
-        updatedConfig,
-        state.telemetryUpdate.dump,
-        option.fittedScale,
-        shell.TraceLog(),
-        shell.WindowHandle()
+        updatedConfig, state.telemetryUpdate.dump, option.fittedScale, shell.TraceLog(), shell.WindowHandle()
     )) {
         return true;
     }
@@ -2062,10 +2163,9 @@ void GenericNestedCallDelimiterCombining() {
 }
 
 int MeasureHexLabelWidth(HWND hwnd) {
-    const int hexLabelWidth = MeasureTextWidthForControl(hwnd, IDC_LAYOUT_EDIT_COLOR_HEX_LABEL, ReadDialogControlText(
-        hwnd,
-        IDC_LAYOUT_EDIT_COLOR_HEX_LABEL
-    )) + 8;
+    const int hexLabelWidth = MeasureTextWidthForControl(
+        hwnd, IDC_LAYOUT_EDIT_COLOR_HEX_LABEL, ReadDialogControlText(hwnd, IDC_LAYOUT_EDIT_COLOR_HEX_LABEL)
+    ) + 8;
     return hexLabelWidth;
 }
 
@@ -2096,15 +2196,10 @@ size_t CountLeftCards(
 }
 
 RenderRect BuildGuideSheetTargetRect(
-    const PlannedCallout& planned,
-    const std::vector<CardPlacement>& cardPlacements,
-    double dx,
-    double dy
+    const PlannedCallout& planned, const std::vector<CardPlacement>& cardPlacements, double dx, double dy
 ) {
     const RenderRect targetRect = cardPlacements[planned.cardIndex].overview ? TransformRect(
-        planned.target,
-        cardPlacements[planned.cardIndex].sourceRect,
-        cardPlacements[planned.cardIndex].destRect
+        planned.target, cardPlacements[planned.cardIndex].sourceRect, cardPlacements[planned.cardIndex].destRect
     ) : OffsetRenderRect(planned.target, dx, dy);
     return targetRect;
 }
@@ -2163,23 +2258,17 @@ int BracedReceiverChain(
 }
 
 void DrawGuideDot(RenderHost& renderer, int x, int y, int dotLength, int right, int strokeWidth) {
-    renderer
-        .Renderer()
-        .FillSolidRect(RenderRect{x, y, std::min(x + dotLength, right), y + strokeWidth}, RenderColorId::LayoutGuide);
+    renderer.Renderer().FillSolidRect(
+        RenderRect{x, y, std::min(x + dotLength, right), y + strokeWidth}, RenderColorId::LayoutGuide
+    );
 }
 
 void DrawGuideDotFromAdapter(
-    RenderHost& renderer,
-    RenderState& state,
-    int x,
-    int y,
-    int dotLength,
-    int right,
-    int strokeWidth
+    RenderHost& renderer, RenderState& state, int x, int y, int dotLength, int right, int strokeWidth
 ) {
-    RenderHostAdapter{renderer, state}
-        .Renderer()
-        .FillSolidRect(RenderRect{x, y, std::min(x + dotLength, right), y + strokeWidth}, RenderColorId::LayoutGuide);
+    RenderHostAdapter{renderer, state}.Renderer().FillSolidRect(
+        RenderRect{x, y, std::min(x + dotLength, right), y + strokeWidth}, RenderColorId::LayoutGuide
+    );
 }
 
 void RegisterStaticEditAnchor(
@@ -2207,10 +2296,7 @@ void RegisterStaticEditAnchor(
 }
 
 void AddThemeColorLeaf(
-    Theme* theme,
-    std::string token,
-    LayoutEditTreeNode& leafNode,
-    const LayoutEditTreeNode& sectionNode
+    Theme* theme, std::string token, LayoutEditTreeNode& leafNode, const LayoutEditTreeNode& sectionNode
 ) {
     leafNode.leaf.emplace(LayoutEditTreeLeaf{
         ThemeColorEditKey{theme->name, token},
@@ -2473,16 +2559,10 @@ std::optional<BoardVendorTelemetrySample> ReviewLogBoardSensorsResponse() {
     if (
         !ReadString(cursor, remaining, payloadHeader.boardManufacturerBytes, sample.boardManufacturer) ||
         !ReadStringVector(
-            cursor,
-            remaining,
-            payloadHeader.requestedTemperatureCount,
-            sample.requestedTemperatureNames
+            cursor, remaining, payloadHeader.requestedTemperatureCount, sample.requestedTemperatureNames
         ) ||
         !ReadStringVector(
-            cursor,
-            remaining,
-            payloadHeader.availableTemperatureCount,
-            sample.availableTemperatureNames
+            cursor, remaining, payloadHeader.availableTemperatureCount, sample.availableTemperatureNames
         ) ||
         remaining != 0
     ) {
@@ -2867,12 +2947,10 @@ void DelimiterBoundaryCoalescingGenerality() {
     };
     OuterAngleContainerForCoalescingGenerality<
         FirstAngleElementTemplateForCoalescingGenerality<
-            firstAngleArgumentValueNameForCoalescing,
-            secondAngleArgumentValueNameForCoalescing
+            firstAngleArgumentValueNameForCoalescing, secondAngleArgumentValueNameForCoalescing
         >,
         SecondAngleElementTemplateForCoalescingGenerality<
-            thirdAngleArgumentValueNameForCoalescing,
-            fourthAngleArgumentValueNameForCoalescing
+            thirdAngleArgumentValueNameForCoalescing, fourthAngleArgumentValueNameForCoalescing
         >
     > angleBoundaryValue;
 }
@@ -3049,17 +3127,15 @@ void ControlInitializerTemplateType() {
 
 void ControlInitializerContinuationIndent() {
     while (ready) {
-        if (
-            FormatBreakNode*
-                templated = BuildAdjacentTemplateDeclaration(children, index, end, depth + 1, afterTemplate)
-        ) {
+        if (FormatBreakNode* templated = BuildAdjacentTemplateDeclaration(
+            children, index, end, depth + 1, afterTemplate
+        )) {
             Use(templated);
         }
     }
-    if (
-        veryLongAssignmentTargetNameThatMustStayWithItsOperator =
-            BuildAdjacentTemplateDeclaration(children, index, end, depth + 1, afterTemplate)
-    ) {
+    if (veryLongAssignmentTargetNameThatMustStayWithItsOperator = BuildAdjacentTemplateDeclaration(
+        children, index, end, depth + 1, afterTemplate
+    )) {
         Use(veryLongAssignmentTargetNameThatMustStayWithItsOperator);
     }
 }
