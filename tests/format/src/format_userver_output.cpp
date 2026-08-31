@@ -154,8 +154,9 @@ void MacroConcatenatedString() { throw Error("prefix " FORMAT_USERVER_VERSION " 
 
 void QualifiedTemplateCompoundLiteral(Token token, Writer& writer) {
     WriteToStream(
-        fixture::chaotic::
-            Primitive<std::string, fixture::chaotic::MinLength<128>, fixture::chaotic::MaxLength<128>>{*token},
+        fixture::chaotic::Primitive<std::string, fixture::chaotic::MinLength<128>, fixture::chaotic::MaxLength<128>>{
+            *token
+        },
         writer
     );
 }
@@ -345,8 +346,8 @@ LockedChannelProxy<AmqpConnection::ReliableChannel> GetReliableChannel(engine::D
     return DoGetChannel(*reliable, deadline);
 }
 
-PostgresChaosProxy::
-    PostgresChaosProxy(engine::TaskProcessor& task_processor) : task_processor_(task_processor), task_storage_() {}
+PostgresChaosProxy::PostgresChaosProxy(engine::TaskProcessor& task_processor) :
+    task_processor_(task_processor), task_storage_() {}
 
 PostgresChaosProxy::~PostgresChaosProxy() {}
 

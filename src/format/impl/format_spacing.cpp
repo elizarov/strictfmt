@@ -55,9 +55,10 @@ bool IsTriviaNode(const SyntaxNode* node) {
 
 bool NodeOrAncestorHasClass(const SyntaxNode* node, SyntaxNodeClass syntaxNodeClass) {
     for (; node != nullptr; node = node->parent) {
-        if ((node->classes & static_cast<std::uint64_t>(syntaxNodeClass)) != 0 || SyntaxNodeKindHasClass(
-            node->kind, syntaxNodeClass
-        )) {
+        if (
+            (node->classes & static_cast<std::uint64_t>(syntaxNodeClass)) != 0 ||
+            SyntaxNodeKindHasClass(node->kind, syntaxNodeClass)
+        ) {
             return true;
         }
     }
@@ -546,9 +547,10 @@ bool FormatTokensShareMacroDefinition(const PrintToken* left, const PrintToken* 
 }
 
 bool IsTemplateAnglePrintToken(const PrintToken& token) {
-    if (token.kind != PrintTokenKind::Known || (
-        token.syntaxKind != SyntaxNodeKind::Less && token.syntaxKind != SyntaxNodeKind::Greater
-    )) {
+    if (
+        token.kind != PrintTokenKind::Known ||
+        (token.syntaxKind != SyntaxNodeKind::Less && token.syntaxKind != SyntaxNodeKind::Greater)
+    ) {
         return false;
     }
     return IsTemplateDelimiterContext(token) || (
@@ -562,9 +564,11 @@ bool IsTemplateAnglePrintToken(const PrintToken& token) {
 }
 
 bool FormatTokenNeedsSpace(const PrintToken* previous, const PrintToken& current) {
-    if (previous == nullptr || (IsPreprocessorLikeToken(*previous) && previous->macroDefinition == nullptr) || (
-        IsPreprocessorLikeToken(current) && current.macroDefinition == nullptr
-    )) {
+    if (
+        previous == nullptr ||
+        (IsPreprocessorLikeToken(*previous) && previous->macroDefinition == nullptr) ||
+        (IsPreprocessorLikeToken(current) && current.macroDefinition == nullptr)
+    ) {
         return false;
     }
     if (current.inMacroValue && !previous->inMacroValue && FormatTokensShareMacroDefinition(previous, &current)) {
@@ -636,9 +640,10 @@ bool FormatTokenNeedsSpace(const PrintToken* previous, const PrintToken& current
         ) {
             return true;
         }
-        if (current.parentKind == SyntaxNodeKind::ConditionalExpression && (
-            current.syntaxKind == SyntaxNodeKind::Question || current.syntaxKind == SyntaxNodeKind::Colon
-        )) {
+        if (
+            current.parentKind == SyntaxNodeKind::ConditionalExpression &&
+            (current.syntaxKind == SyntaxNodeKind::Question || current.syntaxKind == SyntaxNodeKind::Colon)
+        ) {
             return true;
         }
         return SyntaxNodeKindHasClass(current.syntaxKind, SyntaxNodeClass::AttachAfterBlockKeyword);
@@ -654,9 +659,10 @@ bool FormatTokenNeedsSpace(const PrintToken* previous, const PrintToken& current
         return true;
     }
 
-    if (cur == SyntaxNodeKind::LeftBrace && NodeOrAncestorHasClass(
-        current.node, SyntaxNodeClass::ConditionalFunctionHeader
-    )) {
+    if (
+        cur == SyntaxNodeKind::LeftBrace &&
+        NodeOrAncestorHasClass(current.node, SyntaxNodeClass::ConditionalFunctionHeader)
+    ) {
         return true;
     }
 
@@ -675,9 +681,10 @@ bool FormatTokenNeedsSpace(const PrintToken* previous, const PrintToken& current
     if (IsTemplateArgumentExpressionOperator(*previous) || IsTemplateArgumentExpressionOperator(current)) {
         return true;
     }
-    if ((cur == SyntaxNodeKind::Arrow && current.parentKind == SyntaxNodeKind::TrailingReturnType) || (
-        prev == SyntaxNodeKind::Arrow && previous->parentKind == SyntaxNodeKind::TrailingReturnType
-    )) {
+    if (
+        (cur == SyntaxNodeKind::Arrow && current.parentKind == SyntaxNodeKind::TrailingReturnType) ||
+        (prev == SyntaxNodeKind::Arrow && previous->parentKind == SyntaxNodeKind::TrailingReturnType)
+    ) {
         return true;
     }
     if (
@@ -921,9 +928,10 @@ bool FormatTokenNeedsSpace(const PrintToken* previous, const PrintToken& current
     ) {
         return false;
     }
-    if (SyntaxNodeKindHasClass(prev, SyntaxNodeClass::MemberOperator) || SyntaxNodeKindHasClass(
-        cur, SyntaxNodeClass::MemberOperator
-    )) {
+    if (
+        SyntaxNodeKindHasClass(prev, SyntaxNodeClass::MemberOperator) ||
+        SyntaxNodeKindHasClass(cur, SyntaxNodeClass::MemberOperator)
+    ) {
         return false;
     }
     if (IsWordLike(*previous) && IsWordLike(current)) {

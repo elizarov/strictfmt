@@ -122,22 +122,30 @@ constexpr auto kSyntaxKindMappings = std::to_array<SyntaxKindMapping>({
     ),
     Kind(SyntaxNodeKind::IncludeRun, Bit(SyntaxNodeClass::Tree)),
     Tree(SyntaxNodeKind::MacroReplacementList, "macro_replacement_list"),
-    Tree(SyntaxNodeKind::Declaration, "declaration", Bit(SyntaxNodeClass::MacroDeclarationFragment) | Bit(
-        SyntaxNodeClass::DeclarationNode
-    )),
+    Tree(
+        SyntaxNodeKind::Declaration,
+        "declaration",
+        Bit(SyntaxNodeClass::MacroDeclarationFragment) | Bit(SyntaxNodeClass::DeclarationNode)
+    ),
     Tree(SyntaxNodeKind::Declaration, "macro_declaration_fragment", Bit(SyntaxNodeClass::MacroDeclarationFragment)),
     Tree(SyntaxNodeKind::Declaration, "preproc_value_declaration", Bit(SyntaxNodeClass::MacroDeclarationFragment)),
-    Tree(SyntaxNodeKind::Declaration, "concept_definition", Bit(SyntaxNodeClass::MacroDeclarationFragment) | Bit(
-        SyntaxNodeClass::DeclarationGroupType
-    )),
-    Tree(SyntaxNodeKind::FieldDeclaration, "field_declaration", Bit(SyntaxNodeClass::MacroDeclarationFragment) | Bit(
-        SyntaxNodeClass::DeclarationNode
-    )),
+    Tree(
+        SyntaxNodeKind::Declaration,
+        "concept_definition",
+        Bit(SyntaxNodeClass::MacroDeclarationFragment) | Bit(SyntaxNodeClass::DeclarationGroupType)
+    ),
+    Tree(
+        SyntaxNodeKind::FieldDeclaration,
+        "field_declaration",
+        Bit(SyntaxNodeClass::MacroDeclarationFragment) | Bit(SyntaxNodeClass::DeclarationNode)
+    ),
     Tree(SyntaxNodeKind::FieldDeclaration, "macro_method_declaration", Bit(SyntaxNodeClass::MacroDeclarationFragment)),
     Tree(SyntaxNodeKind::AliasDeclaration, "alias_declaration", Bit(SyntaxNodeClass::MacroDeclarationFragment)),
-    Tree(SyntaxNodeKind::FunctionPointerAliasDeclaration, "function_pointer_alias_declaration", Bit(
-        SyntaxNodeClass::MacroDeclarationFragment
-    )),
+    Tree(
+        SyntaxNodeKind::FunctionPointerAliasDeclaration,
+        "function_pointer_alias_declaration",
+        Bit(SyntaxNodeClass::MacroDeclarationFragment)
+    ),
     Tree(SyntaxNodeKind::Declaration, "deduction_guide_declaration", Bit(SyntaxNodeClass::MacroDeclarationFragment)),
     Tree(SyntaxNodeKind::Declaration, "module_declaration"),
     Tree(SyntaxNodeKind::Declaration, "module_import_declaration"),
@@ -167,12 +175,16 @@ constexpr auto kSyntaxKindMappings = std::to_array<SyntaxKindMapping>({
             kAllowedListPreprocessorContainerClasses |
             Bit(SyntaxNodeClass::SourceItemScope)
     ),
-    Tree(SyntaxNodeKind::InitializerList, "initializer_list", kPreprocessorSplitListClasses | Bit(
-        SyntaxNodeClass::NamedList
-    )),
-    Tree(SyntaxNodeKind::FieldInitializerList, "field_initializer_list", Bit(SyntaxNodeClass::PrefixList) | Bit(
-        SyntaxNodeClass::SemanticDelimitedParent
-    )),
+    Tree(
+        SyntaxNodeKind::InitializerList,
+        "initializer_list",
+        kPreprocessorSplitListClasses | Bit(SyntaxNodeClass::NamedList)
+    ),
+    Tree(
+        SyntaxNodeKind::FieldInitializerList,
+        "field_initializer_list",
+        Bit(SyntaxNodeClass::PrefixList) | Bit(SyntaxNodeClass::SemanticDelimitedParent)
+    ),
     Tree(SyntaxNodeKind::FieldInitializer, "field_initializer"),
     Tree(
         SyntaxNodeKind::DeclarationList,
@@ -192,35 +204,49 @@ constexpr auto kSyntaxKindMappings = std::to_array<SyntaxKindMapping>({
     ),
     Tree(SyntaxNodeKind::NamespaceDefinition, "namespace_definition"),
     Tree(SyntaxNodeKind::LinkageSpecification, "linkage_specification"),
-    Tree(SyntaxNodeKind::EnumSpecifier, "enum_specifier", Bit(SyntaxNodeClass::MacroDeclarationFragment) | Bit(
-        SyntaxNodeClass::DeclaredTypeSpecifier
-    )),
-    Tree(SyntaxNodeKind::ClassSpecifier, "class_specifier", Bit(SyntaxNodeClass::MacroDeclarationFragment) | Bit(
-        SyntaxNodeClass::DeclaredTypeSpecifier
-    )),
-    Tree(SyntaxNodeKind::StructSpecifier, "struct_specifier", Bit(SyntaxNodeClass::MacroDeclarationFragment) | Bit(
-        SyntaxNodeClass::DeclaredTypeSpecifier
-    )),
-    Tree(SyntaxNodeKind::UnionSpecifier, "union_specifier", Bit(SyntaxNodeClass::MacroDeclarationFragment) | Bit(
-        SyntaxNodeClass::DeclaredTypeSpecifier
-    )),
+    Tree(
+        SyntaxNodeKind::EnumSpecifier,
+        "enum_specifier",
+        Bit(SyntaxNodeClass::MacroDeclarationFragment) | Bit(SyntaxNodeClass::DeclaredTypeSpecifier)
+    ),
+    Tree(
+        SyntaxNodeKind::ClassSpecifier,
+        "class_specifier",
+        Bit(SyntaxNodeClass::MacroDeclarationFragment) | Bit(SyntaxNodeClass::DeclaredTypeSpecifier)
+    ),
+    Tree(
+        SyntaxNodeKind::StructSpecifier,
+        "struct_specifier",
+        Bit(SyntaxNodeClass::MacroDeclarationFragment) | Bit(SyntaxNodeClass::DeclaredTypeSpecifier)
+    ),
+    Tree(
+        SyntaxNodeKind::UnionSpecifier,
+        "union_specifier",
+        Bit(SyntaxNodeClass::MacroDeclarationFragment) | Bit(SyntaxNodeClass::DeclaredTypeSpecifier)
+    ),
     Tree(SyntaxNodeKind::BaseClassClause, "base_class_clause", Bit(SyntaxNodeClass::PrefixList)),
     Tree(SyntaxNodeKind::AccessSpecifier, "access_specifier"),
     Tree(SyntaxNodeKind::AccessSpecifier, "access_specifier_label"),
-    Tree(SyntaxNodeKind::IfStatement, "if_statement", Bit(SyntaxNodeClass::ControlHeader) | Bit(
-        SyntaxNodeClass::FlatLogicalHeader
-    )),
+    Tree(
+        SyntaxNodeKind::IfStatement,
+        "if_statement",
+        Bit(SyntaxNodeClass::ControlHeader) | Bit(SyntaxNodeClass::FlatLogicalHeader)
+    ),
     Tree(SyntaxNodeKind::ElseClause, "else_clause"),
     Tree(SyntaxNodeKind::ForStatement, "for_statement", Bit(SyntaxNodeClass::ControlHeader)),
     Tree(SyntaxNodeKind::ForStatement, "for_range_loop", Bit(SyntaxNodeClass::ControlHeader)),
     Tree(SyntaxNodeKind::ForStatement, "for_each_statement", Bit(SyntaxNodeClass::ControlHeader)),
-    Tree(SyntaxNodeKind::WhileStatement, "while_statement", Bit(SyntaxNodeClass::ControlHeader) | Bit(
-        SyntaxNodeClass::FlatLogicalHeader
-    )),
+    Tree(
+        SyntaxNodeKind::WhileStatement,
+        "while_statement",
+        Bit(SyntaxNodeClass::ControlHeader) | Bit(SyntaxNodeClass::FlatLogicalHeader)
+    ),
     Tree(SyntaxNodeKind::DoStatement, "do_statement"),
-    Tree(SyntaxNodeKind::SwitchStatement, "switch_statement", Bit(SyntaxNodeClass::ControlHeader) | Bit(
-        SyntaxNodeClass::FlatLogicalHeader
-    )),
+    Tree(
+        SyntaxNodeKind::SwitchStatement,
+        "switch_statement",
+        Bit(SyntaxNodeClass::ControlHeader) | Bit(SyntaxNodeClass::FlatLogicalHeader)
+    ),
     Tree(SyntaxNodeKind::CaseStatement, "case_statement"),
     Tree(SyntaxNodeKind::ReturnStatement, "return_statement"),
     Tree(SyntaxNodeKind::CoReturnStatement, "co_return_statement"),
@@ -242,18 +268,26 @@ constexpr auto kSyntaxKindMappings = std::to_array<SyntaxKindMapping>({
             Bit(SyntaxNodeClass::IncludeDirective) |
             Bit(SyntaxNodeClass::CheckedPreprocessorDirective)
     ),
-    Tree(SyntaxNodeKind::PreprocIf, "preproc_if", kConditionalPreprocessorOpenClasses | Bit(
-        SyntaxNodeClass::SourceItemScope
-    )),
-    Tree(SyntaxNodeKind::PreprocIfdef, "preproc_ifdef", kConditionalPreprocessorOpenClasses | Bit(
-        SyntaxNodeClass::SourceItemScope
-    )),
-    Tree(SyntaxNodeKind::PreprocElse, "preproc_else", kConditionalPreprocessorTreeClasses | Bit(
-        SyntaxNodeClass::ConditionalBranchSeparatorDirective
-    )),
-    Tree(SyntaxNodeKind::PreprocElif, "preproc_elif", kConditionalPreprocessorTreeClasses | Bit(
-        SyntaxNodeClass::ConditionalBranchSeparatorDirective
-    )),
+    Tree(
+        SyntaxNodeKind::PreprocIf,
+        "preproc_if",
+        kConditionalPreprocessorOpenClasses | Bit(SyntaxNodeClass::SourceItemScope)
+    ),
+    Tree(
+        SyntaxNodeKind::PreprocIfdef,
+        "preproc_ifdef",
+        kConditionalPreprocessorOpenClasses | Bit(SyntaxNodeClass::SourceItemScope)
+    ),
+    Tree(
+        SyntaxNodeKind::PreprocElse,
+        "preproc_else",
+        kConditionalPreprocessorTreeClasses | Bit(SyntaxNodeClass::ConditionalBranchSeparatorDirective)
+    ),
+    Tree(
+        SyntaxNodeKind::PreprocElif,
+        "preproc_elif",
+        kConditionalPreprocessorTreeClasses | Bit(SyntaxNodeClass::ConditionalBranchSeparatorDirective)
+    ),
     Tree(SyntaxNodeKind::PreprocUsing, "preproc_using", kAtomicPreprocessorClasses),
     Tree(SyntaxNodeKind::PreprocParams, "preproc_params"),
     Tree(SyntaxNodeKind::PreprocArg, "preproc_arg"),
@@ -364,9 +398,11 @@ constexpr auto kSyntaxKindMappings = std::to_array<SyntaxKindMapping>({
             kSupportedPreprocessorPlacementClasses |
             Bit(SyntaxNodeClass::ConditionalFunctionHeader)
     ),
-    Tree(SyntaxNodeKind::BinaryExpression, "stream_operator_chain_suffix", Bit(
-        SyntaxNodeClass::LeadingStreamOperatorChain
-    )),
+    Tree(
+        SyntaxNodeKind::BinaryExpression,
+        "stream_operator_chain_suffix",
+        Bit(SyntaxNodeClass::LeadingStreamOperatorChain)
+    ),
     Tree(SyntaxNodeKind::PreprocElif, "preproc_elifdef"),
     Tree(SyntaxNodeKind::BinaryExpression, "binary_expression"),
     Tree(SyntaxNodeKind::UnaryExpression, "unary_expression"),
@@ -379,17 +415,23 @@ constexpr auto kSyntaxKindMappings = std::to_array<SyntaxKindMapping>({
     Tree(SyntaxNodeKind::InitDeclarator, "init_declarator"),
     Tree(SyntaxNodeKind::CastExpression, "cast_expression"),
     Tree(SyntaxNodeKind::PointerDeclarator, "pointer_declarator", Bit(SyntaxNodeClass::DeclaratorReferenceParent)),
-    Tree(SyntaxNodeKind::AbstractPointerDeclarator, "abstract_pointer_declarator", Bit(
-        SyntaxNodeClass::DeclaratorReferenceParent
-    )),
+    Tree(
+        SyntaxNodeKind::AbstractPointerDeclarator,
+        "abstract_pointer_declarator",
+        Bit(SyntaxNodeClass::DeclaratorReferenceParent)
+    ),
     Tree(SyntaxNodeKind::ReferenceDeclarator, "reference_declarator", Bit(SyntaxNodeClass::DeclaratorReferenceParent)),
-    Tree(SyntaxNodeKind::AbstractReferenceDeclarator, "abstract_reference_declarator", Bit(
-        SyntaxNodeClass::DeclaratorReferenceParent
-    )),
+    Tree(
+        SyntaxNodeKind::AbstractReferenceDeclarator,
+        "abstract_reference_declarator",
+        Bit(SyntaxNodeClass::DeclaratorReferenceParent)
+    ),
     Tree(SyntaxNodeKind::HandleDeclarator, "handle_declarator", Bit(SyntaxNodeClass::DeclaratorReferenceParent)),
-    Tree(SyntaxNodeKind::AbstractHandleDeclarator, "abstract_handle_declarator", Bit(
-        SyntaxNodeClass::DeclaratorReferenceParent
-    )),
+    Tree(
+        SyntaxNodeKind::AbstractHandleDeclarator,
+        "abstract_handle_declarator",
+        Bit(SyntaxNodeClass::DeclaratorReferenceParent)
+    ),
     Tree(
         SyntaxNodeKind::MemberPointerDeclarator,
         "member_pointer_declarator",
@@ -478,9 +520,11 @@ constexpr auto kSyntaxKindMappings = std::to_array<SyntaxKindMapping>({
     Tree(SyntaxNodeKind::Identifier, "type_identifier"),
     Tree(SyntaxNodeKind::Identifier, "qualified_identifier", Bit(SyntaxNodeClass::QualifiedName)),
     Tree(SyntaxNodeKind::Identifier, "macro_qualified_identifier", Bit(SyntaxNodeClass::QualifiedName)),
-    Token(SyntaxNodeKind::PreprocessorDirectiveInclude, "#include", kCheckedPreprocessorDirectiveClasses | Bit(
-        SyntaxNodeClass::IncludeDirective
-    )),
+    Token(
+        SyntaxNodeKind::PreprocessorDirectiveInclude,
+        "#include",
+        kCheckedPreprocessorDirectiveClasses | Bit(SyntaxNodeClass::IncludeDirective)
+    ),
     Token(SyntaxNodeKind::PreprocessorDirectiveDefine, "#define", kPreprocessorDirectiveClasses),
     Token(SyntaxNodeKind::PreprocessorDirectiveIf, "#if", kConditionalOpeningDirectiveClasses),
     Token(SyntaxNodeKind::PreprocessorDirectiveIfdef, "#ifdef", kConditionalOpeningDirectiveClasses),
@@ -513,18 +557,24 @@ constexpr auto kSyntaxKindMappings = std::to_array<SyntaxKindMapping>({
     Token(SyntaxNodeKind::Spaceship, "<=>", Bit(SyntaxNodeClass::BinaryOperator)),
     Token(SyntaxNodeKind::Plus, "+", kChainBinaryClasses | Bit(SyntaxNodeClass::UnaryOperator)),
     Token(SyntaxNodeKind::Minus, "-", Bit(SyntaxNodeClass::BinaryOperator) | Bit(SyntaxNodeClass::UnaryOperator)),
-    Token(SyntaxNodeKind::Star, "*", kChainBinaryClasses | Bit(SyntaxNodeClass::UnaryOperator) | Bit(
-        SyntaxNodeClass::DeclaratorReferenceToken
-    )),
+    Token(
+        SyntaxNodeKind::Star,
+        "*",
+        kChainBinaryClasses | Bit(SyntaxNodeClass::UnaryOperator) | Bit(SyntaxNodeClass::DeclaratorReferenceToken)
+    ),
     Token(SyntaxNodeKind::Slash, "/", Bit(SyntaxNodeClass::BinaryOperator)),
-    Token(SyntaxNodeKind::Percent, "%", Bit(SyntaxNodeClass::BinaryOperator) | Bit(
-        SyntaxNodeClass::DeclaratorReferenceToken
-    )),
+    Token(
+        SyntaxNodeKind::Percent,
+        "%",
+        Bit(SyntaxNodeClass::BinaryOperator) | Bit(SyntaxNodeClass::DeclaratorReferenceToken)
+    ),
     Token(SyntaxNodeKind::Caret, "^", kChainBinaryClasses | Bit(SyntaxNodeClass::DeclaratorReferenceToken)),
     Token(SyntaxNodeKind::ReflectOperator, "^^", Bit(SyntaxNodeClass::UnaryOperator)),
-    Token(SyntaxNodeKind::Ampersand, "&", kChainBinaryClasses | Bit(SyntaxNodeClass::UnaryOperator) | Bit(
-        SyntaxNodeClass::DeclaratorReferenceToken
-    )),
+    Token(
+        SyntaxNodeKind::Ampersand,
+        "&",
+        kChainBinaryClasses | Bit(SyntaxNodeClass::UnaryOperator) | Bit(SyntaxNodeClass::DeclaratorReferenceToken)
+    ),
     Token(SyntaxNodeKind::Pipe, "|", kChainBinaryClasses),
     Token(SyntaxNodeKind::Bang, "!", Bit(SyntaxNodeClass::UnaryOperator)),
     Token(SyntaxNodeKind::Tilde, "~", Bit(SyntaxNodeClass::UnaryOperator)),
@@ -564,9 +614,11 @@ constexpr auto kSyntaxKindMappings = std::to_array<SyntaxKindMapping>({
     Keyword(SyntaxNodeKind::KeywordBool, "bool"),
     Keyword(SyntaxNodeKind::KeywordBreak, "break"),
     Keyword(SyntaxNodeKind::KeywordCase, "case"),
-    Keyword(SyntaxNodeKind::KeywordCatch, "catch", Bit(SyntaxNodeClass::ControlKeyword) | Bit(
-        SyntaxNodeClass::AttachAfterBlockKeyword
-    )),
+    Keyword(
+        SyntaxNodeKind::KeywordCatch,
+        "catch",
+        Bit(SyntaxNodeClass::ControlKeyword) | Bit(SyntaxNodeClass::AttachAfterBlockKeyword)
+    ),
     Keyword(SyntaxNodeKind::KeywordChar, "char"),
     Keyword(SyntaxNodeKind::KeywordChar16T, "char16_t"),
     Keyword(SyntaxNodeKind::KeywordChar32T, "char32_t"),
@@ -638,9 +690,11 @@ constexpr auto kSyntaxKindMappings = std::to_array<SyntaxKindMapping>({
     Keyword(SyntaxNodeKind::KeywordVoid, "void"),
     Keyword(SyntaxNodeKind::KeywordVolatile, "volatile"),
     Keyword(SyntaxNodeKind::KeywordWcharT, "wchar_t"),
-    Keyword(SyntaxNodeKind::KeywordWhile, "while", Bit(SyntaxNodeClass::ControlKeyword) | Bit(
-        SyntaxNodeClass::AttachAfterBlockKeyword
-    )),
+    Keyword(
+        SyntaxNodeKind::KeywordWhile,
+        "while",
+        Bit(SyntaxNodeClass::ControlKeyword) | Bit(SyntaxNodeClass::AttachAfterBlockKeyword)
+    ),
     Keyword(SyntaxNodeKind::KeywordCdecl, "__cdecl"),
     Keyword(SyntaxNodeKind::KeywordDeclspec, "__declspec"),
     Keyword(SyntaxNodeKind::KeywordCoAwait, "co_await"),
@@ -858,6 +912,11 @@ const SymbolInfoTable& SyntaxInfoBySymbol() {
         };
         for (const std::string_view name : expressionNames) {
             StoreTreeSymbolClasses(result, name, Bit(SyntaxNodeClass::Expression));
+        }
+        constexpr std::string_view prefixListNames[] =
+            {"gnu_asm_output_operand_list", "gnu_asm_input_operand_list", "gnu_asm_clobber_list", "gnu_asm_goto_list"};
+        for (const std::string_view name : prefixListNames) {
+            StoreTreeSymbolClasses(result, name, Bit(SyntaxNodeClass::PrefixList));
         }
         StoreTreeSymbolInfo(result, "comment", SyntaxNodeKind::Comment, kCommentClasses);
 

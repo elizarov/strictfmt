@@ -360,6 +360,7 @@ public:
             model_.root = MakeNode(FormatBreakNodeKind::Sequence, 0);
         }
         ApplyRequiredChainBreaks(*model_.root);
+        NormalizeBreakCosts(*model_.root);
         return std::move(model_);
     }
 
@@ -425,11 +426,12 @@ private:
     }
 
     void ApplyRequiredChainBreaks(FormatBreakNode& node) {
-        if (node.kind == FormatBreakNodeKind::Chain && std::any_of(
-            node.operators.begin(),
-            node.operators.end(),
-            [this](const FormatBreakToken& token) { return RequiresChainBreak(token); }
-        )) {
+        if (
+            node.kind == FormatBreakNodeKind::Chain &&
+            std::any_of(node.operators.begin(), node.operators.end(), [this](const FormatBreakToken& token) {
+                return RequiresChainBreak(token);
+            })
+        ) {
             if (node.chainKind == FormatBreakChainKind::Ternary) {
                 node.ternaryRequiresColonBreaks = true;
             } else {
@@ -581,9 +583,10 @@ private:
             item->kind == FormatBreakNodeKind::Chain &&
             item->chainKind != FormatBreakChainKind::Ternary &&
             !HasAssignmentContinuation(*item) && (
-                virtualDelimiter || (IsFlatParenthesizedChain(*item) && (
-                    UsesFlatLogicalContinuation(open, *item) || UsesFlatNonCallParenthesisContinuation(open)
-                ))
+                virtualDelimiter || (
+                    IsFlatParenthesizedChain(*item) &&
+                    (UsesFlatLogicalContinuation(open, *item) || UsesFlatNonCallParenthesisContinuation(open))
+                )
             )
         ) {
             item->flatSplitIndent = true;
@@ -741,22 +744,68 @@ private:
         return std::nullopt;
     }
 
-    static void ShiftStructuralDepth(FormatBreakNode& node, int delta) {
-        node.structuralDepth += delta;
+    static void ShiftStructuralDepth(FormatBreakNode& node, int delta, bool includeChainLinks = true) {
+        if (includeChainLinks || !IsFormatBreakUniformChain(node)) {
+            node.structuralDepth += delta;
+        }
         for (FormatBreakNode* child : node.children) {
             if (child != nullptr) {
-                ShiftStructuralDepth(*child, delta);
+                ShiftStructuralDepth(*child, delta, includeChainLinks);
             }
         }
         for (FormatBreakListItem& item : node.items) {
             if (item.node != nullptr) {
-                ShiftStructuralDepth(*item.node, delta);
+                ShiftStructuralDepth(*item.node, delta, includeChainLinks);
             }
         }
         for (FormatBreakNode* operand : node.operands) {
             if (operand != nullptr) {
-                ShiftStructuralDepth(*operand, delta);
+                ShiftStructuralDepth(*operand, delta, includeChainLinks);
             }
+        }
+    }
+
+    static FormatBreakNode* UnwrapSingleChildSequence(FormatBreakNode* node) {
+        while (node != nullptr && node->kind == FormatBreakNodeKind::Sequence && node->children.size() == 1) {
+            node = node->children.front();
+        }
+        return node;
+    }
+
+    static void DiscountFinalLambdaBody(FormatBreakNode& list) {
+        size_t end = list.items.size();
+        while (end != 0 && IsStandaloneCommentItem(list, end - 1)) {
+            --end;
+        }
+        FormatBreakNode* lambda = end == 0 ? nullptr : UnwrapSingleChildSequence(list.items[end - 1].node);
+        if (lambda == nullptr || !lambda->bodyHeaderIsLambda || lambda->children.size() != 2) {
+            return;
+        }
+        FormatBreakNode* body = UnwrapSingleChildSequence(lambda->children.back());
+        if (body != nullptr && body->kind == FormatBreakNodeKind::Delimited) {
+            body->breakCost = 0;
+        }
+    }
+
+    static void NormalizeBreakCosts(FormatBreakNode& node) {
+        node.breakCost = node.structuralDepth;
+        for (FormatBreakNode* child : node.children) {
+            if (child != nullptr) {
+                NormalizeBreakCosts(*child);
+            }
+        }
+        for (FormatBreakListItem& item : node.items) {
+            if (item.node != nullptr) {
+                NormalizeBreakCosts(*item.node);
+            }
+        }
+        for (FormatBreakNode* operand : node.operands) {
+            if (operand != nullptr) {
+                NormalizeBreakCosts(*operand);
+            }
+        }
+        if (node.kind == FormatBreakNodeKind::Delimited) {
+            DiscountFinalLambdaBody(node);
         }
     }
 
@@ -918,16 +967,17 @@ private:
                 continue;
             }
             const FormatBreakToken* open = TokenChild(list->children.front());
-            if (open == nullptr || !SyntaxNodeKindHasClass(
-                FormatBreakTokenValue(*open).parentKind, SyntaxNodeClass::NamedList
-            )) {
+            if (
+                open == nullptr ||
+                !SyntaxNodeKindHasClass(FormatBreakTokenValue(*open).parentKind, SyntaxNodeClass::NamedList)
+            ) {
                 continue;
             }
             for (size_t prefixIndex = 0; prefixIndex < index; ++prefixIndex) {
                 FormatBreakNode& prefix = *children[prefixIndex];
                 const std::optional<int> prefixDepth = MinimumStructuralBreakDepth(prefix);
                 if (prefixDepth && *prefixDepth <= list->structuralDepth) {
-                    ShiftStructuralDepth(prefix, list->structuralDepth + 1 - *prefixDepth);
+                    ShiftStructuralDepth(prefix, list->structuralDepth + 1 - *prefixDepth, false);
                 }
             }
         }
@@ -958,9 +1008,11 @@ private:
         std::vector<size_t> operatorIndices;
         for (size_t index = 0; index < children.size(); ++index) {
             const FormatBreakToken* token = TokenChild(children[index]);
-            if (token != nullptr && FormatBreakTokenSyntaxKind(*token) == SyntaxNodeKind::Colon && RequiresChainBreak(
-                *token
-            )) {
+            if (
+                token != nullptr &&
+                FormatBreakTokenSyntaxKind(*token) == SyntaxNodeKind::Colon &&
+                RequiresChainBreak(*token)
+            ) {
                 operatorIndices.push_back(index);
             }
         }
@@ -1322,7 +1374,7 @@ private:
                 return expression;
             }
         }
-        if (SyntaxNodeKindHasClass(node.kind, SyntaxNodeClass::PrefixList)) {
+        if (SyntaxNodeHasLocalClass(node, SyntaxNodeClass::PrefixList)) {
             if (auto list = BuildPrefixList(node, depth)) {
                 return list;
             }
@@ -1356,9 +1408,10 @@ private:
                     if (!local.operands.empty() || !local.operators.empty()) {
                         return false;
                     }
-                    nested.operands.front().insert(
-                        nested.operands.front().begin(), pendingOperand.begin(), pendingOperand.end()
-                    );
+                    nested
+                        .operands
+                        .front()
+                        .insert(nested.operands.front().begin(), pendingOperand.begin(), pendingOperand.end());
                     pendingOperand.clear();
                 }
                 if (local.operands.size() != local.operators.size()) {
@@ -1634,9 +1687,10 @@ private:
         }
 
         size_t declarationIndex = index + 1;
-        while (declarationIndex < end && (
-            children[declarationIndex] == nullptr || !ContainsSelected(*children[declarationIndex])
-        )) {
+        while (
+            declarationIndex < end &&
+            (children[declarationIndex] == nullptr || !ContainsSelected(*children[declarationIndex]))
+        ) {
             ++declarationIndex;
         }
         if (declarationIndex >= end) {
@@ -1695,9 +1749,11 @@ private:
         std::optional<size_t> declaratorIndex;
         for (size_t index = 0; index < end; ++index) {
             const SyntaxNode* child = node.children[index];
-            if (child != nullptr && child->kind == SyntaxNodeKind::AbstractFunctionDeclarator && ContainsSyntaxKind(
-                *child, SyntaxNodeKind::ParameterList
-            )) {
+            if (
+                child != nullptr &&
+                child->kind == SyntaxNodeKind::AbstractFunctionDeclarator &&
+                ContainsSyntaxKind(*child, SyntaxNodeKind::ParameterList)
+            ) {
                 declaratorIndex = index;
                 break;
             }
@@ -1736,6 +1792,7 @@ private:
         }
 
         FormatBreakNode* result = BuildCodeBlockBodyHeader(*node.children[*bodyIndex], header, body, depth);
+        result->bodyHeaderIsLambda = true;
         result->bodyHeaderSingleStatementBody =
             CallableBodyAllowsCompactSingleStatementForm(*node.children[*bodyIndex], node.kind);
         return result;
@@ -1910,9 +1967,10 @@ private:
             return nullptr;
         }
         for (size_t index = 0; index < *declaratorIndex; ++index) {
-            if (node.children[index] != nullptr && ContainsSyntaxKind(
-                *node.children[index], SyntaxNodeKind::KeywordExplicit
-            )) {
+            if (
+                node.children[index] != nullptr &&
+                ContainsSyntaxKind(*node.children[index], SyntaxNodeKind::KeywordExplicit)
+            ) {
                 return nullptr;
             }
         }
@@ -1961,9 +2019,10 @@ private:
             if (!child) {
                 continue;
             }
-            if (SyntaxNodeKindHasClass(child->kind, SyntaxNodeClass::Known) && SyntaxNodeKindHasClass(
-                child->kind, SyntaxNodeClass::AssignmentOperator
-            )) {
+            if (
+                SyntaxNodeKindHasClass(child->kind, SyntaxNodeClass::Known) &&
+                SyntaxNodeKindHasClass(child->kind, SyntaxNodeClass::AssignmentOperator)
+            ) {
                 hasAssignment = true;
             }
             if (child->kind == SyntaxNodeKind::InitializerList) {
@@ -2164,9 +2223,10 @@ private:
                 continue;
             }
             size_t afterTemplate = index;
-            if (FormatBreakNode* templated = BuildAdjacentTemplateDeclaration(
-                children, index, end, depth + 1, afterTemplate
-            )) {
+            if (
+                FormatBreakNode*
+                    templated = BuildAdjacentTemplateDeclaration(children, index, end, depth + 1, afterTemplate)
+            ) {
                 builtChildren.push_back(templated);
                 index = afterTemplate;
                 continue;
@@ -2587,9 +2647,10 @@ private:
         chain->forceSplit = chain->chainKind == FormatBreakChainKind::StreamBeforeOperator &&
             context_.forceSplitStreamChain &&
             root_ == &node;
-        if (node.kind == SyntaxNodeKind::BinaryExpression && SyntaxNodeKindHasClass(
-            operatorKind, SyntaxNodeClass::ChainOperator
-        )) {
+        if (
+            node.kind == SyntaxNodeKind::BinaryExpression &&
+            SyntaxNodeKindHasClass(operatorKind, SyntaxNodeClass::ChainOperator)
+        ) {
             std::vector<FormatBreakNode*> operands;
             std::vector<FormatBreakToken> operators;
             std::vector<std::vector<FormatBreakToken>> commentsBeforeOperators;

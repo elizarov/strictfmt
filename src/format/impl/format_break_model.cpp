@@ -28,12 +28,7 @@ bool ConsumeLeadingName(const FormatBreakNode& node, std::string_view candidate,
         case FormatBreakNodeKind::Token:
             return ConsumeLeadingNameToken(node.token, candidate, position);
         case FormatBreakNodeKind::Chain:
-            if (
-                node.operands.size() != 2 ||
-                node.operators.size() != 1 ||
-                FormatBreakTokenKind(node.operators.front()) != PrintTokenKind::Known ||
-                FormatBreakTokenSyntaxKind(node.operators.front()) != SyntaxNodeKind::ColonColon
-            ) {
+            if (!IsFormatBreakQualifiedName(node)) {
                 return true;
             }
             if (!ConsumeLeadingName(*node.operands.front(), candidate, position)) {
@@ -63,6 +58,27 @@ bool ConsumeLeadingName(const FormatBreakNode& node, std::string_view candidate,
 bool FormatBreakLeadingNameMatches(const FormatBreakNode& node, std::string_view candidate) {
     size_t position = 0;
     return ConsumeLeadingName(node, candidate, position) && position == candidate.size();
+}
+
+bool IsFormatBreakUniformChain(const FormatBreakNode& node) {
+    if (node.kind != FormatBreakNodeKind::Chain) {
+        return false;
+    }
+    if (node.chainKind != FormatBreakChainKind::AfterOperator) {
+        return true;
+    }
+    return !node.operators.empty() && std::all_of(node.operators.begin(), node.operators.end(), [](const auto& token) {
+        return FormatBreakTokenKind(token) == PrintTokenKind::Known &&
+            SyntaxNodeKindHasClass(FormatBreakTokenSyntaxKind(token), SyntaxNodeClass::ChainOperator);
+    });
+}
+
+bool IsFormatBreakQualifiedName(const FormatBreakNode& node) {
+    return node.kind == FormatBreakNodeKind::Chain &&
+        node.operands.size() == 2 &&
+        node.operators.size() == 1 &&
+        FormatBreakTokenKind(node.operators.front()) == PrintTokenKind::Known &&
+        FormatBreakTokenSyntaxKind(node.operators.front()) == SyntaxNodeKind::ColonColon;
 }
 
 bool IsFormatBreakStreamConfigurationOperand(
