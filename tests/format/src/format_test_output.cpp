@@ -868,6 +868,54 @@ void UseMultipleQualifiedBreaks(
 using QualifiedMemberPointerAlias =
     int FirstMemberPointerNamespaceWithLongName::SecondMemberPointerClassWithLongName::*;
 
+void UseSingleQualifiedName(
+    const NamespaceWithAnIntentionallyLongNameForSingleQualificationCoverage::
+        TypeWithAnIntentionallyLongNameForSingleQualificationCoverage& value
+);
+
+using GlobalSingleQualifiedName = ::NamespaceWithAnIntentionallyLongNameForSingleQualificationCoverage::
+    TypeWithAnIntentionallyLongNameForSingleQualificationCoverage;
+
+void UseLeadingGlobalScope(
+    const ::GlobalTypeWithAnIntentionallyLongNameToVerifyThatLeadingScopeResolutionNeverCreatesAnIndependentBreakOpportunity& value
+);
+void UseSingleQualifiedCall() {
+    NamespaceWithAnIntentionallyLongNameForSingleQualificationCoverage::
+        FunctionWithAnIntentionallyLongNameForSingleQualificationCoverage();
+}
+
+int MemberPointerClassWithAnIntentionallyLongNameForSingleQualificationCoverage::
+    *memberPointerWithAnIntentionallyExtendedName;
+int FirstMemberPointerNamespaceWithLongName::SecondMemberPointerClassWithLongName::
+    *memberPointerWithAnIntentionallyExtendedName;
+int ::FirstMemberPointerNamespaceWithLongName::SecondMemberPointerClassWithLongName::
+    *memberPointerWithAnIntentionallyExtendedName;
+
+using LongScopedMemberPointerAlias = int MemberPointerNamespaceWithAnIntentionallyLongNameForQualification::
+    MemberPointerClassWithAnIntentionallyLongNameForQualification::*;
+
+using SingleMemberPointerTarget =
+    int MemberPointerClassWithAnExtendedNameForSingleAbstractQualificationWhoseScopeFitsExactlyAtConfiguredColumnLimit::
+        *;
+
+int (
+    FirstMemberPointerNamespaceWithLongName::SecondMemberPointerClassWithLongName::
+        *memberFunctionPointerWithAnExtendedName
+)(int, int);
+int MemberTemplate<FirstTemplateArgumentWithLongName, SecondTemplateArgumentWithLongName>::
+    *memberPointerWithAnIntentionallyExtendedName;
+
+using CompactMemberPointer = int Object::*;
+
+int Object::*compactMember;
+
+namespace NamespaceWithAnIntentionallyLongNameForSingleQualificationCoverage::
+    NamespaceWithAnIntentionallyLongNameForNestedNamespaceCoverage {
+
+void Function();
+
+}
+
 void TemplatedCallArgumentOverflow() {
     mock.SetConfigValue<
         experiments3::CargoPricingBatchedOrderRoutePriceCorrectionWithSpecificExtendedExperimentConfiguration
@@ -897,9 +945,9 @@ InitializerGeneralityWidget::InitializerGeneralityWidget(int value, int other) :
     Touch();
 }
 
-InitializerGeneralityWidget::InitializerGeneralityWidget(
-    int value, int other, int third
-) : first_(value), second_(other), third_(third) {
+InitializerGeneralityWidget::
+    InitializerGeneralityWidget(int value, int other, int third) : first_(value), second_(other), third_(third)
+{
     Touch();
 }
 
@@ -969,9 +1017,8 @@ enum class OverflowEnum {
     /** @name Class 27 — Triggered Data Change Violation */
     kTriggeredDataChangeViolation = static_cast<std::int64_t>(SqlStateClass::kTriggeredDataChangeViolation),  //!< 27000
     /** @name Class 28 — Invalid Authorization Specification */
-    kInvalidAuthorizationSpecification = static_cast<std::int64_t>(
-        SqlStateClass::kInvalidAuthorizationSpecification
-    ),  //!< 28000
+    kInvalidAuthorizationSpecification = static_cast<std::
+        int64_t>(SqlStateClass::kInvalidAuthorizationSpecification),  //!< 28000
 };
 
 template <typename T> requires(HasValue<T>)
@@ -1092,9 +1139,9 @@ ExtremelyLongQualifiedNamespace::ExtremelyLongTemplate<
     FirstLongTemplateArgument, SecondLongTemplateArgument, ThirdLongTemplateArgument
 > storedSignatureComparisonValue;
 
-ExtremelyLongQualifiedNamespace::ExtremelyLongTemplate<
-    FirstLongTemplateArgument, SecondLongTemplateArgument, ThirdLongTemplateArgument
-> BuildSignatureComparisonValue();
+ExtremelyLongQualifiedNamespace::
+    ExtremelyLongTemplate<FirstLongTemplateArgument, SecondLongTemplateArgument, ThirdLongTemplateArgument>
+    BuildSignatureComparisonValue();
 
 static const auto kPricesTransformsToSkip = std::unordered_map<std::string, std::unordered_set<std::string>>{
     {"price1", {"transform1", "transform2"}}, {"price2", {}}, {"price3", {"transform3", "unexisting"}}

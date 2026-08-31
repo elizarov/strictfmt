@@ -1402,28 +1402,6 @@ private:
         return true;
     }
 
-    static bool StartsWithMemberPointerStar(const ConstSyntaxChildList& operand) {
-        for (const SyntaxNode* child : operand) {
-            if (child == nullptr || SyntaxNodeKindHasClass(child->kind, SyntaxNodeClass::Trivia)) {
-                continue;
-            }
-            if (child->kind == SyntaxNodeKind::Star) {
-                return true;
-            }
-            if (child->kind != SyntaxNodeKind::Tree) {
-                return false;
-            }
-            for (const SyntaxNode* nested : child->children) {
-                if (nested == nullptr || SyntaxNodeKindHasClass(nested->kind, SyntaxNodeClass::Trivia)) {
-                    continue;
-                }
-                return nested->kind == SyntaxNodeKind::Star;
-            }
-            return false;
-        }
-        return false;
-    }
-
     FormatBreakNode* BuildQualifiedNamePrefix(const QualifiedNameParts& parts, size_t operandCount, int depth) {
         if (operandCount == 1) {
             return BuildSequenceFromPointers(parts.operands.front(), depth);
@@ -1444,7 +1422,7 @@ private:
         if (!CollectQualifiedNameParts(node, parts)) {
             return nullptr;
         }
-        if (parts.operators.size() < 2 || StartsWithMemberPointerStar(parts.operands.back())) {
+        if (parts.operators.empty()) {
             return nullptr;
         }
         return BuildQualifiedNamePrefix(parts, parts.operands.size(), depth);

@@ -75,7 +75,7 @@ Mandatory line breaks are structural boundaries. The break is always taken befor
 Line break opportunities are optional boundaries that the break optimizer may take when formatting one formatted segment between mandatory line breaks. See **Break Selection** for the optimization objective and constraints.
 
 - After assignment, binary, or ternary operators.
-- After non-leading `::` in names containing at least two such operators, excluding pointer-to-member scope. Qualification is left-associated: the final `::` is the shallowest break, with its right component one continuation indent deeper.
+- After non-leading `::` in names. Qualification is left-associated; right components split first.
 - After delimiter-group openers and before their matching closers.
 - After commas in any [list](glossary.md#list).
 - Between a declaration type and its direct-initialized declarator value.
