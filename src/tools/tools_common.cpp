@@ -52,10 +52,7 @@ void RecursiveFilesInto(std::string_view root, std::vector<std::string>& files) 
 }
 
 bool DiscoverRecursiveToolFilesInto(
-    std::string_view root,
-    ToolFileDiscoveryFilter& filter,
-    ToolFileDiscoveryResult& result,
-    std::string& error
+    std::string_view root, ToolFileDiscoveryFilter& filter, ToolFileDiscoveryResult& result, std::string& error
 ) {
     std::error_code entryError;
     fs::directory_iterator iterator(NativePath(root), fs::directory_options::skip_permission_denied, entryError);
@@ -195,9 +192,7 @@ std::optional<std::vector<std::string>> ReadToolFileList(std::string_view path, 
 }
 
 std::optional<ToolFileDiscoveryResult> DiscoverRecursiveToolFiles(
-    const std::vector<std::string>& roots,
-    ToolFileDiscoveryFilter& filter,
-    std::string& error
+    const std::vector<std::string>& roots, ToolFileDiscoveryFilter& filter, std::string& error
 ) {
     ToolFileDiscoveryResult result;
     for (const std::string& root : roots) {

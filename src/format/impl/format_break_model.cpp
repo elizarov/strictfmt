@@ -66,8 +66,7 @@ bool FormatBreakLeadingNameMatches(const FormatBreakNode& node, std::string_view
 }
 
 bool IsFormatBreakStreamConfigurationOperand(
-    const FormatBreakNode& node,
-    const std::vector<std::string>& configurationMethods
+    const FormatBreakNode& node, const std::vector<std::string>& configurationMethods
 ) {
     return std::any_of(configurationMethods.begin(), configurationMethods.end(), [&node](const std::string& method) {
         return FormatBreakLeadingNameMatches(node, method);

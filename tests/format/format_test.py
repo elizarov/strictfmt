@@ -140,7 +140,7 @@ def documentation_code_examples() -> list[DocumentationCodeExample]:
 
 
 def native_format(
-    *args: str, cwd: Path = STRICTFMT_ROOT, input_text: str | None = None
+    *args: str, cwd: Path = STRICTFMT_ROOT, input_text: str | None = None, timeout: float | None = None
 ) -> subprocess.CompletedProcess[str]:
     return subprocess.run(
         [str(FORMAT_EXE), *FORMAT_EXE_ARGS, *args],
@@ -149,6 +149,7 @@ def native_format(
         check=False,
         capture_output=True,
         text=True,
+        timeout=timeout,
     )
 
 
@@ -1538,6 +1539,21 @@ class FormatCommandTests(unittest.TestCase):
             "auto text = empty ? std::string{} : value;\n",
             result.stdout,
         )
+
+    def test_nested_list_search_reuses_alternatives(self) -> None:
+        depth = 12
+        source = "auto value = " + "Value{.first = 1, .second = " * depth + "Leaf{2, 3}" + "}" * depth + ";\n"
+        formatted = native_format("--stdin", input_text=source, timeout=10)
+
+        self.assertEqual(0, formatted.returncode, msg=formatted.stderr)
+        self.assert_no_unsupported_placement_warnings(formatted)
+        self.assertEqual(re.sub(r"\s+", "", source), re.sub(r"\s+", "", formatted.stdout))
+        self.assertIn("\n    .first = 1,\n", formatted.stdout)
+        self.assertIn("Value{.first = 1, .second = Leaf{2, 3}}", formatted.stdout)
+        self.assertLessEqual(max(map(len, formatted.stdout.splitlines())), 120)
+
+        idempotent = native_format("--stdin", "--dry-run", input_text=formatted.stdout, timeout=10)
+        self.assertEqual(0, idempotent.returncode, msg=idempotent.stderr)
 
     def test_delimiter_stack_overflow_uses_exact_run_partition(self) -> None:
         build_dir = TEST_TEMP_ROOT

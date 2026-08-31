@@ -12,13 +12,13 @@ After line count, the structural tie-break keeps both the maximum taken-break de
 
 ## Search Shape
 
-`Solver::Solve` evaluates a subproblem identified by break node, current column, current indentation level, and whether the current line already has text. It memoizes solved subproblems.
+`Solver::Solve` evaluates a subproblem identified by break node, current column, current indentation level, and whether the current line already has text. Both the best result and the complete ordered alternative set are memoized by this state. Reusing alternatives avoids repeating recursive search through nested layout combinations; it preserves candidate order and retains every continuation-sensitive choice. Cached results and their choice trees remain immutable for the lifetime of the segment's solver.
 
 Each node kind exposes legal layout candidates through `SolveAlternatives`:
 
 - Tokens produce one candidate.
 - Sequences combine child candidates left to right.
-- Delimited nodes expose compact, split, and specialized indent-economy candidates.
+- Delimited nodes expose compact, packed split, item-per-line split, and specialized indent-economy candidates.
 - Chains, function signatures, body headers, and adjacent strings expose their own compact and split forms.
 
 The solver compares complete candidates with `Better`. Intermediate candidate sets may be pruned only when the removed candidate cannot win any continuation under the same solver contract.
@@ -42,6 +42,8 @@ tokens across a selected break.
 
 When a mandatory block flushes pending tokens from inside nested comma lists, the break model supplies a virtual closer for every enclosing list up to the containing block. The solver therefore records each enclosing compact-or-split choice before any opener is emitted. Deferred comma and closer emission follows exactly the lists whose virtual delimiters selected split form; it does not infer an outer-list layout after the prefix has already been printed.
 
+Deferred list separators belong to their nearest enclosing delimiter group. The shared ownership check traverses delimiter-free syntax wrappers, including comma expressions and conditional branches, but stops at nested groups or blocks. Both following-item detection and deferred comma emission (including preprocessor lists) use this check, so an outer list cannot force breaks or indentation inside an item.
+
 Before a mandatory block is printed, the printer builds the containing source item's break model and records the break opportunities belonging to every uniform chain that crosses the block. Each formatted segment receives those requirements and the original chain base indentation, so it can select and emit the same split form on both sides of the boundary. Nested ternaries carry their colon breaks, while parenthesized comma expressions use the corresponding deferred-list state.
 
 The function-signature candidate that keeps the return type and function name together while splitting the parameter list is legal only when the physical prefix through the parameter opener fits the column limit. A later unavoidable overflow, such as an atomic parameter type, does not make an additional avoidable prefix overflow legal.
@@ -50,7 +52,19 @@ Token candidates account for their complete physical rendering. Newlines embedde
 
 Compact one-line probes reject every token containing an intrinsic newline. Normal solving classifies a multiline literal token as an intrinsic tail expansion and propagates that classification only through an otherwise flat final sequence, chain operand, or delimiter item. Compact enclosing delimiters may therefore stay attached to the literal's first and last physical lines, while a multiline non-final item, comment, or earlier structural break still requires split form. The same classification is used for ordinary delimiters and transparent delimiter stacks; emission remains the normal compact choice.
 
-Owner/value syntax uses one generic after-owner candidate shape. A structured macro definition is built as its header owner plus its complete replacement value. Its compact chain candidate is legal only when the whole definition fits on one physical line; all other candidates split after the owner and solve the complete replacement recursively. A replacement parsed as multiple top-level call units is represented by a force-split statement sequence inside that value, so its required unit boundaries compose with the required header boundary without printer inference. The solver's break-line suffix width accounts for text emitted only on taken breaks; structured macros use it for the trailing ` \`, including that physical suffix in overflow cost without making it a break heuristic.
+Packed split and compact lists share inline-item candidate generation and final-item expansion checks. A packed split
+adds the opener/body and body/closer breaks, rejects overflow in the item body, and records `SplitPacked`; emission and
+deferred closers consume that choice and its selected base indentation. Chain continuation indentation is likewise
+recorded from the selected chain layout before a mandatory block. Mandatory item separators exclude packed split.
+Function-signature parameter-list expansion considers both split forms.
+
+Syntax metadata identifies lists attached to names. Their name-prefix break depths are normalized below the list's
+depth, including preceding calls in a callable expression. The existing structural cost then prefers list expansion to
+name-internal breaks without a new weight or a break between the name and opener.
+
+Owner/value syntax uses one generic after-owner candidate shape.
+
+A structured macro definition is built as its header owner plus its complete replacement value. Its compact chain candidate is legal only when the whole definition fits on one physical line; all other candidates split after the owner and solve the complete replacement recursively. A replacement parsed as multiple top-level call units is represented by a force-split statement sequence inside that value, so its required unit boundaries compose with the required header boundary without printer inference. The solver's break-line suffix width accounts for text emitted only on taken breaks; structured macros use it for the trailing ` \`, including that physical suffix in overflow cost without making it a break heuristic.
 
 ## Choice Fidelity
 
@@ -79,7 +93,12 @@ Not allowed:
 
 When adding a speedup whose proof is not obvious from the code, document the invariant in this file or with a short code comment near the pruning site.
 
-For a compact delimited list with at least two items, every non-final item is constrained to remain on the opener's physical line. Before enumerating compact candidates, the solver probes the opener, the non-final items, and their separators with the one-line renderer. If that prefix cannot remain legal and within the column limit while the split candidate has zero maximum overflow, every compact candidate is either illegal or worse on the primary overflow cost, so the solver returns the split candidate without enumerating compact layouts. The final item is excluded from the probe because eligible non-angle layout may give it a multiline tail; angle lists reject that candidate later.
+For compact and packed-split lists, every non-final item must remain on the body's first physical line. A shared one-line probe checks those items and their separators before recursive enumeration, at each form's own starting column:
+
+- The per-item split candidate is evaluated first. If it has zero maximum overflow and the compact prefix (including the opener) cannot fit, compact layouts are illegal or worse on the primary overflow cost and are skipped.
+- Packed split requires a zero-overflow body. If its inline prefix cannot fit after the opening break, that entire branch is illegal and is skipped regardless of other candidates.
+
+The final item is excluded from the probe because eligible non-angle layout may give it a multiline tail; angle lists reject that candidate later. These probes change search work, not candidate ordering or tie-breaking.
 
 ## Delimiter Stacks
 

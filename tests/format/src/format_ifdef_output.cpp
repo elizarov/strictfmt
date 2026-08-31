@@ -239,6 +239,20 @@ std::vector<Row> ConditionalGenericBracedListItems() {
     return rows;
 }
 
+void ConditionalListNestedCommas() {
+    Call(
+#if MORE
+        [] {
+            Prepare();
+            Finish();
+        },
+#endif
+        Pair{first, second},
+        [](const First& first, const Second& second) { return Call(first, second); },
+        last
+    );
+}
+
 using ConditionalNestedTemplateArgumentList = ::testing::Types<
 #if FORMAT_USERVER_HAS_ARRAY_ENCODER
     std::array<int, 4>,

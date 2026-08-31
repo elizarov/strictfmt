@@ -12,9 +12,7 @@ std::string
     FormatIncludeRunText(const FormatterConfig& config, const SyntaxNode& includeRun, std::string_view sourcePath);
 
 std::string FormatIncludeLinesText(
-    const FormatterConfig& config,
-    const std::vector<std::string>& includeLines,
-    std::string_view sourcePath
+    const FormatterConfig& config, const std::vector<std::string>& includeLines, std::string_view sourcePath
 );
 
 std::string

@@ -597,10 +597,7 @@ private:
     }
 
     void AppendStandaloneCommentItem(
-        FormatBreakNode& list,
-        const FormatBreakToken& comment,
-        int depth,
-        bool blankLineBefore = false
+        FormatBreakNode& list, const FormatBreakToken& comment, int depth, bool blankLineBefore = false
     ) {
         AppendListItem(list, BuildToken(comment, depth + 1), blankLineBefore);
     }
@@ -899,8 +896,7 @@ private:
                     continue;
                 }
                 if (std::optional<std::string> joined = JoinOrdinaryStringLiterals(
-                    strings->compactStringTexts[compactRunStart],
-                    text
+                    strings->compactStringTexts[compactRunStart], text
                 )) {
                     strings->compactStringTexts[compactRunStart] = std::move(*joined);
                     strings->compactStringTexts.emplace_back();
@@ -913,6 +909,28 @@ private:
             grouped.push_back(strings);
         }
         sequence.children = StoreNodePointers(grouped);
+    }
+
+    static void NormalizeNamedListBreakDepth(std::vector<FormatBreakNode*>& children) {
+        for (size_t index = 1; index < children.size(); ++index) {
+            const FormatBreakNode* list = children[index];
+            if (list->kind != FormatBreakNodeKind::Delimited || list->children.empty()) {
+                continue;
+            }
+            const FormatBreakToken* open = TokenChild(list->children.front());
+            if (open == nullptr || !SyntaxNodeKindHasClass(
+                FormatBreakTokenValue(*open).parentKind, SyntaxNodeClass::NamedList
+            )) {
+                continue;
+            }
+            for (size_t prefixIndex = 0; prefixIndex < index; ++prefixIndex) {
+                FormatBreakNode& prefix = *children[prefixIndex];
+                const std::optional<int> prefixDepth = MinimumStructuralBreakDepth(prefix);
+                if (prefixDepth && *prefixDepth <= list->structuralDepth) {
+                    ShiftStructuralDepth(prefix, list->structuralDepth + 1 - *prefixDepth);
+                }
+            }
+        }
     }
 
     void GroupMemberCallArguments(std::vector<FormatBreakNode*>& children, int depth) {
@@ -988,9 +1006,7 @@ private:
     }
 
     static FormatBreakNode* MatchingChain(
-        FormatBreakNode* node,
-        FormatBreakChainKind chainKind,
-        std::optional<SyntaxNodeKind> operatorKind = std::nullopt
+        FormatBreakNode* node, FormatBreakChainKind chainKind, std::optional<SyntaxNodeKind> operatorKind = std::nullopt
     ) {
         if (node == nullptr || node->kind != FormatBreakNodeKind::Chain) {
             return nullptr;
@@ -1115,10 +1131,7 @@ private:
     }
 
     FormatBreakNode* BuildOwnedValue(
-        FormatBreakNode* owner,
-        FormatBreakNode* value,
-        int depth,
-        bool splitTrailingBodyHeaderAtParentIndent = true
+        FormatBreakNode* owner, FormatBreakNode* value, int depth, bool splitTrailingBodyHeaderAtParentIndent = true
     ) {
         if (owner == nullptr || value == nullptr) {
             return nullptr;
@@ -1343,10 +1356,9 @@ private:
                     if (!local.operands.empty() || !local.operators.empty()) {
                         return false;
                     }
-                    nested
-                        .operands
-                        .front()
-                        .insert(nested.operands.front().begin(), pendingOperand.begin(), pendingOperand.end());
+                    nested.operands.front().insert(
+                        nested.operands.front().begin(), pendingOperand.begin(), pendingOperand.end()
+                    );
                     pendingOperand.clear();
                 }
                 if (local.operands.size() != local.operators.size()) {
@@ -1602,11 +1614,7 @@ private:
     }
 
     FormatBreakNode* BuildAdjacentTemplateDeclaration(
-        const ::SyntaxChildList& children,
-        size_t index,
-        size_t end,
-        int depth,
-        size_t& after
+        const ::SyntaxChildList& children, size_t index, size_t end, int depth, size_t& after
     ) {
         const SyntaxNode* templateNode = children[index];
         if (templateNode == nullptr || templateNode->kind != SyntaxNodeKind::TemplateDeclaration) {
@@ -1710,8 +1718,7 @@ private:
         for (size_t index = 0; index < end; ++index) {
             const SyntaxNode* child = node.children[index];
             if (child != nullptr && child->kind == SyntaxNodeKind::AbstractFunctionDeclarator && ContainsSyntaxKind(
-                *child,
-                SyntaxNodeKind::ParameterList
+                *child, SyntaxNodeKind::ParameterList
             )) {
                 declaratorIndex = index;
                 break;
@@ -1851,11 +1858,7 @@ private:
     }
 
     FormatBreakNode* BuildNestedFunctionSignature(
-        const SyntaxNode& node,
-        size_t declaratorIndex,
-        size_t functionDeclaratorIndex,
-        int depth,
-        size_t end
+        const SyntaxNode& node, size_t declaratorIndex, size_t functionDeclaratorIndex, int depth, size_t end
     ) {
         const SyntaxNode* wrapper = node.children[declaratorIndex];
         if (wrapper == nullptr || !ContainsSelected(*wrapper->children[functionDeclaratorIndex])) {
@@ -1882,10 +1885,7 @@ private:
 
         FormatBreakNode* returnType = BuildSequenceFromPointers(returnTypeChildren, depth + 1);
         FormatBreakNode* declarator = BuildSequenceFromChildren(
-            wrapper->children,
-            functionDeclaratorIndex,
-            functionDeclaratorIndex + 1,
-            depth + 1
+            wrapper->children, functionDeclaratorIndex, functionDeclaratorIndex + 1, depth + 1
         );
         if (!returnType || !declarator) {
             return nullptr;
@@ -1932,10 +1932,9 @@ private:
             return nullptr;
         }
         for (size_t index = 0; index < *declaratorIndex; ++index) {
-            if (
-                node.children[index] != nullptr &&
-                ContainsSyntaxKind(*node.children[index], SyntaxNodeKind::KeywordExplicit)
-            ) {
+            if (node.children[index] != nullptr && ContainsSyntaxKind(
+                *node.children[index], SyntaxNodeKind::KeywordExplicit
+            )) {
                 return nullptr;
             }
         }
@@ -1984,10 +1983,9 @@ private:
             if (!child) {
                 continue;
             }
-            if (
-                SyntaxNodeKindHasClass(child->kind, SyntaxNodeClass::Known) &&
-                SyntaxNodeKindHasClass(child->kind, SyntaxNodeClass::AssignmentOperator)
-            ) {
+            if (SyntaxNodeKindHasClass(child->kind, SyntaxNodeClass::Known) && SyntaxNodeKindHasClass(
+                child->kind, SyntaxNodeClass::AssignmentOperator
+            )) {
                 hasAssignment = true;
             }
             if (child->kind == SyntaxNodeKind::InitializerList) {
@@ -2165,6 +2163,7 @@ private:
                 builtChildren.push_back(built);
             }
         }
+        NormalizeNamedListBreakDepth(builtChildren);
         GroupMemberCallArguments(builtChildren, depth);
         if (FormatBreakNode* suffix = BuildRequiredTernarySuffix(builtChildren, depth)) {
             return suffix;
@@ -2187,10 +2186,9 @@ private:
                 continue;
             }
             size_t afterTemplate = index;
-            if (
-                FormatBreakNode*
-                    templated = BuildAdjacentTemplateDeclaration(children, index, end, depth + 1, afterTemplate)
-            ) {
+            if (FormatBreakNode* templated = BuildAdjacentTemplateDeclaration(
+                children, index, end, depth + 1, afterTemplate
+            )) {
                 builtChildren.push_back(templated);
                 index = afterTemplate;
                 continue;
@@ -2206,6 +2204,7 @@ private:
             }
             ++index;
         }
+        NormalizeNamedListBreakDepth(builtChildren);
         GroupMemberCallArguments(builtChildren, depth);
         if (FormatBreakNode* suffix = BuildRequiredTernarySuffix(builtChildren, depth)) {
             return suffix;
@@ -2353,11 +2352,7 @@ private:
     }
 
     bool AppendCommaExpressionListItems(
-        FormatBreakNode& list,
-        const SyntaxNode& node,
-        const FormatBreakToken& open,
-        int depth,
-        bool blankLineBefore
+        FormatBreakNode& list, const SyntaxNode& node, const FormatBreakToken& open, int depth, bool blankLineBefore
     ) {
         const std::optional<size_t> opIndex = DirectOperatorIndex(node);
         if (!opIndex || !node.children[*opIndex]) {
@@ -2372,13 +2367,7 @@ private:
         }
         AttachSeparatorToPreviousItem(list, *separator);
         return AppendCommaExpressionListOperand(
-            list,
-            node.children,
-            *opIndex + 1,
-            node.children.size(),
-            open,
-            depth,
-            false
+            list, node.children, *opIndex + 1, node.children.size(), open, depth, false
         );
     }
 
@@ -2492,15 +2481,7 @@ private:
 
         const bool streamChain = op == SyntaxNodeKind::LessLess || op == SyntaxNodeKind::GreaterGreater;
         std::vector<FormatBreakToken> commentsBeforeOperator = AppendBinaryChainOperand(
-            operands,
-            operators,
-            commentsBeforeOperators,
-            node.children,
-            0,
-            *opIndex,
-            op,
-            depth,
-            streamChain
+            operands, operators, commentsBeforeOperators, node.children, 0, *opIndex, op, depth, streamChain
         );
         if (std::optional<FormatBreakToken> token = TokenForNode(*node.children[*opIndex])) {
             operators.push_back(*token);
@@ -2628,10 +2609,9 @@ private:
         chain->forceSplit = chain->chainKind == FormatBreakChainKind::StreamBeforeOperator &&
             context_.forceSplitStreamChain &&
             root_ == &node;
-        if (
-            node.kind == SyntaxNodeKind::BinaryExpression &&
-            SyntaxNodeKindHasClass(operatorKind, SyntaxNodeClass::ChainOperator)
-        ) {
+        if (node.kind == SyntaxNodeKind::BinaryExpression && SyntaxNodeKindHasClass(
+            operatorKind, SyntaxNodeClass::ChainOperator
+        )) {
             std::vector<FormatBreakNode*> operands;
             std::vector<FormatBreakToken> operators;
             std::vector<std::vector<FormatBreakToken>> commentsBeforeOperators;
@@ -2923,10 +2903,7 @@ private:
     }
 
     std::optional<std::pair<size_t, FormatBreakDelimiterKind>> FindDirectClose(
-        const ::SyntaxChildList& children,
-        size_t openIndex,
-        size_t end,
-        FormatBreakDelimiterKind delimiter
+        const ::SyntaxChildList& children, size_t openIndex, size_t end, FormatBreakDelimiterKind delimiter
     ) const {
         for (size_t index = openIndex + 1; index < end; ++index) {
             if (!children[index]) {
@@ -2941,11 +2918,7 @@ private:
     }
 
     FormatBreakNode* BuildDirectDelimited(
-        const ::SyntaxChildList& children,
-        size_t openIndex,
-        size_t end,
-        int depth,
-        size_t& afterDelimited
+        const ::SyntaxChildList& children, size_t openIndex, size_t end, int depth, size_t& afterDelimited
     ) {
         afterDelimited = openIndex + 1;
         if (!children[openIndex]) {

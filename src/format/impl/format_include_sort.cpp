@@ -259,9 +259,7 @@ std::string FormatIncludeTextsPreservingOrder(const std::vector<std::string>& in
 }
 
 std::string FormatIncludeEntriesText(
-    const FormatterConfig& config,
-    const std::vector<std::string>& includeTexts,
-    std::string_view sourcePath
+    const FormatterConfig& config, const std::vector<std::string>& includeTexts, std::string_view sourcePath
 ) {
     if (config.includeGroups.empty()) {
         return FormatIncludeTextsPreservingOrder(includeTexts);
@@ -376,9 +374,7 @@ std::string
 }
 
 std::string FormatIncludeLinesText(
-    const FormatterConfig& config,
-    const std::vector<std::string>& includeLines,
-    std::string_view sourcePath
+    const FormatterConfig& config, const std::vector<std::string>& includeLines, std::string_view sourcePath
 ) {
     return FormatIncludeEntriesText(config, includeLines, sourcePath);
 }

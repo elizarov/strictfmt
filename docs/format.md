@@ -74,32 +74,13 @@ Mandatory line breaks are structural boundaries. The break is always taken befor
 
 Line break opportunities are optional boundaries that the break optimizer may take when formatting one formatted segment between mandatory line breaks. See **Break Selection** for the optimization objective and constraints.
 
-- After assignment operators, qualification operators, and binary or ternary operators.
+- After assignment, binary, or ternary operators.
+- After non-leading `::` in names containing at least two such operators, excluding pointer-to-member scope. Qualification is left-associated: the final `::` is the shallowest break, with its right component one continuation indent deeper.
 - After delimiter-group openers and before their matching closers.
 - After commas in any [list](glossary.md#list).
 - Between a declaration type and its direct-initialized declarator value.
 - After semicolons inside control-statement headers.
 - At callable-structure boundaries and between adjacent string literals.
-
-## Qualified Names
-
-A nested qualified name containing at least two non-leading `::` operators makes each of those operators an
-after-operator break opportunity. A selected break keeps `::` on the owning line and puts its subordinate right
-component one continuation indentation level deeper. A leading global-scope `::` is part of the first component and
-is not a break opportunity. The scope portion of a pointer-to-member declarator, such as `Type::*`, is not a
-qualified-name break opportunity. A single qualification, such as `std::string`, stays cohesive.
-
-Qualification is left-associated for layout selection, independently of the parser's tree shape. The final `::` is
-therefore the structurally shallowest qualification break. When overflow, physical-line count, and the other earlier
-cost components are equal, the normal structural cost prefers a later `::`. Each qualification boundary makes an
-independent compact-or-split choice, so an exceptionally long qualified name may take more than one break.
-
-```cpp
-void Convert(
-    const experiments3::cargo_pricing_batched_order_route_price_correction::
-        BatchedOrderRoutePriceCorrectionRequirementNames& value
-);
-```
 
 ## Indent Economy
 
@@ -122,8 +103,8 @@ ColumnLimit: 26
 -->
 ```cpp
 auto r = render(transform(
-    first,
-    second
+    firstValue,
+    secondValue
 ));
 ```
 
@@ -158,7 +139,9 @@ Delimiter item boundaries may coalesce generically only for direct close-comma-o
 
 ## Lists
 
-A list uses compact or split form.
+A delimiter-enclosed comma-separated list has three forms: compact, split one item per line, or **packed split** with
+breaks after the opener and before the closer and the items together on one continuation-indented line. Packed split
+is allowed only when that item line fits, subject to the final-item expansion below.
 
 ```cpp
 auto compact = call(first, second, third);
@@ -169,17 +152,26 @@ ColumnLimit: 30
 -->
 ```cpp
 auto split = call(
-    first,
-    second,
-    third
+    firstValue,
+    secondValue,
+    thirdValue
 );
 ```
 
-Parenthesized comma expressions that represent list-like syntax, such as macro signature arguments, use the same single compact-or-split list decision.
+<!-- .cpp-format
+ColumnLimit: 60
+-->
+```cpp
+auto result = MakeResult<FirstType, SecondType>(
+    firstArgument, secondArgument
+);
+```
 
-Compact comma-separated lists may keep leading items on the opener line while the final item uses an indent-economy delimiter expansion. The final item may be any expression. If any earlier item splits, or if the final item only splits at an operator, the whole list uses split form.
+Parenthesized comma expressions that represent list-like syntax, such as macro signature arguments, use the same list choices.
 
-A multi-item designated-initializer list may stay compact only when none of its items contains a selected line break; otherwise, the list uses split form.
+Compact and packed-split lists may keep leading items together while the final item uses an indent-economy delimiter expansion. The final item may be any expression. If any earlier item splits, or if the final item only splits at an operator, the list splits one item per line.
+
+A multi-item designated-initializer list may keep items together only when none contains a selected line break; otherwise, it splits one item per line.
 
 A final lambda may use this exception only with an unbroken callable header; otherwise the list splits first. Outer item boundaries preserve more structure than breaks inside a callable header.
 
@@ -190,7 +182,7 @@ ColumnLimit: 60
 -->
 ```cpp
 auto result = call(first, second, [](int value) {
-    return value + 1;
+    return value + firstAdjustment + secondAdjustment;
 });
 ```
 
@@ -288,8 +280,7 @@ ColumnLimit: 50
 -->
 ```cpp
 int total = first + second + BuildValue(
-    firstLongArgument,
-    secondLongArgument
+    firstLongerArgument, secondLongerArgument
 );
 ```
 
@@ -304,7 +295,7 @@ int total = first + second + BuildValue(
 - In compact and receiver-separated forms, every top-level member operator must occur on the same physical line. The receiver may expand before the first operator, and the final chain operand may expand after the last operator. An intermediate operand may not expand because that would place the operators before and after it on different lines.
 
 <!-- .cpp-format
-ColumnLimit: 60
+ColumnLimit: 50
 -->
 ```cpp
 auto expectation = EXPECT_CALL(mock, GetSize())
@@ -424,8 +415,7 @@ ColumnLimit: 40
 auto result = render(
     first,
     transform(
-        veryLongInputA,
-        veryLongInputB
+        veryLongInputA, veryLongInputB
     ),
     third
 );
@@ -509,10 +499,9 @@ template <typename T> requires(HasValue<T>)
 void Use(T& value);
 
 template <typename Callable>
-    requires(
-        !std::is_same_v<std::remove_cvref_t<Callable>, FunctionRef> &&
-        std::is_invocable_r_v<Result, Callable&&, Args...>
-    )
+    requires(!std::is_same_v<std::remove_cvref_t<Callable>, FunctionRef> && std::is_invocable_r_v<
+        Result, Callable&&, Args...
+    >)
 FunctionRef(Callable&& callable);
 ```
 
@@ -528,7 +517,7 @@ concept HasNonEmptyName = requires {
 Constructor initializer lists use compact or split form. An `explicit` specifier stays attached to the constructor declarator. A long initializer list keeps `) :` on the header line, or `) noexcept :` when a trailing qualifier is present. Initializer count alone does not force the constructor parameter list to split.
 
 <!-- .cpp-format
-ColumnLimit: 80
+ColumnLimit: 70
 -->
 ```cpp
 Widget::Widget(int value) : value_(value) {}
@@ -647,7 +636,7 @@ Nested switches restore the enclosing switch case indentation after the inner sw
 
 The complete lambda [callable header](glossary.md#callable-header) follows function-header placement, and an owner prefix behaves like a function return-type prefix.
 
-Lambda captures are part of the callable prefix. Captures and parameters are separate break opportunities and use the same compact-or-split layouts as other delimiter groups. Breaks inside the callable prefix are structurally deeper than parameter-list breaks, so equal-cost wrapping splits parameters first.
+Lambda captures are part of the callable prefix. Captures and parameters are separate break opportunities and use the same [list layouts](#lists). Breaks inside the callable prefix are structurally deeper than parameter-list breaks, so equal-cost wrapping splits parameters first.
 
 <!-- .cpp-format
 ColumnLimit: 72

@@ -104,8 +104,7 @@ SourceFormatResult FormatSourceText(std::string_view text, const FormatterConfig
             result.formatted = *model.sourceText;
         } else {
             std::string verified = WithLineEndings(
-                FormatModelText(config, verification, sourcePath),
-                SourceOutputLineEnding(result.formatted)
+                FormatModelText(config, verification, sourcePath), SourceOutputLineEnding(result.formatted)
             );
             if (verified != result.formatted) {
                 result.formatted = *model.sourceText;

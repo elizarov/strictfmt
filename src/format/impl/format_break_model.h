@@ -43,6 +43,7 @@ enum class FormatBreakChainKind {
 enum class FormatBreakChoice {
     Compact,
     Split,
+    SplitPacked,
     BodyHeaderSplitAtParentIndent,
     BodyHeaderDetachedBody,
     SplitAttachedOpen,
@@ -169,6 +170,5 @@ struct FormatBreakModelContext {
 
 bool FormatBreakLeadingNameMatches(const FormatBreakNode& node, std::string_view candidate);
 bool IsFormatBreakStreamConfigurationOperand(
-    const FormatBreakNode& node,
-    const std::vector<std::string>& configurationMethods
+    const FormatBreakNode& node, const std::vector<std::string>& configurationMethods
 );

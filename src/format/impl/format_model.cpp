@@ -142,9 +142,9 @@ constexpr auto kSyntaxKindMappings = std::to_array<SyntaxKindMapping>({
     Tree(SyntaxNodeKind::Declaration, "module_declaration"),
     Tree(SyntaxNodeKind::Declaration, "module_import_declaration"),
     Tree(SyntaxNodeKind::FunctionDefinition, "function_definition", Bit(SyntaxNodeClass::MacroDeclarationFragment)),
-    Tree(SyntaxNodeKind::FunctionDefinition, "macro_function_definition", Bit(
-        SyntaxNodeClass::MacroDeclarationFragment
-    )),
+    Tree(
+        SyntaxNodeKind::FunctionDefinition, "macro_function_definition", Bit(SyntaxNodeClass::MacroDeclarationFragment)
+    ),
     Tree(
         SyntaxNodeKind::CompoundStatement,
         "compound_statement",
@@ -167,7 +167,9 @@ constexpr auto kSyntaxKindMappings = std::to_array<SyntaxKindMapping>({
             kAllowedListPreprocessorContainerClasses |
             Bit(SyntaxNodeClass::SourceItemScope)
     ),
-    Tree(SyntaxNodeKind::InitializerList, "initializer_list", kPreprocessorSplitListClasses),
+    Tree(SyntaxNodeKind::InitializerList, "initializer_list", kPreprocessorSplitListClasses | Bit(
+        SyntaxNodeClass::NamedList
+    )),
     Tree(SyntaxNodeKind::FieldInitializerList, "field_initializer_list", Bit(SyntaxNodeClass::PrefixList) | Bit(
         SyntaxNodeClass::SemanticDelimitedParent
     )),
@@ -403,9 +405,13 @@ constexpr auto kSyntaxKindMappings = std::to_array<SyntaxKindMapping>({
         "abstract_parenthesized_declarator",
         Bit(SyntaxNodeClass::ParenthesizedDeclarator) | Bit(SyntaxNodeClass::SemanticDelimitedParent)
     ),
-    Tree(SyntaxNodeKind::ParameterList, "parameter_list", kPreprocessorSplitListClasses),
+    Tree(
+        SyntaxNodeKind::ParameterList, "parameter_list", kPreprocessorSplitListClasses | Bit(SyntaxNodeClass::NamedList)
+    ),
     Tree(SyntaxNodeKind::ParameterList, "macro_method_parameter_list"),
-    Tree(SyntaxNodeKind::ArgumentList, "argument_list", kPreprocessorSplitListClasses),
+    Tree(
+        SyntaxNodeKind::ArgumentList, "argument_list", kPreprocessorSplitListClasses | Bit(SyntaxNodeClass::NamedList)
+    ),
     Tree(SyntaxNodeKind::ArgumentList, "primitive_braced_argument_list", kPreprocessorSplitListClasses),
     Tree(SyntaxNodeKind::ArgumentList, "macro_argument_list", kPreprocessorSplitListClasses),
     Tree(SyntaxNodeKind::ArgumentList, "macro_statement_argument_list", kPreprocessorSplitListClasses),
@@ -531,9 +537,9 @@ constexpr auto kSyntaxKindMappings = std::to_array<SyntaxKindMapping>({
     Token(SyntaxNodeKind::GreaterGreater, ">>", kChainBinaryClasses),
     Token(SyntaxNodeKind::LessLessEqual, "<<=", Bit(SyntaxNodeClass::AssignmentOperator)),
     Token(SyntaxNodeKind::GreaterGreaterEqual, ">>=", Bit(SyntaxNodeClass::AssignmentOperator)),
-    Token(SyntaxNodeKind::AmpersandAmpersand, "&&", kChainBinaryClasses | Bit(
-        SyntaxNodeClass::DeclaratorReferenceToken
-    )),
+    Token(
+        SyntaxNodeKind::AmpersandAmpersand, "&&", kChainBinaryClasses | Bit(SyntaxNodeClass::DeclaratorReferenceToken)
+    ),
     Token(SyntaxNodeKind::PipePipe, "||", kChainBinaryClasses),
     Token(SyntaxNodeKind::PlusPlus, "++", Bit(SyntaxNodeClass::UnaryOperator)),
     Token(SyntaxNodeKind::MinusMinus, "--", Bit(SyntaxNodeClass::UnaryOperator)),
@@ -669,8 +675,7 @@ static_assert(
     "RawMacroDefinitions replacement text is the only permitted opaque source node"
 );
 static_assert(
-    HasOnlyLiteralLexicalAtomMappings(),
-    "Only lexical literals may suppress tree-sitter's internal lexical children"
+    HasOnlyLiteralLexicalAtomMappings(), "Only lexical literals may suppress tree-sitter's internal lexical children"
 );
 
 constexpr size_t KindIndex(SyntaxNodeKind kind) { return static_cast<size_t>(kind); }
@@ -749,11 +754,7 @@ void
 }
 
 void StoreTokenSymbolInfo(
-    SymbolInfoTable& table,
-    std::string_view name,
-    bool isNamed,
-    SyntaxNodeKind kind,
-    std::uint64_t classes = 0
+    SymbolInfoTable& table, std::string_view name, bool isNamed, SyntaxNodeKind kind, std::uint64_t classes = 0
 ) {
     const TSSymbol symbol =
         ts_language_symbol_for_name(tree_sitter_cpp(), name.data(), static_cast<uint32_t>(name.size()), isNamed);

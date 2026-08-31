@@ -55,10 +55,9 @@ bool IsTriviaNode(const SyntaxNode* node) {
 
 bool NodeOrAncestorHasClass(const SyntaxNode* node, SyntaxNodeClass syntaxNodeClass) {
     for (; node != nullptr; node = node->parent) {
-        if (
-            (node->classes & static_cast<std::uint64_t>(syntaxNodeClass)) != 0 ||
-            SyntaxNodeKindHasClass(node->kind, syntaxNodeClass)
-        ) {
+        if ((node->classes & static_cast<std::uint64_t>(syntaxNodeClass)) != 0 || SyntaxNodeKindHasClass(
+            node->kind, syntaxNodeClass
+        )) {
             return true;
         }
     }
@@ -655,10 +654,9 @@ bool FormatTokenNeedsSpace(const PrintToken* previous, const PrintToken& current
         return true;
     }
 
-    if (
-        cur == SyntaxNodeKind::LeftBrace &&
-        NodeOrAncestorHasClass(current.node, SyntaxNodeClass::ConditionalFunctionHeader)
-    ) {
+    if (cur == SyntaxNodeKind::LeftBrace && NodeOrAncestorHasClass(
+        current.node, SyntaxNodeClass::ConditionalFunctionHeader
+    )) {
         return true;
     }
 
@@ -923,10 +921,9 @@ bool FormatTokenNeedsSpace(const PrintToken* previous, const PrintToken& current
     ) {
         return false;
     }
-    if (
-        SyntaxNodeKindHasClass(prev, SyntaxNodeClass::MemberOperator) ||
-        SyntaxNodeKindHasClass(cur, SyntaxNodeClass::MemberOperator)
-    ) {
+    if (SyntaxNodeKindHasClass(prev, SyntaxNodeClass::MemberOperator) || SyntaxNodeKindHasClass(
+        cur, SyntaxNodeClass::MemberOperator
+    )) {
         return false;
     }
     if (IsWordLike(*previous) && IsWordLike(current)) {

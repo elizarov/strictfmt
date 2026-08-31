@@ -89,8 +89,7 @@ TSParser* ThreadFormatParser() {
 
 extern "C" bool strictfmt_tree_sitter_cpp_macro_category_matches(unsigned category, const char* text, unsigned length) {
     return ConfigMacroCategoryMatches(
-        static_cast<ScannerMacroCategory>(category),
-        std::string_view(text, static_cast<size_t>(length))
+        static_cast<ScannerMacroCategory>(category), std::string_view(text, static_cast<size_t>(length))
     );
 }
 

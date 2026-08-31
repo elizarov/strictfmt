@@ -31,9 +31,7 @@ std::optional<std::uint64_t> LastWriteTime(std::string_view path);
 std::vector<std::string> RecursiveFiles(std::string_view root);
 std::optional<std::vector<std::string>> ReadToolFileList(std::string_view path, std::string& error);
 std::optional<ToolFileDiscoveryResult> DiscoverRecursiveToolFiles(
-    const std::vector<std::string>& roots,
-    ToolFileDiscoveryFilter& filter,
-    std::string& error
+    const std::vector<std::string>& roots, ToolFileDiscoveryFilter& filter, std::string& error
 );
 
 bool StartsWith(std::string_view value, std::string_view prefix);

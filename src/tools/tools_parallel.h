@@ -13,10 +13,7 @@
 constexpr size_t kToolAutoConcurrency = 0;
 
 bool ParseToolConcurrency(
-    std::string_view value,
-    size_t& concurrency,
-    std::string& error,
-    std::string_view optionName = "--concurrency"
+    std::string_view value, size_t& concurrency, std::string& error, std::string_view optionName = "--concurrency"
 );
 size_t DefaultToolConcurrency();
 size_t EffectiveToolConcurrency(size_t workSize, size_t requestedConcurrency);
