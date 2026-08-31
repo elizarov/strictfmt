@@ -390,9 +390,12 @@ constexpr auto kSyntaxKindMappings = std::to_array<SyntaxKindMapping>({
     Tree(SyntaxNodeKind::AbstractHandleDeclarator, "abstract_handle_declarator", Bit(
         SyntaxNodeClass::DeclaratorReferenceParent
     )),
-    Tree(SyntaxNodeKind::MemberPointerDeclarator, "member_pointer_declarator", Bit(
-        SyntaxNodeClass::DeclaratorReferenceParent
-    )),
+    Tree(
+        SyntaxNodeKind::MemberPointerDeclarator,
+        "member_pointer_declarator",
+        Bit(SyntaxNodeClass::DeclaratorReferenceParent) | Bit(SyntaxNodeClass::QualifiedName)
+    ),
+    Tree(SyntaxNodeKind::Tree, "abstract_member_pointer_declarator", Bit(SyntaxNodeClass::QualifiedName)),
     Tree(SyntaxNodeKind::FunctionDeclarator, "function_declarator"),
     Tree(SyntaxNodeKind::AbstractFunctionDeclarator, "abstract_function_declarator"),
     Tree(
@@ -471,6 +474,7 @@ constexpr auto kSyntaxKindMappings = std::to_array<SyntaxKindMapping>({
     Tree(SyntaxNodeKind::Identifier, "preprocessor_argument_macro_identifier"),
     Tree(SyntaxNodeKind::Identifier, "field_identifier"),
     Tree(SyntaxNodeKind::Identifier, "namespace_identifier"),
+    Tree(SyntaxNodeKind::Tree, "nested_namespace_specifier", Bit(SyntaxNodeClass::QualifiedName)),
     Tree(SyntaxNodeKind::Identifier, "type_identifier"),
     Tree(SyntaxNodeKind::Identifier, "qualified_identifier", Bit(SyntaxNodeClass::QualifiedName)),
     Tree(SyntaxNodeKind::Identifier, "macro_qualified_identifier", Bit(SyntaxNodeClass::QualifiedName)),

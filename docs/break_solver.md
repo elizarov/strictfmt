@@ -25,14 +25,13 @@ The solver compares complete candidates with `Better`. Intermediate candidate se
 
 Composite candidates retain nondominated child layouts until all following children and suffix tokens have been costed. A locally best child is not sufficient when a later separator, comment, closer, or statement terminator can make another child layout win.
 
-Nested qualified names with at least two non-leading `::` operators are normalized from the grammar's right-recursive
-representation into left-associated binary break nodes. Every node owns one `::` and uses the ordinary after-operator
+Qualified names are normalized into left-associated binary break nodes. Every node owns one non-leading `::` and uses the ordinary after-operator
 compact and split candidates. Consequently, the final qualification operator is closest to the break-model root and
 earlier operators are successively deeper. The standard structural-depth cost therefore prefers the latest
 qualification boundary when all earlier cost components are equal, without a qualification-specific weight or solver
-tie-break. Independent binary choices also enumerate the layouts with multiple qualification breaks. A single
-qualification, the leading global-scope `::`, and pointer-to-member declarator scope are not represented by these
-nodes.
+tie-break. Independent binary choices also enumerate the layouts with multiple qualification breaks. The leading
+global-scope `::` remains attached to the first operand. Syntax metadata applies the same construction to scoped
+declarators and namespace names.
 
 An adjacent-string node stores the exact safely joined spellings of its compact ordinary-literal runs. Compact solving
 prices those spellings rather than the original separated tokens, and compact one-line probes use the same widths.

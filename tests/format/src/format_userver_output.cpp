@@ -345,9 +345,8 @@ LockedChannelProxy<AmqpConnection::ReliableChannel> GetReliableChannel(engine::D
     return DoGetChannel(*reliable, deadline);
 }
 
-PostgresChaosProxy::PostgresChaosProxy(engine::TaskProcessor& task_processor) :
-    task_processor_(task_processor),
-    task_storage_() {}
+PostgresChaosProxy::
+    PostgresChaosProxy(engine::TaskProcessor& task_processor) : task_processor_(task_processor), task_storage_() {}
 
 PostgresChaosProxy::~PostgresChaosProxy() {}
 
