@@ -119,6 +119,7 @@ add_library(strictfmt_core STATIC
     src/format/format.cpp
     src/format/impl/format_break_model.cpp
     src/format/impl/format_break_model_builder.cpp
+    src/format/impl/format_break_model_dump.cpp
     src/format/impl/format_break_solver.cpp
     src/format/impl/format_value_profile.cpp
     src/format/impl/format_config.cpp
@@ -143,7 +144,7 @@ strictfmt_apply_common_options(strictfmt_core)
 
 add_library(strictfmt_cli STATIC
     src/format/format_cli.cpp
-    src/format/format_model_dump.cpp
+    src/format/impl/format_model_dump.cpp
     src/format/impl/format_args.cpp
     src/format/strictfmt_cli.cpp
 )

@@ -16,7 +16,7 @@ The overflow-size profile contains completed physical lines. The current unfinis
 
 A packed list's separately evaluated body inherits the opener's charged flag, but starts without the prefix's profile; the profiles merge afterward. Attached-open solving starts a fresh child result before merging it into the operator prefix. Both paths therefore obey the same ownership rule as ordinary recursive solving.
 
-After building the complete break model, `NormalizeBreakCosts` initializes `breakCost` from `structuralDepth`, then applies the final-lambda discount specified in [format.md] from outer bodies inward. Lambda body headers carry syntax-derived identity. The pass finds the last non-comment delimiter item through single-child sequence wrappers, subtracts its current body cost throughout that subtree, and leaves its header unchanged. Processing outer discounts first lets nested final lambdas reset their body cost relative to the already-discounted context. It does not follow expression tails into other calls or chain operands. Costs are fixed before solving, so memoization needs no layout-history state, and the pretty printer's choices and indentation rules are unchanged.
+The builder retains initial depth in `rawDepth` and materializes the depth adjustments specified in [format.md] in `structuralDepth`. After building the complete break model, `NormalizeBreakCosts` initializes `breakCost` from the adjusted depth and applies the specified subtree adjustments from outer subtrees inward. Costs are fixed before solving, so memoization needs no layout-history state, and the pretty printer's choices and indentation rules are unchanged.
 
 ## Search Shape
 
@@ -67,10 +67,6 @@ adds the opener/body and body/closer breaks, rejects overflow in the item body, 
 deferred closers consume that choice and its selected base indentation. Chain continuation indentation is likewise
 recorded from the selected chain layout before a mandatory block. Mandatory item separators exclude packed split.
 Function-signature parameter-list expansion considers both split forms.
-
-Syntax metadata identifies lists attached to names. Their name-prefix break depths are normalized below the list's
-depth. Uniform-chain link boundaries are excluded from this shift: they describe expression layout, not name-internal
-wrapping. The cost pass preserves this distinction when preferring list expansion to name-internal breaks.
 
 Owner/value syntax uses one generic after-owner candidate shape.
 

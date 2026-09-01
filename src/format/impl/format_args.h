@@ -12,6 +12,12 @@ enum class FormatMode {
     DryRun,
 };
 
+enum class FormatDumpKind {
+    None,
+    SyntaxTree,
+    BreakTree,
+};
+
 struct FormatOptions {
     FormatMode mode = FormatMode::Stdout;
     bool verbose = false;
@@ -21,7 +27,7 @@ struct FormatOptions {
     bool fileListProvided = false;
     bool recursiveInputProvided = false;
     bool concurrencyProvided = false;
-    bool dump = false;
+    FormatDumpKind dumpKind = FormatDumpKind::None;
     size_t concurrency = 0;
     std::optional<std::string> dumpFile;
     std::optional<std::string> explicitStylePath;

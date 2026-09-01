@@ -824,7 +824,7 @@ class FormatCommandTests(unittest.TestCase):
             source = root / "sample.cpp"
             source.write_text("int main(){return 1;}\n", encoding="utf-8")
 
-            result = native_format("--dump", str(source), cwd=root)
+            result = native_format("--dump-syntax-tree", str(source), cwd=root)
 
             self.assertEqual(0, result.returncode, msg=f"stdout:\n{result.stdout}\n\nstderr:\n{result.stderr}")
             self.assertEqual("", result.stderr)
@@ -842,7 +842,7 @@ class FormatCommandTests(unittest.TestCase):
             "{ return *lhs != '\\0'; }\n"
             "};\n"
         )
-        dump = native_format("--stdin", "--dump", input_text=source)
+        dump = native_format("--stdin", "--dump-syntax-tree", input_text=source)
 
         self.assertEqual(0, dump.returncode, msg=f"stdout:\n{dump.stdout}\n\nstderr:\n{dump.stderr}")
         self.assertEqual(2, dump.stdout.count("- kind: FunctionDefinition\n"))
@@ -861,7 +861,7 @@ class FormatCommandTests(unittest.TestCase):
         )
 
     def test_dump_reads_stdin_source(self) -> None:
-        result = native_format("--stdin", "--dump", input_text="int value(){return 2;}\n")
+        result = native_format("--stdin", "--dump-syntax-tree", input_text="int value(){return 2;}\n")
 
         self.assertEqual(0, result.returncode, msg=f"stdout:\n{result.stdout}\n\nstderr:\n{result.stderr}")
         self.assertEqual("", result.stderr)
@@ -869,7 +869,7 @@ class FormatCommandTests(unittest.TestCase):
         self.assertIn("text: \"value\"", result.stdout)
         self.assertIn("text: \"2\"", result.stdout)
 
-        reversed_result = native_format("--dump", "--stdin", input_text="int other(){return 3;}\n")
+        reversed_result = native_format("--dump-syntax-tree", "--stdin", input_text="int other(){return 3;}\n")
 
         self.assertEqual(
             0,
@@ -878,10 +878,34 @@ class FormatCommandTests(unittest.TestCase):
         )
         self.assertIn("text: \"other\"", reversed_result.stdout)
 
+    def test_break_tree_dump_shows_costs_and_final_lambda_discount(self) -> None:
+        result = native_format(
+            "--stdin",
+            "--dump-break-tree",
+            input_text=(
+                "Vector<int> func(int a);\n"
+                "void f(){make<int>(value);"
+                "visit(items,[](const auto& item){return Serialize(item);});}\n"
+            ),
+        )
+
+        self.assertEqual(0, result.returncode, msg=f"stdout:\n{result.stdout}\n\nstderr:\n{result.stderr}")
+        self.assertEqual("", result.stderr)
+        self.assertIn('tokens: "Vector<int> func(int a);"\n', result.stdout)
+        self.assertIn("kind: FunctionSignature\n", result.stdout)
+        self.assertIn("raw-depth: 3\n", result.stdout)
+        self.assertIn("surcharge: 2\n", result.stdout)
+        self.assertIn("discount: 0\n", result.stdout)
+        self.assertIn("effective-cost: 5\n", result.stdout)
+        self.assertIn('tokens: "make<int>(value);"\n', result.stdout)
+        self.assertIn("body-header-is-lambda: true\n", result.stdout)
+        self.assertRegex(result.stdout, r"raw-depth: 7\n\s+surcharge: 0\n\s+discount: 7\n\s+effective-cost: 0\n")
+        self.assertRegex(result.stdout, r"raw-depth: 12\n\s+surcharge: 0\n\s+discount: 7\n\s+effective-cost: 5\n")
+
     def test_dump_prints_model_for_parse_error_tree(self) -> None:
         result = native_format(
             "--stdin",
-            "--dump",
+            "--dump-syntax-tree",
             "--style",
             str(USERVER_FORMAT_CONFIG),
             input_text=read_fixture(ERROR_INPUT_FIXTURE),
@@ -930,7 +954,7 @@ class FormatCommandTests(unittest.TestCase):
     def test_dump_uses_preprocessor_directive_tokens(self) -> None:
         result = native_format(
             "--stdin",
-            "--dump",
+            "--dump-syntax-tree",
             input_text=(
                 "#   if FOO\n"
                 "int value;\n"
@@ -1154,7 +1178,7 @@ class FormatCommandTests(unittest.TestCase):
             source_path = Path(temp_dir) / "sample.cpp"
             source_path.write_text(source, encoding="utf-8")
 
-            dump = native_format("--dump", str(source_path))
+            dump = native_format("--dump-syntax-tree", str(source_path))
 
             self.assertEqual(0, dump.returncode, msg=f"stdout:\n{dump.stdout}\n\nstderr:\n{dump.stderr}")
             self.assertIn("- kind: MacroDefinition\n", dump.stdout)
@@ -1336,7 +1360,7 @@ class FormatCommandTests(unittest.TestCase):
                 result.stdout,
             )
 
-            dump = native_format("--dump", str(source), "--style", str(config))
+            dump = native_format("--dump-syntax-tree", str(source), "--style", str(config))
 
             self.assertEqual(0, dump.returncode, msg=f"stdout:\n{dump.stdout}\n\nstderr:\n{dump.stderr}")
             self.assertIn("- kind: MacroDefinition\n", dump.stdout)
@@ -1356,7 +1380,7 @@ class FormatCommandTests(unittest.TestCase):
         )
         self.assertEqual("#define HASH_JOIN(first, second) first##second\n", structured.stdout)
 
-        structured_dump = native_format("--stdin", "--dump", input_text=source)
+        structured_dump = native_format("--stdin", "--dump-syntax-tree", input_text=source)
 
         self.assertEqual(
             0,
@@ -1883,6 +1907,8 @@ class FormatCommandTests(unittest.TestCase):
         self.assertEqual("", result.stderr)
         self.assertIn("Usage:", result.stdout)
         self.assertIn("strictfmt [options] [ <file>... | -r <path> | --stdin | --files <path> ]", result.stdout)
+        self.assertIn("--dump-syntax-tree", result.stdout)
+        self.assertIn("--dump-break-tree", result.stdout)
         self.assertIn("--style <config-file>", result.stdout)
 
     def test_invalid_native_usage_is_rejected(self) -> None:
@@ -1891,9 +1917,11 @@ class FormatCommandTests(unittest.TestCase):
             ("-i", "--dry-run", str(TEST_ROOT / OUTPUT_FIXTURE)),
             ("--style",),
             ("--dump",),
-            ("--dump", str(TEST_ROOT / OUTPUT_FIXTURE), "--stdin"),
-            ("--dump", str(TEST_ROOT / OUTPUT_FIXTURE), "--dry-run"),
-            ("--dump", str(TEST_ROOT / OUTPUT_FIXTURE), "--concurrency", "1"),
+            ("--dump-syntax-tree",),
+            ("--dump-syntax-tree", str(TEST_ROOT / OUTPUT_FIXTURE), "--stdin"),
+            ("--dump-syntax-tree", str(TEST_ROOT / OUTPUT_FIXTURE), "--dry-run"),
+            ("--dump-break-tree", str(TEST_ROOT / OUTPUT_FIXTURE), "--concurrency", "1"),
+            ("--stdin", "--dump-syntax-tree", "--dump-break-tree"),
             ("--files",),
             ("-r",),
             ("--concurrency",),

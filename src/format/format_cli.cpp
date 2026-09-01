@@ -13,7 +13,7 @@
 #endif
 
 #include "format/format.h"
-#include "format/format_model_dump.h"
+#include "format/impl/format_model_dump.h"
 #include "format/impl/format_args.h"
 #include "format/impl/format_config.h"
 #include "strictfmt_version.h"
@@ -216,7 +216,14 @@ int RunFormat(int argc, char** argv) {
         return 0;
     }
     if (options.dumpFile.has_value()) {
-        return DumpFormatModel(*options.dumpFile, options.explicitStylePath, stdout, stderr, "strictfmt --dump");
+        if (options.dumpKind == FormatDumpKind::BreakTree) {
+            return DumpFormatBreakTree(
+                *options.dumpFile, options.explicitStylePath, stdout, stderr, "strictfmt --dump-break-tree"
+            );
+        }
+        return DumpFormatModel(
+            *options.dumpFile, options.explicitStylePath, stdout, stderr, "strictfmt --dump-syntax-tree"
+        );
     }
 
     FormatStyleCache styleCache(options.explicitStylePath);
@@ -237,8 +244,12 @@ int RunFormat(int argc, char** argv) {
         }
         SetBinaryMode(stdin);
         std::string stdinText = ReadStdinText();
-        if (options.dump) {
-            return DumpFormatModelText(stdinText, *config, stdout, stderr, "strictfmt --dump");
+        if (options.dumpKind == FormatDumpKind::SyntaxTree) {
+            return DumpFormatModelText(stdinText, *config, stdout, stderr, "strictfmt --dump-syntax-tree");
+        }
+        if (options.dumpKind == FormatDumpKind::BreakTree) {
+            return
+                DumpFormatBreakTreeText(stdinText, *config, "<stdin>", stdout, stderr, "strictfmt --dump-break-tree");
         }
         SourceFormatResult result = FormatSourceText(stdinText, *config, "<stdin>");
         if (!result.ok) {

@@ -10,10 +10,10 @@
 - `src/format/strictfmt_cli.h|cpp` own the embeddable `RunStrictfmtCli(argc, argv)` entry point.
 - `src/format/format.h|cpp` own source text formatting, line ending preservation, and second-pass verification.
 - `src/format/format_cli.cpp` owns the end-user formatter command orchestration: input collection, configuration lookup, ignore filtering, parallel file formatting, output routing, summaries, and exit codes.
-- `src/format/format_model_dump.h|cpp` own the debug format model dump used by `--dump`.
 - `src/format/impl/format_args.h|cpp` own command-line option parsing and usage text.
 - `src/format/impl/format_break_model.h|cpp` own the break model data structures and shared break model predicates.
 - `src/format/impl/format_break_model_builder.h|cpp` own conversion from print tokens to break models.
+- `src/format/impl/format_break_model_dump.h|cpp` own serialization of break-decision trees.
 - `src/format/impl/format_break_model_inline_helpers.h` owns small inline accessors for optional break model tokens.
 - `src/format/impl/format_break_solver.h|cpp` own the break optimizer; see [break_solver.md].
 - `src/format/impl/format_value_profile.h|cpp` own the sparse value profile shared by break optimization costs.
@@ -21,6 +21,7 @@
 - `src/format/impl/format_include_sort.h|cpp` own include run normalization, grouping, main-include detection, and sorting.
 - `src/format/impl/format_model.h|cpp` own format model node kinds, `SyntaxNodeClass`, symbol mappings, and syntax metadata; category checks must use `SyntaxNodeClass` helpers, not duplicated `SyntaxNodeKind` lists, with exact kind comparisons reserved for one concrete syntax rule.
 - `src/format/impl/format_model_builder.h|cpp` own conversion from tree-sitter nodes to the normalized format model, including syntax normalization and preprocessor placement checks.
+- `src/format/impl/format_model_dump.h|cpp` own syntax-tree and break-tree dump command orchestration.
 - `src/format/impl/format_model_parse.h|cpp` own tree-sitter parser setup, macro-category callbacks, and parse-to-format-model wiring.
 - `vendor/tree-sitter/tree-sitter-cpp/src/scanner.c` owns custom tree-sitter external tokens, including runtime-configured macro identifiers, raw string delimiter state, and preprocessor directive newline ownership; see [scanner.md](scanner.md).
 - `src/format/impl/format_pretty_printer.h|cpp` own print token production, mandatory line breaks, break model solving integration, and formatted source emission.

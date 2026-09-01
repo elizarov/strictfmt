@@ -10,6 +10,7 @@
 #include <vector>
 
 #include "format/impl/format_break_model_builder.h"
+#include "format/impl/format_break_model_dump.h"
 #include "format/impl/format_break_model_inline_helpers.h"
 #include "format/impl/format_break_solver.h"
 #include "format/impl/format_include_sort.h"
@@ -900,10 +901,16 @@ struct TrailingCommentPosition {
 
 class Printer {
 public:
-    Printer(const FormatterConfig& config, std::string_view sourcePath, FormatModelTextStats* stats) :
+    Printer(
+        const FormatterConfig& config,
+        std::string_view sourcePath,
+        FormatModelTextStats* stats,
+        FormatBreakModelDumpWriter* breakModelDump = nullptr
+    ) :
         config_(config),
         sourcePath_(sourcePath),
         stats_(stats),
+        breakModelDump_(breakModelDump),
         indentWidth_(std::max(1, config.indentWidth)),
         tabWidth_(std::max(1, config.tabWidth)) {}
 
@@ -935,6 +942,7 @@ private:
     const FormatterConfig& config_;
     std::string_view sourcePath_;
     FormatModelTextStats* stats_ = nullptr;
+    FormatBreakModelDumpWriter* breakModelDump_ = nullptr;
     int indentWidth_ = 4;
     int tabWidth_ = 4;
     std::string output_;
@@ -2685,7 +2693,7 @@ private:
         if (!requiredChainBreakBaseIndents_.empty()) {
             effectiveContext.requiredChainBreakBaseIndents = &requiredChainBreakBaseIndents_;
         }
-        if (CanFlushPendingTokensCompact(effectiveContext)) {
+        if (breakModelDump_ == nullptr && CanFlushPendingTokensCompact(effectiveContext)) {
             FlushPendingTokensCompact();
             if (pendingIndentRestoreAfterFlush_) {
                 indentLevel_ = *pendingIndentRestoreAfterFlush_;
@@ -2711,12 +2719,17 @@ private:
             pendingIndentLevel_ = std::max(pendingIndentLevel_.value_or(0), indentLevel_ + 1);
         }
         const int baseIndentLevel = pendingIndentLevel_.value_or(indentLevel_);
+        const int startColumn = CurrentColumn();
+        const int breakLineSuffixWidth = emittingMacroDefinition_ ? 2 : 0;
         const auto solveStart = std::chrono::steady_clock::now();
-        FormatBreakSolution solution = SolveFormatBreaks(
-            config_, model, CurrentColumn(), baseIndentLevel, indentWidth_, emittingMacroDefinition_ ? 2 : 0
-        );
+        FormatBreakSolution solution =
+            SolveFormatBreaks(config_, model, startColumn, baseIndentLevel, indentWidth_, breakLineSuffixWidth);
         if (stats_ != nullptr) {
             stats_->solve += std::chrono::steady_clock::now() - solveStart;
+        }
+        if (breakModelDump_ != nullptr) {
+            breakModelDump_
+                ->WriteSegment(pendingTokens_, model, solution, startColumn, baseIndentLevel, breakLineSuffixWidth);
         }
         std::vector<MandatoryBlockSplitListContext> splitContexts;
         if (model.root) {
@@ -3863,17 +3876,9 @@ private:
 
 }  // namespace
 
-std::string FormatModelText(const FormatterConfig& config, const FormatModel& model, std::string_view sourcePath) {
-    FormatModelTextStats stats;
-    return FormatModelText(config, model, sourcePath, stats);
-}
+namespace {
 
-std::string FormatModelText(
-    const FormatterConfig& config, const FormatModel& model, std::string_view sourcePath, FormatModelTextStats& stats
-) {
-    if (!model.root) {
-        return {};
-    }
+std::vector<PrintToken> BuildPrintTokens(const FormatModel& model, FormatModelTextStats& stats) {
     const auto tokenizeStart = std::chrono::steady_clock::now();
     std::vector<PrintToken> tokens;
     const size_t sourceSize = model.sourceText != nullptr ? model.sourceText->size() : 0;
@@ -3891,8 +3896,43 @@ std::string FormatModelText(
         tokens
     );
     stats.tokenize += std::chrono::steady_clock::now() - tokenizeStart;
+    return tokens;
+}
+
+std::string PrintFormatModel(
+    const FormatterConfig& config,
+    const FormatModel& model,
+    std::string_view sourcePath,
+    FormatModelTextStats& stats,
+    FormatBreakModelDumpWriter* breakModelDump
+) {
+    if (!model.root) {
+        return {};
+    }
+    std::vector<PrintToken> tokens = BuildPrintTokens(model, stats);
     const auto printStart = std::chrono::steady_clock::now();
-    std::string result = Printer(config, sourcePath, &stats).Print(tokens);
+    std::string result = Printer(config, sourcePath, &stats, breakModelDump).Print(tokens);
     stats.print += std::chrono::steady_clock::now() - printStart;
     return result;
+}
+
+}  // namespace
+
+std::string FormatModelText(const FormatterConfig& config, const FormatModel& model, std::string_view sourcePath) {
+    FormatModelTextStats stats;
+    return FormatModelText(config, model, sourcePath, stats);
+}
+
+std::string FormatModelText(
+    const FormatterConfig& config, const FormatModel& model, std::string_view sourcePath, FormatModelTextStats& stats
+) {
+    return PrintFormatModel(config, model, sourcePath, stats, nullptr);
+}
+
+void DumpFormatBreakTrees(
+    const FormatterConfig& config, const FormatModel& model, std::string_view sourcePath, FILE* output
+) {
+    FormatModelTextStats stats;
+    FormatBreakModelDumpWriter dump(output);
+    (void)PrintFormatModel(config, model, sourcePath, stats, &dump);
 }

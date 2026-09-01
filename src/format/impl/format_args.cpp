@@ -72,12 +72,12 @@ std::optional<FormatOptions> ParseFormatArgs(int argc, char** argv, std::string&
             options.verbose = true;
         } else if (arg == "--stdin") {
             options.readStdin = true;
-        } else if (arg == "--dump") {
-            if (options.dump) {
-                error = "--dump can be specified only once";
+        } else if (arg == "--dump-syntax-tree" || arg == "--dump-break-tree") {
+            if (options.dumpKind != FormatDumpKind::None) {
+                error = "only one dump mode can be specified";
                 return std::nullopt;
             }
-            options.dump = true;
+            options.dumpKind = arg == "--dump-syntax-tree" ? FormatDumpKind::SyntaxTree : FormatDumpKind::BreakTree;
             if (index + 1 < argc && argv[index + 1][0] != '-') {
                 options.dumpFile = argv[++index];
             }
@@ -123,25 +123,27 @@ std::optional<FormatOptions> ParseFormatArgs(int argc, char** argv, std::string&
             options.files.push_back(arg);
         }
     }
-    if (options.dump) {
+    if (options.dumpKind != FormatDumpKind::None) {
+        const std::string_view optionName =
+            options.dumpKind == FormatDumpKind::SyntaxTree ? "--dump-syntax-tree" : "--dump-break-tree";
         if (options.mode != FormatMode::Stdout) {
-            error = "--dump is incompatible with -i and --dry-run";
+            error = std::string(optionName) + " is incompatible with -i and --dry-run";
             return std::nullopt;
         }
         if (options.fileListProvided || options.recursiveInputProvided || !options.files.empty()) {
-            error = "--dump cannot be combined with format inputs";
+            error = std::string(optionName) + " cannot be combined with format inputs";
             return std::nullopt;
         }
         if (options.dumpFile.has_value() && options.readStdin) {
-            error = "--dump <file> cannot be combined with --stdin";
+            error = std::string(optionName) + " <file> cannot be combined with --stdin";
             return std::nullopt;
         }
         if (!options.dumpFile.has_value() && !options.readStdin) {
-            error = "--dump requires a file unless combined with --stdin";
+            error = std::string(optionName) + " requires a file unless combined with --stdin";
             return std::nullopt;
         }
         if (options.concurrencyProvided) {
-            error = "--dump is incompatible with --concurrency";
+            error = std::string(optionName) + " is incompatible with --concurrency";
             return std::nullopt;
         }
     }
@@ -179,8 +181,9 @@ void PrintFormatUsage(FILE* out) {
     std::fprintf(out, "  -i                      Rewrite files in place.\n");
     std::fprintf(out, "  -n, --dry-run           Check formatting and return 1 when formatting changes are needed.\n");
     std::fprintf(out, "                          Without -i or -n, write formatted text to stdout.\n");
-    std::fprintf(out, "  --dump                  Print the parsed internal format model for debugging to stdout.\n");
-    std::fprintf(out, "                          Pass one file or combine with --stdin to dump stdin.\n");
+    std::fprintf(out, "  --dump-syntax-tree      Print the parsed syntax tree for debugging to stdout.\n");
+    std::fprintf(out, "  --dump-break-tree       Print break-decision trees for debugging to stdout.\n");
+    std::fprintf(out, "                          Pass one file or combine either option with --stdin.\n");
     std::fprintf(out, "\n");
     std::fprintf(out, "Configuration:\n");
     std::fprintf(out, "  --style <config-file>   Use this .cpp-format file for every input.\n");

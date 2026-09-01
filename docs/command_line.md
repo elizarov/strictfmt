@@ -8,8 +8,9 @@ executable.
 ```text
 strictfmt [options] [file...]
 strictfmt --stdin [options]
-strictfmt --dump <file> [--style <config-file>]
-strictfmt --stdin --dump [--style <config-file>]
+strictfmt --dump-syntax-tree <file> [--style <config-file>]
+strictfmt --dump-break-tree <file> [--style <config-file>]
+strictfmt --stdin (--dump-syntax-tree | --dump-break-tree) [--style <config-file>]
 strictfmt --version
 ```
 
@@ -22,7 +23,7 @@ code `0`.
 ## Inputs
 
 - `file...` formats the listed source files. In default mode, formatted source is written to stdout. Multiple file outputs are concatenated in input order with no extra separator.
-- `--stdin` reads one source file from stdin. In default mode it writes formatted text to stdout; with `--dump` it writes the parsed internal format model to stdout. It cannot be combined with direct file arguments, `--files`, `-r`, or `--recursive`. It is also incompatible with `-i`.
+- `--stdin` reads one source file from stdin. In default mode it writes formatted text to stdout; with a dump mode it writes the requested tree to stdout. It cannot be combined with direct file arguments, `--files`, `-r`, or `--recursive`. It is also incompatible with `-i`.
 - `--files <path>` reads input file paths from a newline-delimited file list. Each list line is trimmed, and blank lines are ignored. The listed files are appended to the explicit input list in list order.
 - `-r <path>` and `--recursive <path>` recursively discover supported source files under a directory. The root must exist. Recursive input can be combined with direct file arguments and `--files`.
 
@@ -43,12 +44,15 @@ specified in [config.md](config.md).
 - Default mode formats input and writes formatted source to stdout. For file inputs and `--stdin`, the final summary is written to stderr so stdout contains only formatted source.
 - `-i` rewrites files in place. It requires at least one file input from `file...`, `--files`, `-r`, or `--recursive`. It is incompatible with `--stdin` and `--dry-run`.
 - `-n` and `--dry-run` check formatting without writing formatted source or modifying files. The command exits with code `1` when formatting changes are needed.
-- `--dump <file>` or `--stdin --dump` prints the parsed internal format model for one source file to stdout. This debugging mode helps inspect parsing, syntax normalization, macro classification, and the internal model used by the formatter. When the parser produces an error tree, the dump still prints the model with `Error` and `Missing` nodes, reports the parse failure to stderr, and exits with code `1`. It does not format, check, rewrite, or honor ignore files. It is incompatible with formatting inputs, `-i`, `--dry-run`, and `--concurrency`.
+- `--dump-syntax-tree <file>` or `--stdin --dump-syntax-tree` prints the normalized syntax tree used by the formatter.
+- `--dump-break-tree <file>` or `--stdin --dump-break-tree` prints each formatted segment's break-decision tree, including raw depth, surcharge, discount, effective cost, and the selected layout at each decision node.
+
+Dump modes help inspect parsing and layout decisions. A syntax-tree dump includes `Error` and `Missing` nodes when parsing fails; either mode reports the failure to stderr and exits with code `1`. Dump modes do not format, check, rewrite, or honor ignore files. They are mutually exclusive and incompatible with formatting inputs, `-i`, `--dry-run`, and `--concurrency`.
 
 ## Configuration
 
 - `--style <config-file>` uses the specified formatter configuration file for every input. The path is resolved to an absolute path. The special values `file` and `file:<path>` are rejected; pass the formatter configuration path directly instead.
-- When `--style` is omitted, file inputs and `--dump <file>` search upward from the source file for `.cpp-format`; `--stdin`, including `--stdin --dump`, searches upward from the current working directory.
+- When `--style` is omitted, file inputs and file dump modes search upward from the source file for `.cpp-format`; `--stdin`, including stdin dump modes, searches upward from the current working directory.
 
 Formatter configuration syntax, inheritance, and `.cpp-format-ignore` behavior
 are specified in [config.md](config.md).

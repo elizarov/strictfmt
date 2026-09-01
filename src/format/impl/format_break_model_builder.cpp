@@ -2,6 +2,7 @@
 
 #include <algorithm>
 #include <array>
+#include <cassert>
 #include <cstdint>
 #include <initializer_list>
 #include <optional>
@@ -510,6 +511,7 @@ private:
         FormatBreakNode& node = model_.nodes->back();
         node.id = nextId_++;
         node.kind = kind;
+        node.rawDepth = depth;
         node.structuralDepth = depth;
         return &node;
     }
@@ -773,7 +775,8 @@ private:
     }
 
     static void DiscountBreakCostsRecursively(FormatBreakNode& node, int discount) {
-        node.breakCost = std::max(0, node.breakCost - discount);
+        assert(node.breakCost >= discount);
+        node.breakCost -= discount;
         for (FormatBreakNode* child : node.children) {
             if (child != nullptr) {
                 DiscountBreakCostsRecursively(*child, discount);

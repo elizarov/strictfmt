@@ -73,6 +73,7 @@ struct FormatBreakListItem {
 
 struct FormatBreakNode {
     int id = 0;
+    int rawDepth = 0;
     int structuralDepth = 0;
     int breakCost = 0;
     FormatBreakNodeKind kind = FormatBreakNodeKind::Sequence;

@@ -1,4 +1,4 @@
-#include "format/format_model_dump.h"
+#include "format/impl/format_model_dump.h"
 
 #include <cstdio>
 #include <optional>
@@ -8,6 +8,7 @@
 #include "format/impl/format_config.h"
 #include "format/impl/format_model.h"
 #include "format/impl/format_model_parse.h"
+#include "format/impl/format_pretty_printer.h"
 #include "tools/tools_common.h"
 #include "util/file_path.h"
 
@@ -99,11 +100,59 @@ void WriteNode(FILE* output, const SyntaxNode& node, int indent, bool listItem) 
 
 void PrintUsage(FILE* output) { std::fprintf(output, "Usage: format_model_dump <source-file>\n"); }
 
-}  // namespace
+enum class DumpTreeKind {
+    Syntax,
+    Break,
+};
 
-int DumpFormatModel(
+int DumpTreeText(
+    std::string_view sourceText,
+    const FormatterConfig& config,
+    std::string_view sourcePath,
+    DumpTreeKind kind,
+    FILE* output,
+    FILE* errorOutput,
+    std::string_view commandName
+) {
+    FormatModel model = ParseFormatModel(sourceText, config);
+    if (model.root == nullptr) {
+        if (!model.parse.ok) {
+            const std::string error =
+                model.parse.error.empty() ? std::string("parser setup failed") : model.parse.error;
+            std::fprintf(
+                errorOutput,
+                "%.*s: parse failed: %s\n",
+                static_cast<int>(commandName.size()),
+                commandName.data(),
+                error.c_str()
+            );
+            return 1;
+        }
+        std::fprintf(
+            errorOutput, "%.*s: parse produced no root node\n", static_cast<int>(commandName.size()), commandName.data()
+        );
+        return 1;
+    }
+
+    if (kind == DumpTreeKind::Syntax) {
+        WriteNode(output, *model.root, 0, false);
+    } else {
+        DumpFormatBreakTrees(config, model, sourcePath, output);
+    }
+    if (model.parse.ok) {
+        return 0;
+    }
+    const std::string error = model.parse.error.empty() ? std::string("parser setup failed") : model.parse.error;
+    std::fprintf(
+        errorOutput, "%.*s: parse failed: %s\n", static_cast<int>(commandName.size()), commandName.data(), error.c_str()
+    );
+    return 1;
+}
+
+int DumpTreeFile(
     std::string_view sourcePath,
     const std::optional<std::string>& explicitStylePath,
+    DumpTreeKind kind,
     FILE* output,
     FILE* errorOutput,
     std::string_view commandName
@@ -131,7 +180,19 @@ int DumpFormatModel(
         return 2;
     }
 
-    return DumpFormatModelText(*text, *config, output, errorOutput, commandName);
+    return DumpTreeText(*text, *config, path, kind, output, errorOutput, commandName);
+}
+
+}  // namespace
+
+int DumpFormatModel(
+    std::string_view sourcePath,
+    const std::optional<std::string>& explicitStylePath,
+    FILE* output,
+    FILE* errorOutput,
+    std::string_view commandName
+) {
+    return DumpTreeFile(sourcePath, explicitStylePath, DumpTreeKind::Syntax, output, errorOutput, commandName);
 }
 
 int DumpFormatModelText(
@@ -141,35 +202,28 @@ int DumpFormatModelText(
     FILE* errorOutput,
     std::string_view commandName
 ) {
-    FormatModel model = ParseFormatModel(sourceText, config);
-    if (model.root == nullptr) {
-        if (!model.parse.ok) {
-            const std::string error =
-                model.parse.error.empty() ? std::string("parser setup failed") : model.parse.error;
-            std::fprintf(
-                errorOutput,
-                "%.*s: parse failed: %s\n",
-                static_cast<int>(commandName.size()),
-                commandName.data(),
-                error.c_str()
-            );
-            return 1;
-        }
-        std::fprintf(
-            errorOutput, "%.*s: parse produced no root node\n", static_cast<int>(commandName.size()), commandName.data()
-        );
-        return 1;
-    }
+    return DumpTreeText(sourceText, config, "<stdin>", DumpTreeKind::Syntax, output, errorOutput, commandName);
+}
 
-    WriteNode(output, *model.root, 0, false);
-    if (model.parse.ok) {
-        return 0;
-    }
-    const std::string error = model.parse.error.empty() ? std::string("parser setup failed") : model.parse.error;
-    std::fprintf(
-        errorOutput, "%.*s: parse failed: %s\n", static_cast<int>(commandName.size()), commandName.data(), error.c_str()
-    );
-    return 1;
+int DumpFormatBreakTree(
+    std::string_view sourcePath,
+    const std::optional<std::string>& explicitStylePath,
+    FILE* output,
+    FILE* errorOutput,
+    std::string_view commandName
+) {
+    return DumpTreeFile(sourcePath, explicitStylePath, DumpTreeKind::Break, output, errorOutput, commandName);
+}
+
+int DumpFormatBreakTreeText(
+    std::string_view sourceText,
+    const FormatterConfig& config,
+    std::string_view sourcePath,
+    FILE* output,
+    FILE* errorOutput,
+    std::string_view commandName
+) {
+    return DumpTreeText(sourceText, config, sourcePath, DumpTreeKind::Break, output, errorOutput, commandName);
 }
 
 int RunFormatModelDump(int argc, char** argv) {
