@@ -2956,6 +2956,11 @@ public:
     void Run();
 };
 
+class CommentedClassBrace /* public for compatibility */ {
+public:
+    void Raise();
+};
+
 struct ExpandedTemplateBaseList :
     SimpleBase,
     GenericBase<

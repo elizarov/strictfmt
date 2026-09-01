@@ -2064,6 +2064,9 @@ template<class Base>
 class CommentedBaseList // keep this declaration comment
 :public First,public Base{public:void Run();};
 
+class CommentedClassBrace /* public for compatibility */
+{public:void Raise();};
+
 struct ExpandedTemplateBaseList:SimpleBase,GenericBase<FirstTemplateArgumentWithAnExtremelyLongNameForTestingBaseListExpansion,SecondTemplateArgumentWithAnExtremelyLongNameForTestingBaseListExpansion>{};
 
 class BaseClassListCommentDerived : public BaseClassListCommentRootA,  // primary
