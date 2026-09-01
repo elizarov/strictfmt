@@ -2149,6 +2149,14 @@ operator std::shared_ptr<const T>();
 void* operator new(std::size_t);
 };
 
+template<typename T>
+struct FormatterConversionOperatorDefinitionSpacing {
+constexpr operator T() const;
+};
+
+template<typename T>
+constexpr FormatterConversionOperatorDefinitionSpacing<T>::operator T() const{return T{};}
+
 struct FormatterPureVirtualRegression {
 virtual ~FormatterPureVirtualRegression() = 0;
 };

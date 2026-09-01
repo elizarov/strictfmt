@@ -350,18 +350,25 @@ bool IsUserDefinedLiteralSuffix(const PrintToken& previous, const PrintToken& cu
         );
 }
 
+bool IsWordBoundaryChar(char ch) {
+    return (ch >= 'A' && ch <= 'Z') || (ch >= 'a' && ch <= 'z') || (ch >= '0' && ch <= '9') || ch == '_';
+}
+
+bool StartsWithWordBoundary(const PrintToken& token) {
+    if (token.kind == PrintTokenKind::Text) {
+        return !token.text.empty() && IsWordBoundaryChar(token.text.front());
+    }
+    return token.kind == PrintTokenKind::Known && PrintTokenSyntaxHasClass(token, SyntaxNodeClass::Keyword);
+}
+
 bool KeywordOperatorNeedsSpaceAfter(const PrintToken& previous, const PrintToken& current) {
     if (previous.syntaxKind != SyntaxNodeKind::KeywordOperator) {
         return false;
     }
     return previous.parentKind == SyntaxNodeKind::OperatorCast ||
         current.parentKind == SyntaxNodeKind::OperatorCast ||
-        current.syntaxKind == SyntaxNodeKind::KeywordNew ||
-        current.syntaxKind == SyntaxNodeKind::KeywordDelete;
-}
-
-bool IsWordBoundaryChar(char ch) {
-    return (ch >= 'A' && ch <= 'Z') || (ch >= 'a' && ch <= 'z') || (ch >= '0' && ch <= '9') || ch == '_';
+        current.syntaxKind == SyntaxNodeKind::ColonColon ||
+        StartsWithWordBoundary(current);
 }
 
 const SyntaxNode* ParentNode(const PrintToken& token) { return token.node != nullptr ? token.node->parent : nullptr; }
