@@ -1371,14 +1371,14 @@ private:
                 return header;
             }
         }
-        if (node.kind == SyntaxNodeKind::Declaration || node.kind == SyntaxNodeKind::FunctionDefinition) {
-            if (auto signature = BuildFunctionSignature(node, depth)) {
-                return signature;
-            }
-        }
         if (node.kind == SyntaxNodeKind::FunctionDefinition) {
             if (auto header = BuildInitializerListBodyHeader(node, depth)) {
                 return header;
+            }
+        }
+        if (node.kind == SyntaxNodeKind::Declaration || node.kind == SyntaxNodeKind::FunctionDefinition) {
+            if (auto signature = BuildFunctionSignature(node, depth)) {
+                return signature;
             }
         }
         if (node.kind == SyntaxNodeKind::LambdaExpression) {
