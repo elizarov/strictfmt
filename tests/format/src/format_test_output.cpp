@@ -1690,9 +1690,9 @@ void PreferRootBreakBeforeNestedLambda() {
 }
 
 bool StructuralLogicalBreak() {
-    return node.kind == SyntaxNodeKind::PreprocCall && SyntaxNodeKindFromPreprocessorDirectiveLine(
-        TrimLeadingWhitespace(node.text)
-    ) == SyntaxNodeKind::PreprocessorDirectivePragma;
+    return node.kind == SyntaxNodeKind::PreprocCall &&
+        SyntaxNodeKindFromPreprocessorDirectiveLine(TrimLeadingWhitespace(node.text)) ==
+            SyntaxNodeKind::PreprocessorDirectivePragma;
 }
 
 void StructuralAssignmentBreak() {

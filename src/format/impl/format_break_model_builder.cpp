@@ -583,9 +583,10 @@ private:
             item->kind == FormatBreakNodeKind::Chain &&
             item->chainKind != FormatBreakChainKind::Ternary &&
             !HasAssignmentContinuation(*item) && (
-                virtualDelimiter || (IsFlatParenthesizedChain(*item) && (
-                    UsesFlatLogicalContinuation(open, *item) || UsesFlatNonCallParenthesisContinuation(open)
-                ))
+                virtualDelimiter || (
+                    IsFlatParenthesizedChain(*item) &&
+                    (UsesFlatLogicalContinuation(open, *item) || UsesFlatNonCallParenthesisContinuation(open))
+                )
             )
         ) {
             item->flatSplitIndent = true;

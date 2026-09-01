@@ -1,6 +1,7 @@
 #include "format/impl/format_break_solver.h"
 
 #include <algorithm>
+#include <array>
 #include <cstddef>
 #include <deque>
 #include <memory>
@@ -39,6 +40,96 @@ struct SolveKeyHash {
     }
 };
 
+struct ExpansionDepthProfile {
+    struct Entry {
+        int cost = 0;
+        int occurrences = 0;
+    };
+
+    void AddExpansion(int cost) {
+        if (cost <= 0) {
+            return;
+        }
+        AddOccurrences(cost, 1);
+    }
+
+    void Add(const ExpansionDepthProfile& other) {
+        for (const Entry& entry : other.Entries()) {
+            AddOccurrences(entry.cost, entry.occurrences);
+        }
+    }
+
+    std::span<const Entry> Entries() const {
+        if (!heapEntries.empty()) {
+            return heapEntries;
+        }
+        return {inlineEntries.data(), inlineSize};
+    }
+
+private:
+    void AddOccurrences(int cost, int occurrences) {
+        if (!heapEntries.empty()) {
+            const auto found =
+                std::lower_bound(heapEntries.begin(), heapEntries.end(), cost, [](const Entry& entry, int value) {
+                    return entry.cost < value;
+                });
+            if (found != heapEntries.end() && found->cost == cost) {
+                found->occurrences += occurrences;
+            } else {
+                heapEntries.insert(found, {.cost = cost, .occurrences = occurrences});
+            }
+            return;
+        }
+        size_t index = 0;
+        while (index < inlineSize && inlineEntries[index].cost < cost) {
+            ++index;
+        }
+        if (index < inlineSize && inlineEntries[index].cost == cost) {
+            inlineEntries[index].occurrences += occurrences;
+            return;
+        }
+        if (inlineSize < inlineEntries.size()) {
+            std::move_backward(
+                inlineEntries.begin() + static_cast<std::ptrdiff_t>(index),
+                inlineEntries.begin() + static_cast<std::ptrdiff_t>(inlineSize),
+                inlineEntries.begin() + static_cast<std::ptrdiff_t>(inlineSize + 1)
+            );
+            inlineEntries[index] = {.cost = cost, .occurrences = occurrences};
+            ++inlineSize;
+            return;
+        }
+        heapEntries.assign(inlineEntries.begin(), inlineEntries.end());
+        AddOccurrences(cost, occurrences);
+    }
+
+    std::array<Entry, 4> inlineEntries{};
+    size_t inlineSize = 0;
+    std::vector<Entry> heapEntries;
+};
+
+int CompareExpansionDepthProfiles(const ExpansionDepthProfile& left, const ExpansionDepthProfile& right) {
+    const std::span<const ExpansionDepthProfile::Entry> leftEntries = left.Entries();
+    const std::span<const ExpansionDepthProfile::Entry> rightEntries = right.Entries();
+    size_t leftIndex = leftEntries.size();
+    size_t rightIndex = rightEntries.size();
+    while (leftIndex > 0 || rightIndex > 0) {
+        if (rightIndex == 0 || (leftIndex > 0 && leftEntries[leftIndex - 1].cost > rightEntries[rightIndex - 1].cost)) {
+            return 1;
+        }
+        if (leftIndex == 0 || rightEntries[rightIndex - 1].cost > leftEntries[leftIndex - 1].cost) {
+            return -1;
+        }
+        const int leftOccurrences = leftEntries[leftIndex - 1].occurrences;
+        const int rightOccurrences = rightEntries[rightIndex - 1].occurrences;
+        if (leftOccurrences != rightOccurrences) {
+            return leftOccurrences < rightOccurrences ? -1 : 1;
+        }
+        --leftIndex;
+        --rightIndex;
+    }
+    return 0;
+}
+
 struct NodeResult {
     bool valid = false;
     int endColumn = 0;
@@ -47,7 +138,7 @@ struct NodeResult {
     int extraLines = 0;
     int maxOverflow = 0;
     int overflowLines = 0;
-    int totalBreakCost = 0;
+    ExpansionDepthProfile expansionDepthProfile;
     bool ownExpansionCharged = false;
     const struct ChoiceTree* choices = nullptr;
 };
@@ -390,7 +481,7 @@ private:
         left.extraLines += right.extraLines;
         left.maxOverflow = std::max(left.maxOverflow, right.maxOverflow);
         left.overflowLines += right.overflowLines;
-        left.totalBreakCost += right.totalBreakCost;
+        left.expansionDepthProfile.Add(right.expansionDepthProfile);
         // A child's expansion charge does not pay for its parent's own breaks.
         left.choices = ConcatChoices(left.choices, right.choices);
     }
@@ -620,7 +711,7 @@ private:
         result.endColumn = IndentColumn(indentLevel);
         result.endLineHasText = false;
         if (!result.ownExpansionCharged) {
-            result.totalBreakCost += breakCost;
+            result.expansionDepthProfile.AddExpansion(breakCost);
             result.ownExpansionCharged = true;
         }
         return result;
@@ -728,8 +819,10 @@ private:
         if (candidate.overflowLines != incumbent.overflowLines) {
             return candidate.overflowLines < incumbent.overflowLines;
         }
-        if (candidate.totalBreakCost != incumbent.totalBreakCost) {
-            return candidate.totalBreakCost < incumbent.totalBreakCost;
+        const int depthProfileComparison =
+            CompareExpansionDepthProfiles(candidate.expansionDepthProfile, incumbent.expansionDepthProfile);
+        if (depthProfileComparison != 0) {
+            return depthProfileComparison < 0;
         }
         if (candidate.extraLines != incumbent.extraLines) {
             return candidate.extraLines < incumbent.extraLines;
@@ -755,17 +848,19 @@ private:
         if (left.endColumn > right.endColumn) {
             return false;
         }
+        const int depthProfileComparison =
+            CompareExpansionDepthProfiles(left.expansionDepthProfile, right.expansionDepthProfile);
         if (
             left.maxOverflow > right.maxOverflow ||
             left.overflowLines > right.overflowLines ||
-            left.totalBreakCost > right.totalBreakCost ||
+            depthProfileComparison > 0 ||
             left.extraLines > right.extraLines
         ) {
             return false;
         }
         return left.maxOverflow < right.maxOverflow ||
             left.overflowLines < right.overflowLines ||
-            left.totalBreakCost < right.totalBreakCost ||
+            depthProfileComparison < 0 ||
             left.extraLines < right.extraLines;
     }
 
@@ -1204,9 +1299,10 @@ private:
         }
         NodeResults alternatives;
         for (const NodeResult& body : SolveDelimitedInlineItems(node, start)) {
-            if (!body.valid || (body.extraLines > 0 && (
-                ContainsForceSplitAdjacentStrings(node) || !CanKeepDelimitedCompactWithExtraLines(node, body)
-            ))) {
+            if (!body.valid || (
+                body.extraLines > 0 &&
+                (ContainsForceSplitAdjacentStrings(node) || !CanKeepDelimitedCompactWithExtraLines(node, body))
+            )) {
                 continue;
             }
             const NodeResult closedBody = AddBreak(body, indentLevel, node.breakCost);

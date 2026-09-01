@@ -296,9 +296,9 @@ const char* messages[] = {
 
 An expansion's base cost is its construct's structural depth in the formatted segment: zero at the root, increasing by one per nested level. Name-internal expansions are deeper than the attached list's expansion; chains keep their expression depth.
 
-Charge each selected expansion once, regardless of how many coupled breaks it introduces. Independent nested expansions add their own costs.
+Each selected expansion with nonzero cost contributes one occurrence to the expansion-depth profile. At the greatest cost whose occurrence count differs, prefer fewer occurrences. Profiles of independent parts combine by adding their counts.
 
-When a lambda is the final list item, its body expansion receives a full discount: its cost is zero. Expansions in its header and body expressions retain their normal cost. Discounts change neither indentation nor permitted layouts.
+When a lambda is the final list item, its body expansion receives a full discount and contributes no occurrence. Expansions in its header and body expressions retain their normal cost. Discounts change neither indentation nor permitted layouts.
 
 <!-- .cpp-format
 ColumnLimit: 50
@@ -315,7 +315,7 @@ Within each formatted segment, choose a layout satisfying all these rules, minim
 
 1. Maximum overflow beyond the column limit.
 2. Number of overflowing physical lines.
-3. Sum of expansion costs.
+3. Expansion-depth profile.
 4. Total physical line count.
 
 Remaining ties prefer compact choices in source order.
