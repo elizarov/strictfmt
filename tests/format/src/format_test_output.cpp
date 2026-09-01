@@ -2947,6 +2947,15 @@ struct PrefixCommentBaseList :  // preserve split
     First,
     Second {};
 
+template <class Base>
+class CommentedBaseList :  // keep this declaration comment
+    public First,
+    public Base
+{
+public:
+    void Run();
+};
+
 struct ExpandedTemplateBaseList :
     SimpleBase,
     GenericBase<
