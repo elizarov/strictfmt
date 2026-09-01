@@ -412,9 +412,10 @@ bool TrailingCommentReturnsToStructuralIndent(const PrintToken& token) {
             previous = child;
         }
     }
-    return previous != nullptr && (previous->kind == SyntaxNodeKind::LeftBrace || (
-        previous->kind == SyntaxNodeKind::Colon && token.node->parent->kind == SyntaxNodeKind::CaseStatement
-    ));
+    return previous != nullptr && (
+        previous->kind == SyntaxNodeKind::LeftBrace ||
+        (previous->kind == SyntaxNodeKind::Colon && token.node->parent->kind == SyntaxNodeKind::CaseStatement)
+    );
 }
 
 bool HasSeparatedListAncestor(const SyntaxNode* node) {
@@ -1941,11 +1942,12 @@ private:
     }
 
     bool CanFlushPendingTokensCompact(const FormatBreakModelContext& context) const {
-        if (!context.virtualDelimiters.empty() || (context.requiredChainBreakOperators != nullptr && std::any_of(
-            pendingTokens_.begin(), pendingTokens_.end(), [&](const PrintToken& token) {
+        if (!context.virtualDelimiters.empty() || (
+            context.requiredChainBreakOperators != nullptr &&
+            std::any_of(pendingTokens_.begin(), pendingTokens_.end(), [&](const PrintToken& token) {
                 return token.node != nullptr && context.requiredChainBreakOperators->contains(token.node);
-            }
-        ))) {
+            })
+        )) {
             return false;
         }
         int width = 0;
@@ -3131,9 +3133,10 @@ private:
         if (previous == nullptr || previous->node == nullptr) {
             return false;
         }
-        const bool followsCompleteItem = (previous->kind == PrintTokenKind::Known && (
-            previous->syntaxKind == SyntaxNodeKind::Semicolon || previous->syntaxKind == SyntaxNodeKind::RightBrace
-        )) ||
+        const bool followsCompleteItem = (
+            previous->kind == PrintTokenKind::Known &&
+            (previous->syntaxKind == SyntaxNodeKind::Semicolon || previous->syntaxKind == SyntaxNodeKind::RightBrace)
+        ) ||
             ClosesStatementPositionMacroCallItem(*previous) ||
             SyntaxPathContainsKind(*previous, SyntaxNodeKind::BareMacroItem);
         if (!followsCompleteItem) {
@@ -3702,9 +3705,10 @@ private:
         RecordCrossBlockChainBaseIndents(splitListItemIndent.value_or(crossBlockFallbackBaseIndent));
         const bool functionBlock = token.parentKind == SyntaxNodeKind::CompoundStatement &&
             token.grandParentKind == SyntaxNodeKind::FunctionDefinition;
-        int openLineIndent = splitListItemIndent.value_or(token.inMacroValue || functionBlock ? indentLevel_ : (
-            lineHasText_ ? CurrentLineIndentLevel() : indentLevel_
-        ));
+        int openLineIndent = splitListItemIndent.value_or(
+            token.inMacroValue || functionBlock ? indentLevel_ :
+                (lineHasText_ ? CurrentLineIndentLevel() : indentLevel_)
+        );
         if (
             token.parentKind == SyntaxNodeKind::RequirementSeq && token.inTemplateDeclaration && token.inRequiresClause
         ) {
