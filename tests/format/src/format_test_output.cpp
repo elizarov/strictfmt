@@ -920,6 +920,9 @@ using CompactMemberPointer = int Object::*;
 
 int Object::*compactMember;
 
+template <typename Struct, typename Descriptor, typename Descriptor::Value (Struct::*member)>
+struct MemberPointerTemplateParameter;
+
 namespace NamespaceWithAnIntentionallyLongNameForSingleQualificationCoverage::
     NamespaceWithAnIntentionallyLongNameForNestedNamespaceCoverage {
 
