@@ -2787,6 +2787,22 @@ private:
             return;
         }
 
+        if (node.chainKind == FormatBreakChainKind::CallApplication) {
+            EmitBreakNode(*node.operands.front(), solution, baseIndent);
+            if (choice == FormatBreakChoice::CallCompactTail) {
+                NewLineWithIndent(splitBaseIndent + 1);
+                for (size_t index = 1; index < node.operands.size(); ++index) {
+                    EmitBreakNode(*node.operands[index], solution, splitBaseIndent + 1);
+                }
+                return;
+            }
+            for (size_t index = 1; index < node.operands.size(); ++index) {
+                NewLineWithIndent(splitBaseIndent + 1);
+                EmitBreakNode(*node.operands[index], solution, splitBaseIndent + 1);
+            }
+            return;
+        }
+
         if (node.chainKind == FormatBreakChainKind::MemberBeforeOperator) {
             EmitBreakNode(*node.operands.front(), solution, baseIndent);
             if (choice == FormatBreakChoice::MemberCompactTail) {

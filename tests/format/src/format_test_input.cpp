@@ -504,6 +504,12 @@ ExtremelyLongDirectInitializerTypeNameForFormatterGeneralityAndMemberCoverage lo
 ExtremelyLongDirectInitializerTypeNameForFormatterGeneralityAndMemberCoverage localWithExtraParenDirectInitializerName((value));
 }
 
+void RepeatedCallApplications(){
+call(init)(next)(more);
+ConfigureWithModeratelyLongReceiverName(initialValue)(firstOptionWithModeratelyLongName)(secondOptionWithModeratelyLongName);
+desc.add_options()("help,h","produce this help message")("print-config-schema","print config.yaml YAML Schema")("print-dynamic-config-defaults","print JSON object with dynamic config defaults")("config-vars,config_vars",po::value<std::string>(),"path to config_vars.yaml; if set, config_vars in config.yaml are ignored")("config-vars-override,config_vars_override",po::value<std::string>(),"path to an additional config_vars.yaml, which overrides vars of config_vars.yaml");
+}
+
 void PackedCommaSeparatedLists(){
 const auto corp_clients_counter=std::unordered_map<std::optional<CorpClientId>,std::size_t>{{std::nullopt,1},{CorpClientId{"corp1"},1},{CorpClientId{"corp2"},2}};
 const mem::SPtr<FetcherFromSlotUnusedOracle> fetcher=mem::MakeSPtr<impl::FetcherFromSlotUnusedOracle>(fetcher_from_slot,TwoPhaseFetcherCollector::CreateUnsafeNoneTwoPhase(fetcher_from_oracle));

@@ -174,6 +174,7 @@ Binary chain operators are the operators whose usual source meaning is a mostly 
 - Comma chains: commas in comma expressions.
 - Stream chains: `<<` and `>>`.
 - Member-call chains: `.` and `->`.
+- Repeated call-application chains: an argument list applied to the result of another call.
 
 Other operators, including `.*` and `->*`, are ordinary operators.
 
@@ -248,6 +249,46 @@ auto result = Build(source)
     .Validate()
     .Transform()
     .Finish();
+```
+
+### Repeated call applications
+
+A call whose result is immediately called again starts a repeated call-application chain. The first complete call is
+the receiver; each following argument list is one chain item. An ordinary call with only one argument list is not a
+chain.
+
+Repeated call applications have three forms: compact, receiver-separated with one break before the first repeated
+argument list, or split before every repeated argument list. In the first two forms, all repeated argument-list
+openers share a physical line; only the receiver or final application may expand.
+
+<!-- .cpp-format
+ColumnLimit: 32
+-->
+```cpp
+void Configure() {
+    call(init)(next)(more);
+}
+```
+
+<!-- .cpp-format
+ColumnLimit: 23
+-->
+```cpp
+void Configure() {
+    call(initialValue)
+        (next)(more);
+}
+```
+
+<!-- .cpp-format
+ColumnLimit: 20
+-->
+```cpp
+void Configure() {
+    call(init)
+        (nextValue)
+        (moreValue);
+}
 ```
 
 ### Ternaries and ordinary operators
