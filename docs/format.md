@@ -31,7 +31,8 @@ This document specifies the source layout produced by `strictfmt`. Wrapping exam
 - Put spaces around range-for and list-prefix colons, e.g. `for (auto item : items)`.
 - Put no space before access-specifier, label, or `case` colons, e.g. `public:`.
 - Put no spaces around qualification or member-access operators, e.g. `std::string`.
-- Put two spaces before a trailing `//` comment after code, e.g. `value;  // note`.
+- Put two spaces before a trailing `//` comment, e.g. `value;  // note`.
+- Put one space before a trailing `/* ... */` comment, e.g. `Type& /*name*/`.
 - Put no space between `#` and any preprocessor directive keyword, e.g. `#include`.
 - Put one space after a preprocessor directive keyword before its operand, e.g. `#pragma once`.
 

@@ -2055,14 +2055,16 @@ private:
 
     void WriteTrailingComment(const PrintToken& token, std::string_view text) {
         Space();
-        output_.push_back(' ');
-        ++currentColumn_;
-        trailingComments_.push_back({
-            .owner = token.node == nullptr ? nullptr : token.node->parent,
-            .commentOffset = output_.size(),
-            .commentColumn = currentColumn_,
-            .commentWidth = static_cast<int>(text.size())
-        });
+        if (IsLineCommentToken(token)) {
+            output_.push_back(' ');
+            ++currentColumn_;
+            trailingComments_.push_back({
+                .owner = token.node == nullptr ? nullptr : token.node->parent,
+                .commentOffset = output_.size(),
+                .commentColumn = currentColumn_,
+                .commentWidth = static_cast<int>(text.size())
+            });
+        }
         Write(text);
     }
 

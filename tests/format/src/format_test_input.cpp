@@ -2183,6 +2183,11 @@ using TemplateArgumentPointerDereference=A<* ::pointer>;
 
 void FallthroughSpaceBeforeSemicolon(int value){switch(value){case 0:[[fallthrough]];case 1:break;}}
 
+formats::json::Value SerializeWithUnnamedParameter(
+const CallCenterTariffSettings& data,
+const formats::serialize::To<formats::json::Value>&  /*to*/
+){}
+
 void ForEmptyInitSpacingOrBody(size_t count){size_t len=0;for(;(1UL << len) < count;++len);}
 
 void StandaloneOrTrailingCommentsMoved(int command){switch(command){case 67: /* command complete */
