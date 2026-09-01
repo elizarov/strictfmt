@@ -34,7 +34,7 @@ Syntax-local `PrefixList` metadata routes colon-prefixed lists through the same 
 
 The solver compares complete candidates with `Better`. Intermediate candidate sets may be pruned only when the removed candidate cannot win any continuation under the same solver contract.
 
-Composite candidates retain nondominated child layouts until all following children and suffix tokens have been costed. A locally best child is not sufficient when a later separator, comment, closer, or statement terminator can make another child layout win.
+Composite candidates retain nondominated child layouts until their shared continuation has been costed. This includes function-signature children, ternary operands and operators, and list items with separators. A flat-only parent filters the child's flat alternatives; it does not reject the parent merely because the child's locally best layout breaks.
 
 Qualified names are normalized into left-associated binary break nodes. Every node owns one non-leading `::` and uses the ordinary after-operator
 compact and split candidates. Consequently, the final qualification operator is closest to the break-model root and
@@ -103,6 +103,10 @@ Not allowed:
 
 When adding a speedup whose proof is not obvious from the code, document the invariant in this file or with a short code comment near the pruning site.
 
+Dominance requires equal continuation state except that the dominating candidate may end at an earlier column. Cost profiles compose by addition, so adding a shared continuation preserves their first differing value. Starting that continuation earlier cannot increase its overflow relative to the dominated candidate. The same argument permits replacing equal-state candidates with the locally better one.
+
+An exact search may reject a partial candidate whose greatest overflow already exceeds the best complete candidate's greatest overflow. Later layout cannot remove a completed-line occurrence, so that candidate loses at the first optimization tier regardless of its break cost or line count.
+
 For compact and packed-split lists, every non-final item must remain on the body's first physical line. A shared one-line probe checks those items and their separators before recursive enumeration, at each form's own starting column:
 
 - The per-item split candidate is evaluated first. If it has an empty overflow-size profile and the compact prefix (including the opener) cannot fit, compact layouts are illegal or worse on the primary cost and are skipped.
@@ -127,8 +131,6 @@ The opener-run construction uses a greedy zero-overflow fast path. It delays eac
 - Each extra run adds an opener line and a matching closer line. Among equally charged expansions, the minimum-run partition therefore minimizes line count.
 - Among equal-run partitions, the latest boundaries are the source-order-stable compact choice and leave the final run no wider than an earlier partition.
 
-For a detached leaf, the same proof applies when only the leaf overflows but every delimiter line fits: the minimum run count gives the shallowest leaf indentation, and another run cannot improve the leaf layout.
-
-The proof does not apply when a delimiter line overflows. An extra run can then improve the overflow-size profile even though it adds lines. The solver uses exact partition DP for that case and compares the complete candidates with `Better`. A zero-overflow attached-leaf search uses the same minimum-run invariant to restrict its prefix search without discarding a winning layout.
+The proof does not apply once the greedy candidate overflows. A different partition may exchange a small delimiter overflow for a larger leaf overflow, or improve a later occurrence in the overflow-size profile. The solver then uses exact partition DP and compares complete candidates with `Better`. A zero-overflow attached-leaf search uses the minimum-run invariant to restrict its prefix search without discarding a winning layout.
 
 Every selected opener-run boundary is stored as `SplitDelimiterStackRun` on the corresponding opener node. The pretty printer reads those choices; it does not repeat the threshold calculation.
