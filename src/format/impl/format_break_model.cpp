@@ -81,6 +81,20 @@ bool IsFormatBreakQualifiedName(const FormatBreakNode& node) {
         FormatBreakTokenSyntaxKind(node.operators.front()) == SyntaxNodeKind::ColonColon;
 }
 
+bool IsFormatBreakStreamLiteralOperand(const FormatBreakNode& node) {
+    if (node.kind == FormatBreakNodeKind::Token) {
+        return IsStringLike(FormatBreakTokenValue(node.token));
+    }
+    if (node.kind == FormatBreakNodeKind::Sequence) {
+        return node.children.size() == 1 && IsFormatBreakStreamLiteralOperand(*node.children.front());
+    }
+    return node.kind == FormatBreakNodeKind::AdjacentStrings &&
+        !node.operands.empty() &&
+        std::all_of(node.operands.begin(), node.operands.end(), [](const FormatBreakNode* operand) {
+            return operand != nullptr && IsFormatBreakStreamLiteralOperand(*operand);
+        });
+}
+
 bool IsFormatBreakStreamConfigurationOperand(
     const FormatBreakNode& node, const std::vector<std::string>& configurationMethods
 ) {

@@ -1,5 +1,6 @@
 #pragma once
 
+#include <cstdint>
 #include <vector>
 
 #include "format/impl/format_break_model.h"
@@ -11,6 +12,8 @@ struct FormatBreakSolution {
     std::vector<int> indentLevels;
     // Declaration owner/value nodes record the selected number of continuation lines in their value.
     std::vector<int> declarationValueContinuationLines;
+    // Stream insertion operators selected to stay with the preceding string or character operand.
+    std::vector<std::uint32_t> attachedStreamOperators;
 };
 
 FormatBreakSolution SolveFormatBreaks(

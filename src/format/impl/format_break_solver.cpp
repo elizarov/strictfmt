@@ -3,6 +3,7 @@
 #include <algorithm>
 #include <cstddef>
 #include <deque>
+#include <limits>
 #include <memory>
 #include <new>
 #include <optional>
@@ -27,6 +28,7 @@ struct NodeResult {
     FormatValueProfile overflowSizeProfile;
     FormatValueProfile expansionDepthProfile;
     bool ownExpansionCharged = false;
+    bool compactNextStreamOperand = false;
     const struct ChoiceTree* choices = nullptr;
 };
 
@@ -190,9 +192,10 @@ struct AlternativesMemoEntry {
 struct ChoiceTree {
     const ChoiceTree* left = nullptr;
     const ChoiceTree* right = nullptr;
-    int nodeId = 0;
+    int nodeId = -1;
     int indentLevel = -1;
     int declarationValueContinuationLines = -1;
+    std::uint32_t attachedStreamOperator = std::numeric_limits<std::uint32_t>::max();
     FormatBreakChoice choice = FormatBreakChoice::Compact;
     bool leaf = false;
 };
@@ -564,6 +567,12 @@ private:
         choiceArena_.push_back(
             ChoiceTree{.nodeId = nodeId, .declarationValueContinuationLines = continuationLines, .leaf = true}
         );
+        result.choices = ConcatChoices(result.choices, &choiceArena_.back());
+    }
+
+    void AddAttachedStreamOperator(NodeResult& result, const FormatBreakToken& op) {
+        choiceArena_
+            .push_back(ChoiceTree{.attachedStreamOperator = FormatBreakTokenValue(op).sourceIndex, .leaf = true});
         result.choices = ConcatChoices(result.choices, &choiceArena_.back());
     }
 
@@ -1029,7 +1038,8 @@ private:
             left.endIndentLevel == right.endIndentLevel &&
             left.endLineHasText == right.endLineHasText &&
             left.currentLineOverflowRecorded == right.currentLineOverflowRecorded &&
-            left.ownExpansionCharged == right.ownExpansionCharged;
+            left.ownExpansionCharged == right.ownExpansionCharged &&
+            left.compactNextStreamOperand == right.compactNextStreamOperand;
     }
 
     bool DominatesResult(const NodeResult& left, const NodeResult& right) const {
@@ -1037,7 +1047,8 @@ private:
             left.endIndentLevel != right.endIndentLevel ||
             left.endLineHasText != right.endLineHasText ||
             left.currentLineOverflowRecorded != right.currentLineOverflowRecorded ||
-            left.ownExpansionCharged != right.ownExpansionCharged
+            left.ownExpansionCharged != right.ownExpansionCharged ||
+            left.compactNextStreamOperand != right.compactNextStreamOperand
         ) {
             return false;
         }
@@ -1068,7 +1079,10 @@ private:
         if (left.currentLineOverflowRecorded != right.currentLineOverflowRecorded) {
             return left.currentLineOverflowRecorded < right.currentLineOverflowRecorded;
         }
-        return left.ownExpansionCharged < right.ownExpansionCharged;
+        if (left.ownExpansionCharged != right.ownExpansionCharged) {
+            return left.ownExpansionCharged < right.ownExpansionCharged;
+        }
+        return left.compactNextStreamOperand < right.compactNextStreamOperand;
     }
 
     void AddPrunedResult(NodeResults& results, NodeResult candidate) const {
@@ -2978,6 +2992,31 @@ private:
         }
     }
 
+    static bool IsOutputStreamOperator(const FormatBreakToken& op) {
+        return FormatBreakTokenKind(op) == PrintTokenKind::Known &&
+            FormatBreakTokenSyntaxKind(op) == SyntaxNodeKind::LessLess;
+    }
+
+    bool CompactStreamFollowerFits(const FormatBreakNode& node, size_t operatorIndex, NodeResult prefix) const {
+        for (size_t index = operatorIndex; index < node.operators.size(); ++index) {
+            if (
+                !IsOutputStreamOperator(node.operators[index]) ||
+                (index < node.commentsBeforeOperators.size() && !node.commentsBeforeOperators[index].empty()) ||
+                !AddCompactToken(prefix, node.operators[index], true) ||
+                !AppendCompactOneLine(*node.operands[index + 1], prefix, true)
+            ) {
+                return false;
+            }
+            if (!IsFormatBreakStreamConfigurationOperand(
+                *node.operands[index + 1], config_.streamShiftConfigurationMethods
+            )) {
+                return index + 1 < node.operators.size() ||
+                    prefix.endColumn + breakLineSuffixWidth_ <= config_.columnLimit;
+            }
+        }
+        return prefix.endColumn + breakLineSuffixWidth_ <= config_.columnLimit;
+    }
+
     NodeResults
         SolveChainCompactAlternatives(const FormatBreakNode& node, int column, int indentLevel, bool lineHasText)
     {
@@ -3250,11 +3289,13 @@ private:
             NodeResults next;
             for (const NodeResult& prefix : current) {
                 NodeResult withOperator = prefix;
+                const bool attachedLiteralFollower = withOperator.compactNextStreamOperand;
+                withOperator.compactNextStreamOperand = false;
                 AppendCommentsBeforeChainOperator(node, index, withOperator);
                 AppendToken(withOperator, node.operators[index]);
                 NodeResults compactTailOperands;
                 const NodeResults* operands = nullptr;
-                if (choice == FormatBreakChoice::StreamCompactTail) {
+                if (choice == FormatBreakChoice::StreamCompactTail || attachedLiteralFollower) {
                     compactTailOperands.push_back(SolveNodeWithoutBreaks(
                         *node.operands[index + 1],
                         withOperator.endColumn,
@@ -3283,7 +3324,15 @@ private:
                             *node.operands[index + 1], config_.streamShiftConfigurationMethods
                         )
                     ) {
-                        AppendBreak(candidate, splitBaseIndent + 1, node.breakCost);
+                        if (
+                            IsFormatBreakStreamLiteralOperand(*node.operands[index + 1]) &&
+                            CompactStreamFollowerFits(node, index + 1, candidate)
+                        ) {
+                            AddAttachedStreamOperator(candidate, node.operators[index + 1]);
+                            candidate.compactNextStreamOperand = true;
+                        } else {
+                            AppendBreak(candidate, splitBaseIndent + 1, node.breakCost);
+                        }
                     }
                     AddPrunedResult(next, std::move(candidate));
                 }
@@ -3593,6 +3642,20 @@ void AppendDeclarationValueContinuationLines(const ChoiceTree* tree, std::vector
     AppendDeclarationValueContinuationLines(tree->right, continuationLines);
 }
 
+void AppendAttachedStreamOperators(const ChoiceTree* tree, std::vector<std::uint32_t>& sourceIndices) {
+    if (tree == nullptr) {
+        return;
+    }
+    if (tree->leaf) {
+        if (tree->attachedStreamOperator != std::numeric_limits<std::uint32_t>::max()) {
+            sourceIndices.push_back(tree->attachedStreamOperator);
+        }
+        return;
+    }
+    AppendAttachedStreamOperators(tree->left, sourceIndices);
+    AppendAttachedStreamOperators(tree->right, sourceIndices);
+}
+
 }  // namespace
 
 FormatBreakSolution SolveFormatBreaks(
@@ -3619,5 +3682,11 @@ FormatBreakSolution SolveFormatBreaks(
     std::vector<bool> assigned(choiceCount, false);
     AppendChoices(result.choices, solution.choices, solution.indentLevels, assigned);
     AppendDeclarationValueContinuationLines(result.choices, solution.declarationValueContinuationLines);
+    AppendAttachedStreamOperators(result.choices, solution.attachedStreamOperators);
+    std::sort(solution.attachedStreamOperators.begin(), solution.attachedStreamOperators.end());
+    solution.attachedStreamOperators.erase(
+        std::unique(solution.attachedStreamOperators.begin(), solution.attachedStreamOperators.end()),
+        solution.attachedStreamOperators.end()
+    );
     return solution;
 }

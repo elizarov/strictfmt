@@ -315,6 +315,11 @@ input>>firstBenchmarkName>>secondBenchmarkNameWithLongName>>thirdBenchmarkNameWi
 std::cout<<std::left<<std::setw(18)<<name<<" total_ms="<<std::fixed<<std::setprecision(2)<<result.total.count()<<" per_iter_ms="<<result.perIteration.count()<<"\n";
 }
 
+void ReportTariffRetrieval(){
+LOG_INFO()<<"Start retrieving cargo_tariffs for "<<zone_name<<' '<<tariff<<" and corp_client_id="<<corp_client_id<<" using experiment="<<pricing_experiment_name;
+LOG_INFO()<<"Detailed cargo tariff retrieval payload="<<cargoTariffRetrievalResultWithAllFallbackAttributesAndMetadataIncludingExperimentOverrides;
+}
+
 void ExpectRectNoOverlap(RECT* rects){
 if(check){
 if(ready){

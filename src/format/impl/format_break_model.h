@@ -175,6 +175,7 @@ struct FormatBreakModelContext {
 bool FormatBreakLeadingNameMatches(const FormatBreakNode& node, std::string_view candidate);
 bool IsFormatBreakUniformChain(const FormatBreakNode& node);
 bool IsFormatBreakQualifiedName(const FormatBreakNode& node);
+bool IsFormatBreakStreamLiteralOperand(const FormatBreakNode& node);
 bool IsFormatBreakStreamConfigurationOperand(
     const FormatBreakNode& node, const std::vector<std::string>& configurationMethods
 );
