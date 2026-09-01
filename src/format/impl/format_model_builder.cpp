@@ -582,7 +582,21 @@ void ClassifyDeclarationGroup(SyntaxNode& node) {
     node.classes |= group;
 }
 
+bool ContainsConditionalPreprocessor(const SyntaxNode& node) {
+    if (SyntaxNodeHasClass(node, SyntaxNodeClass::ConditionalPreprocessorTree)) {
+        return true;
+    }
+    return std::any_of(node.children.begin(), node.children.end(), [](const SyntaxNode* child) {
+        return child != nullptr && ContainsConditionalPreprocessor(*child);
+    });
+}
+
 void NormalizeSyntaxNode(FormatModel& model, SyntaxNode& node) {
+    if (SyntaxNodeHasClass(node, SyntaxNodeClass::PreprocessorSplitList) && ContainsConditionalPreprocessor(node)) {
+        // Only preprocessor-split lists query this immutable descendant predicate. Materializing it on the owning
+        // node is equivalent to the printer's former recursive memoization and avoids its hash table.
+        node.classes |= static_cast<std::uint64_t>(SyntaxNodeClass::ContainsConditionalPreprocessor);
+    }
     if (
         SyntaxNodeHasClass(node, SyntaxNodeClass::ConditionalPreprocessorTree) &&
         std::any_of(node.children.begin(), node.children.end(), [](const SyntaxNode* child) {

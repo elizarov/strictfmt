@@ -83,14 +83,14 @@ bool IsSelectedSeparator(const FormatBreakToken& token) {
 bool IsBinaryOperatorForNode(const FormatBreakToken& token) {
     const PrintToken& printToken = FormatBreakTokenValue(token);
     return printToken.kind == PrintTokenKind::Known &&
-        SyntaxNodeKindHasClass(printToken.syntaxKind, SyntaxNodeClass::BinaryOperator) &&
+        PrintTokenSyntaxHasClass(printToken, SyntaxNodeClass::BinaryOperator) &&
         printToken.parentKind == SyntaxNodeKind::BinaryExpression;
 }
 
 bool IsAssignmentOperatorForNode(const FormatBreakToken& token) {
     const PrintToken& printToken = FormatBreakTokenValue(token);
     return printToken.kind == PrintTokenKind::Known &&
-        SyntaxNodeKindHasClass(printToken.syntaxKind, SyntaxNodeClass::AssignmentOperator) && (
+        PrintTokenSyntaxHasClass(printToken, SyntaxNodeClass::AssignmentOperator) && (
             printToken.parentKind == SyntaxNodeKind::AssignmentExpression ||
             printToken.parentKind == SyntaxNodeKind::InitDeclarator ||
             printToken.parentKind == SyntaxNodeKind::FieldDeclaration ||
@@ -118,7 +118,7 @@ bool IsCommaOperatorForNode(const FormatBreakToken& token) {
     const PrintToken& printToken = FormatBreakTokenValue(token);
     return printToken.kind == PrintTokenKind::Known &&
         printToken.parentKind == SyntaxNodeKind::CommaExpression &&
-        SyntaxNodeKindHasClass(printToken.syntaxKind, SyntaxNodeClass::ChainOperator);
+        PrintTokenSyntaxHasClass(printToken, SyntaxNodeClass::ChainOperator);
 }
 
 bool IsForHeaderDelimiter(const FormatBreakToken& open) {
@@ -333,9 +333,11 @@ public:
         model_.nodes = std::make_unique<std::deque<FormatBreakNode>>();
         selectionMark_ = NextSelectionMark();
         const PrintToken* previous = nullptr;
+        bool firstToken = true;
         for (size_t index = 0; index < tokens.size(); ++index) {
             const PrintToken& token = tokens[index];
-            bool spaceBefore = FormatTokenNeedsSpace(previous, token);
+            const bool spaceBefore = previous == nullptr ? false :
+                (token.spaceBeforeKnown ? token.spaceBefore : FormatTokenNeedsSpace(previous, token));
             if (token.node != nullptr) {
                 token.node->formatPrintToken = &token;
                 token.node->formatSpaceBefore = spaceBefore;
@@ -348,9 +350,12 @@ public:
             ) {
                 ancestor->formatSelectionMark = selectionMark_;
             }
+            root_ = firstToken ? token.node : CommonAncestor(root_, token.node);
+            firstToken = false;
             previous = &token;
         }
-        root_ = CommonRoot(tokens);
+        // CommonAncestor is associative for nodes in one immutable tree, so accumulating it in the existing token
+        // pass is identical to the former second pass over the same ordered token span.
     }
 
     FormatBreakModel Build() {
@@ -360,8 +365,13 @@ public:
         if (!model_.root) {
             model_.root = MakeNode(FormatBreakNodeKind::Sequence, 0);
         }
-        ApplyRequiredChainBreaks(*model_.root);
-        NormalizeBreakCosts(*model_.root);
+        if (context_.requiredChainBreakOperators != nullptr && !context_.requiredChainBreakOperators->empty()) {
+            // With no required operator, every predicate in the recursive pass is false and the model is unchanged.
+            ApplyRequiredChainBreaks(*model_.root);
+        }
+        if (hasFinalLambdaBody_) {
+            NormalizeBreakCosts(*model_.root);
+        }
         return std::move(model_);
     }
 
@@ -371,6 +381,7 @@ private:
     const SyntaxNode* root_ = nullptr;
     std::uint32_t selectionMark_ = 0;
     int nextId_ = 1;
+    bool hasFinalLambdaBody_ = false;
 
     static size_t AncestorCount(const SyntaxNode* node) { return node == nullptr ? 0 : node->depth + 1; }
 
@@ -393,20 +404,6 @@ private:
             right = right->parent;
         }
         return left;
-    }
-
-    static const SyntaxNode* CommonRoot(std::span<const PrintToken> tokens) {
-        if (tokens.empty() || tokens.front().node == nullptr) {
-            return nullptr;
-        }
-        const SyntaxNode* common = tokens.front().node;
-        for (const PrintToken& token : tokens.subspan(1)) {
-            common = CommonAncestor(common, token.node);
-            if (common == nullptr) {
-                return nullptr;
-            }
-        }
-        return common;
     }
 
     static std::uint32_t NextSelectionMark() {
@@ -513,6 +510,9 @@ private:
         node.kind = kind;
         node.rawDepth = depth;
         node.structuralDepth = depth;
+        node.breakCost = depth;
+        model_.hasLayoutChoice =
+            model_.hasLayoutChoice || (kind != FormatBreakNodeKind::Token && kind != FormatBreakNodeKind::Sequence);
         return &node;
     }
 
@@ -749,6 +749,7 @@ private:
     static void ShiftStructuralDepth(FormatBreakNode& node, int delta, bool includeChainLinks = true) {
         if (includeChainLinks || !IsFormatBreakUniformChain(node)) {
             node.structuralDepth += delta;
+            node.breakCost += delta;
         }
         for (FormatBreakNode* child : node.children) {
             if (child != nullptr) {
@@ -794,38 +795,30 @@ private:
         }
     }
 
-    static void DiscountFinalLambdaBody(FormatBreakNode& list) {
+    static FormatBreakNode* FinalLambdaBody(FormatBreakNode& list) {
         size_t end = list.items.size();
         while (end != 0 && IsStandaloneCommentItem(list, end - 1)) {
             --end;
         }
         FormatBreakNode* lambda = end == 0 ? nullptr : UnwrapSingleChildSequence(list.items[end - 1].node);
         if (lambda == nullptr || !lambda->bodyHeaderIsLambda || lambda->children.size() != 2) {
-            return;
+            return nullptr;
         }
         FormatBreakNode* body = UnwrapSingleChildSequence(lambda->children.back());
-        if (body != nullptr && body->kind == FormatBreakNodeKind::Delimited) {
+        return body != nullptr && body->kind == FormatBreakNodeKind::Delimited ? body : nullptr;
+    }
+
+    static void DiscountFinalLambdaBody(FormatBreakNode& list) {
+        if (FormatBreakNode* body = FinalLambdaBody(list)) {
             DiscountBreakCostsRecursively(*body, body->breakCost);
         }
     }
 
-    static void InitializeBreakCosts(FormatBreakNode& node) {
-        node.breakCost = node.structuralDepth;
-        for (FormatBreakNode* child : node.children) {
-            if (child != nullptr) {
-                InitializeBreakCosts(*child);
-            }
-        }
-        for (FormatBreakListItem& item : node.items) {
-            if (item.node != nullptr) {
-                InitializeBreakCosts(*item.node);
-            }
-        }
-        for (FormatBreakNode* operand : node.operands) {
-            if (operand != nullptr) {
-                InitializeBreakCosts(*operand);
-            }
-        }
+    FormatBreakNode* FinishDelimited(FormatBreakNode* node) {
+        // Final-lambda discounting is the only normalization pass. Every delimited node is completed here, so no
+        // recorded body proves that the full recursive normalization walk would be an identity operation.
+        hasFinalLambdaBody_ = hasFinalLambdaBody_ || (node != nullptr && FinalLambdaBody(*node) != nullptr);
+        return node;
     }
 
     static void ApplyFinalLambdaDiscounts(FormatBreakNode& node) {
@@ -849,10 +842,7 @@ private:
         }
     }
 
-    static void NormalizeBreakCosts(FormatBreakNode& node) {
-        InitializeBreakCosts(node);
-        ApplyFinalLambdaDiscounts(node);
-    }
+    static void NormalizeBreakCosts(FormatBreakNode& node) { ApplyFinalLambdaDiscounts(node); }
 
     static void NormalizeCallablePrefixBreakDepth(FormatBreakNode& prefix, const FormatBreakNode& declarator) {
         const std::optional<int> parameterDepth = FirstParameterListBreakDepth(declarator);
@@ -3057,7 +3047,7 @@ private:
                 if (AppendCommaExpressionListItems(*delimited, *commaExpression, *open, depth, false)) {
                     delimited->forceSplit = delimited->forceSplit || (hasVirtualClose && virtualDelimiter->forceSplit);
                     afterDelimited = hasVirtualClose ? end : closeIndex + 1;
-                    return delimited;
+                    return FinishDelimited(delimited);
                 }
                 delimited->items.clear();
             }
@@ -3148,7 +3138,7 @@ private:
         delimited->compactRequiresUnbrokenItems = IsMultiItemDesignatedInitializer(*delimited, *open);
         delimited->forceSplit = delimited->forceSplit || (hasVirtualClose && virtualDelimiter->forceSplit);
         afterDelimited = hasVirtualClose ? end : closeIndex + 1;
-        return delimited;
+        return FinishDelimited(delimited);
     }
 };
 

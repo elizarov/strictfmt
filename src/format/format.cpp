@@ -1,5 +1,6 @@
 #include "format/format.h"
 
+#include <string>
 #include <string_view>
 
 #include "format/impl/format_model.h"
@@ -66,7 +67,10 @@ std::string_view SourceOutputLineEnding(std::string_view text) {
     return LineEndingText(LineEndingKind::Lf);
 }
 
-std::string WithLineEndings(std::string_view text, std::string_view lineEnding) {
+std::string WithLineEndings(std::string text, std::string_view lineEnding) {
+    if (lineEnding == "\n" && text.find('\r') == std::string::npos) {
+        return text;
+    }
     std::string result;
     result.reserve(lineEnding.size() == 1 ? text.size() : text.size() + text.size() / 24);
     for (size_t index = 0; index < text.size(); ++index) {

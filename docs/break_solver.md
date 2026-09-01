@@ -8,7 +8,7 @@ The solver receives a `FormatBreakModel` for one formatted segment and returns a
 
 `Better` implements the break-selection cost from [format.md].
 
-`FormatValueProfile` stores sorted occurrence counts for both cost profiles. It keeps four values inline and ignores zero, so an empty profile performs no heap allocation. Profile comparison proceeds from greatest value to least, and `Merge` adds child occurrence counts. Adding a shared surrounding profile therefore cannot change the greatest value where two alternatives differ.
+`FormatValueProfile` stores sorted occurrence counts for both cost profiles. It keeps four values inline, allocates overflow storage only for a fifth distinct value, and ignores zero. Profile comparison proceeds from greatest value to least, and `Merge` adds child occurrence counts. Adding a shared surrounding profile therefore cannot change the greatest value where two alternatives differ.
 
 The overflow-size profile contains completed physical lines. The current unfinished line is compared as one virtual occurrence and enters the stored profile only when a token newline, comment termination, or selected break completes it. A child that completes the caller's current line owns that occurrence, so profiles remain additive across `Merge`. Exact delimiter-stack search may price and then restore an outer line; its result marks that line as already recorded until the next break to prevent duplicate occurrences.
 
@@ -16,7 +16,7 @@ The overflow-size profile contains completed physical lines. The current unfinis
 
 A packed list's separately evaluated body inherits the opener's charged flag, but starts without the prefix's profile; the profiles merge afterward. Attached-open solving starts a fresh child result before merging it into the operator prefix. Both paths therefore obey the same ownership rule as ordinary recursive solving.
 
-The builder retains initial depth in `rawDepth` and materializes the depth adjustments specified in [format.md] in `structuralDepth`. After building the complete break model, `NormalizeBreakCosts` initializes `breakCost` from the adjusted depth and applies the specified subtree adjustments from outer subtrees inward. Costs are fixed before solving, so memoization needs no layout-history state, and the pretty printer's choices and indentation rules are unchanged.
+The builder retains initial depth in `rawDepth` and materializes the depth adjustments specified in [format.md] in `structuralDepth`. `breakCost` starts at the same depth and every structural-depth shift updates both values. After building the complete model, normalization applies the specified subtree discounts from outer subtrees inward. Costs are fixed before solving, so memoization needs no layout-history state, and the pretty printer's choices and indentation rules are unchanged.
 
 ## Search Shape
 
@@ -85,6 +85,14 @@ Heuristics are allowed only when they are equivalence-preserving: the result mus
 Allowed speedups include:
 
 - Memoization by solver state.
+- Reusing an already built and solved declaration model when the buffered token span, incoming print state, suffix width, and every model context input are identical.
+- Caching an exact compact physical-line shape by immutable break node. The shape records compact legality, text production, and widths with and without preceding line text; applying it is equivalent to recursively appending every compact token.
+- Caching exact recursive predicates by immutable break or syntax node when the cache key includes every predicate input.
+- Materializing an exact descendant predicate on its owning immutable syntax node during normalization when all later queries use that same root and predicate.
+- Recording monotonic builder summaries, such as whether a model contains any layout choice or final-lambda discount target, while visiting the nodes that determine them.
+- Omitting a recursive transformation when its complete input summary proves that it is an identity operation, such as final-lambda normalization without a final lambda or required-chain propagation without required operators.
+- Bypassing the solver for a model containing only token and sequence nodes, because such a model has no layout choice; normal model emission still runs.
+- Mutating an exclusively owned candidate in place instead of copying it before each token, break, or merge operation.
 - Rejecting layouts that violate documented legality constraints.
 - Dominance pruning when another candidate with the same continuation state is no worse in every cost component and better in at least one.
 - Fast paths that prove the returned layout is already optimal for the subproblem, such as a compact one-line layout with an empty overflow-size profile and zero extra lines.
@@ -109,6 +117,8 @@ For compact and packed-split lists, every non-final item must remain on the body
 - Packed split requires a zero-overflow body. If its inline prefix cannot fit after the opening break, that entire branch is illegal and is skipped regardless of other candidates.
 
 The final item is excluded from the probe because eligible non-angle layout may give it a multiline tail; angle lists reject that candidate later. These probes change search work, not candidate ordering or tie-breaking.
+
+A compact uniform-chain candidate may solve an intermediate operand with the all-compact physical-line walker when the chain legality check would reject every selected break in that operand. A successful walk is the unique no-selected-break candidate, including when it overflows. If comments or intrinsic newlines make the walk inapplicable, normal alternative enumeration and exact filtering remain in use.
 
 ## Delimiter Stacks
 

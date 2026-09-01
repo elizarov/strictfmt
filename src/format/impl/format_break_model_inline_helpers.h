@@ -3,7 +3,7 @@
 #include "format/impl/format_break_model.h"
 
 inline const PrintToken& FormatBreakTokenValue(const FormatBreakToken& token) {
-    static const PrintToken kEmptyToken;
+    static const PrintToken kEmptyToken{};
     return token.token == nullptr ? kEmptyToken : *token.token;
 }
 

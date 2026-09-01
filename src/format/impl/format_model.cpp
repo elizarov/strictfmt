@@ -946,12 +946,24 @@ const SymbolInfoTable& SyntaxInfoBySymbol() {
     return symbols;
 }
 
-bool NodeOrDescendantHasClass(const SyntaxNode& node, SyntaxNodeClass syntaxNodeClass) {
-    if (SyntaxNodeKindHasClass(node.kind, syntaxNodeClass)) {
+bool CallableBodyHasDisqualifier(
+    const SyntaxNode& node,
+    const SyntaxNode& body,
+    const SyntaxNode* statement,
+    bool inBody = false,
+    bool inStatement = false
+) {
+    inBody = inBody || &node == &body;
+    inStatement = inStatement || &node == statement;
+    if (
+        SyntaxNodeKindHasClass(node.kind, SyntaxNodeClass::PreprocessorDirective) ||
+        (inBody && SyntaxNodeKindHasClass(node.kind, SyntaxNodeClass::Comment)) ||
+        (inStatement && SyntaxNodeKindHasClass(node.kind, SyntaxNodeClass::CompoundBlock))
+    ) {
         return true;
     }
     for (const SyntaxNode* child : node.children) {
-        if (child != nullptr && NodeOrDescendantHasClass(*child, syntaxNodeClass)) {
+        if (child != nullptr && CallableBodyHasDisqualifier(*child, body, statement, inBody, inStatement)) {
             return true;
         }
     }
@@ -1579,12 +1591,16 @@ std::string_view SyntaxNodeKindName(SyntaxNodeKind kind) {
     return "Unknown";
 }
 
-bool SyntaxNodeKindHasClass(SyntaxNodeKind kind, SyntaxNodeClass syntaxNodeClass) {
+std::uint64_t SyntaxNodeKindClasses(SyntaxNodeKind kind) {
     const size_t index = KindIndex(kind);
     if (index >= kSyntaxKindInfoByKind.size()) {
-        return false;
+        return 0;
     }
-    return (kSyntaxKindInfoByKind[index].classes & Bit(syntaxNodeClass)) != 0;
+    return kSyntaxKindInfoByKind[index].classes;
+}
+
+bool SyntaxNodeKindHasClass(SyntaxNodeKind kind, SyntaxNodeClass syntaxNodeClass) {
+    return (SyntaxNodeKindClasses(kind) & Bit(syntaxNodeClass)) != 0;
 }
 
 bool CallableBodyAllowsCompactSingleStatementForm(const SyntaxNode& node, SyntaxNodeKind parentKind) {
@@ -1593,14 +1609,16 @@ bool CallableBodyAllowsCompactSingleStatementForm(const SyntaxNode& node, Syntax
     if (node.kind != SyntaxNodeKind::CompoundStatement || !callableOwner) {
         return false;
     }
-    if (NodeOrDescendantHasClass(node, SyntaxNodeClass::Comment)) {
-        return false;
-    }
-    if (node.parent != nullptr && NodeOrDescendantHasClass(*node.parent, SyntaxNodeClass::PreprocessorDirective)) {
-        return false;
+    if (node.compactCallableBodyCache != 0) {
+        return node.compactCallableBodyCache == 2;
     }
     const SyntaxNode* statement = OnlyContentChild(node);
     // Compact callable spacing and body-header choices must agree. A lone statement that owns a
     // compound block, such as if/switch/compound, needs normal block indentation for that subtree.
-    return statement != nullptr && !NodeOrDescendantHasClass(*statement, SyntaxNodeClass::CompoundBlock);
+    // These are the same three existential queries as the former separate recursive walks: comments are searched
+    // under the body, preprocessing under the callable parent, and compound blocks under the lone statement.
+    const SyntaxNode& searchRoot = node.parent == nullptr ? node : *node.parent;
+    const bool result = statement != nullptr && !CallableBodyHasDisqualifier(searchRoot, node, statement);
+    node.compactCallableBodyCache = result ? 2 : 1;
+    return result;
 }
