@@ -75,6 +75,8 @@ target passes its resolved version to the Python harness, which requires
 `strictfmt --version` to print the same value.
 
 - `tests/format/.cpp-format` owns the default test formatter configuration.
+- `tests/format/.cpp-format-optimization` owns the 15-column break-selection
+  golden configuration.
 - `tests/format/.cpp-format-userver` owns the userver-oriented test formatter
   configuration.
 - `tests/format/src/` owns golden input, formatted output, and diagnostic output
@@ -89,6 +91,9 @@ and exist only to exercise one command or configuration edge.
 - `tests/format/src/format_test_input.cpp` ->
   `tests/format/src/format_test_output.cpp`: broad default-configuration
   formatting coverage for ordinary C++ layout core as documented in [format.md].
+- `tests/format/src/format_optimization_input.cpp` ->
+  `tests/format/src/format_optimization_output.cpp`: reduced-width corner cases
+  for profiles, delimiter partitions, and suffix-sensitive pruning.
 - `tests/format/src/format_userver_input.cpp` ->
   `tests/format/src/format_userver_output.cpp`: userver-oriented formatting
   coverage using `.cpp-format-userver`, including configured macro categories as documented in [macro.md] and include grouping.

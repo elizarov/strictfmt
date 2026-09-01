@@ -46,6 +46,8 @@ SOURCE_SUFFIXES = {
 }
 INPUT_FIXTURE = Path("src") / "format_test_input.cpp"
 OUTPUT_FIXTURE = Path("src") / "format_test_output.cpp"
+OPTIMIZATION_INPUT_FIXTURE = Path("src") / "format_optimization_input.cpp"
+OPTIMIZATION_OUTPUT_FIXTURE = Path("src") / "format_optimization_output.cpp"
 USERVER_INPUT_FIXTURE = Path("src") / "format_userver_input.cpp"
 USERVER_OUTPUT_FIXTURE = Path("src") / "format_userver_output.cpp"
 IFDEF_INPUT_FIXTURE = Path("src") / "format_ifdef_input.cpp"
@@ -57,8 +59,10 @@ ERROR_INPUT_FIXTURE = Path("src") / "format_error_input.cpp"
 ERROR_OUTPUT_FIXTURE = Path("src") / "format_error_output.txt"
 USERVER_FORMAT_CONFIG = TEST_ROOT / ".cpp-format-userver"
 DEFAULT_FORMAT_CONFIG = TEST_ROOT / ".cpp-format"
+OPTIMIZATION_FORMAT_CONFIG = TEST_ROOT / ".cpp-format-optimization"
 FORMATTED_GOLDEN_OUTPUTS = (
     ("default", OUTPUT_FIXTURE, None),
+    ("optimization", OPTIMIZATION_OUTPUT_FIXTURE, OPTIMIZATION_FORMAT_CONFIG),
     ("userver", USERVER_OUTPUT_FIXTURE, USERVER_FORMAT_CONFIG),
     ("ifdef", IFDEF_OUTPUT_FIXTURE, USERVER_FORMAT_CONFIG),
     ("unsupported", UNSUPPORTED_OUTPUT_FIXTURE, USERVER_FORMAT_CONFIG),
@@ -367,6 +371,29 @@ class FormatCommandTests(unittest.TestCase):
     def test_golden_input_parses_without_errors(self) -> None:
         with copied_fixtures(INPUT_FIXTURE) as fixtures:
             result = native_format(str(fixtures[INPUT_FIXTURE]))
+
+        self.assertEqual(0, result.returncode, msg=f"stdout:\n{result.stdout}\n\nstderr:\n{result.stderr}")
+        self.assertNotIn("parse failed", result.stderr)
+        self.assert_no_unsupported_placement_warnings(result)
+
+    def test_optimization_stdin_formats_to_expected_output(self) -> None:
+        result = native_format(
+            "--stdin",
+            "--style",
+            str(OPTIMIZATION_FORMAT_CONFIG),
+            cwd=TEST_ROOT,
+            input_text=read_fixture(OPTIMIZATION_INPUT_FIXTURE),
+        )
+
+        self.assertEqual(0, result.returncode, msg=f"stdout:\n{result.stdout}\n\nstderr:\n{result.stderr}")
+        self.assertEqual(read_fixture(OPTIMIZATION_OUTPUT_FIXTURE), result.stdout)
+        self.assert_no_unsupported_placement_warnings(result)
+
+    def test_optimization_golden_input_parses_without_errors(self) -> None:
+        with copied_fixtures(OPTIMIZATION_INPUT_FIXTURE) as fixtures:
+            result = native_format(
+                "--style", str(OPTIMIZATION_FORMAT_CONFIG), str(fixtures[OPTIMIZATION_INPUT_FIXTURE])
+            )
 
         self.assertEqual(0, result.returncode, msg=f"stdout:\n{result.stdout}\n\nstderr:\n{result.stderr}")
         self.assertNotIn("parse failed", result.stderr)
@@ -1554,79 +1581,6 @@ class FormatCommandTests(unittest.TestCase):
 
         idempotent = native_format("--stdin", "--dry-run", input_text=formatted.stdout, timeout=10)
         self.assertEqual(0, idempotent.returncode, msg=idempotent.stderr)
-
-    def test_delimiter_stack_overflow_uses_exact_run_partition(self) -> None:
-        build_dir = TEST_TEMP_ROOT
-        build_dir.mkdir(exist_ok=True)
-        with tempfile.TemporaryDirectory(prefix="format_delimiter_stack_", dir=build_dir) as temp_dir:
-            config = Path(temp_dir) / ".cpp-format"
-            config.write_text(
-                "---\n"
-                "ColumnLimit: 20\n"
-                "IndentWidth: 4\n"
-                "TabWidth: 4\n",
-                encoding="utf-8",
-            )
-            source = (
-                "void f() { if (a) { if (b) { if (c) { "
-                "throw ((((((((((((((((((((value)))))))))))))))))))); } } } }\n"
-            )
-            expected = (
-                "void f() {\n"
-                "    if (a) {\n"
-                "        if (b) {\n"
-                "            if (c) {\n"
-                "                throw (((((((((\n"
-                "                    ((((((((((\n"
-                "                        (value)\n"
-                "                    ))))))))))\n"
-                "                )))))))));\n"
-                "            }\n"
-                "        }\n"
-                "    }\n"
-                "}\n"
-            )
-
-            formatted = native_format("--stdin", "--style", str(config), input_text=source)
-
-            self.assertEqual(0, formatted.returncode, msg=f"stdout:\n{formatted.stdout}\n\nstderr:\n{formatted.stderr}")
-            self.assertEqual(expected, formatted.stdout)
-            idempotent = native_format(
-                "--dry-run", "--stdin", "--style", str(config), input_text=formatted.stdout
-            )
-            self.assertEqual(
-                0,
-                idempotent.returncode,
-                msg=f"stdout:\n{idempotent.stdout}\n\nstderr:\n{idempotent.stderr}",
-            )
-
-    def test_overflow_size_profile_compares_next_largest_overflow(self) -> None:
-        build_dir = TEST_TEMP_ROOT
-        build_dir.mkdir(exist_ok=True)
-        with tempfile.TemporaryDirectory(prefix="format_overflow_profile_", dir=build_dir) as temp_dir:
-            config = Path(temp_dir) / ".cpp-format"
-            config.write_text(
-                "---\n"
-                "ColumnLimit: 12\n"
-                "IndentWidth: 4\n"
-                "TabWidth: 4\n",
-                encoding="utf-8",
-            )
-            source = "void f(){if(a){throw (((((value)))));}}\n"
-            expected = (
-                "void f() {\n"
-                "    if (a) {\n"
-                "        throw (((((\n"
-                "            value\n"
-                "        )))));\n"
-                "    }\n"
-                "}\n"
-            )
-
-            formatted = native_format("--stdin", "--style", str(config), input_text=source)
-
-            self.assertEqual(0, formatted.returncode, msg=f"stdout:\n{formatted.stdout}\n\nstderr:\n{formatted.stderr}")
-            self.assertEqual(expected, formatted.stdout)
 
     def test_compact_initializer_braces_stay_tight_in_split_context(self) -> None:
         result = native_format(
