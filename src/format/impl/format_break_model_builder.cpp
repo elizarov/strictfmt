@@ -1367,12 +1367,12 @@ private:
             }
         }
         if (node.kind == SyntaxNodeKind::FunctionDefinition) {
-            if (auto header = BuildFunctionBodyHeader(node, depth)) {
+            if (auto header = BuildInitializerListBodyHeader(node, depth)) {
                 return header;
             }
         }
         if (node.kind == SyntaxNodeKind::FunctionDefinition) {
-            if (auto header = BuildInitializerListBodyHeader(node, depth)) {
+            if (auto header = BuildFunctionBodyHeader(node, depth)) {
                 return header;
             }
         }
@@ -1910,7 +1910,10 @@ private:
             return nullptr;
         }
 
-        return BuildCodeBlockBodyHeader(*node.children[*bodyIndex], header, body, depth);
+        FormatBreakNode* result = BuildCodeBlockBodyHeader(*node.children[*bodyIndex], header, body, depth);
+        result->bodyHeaderSingleStatementBody =
+            CallableBodyAllowsCompactSingleStatementForm(*node.children[*bodyIndex], node.kind);
+        return result;
     }
 
     static std::optional<size_t> DirectFunctionDeclaratorChildIndex(const SyntaxNode& node) {
