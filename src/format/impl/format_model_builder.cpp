@@ -591,6 +591,144 @@ bool ContainsConditionalPreprocessor(const SyntaxNode& node) {
     });
 }
 
+bool HasBinaryExpressionAncestorThroughWrappers(const SyntaxNode& node) {
+    const SyntaxNode* ancestor = node.parent;
+    while (ancestor != nullptr && ancestor->kind == SyntaxNodeKind::Tree) {
+        ancestor = ancestor->parent;
+    }
+    return ancestor != nullptr && ancestor->kind == SyntaxNodeKind::BinaryExpression;
+}
+
+void CollectNonTriviaLeaves(SyntaxNode& node, std::vector<SyntaxNode*>& leaves) {
+    if (node.children.empty()) {
+        if (!SyntaxNodeHasClass(node, SyntaxNodeClass::Trivia)) {
+            leaves.push_back(&node);
+        }
+        return;
+    }
+    for (SyntaxNode* child : node.children) {
+        if (child != nullptr) {
+            CollectNonTriviaLeaves(*child, leaves);
+        }
+    }
+}
+
+bool HasQualifiedNameAncestor(const SyntaxNode& node, const SyntaxNode& root) {
+    for (const SyntaxNode* ancestor = node.parent; ancestor != nullptr; ancestor = ancestor->parent) {
+        if (SyntaxNodeHasClass(*ancestor, SyntaxNodeClass::QualifiedName)) {
+            return true;
+        }
+        if (ancestor == &root) {
+            return false;
+        }
+    }
+    return false;
+}
+
+bool HasDistinctiveTemplateArgument(const std::vector<SyntaxNode*>& leaves, size_t first, size_t last) {
+    for (size_t index = first; index < last; ++index) {
+        const SyntaxNodeKind kind = leaves[index]->kind;
+        if (
+            kind == SyntaxNodeKind::NumberLiteral ||
+            kind == SyntaxNodeKind::CharacterLiteral ||
+            kind == SyntaxNodeKind::KeywordTrue ||
+            kind == SyntaxNodeKind::KeywordFalse ||
+            kind == SyntaxNodeKind::KeywordNullptr ||
+            kind == SyntaxNodeKind::KeywordSizeof ||
+            kind == SyntaxNodeKind::KeywordAlignof ||
+            kind == SyntaxNodeKind::Ellipsis ||
+            kind == SyntaxNodeKind::Comma ||
+            kind == SyntaxNodeKind::ColonColon
+        ) {
+            return true;
+        }
+    }
+    return false;
+}
+
+bool IsRecoveredTemplateSuffix(SyntaxNodeKind suffix, bool hasDeclarationTemplateEvidence) {
+    if (suffix == SyntaxNodeKind::ColonColon || suffix == SyntaxNodeKind::LeftParen) {
+        return true;
+    }
+    if (!hasDeclarationTemplateEvidence) {
+        return false;
+    }
+    return suffix == SyntaxNodeKind::Identifier ||
+        suffix == SyntaxNodeKind::LeftBrace ||
+        suffix == SyntaxNodeKind::Star ||
+        suffix == SyntaxNodeKind::Ampersand ||
+        suffix == SyntaxNodeKind::AmpersandAmpersand ||
+        suffix == SyntaxNodeKind::KeywordConst ||
+        suffix == SyntaxNodeKind::KeywordVolatile;
+}
+
+void RecoverAmbiguousTemplateDelimiters(SyntaxNode& node) {
+    if (node.kind != SyntaxNodeKind::BinaryExpression || HasBinaryExpressionAncestorThroughWrappers(node)) {
+        return;
+    }
+    std::vector<SyntaxNode*> leaves;
+    CollectNonTriviaLeaves(node, leaves);
+    struct LessDelimiter {
+        size_t index;
+        int groupDepth;
+    };
+    std::vector<LessDelimiter> lessDelimiters;
+    int groupDepth = 0;
+    for (size_t index = 0; index < leaves.size(); ++index) {
+        if (
+            leaves[index]->kind == SyntaxNodeKind::LeftParen ||
+            leaves[index]->kind == SyntaxNodeKind::LeftBracket ||
+            leaves[index]->kind == SyntaxNodeKind::LeftBrace
+        ) {
+            ++groupDepth;
+            continue;
+        }
+        if (
+            leaves[index]->kind == SyntaxNodeKind::RightParen ||
+            leaves[index]->kind == SyntaxNodeKind::RightBracket ||
+            leaves[index]->kind == SyntaxNodeKind::RightBrace
+        ) {
+            while (!lessDelimiters.empty() && lessDelimiters.back().groupDepth >= groupDepth) {
+                lessDelimiters.pop_back();
+            }
+            --groupDepth;
+            continue;
+        }
+        if (
+            leaves[index]->kind == SyntaxNodeKind::AmpersandAmpersand || leaves[index]->kind == SyntaxNodeKind::PipePipe
+        ) {
+            while (!lessDelimiters.empty() && lessDelimiters.back().groupDepth == groupDepth) {
+                lessDelimiters.pop_back();
+            }
+            continue;
+        }
+        if (leaves[index]->kind == SyntaxNodeKind::Less) {
+            lessDelimiters.push_back({.index = index, .groupDepth = groupDepth});
+            continue;
+        }
+        if (
+            leaves[index]->kind != SyntaxNodeKind::Greater ||
+            lessDelimiters.empty() ||
+            lessDelimiters.back().groupDepth != groupDepth
+        ) {
+            continue;
+        }
+        const size_t lessIndex = lessDelimiters.back().index;
+        lessDelimiters.pop_back();
+        if (lessIndex == 0 || index + 1 >= leaves.size()) {
+            continue;
+        }
+        const bool hasQualifiedName = HasQualifiedNameAncestor(*leaves[lessIndex - 1], node);
+        const bool hasDeclarationTemplateEvidence =
+            hasQualifiedName || HasDistinctiveTemplateArgument(leaves, lessIndex + 1, index);
+        if (!IsRecoveredTemplateSuffix(leaves[index + 1]->kind, hasDeclarationTemplateEvidence)) {
+            continue;
+        }
+        leaves[lessIndex]->classes |= static_cast<std::uint64_t>(SyntaxNodeClass::RecoveredTemplateDelimiter);
+        leaves[index]->classes |= static_cast<std::uint64_t>(SyntaxNodeClass::RecoveredTemplateDelimiter);
+    }
+}
+
 void NormalizeSyntaxNode(FormatModel& model, SyntaxNode& node) {
     if (SyntaxNodeHasClass(node, SyntaxNodeClass::PreprocessorSplitList) && ContainsConditionalPreprocessor(node)) {
         // Only preprocessor-split lists query this immutable descendant predicate. Materializing it on the owning
@@ -623,6 +761,7 @@ void NormalizeSyntaxNode(FormatModel& model, SyntaxNode& node) {
             node.classes |= static_cast<std::uint64_t>(SyntaxNodeClass::ConditionalStreamOperatorChain);
         }
     }
+    RecoverAmbiguousTemplateDelimiters(node);
     ClassifyKeywordOwnedValue(node);
     ClassifyDeclarationGroup(node);
     NormalizeTrailingCommas(model, node);

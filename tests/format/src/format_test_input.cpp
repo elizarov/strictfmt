@@ -2180,6 +2180,16 @@ auto CompactLambdaNestedInitializer(int x){return [x](){return T{x};};}
 
 void TemplateAngleSpacing(){chaotic::Validate<Validators...>(arr,value);return std::get<0>(key_or_result_);}
 
+template<typename... T>
+void AmbiguousTemplateIdSpacing(Json& json,Stream& stream){
+utils::SmallString<10> str;
+auto decimal=Decimal<10>::FromBiased(1);
+std::tuple<T...> tuple;
+detail::StaticQueryParameters<sizeof...(T)> params;
+StaticQueryParameters<3> directParams;
+json.ParseStream<Flags::kOne|Flags::kTwo>(stream);
+}
+
 auto QualifiedCallableTemplateInNestedCall(const Item& item){return decimal64::ToStringTrailingZeros(decimal64::Decimal<3>(item.weight())/kGramInKgInt);}
 
 bool AlternativeBinaryOperatorSpacing(bool first,bool second,bool third){return first and (!second or third);}
