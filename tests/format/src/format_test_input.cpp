@@ -2328,6 +2328,12 @@ auto NestedSingleLambdaArgumentGroups() {
 return WrapCallback((abstract_future::MakeSharedFutureFromCallOnceFunc<mem::SPtr<ExperimentsMap>>([used_tariff, request, avalon_tags_fut, opt_edges_fut, deps = deps_] { Prepare(); return Fetch(); })));
 }
 
+auto RecursiveFinalLambdaDiscountKeepsTemplateName() {
+if (!IsBatchSizePredictionRequestEnabled(exp3)) {
+return subrequests | ranges::MapTo<std::unordered_map<SlotId, std::optional<mem::SPtr<BatchSizePrediction>>>>([](const auto& subrequest) { return std::make_pair(subrequest.slot_params.slot().slot_id, std::optional<mem::SPtr<BatchSizePrediction>>{}); });
+}
+}
+
 void FinalLambdaDiscountExamples() {
 optional::Map([&](const auto& cargo_options) { builder[fields::kCargoOptions] = json::Serialize(cargo_options); }, request.cargo_options());
 CallbackConfig config{request.cargo_options(), [&](const auto& cargo_options) { builder[fields::kCargoOptions] = json::Serialize(cargo_options); }};
