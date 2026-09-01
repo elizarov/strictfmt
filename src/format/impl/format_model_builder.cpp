@@ -416,6 +416,63 @@ void NormalizeControlBodies(FormatModel& model, SyntaxNode& node) {
     }
 }
 
+void NormalizeFieldInitializerPrefixComments(SyntaxNode& node) {
+    if (node.kind != SyntaxNodeKind::FunctionDefinition) {
+        return;
+    }
+    for (size_t initializerIndex = 0; initializerIndex < node.children.size(); ++initializerIndex) {
+        SyntaxNode* initializerList = node.children[initializerIndex];
+        if (initializerList == nullptr || initializerList->kind != SyntaxNodeKind::FieldInitializerList) {
+            continue;
+        }
+        size_t commentBegin = initializerIndex;
+        while (commentBegin > 0) {
+            const SyntaxNode* previous = node.children[commentBegin - 1];
+            if (
+                previous == nullptr ||
+                (previous->kind != SyntaxNodeKind::Comment && previous->kind != SyntaxNodeKind::TrailingComment)
+            ) {
+                break;
+            }
+            --commentBegin;
+        }
+        if (commentBegin == initializerIndex) {
+            return;
+        }
+        const size_t colonIndex = static_cast<size_t>(
+            std::find_if(
+                initializerList->children.begin(), initializerList->children.end(), [](const SyntaxNode* child) {
+                    return child != nullptr && child->kind == SyntaxNodeKind::Colon;
+                }
+            ) - initializerList->children.begin()
+        );
+        if (colonIndex >= initializerList->children.size()) {
+            return;
+        }
+        std::vector<SyntaxNode*> comments;
+        comments.insert(
+            comments.end(),
+            node.children.begin() + static_cast<std::ptrdiff_t>(commentBegin),
+            node.children.begin() + static_cast<std::ptrdiff_t>(initializerIndex)
+        );
+        node.children.erase(
+            node.children.begin() + static_cast<std::ptrdiff_t>(commentBegin),
+            node.children.begin() + static_cast<std::ptrdiff_t>(initializerIndex)
+        );
+        initializerList->children.insert(
+            initializerList->children.begin() + static_cast<std::ptrdiff_t>(colonIndex + 1),
+            comments.begin(),
+            comments.end()
+        );
+        for (SyntaxNode* comment : comments) {
+            if (comment != nullptr) {
+                SetParentRecursive(*comment, initializerList);
+            }
+        }
+        return;
+    }
+}
+
 constexpr std::uint64_t kDeclarationGroupClasses = static_cast<std::uint64_t>(SyntaxNodeClass::DeclarationGroupType) |
     static_cast<std::uint64_t>(SyntaxNodeClass::DeclarationGroupForwardType) |
     static_cast<std::uint64_t>(SyntaxNodeClass::DeclarationGroupCallable) |
@@ -766,6 +823,7 @@ void NormalizeSyntaxNode(FormatModel& model, SyntaxNode& node) {
     ClassifyDeclarationGroup(node);
     NormalizeTrailingCommas(model, node);
     NormalizeControlBodies(model, node);
+    NormalizeFieldInitializerPrefixComments(node);
 }
 
 struct TsNodeSyntax {

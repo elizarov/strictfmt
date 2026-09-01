@@ -955,6 +955,18 @@ auto CommentAnnotatedAggregateItems() {
     };
 }
 
+struct Duration {
+    constexpr Duration(const std::chrono::seconds& seconds, const std::chrono::nanoseconds& nanos) :
+        seconds_(seconds), nanos_(nanos) {}
+};
+
+struct CommentedDuration {
+    CommentedDuration(int seconds, int nanos) :
+        // NOLINTNEXTLINE(test-check)
+        seconds_(seconds),
+        nanos_(nanos) {}
+};
+
 InitializerGeneralityWidget::InitializerGeneralityWidget(int value, int other) : first_(value), second_(other) {
     Touch();
 }

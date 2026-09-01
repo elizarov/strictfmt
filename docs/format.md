@@ -406,7 +406,9 @@ Comma-separated lists introduced by `:`, such as constructor initializers and ba
 - Packed split: all items share one continuation line that fits.
 - One item per line: each item starts on its own continuation line.
 
-Both split forms indent items one level. Keep `:` attached to the preceding syntax. In constructors, keep `explicit` attached to the declarator; initializer count alone does not force parameters to split.
+Both split forms indent items one level. Keep `:` attached to the preceding syntax. A comment between the preceding
+syntax and `:` moves after the attached colon and before the first item. In constructors, keep `explicit` attached to
+the declarator; initializer count alone does not force parameters to split.
 
 <!-- .cpp-format
 ColumnLimit: 48
