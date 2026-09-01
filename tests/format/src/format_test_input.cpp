@@ -649,6 +649,10 @@ CommentedDuration(int seconds,int nanos)
 :seconds_(seconds),nanos_(nanos){}
 };
 
+struct SourceLocation {
+constexpr SourceLocation(std::uint_least32_t line,std::string_view file_name,std::string_view function_name) noexcept:line_(line),line_digits_(DigitsBase10(line)),file_name_(file_name),function_name_(function_name){FillLineString();}
+};
+
 InitializerGeneralityWidget::InitializerGeneralityWidget(int value, int other) : first_(value), second_(other) {
     Touch();
 }
