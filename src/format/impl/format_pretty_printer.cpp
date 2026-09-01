@@ -2254,6 +2254,13 @@ private:
         return solution.choices[static_cast<size_t>(nodeId)];
     }
 
+    static bool IsAttachedStreamOperator(const FormatBreakSolution& solution, const FormatBreakToken& op) {
+        const std::uint32_t sourceIndex = FormatBreakTokenValue(op).sourceIndex;
+        return std::binary_search(
+            solution.attachedStreamOperators.begin(), solution.attachedStreamOperators.end(), sourceIndex
+        );
+    }
+
     static bool IsSplitChoice(FormatBreakChoice choice) {
         return choice == FormatBreakChoice::Split ||
             choice == FormatBreakChoice::SplitPacked ||
@@ -2771,7 +2778,8 @@ private:
                     index + 1 < node.operators.size() &&
                     !IsFormatBreakStreamConfigurationOperand(
                         *node.operands[index + 1], config_.streamShiftConfigurationMethods
-                    )
+                    ) &&
+                    !IsAttachedStreamOperator(solution, node.operators[index + 1])
                 ) {
                     NewLineWithIndent(splitBaseIndent + 1);
                 }
