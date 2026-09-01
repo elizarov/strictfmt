@@ -416,13 +416,13 @@ void NormalizeControlBodies(FormatModel& model, SyntaxNode& node) {
     }
 }
 
-void NormalizeFieldInitializerPrefixComments(SyntaxNode& node) {
-    if (node.kind != SyntaxNodeKind::FunctionDefinition) {
-        return;
-    }
+void NormalizeColonPrefixedListComments(SyntaxNode& node) {
     for (size_t initializerIndex = 0; initializerIndex < node.children.size(); ++initializerIndex) {
         SyntaxNode* initializerList = node.children[initializerIndex];
-        if (initializerList == nullptr || initializerList->kind != SyntaxNodeKind::FieldInitializerList) {
+        if (initializerList == nullptr || (
+            initializerList->kind != SyntaxNodeKind::FieldInitializerList &&
+            initializerList->kind != SyntaxNodeKind::BaseClassClause
+        )) {
             continue;
         }
         size_t commentBegin = initializerIndex;
@@ -823,7 +823,7 @@ void NormalizeSyntaxNode(FormatModel& model, SyntaxNode& node) {
     ClassifyDeclarationGroup(node);
     NormalizeTrailingCommas(model, node);
     NormalizeControlBodies(model, node);
-    NormalizeFieldInitializerPrefixComments(node);
+    NormalizeColonPrefixedListComments(node);
 }
 
 struct TsNodeSyntax {
