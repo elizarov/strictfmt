@@ -3617,6 +3617,9 @@ private:
         );
         const bool isInclude = PrintTokenSyntaxHasClass(token, SyntaxNodeClass::IncludeDirective) ||
             PreprocessorLineHasClass(line, SyntaxNodeClass::IncludeDirective);
+        const std::optional<int> includeInitializerContinuationIndent =
+            isInclude && token.parentKind == SyntaxNodeKind::InitDeclarator && lineHasText_ ?
+                std::optional<int>(CurrentLineIndentLevel() + 1) : std::nullopt;
         const bool listConditional =
             StartsPreprocessorSplitList(token) && NearestPreprocessorSplitListAncestor(token) != nullptr;
         const SyntaxNodeKind lineDirectiveKind = SyntaxNodeKindFromPreprocessorDirectiveLine(line);
@@ -3697,6 +3700,8 @@ private:
             }
             if (listItemIndent) {
                 pendingIndentLevel_ = *listItemIndent;
+            } else if (includeInitializerContinuationIndent) {
+                pendingIndentLevel_ = *includeInitializerContinuationIndent;
             }
             return;
         }

@@ -93,6 +93,10 @@ class string {};
 
 }
 
+constexpr auto kGeneratedFixtureValue =
+#include "format_fixture_value.inc"
+    ;
+
 constexpr wchar_t kFilterCueText[] = L"Filter settings";
 
 constexpr auto kFixtureSyntaxKindMappings = std::to_array<SyntaxKindMapping>({
@@ -286,6 +290,14 @@ class DeclarationGroupingRules {
 
     using AliasFollowingIsolatedTemplate = int;
 };
+
+using BoolFunctionSignature = std::function<bool(const Value&, const Event&)>;
+using ShortFunctionSignature = std::function<short(const Value&)>;
+
+void UseFundamentalFunctionalCasts(int value) {
+    Use(signed(value), unsigned(value), short(value), long(value));
+    Use(signed{value}, unsigned{value}, short{value}, long{value});
+}
 
 void FormatAlphaNibble(char* text, unsigned int alpha) {
     constexpr char kHex[] = "0123456789ABCDEF";

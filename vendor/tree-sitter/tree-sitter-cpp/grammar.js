@@ -247,6 +247,7 @@ module.exports = grammar(C, {
     [$._function_declarator_seq],
     [$.type_specifier, $.sized_type_specifier],
     [$.type_specifier, $.sized_type_specifier, $.expression],
+    [$.sized_type_specifier, $.functional_cast_type_specifier],
     [$._type_declarator, $.sized_type_specifier],
     [$.type_specifier, $.expression, $.concatenated_string],
     [$.type_specifier, $.concatenated_string, $._template_argument_expression],
@@ -1574,6 +1575,11 @@ module.exports = grammar(C, {
 
     init_declarator: ($, original) => choice(
       $.reference_argument_init_declarator,
+      prec.dynamic(10, seq(
+        field('declarator', $._declarator),
+        '=',
+        field('value', $.preproc_include),
+      )),
       prec.dynamic(10, seq(
         field('declarator', $._declarator),
         '=',
@@ -3326,6 +3332,8 @@ module.exports = grammar(C, {
       field('argument', $.argument_list),
     )),
 
+    functional_cast_type_specifier: _ => choice('signed', 'unsigned', 'long', 'short'),
+
     _string: $ => choice(
       $.string_literal,
       $.raw_string_literal,
@@ -3368,7 +3376,11 @@ module.exports = grammar(C, {
         field('arguments', choice($.argument_list, $.bare_macro_identifier)),
       )),
       seq(
-        field('function', choice($.primitive_type, $.dependent_type)),
+        field('function', choice(
+          $.primitive_type,
+          $.functional_cast_type_specifier,
+          $.dependent_type,
+        )),
         field('arguments', $.argument_list),
       ),
     ),
@@ -3857,6 +3869,7 @@ module.exports = grammar(C, {
         field('type', choice(
           $._class_name,
           $.primitive_type,
+          $.functional_cast_type_specifier,
           $.decltype,
           $.dependent_type,
           $.template_type,

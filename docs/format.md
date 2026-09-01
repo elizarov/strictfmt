@@ -28,6 +28,7 @@ This document specifies the source layout produced by `strictfmt`. Wrapping exam
 - Put one space after `operator` for conversion, allocation, and deallocation operators, e.g. `operator bool(`.
 - Treat destructor `~` plus the following type name as one function name, e.g. `~Widget(`.
 - Put no space between a C-style cast and the expression it prefixes, e.g. `(void)value`.
+- Put no space between a function-style fundamental type cast and `(`, e.g. `unsigned(value)`.
 - Put spaces around range-for and list-prefix colons, e.g. `for (auto item : items)`.
 - Put no space before access-specifier, label, or `case` colons, e.g. `public:`.
 - Put no spaces around qualification or member-access operators, e.g. `std::string`.
