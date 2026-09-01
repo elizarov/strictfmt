@@ -411,13 +411,40 @@ bool IsInlineBlockCommentToken(const PrintToken& token) {
     return token.kind == PrintTokenKind::Text && token.text.size() >= 4 && token.text.substr(0, 2) == "/*";
 }
 
+const SyntaxNode* LastNonTriviaLeaf(const SyntaxNode& node) {
+    if (node.children.empty()) {
+        return IsTriviaNode(&node) ? nullptr : &node;
+    }
+    for (size_t index = node.children.size(); index > 0; --index) {
+        const SyntaxNode* child = node.children[index - 1];
+        if (IsTriviaNode(child)) {
+            continue;
+        }
+        const SyntaxNode* leaf = LastNonTriviaLeaf(*child);
+        if (leaf != nullptr) {
+            return leaf;
+        }
+    }
+    return nullptr;
+}
+
+const SyntaxNode* PreviousNonTriviaLeaf(const SyntaxNode& node) {
+    const SyntaxNode* branch = &node;
+    for (const SyntaxNode* parent = node.parent; parent != nullptr; branch = parent, parent = parent->parent) {
+        const size_t branchIndex = DirectTokenChildIndex(*parent, branch);
+        const SyntaxNode* previous = PreviousNonTriviaChild(*parent, branchIndex);
+        if (previous != nullptr) {
+            return LastNonTriviaLeaf(*previous);
+        }
+    }
+    return nullptr;
+}
+
 bool IsMemberPointerDeclaratorStar(const PrintToken& token) {
-    if (token.syntaxKind != SyntaxNodeKind::Star || token.node == nullptr || token.node->parent == nullptr) {
+    if (token.syntaxKind != SyntaxNodeKind::Star || token.node == nullptr) {
         return false;
     }
-    const SyntaxNode& parent = *token.node->parent;
-    const size_t tokenIndex = DirectTokenChildIndex(parent, token.node);
-    const SyntaxNode* previous = PreviousNonTriviaChild(parent, tokenIndex);
+    const SyntaxNode* previous = PreviousNonTriviaLeaf(*token.node);
     return previous != nullptr && previous->kind == SyntaxNodeKind::ColonColon;
 }
 
