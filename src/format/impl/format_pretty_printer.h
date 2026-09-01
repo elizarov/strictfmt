@@ -1,6 +1,7 @@
 #pragma once
 
 #include <chrono>
+#include <cstdio>
 #include <string>
 #include <string_view>
 
@@ -18,4 +19,7 @@ struct FormatModelTextStats {
 std::string FormatModelText(const FormatterConfig& config, const FormatModel& model, std::string_view sourcePath);
 std::string FormatModelText(
     const FormatterConfig& config, const FormatModel& model, std::string_view sourcePath, FormatModelTextStats& stats
+);
+void DumpFormatBreakTrees(
+    const FormatterConfig& config, const FormatModel& model, std::string_view sourcePath, FILE* output
 );

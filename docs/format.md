@@ -294,20 +294,9 @@ const char* messages[] = {
 
 ### Break Cost
 
-An expansion's base cost is its construct's structural depth in the formatted segment: zero at the root, increasing by one per nested level. Name-internal expansions are deeper than the attached list's expansion; chains keep their expression depth.
+An expansion's raw depth is its construct's structural depth in the formatted segment: zero at the root, increasing by one per nested level. The adjustments that turn raw depth into effective break cost are specified under [Break-Decision Trees](#break-decision-trees).
 
-Each selected expansion with nonzero cost contributes one occurrence to the expansion-depth profile. Cost profiles compare greatest value first: at the greatest value whose occurrence count differs, prefer fewer occurrences. Independent parts combine by adding their counts.
-
-When a lambda is the final list item, its body cost is discounted to zero and every expansion inside it receives the same discount. Its header retains normal costs. Discounts change neither indentation nor permitted layouts.
-
-<!-- .cpp-format
-ColumnLimit: 50
--->
-```cpp
-auto result = visit(items, [](const auto& item) {
-    return Serialize(item);
-});
-```
+Each selected expansion with nonzero effective cost contributes one occurrence to the expansion-depth profile. Cost profiles compare greatest value first: at the greatest value whose occurrence count differs, prefer fewer occurrences. Independent parts combine by adding their counts.
 
 ### Optimization
 
@@ -318,6 +307,68 @@ Within each formatted segment, choose a layout satisfying all these rules, minim
 3. Total physical line count.
 
 Remaining ties prefer compact choices in source order.
+
+#### Break-Decision Trees
+
+The solver builds one tree per formatted segment. Raw depth starts at zero and increases at every construction layer. The dump retains tokens, decision nodes (`*`), and some grouping nodes; the trees below also show collapsed syntax layers (`-`) so raw depth can be counted.
+
+Surcharges and discounts express the relative cohesion of syntax constructs, so optimization favors the expected break locations.
+
+Each surcharge or discount recursively adjusts every decision in its subtree and changes neither indentation nor permitted layouts.
+
+`effective = raw + surcharge - discount`. A decision below is annotated `[raw + surcharge - discount = effective]`.
+
+A **callable-prefix surcharge** is the smallest amount that places the prefix's shallowest decision one level deeper than its parameter-list decision. For the generic-return signature `Vector<int> func(int a);`, it makes the return type's internal choice deeper than the parameter-list choice:
+
+```text
+0 * FunctionSignature [0 + 0 - 0 = 0]
+1 ├─ - return-type Sequence
+2 │  ├─ - Token "Vector"
+2 │  └─ - TemplateArgumentList syntax
+3 │     └─ * Delimited(angle) "<int>" [3 + 2 - 0 = 5]
+1 └─ - declarator branch
+2    └─ - FunctionDeclarator Sequence
+3       ├─ - Token "func"
+3       └─ - ParameterList syntax
+4          └─ * Delimited(paren) "(int a)" [4 + 0 - 0 = 4]
+```
+
+The angle list starts at raw depth 3 and the parameter list at 4. A surcharge of 2 moves the prefix's shallowest decision one level below the parameter decision, giving the angle list effective cost 5.
+
+A **name-prefix surcharge** similarly places name-internal decisions one level deeper than the attached list; chain links retain their expression depth. In the statement segment `make<int>(value);`, both lists start at raw depth 2:
+
+```text
+0 - expression Sequence
+1 ├─ - Token "make"
+1 ├─ - TemplateArgumentList syntax
+2 │  └─ * Delimited(angle) "<int>" [2 + 1 - 0 = 3]
+1 └─ - ArgumentList syntax
+2    └─ * Delimited(paren) "(value)" [2 + 0 - 0 = 2]
+```
+
+A **final-lambda discount** equals the body's current cost and applies to the body subtree; the header remains outside it. In `visit(items, [] { return Serialize(); });`:
+
+```text
+ 0 - expression Sequence
+ 1 ├─ - Token "visit"
+ 1 └─ - ArgumentList syntax
+ 2    └─ * Delimited(paren) outer arguments [2 + 0 - 0 = 2]
+ 3       ├─ - first-item construction
+ 4       │  └─ - Token "items"
+ 3       └─ - final-item construction
+ 4          └─ * BodyHeader(lambda) [4 + 0 - 0 = 4]
+ 5             ├─ - header branch
+ 6             │  └─ - LambdaCaptureSpecifier syntax
+ 7             │     └─ * Delimited(bracket) capture [7 + 0 - 0 = 7]
+ 5             └─ - body branch
+ 6                └─ - CompoundStatement syntax
+ 7                   └─ * Delimited(brace) body [7 + 0 - 7 = 0]
+ 8                      └─ - body-item construction
+ 9                         └─ - ReturnStatement syntax
+10                            └─ * Chain(return value) [10 + 0 - 7 = 3]
+11                               └─ - ArgumentList syntax
+12                                  └─ * Delimited(paren) call arguments [12 + 0 - 7 = 5]
+```
 
 ## Source-Controlled Expansion
 
