@@ -96,6 +96,8 @@ std::string_view ChainKindName(FormatBreakChainKind kind) {
     switch (kind) {
         case FormatBreakChainKind::AfterOperator:
             return "after-operator";
+        case FormatBreakChainKind::CallApplication:
+            return "call-application";
         case FormatBreakChainKind::MemberBeforeOperator:
             return "member-before-operator";
         case FormatBreakChainKind::StreamBeforeOperator:
@@ -126,6 +128,8 @@ std::string_view ChoiceName(FormatBreakChoice choice) {
             return "split-delimiter-stack-detached-leaf";
         case FormatBreakChoice::SplitDelimiterStackRun:
             return "split-delimiter-stack-run";
+        case FormatBreakChoice::CallCompactTail:
+            return "call-compact-tail";
         case FormatBreakChoice::MemberCompactTail:
             return "member-compact-tail";
         case FormatBreakChoice::StreamCompactTail:

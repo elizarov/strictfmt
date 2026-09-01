@@ -711,6 +711,9 @@ private:
                             node, column, indentLevel, lineHasText, FormatBreakChoice::Split
                         );
                     }
+                    if (node.chainKind == FormatBreakChainKind::CallApplication) {
+                        return {SolveCallApplicationSplit(node, column, indentLevel, lineHasText)};
+                    }
                     if (node.chainKind == FormatBreakChainKind::MemberBeforeOperator) {
                         return {SolveChainSplitBeforeOperator(node, column, indentLevel, lineHasText)};
                     }
@@ -762,6 +765,9 @@ private:
                     )) {
                         alternatives.push_back(std::move(candidate));
                     }
+                } else if (node.chainKind == FormatBreakChainKind::CallApplication) {
+                    alternatives.push_back(SolveCallApplicationCompactTail(node, column, indentLevel, lineHasText));
+                    alternatives.push_back(SolveCallApplicationSplit(node, column, indentLevel, lineHasText));
                 } else if (node.chainKind == FormatBreakChainKind::MemberBeforeOperator) {
                     alternatives.push_back(SolveMemberCompactTail(node, column, indentLevel, lineHasText));
                     alternatives.push_back(SolveChainSplitBeforeOperator(node, column, indentLevel, lineHasText));
@@ -2226,7 +2232,10 @@ private:
         if (node.operands.empty() || ChoiceFor(compact, node) != FormatBreakChoice::Compact) {
             return false;
         }
-        if (node.chainKind == FormatBreakChainKind::MemberBeforeOperator) {
+        if (
+            node.chainKind == FormatBreakChainKind::CallApplication ||
+            node.chainKind == FormatBreakChainKind::MemberBeforeOperator
+        ) {
             for (size_t index = 1; index + 1 < node.operands.size(); ++index) {
                 if (node.operands[index] != nullptr && HasSelectedBreak(*node.operands[index], compact)) {
                     return false;
@@ -2252,6 +2261,9 @@ private:
         }
         if (node.chainKind == FormatBreakChainKind::StreamBeforeOperator) {
             return true;
+        }
+        if (node.chainKind == FormatBreakChainKind::CallApplication) {
+            return node.operands.size() > 2;
         }
         return IsFormatBreakUniformChain(node) && node.operators.size() > 1;
     }
@@ -3031,9 +3043,13 @@ private:
         for (size_t index = 0; index < node.operands.size(); ++index) {
             NodeResults nextByState;
             for (const NodeResult& prefix : current) {
-                const bool mustRemainStructurallyCompact = restrictIntermediateBreaks &&
-                    index + 1 < node.operands.size() &&
-                    !(node.chainKind == FormatBreakChainKind::MemberBeforeOperator && index == 0);
+                const bool mustRemainStructurallyCompact =
+                    restrictIntermediateBreaks && index + 1 < node.operands.size() && !(
+                        (
+                            node.chainKind == FormatBreakChainKind::CallApplication ||
+                            node.chainKind == FormatBreakChainKind::MemberBeforeOperator
+                        ) && index == 0
+                    );
                 NodeResults compactOperands;
                 const NodeResults* operands = nullptr;
                 if (mustRemainStructurallyCompact) {
@@ -3252,6 +3268,64 @@ private:
         return result;
     }
 
+    NodeResult
+        SolveCallApplicationCompactTail(const FormatBreakNode& node, int column, int indentLevel, bool lineHasText)
+    {
+        NodeResult
+            result{.valid = true, .endColumn = column, .endIndentLevel = indentLevel, .endLineHasText = lineHasText};
+        AddChoice(result, node.id, FormatBreakChoice::CallCompactTail, indentLevel);
+        if (node.operands.empty()) {
+            return result;
+        }
+
+        NodeResult receiver =
+            Solve(*node.operands.front(), result.endColumn, result.endIndentLevel, result.endLineHasText);
+        if (!receiver.valid) {
+            return {};
+        }
+        Merge(result, receiver);
+        AppendBreak(result, indentLevel + 1, node.breakCost);
+        for (size_t index = 1; index < node.operands.size(); ++index) {
+            const bool finalOperand = index + 1 == node.operands.size();
+            NodeResult operand = finalOperand ?
+                Solve(*node.operands[index], result.endColumn, result.endIndentLevel, result.endLineHasText) :
+                SolveNodeWithoutBreaks(
+                    *node.operands[index], result.endColumn, result.endIndentLevel, result.endLineHasText
+                );
+            if (!operand.valid) {
+                return {};
+            }
+            Merge(result, operand);
+        }
+        return result;
+    }
+
+    NodeResult SolveCallApplicationSplit(const FormatBreakNode& node, int column, int indentLevel, bool lineHasText) {
+        NodeResult
+            result{.valid = true, .endColumn = column, .endIndentLevel = indentLevel, .endLineHasText = lineHasText};
+        AddChoice(result, node.id, FormatBreakChoice::Split, indentLevel);
+        if (node.operands.empty()) {
+            return result;
+        }
+
+        NodeResult receiver =
+            Solve(*node.operands.front(), result.endColumn, result.endIndentLevel, result.endLineHasText);
+        if (!receiver.valid) {
+            return {};
+        }
+        Merge(result, receiver);
+        for (size_t index = 1; index < node.operands.size(); ++index) {
+            AppendBreak(result, indentLevel + 1, node.breakCost);
+            NodeResult operand =
+                Solve(*node.operands[index], result.endColumn, result.endIndentLevel, result.endLineHasText);
+            if (!operand.valid) {
+                return {};
+            }
+            Merge(result, operand);
+        }
+        return result;
+    }
+
     NodeResults SolveStreamSplitAlternatives(
         const FormatBreakNode& node, int column, int indentLevel, bool lineHasText, FormatBreakChoice choice
     ) {
@@ -3456,6 +3530,9 @@ private:
             if (node.chainKind == FormatBreakChainKind::StreamBeforeOperator) {
                 return SolveStreamSplit(node, column, indentLevel, lineHasText, FormatBreakChoice::Split);
             }
+            if (node.chainKind == FormatBreakChainKind::CallApplication) {
+                return SolveCallApplicationSplit(node, column, indentLevel, lineHasText);
+            }
             if (node.chainKind == FormatBreakChainKind::MemberBeforeOperator) {
                 return SolveChainSplitBeforeOperator(node, column, indentLevel, lineHasText);
             }
@@ -3495,6 +3572,15 @@ private:
                 if (compactTail.valid && !HasOverflow(compactTail)) {
                     return compactTail;
                 }
+                return best;
+            }
+            return Better(split, best) ? split : best;
+        }
+        if (node.chainKind == FormatBreakChainKind::CallApplication) {
+            NodeResult compactTail = SolveCallApplicationCompactTail(node, column, indentLevel, lineHasText);
+            NodeResult split = SolveCallApplicationSplit(node, column, indentLevel, lineHasText);
+            NodeResult best = Better(compactTail, compact) ? compactTail : compact;
+            if (compact.valid && best.valid && CompactLineEndsOverLimit(compact) && !HasOverflow(best)) {
                 return best;
             }
             return Better(split, best) ? split : best;

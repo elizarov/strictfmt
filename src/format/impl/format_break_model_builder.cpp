@@ -1039,6 +1039,46 @@ private:
         }
     }
 
+    void GroupRepeatedCallApplications(std::vector<FormatBreakNode*>& children, int depth) {
+        for (size_t begin = 1; begin < children.size();) {
+            if (!IsArgumentList(children[begin])) {
+                ++begin;
+                continue;
+            }
+            size_t end = begin + 1;
+            while (end < children.size() && IsArgumentList(children[end])) {
+                ++end;
+            }
+            if (end - begin < 2) {
+                begin = end;
+                continue;
+            }
+
+            auto receiver = MakeNode(FormatBreakNodeKind::Sequence, depth + 1);
+            receiver->children = StoreNodePointers({children[begin - 1], children[begin]});
+
+            std::vector<FormatBreakNode*> operands;
+            operands.reserve(end - begin);
+            operands.push_back(receiver);
+            operands.insert(
+                operands.end(),
+                children.begin() + static_cast<std::ptrdiff_t>(begin + 1),
+                children.begin() + static_cast<std::ptrdiff_t>(end)
+            );
+
+            auto chain = MakeNode(FormatBreakNodeKind::Chain, depth);
+            chain->chainKind = FormatBreakChainKind::CallApplication;
+            chain->operands = StoreNodePointers(operands);
+
+            children[begin - 1] = chain;
+            children.erase(
+                children.begin() + static_cast<std::ptrdiff_t>(begin),
+                children.begin() + static_cast<std::ptrdiff_t>(end)
+            );
+            begin = begin > 1 ? begin - 1 : 1;
+        }
+    }
+
     FormatBreakNode* BuildRequiredTernarySuffix(std::vector<FormatBreakNode*>& children, int depth) {
         std::vector<size_t> operatorIndices;
         for (size_t index = 0; index < children.size(); ++index) {
@@ -2239,6 +2279,7 @@ private:
             }
         }
         NormalizeNamedListBreakDepth(builtChildren);
+        GroupRepeatedCallApplications(builtChildren, depth);
         GroupMemberCallArguments(builtChildren, depth);
         if (FormatBreakNode* suffix = BuildRequiredTernarySuffix(builtChildren, depth)) {
             return suffix;
@@ -2281,6 +2322,7 @@ private:
             ++index;
         }
         NormalizeNamedListBreakDepth(builtChildren);
+        GroupRepeatedCallApplications(builtChildren, depth);
         GroupMemberCallArguments(builtChildren, depth);
         if (FormatBreakNode* suffix = BuildRequiredTernarySuffix(builtChildren, depth)) {
             return suffix;
