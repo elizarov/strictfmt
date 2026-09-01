@@ -1,6 +1,6 @@
 # Break Solver
 
-This document owns developer-facing details of the break solver in `src/format/impl/format_break_solver.h|cpp`. [format.md] owns the user-facing layout objective and legality constraints.
+This document owns developer-facing details of the break solver and its shared cost profile in `src/format/impl/format_break_solver.h|cpp` and `format_value_profile.h|cpp`. [format.md] owns the user-facing layout objective and legality constraints.
 
 ## Solver Contract
 
@@ -8,7 +8,11 @@ The solver receives a `FormatBreakModel` for one formatted segment and returns a
 
 `Better` implements the break-selection cost from [format.md].
 
-The expansion-depth profile stores the occurrence count of each nonzero break cost. `AddBreak` records the current node's cost on its first break and sets `ownExpansionCharged`; subsequent breaks only affect physical layout. `Merge` adds child occurrence counts without copying that flag, so a child cannot pay for its parent's expansion. Partial results include the flag in continuation-state comparison and dominance pruning because it changes the profile of a later break. Each independent subproblem starts uncharged; memoization needs no caller history. Adding a shared surrounding profile cannot change the greatest cost where two alternatives differ.
+`FormatValueProfile` stores sorted occurrence counts for both cost profiles. It keeps four values inline and ignores zero, so an empty profile performs no heap allocation. Profile comparison proceeds from greatest value to least, and `Merge` adds child occurrence counts. Adding a shared surrounding profile therefore cannot change the greatest value where two alternatives differ.
+
+The overflow-size profile contains completed physical lines. The current unfinished line is compared as one virtual occurrence and enters the stored profile only when a token newline, comment termination, or selected break completes it. A child that completes the caller's current line owns that occurrence, so profiles remain additive across `Merge`. Exact delimiter-stack search may price and then restore an outer line; its result marks that line as already recorded until the next break to prevent duplicate occurrences.
+
+`AddBreak` records the current node's nonzero expansion cost on its first break and sets `ownExpansionCharged`; subsequent breaks only affect physical layout. `Merge` adds child occurrence counts without copying that flag, so a child cannot pay for its parent's expansion. Partial results include the flag in continuation-state comparison and dominance pruning because it changes the profile of a later break. Each independent subproblem starts uncharged; memoization needs no caller history.
 
 A packed list's separately evaluated body inherits the opener's charged flag, but starts without the prefix's profile; the profiles merge afterward. Attached-open solving starts a fresh child result before merging it into the operator prefix. Both paths therefore obey the same ownership rule as ordinary recursive solving.
 
@@ -54,7 +58,7 @@ Before a mandatory block is printed, the printer builds the containing source it
 
 The function-signature candidate that keeps the return type and function name together while splitting the parameter list is legal only when the physical prefix through the parameter opener fits the column limit. A later unavoidable overflow, such as an atomic parameter type, does not make an additional avoidable prefix overflow legal.
 
-Token candidates account for their complete physical rendering. Newlines embedded in token text contribute physical lines and reset the continuation column. Comment tokens also include the mandatory newline emitted after the comment and reset the continuation to the current indentation. A standalone comment between formatter-owned chain links remains in that chain model and is associated with the following operator, so both solving and emission use the chain-item indentation. These line transitions participate in the same overflow and line-count cost as selected break choices.
+Token candidates account for their complete physical rendering. Newlines embedded in token text contribute physical lines and reset the continuation column. Comment tokens also include the mandatory newline emitted after the comment and reset the continuation to the current indentation. A standalone comment between formatter-owned chain links remains in that chain model and is associated with the following operator, so both solving and emission use the chain-item indentation. These line transitions participate in the same optimization cost as selected break choices.
 
 Compact one-line probes reject every token containing an intrinsic newline. Normal solving classifies a multiline literal token as an intrinsic tail expansion and propagates that classification only through an otherwise flat final sequence, chain operand, or delimiter item. Compact enclosing delimiters may therefore stay attached to the literal's first and last physical lines, while a multiline non-final item, comment, or earlier structural break still requires split form. The same classification is used for ordinary delimiters and transparent delimiter stacks; emission remains the normal compact choice.
 
@@ -87,7 +91,7 @@ Allowed speedups include:
 - Memoization by solver state.
 - Rejecting layouts that violate documented legality constraints.
 - Dominance pruning when another candidate with the same continuation state is no worse in every cost component and better in at least one.
-- Fast paths that prove the returned layout is already optimal for the subproblem, such as a compact one-line layout with zero overflow and zero extra lines.
+- Fast paths that prove the returned layout is already optimal for the subproblem, such as a compact one-line layout with an empty overflow-size profile and zero extra lines.
 - Specialized candidate generation that only omits layouts proven dominated by generated candidates.
 
 Not allowed:
@@ -101,7 +105,7 @@ When adding a speedup whose proof is not obvious from the code, document the inv
 
 For compact and packed-split lists, every non-final item must remain on the body's first physical line. A shared one-line probe checks those items and their separators before recursive enumeration, at each form's own starting column:
 
-- The per-item split candidate is evaluated first. If it has zero maximum overflow and the compact prefix (including the opener) cannot fit, compact layouts are illegal or worse on the primary overflow cost and are skipped.
+- The per-item split candidate is evaluated first. If it has an empty overflow-size profile and the compact prefix (including the opener) cannot fit, compact layouts are illegal or worse on the primary cost and are skipped.
 - Packed split requires a zero-overflow body. If its inline prefix cannot fit after the opening break, that entire branch is illegal and is skipped regardless of other candidates.
 
 The final item is excluded from the probe because eligible non-angle layout may give it a multiline tail; angle lists reject that candidate later. These probes change search work, not candidate ordering or tie-breaking.
@@ -115,9 +119,9 @@ Transparent single-item delimiter stacks are an indent-economy specialization. T
 - Split stack layout with a detached leaf is a separate candidate.
 - The solver chooses among those candidates with `Better`; leaf detachment is not decided by overflow or child-choice heuristics.
 
-The opener-run construction uses a greedy zero-overflow fast path. It delays each run boundary until the next opener would overflow. If the completed candidate has zero overflow, this is optimal under the normal cost:
+The opener-run construction uses a greedy zero-overflow fast path. It delays each run boundary until the next opener would overflow. If the completed candidate has an empty overflow-size profile, this is optimal under the normal cost:
 
-- Zero is the minimum possible maximum overflow and overflowing-line count.
+- The empty overflow-size profile is minimal.
 - All opener-run and matching closer breaks belong to one stack-root expansion. Once charged, extra runs add no cost and only reduce the space available to the leaf.
 - By induction over runs, breaking earlier leaves at least as many openers for a line at the same or deeper indentation, so it cannot use fewer runs.
 - Each extra run adds an opener line and a matching closer line. Among equally charged expansions, the minimum-run partition therefore minimizes line count.
@@ -125,6 +129,6 @@ The opener-run construction uses a greedy zero-overflow fast path. It delays eac
 
 For a detached leaf, the same proof applies when only the leaf overflows but every delimiter line fits: the minimum run count gives the shallowest leaf indentation, and another run cannot improve the leaf layout.
 
-The proof does not apply when a delimiter line overflows. An extra run can then reduce maximum overflow even though it adds lines. The solver uses exact partition DP for that case and compares the complete candidates with `Better`. A zero-overflow attached-leaf search uses the same minimum-run invariant to restrict its prefix search without discarding a winning layout.
+The proof does not apply when a delimiter line overflows. An extra run can then improve the overflow-size profile even though it adds lines. The solver uses exact partition DP for that case and compares the complete candidates with `Better`. A zero-overflow attached-leaf search uses the same minimum-run invariant to restrict its prefix search without discarding a winning layout.
 
 Every selected opener-run boundary is stored as `SplitDelimiterStackRun` on the corresponding opener node. The pretty printer reads those choices; it does not repeat the threshold calculation.
