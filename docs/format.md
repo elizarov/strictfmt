@@ -298,7 +298,7 @@ An expansion's base cost is its construct's structural depth in the formatted se
 
 Each selected expansion with nonzero cost contributes one occurrence to the expansion-depth profile. At the greatest cost whose occurrence count differs, prefer fewer occurrences. Profiles of independent parts combine by adding their counts.
 
-When a lambda is the final list item, its body expansion receives a full discount and contributes no occurrence. Expansions in its header and body expressions retain their normal cost. Discounts change neither indentation nor permitted layouts.
+When a lambda is the final list item, its body cost is discounted to zero and every expansion inside it receives the same discount. Its header retains normal costs. Discounts change neither indentation nor permitted layouts.
 
 <!-- .cpp-format
 ColumnLimit: 50

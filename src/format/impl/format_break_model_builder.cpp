@@ -772,6 +772,25 @@ private:
         return node;
     }
 
+    static void DiscountBreakCostsRecursively(FormatBreakNode& node, int discount) {
+        node.breakCost = std::max(0, node.breakCost - discount);
+        for (FormatBreakNode* child : node.children) {
+            if (child != nullptr) {
+                DiscountBreakCostsRecursively(*child, discount);
+            }
+        }
+        for (FormatBreakListItem& item : node.items) {
+            if (item.node != nullptr) {
+                DiscountBreakCostsRecursively(*item.node, discount);
+            }
+        }
+        for (FormatBreakNode* operand : node.operands) {
+            if (operand != nullptr) {
+                DiscountBreakCostsRecursively(*operand, discount);
+            }
+        }
+    }
+
     static void DiscountFinalLambdaBody(FormatBreakNode& list) {
         size_t end = list.items.size();
         while (end != 0 && IsStandaloneCommentItem(list, end - 1)) {
@@ -783,30 +802,53 @@ private:
         }
         FormatBreakNode* body = UnwrapSingleChildSequence(lambda->children.back());
         if (body != nullptr && body->kind == FormatBreakNodeKind::Delimited) {
-            body->breakCost = 0;
+            DiscountBreakCostsRecursively(*body, body->breakCost);
         }
     }
 
-    static void NormalizeBreakCosts(FormatBreakNode& node) {
+    static void InitializeBreakCosts(FormatBreakNode& node) {
         node.breakCost = node.structuralDepth;
         for (FormatBreakNode* child : node.children) {
             if (child != nullptr) {
-                NormalizeBreakCosts(*child);
+                InitializeBreakCosts(*child);
             }
         }
         for (FormatBreakListItem& item : node.items) {
             if (item.node != nullptr) {
-                NormalizeBreakCosts(*item.node);
+                InitializeBreakCosts(*item.node);
             }
         }
         for (FormatBreakNode* operand : node.operands) {
             if (operand != nullptr) {
-                NormalizeBreakCosts(*operand);
+                InitializeBreakCosts(*operand);
             }
         }
+    }
+
+    static void ApplyFinalLambdaDiscounts(FormatBreakNode& node) {
         if (node.kind == FormatBreakNodeKind::Delimited) {
             DiscountFinalLambdaBody(node);
         }
+        for (FormatBreakNode* child : node.children) {
+            if (child != nullptr) {
+                ApplyFinalLambdaDiscounts(*child);
+            }
+        }
+        for (FormatBreakListItem& item : node.items) {
+            if (item.node != nullptr) {
+                ApplyFinalLambdaDiscounts(*item.node);
+            }
+        }
+        for (FormatBreakNode* operand : node.operands) {
+            if (operand != nullptr) {
+                ApplyFinalLambdaDiscounts(*operand);
+            }
+        }
+    }
+
+    static void NormalizeBreakCosts(FormatBreakNode& node) {
+        InitializeBreakCosts(node);
+        ApplyFinalLambdaDiscounts(node);
     }
 
     static void NormalizeCallablePrefixBreakDepth(FormatBreakNode& prefix, const FormatBreakNode& declarator) {

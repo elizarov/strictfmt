@@ -3490,6 +3490,18 @@ auto NestedSingleLambdaArgumentGroups() {
     )));
 }
 
+auto RecursiveFinalLambdaDiscountKeepsTemplateName() {
+    if (!IsBatchSizePredictionRequestEnabled(exp3)) {
+        return subrequests | ranges::MapTo<std::unordered_map<SlotId, std::optional<mem::SPtr<BatchSizePrediction>>>>(
+            [](const auto& subrequest) {
+                return std::make_pair(
+                    subrequest.slot_params.slot().slot_id, std::optional<mem::SPtr<BatchSizePrediction>>{}
+                );
+            }
+        );
+    }
+}
+
 void FinalLambdaDiscountExamples() {
     optional::Map(
         [&](const auto& cargo_options) { builder[fields::kCargoOptions] = json::Serialize(cargo_options); },
