@@ -473,6 +473,25 @@ void NormalizeColonPrefixedListComments(SyntaxNode& node) {
     }
 }
 
+void NormalizeBlockHeaderTrailingComment(SyntaxNode& node) {
+    for (size_t index = 0; index < node.children.size(); ++index) {
+        SyntaxNode* comment = node.children[index];
+        if (
+            comment == nullptr || comment->kind != SyntaxNodeKind::TrailingComment || !comment->text.starts_with("/*")
+        ) {
+            continue;
+        }
+        const std::optional<size_t> nextIndex = NextNonTriviaChildIndex(node.children, index + 1);
+        if (
+            nextIndex &&
+            node.children[*nextIndex] != nullptr &&
+            SyntaxNodeKindHasClass(node.children[*nextIndex]->kind, SyntaxNodeClass::CompoundBlock)
+        ) {
+            comment->kind = SyntaxNodeKind::LexicalToken;
+        }
+    }
+}
+
 constexpr std::uint64_t kDeclarationGroupClasses = static_cast<std::uint64_t>(SyntaxNodeClass::DeclarationGroupType) |
     static_cast<std::uint64_t>(SyntaxNodeClass::DeclarationGroupForwardType) |
     static_cast<std::uint64_t>(SyntaxNodeClass::DeclarationGroupCallable) |
@@ -824,6 +843,7 @@ void NormalizeSyntaxNode(FormatModel& model, SyntaxNode& node) {
     NormalizeTrailingCommas(model, node);
     NormalizeControlBodies(model, node);
     NormalizeColonPrefixedListComments(node);
+    NormalizeBlockHeaderTrailingComment(node);
 }
 
 struct TsNodeSyntax {

@@ -64,6 +64,7 @@ Mandatory line breaks are structural boundaries. The break is always taken befor
 - Break between complete statements and declarations, including after each statement-terminating semicolon, except inside a single-line function or lambda body.
 - Remove structurally optional null declarations and statements, including first items in a scope, while preserving their comments. Null statements required as bodies remain subject to control-brace normalization.
 - Put block-opening braces at the end of the introducing line, then break.
+  - A trailing `/* ... */` header comment stays before the brace on that line.
   - For a non-empty block, if a multiline header ends at body indentation, put `{` on its own line at the block owner's indentation. A closing-delimiter line at owner indentation already provides this separation.
 - Keep an empty code block as `{}` without a body break.
 - Apply the closing-brace attachment rules under [Declaration And Control Headers](#declaration-and-control-headers).
