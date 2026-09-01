@@ -3185,6 +3185,11 @@ void FallthroughSpaceBeforeSemicolon(int value) {
     }
 }
 
+formats::json::Value SerializeWithUnnamedParameter(
+    const CallCenterTariffSettings& data,
+    const formats::serialize::To<formats::json::Value>& /*to*/
+) {}
+
 void ForEmptyInitSpacingOrBody(size_t count) {
     size_t len = 0;
     for (; (1UL << len) < count; ++len) {}
@@ -3192,7 +3197,7 @@ void ForEmptyInitSpacingOrBody(size_t count) {
 
 void StandaloneOrTrailingCommentsMoved(int command) {
     switch (command) {
-        case 67:  /* command complete */
+        case 67: /* command complete */
             Complete();
             break;
     }

@@ -504,6 +504,8 @@ bool IsCommentToken(PrintTokenKind kind) {
     return kind == PrintTokenKind::Comment || kind == PrintTokenKind::TrailingComment;
 }
 
+bool IsLineCommentToken(const PrintToken& token) { return IsCommentToken(token.kind) && token.text.starts_with("//"); }
+
 bool IsWordLike(const PrintToken& token) {
     if (token.kind == PrintTokenKind::Text) {
         return !token.text.empty() && (IsWordBoundaryChar(token.text.front()) || IsWordBoundaryChar(token.text.back()));

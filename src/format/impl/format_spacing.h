@@ -54,6 +54,7 @@ inline bool PrintTokenSyntaxHasClass(const PrintToken& token, SyntaxNodeClass sy
 bool IsPreprocessorPrintToken(PrintTokenKind kind);
 bool IsPreprocessorLikeToken(const PrintToken& token);
 bool IsCommentToken(PrintTokenKind kind);
+bool IsLineCommentToken(const PrintToken& token);
 bool IsWordLike(const PrintToken& token);
 bool IsStringLike(const PrintToken& token);
 bool IsAccessKeyword(const PrintToken& token);
