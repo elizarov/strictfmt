@@ -3,7 +3,32 @@
 #include <algorithm>
 #include <cassert>
 #include <cstddef>
+#include <memory>
 #include <span>
+
+FormatValueProfile::FormatValueProfile(const FormatValueProfile& other) :
+    inlineEntries_(other.inlineEntries_), inlineSize_(other.inlineSize_)
+{
+    if (other.heapEntries_ != nullptr) {
+        heapEntries_ = std::make_unique<std::vector<Entry>>(*other.heapEntries_);
+    }
+}
+
+FormatValueProfile& FormatValueProfile::operator=(const FormatValueProfile& other) {
+    if (this == &other) {
+        return *this;
+    }
+    inlineEntries_ = other.inlineEntries_;
+    inlineSize_ = other.inlineSize_;
+    if (other.heapEntries_ == nullptr) {
+        heapEntries_.reset();
+    } else if (heapEntries_ == nullptr) {
+        heapEntries_ = std::make_unique<std::vector<Entry>>(*other.heapEntries_);
+    } else {
+        *heapEntries_ = *other.heapEntries_;
+    }
+    return *this;
+}
 
 void FormatValueProfile::AddValue(int value) {
     assert(value >= 0);
@@ -18,7 +43,7 @@ void FormatValueProfile::Add(const FormatValueProfile& other) {
     }
 }
 
-bool FormatValueProfile::Empty() const { return inlineSize_ == 0 && heapEntries_.empty(); }
+bool FormatValueProfile::Empty() const { return inlineSize_ == 0 && heapEntries_ == nullptr; }
 
 int FormatValueProfile::GreatestValue() const {
     const std::span<const Entry> entries = Entries();
@@ -28,15 +53,15 @@ int FormatValueProfile::GreatestValue() const {
 void FormatValueProfile::AddOccurrences(int value, int occurrences) {
     assert(value > 0);
     assert(occurrences > 0);
-    if (!heapEntries_.empty()) {
+    if (heapEntries_ != nullptr) {
         const auto found =
-            std::lower_bound(heapEntries_.begin(), heapEntries_.end(), value, [](const Entry& entry, int candidate) {
+            std::lower_bound(heapEntries_->begin(), heapEntries_->end(), value, [](const Entry& entry, int candidate) {
                 return entry.value < candidate;
             });
-        if (found != heapEntries_.end() && found->value == value) {
+        if (found != heapEntries_->end() && found->value == value) {
             found->occurrences += occurrences;
         } else {
-            heapEntries_.insert(found, {.value = value, .occurrences = occurrences});
+            heapEntries_->insert(found, {.value = value, .occurrences = occurrences});
         }
         return;
     }
@@ -58,13 +83,13 @@ void FormatValueProfile::AddOccurrences(int value, int occurrences) {
         ++inlineSize_;
         return;
     }
-    heapEntries_.assign(inlineEntries_.begin(), inlineEntries_.end());
+    heapEntries_ = std::make_unique<std::vector<Entry>>(inlineEntries_.begin(), inlineEntries_.end());
     AddOccurrences(value, occurrences);
 }
 
 std::span<const FormatValueProfile::Entry> FormatValueProfile::Entries() const {
-    if (!heapEntries_.empty()) {
-        return heapEntries_;
+    if (heapEntries_ != nullptr) {
+        return *heapEntries_;
     }
     return {inlineEntries_.data(), inlineSize_};
 }

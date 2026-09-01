@@ -2,7 +2,9 @@
 
 #include <atomic>
 #include <chrono>
+#include <condition_variable>
 #include <cstddef>
+#include <mutex>
 #include <string>
 #include <string_view>
 #include <thread>
@@ -43,6 +45,8 @@ void RunToolParallelFor(size_t workSize, size_t requestedConcurrency, ToolFilePr
 
     std::atomic<size_t> nextIndex = 0;
     std::atomic<size_t> completedCount = 0;
+    std::mutex completionMutex;
+    std::condition_variable completionCondition;
     std::vector<std::thread> workers;
     workers.reserve(workerCount);
     for (size_t workerIndex = 0; workerIndex < workerCount; ++workerIndex) {
@@ -53,17 +57,28 @@ void RunToolParallelFor(size_t workSize, size_t requestedConcurrency, ToolFilePr
                     return;
                 }
                 worker(index);
-                completedCount.fetch_add(1, std::memory_order_relaxed);
+                const size_t completed = completedCount.fetch_add(1, std::memory_order_release) + 1;
+                if (completed == workSize) {
+                    // Synchronizing the final notification with the wait mutex prevents a lost wake between the
+                    // completion predicate and wait. Earlier completions need no notification: progress refreshes
+                    // on the existing bounded interval, while final completion wakes the caller immediately.
+                    std::lock_guard lock(completionMutex);
+                    completionCondition.notify_one();
+                }
             }
         });
     }
 
-    while (completedCount.load(std::memory_order_relaxed) < workSize) {
+    std::unique_lock completionLock(completionMutex);
+    while (completedCount.load(std::memory_order_acquire) < workSize) {
         if (progress != nullptr) {
-            progress->Update(completedCount.load(std::memory_order_relaxed));
+            progress->Update(completedCount.load(std::memory_order_acquire));
         }
-        std::this_thread::sleep_for(std::chrono::milliseconds(50));
+        completionCondition.wait_for(completionLock, std::chrono::milliseconds(50), [&]() {
+            return completedCount.load(std::memory_order_acquire) == workSize;
+        });
     }
+    completionLock.unlock();
     for (std::thread& thread : workers) {
         thread.join();
     }

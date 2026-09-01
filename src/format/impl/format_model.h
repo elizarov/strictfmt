@@ -357,6 +357,7 @@ enum class SyntaxNodeClass : std::uint64_t {
     QualifiedName = 1ull << 59,
     DeclarationGroupForwardType = 1ull << 60,
     NamedList = 1ull << 61,
+    ContainsConditionalPreprocessor = 1ull << 62,
 };
 
 enum class SyntaxWrapperRole : std::uint8_t {
@@ -378,6 +379,7 @@ SyntaxNodeKind SyntaxNodeKindFromPreprocessorDirectiveLine(std::string_view line
 SyntaxSymbolInfo SyntaxSymbolInfoForSymbol(TSSymbol symbol);
 std::string_view SyntaxNodeKindName(SyntaxNodeKind kind);
 std::string_view SyntaxNodeKindTokenText(SyntaxNodeKind kind);
+std::uint64_t SyntaxNodeKindClasses(SyntaxNodeKind kind);
 bool SyntaxNodeKindHasClass(SyntaxNodeKind kind, SyntaxNodeClass syntaxNodeClass);
 bool CallableBodyAllowsCompactSingleStatementForm(const SyntaxNode& node, SyntaxNodeKind parentKind);
 
@@ -397,6 +399,7 @@ struct SyntaxNode {
     mutable std::uint32_t formatSelectionMark = 0;
     mutable std::uint32_t formatTokenMark = 0;
     mutable bool formatSpaceBefore = false;
+    mutable std::uint8_t compactCallableBodyCache = 0;
 };
 
 struct FormatModel {

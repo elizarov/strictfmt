@@ -2,11 +2,18 @@
 
 #include <array>
 #include <cstddef>
+#include <memory>
 #include <span>
 #include <vector>
 
 class FormatValueProfile {
 public:
+    FormatValueProfile() = default;
+    FormatValueProfile(const FormatValueProfile& other);
+    FormatValueProfile(FormatValueProfile&& other) noexcept = default;
+    FormatValueProfile& operator=(const FormatValueProfile& other);
+    FormatValueProfile& operator=(FormatValueProfile&& other) noexcept = default;
+
     void AddValue(int value);
     void Add(const FormatValueProfile& other);
 
@@ -24,7 +31,7 @@ private:
 
     std::array<Entry, 4> inlineEntries_{};
     size_t inlineSize_ = 0;
-    std::vector<Entry> heapEntries_;
+    std::unique_ptr<std::vector<Entry>> heapEntries_;
 
     friend int CompareFormatValueProfiles(const FormatValueProfile& left, const FormatValueProfile& right);
     friend int CompareFormatValueProfilesWithAdditionalValues(

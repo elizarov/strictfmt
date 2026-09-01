@@ -2,6 +2,8 @@
 
 #include <algorithm>
 #include <chrono>
+#include <cstdint>
+#include <memory>
 #include <numeric>
 #include <optional>
 #include <string>
@@ -42,6 +44,14 @@ struct DeclarationGroupState {
     const SyntaxNode* preparedItem = nullptr;
 };
 
+struct CachedDeclarationLayout {
+    std::uint32_t endSourceIndex = 0;
+    int startColumn = 0;
+    int baseIndentLevel = 0;
+    FormatBreakModel model;
+    FormatBreakSolution solution;
+};
+
 struct BraceFrame {
     BraceRole role = BraceRole::Compact;
     int parenDepth = 0;
@@ -52,6 +62,23 @@ struct BraceFrame {
 bool SyntaxNodeHasClass(const SyntaxNode& node, SyntaxNodeClass syntaxNodeClass) {
     return (node.classes & static_cast<std::uint64_t>(syntaxNodeClass)) != 0 ||
         SyntaxNodeKindHasClass(node.kind, syntaxNodeClass);
+}
+
+bool BreakModelHasLayoutChoice(const FormatBreakModel& model) {
+    // Token and sequence nodes have exactly one layout. Emitting them with the default compact solution is the same
+    // as running the solver, while a dump still runs it so the diagnostic model remains complete. The builder sets
+    // this summary monotonically for every created node, making it equivalent to scanning the completed model.
+    return model.hasLayoutChoice;
+}
+
+const SyntaxNode* DeclarationScopeItem(const SyntaxNode* node) {
+    for (const SyntaxNode* cursor = node; cursor != nullptr && cursor->parent != nullptr; cursor = cursor->parent) {
+        // DeclarationScope is a syntax-local normalized class, so its authoritative value is stored on the node.
+        if ((cursor->parent->classes & static_cast<std::uint64_t>(SyntaxNodeClass::DeclarationScope)) != 0) {
+            return cursor;
+        }
+    }
+    return nullptr;
 }
 
 bool IsPreprocessorNode(const SyntaxNode& node) {
@@ -80,6 +107,47 @@ BraceRole RoleForBraceParent(SyntaxNodeKind parentKind) {
         default:
             return BraceRole::Compact;
     }
+}
+
+bool ContainsSourceLineBreak(std::string_view text);
+
+void InitializePrintTokenTraits(PrintToken& token) {
+    if (token.kind == PrintTokenKind::Known && token.text.empty()) {
+        token.text = SyntaxNodeKindTokenText(token.syntaxKind);
+    }
+    token.syntaxClasses = SyntaxNodeKindClasses(token.syntaxKind);
+    token.stringLike = PrintTokenSyntaxHasClass(token, SyntaxNodeClass::StringLike) ||
+        (token.kind == PrintTokenKind::Text && token.text.find('"') != std::string_view::npos);
+    token.containsSourceLineBreak = ContainsSourceLineBreak(FormatTokenText(token));
+    token.inFieldInitializerList = token.parentKind == SyntaxNodeKind::FieldInitializerList ||
+        token.grandParentKind == SyntaxNodeKind::FieldInitializerList;
+}
+
+enum PrintTokenAncestryFlag : std::uint8_t {
+    InMacroStatementSequence = 1u << 0,
+    InLeadingStreamOperatorChain = 1u << 1,
+    InConditionalStreamOperatorChain = 1u << 2,
+    InConditionalFunctionHeader = 1u << 3,
+    InBareMacroItem = 1u << 4,
+    InTemplateList = 1u << 5,
+};
+
+void ApplyPrintTokenAncestryTraits(
+    PrintToken& token,
+    std::uint8_t flags,
+    const SyntaxNode* declarationScopeItem,
+    bool inTemplateDeclarationBlock,
+    bool inTemplateDeclarationHeader
+) {
+    token.inMacroStatementSequence = (flags & InMacroStatementSequence) != 0;
+    token.inLeadingStreamOperatorChain = (flags & InLeadingStreamOperatorChain) != 0;
+    token.inConditionalStreamOperatorChain = (flags & InConditionalStreamOperatorChain) != 0;
+    token.inConditionalFunctionHeader = (flags & InConditionalFunctionHeader) != 0;
+    token.inBareMacroItem = (flags & InBareMacroItem) != 0;
+    token.inTemplateList = (flags & InTemplateList) != 0;
+    token.inTemplateDeclarationBlock = inTemplateDeclarationBlock;
+    token.inTemplateDeclarationHeader = inTemplateDeclarationHeader;
+    token.declarationScopeItem = declarationScopeItem;
 }
 
 bool IsNamespaceDefinitionDeclarationList(const PrintToken& token) {
@@ -116,15 +184,6 @@ bool IsCompactSingleStatementFunctionBodyBrace(const PrintToken& token) {
     return token.inCompactSingleStatementBody &&
         token.parentKind == SyntaxNodeKind::CompoundStatement &&
         token.grandParentKind == SyntaxNodeKind::FunctionDefinition;
-}
-
-bool IsWithinConditionalFunctionHeader(const PrintToken& token) {
-    for (const SyntaxNode* node = token.node; node != nullptr; node = node->parent) {
-        if (SyntaxNodeHasClass(*node, SyntaxNodeClass::ConditionalFunctionHeader)) {
-            return true;
-        }
-    }
-    return false;
 }
 
 bool IsDeclarationModifierPreprocessorToken(const PrintToken& token) {
@@ -466,6 +525,10 @@ void AppendPreprocessorPrintToken(
     bool inMacroValue,
     bool structuredPreprocessor,
     const SyntaxNode* macroDefinition,
+    std::uint8_t ancestryFlags,
+    const SyntaxNode* declarationScopeItem,
+    bool inTemplateDeclarationBlock,
+    bool inTemplateDeclarationHeader,
     std::vector<PrintToken>& tokens
 ) {
     tokens.push_back({
@@ -483,6 +546,9 @@ void AppendPreprocessorPrintToken(
         .node = &node,
         .macroDefinition = macroDefinition
     });
+    ApplyPrintTokenAncestryTraits(
+        tokens.back(), ancestryFlags, declarationScopeItem, inTemplateDeclarationBlock, inTemplateDeclarationHeader
+    );
 }
 
 void AppendTokens(
@@ -495,6 +561,10 @@ void AppendTokens(
     bool inCompactSingleStatementBody,
     const SyntaxNode* macroDefinition,
     bool inMacroValue,
+    std::uint8_t ancestryFlags,
+    const SyntaxNode* declarationScopeItem,
+    bool inTemplateDeclarationBlock,
+    bool inTemplateDeclarationHeader,
     std::vector<PrintToken>& tokens
 ) {
     const SyntaxNodeKind nodeKind = node.kind;
@@ -508,6 +578,45 @@ void AppendTokens(
     const SyntaxNode* childMacroDefinition = macroDefinition != nullptr ? macroDefinition :
         (SyntaxNodeKindHasClass(nodeKind, SyntaxNodeClass::MacroDefinition) ? &node : nullptr);
     const bool childInMacroValue = inMacroValue || nodeKind == SyntaxNodeKind::MacroReplacementList;
+    std::uint8_t childAncestryFlags = ancestryFlags;
+    childAncestryFlags |= nodeKind == SyntaxNodeKind::MacroStatementSequence ? InMacroStatementSequence : 0;
+    childAncestryFlags |=
+        (node.classes & static_cast<std::uint64_t>(SyntaxNodeClass::LeadingStreamOperatorChain)) != 0 ?
+            InLeadingStreamOperatorChain : 0;
+    childAncestryFlags |=
+        (node.classes & static_cast<std::uint64_t>(SyntaxNodeClass::ConditionalStreamOperatorChain)) != 0 ?
+            InConditionalStreamOperatorChain : 0;
+    childAncestryFlags |= (node.classes & static_cast<std::uint64_t>(SyntaxNodeClass::ConditionalFunctionHeader)) != 0 ?
+        InConditionalFunctionHeader : 0;
+    childAncestryFlags |= nodeKind == SyntaxNodeKind::BareMacroItem ? InBareMacroItem : 0;
+    childAncestryFlags |=
+        (nodeKind == SyntaxNodeKind::TemplateArgumentList || nodeKind == SyntaxNodeKind::TemplateParameterList) ?
+            InTemplateList : 0;
+    const SyntaxNode* childDeclarationScopeItem = node.parent != nullptr &&
+        (node.parent->classes & static_cast<std::uint64_t>(SyntaxNodeClass::DeclarationScope)) != 0 ? &node :
+        declarationScopeItem;
+    bool childInTemplateDeclarationBlock = inTemplateDeclarationBlock;
+    bool childInTemplateDeclarationHeader = inTemplateDeclarationHeader;
+    if (nodeKind == SyntaxNodeKind::TemplateDeclaration) {
+        childInTemplateDeclarationBlock = false;
+        childInTemplateDeclarationHeader = false;
+    } else {
+        childInTemplateDeclarationBlock =
+            childInTemplateDeclarationBlock || RoleForBraceParent(nodeKind) != BraceRole::Compact;
+        childInTemplateDeclarationHeader = childInTemplateDeclarationHeader ||
+            nodeKind == SyntaxNodeKind::KeywordTemplate ||
+            nodeKind == SyntaxNodeKind::TemplateParameterList ||
+            nodeKind == SyntaxNodeKind::RequiresClause;
+    }
+    const auto applyAncestryTraits = [&]() {
+        ApplyPrintTokenAncestryTraits(
+            tokens.back(),
+            childAncestryFlags,
+            childDeclarationScopeItem,
+            childInTemplateDeclarationBlock,
+            childInTemplateDeclarationHeader
+        );
+    };
 
     if (nodeKind == SyntaxNodeKind::BlankLine) {
         tokens.push_back({
@@ -516,6 +625,7 @@ void AppendTokens(
             .node = &node,
             .macroDefinition = childMacroDefinition
         });
+        applyAncestryTraits();
         return;
     }
     if (nodeKind == SyntaxNodeKind::Comment || nodeKind == SyntaxNodeKind::TrailingComment) {
@@ -534,6 +644,7 @@ void AppendTokens(
             .node = &node,
             .macroDefinition = childMacroDefinition
         });
+        applyAncestryTraits();
         return;
     }
     if (IsStandalonePreprocessorBranchToken(node, parentKind)) {
@@ -551,6 +662,7 @@ void AppendTokens(
             .node = &node,
             .macroDefinition = childMacroDefinition
         });
+        applyAncestryTraits();
         return;
     }
     if (IsStructuredConditionalPreprocessorNode(node)) {
@@ -566,6 +678,10 @@ void AppendTokens(
             childInMacroValue,
             true,
             childMacroDefinition,
+            childAncestryFlags,
+            childDeclarationScopeItem,
+            childInTemplateDeclarationBlock,
+            childInTemplateDeclarationHeader,
             tokens
         );
 
@@ -588,6 +704,10 @@ void AppendTokens(
                     childInMacroValue,
                     true,
                     childMacroDefinition,
+                    childAncestryFlags,
+                    childDeclarationScopeItem,
+                    childInTemplateDeclarationBlock,
+                    childInTemplateDeclarationHeader,
                     tokens
                 );
                 continue;
@@ -617,6 +737,10 @@ void AppendTokens(
                 childInCompactSingleStatementBody,
                 childMacroDefinition,
                 childInMacroValue,
+                childAncestryFlags,
+                childDeclarationScopeItem,
+                childInTemplateDeclarationBlock,
+                childInTemplateDeclarationHeader,
                 tokens
             );
         }
@@ -637,6 +761,7 @@ void AppendTokens(
             .node = &node,
             .macroDefinition = childMacroDefinition
         });
+        applyAncestryTraits();
         return;
     }
     if (nodeKind == SyntaxNodeKind::IncludeRun) {
@@ -653,6 +778,7 @@ void AppendTokens(
             .node = &node,
             .macroDefinition = childMacroDefinition
         });
+        applyAncestryTraits();
         return;
     }
     if (IsPreprocessorNode(node)) {
@@ -670,6 +796,7 @@ void AppendTokens(
             .node = &node,
             .macroDefinition = childMacroDefinition
         });
+        applyAncestryTraits();
         return;
     }
     if (nodeKind == SyntaxNodeKind::LexicalToken || node.children.empty()) {
@@ -687,6 +814,7 @@ void AppendTokens(
             .node = &node,
             .macroDefinition = childMacroDefinition
         });
+        applyAncestryTraits();
         return;
     }
     if (nodeKind == SyntaxNodeKind::MacroReplacementList) {
@@ -701,6 +829,10 @@ void AppendTokens(
                 childInCompactSingleStatementBody,
                 childMacroDefinition,
                 true,
+                childAncestryFlags,
+                childDeclarationScopeItem,
+                childInTemplateDeclarationBlock,
+                childInTemplateDeclarationHeader,
                 tokens
             );
         }
@@ -718,6 +850,10 @@ void AppendTokens(
                 childInCompactSingleStatementBody,
                 childMacroDefinition,
                 childInMacroValue,
+                childAncestryFlags,
+                childDeclarationScopeItem,
+                childInTemplateDeclarationBlock,
+                childInTemplateDeclarationHeader,
                 tokens
             );
         }
@@ -914,18 +1050,29 @@ public:
         indentWidth_(std::max(1, config.indentWidth)),
         tabWidth_(std::max(1, config.tabWidth)) {}
 
-    std::string Print(const std::vector<PrintToken>& tokens) {
+    std::string Print(const std::vector<PrintToken>& tokens, size_t sourceSize) {
         activeTokens_ = &tokens;
         AnalyzeDeclarationGroups(tokens);
-        output_.reserve(tokens.size() * 8);
+        output_.reserve(std::max(tokens.size() * 8, sourceSize));
         pendingTokens_.reserve(64);
+        const PrintToken* previous = nullptr;
+        size_t nextIndex = 0;
         for (size_t index = 0; index < tokens.size(); ++index) {
             currentTokenIndex_ = index;
-            const PrintToken* previous = PreviousToken(tokens, index);
+            nextIndex = std::max(nextIndex, index + 1);
+            while (
+                nextIndex < tokens.size() &&
+                (tokens[nextIndex].kind == PrintTokenKind::BlankLine || IsCommentToken(tokens[nextIndex].kind))
+            ) {
+                ++nextIndex;
+            }
             const PrintToken* rawPrevious = index == 0 ? nullptr : &tokens[index - 1];
-            const PrintToken* next = NextToken(tokens, index);
+            const PrintToken* next = nextIndex < tokens.size() ? &tokens[nextIndex] : nullptr;
             const PrintToken* rawNext = RawNextToken(tokens, index);
             PrintOne(tokens[index], previous, rawPrevious, next, rawNext);
+            if (tokens[index].kind != PrintTokenKind::BlankLine && !IsCommentToken(tokens[index].kind)) {
+                previous = &tokens[index];
+            }
         }
         activeTokens_ = nullptr;
         FlushPendingTokens();
@@ -971,41 +1118,15 @@ private:
     std::optional<int> pendingIndentRestoreAfterFlush_;
     std::unordered_set<const SyntaxNode*> isolatedDeclarationItems_;
     std::unordered_map<const SyntaxNode*, DeclarationGroupState> declarationGroupStates_;
+    std::vector<std::unique_ptr<CachedDeclarationLayout>> declarationLayoutsBySourceIndex_;
+    std::vector<const SyntaxNode*> nextDeclarationItemsBySourceIndex_;
     std::unordered_set<const SyntaxNode*> requiredChainBreakOperators_;
     std::unordered_map<const SyntaxNode*, const SyntaxNode*> requiredChainBreakGroups_;
     std::unordered_map<const SyntaxNode*, int> requiredChainBreakBaseIndents_;
     std::unordered_set<const SyntaxNode*> pendingCrossBlockChainGroups_;
 
-    static const PrintToken* PreviousToken(const std::vector<PrintToken>& tokens, size_t index) {
-        while (index > 0) {
-            --index;
-            if (tokens[index].kind != PrintTokenKind::BlankLine && !IsCommentToken(tokens[index].kind)) {
-                return &tokens[index];
-            }
-        }
-        return nullptr;
-    }
-
-    static const PrintToken* NextToken(const std::vector<PrintToken>& tokens, size_t index) {
-        for (++index; index < tokens.size(); ++index) {
-            if (tokens[index].kind != PrintTokenKind::BlankLine && !IsCommentToken(tokens[index].kind)) {
-                return &tokens[index];
-            }
-        }
-        return nullptr;
-    }
-
     static const PrintToken* RawNextToken(const std::vector<PrintToken>& tokens, size_t index) {
         return index + 1 < tokens.size() ? &tokens[index + 1] : nullptr;
-    }
-
-    static const SyntaxNode* DeclarationScopeItem(const SyntaxNode* node) {
-        for (const SyntaxNode* cursor = node; cursor != nullptr && cursor->parent != nullptr; cursor = cursor->parent) {
-            if (SyntaxNodeHasClass(*cursor->parent, SyntaxNodeClass::DeclarationScope)) {
-                return cursor;
-            }
-        }
-        return nullptr;
     }
 
     static const SyntaxNode* CrossBlockSourceItem(const SyntaxNode* block) {
@@ -1029,7 +1150,7 @@ private:
         if (token.kind != PrintTokenKind::Known || token.syntaxKind != SyntaxNodeKind::LeftBrace) {
             return false;
         }
-        if (IsWithinConditionalFunctionHeader(token)) {
+        if (token.inConditionalFunctionHeader) {
             return true;
         }
         if (RoleForBrace(token) == BraceRole::Compact || IsCompactSingleStatementFunctionBodyBrace(token)) {
@@ -1127,6 +1248,41 @@ private:
         }
     }
 
+    static bool CanParticipateInUniformCrossBlockChain(const PrintToken& token) {
+        if (token.kind != PrintTokenKind::Known) {
+            return false;
+        }
+        if (PrintTokenSyntaxHasClass(token, SyntaxNodeClass::ChainOperator)) {
+            return true;
+        }
+        switch (token.syntaxKind) {
+            case SyntaxNodeKind::Comma:
+            case SyntaxNodeKind::Dot:
+            case SyntaxNodeKind::Arrow:
+            case SyntaxNodeKind::DotStar:
+            case SyntaxNodeKind::ArrowStar:
+            case SyntaxNodeKind::Question:
+            case SyntaxNodeKind::Colon:
+                return true;
+            default:
+                return false;
+        }
+    }
+
+    bool MayHaveCrossBlockChain(size_t begin, size_t block, size_t end) const {
+        const auto hasCandidate = [&](size_t first, size_t last) {
+            return std::any_of(
+                activeTokens_->begin() + static_cast<std::ptrdiff_t>(first),
+                activeTokens_->begin() + static_cast<std::ptrdiff_t>(last),
+                CanParticipateInUniformCrossBlockChain
+            );
+        };
+        // Every uniform chain recognized by HasUniformSplitForm has at least one of these operators on each side
+        // of a crossed block. Absence on either side therefore proves that building the exact model cannot add a
+        // required cross-block break. Extra operators only cause a conservative fallthrough to exact analysis.
+        return hasCandidate(begin, block) && hasCandidate(block + 1, end);
+    }
+
     void AnalyzeCrossBlockChains(const PrintToken& token) {
         pendingCrossBlockChainGroups_.clear();
         if (activeTokens_ == nullptr) {
@@ -1145,6 +1301,9 @@ private:
         while (end < activeTokens_->size() && SyntaxPathContains((*activeTokens_)[end], item)) {
             ++end;
         }
+        if (!MayHaveCrossBlockChain(begin, currentTokenIndex_, end)) {
+            return;
+        }
         FormatBreakModel model =
             BuildFormatBreakModel(std::span<const PrintToken>{activeTokens_->data() + begin, end - begin});
         if (model.root != nullptr) {
@@ -1156,19 +1315,22 @@ private:
         if (item == nullptr) {
             return DeclarationGroupKind::None;
         }
-        if (SyntaxNodeHasClass(*item, SyntaxNodeClass::DeclarationGroupType)) {
+        // Declaration-group classes are normalized per node and intentionally excluded from static kind classes.
+        // Reading the stored bits is therefore equivalent to five generic class queries and reuses that analysis.
+        const std::uint64_t classes = item->classes;
+        if ((classes & static_cast<std::uint64_t>(SyntaxNodeClass::DeclarationGroupType)) != 0) {
             return DeclarationGroupKind::Type;
         }
-        if (SyntaxNodeHasClass(*item, SyntaxNodeClass::DeclarationGroupForwardType)) {
+        if ((classes & static_cast<std::uint64_t>(SyntaxNodeClass::DeclarationGroupForwardType)) != 0) {
             return DeclarationGroupKind::ForwardType;
         }
-        if (SyntaxNodeHasClass(*item, SyntaxNodeClass::DeclarationGroupCallable)) {
+        if ((classes & static_cast<std::uint64_t>(SyntaxNodeClass::DeclarationGroupCallable)) != 0) {
             return DeclarationGroupKind::Callable;
         }
-        if (SyntaxNodeHasClass(*item, SyntaxNodeClass::DeclarationGroupObject)) {
+        if ((classes & static_cast<std::uint64_t>(SyntaxNodeClass::DeclarationGroupObject)) != 0) {
             return DeclarationGroupKind::Object;
         }
-        if (SyntaxNodeHasClass(*item, SyntaxNodeClass::DeclarationGroupAlias)) {
+        if ((classes & static_cast<std::uint64_t>(SyntaxNodeClass::DeclarationGroupAlias)) != 0) {
             return DeclarationGroupKind::Alias;
         }
         return DeclarationGroupKind::None;
@@ -1199,15 +1361,67 @@ private:
         return indent;
     }
 
+    bool HasProvablyCompactDeclarationLayout(
+        const std::vector<PrintToken>& tokens, size_t begin, size_t end, int declarationIndent
+    ) const {
+        int column = declarationIndent * indentWidth_;
+        bool hasText = false;
+        bool previousStringLike = false;
+        const PrintToken* previous = nullptr;
+        for (size_t index = begin; index < end; ++index) {
+            const PrintToken& token = tokens[index];
+            if (
+                (token.kind != PrintTokenKind::Known && token.kind != PrintTokenKind::Text) ||
+                token.containsSourceLineBreak ||
+                token.inMacroValue ||
+                token.macroDefinition != nullptr ||
+                token.inMacroStatementSequence ||
+                token.inLeadingStreamOperatorChain ||
+                token.inConditionalStreamOperatorChain ||
+                token.inTemplateDeclaration ||
+                (token.stringLike && previousStringLike) ||
+                token.inFieldInitializerList ||
+                IsMandatoryBlockOpen(index)
+            ) {
+                return false;
+            }
+            if (FormatTokenNeedsSpace(previous, token) && hasText) {
+                ++column;
+            }
+            const int tokenWidth = FormatTokenWidth(token);
+            column += tokenWidth;
+            if (column > config_.columnLimit) {
+                return false;
+            }
+            hasText = hasText || tokenWidth > 0;
+            previous = &token;
+            previousStringLike = token.stringLike;
+        }
+        // A compact one-line declaration has zero continuation lines; no solved layout can make it an isolated
+        // declaration-group item under the same compact eligibility and width checks.
+        return true;
+    }
+
     void AnalyzeDeclarationGroups(const std::vector<PrintToken>& tokens) {
         // A large declaration value must be known before its first token is emitted so the mandatory blank line
         // can precede it. Pre-solving uses the ordinary break model and solver; the printer only observes the
         // number of continuation lines selected for each declaration owner/value relation.
         isolatedDeclarationItems_.clear();
         declarationGroupStates_.clear();
+        declarationLayoutsBySourceIndex_.clear();
+        declarationLayoutsBySourceIndex_.resize(tokens.size());
+        nextDeclarationItemsBySourceIndex_.resize(tokens.size());
+        const SyntaxNode* nextDeclarationItem = nullptr;
+        for (size_t index = tokens.size(); index-- > 0;) {
+            nextDeclarationItemsBySourceIndex_[index] = nextDeclarationItem;
+            const SyntaxNode* item = tokens[index].declarationScopeItem;
+            if (DeclarationGroup(item) != DeclarationGroupKind::None) {
+                nextDeclarationItem = item;
+            }
+        }
         std::unordered_set<const SyntaxNode*> analyzedItems;
         for (size_t index = 0; index < tokens.size();) {
-            const SyntaxNode* item = DeclarationScopeItem(tokens[index].node);
+            const SyntaxNode* item = tokens[index].declarationScopeItem;
             if (item == nullptr || !analyzedItems.insert(item).second) {
                 ++index;
                 continue;
@@ -1221,8 +1435,18 @@ private:
             while (end < tokens.size() && SyntaxPathContains(tokens[end], item)) {
                 ++end;
             }
+            const int declarationIndent = DeclarationIndent(*item);
+            if (HasProvablyCompactDeclarationLayout(tokens, index, end, declarationIndent)) {
+                ++index;
+                continue;
+            }
+            const auto modelStart =
+                stats_ == nullptr ? std::chrono::steady_clock::time_point{} : std::chrono::steady_clock::now();
             FormatBreakModel model =
                 BuildFormatBreakModel(std::span<const PrintToken>{tokens.data() + index, end - index});
+            if (stats_ != nullptr) {
+                stats_->breakModel += std::chrono::steady_clock::now() - modelStart;
+            }
             const bool hasDeclarationValue = model.nodes != nullptr &&
                 std::any_of(model.nodes->begin(), model.nodes->end(), [&](const FormatBreakNode& node) {
                     return node.declarationValueOwner != nullptr &&
@@ -1232,14 +1456,63 @@ private:
                 ++index;
                 continue;
             }
-            const int declarationIndent = DeclarationIndent(*item);
+            const auto solveStart =
+                stats_ == nullptr ? std::chrono::steady_clock::time_point{} : std::chrono::steady_clock::now();
             FormatBreakSolution solution =
                 SolveFormatBreaks(config_, model, declarationIndent * indentWidth_, declarationIndent, indentWidth_, 0);
+            if (stats_ != nullptr) {
+                stats_->solve += std::chrono::steady_clock::now() - solveStart;
+            }
             if (HasLargeDeclarationValue(model, solution, *item)) {
                 isolatedDeclarationItems_.insert(item);
             }
+            const std::uint32_t sourceIndex = tokens[index].sourceIndex;
+            if (sourceIndex < declarationLayoutsBySourceIndex_.size()) {
+                declarationLayoutsBySourceIndex_[sourceIndex] =
+                    std::make_unique<CachedDeclarationLayout>(CachedDeclarationLayout{
+                        .endSourceIndex = tokens[end - 1].sourceIndex + 1,
+                        .startColumn = declarationIndent * indentWidth_,
+                        .baseIndentLevel = declarationIndent,
+                        .model = std::move(model),
+                        .solution = std::move(solution)
+                    });
+            }
             ++index;
         }
+    }
+
+    const CachedDeclarationLayout* ReusableDeclarationLayout(
+        const FormatBreakModelContext& context, int startColumn, int baseIndentLevel, int breakLineSuffixWidth
+    ) const {
+        if (
+            breakModelDump_ != nullptr ||
+            breakLineSuffixWidth != 0 ||
+            context.forceSplitStreamChain ||
+            !context.virtualDelimiters.empty() ||
+            context.requiredChainBreakOperators != nullptr ||
+            context.requiredChainBreakBaseIndents != nullptr ||
+            pendingTokens_.empty()
+        ) {
+            return nullptr;
+        }
+        const std::uint32_t begin = pendingTokens_.front().sourceIndex;
+        if (begin >= declarationLayoutsBySourceIndex_.size()) {
+            return nullptr;
+        }
+        const std::unique_ptr<CachedDeclarationLayout>& cached = declarationLayoutsBySourceIndex_[begin];
+        if (
+            cached == nullptr ||
+            cached->endSourceIndex != pendingTokens_.back().sourceIndex + 1 ||
+            cached->endSourceIndex - begin != pendingTokens_.size() ||
+            cached->startColumn != startColumn ||
+            cached->baseIndentLevel != baseIndentLevel
+        ) {
+            return nullptr;
+        }
+        // The complete consecutive source-token span, incoming state, suffix width, and every model context input
+        // are identical to declaration pre-analysis. Break-model construction and solving are pure in those inputs,
+        // so reusing both objects produces the same choices and token emission as rebuilding them here.
+        return cached.get();
     }
 
     bool RequiresDeclarationGroupSeparation(const SyntaxNode* left, const SyntaxNode* right) const {
@@ -1271,20 +1544,16 @@ private:
     }
 
     const SyntaxNode* NextDeclarationItem(size_t index) const {
-        if (activeTokens_ == nullptr) {
+        if (index >= nextDeclarationItemsBySourceIndex_.size()) {
             return nullptr;
         }
-        for (++index; index < activeTokens_->size(); ++index) {
-            const SyntaxNode* item = DeclarationScopeItem((*activeTokens_)[index].node);
-            if (DeclarationGroup(item) != DeclarationGroupKind::None) {
-                return item;
-            }
-        }
-        return nullptr;
+        // This is the exact result of the former forward scan: the immutable token order is summarized backward,
+        // replacing repeated searches without changing which following declaration item is selected.
+        return nextDeclarationItemsBySourceIndex_[index];
     }
 
     bool PrepareDeclarationGroupBoundary(const PrintToken& token) {
-        const SyntaxNode* item = DeclarationScopeItem(token.node);
+        const SyntaxNode* item = token.declarationScopeItem;
         const DeclarationGroupKind group = DeclarationGroup(item);
         if (group != DeclarationGroupKind::None) {
             DeclarationGroupState& state = declarationGroupStates_[item->parent];
@@ -1298,11 +1567,7 @@ private:
             }
             return false;
         }
-        if (
-            item == nullptr ||
-            item->parent == nullptr ||
-            !SyntaxNodeHasClass(*item->parent, SyntaxNodeClass::DeclarationScope)
-        ) {
+        if (item == nullptr || item->parent == nullptr) {
             return false;
         }
         // A declaration terminator may be a declaration-scope sibling when the parser flattens a bare
@@ -1330,24 +1595,6 @@ private:
     static bool SyntaxPathContains(const PrintToken& token, const SyntaxNode* node) {
         for (const SyntaxNode* cursor = token.node; cursor != nullptr; cursor = cursor->parent) {
             if (cursor == node) {
-                return true;
-            }
-        }
-        return false;
-    }
-
-    static bool SyntaxPathContainsKind(const PrintToken& token, SyntaxNodeKind kind) {
-        for (const SyntaxNode* cursor = token.node; cursor != nullptr; cursor = cursor->parent) {
-            if (cursor->kind == kind) {
-                return true;
-            }
-        }
-        return false;
-    }
-
-    static bool SyntaxPathContainsClass(const PrintToken& token, SyntaxNodeClass syntaxNodeClass) {
-        for (const SyntaxNode* cursor = token.node; cursor != nullptr; cursor = cursor->parent) {
-            if (SyntaxNodeHasClass(*cursor, syntaxNodeClass)) {
                 return true;
             }
         }
@@ -1397,7 +1644,7 @@ private:
         // Call and subscript expression wrappers are flattened. Their semantic list
         // remains a following sibling of the expression being invoked or indexed.
         if (
-            (continuation == next.node || SyntaxNodeKindHasClass(next.syntaxKind, SyntaxNodeClass::OpeningDelimiter)) &&
+            (continuation == next.node || PrintTokenSyntaxHasClass(next, SyntaxNodeClass::OpeningDelimiter)) &&
             continuation->parent == blockExpression->parent
         ) {
             return true;
@@ -1410,7 +1657,7 @@ private:
             return false;
         }
         if (
-            SyntaxNodeKindHasClass(next.syntaxKind, SyntaxNodeClass::AttachAfterBlockKeyword) &&
+            PrintTokenSyntaxHasClass(next, SyntaxNodeClass::AttachAfterBlockKeyword) &&
             next.syntaxKind != SyntaxNodeKind::KeywordWhile
         ) {
             return true;
@@ -1566,7 +1813,7 @@ private:
 
     static bool StartsPreprocessorSplitList(const PrintToken& token) {
         return token.kind == PrintTokenKind::Preprocessor &&
-            SyntaxNodeKindHasClass(token.syntaxKind, SyntaxNodeClass::ConditionalPreprocessorOpen);
+            PrintTokenSyntaxHasClass(token, SyntaxNodeClass::ConditionalPreprocessorOpen);
     }
 
     static const SyntaxNode* NearestPreprocessorSplitListAncestor(const PrintToken& token) {
@@ -1578,24 +1825,12 @@ private:
         return nullptr;
     }
 
-    static bool NodeOrDescendantHasConditionalPreprocessor(const SyntaxNode& node) {
-        if (SyntaxNodeKindHasClass(node.kind, SyntaxNodeClass::ConditionalPreprocessorTree)) {
-            return true;
-        }
-        for (const SyntaxNode* child : node.children) {
-            if (child != nullptr && NodeOrDescendantHasConditionalPreprocessor(*child)) {
-                return true;
-            }
-        }
-        return false;
-    }
-
-    static const SyntaxNode* ImmediateConditionalPreprocessorListParent(const PrintToken& token) {
+    const SyntaxNode* ImmediateConditionalPreprocessorListParent(const PrintToken& token) {
         const SyntaxNode* parent = token.node == nullptr ? nullptr : token.node->parent;
         if (
             parent == nullptr ||
             !SyntaxNodeKindHasClass(parent->kind, SyntaxNodeClass::PreprocessorSplitList) ||
-            !NodeOrDescendantHasConditionalPreprocessor(*parent)
+            (parent->classes & static_cast<std::uint64_t>(SyntaxNodeClass::ContainsConditionalPreprocessor)) == 0
         ) {
             return nullptr;
         }
@@ -1613,14 +1848,11 @@ private:
         if (token.kind != PrintTokenKind::Known && token.kind != PrintTokenKind::Text) {
             return false;
         }
-        const bool stringLike = IsStringLike(token);
-        const bool inFieldInitializerList = token.parentKind == SyntaxNodeKind::FieldInitializerList ||
-            token.grandParentKind == SyntaxNodeKind::FieldInitializerList;
         if (
             token.inMacroValue ||
             token.macroDefinition != nullptr ||
-            (stringLike && previousStringLike) ||
-            (!allowFieldInitializerList && inFieldInitializerList)
+            (token.stringLike && previousStringLike) ||
+            (!allowFieldInitializerList && token.inFieldInitializerList)
         ) {
             return false;
         }
@@ -1631,7 +1863,7 @@ private:
         width += tokenWidth;
         hasText = hasText || tokenWidth > 0;
         previous = &token;
-        previousStringLike = stringLike;
+        previousStringLike = token.stringLike;
         return true;
     }
 
@@ -1658,7 +1890,7 @@ private:
         for (auto token = pendingTokens_.rbegin(); token != pendingTokens_.rend(); ++token) {
             if (
                 token->kind == PrintTokenKind::Known &&
-                SyntaxNodeKindHasClass(token->syntaxKind, SyntaxNodeClass::OpeningDelimiter) &&
+                PrintTokenSyntaxHasClass(*token, SyntaxNodeClass::OpeningDelimiter) &&
                 SyntaxPathContains(*token, list)
             ) {
                 return token->node;
@@ -1934,21 +2166,6 @@ private:
         return spaces / indentWidth_;
     }
 
-    int PendingCompactWidth() const {
-        int width = 0;
-        bool hasText = lineHasText_;
-        const PrintToken* previous = nullptr;
-        for (const PrintToken& token : pendingTokens_) {
-            if (FormatTokenNeedsSpace(previous, token) && hasText) {
-                ++width;
-            }
-            width += FormatTokenWidth(token);
-            hasText = hasText || FormatTokenWidth(token) > 0;
-            previous = &token;
-        }
-        return width;
-    }
-
     bool CanFlushPendingTokensCompact(const FormatBreakModelContext& context) const {
         if (!context.virtualDelimiters.empty() || (
             context.requiredChainBreakOperators != nullptr &&
@@ -1960,54 +2177,73 @@ private:
         }
         int width = 0;
         bool hasText = lineHasText_;
-        const PrintToken* previous = nullptr;
         bool previousStringLike = false;
+        bool hasTemplateHeader = false;
+        bool hasTemplateDeclaredEntity = false;
         for (const PrintToken& token : pendingTokens_) {
             if (token.kind != PrintTokenKind::Known && token.kind != PrintTokenKind::Text) {
                 return false;
             }
-            if (ContainsSourceLineBreak(FormatTokenText(token))) {
+            if (token.containsSourceLineBreak) {
                 return false;
             }
-            const bool stringLike = IsStringLike(token);
-            if (
-                token.inMacroValue ||
-                token.macroDefinition != nullptr ||
-                SyntaxPathContainsKind(token, SyntaxNodeKind::MacroStatementSequence) ||
-                SyntaxPathContainsClass(token, SyntaxNodeClass::LeadingStreamOperatorChain) ||
-                SyntaxPathContainsClass(token, SyntaxNodeClass::ConditionalStreamOperatorChain) ||
-                token.inTemplateDeclaration ||
-                (stringLike && previousStringLike) ||
-                token.parentKind == SyntaxNodeKind::FieldInitializerList ||
-                token.grandParentKind == SyntaxNodeKind::FieldInitializerList
-            ) {
+            if (token.inMacroValue || token.macroDefinition != nullptr) {
                 return false;
             }
-            if (FormatTokenNeedsSpace(previous, token) && hasText) {
+            if (token.inMacroStatementSequence) {
+                return false;
+            }
+            if (token.inLeadingStreamOperatorChain || token.inConditionalStreamOperatorChain) {
+                return false;
+            }
+            if (token.inTemplateDeclaration && !token.inTemplateDeclarationBlock) {
+                hasTemplateHeader = hasTemplateHeader || token.inTemplateDeclarationHeader;
+                hasTemplateDeclaredEntity = hasTemplateDeclaredEntity || !token.inTemplateDeclarationHeader;
+                if (hasTemplateHeader && hasTemplateDeclaredEntity) {
+                    return false;
+                }
+            }
+            if (token.stringLike && previousStringLike) {
+                return false;
+            }
+            if (token.spaceBefore && hasText) {
                 ++width;
             }
             const int tokenWidth = FormatTokenWidth(token);
             width += tokenWidth;
             hasText = hasText || tokenWidth > 0;
-            previous = &token;
-            previousStringLike = stringLike;
+            previousStringLike = token.stringLike;
+        }
+        if (hasTemplateHeader && (
+            pendingTokens_.empty() ||
+            pendingTokens_.back().syntaxKind != SyntaxNodeKind::Greater ||
+            pendingTokens_.back().parentKind != SyntaxNodeKind::TemplateParameterList
+        )) {
+            return false;
         }
         return CurrentColumn() + width <= config_.columnLimit;
     }
 
     void FlushPendingTokensCompact() {
-        const PrintToken* previous = nullptr;
         for (const PrintToken& token : pendingTokens_) {
-            if (FormatTokenNeedsSpace(previous, token) && !atLineStart_) {
+            if (token.spaceBefore && !atLineStart_) {
                 Space();
             }
             Write(FormatTokenText(token));
-            previous = &token;
         }
         pendingTokens_.clear();
     }
 
-    void BufferToken(const PrintToken& token) { pendingTokens_.push_back(token); }
+    void BufferToken(const PrintToken& token) {
+        const PrintToken* previous = pendingTokens_.empty() ? nullptr : &pendingTokens_.back();
+        const bool sourceAdjacent = previous != nullptr && previous->sourceIndex + 1 == token.sourceIndex;
+        const bool spaceBefore =
+            sourceAdjacent && token.spaceBeforeKnown ? token.spaceBefore : FormatTokenNeedsSpace(previous, token);
+        PrintToken buffered = token;
+        buffered.spaceBefore = spaceBefore;
+        buffered.spaceBeforeKnown = true;
+        pendingTokens_.push_back(buffered);
+    }
 
     FormatBreakChoice ChoiceFor(const FormatBreakSolution& solution, int nodeId) const {
         if (nodeId < 0 || static_cast<size_t>(nodeId) >= solution.choices.size()) {
@@ -2701,15 +2937,12 @@ private:
             }
             return {};
         }
-        const auto modelStart = std::chrono::steady_clock::now();
+        const auto modelStart =
+            stats_ == nullptr ? std::chrono::steady_clock::time_point{} : std::chrono::steady_clock::now();
         effectiveContext.forceSplitStreamChain = effectiveContext.forceSplitStreamChain ||
             std::any_of(pendingTokens_.begin(), pendingTokens_.end(), [](const PrintToken& token) {
-                return SyntaxPathContainsClass(token, SyntaxNodeClass::ConditionalStreamOperatorChain);
+                return token.inConditionalStreamOperatorChain;
             });
-        FormatBreakModel model = BuildFormatBreakModel(pendingTokens_, effectiveContext);
-        if (stats_ != nullptr) {
-            stats_->breakModel += std::chrono::steady_clock::now() - modelStart;
-        }
         const bool previousEmittingMacroDefinition = emittingMacroDefinition_;
         emittingMacroDefinition_ =
             std::any_of(pendingTokens_.begin(), pendingTokens_.end(), [](const PrintToken& token) {
@@ -2721,21 +2954,39 @@ private:
         const int baseIndentLevel = pendingIndentLevel_.value_or(indentLevel_);
         const int startColumn = CurrentColumn();
         const int breakLineSuffixWidth = emittingMacroDefinition_ ? 2 : 0;
-        const auto solveStart = std::chrono::steady_clock::now();
-        FormatBreakSolution solution =
-            SolveFormatBreaks(config_, model, startColumn, baseIndentLevel, indentWidth_, breakLineSuffixWidth);
+        const CachedDeclarationLayout* cached =
+            ReusableDeclarationLayout(effectiveContext, startColumn, baseIndentLevel, breakLineSuffixWidth);
+        FormatBreakModel model;
+        if (cached == nullptr) {
+            model = BuildFormatBreakModel(pendingTokens_, effectiveContext);
+        }
         if (stats_ != nullptr) {
-            stats_->solve += std::chrono::steady_clock::now() - solveStart;
+            stats_->breakModel += std::chrono::steady_clock::now() - modelStart;
+        }
+        const FormatBreakModel& effectiveModel = cached == nullptr ? model : cached->model;
+        FormatBreakSolution solution;
+        const FormatBreakSolution* effectiveSolution = cached == nullptr ? &solution : &cached->solution;
+        if (cached == nullptr && (breakModelDump_ != nullptr || BreakModelHasLayoutChoice(effectiveModel))) {
+            const auto solveStart =
+                stats_ == nullptr ? std::chrono::steady_clock::time_point{} : std::chrono::steady_clock::now();
+            solution = SolveFormatBreaks(
+                config_, effectiveModel, startColumn, baseIndentLevel, indentWidth_, breakLineSuffixWidth
+            );
+            if (stats_ != nullptr) {
+                stats_->solve += std::chrono::steady_clock::now() - solveStart;
+            }
         }
         if (breakModelDump_ != nullptr) {
-            breakModelDump_
-                ->WriteSegment(pendingTokens_, model, solution, startColumn, baseIndentLevel, breakLineSuffixWidth);
+            breakModelDump_->WriteSegment(
+                pendingTokens_, effectiveModel, *effectiveSolution, startColumn, baseIndentLevel, breakLineSuffixWidth
+            );
         }
         std::vector<MandatoryBlockSplitListContext> splitContexts;
-        if (model.root) {
-            CollectSplitContexts(*model.root, solution, splitContexts);
-            const auto emitStart = std::chrono::steady_clock::now();
-            EmitBreakNode(*model.root, solution, baseIndentLevel);
+        if (effectiveModel.root) {
+            CollectSplitContexts(*effectiveModel.root, *effectiveSolution, splitContexts);
+            const auto emitStart =
+                stats_ == nullptr ? std::chrono::steady_clock::time_point{} : std::chrono::steady_clock::now();
+            EmitBreakNode(*effectiveModel.root, *effectiveSolution, baseIndentLevel);
             if (stats_ != nullptr) {
                 stats_->emit += std::chrono::steady_clock::now() - emitStart;
             }
@@ -2945,7 +3196,7 @@ private:
     bool TryPrintConditionalPreprocessorListOpen(const PrintToken& token) {
         if (
             token.kind != PrintTokenKind::Known ||
-            !SyntaxNodeKindHasClass(token.syntaxKind, SyntaxNodeClass::OpeningDelimiter) ||
+            !PrintTokenSyntaxHasClass(token, SyntaxNodeClass::OpeningDelimiter) ||
             ImmediateConditionalPreprocessorListParent(token) == nullptr
         ) {
             return false;
@@ -3058,11 +3309,7 @@ private:
     }
 
     void PrepareBareMacroItemBoundary(const PrintToken* previous, const PrintToken& current) {
-        if (
-            previous == nullptr ||
-            current.kind == PrintTokenKind::TrailingComment ||
-            !SyntaxPathContainsKind(*previous, SyntaxNodeKind::BareMacroItem)
-        ) {
+        if (previous == nullptr || current.kind == PrintTokenKind::TrailingComment || !previous->inBareMacroItem) {
             return;
         }
         if (HasBufferedLineText()) {
@@ -3125,10 +3372,7 @@ private:
             if (previous->kind == PrintTokenKind::Preprocessor || previous->kind == PrintTokenKind::IncludeRun) {
                 return false;
             }
-            if (
-                ClosesStatementPositionMacroCallItem(*previous) ||
-                SyntaxPathContainsKind(*previous, SyntaxNodeKind::BareMacroItem)
-            ) {
+            if (ClosesStatementPositionMacroCallItem(*previous) || previous->inBareMacroItem) {
                 return true;
             }
             if (previous->kind != PrintTokenKind::Known) {
@@ -3136,7 +3380,7 @@ private:
             }
             if (
                 previous->syntaxKind == SyntaxNodeKind::Semicolon ||
-                SyntaxNodeKindHasClass(previous->syntaxKind, SyntaxNodeClass::OpeningDelimiter) ||
+                PrintTokenSyntaxHasClass(*previous, SyntaxNodeClass::OpeningDelimiter) ||
                 previous->syntaxKind == SyntaxNodeKind::Colon
             ) {
                 return true;
@@ -3151,7 +3395,7 @@ private:
             (previous->syntaxKind == SyntaxNodeKind::Semicolon || previous->syntaxKind == SyntaxNodeKind::RightBrace)
         ) ||
             ClosesStatementPositionMacroCallItem(*previous) ||
-            SyntaxPathContainsKind(*previous, SyntaxNodeKind::BareMacroItem);
+            previous->inBareMacroItem;
         if (!followsCompleteItem) {
             return false;
         }
@@ -3216,7 +3460,7 @@ private:
             return false;
         }
         if (previous->kind == PrintTokenKind::Known && (
-            SyntaxNodeKindHasClass(previous->syntaxKind, SyntaxNodeClass::OpeningDelimiter) ||
+            PrintTokenSyntaxHasClass(*previous, SyntaxNodeClass::OpeningDelimiter) ||
             previous->syntaxKind == SyntaxNodeKind::Colon
         )) {
             return false;
@@ -3345,7 +3589,7 @@ private:
             hasLineBreak ? PreservePreprocessorLines(token.text) :
                 NormalizeTrailingLineCommentSpacing(CollapseSourceWhitespace(token.text))
         );
-        const bool isInclude = SyntaxNodeKindHasClass(token.syntaxKind, SyntaxNodeClass::IncludeDirective) ||
+        const bool isInclude = PrintTokenSyntaxHasClass(token, SyntaxNodeClass::IncludeDirective) ||
             PreprocessorLineHasClass(line, SyntaxNodeClass::IncludeDirective);
         const bool listConditional =
             StartsPreprocessorSplitList(token) && NearestPreprocessorSplitListAncestor(token) != nullptr;
@@ -3354,7 +3598,7 @@ private:
             (token.node != nullptr && IsPreprocEndifToken(*token.node)) ||
             token.syntaxKind == SyntaxNodeKind::PreprocessorDirectiveEndif ||
             lineDirectiveKind == SyntaxNodeKind::PreprocessorDirectiveEndif
-        ) && IsWithinConditionalFunctionHeader(token);
+        ) && token.inConditionalFunctionHeader;
         if (IsConditionalRhsPreprocessorToken(token)) {
             if (HasBufferedLineText()) {
                 FlushPendingTokens();
@@ -3629,7 +3873,7 @@ private:
                 }
                 if (previous != nullptr && previous->kind == PrintTokenKind::Known && (
                     previous->syntaxKind == SyntaxNodeKind::KeywordDefault ||
-                    SyntaxNodeKindHasClass(previous->syntaxKind, SyntaxNodeClass::AccessKeyword)
+                    PrintTokenSyntaxHasClass(*previous, SyntaxNodeClass::AccessKeyword)
                 )) {
                     FlushPendingTokens();
                     if (rawNext == nullptr || rawNext->kind != PrintTokenKind::TrailingComment) {
@@ -3657,7 +3901,7 @@ private:
         }
         const int crossBlockFallbackBaseIndent = std::max(0, pendingIndentLevel_.value_or(indentLevel_));
         const bool followedByTrailingComment = rawNext != nullptr && rawNext->kind == PrintTokenKind::TrailingComment;
-        if (IsWithinConditionalFunctionHeader(token)) {
+        if (token.inConditionalFunctionHeader) {
             BufferToken(token);
             FlushPendingTokens();
             RecordCrossBlockChainBaseIndents(crossBlockFallbackBaseIndent);
@@ -3878,8 +4122,9 @@ private:
 
 namespace {
 
-std::vector<PrintToken> BuildPrintTokens(const FormatModel& model, FormatModelTextStats& stats) {
-    const auto tokenizeStart = std::chrono::steady_clock::now();
+std::vector<PrintToken> BuildPrintTokens(const FormatModel& model, FormatModelTextStats* stats) {
+    const auto tokenizeStart =
+        stats == nullptr ? std::chrono::steady_clock::time_point{} : std::chrono::steady_clock::now();
     std::vector<PrintToken> tokens;
     const size_t sourceSize = model.sourceText != nullptr ? model.sourceText->size() : 0;
     tokens.reserve(std::max<size_t>(256, sourceSize / 4));
@@ -3893,9 +4138,26 @@ std::vector<PrintToken> BuildPrintTokens(const FormatModel& model, FormatModelTe
         false,
         nullptr,
         false,
+        0,
+        nullptr,
+        false,
+        false,
         tokens
     );
-    stats.tokenize += std::chrono::steady_clock::now() - tokenizeStart;
+    const PrintToken* previous = nullptr;
+    for (size_t index = 0; index < tokens.size(); ++index) {
+        PrintToken& token = tokens[index];
+        // The syntax tree is immutable during printing. Cache traits reused by compact checks and break-model
+        // construction; they are exact projections of the original token and its ancestry.
+        InitializePrintTokenTraits(token);
+        token.sourceIndex = static_cast<std::uint32_t>(index);
+        token.spaceBefore = FormatTokenNeedsSpace(previous, token);
+        token.spaceBeforeKnown = true;
+        previous = &token;
+    }
+    if (stats != nullptr) {
+        stats->tokenize += std::chrono::steady_clock::now() - tokenizeStart;
+    }
     return tokens;
 }
 
@@ -3903,36 +4165,38 @@ std::string PrintFormatModel(
     const FormatterConfig& config,
     const FormatModel& model,
     std::string_view sourcePath,
-    FormatModelTextStats& stats,
+    FormatModelTextStats* stats,
     FormatBreakModelDumpWriter* breakModelDump
 ) {
     if (!model.root) {
         return {};
     }
     std::vector<PrintToken> tokens = BuildPrintTokens(model, stats);
-    const auto printStart = std::chrono::steady_clock::now();
-    std::string result = Printer(config, sourcePath, &stats, breakModelDump).Print(tokens);
-    stats.print += std::chrono::steady_clock::now() - printStart;
+    const auto printStart =
+        stats == nullptr ? std::chrono::steady_clock::time_point{} : std::chrono::steady_clock::now();
+    const size_t sourceSize = model.sourceText == nullptr ? 0 : model.sourceText->size();
+    std::string result = Printer(config, sourcePath, stats, breakModelDump).Print(tokens, sourceSize);
+    if (stats != nullptr) {
+        stats->print += std::chrono::steady_clock::now() - printStart;
+    }
     return result;
 }
 
 }  // namespace
 
 std::string FormatModelText(const FormatterConfig& config, const FormatModel& model, std::string_view sourcePath) {
-    FormatModelTextStats stats;
-    return FormatModelText(config, model, sourcePath, stats);
+    return PrintFormatModel(config, model, sourcePath, nullptr, nullptr);
 }
 
 std::string FormatModelText(
     const FormatterConfig& config, const FormatModel& model, std::string_view sourcePath, FormatModelTextStats& stats
 ) {
-    return PrintFormatModel(config, model, sourcePath, stats, nullptr);
+    return PrintFormatModel(config, model, sourcePath, &stats, nullptr);
 }
 
 void DumpFormatBreakTrees(
     const FormatterConfig& config, const FormatModel& model, std::string_view sourcePath, FILE* output
 ) {
-    FormatModelTextStats stats;
     FormatBreakModelDumpWriter dump(output);
-    (void)PrintFormatModel(config, model, sourcePath, stats, &dump);
+    (void)PrintFormatModel(config, model, sourcePath, nullptr, &dump);
 }

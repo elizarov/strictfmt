@@ -156,6 +156,7 @@ struct FormatBreakModel {
     FormatBreakArena<FormatBreakNode*> nodePointers;
     FormatBreakArena<FormatBreakToken> tokens;
     FormatBreakNode* root = nullptr;
+    bool hasLayoutChoice = false;
 };
 
 struct FormatBreakVirtualDelimiter {
