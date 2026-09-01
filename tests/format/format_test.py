@@ -1823,7 +1823,7 @@ class FormatCommandTests(unittest.TestCase):
             self.assertEqual(1, explicit.returncode, msg=f"stdout:\n{explicit.stdout}\n\nstderr:\n{explicit.stderr}")
             self.assertIn("Formatting is required", explicit.stdout)
 
-    def test_style_file_inherits_parent_config_and_overrides_lists(self) -> None:
+    def test_style_file_inherits_parent_config_and_overrides_include_categories(self) -> None:
         build_dir = TEST_TEMP_ROOT
         build_dir.mkdir(exist_ok=True)
 
@@ -1880,6 +1880,140 @@ class FormatCommandTests(unittest.TestCase):
                 "int main() { return 1; }\n",
                 overridden.stdout,
             )
+
+    def test_style_file_merges_stream_configuration_methods_with_parent(self) -> None:
+        build_dir = TEST_TEMP_ROOT
+        build_dir.mkdir(exist_ok=True)
+
+        with tempfile.TemporaryDirectory(prefix="format_stream_config_inherit_", dir=build_dir) as temp_dir:
+            root = Path(temp_dir)
+            nested = root / "nested"
+            nested.mkdir()
+            write_empty_ignore(root)
+            (root / ".cpp-format").write_text(
+                "---\n"
+                "ColumnLimit: 42\n"
+                "StreamShift:\n"
+                "  ConfigurationMethods:\n"
+                "    - PARENT_MANIPULATOR\n"
+                "    - SHARED_MANIPULATOR\n",
+                encoding="utf-8",
+            )
+            (nested / ".cpp-format").write_text(
+                "---\n"
+                "Inherit: Parent\n"
+                "StreamShift:\n"
+                "  ConfigurationMethods:\n"
+                "    - CHILD_MANIPULATOR\n"
+                "    - SHARED_MANIPULATOR\n",
+                encoding="utf-8",
+            )
+            source = nested / "sample.cpp"
+            source.write_text(
+                "void Print(){\n"
+                'output<<"parent="<<PARENT_MANIPULATOR<<parentValue'
+                '<<", child="<<CHILD_MANIPULATOR<<childValue;\n'
+                "}\n",
+                encoding="utf-8",
+            )
+
+            result = native_format(str(source), cwd=nested)
+
+            self.assertEqual(0, result.returncode, msg=f"stdout:\n{result.stdout}\n\nstderr:\n{result.stderr}")
+            self.assertEqual(
+                "void Print() {\n"
+                "    output\n"
+                '        << "parent="\n'
+                "        << PARENT_MANIPULATOR << parentValue\n"
+                '        << ", child="\n'
+                "        << CHILD_MANIPULATOR << childValue;\n"
+                "}\n",
+                result.stdout,
+            )
+
+    def test_style_file_merges_every_macro_category_with_parent(self) -> None:
+        build_dir = TEST_TEMP_ROOT
+        build_dir.mkdir(exist_ok=True)
+
+        with tempfile.TemporaryDirectory(prefix="format_macro_category_inherit_", dir=build_dir) as temp_dir:
+            root = Path(temp_dir)
+            nested = root / "nested"
+            nested.mkdir()
+            write_empty_ignore(root)
+            (root / ".cpp-format").write_text(
+                "---\n"
+                "MacroCategories:\n"
+                "  RawMacroDefinitions:\n"
+                "    - PARENT_RAW\n"
+                "  BareIdentifierMacros:\n"
+                "    - PARENT_BARE\n"
+                "  DeclarationPrefixMacros:\n"
+                "    - PARENT_PREFIX\n"
+                "  CallSyntaxMacros:\n"
+                "    - PARENT_CALL\n"
+                "    - SHARED_CALL\n"
+                "  SemicolonlessCallMacros:\n"
+                "    - PARENT_SEMILESS\n"
+                "  StatementArgumentMacros:\n"
+                "    - PARENT_STATEMENT\n"
+                "  TypeSpecifierMacros:\n"
+                "    - PARENT_TYPE\n"
+                "  PreprocessorArgumentMacros:\n"
+                "    - PARENT_PP\n",
+                encoding="utf-8",
+            )
+            (nested / ".cpp-format").write_text(
+                "---\n"
+                "Inherit: Parent\n"
+                "MacroCategories:\n"
+                "  RawMacroDefinitions:\n"
+                "    - CHILD_RAW\n"
+                "  BareIdentifierMacros:\n"
+                "    - CHILD_BARE\n"
+                "  DeclarationPrefixMacros:\n"
+                "    - CHILD_PREFIX\n"
+                "  CallSyntaxMacros:\n"
+                "    - CHILD_CALL\n"
+                "    - SHARED_CALL\n"
+                "  SemicolonlessCallMacros:\n"
+                "    - CHILD_SEMILESS\n"
+                "  StatementArgumentMacros:\n"
+                "    - CHILD_STATEMENT\n"
+                "  TypeSpecifierMacros:\n"
+                "    - CHILD_TYPE\n"
+                "  PreprocessorArgumentMacros:\n"
+                "    - CHILD_PP\n",
+                encoding="utf-8",
+            )
+            source = nested / "sample.cpp"
+            source.write_text(
+                "#define PARENT_RAW(first,second) first ## second\n"
+                "#define CHILD_RAW(first,second) first ## second\n"
+                "PARENT_BARE\n"
+                "CHILD_BARE\n"
+                "PARENT_PREFIX int ParentDeclaration();\n"
+                "CHILD_PREFIX int ChildDeclaration();\n"
+                "PARENT_CALL(ParentSuite,ParentCase){Run();}\n"
+                "CHILD_CALL(ChildSuite,ChildCase){Run();}\n"
+                "SHARED_CALL(SharedSuite,SharedCase){Run();}\n"
+                "typedef PARENT_TYPE(Value) ParentType;\n"
+                "typedef CHILD_TYPE(Value) ChildType;\n"
+                "PARENT_SEMILESS()\n"
+                "CHILD_SEMILESS()\n"
+                "void Exercise(){\n"
+                "PARENT_STATEMENT(auto parent=Make(),Error);\n"
+                "CHILD_STATEMENT(auto child=Make(),Error);\n"
+                'PARENT_PP("parent",PP_CAT(+, =));\n'
+                'CHILD_PP("child",PP_CAT(+, =));\n'
+                "}\n",
+                encoding="utf-8",
+            )
+
+            result = native_format(str(source), cwd=nested)
+
+            self.assertEqual(0, result.returncode, msg=f"stdout:\n{result.stdout}\n\nstderr:\n{result.stderr}")
+            self.assertIn("#define PARENT_RAW(first, second) first ## second\n", result.stdout)
+            self.assertIn("#define CHILD_RAW(first, second) first ## second\n", result.stdout)
 
     def test_ignore_file_skips_simple_directory_entries(self) -> None:
         build_dir = TEST_TEMP_ROOT

@@ -316,6 +316,7 @@ constexpr auto kSyntaxKindMappings = std::to_array<SyntaxKindMapping>({
     Tree(SyntaxNodeKind::Tree, "throw_expression"),
     Tree(SyntaxNodeKind::Tree, "typeid_expression"),
     Tree(SyntaxNodeKind::Tree, "cpp_cast_expression"),
+    Tree(SyntaxNodeKind::Tree, "functional_cast_type_specifier"),
     Tree(
         SyntaxNodeKind::PreprocIf,
         "preproc_selected_else_if_statement",
@@ -412,7 +413,7 @@ constexpr auto kSyntaxKindMappings = std::to_array<SyntaxKindMapping>({
     Tree(SyntaxNodeKind::CommaExpression, "comma_expression"),
     Tree(SyntaxNodeKind::AssignmentExpression, "assignment_expression"),
     Tree(SyntaxNodeKind::AssignmentExpression, "preproc_assignment_statement"),
-    Tree(SyntaxNodeKind::InitDeclarator, "init_declarator"),
+    Tree(SyntaxNodeKind::InitDeclarator, "init_declarator", kAllowedPreprocessorContainerClasses),
     Tree(SyntaxNodeKind::CastExpression, "cast_expression"),
     Tree(SyntaxNodeKind::PointerDeclarator, "pointer_declarator", Bit(SyntaxNodeClass::DeclaratorReferenceParent)),
     Tree(

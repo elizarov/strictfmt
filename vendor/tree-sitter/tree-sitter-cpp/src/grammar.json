@@ -5543,6 +5543,35 @@
                 "type": "FIELD",
                 "name": "value",
                 "content": {
+                  "type": "SYMBOL",
+                  "name": "preproc_include"
+                }
+              }
+            ]
+          }
+        },
+        {
+          "type": "PREC_DYNAMIC",
+          "value": 10,
+          "content": {
+            "type": "SEQ",
+            "members": [
+              {
+                "type": "FIELD",
+                "name": "declarator",
+                "content": {
+                  "type": "SYMBOL",
+                  "name": "_declarator"
+                }
+              },
+              {
+                "type": "STRING",
+                "value": "="
+              },
+              {
+                "type": "FIELD",
+                "name": "value",
+                "content": {
                   "type": "ALIAS",
                   "content": {
                     "type": "SYMBOL",
@@ -10456,6 +10485,10 @@
                   },
                   {
                     "type": "SYMBOL",
+                    "name": "functional_cast_type_specifier"
+                  },
+                  {
+                    "type": "SYMBOL",
                     "name": "dependent_type"
                   }
                 ]
@@ -11235,6 +11268,10 @@
                     {
                       "type": "SYMBOL",
                       "name": "primitive_type"
+                    },
+                    {
+                      "type": "SYMBOL",
+                      "name": "functional_cast_type_specifier"
                     },
                     {
                       "type": "SYMBOL",
@@ -29266,6 +29303,27 @@
         ]
       }
     },
+    "functional_cast_type_specifier": {
+      "type": "CHOICE",
+      "members": [
+        {
+          "type": "STRING",
+          "value": "signed"
+        },
+        {
+          "type": "STRING",
+          "value": "unsigned"
+        },
+        {
+          "type": "STRING",
+          "value": "long"
+        },
+        {
+          "type": "STRING",
+          "value": "short"
+        }
+      ]
+    },
     "raw_string_literal": {
       "type": "SEQ",
       "members": [
@@ -34545,6 +34603,10 @@
       "type_specifier",
       "sized_type_specifier",
       "expression"
+    ],
+    [
+      "sized_type_specifier",
+      "functional_cast_type_specifier"
     ],
     [
       "_type_declarator",

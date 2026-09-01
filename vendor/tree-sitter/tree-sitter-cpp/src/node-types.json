@@ -1634,6 +1634,10 @@
             "named": true
           },
           {
+            "type": "functional_cast_type_specifier",
+            "named": true
+          },
+          {
             "type": "primitive_type",
             "named": true
           }
@@ -2092,6 +2096,10 @@
           },
           {
             "type": "dependent_type",
+            "named": true
+          },
+          {
+            "type": "functional_cast_type_specifier",
             "named": true
           },
           {
@@ -5134,6 +5142,11 @@
     }
   },
   {
+    "type": "functional_cast_type_specifier",
+    "named": true,
+    "fields": {}
+  },
+  {
     "type": "gcnew_expression",
     "named": true,
     "fields": {
@@ -5608,6 +5621,10 @@
           },
           {
             "type": "macro_initializer",
+            "named": true
+          },
+          {
+            "type": "preproc_include",
             "named": true
           },
           {

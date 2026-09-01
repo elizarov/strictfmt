@@ -22,6 +22,7 @@ This is the closed list of placements that are explicitly supported.
 - **Stream-shift chain links**: conditional-opener blocks with an optional `#else` may select complete leading links in a shared stream-shift chain. These blocks may nest, the receiver must precede the outer conditional, and further shared links and the terminating semicolon may follow it. `#elif` is unsupported in this placement.
 - **Guarded `extern "C"` group delimiters**: conditional-opener blocks may guard an `extern "C" {` opener or its matching closing brace as file-scope grouping items.
 - **Concatenated string fragments**: conditionals may select complete adjacent string-literal fragments inside a concatenated string literal, including an initializer that begins with a conditional, multiple conditional groups in one concatenation, `#elif` alternatives, and fragments interleaved with identifier-like or function-like string macros.
+- **Include-supplied variable initializers**: a local `#include` directive may supply the complete token sequence after a variable declaration's `=`. The declaration's terminating semicolon follows the directive.
 - **Local includes**: local `#include` directives may stand where the parser accepts them as complete items.
 
 All other places are not supported and may result in parsing errors or produce misformatted output if the parser manages to recover without errors.
@@ -36,6 +37,7 @@ Specialized contextual placements do not support `#elifdef` or `#elifndef` alter
 - Conditional declaration-prefix modifiers force a break before the rest of the declaration. Comments, attributes, and modifier lines inside the conditional use the indentation of the declaration that follows.
 - Conditional function return types and their shared declarator each start on their own line. Selected return types use the function declaration's indentation while directive lines stay at column zero.
 - For conditional right-hand sides after `=`, the formatter always breaks after the `=` and formats branch contents with one continuation indent relative to the line that contains the `=`.
+- For an include-supplied variable initializer, the formatter breaks after `=`, keeps the directive at column zero, and places the terminating semicolon one continuation level beyond the declaration's indentation.
 - A conditional stream-shift chain separates its receiver from the shifted tail. Branch-owned links and shared links after the conditional use the stream chain's continuation indentation; multiple links within one branch otherwise follow the ordinary stream-chain rules in [format.md](format.md#operator-chains).
 
 ## Examples
@@ -119,4 +121,12 @@ void RegisterGeneratedMetrics() {
 #include "generated_metrics.inc"
     CommitGeneratedMetrics();
 }
+```
+
+Include-supplied variable initializer:
+
+```cpp
+constexpr auto kEmbeddedSchema =
+#include "embedded_schema.inc"
+    ;
 ```

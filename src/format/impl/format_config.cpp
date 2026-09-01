@@ -1,6 +1,7 @@
 #include "format/impl/format_config.h"
 
 #include <algorithm>
+#include <array>
 #include <cstdio>
 #include <stdexcept>
 #include <string_view>
@@ -17,6 +18,25 @@ struct ConfigLine {
     std::string text;
 };
 
+using MacroCategoryEntries = std::vector<std::string>;
+using MacroCategoryMember = MacroCategoryEntries FormatterConfig::*;
+
+struct MacroCategoryConfig {
+    std::string_view key;
+    MacroCategoryMember member;
+};
+
+constexpr std::array MACRO_CATEGORY_CONFIGS = {
+    MacroCategoryConfig{"RawMacroDefinitions", &FormatterConfig::rawMacroDefinitions},
+    MacroCategoryConfig{"BareIdentifierMacros", &FormatterConfig::bareIdentifierMacros},
+    MacroCategoryConfig{"DeclarationPrefixMacros", &FormatterConfig::declarationPrefixMacros},
+    MacroCategoryConfig{"CallSyntaxMacros", &FormatterConfig::callSyntaxMacros},
+    MacroCategoryConfig{"SemicolonlessCallMacros", &FormatterConfig::semicolonlessCallMacros},
+    MacroCategoryConfig{"StatementArgumentMacros", &FormatterConfig::statementArgumentMacros},
+    MacroCategoryConfig{"TypeSpecifierMacros", &FormatterConfig::typeSpecifierMacros},
+    MacroCategoryConfig{"PreprocessorArgumentMacros", &FormatterConfig::preprocessorArgumentMacros}
+};
+
 struct FormatterConfigPatch {
     bool inheritParent = false;
     std::optional<int> columnLimit;
@@ -24,14 +44,7 @@ struct FormatterConfigPatch {
     std::optional<int> tabWidth;
     std::optional<std::string> mainIncludeRegex;
     std::optional<bool> mainIncludeQuote;
-    std::optional<std::vector<std::string>> rawMacroDefinitions;
-    std::optional<std::vector<std::string>> bareIdentifierMacros;
-    std::optional<std::vector<std::string>> declarationPrefixMacros;
-    std::optional<std::vector<std::string>> callSyntaxMacros;
-    std::optional<std::vector<std::string>> semicolonlessCallMacros;
-    std::optional<std::vector<std::string>> statementArgumentMacros;
-    std::optional<std::vector<std::string>> typeSpecifierMacros;
-    std::optional<std::vector<std::string>> preprocessorArgumentMacros;
+    std::array<std::optional<MacroCategoryEntries>, MACRO_CATEGORY_CONFIGS.size()> macroCategories;
     std::optional<std::vector<std::string>> streamShiftConfigurationMethods;
     std::optional<std::vector<IncludeGroup>> includeGroups;
 };
@@ -168,6 +181,18 @@ void ValidateMacroCategoryEntries(std::string_view configKey, const std::vector<
     }
 }
 
+template <typename Entry>
+void MergeConfigList(std::vector<Entry>& inherited, std::optional<std::vector<Entry>>& local) {
+    if (!local.has_value()) {
+        return;
+    }
+    for (Entry& entry : *local) {
+        if (std::find(inherited.begin(), inherited.end(), entry) == inherited.end()) {
+            inherited.push_back(std::move(entry));
+        }
+    }
+}
+
 void ParseIncludeCategories(const std::vector<ConfigLine>& lines, size_t& index, FormatterConfigPatch& patch) {
     std::vector<IncludeGroup> groups;
     const int parentIndent = lines[index].indent;
@@ -226,30 +251,15 @@ void ParseMacroCategories(const std::vector<ConfigLine>& lines, size_t& index, F
             break;
         }
         const auto [key, value] = SplitKeyValue(line.text);
-        if (key == "RawMacroDefinitions" && value.empty()) {
-            patch.rawMacroDefinitions = ParseIndentedStringList(lines, index, line.indent);
-            ValidateMacroCategoryEntries(key, *patch.rawMacroDefinitions);
-        } else if (key == "BareIdentifierMacros" && value.empty()) {
-            patch.bareIdentifierMacros = ParseIndentedStringList(lines, index, line.indent);
-            ValidateMacroCategoryEntries(key, *patch.bareIdentifierMacros);
-        } else if (key == "DeclarationPrefixMacros" && value.empty()) {
-            patch.declarationPrefixMacros = ParseIndentedStringList(lines, index, line.indent);
-            ValidateMacroCategoryEntries(key, *patch.declarationPrefixMacros);
-        } else if (key == "CallSyntaxMacros" && value.empty()) {
-            patch.callSyntaxMacros = ParseIndentedStringList(lines, index, line.indent);
-            ValidateMacroCategoryEntries(key, *patch.callSyntaxMacros);
-        } else if (key == "SemicolonlessCallMacros" && value.empty()) {
-            patch.semicolonlessCallMacros = ParseIndentedStringList(lines, index, line.indent);
-            ValidateMacroCategoryEntries(key, *patch.semicolonlessCallMacros);
-        } else if (key == "StatementArgumentMacros" && value.empty()) {
-            patch.statementArgumentMacros = ParseIndentedStringList(lines, index, line.indent);
-            ValidateMacroCategoryEntries(key, *patch.statementArgumentMacros);
-        } else if (key == "TypeSpecifierMacros" && value.empty()) {
-            patch.typeSpecifierMacros = ParseIndentedStringList(lines, index, line.indent);
-            ValidateMacroCategoryEntries(key, *patch.typeSpecifierMacros);
-        } else if (key == "PreprocessorArgumentMacros" && value.empty()) {
-            patch.preprocessorArgumentMacros = ParseIndentedStringList(lines, index, line.indent);
-            ValidateMacroCategoryEntries(key, *patch.preprocessorArgumentMacros);
+        const auto category = std::find_if(
+            MACRO_CATEGORY_CONFIGS.begin(), MACRO_CATEGORY_CONFIGS.end(), [&key](const MacroCategoryConfig& config) {
+                return config.key == key;
+            }
+        );
+        if (category != MACRO_CATEGORY_CONFIGS.end() && value.empty()) {
+            MacroCategoryEntries entries = ParseIndentedStringList(lines, index, line.indent);
+            ValidateMacroCategoryEntries(key, entries);
+            patch.macroCategories[static_cast<size_t>(category - MACRO_CATEGORY_CONFIGS.begin())] = std::move(entries);
         }
     }
 }
@@ -320,33 +330,10 @@ FormatterConfig ApplyConfigPatch(FormatterConfig config, FormatterConfigPatch pa
     if (patch.mainIncludeQuote.has_value()) {
         config.mainIncludeQuote = *patch.mainIncludeQuote;
     }
-    if (patch.rawMacroDefinitions.has_value()) {
-        config.rawMacroDefinitions = std::move(*patch.rawMacroDefinitions);
+    for (size_t index = 0; index < MACRO_CATEGORY_CONFIGS.size(); ++index) {
+        MergeConfigList(config.*MACRO_CATEGORY_CONFIGS[index].member, patch.macroCategories[index]);
     }
-    if (patch.bareIdentifierMacros.has_value()) {
-        config.bareIdentifierMacros = std::move(*patch.bareIdentifierMacros);
-    }
-    if (patch.declarationPrefixMacros.has_value()) {
-        config.declarationPrefixMacros = std::move(*patch.declarationPrefixMacros);
-    }
-    if (patch.callSyntaxMacros.has_value()) {
-        config.callSyntaxMacros = std::move(*patch.callSyntaxMacros);
-    }
-    if (patch.semicolonlessCallMacros.has_value()) {
-        config.semicolonlessCallMacros = std::move(*patch.semicolonlessCallMacros);
-    }
-    if (patch.statementArgumentMacros.has_value()) {
-        config.statementArgumentMacros = std::move(*patch.statementArgumentMacros);
-    }
-    if (patch.typeSpecifierMacros.has_value()) {
-        config.typeSpecifierMacros = std::move(*patch.typeSpecifierMacros);
-    }
-    if (patch.preprocessorArgumentMacros.has_value()) {
-        config.preprocessorArgumentMacros = std::move(*patch.preprocessorArgumentMacros);
-    }
-    if (patch.streamShiftConfigurationMethods.has_value()) {
-        config.streamShiftConfigurationMethods = std::move(*patch.streamShiftConfigurationMethods);
-    }
+    MergeConfigList(config.streamShiftConfigurationMethods, patch.streamShiftConfigurationMethods);
     if (patch.includeGroups.has_value()) {
         config.includeGroups = std::move(*patch.includeGroups);
     }
