@@ -296,7 +296,7 @@ const char* messages[] = {
 
 An expansion's base cost is its construct's structural depth in the formatted segment: zero at the root, increasing by one per nested level. Name-internal expansions are deeper than the attached list's expansion; chains keep their expression depth.
 
-Each selected expansion with nonzero cost contributes one occurrence to the expansion-depth profile. At the greatest cost whose occurrence count differs, prefer fewer occurrences. Profiles of independent parts combine by adding their counts.
+Each selected expansion with nonzero cost contributes one occurrence to the expansion-depth profile. Cost profiles compare greatest value first: at the greatest value whose occurrence count differs, prefer fewer occurrences. Independent parts combine by adding their counts.
 
 When a lambda is the final list item, its body cost is discounted to zero and every expansion inside it receives the same discount. Its header retains normal costs. Discounts change neither indentation nor permitted layouts.
 
@@ -313,10 +313,9 @@ auto result = visit(items, [](const auto& item) {
 
 Within each formatted segment, choose a layout satisfying all these rules, minimizing in order:
 
-1. Maximum overflow beyond the column limit.
-2. Number of overflowing physical lines.
-3. Expansion-depth profile.
-4. Total physical line count.
+1. Overflow-size profile, with each overflowing physical line contributing its overflow beyond the column limit.
+2. Expansion-depth profile.
+3. Total physical line count.
 
 Remaining ties prefer compact choices in source order.
 

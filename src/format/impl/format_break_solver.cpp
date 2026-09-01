@@ -1,7 +1,6 @@
 #include "format/impl/format_break_solver.h"
 
 #include <algorithm>
-#include <array>
 #include <cstddef>
 #include <deque>
 #include <memory>
@@ -13,6 +12,7 @@
 #include <vector>
 
 #include "format/impl/format_break_model_inline_helpers.h"
+#include "format/impl/format_value_profile.h"
 
 namespace {
 
@@ -40,105 +40,16 @@ struct SolveKeyHash {
     }
 };
 
-struct ExpansionDepthProfile {
-    struct Entry {
-        int cost = 0;
-        int occurrences = 0;
-    };
-
-    void AddExpansion(int cost) {
-        if (cost <= 0) {
-            return;
-        }
-        AddOccurrences(cost, 1);
-    }
-
-    void Add(const ExpansionDepthProfile& other) {
-        for (const Entry& entry : other.Entries()) {
-            AddOccurrences(entry.cost, entry.occurrences);
-        }
-    }
-
-    std::span<const Entry> Entries() const {
-        if (!heapEntries.empty()) {
-            return heapEntries;
-        }
-        return {inlineEntries.data(), inlineSize};
-    }
-
-private:
-    void AddOccurrences(int cost, int occurrences) {
-        if (!heapEntries.empty()) {
-            const auto found =
-                std::lower_bound(heapEntries.begin(), heapEntries.end(), cost, [](const Entry& entry, int value) {
-                    return entry.cost < value;
-                });
-            if (found != heapEntries.end() && found->cost == cost) {
-                found->occurrences += occurrences;
-            } else {
-                heapEntries.insert(found, {.cost = cost, .occurrences = occurrences});
-            }
-            return;
-        }
-        size_t index = 0;
-        while (index < inlineSize && inlineEntries[index].cost < cost) {
-            ++index;
-        }
-        if (index < inlineSize && inlineEntries[index].cost == cost) {
-            inlineEntries[index].occurrences += occurrences;
-            return;
-        }
-        if (inlineSize < inlineEntries.size()) {
-            std::move_backward(
-                inlineEntries.begin() + static_cast<std::ptrdiff_t>(index),
-                inlineEntries.begin() + static_cast<std::ptrdiff_t>(inlineSize),
-                inlineEntries.begin() + static_cast<std::ptrdiff_t>(inlineSize + 1)
-            );
-            inlineEntries[index] = {.cost = cost, .occurrences = occurrences};
-            ++inlineSize;
-            return;
-        }
-        heapEntries.assign(inlineEntries.begin(), inlineEntries.end());
-        AddOccurrences(cost, occurrences);
-    }
-
-    std::array<Entry, 4> inlineEntries{};
-    size_t inlineSize = 0;
-    std::vector<Entry> heapEntries;
-};
-
-int CompareExpansionDepthProfiles(const ExpansionDepthProfile& left, const ExpansionDepthProfile& right) {
-    const std::span<const ExpansionDepthProfile::Entry> leftEntries = left.Entries();
-    const std::span<const ExpansionDepthProfile::Entry> rightEntries = right.Entries();
-    size_t leftIndex = leftEntries.size();
-    size_t rightIndex = rightEntries.size();
-    while (leftIndex > 0 || rightIndex > 0) {
-        if (rightIndex == 0 || (leftIndex > 0 && leftEntries[leftIndex - 1].cost > rightEntries[rightIndex - 1].cost)) {
-            return 1;
-        }
-        if (leftIndex == 0 || rightEntries[rightIndex - 1].cost > leftEntries[leftIndex - 1].cost) {
-            return -1;
-        }
-        const int leftOccurrences = leftEntries[leftIndex - 1].occurrences;
-        const int rightOccurrences = rightEntries[rightIndex - 1].occurrences;
-        if (leftOccurrences != rightOccurrences) {
-            return leftOccurrences < rightOccurrences ? -1 : 1;
-        }
-        --leftIndex;
-        --rightIndex;
-    }
-    return 0;
-}
-
 struct NodeResult {
     bool valid = false;
     int endColumn = 0;
     int endIndentLevel = 0;
     bool endLineHasText = false;
+    // Exact delimiter-stack search can rewind a line after pricing it. Normal results keep this false.
+    bool currentLineOverflowRecorded = false;
     int extraLines = 0;
-    int maxOverflow = 0;
-    int overflowLines = 0;
-    ExpansionDepthProfile expansionDepthProfile;
+    FormatValueProfile overflowSizeProfile;
+    FormatValueProfile expansionDepthProfile;
     bool ownExpansionCharged = false;
     const struct ChoiceTree* choices = nullptr;
 };
@@ -398,6 +309,26 @@ private:
         return token.spaceBefore ? 1 : 0;
     }
 
+    int CurrentLineOverflow(const NodeResult& result) const {
+        return result.endLineHasText && !result.currentLineOverflowRecorded ?
+            std::max(0, result.endColumn - config_.columnLimit) : 0;
+    }
+
+    int MaximumOverflow(const NodeResult& result) const {
+        return std::max(result.overflowSizeProfile.GreatestValue(), CurrentLineOverflow(result));
+    }
+
+    bool HasOverflow(const NodeResult& result) const {
+        return !result.overflowSizeProfile.Empty() || CurrentLineOverflow(result) > 0;
+    }
+
+    void FinishCurrentLine(NodeResult& result, int suffixWidth = 0) const {
+        if (result.endLineHasText && !result.currentLineOverflowRecorded) {
+            result.overflowSizeProfile.AddValue(std::max(0, result.endColumn + suffixWidth - config_.columnLimit));
+            result.currentLineOverflowRecorded = true;
+        }
+    }
+
     NodeResult SolveTokenText(
         const FormatBreakToken& token, std::string_view text, int column, int indentLevel, bool lineHasText
     ) const {
@@ -408,35 +339,27 @@ private:
         NodeResult result{
             .valid = true, .endColumn = column + space, .endIndentLevel = indentLevel, .endLineHasText = lineHasText
         };
-        bool lineWasOverLimit = lineHasText && column > config_.columnLimit;
         for (size_t index = 0; index < text.size(); ++index) {
             if (text[index] == '\r' && index + 1 < text.size() && text[index + 1] == '\n') {
                 continue;
             }
             if (text[index] == '\n') {
-                const bool lineIsOverLimit = result.endLineHasText && result.endColumn > config_.columnLimit;
-                result.maxOverflow = std::max(result.maxOverflow, result.endColumn - config_.columnLimit);
-                if (!lineWasOverLimit && lineIsOverLimit) {
-                    ++result.overflowLines;
-                }
+                FinishCurrentLine(result);
                 ++result.extraLines;
                 result.endColumn = 0;
                 result.endLineHasText = false;
-                lineWasOverLimit = false;
+                result.currentLineOverflowRecorded = false;
                 continue;
             }
             ++result.endColumn;
             result.endLineHasText = true;
         }
-        const bool lineIsOverLimit = result.endLineHasText && result.endColumn > config_.columnLimit;
-        result.maxOverflow = std::max(result.maxOverflow, result.endColumn - config_.columnLimit);
-        if (!lineWasOverLimit && lineIsOverLimit) {
-            ++result.overflowLines;
-        }
         if (IsCommentToken(FormatBreakTokenKind(token))) {
+            FinishCurrentLine(result);
             ++result.extraLines;
             result.endColumn = IndentColumn(indentLevel);
             result.endLineHasText = false;
+            result.currentLineOverflowRecorded = false;
         }
         return result;
     }
@@ -478,9 +401,9 @@ private:
         left.endColumn = right.endColumn;
         left.endIndentLevel = right.endIndentLevel;
         left.endLineHasText = right.endLineHasText;
+        left.currentLineOverflowRecorded = right.currentLineOverflowRecorded;
         left.extraLines += right.extraLines;
-        left.maxOverflow = std::max(left.maxOverflow, right.maxOverflow);
-        left.overflowLines += right.overflowLines;
+        left.overflowSizeProfile.Add(right.overflowSizeProfile);
         left.expansionDepthProfile.Add(right.expansionDepthProfile);
         // A child's expansion charge does not pay for its parent's own breaks.
         left.choices = ConcatChoices(left.choices, right.choices);
@@ -579,7 +502,7 @@ private:
                 }
                 NodeResults alternatives;
                 for (NodeResult compact : SolveChainCompactAlternatives(node, column, indentLevel, lineHasText)) {
-                    if (node.chainCompactRequiresFitOnOneLine && (compact.extraLines > 0 || compact.maxOverflow > 0)) {
+                    if (node.chainCompactRequiresFitOnOneLine && (compact.extraLines > 0 || HasOverflow(compact))) {
                         continue;
                     }
                     if (node.chainPrefersSplitWhenCompactBreaks && compact.valid && compact.extraLines > 0) {
@@ -697,21 +620,14 @@ private:
     NodeResult AddBreak(NodeResult result, int indentLevel, int breakCost) const {
         // Some formats add text only when a line actually breaks. Account for that physical suffix here so it
         // participates in the same DP cost as ordinary tokens without inventing a printer-side break decision.
-        if (result.endLineHasText && breakLineSuffixWidth_ > 0) {
-            const bool lineWasOverLimit = result.endColumn > config_.columnLimit;
-            const int suffixedColumn = result.endColumn + breakLineSuffixWidth_;
-            const bool lineIsOverLimit = suffixedColumn > config_.columnLimit;
-            result.maxOverflow = std::max(result.maxOverflow, suffixedColumn - config_.columnLimit);
-            if (!lineWasOverLimit && lineIsOverLimit) {
-                ++result.overflowLines;
-            }
-        }
+        FinishCurrentLine(result, breakLineSuffixWidth_);
         ++result.extraLines;
         result.endIndentLevel = indentLevel;
         result.endColumn = IndentColumn(indentLevel);
         result.endLineHasText = false;
+        result.currentLineOverflowRecorded = false;
         if (!result.ownExpansionCharged) {
-            result.expansionDepthProfile.AddExpansion(breakCost);
+            result.expansionDepthProfile.AddValue(breakCost);
             result.ownExpansionCharged = true;
         }
         return result;
@@ -734,6 +650,7 @@ private:
         result.endIndentLevel = indentLevel;
         result.endColumn = IndentColumn(indentLevel);
         result.endLineHasText = false;
+        result.currentLineOverflowRecorded = false;
         return blankLine ? AddBreak(result, indentLevel, breakCost) : result;
     }
 
@@ -813,14 +730,17 @@ private:
         if (!incumbent.valid) {
             return true;
         }
-        if (candidate.maxOverflow != incumbent.maxOverflow) {
-            return candidate.maxOverflow < incumbent.maxOverflow;
-        }
-        if (candidate.overflowLines != incumbent.overflowLines) {
-            return candidate.overflowLines < incumbent.overflowLines;
+        const int overflowProfileComparison = CompareFormatValueProfilesWithAdditionalValues(
+            candidate.overflowSizeProfile,
+            CurrentLineOverflow(candidate),
+            incumbent.overflowSizeProfile,
+            CurrentLineOverflow(incumbent)
+        );
+        if (overflowProfileComparison != 0) {
+            return overflowProfileComparison < 0;
         }
         const int depthProfileComparison =
-            CompareExpansionDepthProfiles(candidate.expansionDepthProfile, incumbent.expansionDepthProfile);
+            CompareFormatValueProfiles(candidate.expansionDepthProfile, incumbent.expansionDepthProfile);
         if (depthProfileComparison != 0) {
             return depthProfileComparison < 0;
         }
@@ -834,13 +754,15 @@ private:
         return left.endColumn == right.endColumn &&
             left.endIndentLevel == right.endIndentLevel &&
             left.endLineHasText == right.endLineHasText &&
+            left.currentLineOverflowRecorded == right.currentLineOverflowRecorded &&
             left.ownExpansionCharged == right.ownExpansionCharged;
     }
 
-    static bool DominatesResult(const NodeResult& left, const NodeResult& right) {
+    bool DominatesResult(const NodeResult& left, const NodeResult& right) const {
         if (
             left.endIndentLevel != right.endIndentLevel ||
             left.endLineHasText != right.endLineHasText ||
+            left.currentLineOverflowRecorded != right.currentLineOverflowRecorded ||
             left.ownExpansionCharged != right.ownExpansionCharged
         ) {
             return false;
@@ -848,20 +770,15 @@ private:
         if (left.endColumn > right.endColumn) {
             return false;
         }
+        const int overflowProfileComparison = CompareFormatValueProfilesWithAdditionalValues(
+            left.overflowSizeProfile, CurrentLineOverflow(left), right.overflowSizeProfile, CurrentLineOverflow(right)
+        );
         const int depthProfileComparison =
-            CompareExpansionDepthProfiles(left.expansionDepthProfile, right.expansionDepthProfile);
-        if (
-            left.maxOverflow > right.maxOverflow ||
-            left.overflowLines > right.overflowLines ||
-            depthProfileComparison > 0 ||
-            left.extraLines > right.extraLines
-        ) {
+            CompareFormatValueProfiles(left.expansionDepthProfile, right.expansionDepthProfile);
+        if (overflowProfileComparison > 0 || depthProfileComparison > 0 || left.extraLines > right.extraLines) {
             return false;
         }
-        return left.maxOverflow < right.maxOverflow ||
-            left.overflowLines < right.overflowLines ||
-            depthProfileComparison < 0 ||
-            left.extraLines < right.extraLines;
+        return overflowProfileComparison < 0 || depthProfileComparison < 0 || left.extraLines < right.extraLines;
     }
 
     static bool ResultStateLess(const NodeResult& left, const NodeResult& right) {
@@ -873,6 +790,9 @@ private:
         }
         if (left.endLineHasText != right.endLineHasText) {
             return left.endLineHasText < right.endLineHasText;
+        }
+        if (left.currentLineOverflowRecorded != right.currentLineOverflowRecorded) {
+            return left.currentLineOverflowRecorded < right.currentLineOverflowRecorded;
         }
         return left.ownExpansionCharged < right.ownExpansionCharged;
     }
@@ -1125,7 +1045,7 @@ private:
         if (node.forceSplit) {
             return true;
         }
-        if (split.maxOverflow != 0 || node.children.empty() || node.items.size() < 2) {
+        if (HasOverflow(split) || node.children.empty() || node.items.size() < 2) {
             return false;
         }
         NodeResult
@@ -1306,7 +1226,7 @@ private:
                 continue;
             }
             const NodeResult closedBody = AddBreak(body, indentLevel, node.breakCost);
-            if (closedBody.maxOverflow > 0) {
+            if (HasOverflow(closedBody)) {
                 continue;
             }
             NodeResult candidate = prefix;
@@ -1614,7 +1534,7 @@ private:
                         runStarts.push_back(index);
                     }
                     prefix = AddToken(prefix, open);
-                    if (prefix.maxOverflow > 0) {
+                    if (HasOverflow(prefix)) {
                         prefixFits = false;
                         break;
                     }
@@ -1627,7 +1547,7 @@ private:
                 }
                 NodeResult candidate =
                     SolveDelimiterStackPartition(node, stack, column, indentLevel, lineHasText, false, runStarts);
-                if (!candidate.valid || candidate.maxOverflow > 0) {
+                if (!candidate.valid || HasOverflow(candidate)) {
                     continue;
                 }
                 const bool equalCost = !Better(candidate, best) && !Better(best, candidate);
@@ -1699,20 +1619,22 @@ private:
                         for (size_t index = begin; index < end; ++index) {
                             candidate = AddToken(candidate, stack.delimiters[index]->children.front()->token);
                         }
-                        if (candidate.maxOverflow > maximumOverflow) {
+                        if (MaximumOverflow(candidate) > maximumOverflow) {
                             break;
                         }
                         candidate = AddBreak(candidate, runIndent, node.breakCost);
                         for (size_t index = end; index-- > begin;) {
                             candidate = AddToken(candidate, stack.delimiters[index]->children.back()->token);
                         }
-                        if (candidate.maxOverflow > maximumOverflow) {
+                        if (MaximumOverflow(candidate) > maximumOverflow) {
                             break;
                         }
                         if (completedRuns > 0) {
+                            FinishCurrentLine(candidate);
                             candidate.endColumn = outerEndColumn;
                             candidate.endIndentLevel = outerEndIndentLevel;
                             candidate.endLineHasText = outerEndLineHasText;
+                            candidate.currentLineOverflowRecorded = outerEndLineHasText;
                         }
                         AddPrunedDelimiterStackPartitionCandidate(
                             state(completedRuns + 1, end), {.result = candidate, .path = path}
@@ -1750,12 +1672,14 @@ private:
                         continue;
                     }
                     Merge(candidate, leaf);
-                    if (candidate.maxOverflow > maximumOverflow) {
+                    if (MaximumOverflow(candidate) > maximumOverflow) {
                         continue;
                     }
+                    FinishCurrentLine(candidate);
                     candidate.endColumn = outerEndColumn;
                     candidate.endIndentLevel = outerEndIndentLevel;
                     candidate.endLineHasText = outerEndLineHasText;
+                    candidate.currentLineOverflowRecorded = outerEndLineHasText;
                     consider(candidate, partition.path);
                 }
             }
@@ -1776,7 +1700,7 @@ private:
                         for (size_t index = begin; index < delimiterCount; ++index) {
                             candidate = AddToken(candidate, stack.delimiters[index]->children.front()->token);
                         }
-                        if (candidate.maxOverflow > maximumOverflow) {
+                        if (MaximumOverflow(candidate) > maximumOverflow) {
                             continue;
                         }
                         NodeResult leaf =
@@ -1788,13 +1712,15 @@ private:
                         for (size_t index = delimiterCount; index-- > begin;) {
                             candidate = AddToken(candidate, stack.delimiters[index]->children.back()->token);
                         }
-                        if (candidate.maxOverflow > maximumOverflow) {
+                        if (MaximumOverflow(candidate) > maximumOverflow) {
                             continue;
                         }
                         if (completedRuns > 0) {
+                            FinishCurrentLine(candidate);
                             candidate.endColumn = outerEndColumn;
                             candidate.endIndentLevel = outerEndIndentLevel;
                             candidate.endLineHasText = outerEndLineHasText;
+                            candidate.currentLineOverflowRecorded = outerEndLineHasText;
                         }
                         consider(candidate, path);
                     }
@@ -1858,8 +1784,8 @@ private:
         // Fewer runs mean fewer opener and closer lines, and the latest equal-run partition is the
         // source-order-stable compact choice. This is therefore an equivalence-preserving fast path, not
         // a local layout decision. Once overflow is unavoidable, that proof no longer applies because an
-        // additional run can reduce maximum overflow; the exact partition DP below must make the choice.
-        if (!greedy.valid || greedy.maxOverflow == 0) {
+        // additional run can improve the overflow-size profile; the exact partition DP below must make the choice.
+        if (!greedy.valid || !HasOverflow(greedy)) {
             return greedy;
         }
         // A detached leaf starts one level after the final opener run. If all greedy delimiter lines fit,
@@ -1869,14 +1795,14 @@ private:
         if (detachLeaf && !delimiterOverflow) {
             return greedy;
         }
-        int exactMaximumOverflow = greedy.maxOverflow;
+        int exactMaximumOverflow = MaximumOverflow(greedy);
         if (!detachLeaf) {
             bool detachedDelimiterOverflow = false;
             const NodeResult detached = SolveGreedyDelimiterStack(
                 node, stack, column, indentLevel, lineHasText, true, detachedDelimiterOverflow
             );
             if (detached.valid) {
-                exactMaximumOverflow = std::min(exactMaximumOverflow, detached.maxOverflow);
+                exactMaximumOverflow = std::min(exactMaximumOverflow, MaximumOverflow(detached));
             }
         }
         NodeResult exact =
@@ -2526,7 +2452,7 @@ private:
         }
         NodeResult best;
         for (NodeResult candidate : SolveChildrenAlternatives(node.children, column, indentLevel, lineHasText)) {
-            if (node.bodyHeaderSingleStatementBody && (candidate.extraLines > 0 || candidate.maxOverflow > 0)) {
+            if (node.bodyHeaderSingleStatementBody && (candidate.extraLines > 0 || HasOverflow(candidate))) {
                 continue;
             }
             AddChoice(candidate, node.id, FormatBreakChoice::Compact, indentLevel);
@@ -3139,8 +3065,8 @@ private:
                 SolveStreamSplit(node, column, indentLevel, lineHasText, FormatBreakChoice::StreamCompactTail);
             NodeResult split = SolveStreamSplit(node, column, indentLevel, lineHasText, FormatBreakChoice::Split);
             NodeResult best = Better(compactTail, compact) ? compactTail : compact;
-            if (compact.valid && best.valid && CompactLineEndsOverLimit(compact) && best.maxOverflow == 0) {
-                if (compactTail.valid && compactTail.maxOverflow == 0) {
+            if (compact.valid && best.valid && CompactLineEndsOverLimit(compact) && !HasOverflow(best)) {
+                if (compactTail.valid && !HasOverflow(compactTail)) {
                     return compactTail;
                 }
                 return best;
@@ -3154,7 +3080,7 @@ private:
             if (node.chainPrefersSplitWhenCompactBreaks && compact.valid && compact.extraLines > 0 && split.valid) {
                 return split;
             }
-            if (compact.valid && best.valid && CompactLineEndsOverLimit(compact) && best.maxOverflow == 0) {
+            if (compact.valid && best.valid && CompactLineEndsOverLimit(compact) && !HasOverflow(best)) {
                 return best;
             }
             return Better(split, best) ? split : best;
@@ -3177,7 +3103,7 @@ private:
                     best = alternative;
                 }
             }
-            if (compact.valid && best.valid && CompactLineEndsOverLimit(compact) && best.maxOverflow == 0) {
+            if (compact.valid && best.valid && CompactLineEndsOverLimit(compact) && !HasOverflow(best)) {
                 return best;
             }
             return best;
@@ -3186,7 +3112,7 @@ private:
         if (
             node.chainCompactRequiresFitOnOneLine &&
             compact.valid &&
-            (compact.extraLines > 0 || compact.maxOverflow > 0) &&
+            (compact.extraLines > 0 || HasOverflow(compact)) &&
             split.valid
         ) {
             return split;
@@ -3194,7 +3120,7 @@ private:
         if (node.chainPrefersSplitWhenCompactBreaks && compact.valid && compact.extraLines > 0 && split.valid) {
             return split;
         }
-        if (compact.valid && split.valid && CompactLineEndsOverLimit(compact) && split.maxOverflow == 0) {
+        if (compact.valid && split.valid && CompactLineEndsOverLimit(compact) && !HasOverflow(split)) {
             return split;
         }
         return Better(split, compact) ? split : compact;

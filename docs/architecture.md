@@ -16,6 +16,7 @@
 - `src/format/impl/format_break_model_builder.h|cpp` own conversion from print tokens to break models.
 - `src/format/impl/format_break_model_inline_helpers.h` owns small inline accessors for optional break model tokens.
 - `src/format/impl/format_break_solver.h|cpp` own the break optimizer; see [break_solver.md].
+- `src/format/impl/format_value_profile.h|cpp` own the sparse value profile shared by break optimization costs.
 - `src/format/impl/format_config.h|cpp` own formatter configuration, ignore files, upward discovery, inheritance, parsing, and caching.
 - `src/format/impl/format_include_sort.h|cpp` own include run normalization, grouping, main-include detection, and sorting.
 - `src/format/impl/format_model.h|cpp` own format model node kinds, `SyntaxNodeClass`, symbol mappings, and syntax metadata; category checks must use `SyntaxNodeClass` helpers, not duplicated `SyntaxNodeKind` lists, with exact kind comparisons reserved for one concrete syntax rule.

@@ -1600,6 +1600,34 @@ class FormatCommandTests(unittest.TestCase):
                 msg=f"stdout:\n{idempotent.stdout}\n\nstderr:\n{idempotent.stderr}",
             )
 
+    def test_overflow_size_profile_compares_next_largest_overflow(self) -> None:
+        build_dir = TEST_TEMP_ROOT
+        build_dir.mkdir(exist_ok=True)
+        with tempfile.TemporaryDirectory(prefix="format_overflow_profile_", dir=build_dir) as temp_dir:
+            config = Path(temp_dir) / ".cpp-format"
+            config.write_text(
+                "---\n"
+                "ColumnLimit: 12\n"
+                "IndentWidth: 4\n"
+                "TabWidth: 4\n",
+                encoding="utf-8",
+            )
+            source = "void f(){if(a){throw (((((value)))));}}\n"
+            expected = (
+                "void f() {\n"
+                "    if (a) {\n"
+                "        throw (((((\n"
+                "            value\n"
+                "        )))));\n"
+                "    }\n"
+                "}\n"
+            )
+
+            formatted = native_format("--stdin", "--style", str(config), input_text=source)
+
+            self.assertEqual(0, formatted.returncode, msg=f"stdout:\n{formatted.stdout}\n\nstderr:\n{formatted.stderr}")
+            self.assertEqual(expected, formatted.stdout)
+
     def test_compact_initializer_braces_stay_tight_in_split_context(self) -> None:
         result = native_format(
             "--stdin",
