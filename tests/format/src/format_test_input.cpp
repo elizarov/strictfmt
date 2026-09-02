@@ -707,6 +707,8 @@ PackedInitializerBodySuffix::PackedInitializerBodySuffix():firstValue_(firstInit
 
 ExpandedFinalInitializer::ExpandedFinalInitializer(int first):first_(first),second_(BuildValue(firstArgumentWithAnExtremelyLongNameForTheConstructorFixture,secondArgumentWithAnExtremelyLongNameForTheConstructorFixture)){Use();}
 
+CrossBlockInitializerList::CrossBlockInitializerList(const Dependencies& deps,const Account& account):first_initializer_with_long_name_(deps.first),second_initializer_with_long_name_(deps.second),account_([](const Account& value)->const Detail&{Validate(value);return GetDetail(value);}(account)),following_initializer_with_long_name_(deps.following),final_initializer_(deps.final){}
+
 StringColumn::StringColumn(ColumnRef column)
     : ClickhouseColumn{impl::GetTypedColumn<StringColumn, NativeTyp>(column)}
 {}

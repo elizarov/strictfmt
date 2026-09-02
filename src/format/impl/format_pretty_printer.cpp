@@ -1806,7 +1806,7 @@ private:
         return closingKind == SyntaxNodeKind::Unknown ? nullptr : DirectTokenChild(node, closingKind);
     }
 
-    static bool IsDelimitedListComma(const PrintToken& token, const SyntaxNode* list) {
+    static bool IsListComma(const PrintToken& token, const SyntaxNode* list) {
         if (token.kind != PrintTokenKind::Known || token.syntaxKind != SyntaxNodeKind::Comma || token.node == nullptr) {
             return false;
         }
@@ -1833,7 +1833,7 @@ private:
             DirectMatchingClosingDelimiterChild(*container, DirectOpeningDelimiterChild(*container)) == next.node;
     }
 
-    static std::vector<const SyntaxNode*> DelimitedAncestorsBefore(const PrintToken& token, const SyntaxNode* before) {
+    static std::vector<const SyntaxNode*> ListAncestorsBefore(const PrintToken& token, const SyntaxNode* before) {
         for (const SyntaxNode* cursor = token.node; cursor != nullptr; cursor = cursor->parent) {
             if (cursor == before) {
                 std::vector<const SyntaxNode*> result;
@@ -1842,7 +1842,10 @@ private:
                         break;
                     }
                     const SyntaxNode* open = DirectOpeningDelimiterChild(*cursor);
-                    if (open != nullptr && DirectMatchingClosingDelimiterChild(*cursor, open) != nullptr) {
+                    if (
+                        SyntaxNodeHasClass(*cursor, SyntaxNodeClass::PrefixList) ||
+                        (open != nullptr && DirectMatchingClosingDelimiterChild(*cursor, open) != nullptr)
+                    ) {
                         result.push_back(cursor);
                     }
                 }
@@ -3042,6 +3045,18 @@ private:
                 );
             }
         }
+        if (
+            node.kind == FormatBreakNodeKind::PrefixList &&
+            !node.children.empty() &&
+            node.children.front()->kind == FormatBreakNodeKind::Token &&
+            ChoiceFor(solution, node.id) == FormatBreakChoice::Split
+        ) {
+            const FormatBreakToken& prefix = node.children.front()->token;
+            if (prefix.token != nullptr && prefix.token->node != nullptr) {
+                const int baseIndent = solution.indentLevels[static_cast<size_t>(node.id)];
+                result.push_back({.openToken = prefix.token->node, .itemIndent = baseIndent + 1});
+            }
+        }
         for (const FormatBreakNode* child : node.children) {
             if (child) {
                 CollectSplitContexts(*child, solution, result);
@@ -3155,7 +3170,7 @@ private:
             return std::nullopt;
         }
         const SyntaxNode* block = token.node->parent;
-        const std::vector<const SyntaxNode*> lists = DelimitedAncestorsBefore(token, block);
+        const std::vector<const SyntaxNode*> lists = ListAncestorsBefore(token, block);
         if (lists.empty()) {
             return std::nullopt;
         }
@@ -3170,6 +3185,13 @@ private:
 
         MandatoryBlockSplitListPlan result;
         for (const SyntaxNode* list : lists) {
+            if (SyntaxNodeHasClass(*list, SyntaxNodeClass::PrefixList)) {
+                const SyntaxNode* prefix = DirectTokenChild(*list, SyntaxNodeKind::Colon);
+                if (prefix != nullptr) {
+                    result.deferredContexts.push_back({.openToken = prefix, .list = list, .itemRightBrace = itemClose});
+                }
+                continue;
+            }
             const SyntaxNode* listOpen = DirectOpeningDelimiterChild(*list);
             const SyntaxNode* listClose = DirectMatchingClosingDelimiterChild(*list, listOpen);
             if (listOpen == nullptr || listClose == nullptr) {
@@ -3182,7 +3204,7 @@ private:
             bool hasFollowingListItem = false;
             for (size_t index = *itemCloseIndex + 1; index < *closeIndex; ++index) {
                 const PrintToken& candidate = (*activeTokens_)[index];
-                if (IsDelimitedListComma(candidate, list)) {
+                if (IsListComma(candidate, list)) {
                     hasFollowingListItem = true;
                     break;
                 }
@@ -3308,7 +3330,7 @@ private:
 
     bool TryPrintPreprocessorSplitListComma(const PrintToken& token) {
         PreprocessorSplitListContext* context = ActivePreprocessorSplitListContextFor(token);
-        if (context == nullptr || !IsDelimitedListComma(token, context->list)) {
+        if (context == nullptr || !IsListComma(token, context->list)) {
             return false;
         }
         BufferToken(token);
@@ -3386,9 +3408,24 @@ private:
         }
     }
 
+    void RetireFinishedMandatoryBlockSplitListContexts(const PrintToken& token) {
+        while (!mandatoryBlockSplitListContexts_.empty()) {
+            const MandatoryBlockSplitListContext& context = mandatoryBlockSplitListContexts_.back();
+            if (
+                context.closeToken != nullptr ||
+                !context.afterItemClose ||
+                token.node == nullptr ||
+                SyntaxPathContains(token, context.list)
+            ) {
+                return;
+            }
+            mandatoryBlockSplitListContexts_.pop_back();
+        }
+    }
+
     bool TryPrintDeferredSplitListComma(const PrintToken& token) {
         MandatoryBlockSplitListContext* context = ActiveMandatoryBlockSplitListContext();
-        if (context == nullptr || !context->afterItemClose || !IsDelimitedListComma(token, context->list)) {
+        if (context == nullptr || !context->afterItemClose || !IsListComma(token, context->list)) {
             return false;
         }
         BufferToken(token);
@@ -3621,6 +3658,7 @@ private:
         const PrintToken* next,
         const PrintToken* rawNext
     ) {
+        RetireFinishedMandatoryBlockSplitListContexts(token);
         if (PrepareDeclarationGroupBoundary(token)) {
             return;
         }
