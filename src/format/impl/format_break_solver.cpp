@@ -3433,11 +3433,12 @@ private:
                             IsFormatBreakStreamLiteralOperand(*node.operands[index + 1]) &&
                             CompactStreamFollowerFits(node, index + 1, candidate)
                         ) {
-                            AddAttachedStreamOperator(candidate, node.operators[index + 1]);
-                            candidate.compactNextStreamOperand = true;
-                        } else {
-                            AppendBreak(candidate, splitBaseIndent + 1, node.breakCost);
+                            NodeResult attached = candidate;
+                            AddAttachedStreamOperator(attached, node.operators[index + 1]);
+                            attached.compactNextStreamOperand = true;
+                            AddPrunedResult(next, std::move(attached));
                         }
+                        AppendBreak(candidate, splitBaseIndent + 1, node.breakCost);
                     }
                     AddPrunedResult(next, std::move(candidate));
                 }

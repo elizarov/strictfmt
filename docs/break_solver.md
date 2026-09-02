@@ -36,6 +36,8 @@ The solver compares complete candidates with `Better`. Intermediate candidate se
 
 Composite candidates retain nondominated child layouts until their shared continuation has been costed. This includes function-signature children, ternary operands and operators, and list items with separators. A flat-only parent filters the child's flat alternatives; it does not reject the parent merely because the child's locally best layout breaks.
 
+Stream literal binding retains both the attached-follower candidate and the insertion-break candidate until their continuation is costed. A pair fitting inside the stream subtree does not prove that enclosing punctuation or following syntax fits. The normal overflow, expansion, and line-count comparison selects the complete layout; an early binding decision must not discard the shorter continuation state.
+
 Qualified names are normalized into left-associated binary break nodes. Every node owns one non-leading `::` and uses the ordinary after-operator
 compact and split candidates. Consequently, the final qualification operator is closest to the break-model root and
 earlier operators are successively deeper. The standard break cost therefore prefers the latest
