@@ -46,6 +46,8 @@ SOURCE_SUFFIXES = {
 }
 INPUT_FIXTURE = Path("src") / "format_test_input.cpp"
 OUTPUT_FIXTURE = Path("src") / "format_test_output.cpp"
+MAIN_INCLUDE_INPUT_FIXTURE = Path("src") / "format_main_include_input.cpp"
+MAIN_INCLUDE_OUTPUT_FIXTURE = Path("src") / "format_main_include_output.cpp"
 OPTIMIZATION_INPUT_FIXTURE = Path("src") / "format_optimization_input.cpp"
 OPTIMIZATION_OUTPUT_FIXTURE = Path("src") / "format_optimization_output.cpp"
 USERVER_INPUT_FIXTURE = Path("src") / "format_userver_input.cpp"
@@ -592,6 +594,100 @@ class FormatCommandTests(unittest.TestCase):
 
                     self.assertEqual(0, result.returncode, msg=f"stdout:\n{result.stdout}\n\nstderr:\n{result.stderr}")
                     self.assertEqual(expected, result.stdout)
+
+    def test_main_include_detection_matches_source_filename(self) -> None:
+        TEST_TEMP_ROOT.mkdir(exist_ok=True)
+        with tempfile.TemporaryDirectory(prefix="format_main_include_", dir=TEST_TEMP_ROOT) as temp_dir:
+            root = Path(temp_dir)
+            write_empty_ignore(root)
+            config = root / ".cpp-format"
+            config_text = (
+                "IncludeCategories:\n"
+                "  - Regex: '^\"first.hpp\"$'\n"
+                "    Priority: -1\n"
+                "  - Regex: '^<.*>$'\n"
+                "    Priority: 1\n"
+                "  - Regex: '^\".*\"$'\n"
+                "    Priority: 2\n"
+            )
+
+            def check(filename: str, text: str, expected: str, extra_config: str = "") -> None:
+                config.write_text(config_text + extra_config, encoding="utf-8")
+                source = root / filename
+                source.write_text(text, encoding="utf-8")
+                result = native_format(str(source), cwd=root)
+                self.assertEqual(0, result.returncode, msg=result.stderr)
+                self.assertEqual(expected, result.stdout)
+                source.write_text(result.stdout, encoding="utf-8")
+                second = native_format("-n", str(source), cwd=root)
+                self.assertEqual(0, second.returncode, msg=f"{second.stdout}\n{second.stderr}")
+
+            service_config = "IncludeIsMainRegex: '([-_](test|unittest))?$'\n"
+            golden_input = read_fixture(MAIN_INCLUDE_INPUT_FIXTURE)
+            golden_output = read_fixture(MAIN_INCLUDE_OUTPUT_FIXTURE)
+            no_main_output = (
+                "#include <algorithm>\n"
+                "#include <vector>\n\n"
+                '#include "../widget.hpp"\n'
+                '#include "helper.hpp"\n'
+                '#include "widget_extra.hpp"\n'
+            )
+            for filename in (
+                "widget.c", "widget.cc", "widget.cpp", "widget.c++", "widget.cxx", "widget.m", "widget.mm",
+                "widget_test.cpp", "widget_unittest.cc", "widget-test.cpp", "widget-unittest.cxx",
+                "Widget_TEST.cpp", "widget.cu.cc", "widget_test.cu.cc",
+            ):
+                with self.subTest(filename=filename):
+                    check(filename, golden_input, golden_output, service_config)
+            for filename in (
+                "widget.h", "widget.hh", "widget.hpp", "widget.hxx", "widget.h++",
+                "widget.ipp", "widget.inl", "widget.tpp", "widget.CPP", "other.cpp", "widget_test_extra.cpp",
+            ):
+                with self.subTest(filename=filename):
+                    check(filename, golden_input, no_main_output, service_config)
+
+            for filename, target, suffix, is_main in (
+                ("widgetTest.cpp", '"widget.hpp"', None, True),
+                ("widget.cpp", '"widgetTest.hpp"', None, False),
+                ("widget_test.cpp", '"widget.hpp"', "$", False),
+                ("widget_more.cpp", '"widget.hpp"', "", True),
+                ("widget_spec_more.cpp", '"widget.hpp"', "_spec", True),
+                ("widget_spec.cpp", '"widget.hpp"', "(_spec)?$", True),
+                ("widget_spec_more.cpp", '"widget.hpp"', "(_spec)?$", False),
+                ("widget.cpp", '"Widget.hpp"', "$", True),
+                ("widget.v2.cpp", '"widget.v2.hpp"', "$", True),
+                ("widget.cpp", '"widget.v2.hpp"', "$", False),
+                ("widgetXv2.cpp", '"widget.v2.hpp"', "", False),
+                ("widget.cpp", '"widget.hpp"', "[", False),
+                ("widget.cpp", "<widget.hpp>", "$", False),
+            ):
+                with self.subTest(filename=filename, target=target, suffix=suffix):
+                    directive = "#include " + target + "\n"
+                    text = "#include <vector>\n" + directive
+                    expected = (
+                        directive + "\n#include <vector>\n" if is_main else
+                        "#include <vector>\n" + ("\n" if target.startswith('"') else "") + directive
+                    )
+                    extra = "" if suffix is None else f"IncludeIsMainRegex: '{suffix}'\n"
+                    check(filename, text, expected, extra)
+
+            with self.subTest(name="angle main include"):
+                check(
+                    "widget.cpp", "#include <vector>\n#include <widget.hpp>\n",
+                    "#include <widget.hpp>\n\n#include <vector>\n", "MainIncludeChar: AngleBracket\n",
+                )
+            with self.subTest(name="first match and negative category"):
+                check(
+                    "widget.cpp",
+                    '#include "other/widget.hpp"\n#include <vector>\n#include "widget.hpp"\n#include "first.hpp"\n',
+                    '#include "first.hpp"\n\n#include "other/widget.hpp"\n\n#include <vector>\n\n#include "widget.hpp"\n',
+                )
+            with self.subTest(name="only first include run"):
+                check(
+                    "widget.cpp",
+                    '#include <vector>\n\n// Later includes.\n#include "widget.hpp"\n#include <algorithm>\n',
+                    '#include <vector>\n\n// Later includes.\n#include <algorithm>\n\n#include "widget.hpp"\n',
+                )
 
     def test_file_argument_formats_to_stdout(self) -> None:
         with copied_fixtures(OUTPUT_FIXTURE) as fixtures:

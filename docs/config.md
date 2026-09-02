@@ -21,8 +21,8 @@ Supported top-level keys:
 - `IndentWidth`: integer spaces per indentation level. The default is `4`.
 - `TabWidth`: integer tab display width. The default is `4`.
 - `IncludeCategories`: optional ordered list of include groups. Each entry requires `Regex`, and may set `Priority`; priorities sort ascending and default to list order. Regexes match the normalized include target with delimiters, such as `'<vector>'` or `'"util/path.h"'`.
-- `MainIncludeChar`: `Quote` makes the main include detection consider quoted includes.
-- `IncludeIsMainRegex`: regex suffix appended to the current source file stem for main-include detection. The default is `(Test)?$`, so `widget.cpp` treats `"widget.h"` and `"widgetTest.h"` as main include candidates.
+- `MainIncludeChar`: `Quote` (the default) considers quoted includes for main-header detection; `AngleBracket` considers angle-bracket includes.
+- `IncludeIsMainRegex`: allowed suffix regex for [main-header detection](#main-header-detection). The default is `(Test)?$`.
 - `MacroCategories`: macro and macro-like runtime parser roles. See [macro.md](macro.md) for details.
 - `StreamShift`: stream insertion/extraction configuration.
 
@@ -66,6 +66,12 @@ StreamShift:
     - std::boolalpha
     - std::setw
 ```
+
+### Main-header detection
+
+Only the first include run in files ending with `.c`, `.cc`, `.cpp`, `.c++`, `.cxx`, `.m`, or `.mm` is eligible. The first matching include with a positive or unmatched category receives priority `0`; configured nonpositive priorities are retained, and encountering priority `0` ends the search. Header files do not receive main-header priority.
+
+Matching ignores directories and letter case. Append `IncludeIsMainRegex` to the escaped header stem and search the source stem, not the reverse: by default, `"widget.h"` is a main-header candidate in `widget.cpp` and `widgetTest.cpp`. Suffixes match partially unless anchored: `''` permits any suffix, `'$'` requires an exact stem, and `'(_test)?$'` also accepts `widget_test.cpp`. For compound source extensions, match the basename before the first non-leading dot (`widget.h` with `widget.cu.cc`); an exact full-stem match also accepts compound header names (`widget.proto.h` with `widget.proto.cc`).
 
 ### StreamShift
 

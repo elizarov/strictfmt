@@ -8,8 +8,12 @@ struct FormatterConfig;
 
 struct SyntaxNode;
 
-std::string
-    FormatIncludeRunText(const FormatterConfig& config, const SyntaxNode& includeRun, std::string_view sourcePath);
+std::string FormatIncludeRunText(
+    const FormatterConfig& config,
+    const SyntaxNode& includeRun,
+    std::string_view sourcePath,
+    bool isFirstIncludeRun = true
+);
 
 std::string FormatIncludeLinesText(
     const FormatterConfig& config, const std::vector<std::string>& includeLines, std::string_view sourcePath

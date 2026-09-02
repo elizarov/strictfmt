@@ -3,7 +3,6 @@
 #include <algorithm>
 #include <cctype>
 #include <limits>
-#include <optional>
 #include <regex>
 #include <string>
 #include <vector>
@@ -15,7 +14,7 @@
 
 namespace {
 
-constexpr int kMainIncludePriority = std::numeric_limits<int>::min();
+constexpr int kMainIncludePriority = 0;
 constexpr int kUnmatchedIncludePriority = std::numeric_limits<int>::max();
 
 struct IncludeText {
@@ -32,7 +31,9 @@ struct IncludeEntry {
 
 struct IncludeSortContext {
     const FormatterConfig& config;
-    std::optional<std::regex> mainIncludeRegex;
+    std::string sourceStem;
+    std::string matchingSourceStem;
+    bool mainIncludeFound = false;
 };
 
 bool IsWhitespace(char ch) { return std::isspace(static_cast<unsigned char>(ch)) != 0; }
@@ -203,44 +204,67 @@ std::string EscapeRegexLiteral(std::string_view text) {
     return escaped;
 }
 
-std::optional<std::regex> BuildMainIncludeRegex(const FormatterConfig& config, std::string_view sourcePath) {
-    const std::string sourceStem = BaseNameNoExtension(sourcePath);
-    if (sourceStem.empty()) {
-        return std::nullopt;
+IncludeSortContext
+    BuildIncludeSortContext(const FormatterConfig& config, std::string_view sourcePath, bool isFirstIncludeRun)
+{
+    IncludeSortContext context{.config = config};
+    const std::string extension = Extension(sourcePath);
+    if (isFirstIncludeRun && (
+        extension == ".c" ||
+        extension == ".cc" ||
+        extension == ".cpp" ||
+        extension == ".c++" ||
+        extension == ".cxx" ||
+        extension == ".m" ||
+        extension == ".mm"
+    )) {
+        context.sourceStem = ToLower(BaseNameNoExtension(sourcePath));
+        context.matchingSourceStem = context.sourceStem.substr(0, context.sourceStem.find('.', 1));
     }
-
-    try {
-        return std::regex("^" + EscapeRegexLiteral(sourceStem) + config.mainIncludeRegex);
-    } catch (const std::regex_error&) {
-        return std::nullopt;
-    }
+    return context;
 }
 
 bool IsMainInclude(const IncludeSortContext& context, std::string_view target) {
-    if (!context.mainIncludeRegex.has_value() || !HasHeaderDelimiter(target, context.config.mainIncludeQuote)) {
+    if (context.sourceStem.empty() || !HasHeaderDelimiter(target, context.config.mainIncludeQuote)) {
         return false;
     }
 
-    const std::string targetStem = BaseNameNoExtension(StripHeaderDelimiter(target));
+    const std::string targetStem = ToLower(BaseNameNoExtension(StripHeaderDelimiter(target)));
     if (targetStem.empty()) {
         return false;
     }
 
-    return std::regex_match(targetStem, *context.mainIncludeRegex);
+    const std::string* matchingStem = nullptr;
+    if (StartsWith(context.matchingSourceStem, targetStem)) {
+        matchingStem = &context.matchingSourceStem;
+    } else if (context.sourceStem == targetStem) {
+        matchingStem = &context.sourceStem;
+    } else {
+        return false;
+    }
+    try {
+        const std::regex
+            mainIncludeRegex(EscapeRegexLiteral(targetStem) + context.config.mainIncludeRegex, std::regex::icase);
+        return std::regex_search(*matchingStem, mainIncludeRegex);
+    } catch (const std::regex_error&) {
+        return false;
+    }
 }
 
-int IncludePriority(const IncludeSortContext& context, std::string_view target) {
-    if (IsMainInclude(context, target)) {
-        return kMainIncludePriority;
-    }
-
+int IncludePriority(IncludeSortContext& context, std::string_view target) {
+    int priority = kUnmatchedIncludePriority;
     const std::string targetText(target);
     for (const IncludeGroup& group : context.config.includeGroups) {
         if (std::regex_match(targetText, group.regex)) {
-            return group.priority;
+            priority = group.priority;
+            break;
         }
     }
-    return kUnmatchedIncludePriority;
+    if (!context.mainIncludeFound && priority > kMainIncludePriority && IsMainInclude(context, target)) {
+        priority = kMainIncludePriority;
+    }
+    context.mainIncludeFound = context.mainIncludeFound || priority == kMainIncludePriority;
+    return priority;
 }
 
 bool IsIncludeNode(const SyntaxNode& node) { return node.kind == SyntaxNodeKind::PreprocInclude; }
@@ -259,13 +283,16 @@ std::string FormatIncludeTextsPreservingOrder(const std::vector<std::string>& in
 }
 
 std::string FormatIncludeEntriesText(
-    const FormatterConfig& config, const std::vector<std::string>& includeTexts, std::string_view sourcePath
+    const FormatterConfig& config,
+    const std::vector<std::string>& includeTexts,
+    std::string_view sourcePath,
+    bool isFirstIncludeRun = true
 ) {
     if (config.includeGroups.empty()) {
         return FormatIncludeTextsPreservingOrder(includeTexts);
     }
 
-    const IncludeSortContext context{.config = config, .mainIncludeRegex = BuildMainIncludeRegex(config, sourcePath)};
+    IncludeSortContext context = BuildIncludeSortContext(config, sourcePath, isFirstIncludeRun);
     std::vector<IncludeEntry> includes;
     includes.reserve(includeTexts.size());
     for (const std::string& text : includeTexts) {
@@ -354,9 +381,9 @@ std::string
 
 }  // namespace
 
-std::string
-    FormatIncludeRunText(const FormatterConfig& config, const SyntaxNode& includeRun, std::string_view sourcePath)
-{
+std::string FormatIncludeRunText(
+    const FormatterConfig& config, const SyntaxNode& includeRun, std::string_view sourcePath, bool isFirstIncludeRun
+) {
     std::vector<std::string> includeTexts;
     includeTexts.reserve(includeRun.children.size());
     for (const SyntaxNode* child : includeRun.children) {
@@ -369,7 +396,7 @@ std::string
             includeTexts.emplace_back();
         }
     }
-    return FormatIncludeEntriesText(config, includeTexts, sourcePath);
+    return FormatIncludeEntriesText(config, includeTexts, sourcePath, isFirstIncludeRun);
 }
 
 std::string FormatIncludeLinesText(
