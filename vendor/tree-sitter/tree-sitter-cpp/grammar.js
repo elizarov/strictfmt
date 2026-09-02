@@ -3904,7 +3904,10 @@ module.exports = grammar(C, {
 
     _scope_name: $ => prec(1, choice(
       $._namespace_identifier,
-      $.template_type,
+      // A template-id used as a scope owns both angle delimiters. Prefer it
+      // over the two relational operators in Name<argument>::member at each
+      // recursive scope, including scopes with non-type template arguments.
+      prec.dynamic(3, $.template_type),
       $.decltype,
       alias($.dependent_type_identifier, $.dependent_name),
     )),
