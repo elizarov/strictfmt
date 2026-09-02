@@ -2487,3 +2487,14 @@ void StreamLiteralBindingWithSuffixes() {
     Consume(LOG_INFO() << "[DubaiLaundryOffers] Built request tariffs" << ", mappings_count=" << state_to_request_tariff_mapping.size());
     auto values = Values{LOG_INFO() << "[DubaiLaundryOffers] Built request tariffs" << ", mappings_count=" << state_to_request_tariff_mapping.size()};
 }
+
+void ChainedLambdaInDesignatedInitializer() {
+    record = Record{
+        .price = Find(input)
+            .and_then([](const Doc& doc) -> std::optional<Price> {
+                Prepare(doc);
+                return Extract(doc);
+            })
+            .transform([](const Price& price) { return Format(price); }),
+    };
+}
