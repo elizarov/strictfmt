@@ -2212,6 +2212,21 @@ void UniversalBreakSelectionCases() {
         LoadConfigWithExtraTemplate(GetRuntimeConfigPath(), !options.defaultConfig, context, extraTemplate);
 }
 
+const char* PickParenthesizedTernary(const State& state) {
+    return (!state.first_value.has_value() ? "First value" : (!state.second_value.has_value() ? "Second value" : (
+        !state.third_value.has_value() ? "Third value" :
+            (!state.fourth_value.has_value() ? "Fourth value" : throw Error())
+    )));
+}
+
+int ParenthesizedOperatorPieces() {
+    return firstLongOuterOperandForParenthesizedOperatorPieces + (
+            secondExtraLongInnerOperandForParenthesizedOperatorPieces *
+            thirdExtraLongInnerOperandForParenthesizedOperatorPieces
+        ) +
+        fourthLongOuterOperandForParenthesizedOperatorPieces;
+}
+
 void TrailingListExpansionCases() {
     UseTrailingListExpansion(firstValue, secondValue, BuildValue(
         firstArgumentWithLongName, secondArgumentWithLongName, thirdArgumentWithLongName, fourthArgumentWithLongName

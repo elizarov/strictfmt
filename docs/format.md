@@ -294,7 +294,7 @@ void Configure() {
 
 ### Ternaries and ordinary operators
 
-Nested ternaries stay compact or break after every `:`, with flat indentation. A single ternary may break after `?`, `:`, both, or inside an attached branch.
+Nested ternaries within one chain stay compact or break after every `:`, with flat indentation. A single ternary may break after `?`, `:`, both, or inside an attached branch.
 
 <!-- .cpp-format
 ColumnLimit: 45
@@ -307,16 +307,17 @@ auto key = firstCondition ? firstKey :
 
 Ordinary binary and assignment breaks indent the right operand one level deeper, including inside parentheses and nested operators. This also applies to designated initializers and breaks between a condition declaration's type/pointer prefix and assigned declarator. Unary operators and declarator `*` or `&` do not introduce breaks.
 
-Plain non-call parentheses add only body indentation; nested lists and chain parts stay at that level.
+Parentheses always divide operator chains into separately formatted pieces, for ternaries and every other operator. Each piece chooses its own layout and indentation; flat chain indentation does not cross a parenthesis boundary. Plain non-call parentheses add one body-indentation level to their piece.
 
 <!-- .cpp-format
-ColumnLimit: 30
+ColumnLimit: 28
 -->
 ```cpp
-int ratio = (
-    firstLongValue /
-        secondLongValue
-);
+auto value = conditionLong ?
+    firstLong : (
+        secondLong +
+        thirdLong
+    );
 ```
 
 ### String fragments
