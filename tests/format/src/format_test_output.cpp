@@ -8,6 +8,9 @@
 
 #include <algorithm>
 #include <chrono>  // formatter spacing regression include
+#include <module/ITEMS.hpp>
+#include <module/ITEM_ONE.hpp>
+#include <module/items.hpp>
 #include <string>
 #include <string_view>
 #include <vector>
@@ -15,6 +18,8 @@
 #include "vendor/library.h"
 
 #include "Alpha/thing.h"
+#include "Zebra/thing.h"
+#include "alpha/thing.h"
 #include "format_test_fixture.h"
 #include "zeta/thing.h"
 
