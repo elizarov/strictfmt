@@ -2480,3 +2480,10 @@ void QualifiedTemplateCallWrapping() {
     auto mixed = container::Map<Key, units::Scale<4>>::template Rebind<Value>::Create(source.value);
     bool ordered = (first < second) > ::third;
 }
+
+void StreamLiteralBindingWithSuffixes() {
+    Prepare();
+    LOG_INFO() << "[DubaiLaundryOffers] Built request tariffs" << ", mappings_count=" << state_to_request_tariff_mapping.size();
+    Consume(LOG_INFO() << "[DubaiLaundryOffers] Built request tariffs" << ", mappings_count=" << state_to_request_tariff_mapping.size());
+    auto values = Values{LOG_INFO() << "[DubaiLaundryOffers] Built request tariffs" << ", mappings_count=" << state_to_request_tariff_mapping.size()};
+}
