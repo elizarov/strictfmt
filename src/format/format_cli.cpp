@@ -13,9 +13,10 @@
 #endif
 
 #include "format/format.h"
-#include "format/impl/format_model_dump.h"
 #include "format/impl/format_args.h"
 #include "format/impl/format_config.h"
+#include "format/impl/format_diff.h"
+#include "format/impl/format_model_dump.h"
 #include "strictfmt_version.h"
 #include "tools/tools_common.h"
 #include "tools/tools_parallel.h"
@@ -27,11 +28,13 @@ namespace {
 
 struct PendingFileFormat {
     std::string file;
+    std::string diff;
     SourceFormatResult result;
 };
 
 struct ResolvedFileFormat {
     std::string file;
+    std::string diffPath;
     const FormatterConfig* config = nullptr;
 };
 
@@ -65,7 +68,19 @@ std::string ReadStdinText() {
     return text;
 }
 
-FILE* SummaryStream(const FormatOptions& options) { return options.mode == FormatMode::Stdout ? stderr : stdout; }
+bool IsCheckMode(const FormatOptions& options) {
+    return options.mode == FormatMode::DryRun || options.mode == FormatMode::Diff;
+}
+
+FILE* SummaryStream(const FormatOptions& options) {
+    return options.mode == FormatMode::Stdout || options.mode == FormatMode::Diff ? stderr : stdout;
+}
+
+void PrintDiff(std::string_view source, std::string_view formatted, std::string_view path) {
+    const std::string diff = BuildUnifiedFormatDiff(source, formatted, path);
+    SetBinaryMode(stdout);
+    std::fwrite(diff.data(), 1, diff.size(), stdout);
+}
 
 void PrintSourceError(FILE* output, std::string_view file, std::string_view error) {
     const std::vector<std::string> lines = SplitLines(error);
@@ -257,7 +272,10 @@ int RunFormat(int argc, char** argv) {
             return 1;
         }
         PrintSourceWarnings(stderr, "<stdin>", result.warnings);
-        if (options.mode == FormatMode::DryRun && result.changed) {
+        if (IsCheckMode(options) && result.changed) {
+            if (options.mode == FormatMode::Diff) {
+                PrintDiff(stdinText, result.formatted, "<stdin>");
+            }
             std::fprintf(
                 summary,
                 "Formatting is required for stdin. Checked stdin in %s.\n",
@@ -272,7 +290,7 @@ int RunFormat(int argc, char** argv) {
         std::fprintf(
             summary,
             "%s stdin in %s.\n",
-            options.mode == FormatMode::DryRun ? "Checked" : "Formatted",
+            IsCheckMode(options) ? "Checked" : "Formatted",
             FormatToolElapsed(std::chrono::steady_clock::now() - start).c_str()
         );
         return 0;
@@ -319,7 +337,7 @@ int RunFormat(int argc, char** argv) {
             std::fprintf(stderr, "%s\n", error.c_str());
             return 2;
         }
-        work.push_back({file, config});
+        work.push_back({file, RelativePath(file, currentDirectory), config});
     }
 
     std::vector<CompletedFileFormat> completed(work.size());
@@ -341,6 +359,10 @@ int RunFormat(int argc, char** argv) {
             result.hasPending = true;
             result.lineCount = CountSourceLines(*text);
             result.pending.result = FormatSourceText(*text, *item.config, item.file);
+            if (options.mode == FormatMode::Diff && result.pending.result.ok && result.pending.result.changed) {
+                std::string formatted = std::move(result.pending.result.formatted);
+                result.pending.diff = BuildUnifiedFormatDiff(*text, formatted, item.diffPath);
+            }
         }
         completed[index] = std::move(result);
         if (options.verbose) {
@@ -378,13 +400,13 @@ int RunFormat(int argc, char** argv) {
         PrintSourceWarnings(stderr, file, result.warnings);
         if (result.changed) {
             ++changedCount;
-            if (options.mode == FormatMode::DryRun) {
+            if (IsCheckMode(options)) {
                 failed = true;
             }
         }
         pendingResults.push_back(std::move(completedFormat.pending));
     }
-    if (!failed) {
+    if (!failed || options.mode == FormatMode::Diff) {
         for (const PendingFileFormat& pending : pendingResults) {
             if (options.mode == FormatMode::Stdout) {
                 SetBinaryMode(stdout);
@@ -394,6 +416,9 @@ int RunFormat(int argc, char** argv) {
                     std::fprintf(stderr, "Failed to write %s\n", pending.file.c_str());
                     failed = true;
                 }
+            } else if (options.mode == FormatMode::Diff && pending.result.changed) {
+                SetBinaryMode(stdout);
+                std::fwrite(pending.diff.data(), 1, pending.diff.size(), stdout);
             }
         }
     }
@@ -419,13 +444,13 @@ int RunFormat(int argc, char** argv) {
         );
         return 1;
     }
-    const char* verb = options.mode == FormatMode::DryRun ? "Checked" : "Formatted";
+    const char* verb = IsCheckMode(options) ? "Checked" : "Formatted";
     PrintFormatSummary(
         summary,
         verb,
         processedCount,
         work.size(),
-        options.mode == FormatMode::DryRun ? changedCount : 0,
+        IsCheckMode(options) ? changedCount : 0,
         ignoredCount,
         parseErrorCount,
         lineCount,
