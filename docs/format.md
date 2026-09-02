@@ -444,7 +444,7 @@ auto update = [context, options](
 
 ### Templates
 
-A template prefix precedes the declaration on a separate line. Keep `requires` on the template line only when the complete prefix and compact clause fit; otherwise move it one indent deeper and wrap structurally. Constraint conjunctions and disjunctions use ordinary operator chains, so break after their logical operator before breaking inside either operand.
+A template prefix precedes the declaration on a separate line. This boundary belongs to the immediately introduced declaration; nested template-template parameters and explicit lambda template parameters remain part of their enclosing header. Keep `requires` on the template line only when the complete prefix and compact clause fit; otherwise move it one indent deeper and wrap structurally. Constraint conjunctions and disjunctions use ordinary operator chains, so break after their logical operator before breaking inside either operand.
 
 <!-- .cpp-format
 ColumnLimit: 40
