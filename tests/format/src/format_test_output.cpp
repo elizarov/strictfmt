@@ -2221,7 +2221,7 @@ const char* PickParenthesizedTernary(const State& state) {
 
 int ParenthesizedOperatorPieces() {
     return firstLongOuterOperandForParenthesizedOperatorPieces + (
-            secondExtraLongInnerOperandForParenthesizedOperatorPieces *
+            secondExtraLongInnerOperandForParenthesizedOperatorPieces +
             thirdExtraLongInnerOperandForParenthesizedOperatorPieces
         ) +
         fourthLongOuterOperandForParenthesizedOperatorPieces;

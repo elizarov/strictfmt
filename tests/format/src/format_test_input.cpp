@@ -1650,7 +1650,7 @@ const char* PickParenthesizedTernary(const State& state) {
 }
 
 int ParenthesizedOperatorPieces() {
-return firstLongOuterOperandForParenthesizedOperatorPieces + (secondExtraLongInnerOperandForParenthesizedOperatorPieces * thirdExtraLongInnerOperandForParenthesizedOperatorPieces) + fourthLongOuterOperandForParenthesizedOperatorPieces;
+return firstLongOuterOperandForParenthesizedOperatorPieces + (secondExtraLongInnerOperandForParenthesizedOperatorPieces + thirdExtraLongInnerOperandForParenthesizedOperatorPieces) + fourthLongOuterOperandForParenthesizedOperatorPieces;
 }
 
 void TrailingListExpansionCases() {
