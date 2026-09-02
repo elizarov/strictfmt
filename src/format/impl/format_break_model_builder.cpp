@@ -1483,17 +1483,11 @@ private:
                 return header;
             }
         }
-        if (node.kind == SyntaxNodeKind::Declaration || node.kind == SyntaxNodeKind::FunctionDefinition) {
-            if (auto signature = BuildFunctionSignature(node, depth)) {
-                return signature;
-            }
-        }
         if (
-            node.kind != SyntaxNodeKind::Declaration &&
-            node.kind != SyntaxNodeKind::FunctionDefinition &&
-            SyntaxNodeHasLocalClass(node, SyntaxNodeClass::DeclarationNode)
+            SyntaxNodeHasLocalClass(node, SyntaxNodeClass::DeclarationNode) ||
+            node.kind == SyntaxNodeKind::FunctionDefinition
         ) {
-            if (auto signature = BuildQualifiedFunctionSignature(node, depth)) {
+            if (auto signature = BuildFunctionSignature(node, depth)) {
                 return signature;
             }
         }
@@ -1972,7 +1966,7 @@ private:
             return nullptr;
         }
 
-        FormatBreakNode* header = BuildFunctionSignature(node, depth + 1, *bodyIndex, false);
+        FormatBreakNode* header = BuildFunctionSignature(node, depth + 1, *bodyIndex);
         if (header == nullptr) {
             header = BuildSequenceFromChildren(node.children, 0, *bodyIndex, depth + 1);
         }
@@ -2053,12 +2047,7 @@ private:
     }
 
     FormatBreakNode* BuildNestedFunctionSignature(
-        const SyntaxNode& node,
-        size_t declaratorIndex,
-        size_t functionDeclaratorIndex,
-        int depth,
-        size_t end,
-        bool requireQualifiedReturnType
+        const SyntaxNode& node, size_t declaratorIndex, size_t functionDeclaratorIndex, int depth, size_t end
     ) {
         const SyntaxNode* wrapper = node.children[declaratorIndex];
         if (wrapper == nullptr || !ContainsSelected(*wrapper->children[functionDeclaratorIndex])) {
@@ -2087,7 +2076,7 @@ private:
         FormatBreakNode* declarator = BuildSequenceFromChildren(
             wrapper->children, functionDeclaratorIndex, functionDeclaratorIndex + 1, depth + 1
         );
-        if (!returnType || !declarator || (requireQualifiedReturnType && !ContainsQualificationBreak(*returnType))) {
+        if (!returnType || !declarator) {
             return nullptr;
         }
 
@@ -2108,9 +2097,7 @@ private:
         return signature;
     }
 
-    FormatBreakNode*
-        BuildFunctionSignature(const SyntaxNode& node, int depth, size_t end, bool requireQualifiedReturnType)
-    {
+    FormatBreakNode* BuildFunctionSignature(const SyntaxNode& node, int depth, size_t end) {
         std::optional<size_t> declaratorIndex;
         std::optional<size_t> nestedFunctionDeclaratorIndex;
         for (size_t index = 0; index < end; ++index) {
@@ -2142,9 +2129,7 @@ private:
             }
         }
         if (nestedFunctionDeclaratorIndex) {
-            return BuildNestedFunctionSignature(
-                node, *declaratorIndex, *nestedFunctionDeclaratorIndex, depth, end, requireQualifiedReturnType
-            );
+            return BuildNestedFunctionSignature(node, *declaratorIndex, *nestedFunctionDeclaratorIndex, depth, end);
         }
         if (!ContainsSelected(*node.children[*declaratorIndex])) {
             return nullptr;
@@ -2153,7 +2138,7 @@ private:
         FormatBreakNode* returnType = BuildSequenceFromChildren(node.children, 0, *declaratorIndex, depth + 1);
         FormatBreakNode* declarator =
             BuildSequenceFromChildren(node.children, *declaratorIndex, *declaratorIndex + 1, depth + 1);
-        if (!returnType || !declarator || (requireQualifiedReturnType && !ContainsQualificationBreak(*returnType))) {
+        if (!returnType || !declarator) {
             return nullptr;
         }
 
@@ -2175,11 +2160,7 @@ private:
     }
 
     FormatBreakNode* BuildFunctionSignature(const SyntaxNode& node, int depth) {
-        return BuildFunctionSignature(node, depth, node.children.size(), false);
-    }
-
-    FormatBreakNode* BuildQualifiedFunctionSignature(const SyntaxNode& node, int depth) {
-        return BuildFunctionSignature(node, depth, node.children.size(), true);
+        return BuildFunctionSignature(node, depth, node.children.size());
     }
 
     static bool IsDirectInitializedDeclarator(const SyntaxNode& node) {
