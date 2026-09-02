@@ -642,7 +642,7 @@ A **final-lambda discount** equals the body's current cost and applies to the bo
 
 ## Include Sorting
 
-With configured include groups, sort each include run case-insensitively within groups, order groups by priority, and separate them with one empty line. Preserve the include set, spelling, and comments; comments bound sortable runs.
+With configured include groups, sort each include run lexicographically and case-sensitively within groups, order groups by priority, and separate them with one empty line. Preserve the include set, spelling, and comments; comments bound sortable runs.
 
 Without groups, retain source order and blank-separated blocks. These rules also apply inside header guards. Blank lines before include blocks remain source-authored.
 

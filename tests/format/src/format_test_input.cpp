@@ -2,14 +2,19 @@
 #pragma strictfmt_fixture
 
 #include <windows.h>
+#include <module/ITEM_ONE.hpp>
 #include <chrono> // formatter spacing regression include
 #include "zeta/thing.h"
+#include "Zebra/thing.h"
 #include <vector>
+#include <module/items.hpp>
 #include <string_view>
 #include "format_test_fixture.h"
 #include "vendor/library.h"
+#include <module/ITEMS.hpp>
 #include <winsock2.h>
 #include <string>
+#include "alpha/thing.h"
 #include "Alpha/thing.h"
 #include <algorithm>
 #include <ws2tcpip.h>

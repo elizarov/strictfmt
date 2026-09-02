@@ -26,7 +26,6 @@ struct IncludeText {
 struct IncludeEntry {
     std::string line;
     std::string target;
-    std::string sortKey;
     int priority = kUnmatchedIncludePriority;
     size_t originalIndex = 0;
 };
@@ -277,7 +276,6 @@ std::string FormatIncludeEntriesText(
         includes.push_back({
             .line = std::move(include.line),
             .target = include.target,
-            .sortKey = ToLower(include.target),
             .priority = IncludePriority(context, include.target),
             .originalIndex = includes.size(),
         });
@@ -287,8 +285,8 @@ std::string FormatIncludeEntriesText(
         if (left.priority != right.priority) {
             return left.priority < right.priority;
         }
-        if (left.sortKey != right.sortKey) {
-            return left.sortKey < right.sortKey;
+        if (left.target != right.target) {
+            return left.target < right.target;
         }
         return left.originalIndex < right.originalIndex;
     });
