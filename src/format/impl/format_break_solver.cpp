@@ -3050,11 +3050,13 @@ private:
             if (!IsFormatBreakStreamConfigurationOperand(
                 *node.operands[index + 1], config_.streamShiftConfigurationMethods
             )) {
-                return index + 1 < node.operators.size() ||
-                    prefix.endColumn + breakLineSuffixWidth_ <= config_.columnLimit;
+                return !IsFormatBreakStreamLiteralOperand(*node.operands[index + 1]) && (
+                    index + 1 < node.operators.size() ||
+                    prefix.endColumn + breakLineSuffixWidth_ <= config_.columnLimit
+                );
             }
         }
-        return prefix.endColumn + breakLineSuffixWidth_ <= config_.columnLimit;
+        return false;
     }
 
     NodeResults
@@ -3430,7 +3432,7 @@ private:
                         )
                     ) {
                         if (
-                            IsFormatBreakStreamLiteralOperand(*node.operands[index + 1]) &&
+                            IsFormatBreakStreamLiteralOperand(*node.operands[index + 1], SyntaxNodeClass::StringLike) &&
                             CompactStreamFollowerFits(node, index + 1, candidate)
                         ) {
                             NodeResult attached = candidate;

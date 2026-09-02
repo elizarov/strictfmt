@@ -2565,3 +2565,8 @@ void PreserveParameterBlankLines(int first,
 struct PreserveBaseListBlankLines : First,
 
     Second {};
+
+void StreamPairsRequireNonLiteralValues() {
+    output << "message" << "continued " "message" << "number=" << 42 << "boolean=" << true << false << "empty=" << nullptr << "duration=" << 12_ms << "text=" << "hello"s << 'x' << ':' << "name=" << name << ' ' << total;
+    output << "message" << "hex=" << std::hex << 42 << "value=" << std::hex << std::setw(8) << value << "literal=" << std::hex << "tail" << "unfinished=" << std::hex;
+}

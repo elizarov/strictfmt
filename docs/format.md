@@ -232,7 +232,7 @@ void Scan() {
 
 ### Streams
 
-Stream chains break before shift operators. A compact shifted tail may occupy one continuation line after the receiver. Otherwise each insertion starts a continuation line, except a string or character insertion binds to the following insertion when the pair fits. Configured manipulators bind to the following value.
+Stream chains break before shift operators. A compact shifted tail may occupy one continuation line after the receiver. Otherwise each insertion starts a continuation line, except a string or character insertion binds to the following non-literal value insertion when the pair fits. Configured manipulators bind to the following value.
 
 <!-- .cpp-format
 ColumnLimit: 45

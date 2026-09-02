@@ -81,17 +81,27 @@ bool IsFormatBreakQualifiedName(const FormatBreakNode& node) {
         FormatBreakTokenSyntaxKind(node.operators.front()) == SyntaxNodeKind::ColonColon;
 }
 
-bool IsFormatBreakStreamLiteralOperand(const FormatBreakNode& node) {
+bool IsFormatBreakStreamLiteralOperand(const FormatBreakNode& node, SyntaxNodeClass literalClass) {
     if (node.kind == FormatBreakNodeKind::Token) {
-        return IsStringLike(FormatBreakTokenValue(node.token));
+        const PrintToken& token = FormatBreakTokenValue(node.token);
+        if (IsStringLike(token)) {
+            return true;
+        }
+        return literalClass == SyntaxNodeClass::Literal && (
+            PrintTokenSyntaxHasClass(token, SyntaxNodeClass::Literal) ||
+            SyntaxNodeKindHasClass(token.parentKind, SyntaxNodeClass::Literal)
+        );
     }
     if (node.kind == FormatBreakNodeKind::Sequence) {
-        return node.children.size() == 1 && IsFormatBreakStreamLiteralOperand(*node.children.front());
+        return !node.children.empty() &&
+            std::all_of(node.children.begin(), node.children.end(), [literalClass](const FormatBreakNode* child) {
+                return child != nullptr && IsFormatBreakStreamLiteralOperand(*child, literalClass);
+            });
     }
     return node.kind == FormatBreakNodeKind::AdjacentStrings &&
         !node.operands.empty() &&
-        std::all_of(node.operands.begin(), node.operands.end(), [](const FormatBreakNode* operand) {
-            return operand != nullptr && IsFormatBreakStreamLiteralOperand(*operand);
+        std::all_of(node.operands.begin(), node.operands.end(), [literalClass](const FormatBreakNode* operand) {
+            return operand != nullptr && IsFormatBreakStreamLiteralOperand(*operand, literalClass);
         });
 }
 
