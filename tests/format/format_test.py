@@ -615,6 +615,77 @@ class FormatCommandTests(unittest.TestCase):
                 rf"Checked 1 file, {fixture_loc(INPUT_FIXTURE)} LOC in (?:\d+ms|\d+\.\d{{3}}s)\.\s*$",
             )
 
+    def test_diff_outputs_unified_diff_and_uses_dry_run_exit_codes(self) -> None:
+        build_dir = TEST_TEMP_ROOT
+        build_dir.mkdir(exist_ok=True)
+
+        with tempfile.TemporaryDirectory(prefix="format_diff_", dir=build_dir) as temp_dir:
+            root = Path(temp_dir)
+            copy_default_config(root)
+            write_empty_ignore(root)
+            source = root / "value.cpp"
+            source.write_text("int value=1;\n", encoding="utf-8")
+
+            changed = native_format("--diff", str(source), cwd=root)
+
+            self.assertEqual(1, changed.returncode, msg=f"stdout:\n{changed.stdout}\n\nstderr:\n{changed.stderr}")
+            self.assertEqual(
+                "--- value.cpp\n"
+                "+++ value.cpp\n"
+                "@@ -1 +1 @@\n"
+                "-int value=1;\n"
+                "+int value = 1;\n",
+                changed.stdout,
+            )
+            self.assertIn("Formatting is required for 1 file", changed.stderr)
+            self.assertEqual("int value=1;\n", source.read_text(encoding="utf-8"))
+
+            source.write_text("int value = 1;\n", encoding="utf-8")
+            clean = native_format("--diff", str(source), cwd=root)
+
+            self.assertEqual(0, clean.returncode, msg=f"stdout:\n{clean.stdout}\n\nstderr:\n{clean.stderr}")
+            self.assertEqual("", clean.stdout)
+            self.assertRegex(clean.stderr, r"Checked 1 file, 1 LOC in (?:\d+ms|\d+\.\d{3}s)\.\s*$")
+
+    def test_diff_supports_stdin_and_marks_a_missing_final_newline(self) -> None:
+        result = native_format("--diff", "--stdin", input_text="int value=1;")
+
+        self.assertEqual(1, result.returncode, msg=f"stdout:\n{result.stdout}\n\nstderr:\n{result.stderr}")
+        self.assertEqual(
+            "--- <stdin>\n"
+            "+++ <stdin>\n"
+            "@@ -1 +1 @@\n"
+            "-int value=1;\n"
+            "\\ No newline at end of file\n"
+            "+int value = 1;\n",
+            result.stdout,
+        )
+        self.assertIn("Formatting is required for stdin", result.stderr)
+
+    def test_diff_separates_distant_changes_into_clear_hunks(self) -> None:
+        result = native_format(
+            "--diff",
+            "--stdin",
+            input_text=(
+                "void Test() {\n"
+                "    int first=1;\n"
+                "    Keep1();\n"
+                "    Keep2();\n"
+                "    Keep3();\n"
+                "    Keep4();\n"
+                "    Keep5();\n"
+                "    Keep6();\n"
+                "    Keep7();\n"
+                "    int second=2;\n"
+                "}\n"
+            ),
+        )
+
+        self.assertEqual(1, result.returncode, msg=f"stdout:\n{result.stdout}\n\nstderr:\n{result.stderr}")
+        self.assertEqual(2, result.stdout.count("@@ -"))
+        self.assertIn("-    int first=1;\n+    int first = 1;\n", result.stdout)
+        self.assertIn("-    int second=2;\n+    int second = 2;\n", result.stdout)
+
     def test_files_option_reads_newline_file_list(self) -> None:
         build_dir = TEST_TEMP_ROOT
         build_dir.mkdir(exist_ok=True)
@@ -2058,11 +2129,14 @@ class FormatCommandTests(unittest.TestCase):
         invalid_cases = [
             ("-i",),
             ("-i", "--dry-run", str(TEST_ROOT / OUTPUT_FIXTURE)),
+            ("-i", "--diff", str(TEST_ROOT / OUTPUT_FIXTURE)),
+            ("--dry-run", "--diff", str(TEST_ROOT / OUTPUT_FIXTURE)),
             ("--style",),
             ("--dump",),
             ("--dump-syntax-tree",),
             ("--dump-syntax-tree", str(TEST_ROOT / OUTPUT_FIXTURE), "--stdin"),
             ("--dump-syntax-tree", str(TEST_ROOT / OUTPUT_FIXTURE), "--dry-run"),
+            ("--dump-syntax-tree", str(TEST_ROOT / OUTPUT_FIXTURE), "--diff"),
             ("--dump-break-tree", str(TEST_ROOT / OUTPUT_FIXTURE), "--concurrency", "1"),
             ("--stdin", "--dump-syntax-tree", "--dump-break-tree"),
             ("--files",),

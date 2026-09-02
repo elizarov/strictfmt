@@ -46,6 +46,29 @@ bool AppendRecursiveRoot(std::string_view path, FormatOptions& options, std::str
     return true;
 }
 
+std::string_view FormatModeOption(FormatMode mode) {
+    switch (mode) {
+        case FormatMode::Stdout:
+            return "default output";
+        case FormatMode::InPlace:
+            return "-i";
+        case FormatMode::DryRun:
+            return "--dry-run";
+        case FormatMode::Diff:
+            return "--diff";
+    }
+    return "format mode";
+}
+
+bool SelectFormatMode(FormatOptions& options, FormatMode mode, std::string_view option, std::string& error) {
+    if (options.mode != FormatMode::Stdout && options.mode != mode) {
+        error = std::string(option) + " is incompatible with " + std::string(FormatModeOption(options.mode));
+        return false;
+    }
+    options.mode = mode;
+    return true;
+}
+
 }  // namespace
 
 std::optional<FormatOptions> ParseFormatArgs(int argc, char** argv, std::string& error) {
@@ -57,17 +80,17 @@ std::optional<FormatOptions> ParseFormatArgs(int argc, char** argv, std::string&
         } else if (arg == "--version") {
             options.version = true;
         } else if (arg == "-i") {
-            if (options.mode == FormatMode::DryRun) {
-                error = "-i is incompatible with --dry-run";
+            if (!SelectFormatMode(options, FormatMode::InPlace, arg, error)) {
                 return std::nullopt;
             }
-            options.mode = FormatMode::InPlace;
         } else if (arg == "-n" || arg == "--dry-run") {
-            if (options.mode == FormatMode::InPlace) {
-                error = "--dry-run is incompatible with -i";
+            if (!SelectFormatMode(options, FormatMode::DryRun, "--dry-run", error)) {
                 return std::nullopt;
             }
-            options.mode = FormatMode::DryRun;
+        } else if (arg == "--diff") {
+            if (!SelectFormatMode(options, FormatMode::Diff, arg, error)) {
+                return std::nullopt;
+            }
         } else if (arg == "-v" || arg == "--verbose") {
             options.verbose = true;
         } else if (arg == "--stdin") {
@@ -127,7 +150,7 @@ std::optional<FormatOptions> ParseFormatArgs(int argc, char** argv, std::string&
         const std::string_view optionName =
             options.dumpKind == FormatDumpKind::SyntaxTree ? "--dump-syntax-tree" : "--dump-break-tree";
         if (options.mode != FormatMode::Stdout) {
-            error = std::string(optionName) + " is incompatible with -i and --dry-run";
+            error = std::string(optionName) + " is incompatible with -i, --dry-run, and --diff";
             return std::nullopt;
         }
         if (options.fileListProvided || options.recursiveInputProvided || !options.files.empty()) {
@@ -180,10 +203,11 @@ void PrintFormatUsage(FILE* out) {
     std::fprintf(out, "Modes:\n");
     std::fprintf(out, "  -i                      Rewrite files in place.\n");
     std::fprintf(out, "  -n, --dry-run           Check formatting and return 1 when formatting changes are needed.\n");
-    std::fprintf(out, "                          Without -i or -n, write formatted text to stdout.\n");
+    std::fprintf(out, "  --diff                  Print a unified diff and use the dry-run exit code.\n");
     std::fprintf(out, "  --dump-syntax-tree      Print the parsed syntax tree for debugging to stdout.\n");
     std::fprintf(out, "  --dump-break-tree       Print break-decision trees for debugging to stdout.\n");
-    std::fprintf(out, "                          Pass one file or combine either option with --stdin.\n");
+    std::fprintf(out, "                          For either dump mode, pass one file or combine it with --stdin.\n");
+    std::fprintf(out, "                          With no mode option, write formatted text to stdout.\n");
     std::fprintf(out, "\n");
     std::fprintf(out, "Configuration:\n");
     std::fprintf(out, "  --style <config-file>   Use this .cpp-format file for every input.\n");
