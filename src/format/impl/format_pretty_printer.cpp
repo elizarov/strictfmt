@@ -1190,6 +1190,7 @@ private:
     bool macroContinuationLine_ = false;
     bool forceColumnZeroLine_ = false;
     bool emittingMacroDefinition_ = false;
+    bool firstIncludeRun_ = true;
     const std::vector<PrintToken>* activeTokens_ = nullptr;
     size_t currentTokenIndex_ = 0;
     std::optional<int> pendingIndentLevel_;
@@ -3748,7 +3749,8 @@ private:
         if (lineHasText_) {
             NewLine();
         }
-        const std::string text = FormatIncludeRunText(config_, *token.node, sourcePath_);
+        const std::string text = FormatIncludeRunText(config_, *token.node, sourcePath_, firstIncludeRun_);
+        firstIncludeRun_ = false;
         output_.append(text);
         currentColumn_ = 0;
         atLineStart_ = true;
