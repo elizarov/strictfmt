@@ -2823,6 +2823,15 @@ void TryFinallyCleanup() {
     }
 }
 
+void TryCatchAfterComment() {
+    try {
+        Work();
+    }  // keep note
+    catch (...) {
+        Recover();
+    }
+}
+
 namespace trailing_comment_fixture {
 
 void UseNamespaceTrailingComment() {}
@@ -3621,3 +3630,15 @@ void FinalLambdaDiscountExamples() {
     });
     auto callback = [&](const auto& cargo_options) { builder[fields::kCargoOptions] = json::Serialize(cargo_options); };
 }
+
+namespace post_namespace_first_fixture {
+
+class First;
+
+}  // namespace post_namespace_first_fixture
+namespace post_namespace_second_fixture {
+
+class Second;
+
+}  // namespace post_namespace_second_fixture
+// after adjacent namespaces
