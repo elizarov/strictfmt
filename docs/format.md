@@ -425,7 +425,7 @@ Function-pointer aliases, typedefs, and declarations put a space between the ret
 using Callback = Result (*)(const Request&);
 ```
 
-Defaulted, deleted, and pure-virtual markers stay with the declaration tail.
+Defaulted, deleted, and pure-virtual markers stay with the declaration tail. Member declarations use the same signature layout as free functions, including when the return type is unqualified; wrap the signature earlier when a marker such as `= 0` would exceed the line limit.
 
 ### Lambdas
 

@@ -3707,4 +3707,22 @@ namespace post_namespace_second_fixture {
 class Second;
 
 }  // namespace post_namespace_second_fixture
+
 // after adjacent namespaces
+
+struct PureVirtualDeclarationTails {
+    virtual void
+        ExtendArgsWithRelativeTiming(LocalizerArgs& args, const std::string& key, int relative_minutes) const = 0;
+    virtual Result*
+        BuildActionParams(const State& state, const DataProviderStoragePtr& storage, const Options& options) const = 0;
+
+    struct Nested {
+        virtual Result&
+            BuildActionParams(const State& state, const DataProviderStoragePtr& storage, int mode) const = 0;
+    };
+
+    virtual Result CopyActionParams(const State& state, const DataProviderStoragePtr& storage, int mode) const = delete;
+
+    int initial_value =
+        ComputeInitialValue(first_argument, second_argument, third_argument, fourth_argument, fifth_argument);
+};
