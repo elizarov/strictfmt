@@ -39,7 +39,7 @@ auto result = function<((min)(a, b) && flag)>((max)(a, b));  // template functio
 Formatter parses expressions and templates using the following rules:
 
 - Callable template shapes parse as template calls: `name<args>(...)`, `qualified::name<args>(...)`.
-- A template-id immediately followed by qualification parses as a template: `Name<args>::member`. This preference applies at every scope in a qualified name, including nested templates and non-type arguments; its angle delimiters are structural template delimiters, not relational operators.
+- A template-id immediately followed by qualification parses as a template: `Name<args>::member`.
 - A declaration-like angle chain parses as a template when the name is qualified or the argument is syntactically
   distinctive as a template argument, such as a literal, pack, `sizeof`, or qualified name:
   `qualified::Name<T> object`, `Name<4> object`.
@@ -57,5 +57,3 @@ Parenthesize expression chains that look like callable templates:
 ```cpp
 bool ordered = (a < b) > (c);  // expression
 ```
-
-Without those parentheses, `a < b > (c)` is parsed as the template call `a<b>(c)`.

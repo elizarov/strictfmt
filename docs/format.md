@@ -7,7 +7,6 @@ This document specifies the source layout produced by `strictfmt`. Wrapping exam
 - Put one space between a control keyword and `(`, e.g. `if (`.
 - Put no space between the name and `(` in [call-like syntax](glossary.md#call-like-syntax), e.g. `Run(`.
 - Put no padding inside compact [delimiter groups](glossary.md#delimiter-group), e.g. `call(value)`.
-- Keep empty braces as `{}`, e.g. `return {};`.
 - Put one space before a code-block `{`, e.g. `if (ok) {`.
 - Put spaces around lambda trailing-return arrows, e.g. `[]() -> int`.
 - Put one space before trailing function qualifiers, e.g. `Run() const`.
@@ -18,7 +17,8 @@ This document specifies the source layout produced by `strictfmt`. Wrapping exam
 - Put no space between a literal and its user-defined literal suffix, e.g. `100ms`.
 - Put no padding before braced initializer braces, e.g. `std::string{}`.
 - Put one space after commas and no space before commas, e.g. `a, b`.
-- Put one space after non-empty `for` header semicolons. Put no space before semicolons. Keep `for (;;)` compact, e.g. `for (int i = 0; i < n; ++i)`.
+- Put one space after non-empty `for` header semicolons; put no space before semicolons, e.g. `for (int i = 0; i < n; ++i)`.
+- Keep `for (;;)` compact.
 - Put spaces around binary and ternary operators, e.g. `a + b`.
 - Put no spaces around unary operators, e.g. `!ok`.
 - Keep the reflection operator and splice delimiters tight, e.g. `value.[:member:]`.
@@ -28,7 +28,6 @@ This document specifies the source layout produced by `strictfmt`. Wrapping exam
 - Put one space after `operator` for conversion, allocation, and deallocation operators, e.g. `operator bool(`.
 - Treat destructor `~` plus the following type name as one function name, e.g. `~Widget(`.
 - Put no space between a C-style cast and the expression it prefixes, e.g. `(void)value`.
-- Put no space between a function-style fundamental type cast and `(`, e.g. `unsigned(value)`.
 - Put spaces around range-for and list-prefix colons, e.g. `for (auto item : (*items)->values)`.
 - Put no space before access-specifier, label, or `case` colons, e.g. `public:`.
 - Put no spaces around qualification or member-access operators, e.g. `std::string`.
@@ -39,7 +38,7 @@ This document specifies the source layout produced by `strictfmt`. Wrapping exam
 
 ## Vertical Alignment
 
-Do not vertically align tokens across lines. As the sole exception, align a run of trailing `//` comments on consecutive lines in the same syntactic group when the aligned run fits within the line limit; otherwise use the ordinary two-space separation.
+Do not vertically align tokens across lines. As the sole exception, align a run of trailing `//` comments on consecutive lines in the same syntactic group when the aligned run fits within the line limit.
 
 ```cpp
 struct Key {
@@ -62,11 +61,10 @@ struct Key {
 
 Mandatory line breaks are structural boundaries. The break is always taken before optional wrapping is considered.
 
-- Break between complete statements and declarations, including after each statement-terminating semicolon, except inside a single-line function or lambda body.
-- Remove structurally optional null declarations and statements, including first items in a scope, while preserving their comments. Null statements required as bodies remain subject to control-brace normalization.
+- Break between complete statements and declarations, except inside a single-line function or lambda body.
+- Remove structurally optional null declarations and statements.
 - Put block-opening braces at the end of the introducing line, then break.
-  - A trailing `/* ... */` header comment stays before the brace on that line.
-  - For a non-empty block, if a multiline header ends at body indentation, put `{` on its own line at the block owner's indentation. A closing-delimiter line at owner indentation already provides this separation.
+- For a non-empty block, if a multiline header ends at body indentation, put `{` on its own line at the block owner's indentation.
 - Keep an empty code block as `{}` without a body break.
 - Apply the closing-brace attachment rules under [Declaration And Control Headers](#declaration-and-control-headers).
 - Break around preprocessor directives and apply the structured macro breaks and continuation lines specified in [macro.md](macro.md).
@@ -77,7 +75,7 @@ Mandatory line breaks are structural boundaries. The break is always taken befor
 Optional breaks within a [formatted segment](glossary.md#formatted-segment) occur:
 
 - After assignment, binary, or ternary operators.
-- After non-leading `::` in names. Qualification is left-associated; right components split first.
+- After non-leading `::` in names. Qualification is left-associated.
 - After delimiter-group openers and before their matching closers.
 - After a list's introducing `:`.
 - After commas in any [list](glossary.md#list).
@@ -88,7 +86,7 @@ Optional breaks within a [formatted segment](glossary.md#formatted-segment) occu
 
 ## Lists
 
-Comma-separated delimiter groups, including list-like parenthesized comma expressions, use compact, packed split, or one-item-per-line layout. Both split forms break after the opener and before the closer, with items indented one level. Packed split keeps the items together on one line that fits.
+Comma-separated delimiter groups use compact, packed split, or one-item-per-line layout. Both split forms break after the opener and before the closer, with items indented one level. Packed split keeps the items together on one line that fits.
 
 <!-- .cpp-format
 ColumnLimit: 34
@@ -160,7 +158,7 @@ Point points[] = {
 };
 ```
 
-Intrinsic newlines in a literal do not force delimiter expansion. An otherwise compact final-item tail keeps its opener and closer attached to the literal's first and last lines.
+Intrinsic newlines in a literal do not force delimiter expansion.
 
 ```cpp
 auto text = wrap(R"(first
@@ -169,7 +167,7 @@ second)");
 
 ## Operator Chains
 
-Binary chain operators are the operators whose usual source meaning is a mostly associative aggregation or a a repeated separator sequence. Formatting them as a chain avoids implying that the first operand owns a subordinate "rest of expression" branch.
+Binary chain operators are the operators whose usual source meaning is a mostly associative aggregation or a repeated separator sequence. Formatting them as a chain avoids implying that the first operand owns a subordinate "rest of expression" branch.
 
 - Binary chains: `+`, `*`, `&`, `|`, `^`, `&&`/`and`, and `||`/`or`.
 - Comma chains: commas in comma expressions.
@@ -177,9 +175,9 @@ Binary chain operators are the operators whose usual source meaning is a mostly 
 - Member-call chains: `.` and `->`.
 - Repeated call-application chains: an argument list applied to the result of another call.
 
-Other operators, including `.*` and `->*`, are ordinary operators.
+Other operators are ordinary operators.
 
-Ordinary binary and assignment breaks indent the right operand one level deeper, including inside parentheses and nested operators. This also applies to designated initializers and breaks between a condition declaration's type/pointer prefix and assigned declarator. Unary operators and declarator `*` or `&` do not introduce breaks.
+Ordinary binary and assignment breaks indent the right operand one level deeper. This also applies to breaks between a condition declaration's type/pointer prefix and assigned declarator. Unary operators and declarator `*` or `&` do not introduce breaks.
 
 <!-- .cpp-format
 ColumnLimit: 28
@@ -189,7 +187,7 @@ bool same = firstValue ==
     secondValue;
 ```
 
-Like [lists](#lists), chains stay compact on one line or split one item per line. Split items share the chain's base indentation, including any continuation indent from the surrounding context.
+Like [lists](#lists), chains stay compact on one line or split one item per line. Split items share the chain's base indentation.
 
 <!-- .cpp-format
 ColumnLimit: 35
@@ -201,7 +199,7 @@ int total = (
 );
 ```
 
-Compact chains may expand only the final operand. A break in an intermediate operand splits the whole chain.
+Compact chains may expand only the final operand.
 
 <!-- .cpp-format
 ColumnLimit: 50
@@ -212,7 +210,7 @@ int total = first + second + BuildValue(
 );
 ```
 
-Logical chains break at `&&` or `||`. In `if` and `while`, parts stay at condition indentation; inside a split `for` header part, they use continuation indentation.
+Logical-chain parts stay at condition indentation in `if` and `while`; inside a split `for` header part, they use continuation indentation.
 
 <!-- .cpp-format
 ColumnLimit: 28
@@ -264,13 +262,7 @@ auto result = Build(source)
 
 ### Repeated call applications
 
-A call whose result is immediately called again starts a repeated call-application chain. The first complete call is
-the receiver; each following argument list is one chain item. An ordinary call with only one argument list is not a
-chain.
-
-Repeated call applications have three forms: compact, receiver-separated with one break before the first repeated
-argument list, or split before every repeated argument list. In the first two forms, all repeated argument-list
-openers share a physical line; only the receiver or final application may expand.
+Repeated call applications use the [member-call layouts](#member-calls), breaking before argument-list openers. The first complete call is the receiver; each following argument list is one chain item.
 
 <!-- .cpp-format
 ColumnLimit: 32
@@ -317,7 +309,7 @@ auto key = firstCondition ? firstKey :
 
 ### Parenthesized operator pieces
 
-Parentheses always divide an operator chain into separately formatted pieces. This keeps explicit grouping visible rather than flattening it into the surrounding chain. Use parentheses when they expose structure beyond what the chain itself expresses. Plain non-call parentheses add one body-indentation level to their piece.
+Parentheses always divide an operator chain into separately formatted pieces. Plain non-call parentheses add one body-indentation level to their piece.
 
 <!-- .cpp-format
 ColumnLimit: 16
@@ -349,8 +341,6 @@ const char* messages[] = {
 
 A trailing comment on a list item or chain part, or a standalone comment between them, forces split form. A blank line between list items also forces split form. Standalone chain comments align with the following link.
 
-Use end-of-line comments when expansion is essential for readability.
-
 ```cpp
 auto result = call(
     first,  // keep vertical
@@ -360,11 +350,10 @@ auto result = call(
 
 ## Declaration Groups
 
-In declaration scopes, group by declared entity: types (including concepts), callables, objects or fields, and type aliases. Declaration wrappers inherit the kind of the entity they introduce; type syntax does not change the kind.
+In declaration scopes, group by declared entity: types (including concepts), callables, objects or fields, and type aliases. Declaration wrappers inherit the kind of the entity they introduce.
 
 - Separate different kinds, and each non-forward type declaration, with one empty line.
-- Keep consecutive forward type declarations or callables together.
-- Isolate an object or alias whose initializer or target takes more than one continuation line. A single continuation line does not separate fields; nested compound scopes do not affect this count.
+- Isolate an object or alias whose initializer or target takes more than one continuation line. Nested compound scopes do not affect this count.
 - Access specifiers and leading standalone comments attach to the following group.
 
 Access labels align with the class; members are indented one level.
@@ -379,7 +368,7 @@ private:
 };
 ```
 
-Namespaces add no indentation. Separate their contents from the opening and closing lines with one empty line. `extern "C"` blocks follow the same rule; conditional linkage guards and braces stay at column zero.
+Namespaces add no indentation. Separate their contents from the opening and closing lines with one empty line. `extern "C"` blocks follow the same rule.
 
 ```cpp
 namespace app {
@@ -397,7 +386,7 @@ Functions and lambdas share body layout: keep a single-statement body on the hea
 int Next(int value) { return value + 1; }
 ```
 
-When a qualified type and its declarator need separation, first break after the complete type, including declarator `*` or `&`, and indent the declarator one level. This boundary is preferred to every break inside the type, including template-list and non-leading `::` breaks. Type-internal breaks are available when the complete type does not fit by itself.
+When a qualified type and its declarator need separation, first break after the complete type and indent the declarator one level. This boundary is preferred to every break inside the type.
 
 <!-- .cpp-format
 ColumnLimit: 80
@@ -425,11 +414,21 @@ Function-pointer aliases, typedefs, and declarations put a space between the ret
 using Callback = Result (*)(const Request&);
 ```
 
-Defaulted, deleted, and pure-virtual markers stay with the declaration tail. Member declarations use the same signature layout as free functions.
+Defaulted, deleted, and pure-virtual markers stay with the declaration tail.
+
+<!-- .cpp-format
+ColumnLimit: 40
+-->
+```cpp
+struct Loader {
+    virtual Result
+        Load(int mode) const = 0;
+};
+```
 
 ### Lambdas
 
-Lambda [headers](glossary.md#callable-header) follow function-header placement; an owner prefix acts like a return-type prefix. Captures belong to the callable prefix and use [list layout](#lists), independently of parameters. When either break would suffice, split parameters before the prefix.
+Lambda [headers](glossary.md#callable-header) follow function-header placement; an owner prefix acts like a return-type prefix. Captures belong to the callable prefix and use [list layout](#lists).
 
 <!-- .cpp-format
 ColumnLimit: 40
@@ -444,7 +443,7 @@ auto update = [context, options](
 
 ### Templates
 
-A template prefix precedes the declaration on a separate line. Keep `requires` on the template line only when the complete prefix and compact clause fit; otherwise move it one indent deeper and wrap structurally. Constraint conjunctions and disjunctions use ordinary operator chains, so break after their logical operator before breaking inside either operand.
+A template prefix precedes the declaration on a separate line. Keep `requires` on the template line only when the complete prefix and compact clause fit; otherwise move it one indent deeper and wrap structurally.
 
 <!-- .cpp-format
 ColumnLimit: 40
@@ -455,8 +454,6 @@ template <typename T>
 void Copy(T& value);
 ```
 
-Concept definitions use assignment spacing, and `requires` expression bodies use block layout.
-
 ```cpp
 template <typename T>
 concept Sized = requires(T value) {
@@ -466,15 +463,11 @@ concept Sized = requires(T value) {
 
 ### Colon-prefixed lists
 
-Comma-separated lists introduced by `:`, such as constructor initializers and base classes, use these layouts, in increasing line count:
-
-- Compact: items follow `:` on the same line.
-- Packed split: all items share one continuation line that fits.
-- One item per line: each item starts on its own continuation line.
+Comma-separated lists introduced by `:`, such as constructor initializers and base classes, use compact, packed split, or one-item-per-line layout.
 
 Both split forms indent items one level. Keep `:` attached to the preceding syntax. A comment between the preceding
 syntax and `:` moves after the attached colon and before the first item. In constructors, keep `explicit` attached to
-the declarator; initializer count alone does not force parameters to split.
+the declarator.
 
 <!-- .cpp-format
 ColumnLimit: 48
@@ -493,7 +486,7 @@ OnePerLine::OnePerLine() :
 
 ### Control flow
 
-Brace every [control-statement](glossary.md#control-statement) body. Collapse an `else` containing only an `if` into `else if`. An empty body ends its line before a following attachment keyword. Attributes between a header and an already-braced body stay there without another block.
+Brace every [control-statement](glossary.md#control-statement) body. Collapse an `else` containing only an `if` into `else if`. An empty body ends its line before a following attachment keyword.
 
 ```cpp
 void Check() {
@@ -507,7 +500,7 @@ void Check() {
 }
 ```
 
-Control headers use list layout, splitting at top-level semicolons before nested calls.
+Control headers use list layout.
 
 <!-- .cpp-format
 ColumnLimit: 40
@@ -543,7 +536,7 @@ struct Point {
 
 ## Labels And Switches
 
-Switch labels are indented inside the switch, with statements one level deeper. A scoped case keeps `{` on the label line and aligns `}` with the label. Nested switches restore the enclosing case indentation.
+Switch labels are indented inside the switch, with statements one level deeper. A scoped case keeps `{` on the label line and aligns `}` with the label.
 
 ```cpp
 int Select(int value) {
@@ -578,7 +571,7 @@ Remaining ties prefer compact choices in source order.
 
 #### Break-Decision Trees
 
-The solver builds one tree per formatted segment. Raw depth starts at zero and increases at every construction layer. The dump retains tokens, decision nodes (`*`), and some grouping nodes; the trees below also show collapsed syntax layers (`-`) so raw depth can be counted.
+The solver builds one tree per formatted segment. The dump retains tokens, decision nodes (`*`), and some grouping nodes; the trees below also show collapsed syntax layers (`-`) so raw depth can be counted.
 
 ##### Surcharges and Discounts
 
@@ -644,7 +637,7 @@ A **final-lambda discount** equals the body's current cost and applies to the bo
 
 With configured include groups, sort each include run lexicographically and case-sensitively within groups, order groups by priority, and separate them with one empty line. Preserve the include set, spelling, and comments; comments bound sortable runs.
 
-Without groups, retain source order and blank-separated blocks. These rules also apply inside header guards. Blank lines before include blocks remain source-authored.
+Without groups, retain source order and blank-separated blocks. Blank lines before include blocks remain source-authored.
 
 ```cpp
 #include <algorithm>
@@ -655,7 +648,7 @@ Without groups, retain source order and blank-separated blocks. These rules also
 
 ## Comma Normalization
 
-For every non-empty comma-separated list inside `{ ... }`, omit the trailing comma in compact and packed layouts and add it in one-item-per-line layout. Remove trailing commas from lists with other delimiters. When conditional preprocessing selects the final list item, apply the same rule to every possible final branch.
+For every non-empty comma-separated list inside `{ ... }`, omit the trailing comma in compact and packed layouts and add it in one-item-per-line layout. Remove trailing commas from lists with other delimiters.
 
 <!-- .cpp-format
 ColumnLimit: 30
@@ -677,9 +670,16 @@ Only spaces and line breaks change, except for:
 - Removal of optional null declarations and statements.
 - Safe joining of adjacent ordinary string literals on the same physical line.
 
-Join ordinary literals only when their encoding prefixes and suffixes are compatible and joining cannot extend an escape. Preserve the compatible prefix and suffix. Raw literals and literals separated by a selected break retain their boundaries. For example, `"\x1" "a"` stays separate.
+Join ordinary literals only when their encoding prefixes and suffixes are compatible and joining cannot extend an escape. Preserve the compatible prefix and suffix. For example, `"\x1" "a"` stays separate.
 
-A literal ending in escaped `\n` or `\r\n` forces a break before the next literal. Other unsafe-to-join fragments may share a line.
+A literal ending in escaped `\n` or `\r\n` forces a break before the next literal.
+
+```cpp
+const char* text =
+    "first\n"
+    "second\r\n"
+    "third";
+```
 
 ## Further reading
 
