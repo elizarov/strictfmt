@@ -1,6 +1,6 @@
 # Agent Notes
 
-Keep docs up to date with code changes in the same change. Do not duplicate information and logic in docs and in source code. Each piece of key logic must be specified exactly once in a document that owns the corresponding area and implemented in exactly one place in the source code. 
+Keep docs consistent with code in the same change. Specify each rule once, concisely and generally, in its owning document; implement it once. Do not expand the spec for fixes covered by existing rules.
 
 References to all docs and their ownership areas; read them only when needed for the task at hand:
 

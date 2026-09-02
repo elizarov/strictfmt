@@ -29,7 +29,7 @@ This document specifies the source layout produced by `strictfmt`. Wrapping exam
 - Treat destructor `~` plus the following type name as one function name, e.g. `~Widget(`.
 - Put no space between a C-style cast and the expression it prefixes, e.g. `(void)value`.
 - Put no space between a function-style fundamental type cast and `(`, e.g. `unsigned(value)`.
-- Put spaces around range-for and list-prefix colons, including before parenthesized, lambda, or braced expressions, e.g. `for (auto item : (*items)->values)`.
+- Put spaces around range-for and list-prefix colons, e.g. `for (auto item : (*items)->values)`.
 - Put no space before access-specifier, label, or `case` colons, e.g. `public:`.
 - Put no spaces around qualification or member-access operators, e.g. `std::string`.
 - Put two spaces before a trailing `//` comment, e.g. `value;  // note`.
@@ -232,7 +232,7 @@ void Scan() {
 
 ### Streams
 
-Stream chains break before shift operators. A compact shifted tail may occupy one continuation line after the receiver. Otherwise each insertion starts a continuation line, except a string or character insertion binds to the following insertion when the pair fits, including punctuation attached by the enclosing expression. Configured manipulators bind to the following value.
+Stream chains break before shift operators. A compact shifted tail may occupy one continuation line after the receiver. Otherwise each insertion starts a continuation line, except a string or character insertion binds to the following insertion when the pair fits. Configured manipulators bind to the following value.
 
 <!-- .cpp-format
 ColumnLimit: 45
@@ -425,7 +425,7 @@ Function-pointer aliases, typedefs, and declarations put a space between the ret
 using Callback = Result (*)(const Request&);
 ```
 
-Defaulted, deleted, and pure-virtual markers stay with the declaration tail. Member declarations use the same signature layout as free functions, including when the return type is unqualified; wrap the signature earlier when a marker such as `= 0` would exceed the line limit.
+Defaulted, deleted, and pure-virtual markers stay with the declaration tail. Member declarations use the same signature layout as free functions.
 
 ### Lambdas
 
@@ -444,7 +444,7 @@ auto update = [context, options](
 
 ### Templates
 
-A template prefix precedes the declaration on a separate line. This boundary belongs to the immediately introduced declaration; nested template-template parameters and explicit lambda template parameters remain part of their enclosing header. Keep `requires` on the template line only when the complete prefix and compact clause fit; otherwise move it one indent deeper and wrap structurally. Constraint conjunctions and disjunctions use ordinary operator chains, so break after their logical operator before breaking inside either operand.
+A template prefix precedes the declaration on a separate line. Keep `requires` on the template line only when the complete prefix and compact clause fit; otherwise move it one indent deeper and wrap structurally. Constraint conjunctions and disjunctions use ordinary operator chains, so break after their logical operator before breaking inside either operand.
 
 <!-- .cpp-format
 ColumnLimit: 40
