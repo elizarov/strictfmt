@@ -2471,3 +2471,12 @@ struct PureVirtualDeclarationTails {
     virtual Result CopyActionParams(const State& state, const DataProviderStoragePtr& storage, int mode) const = delete;
     int initial_value = ComputeInitialValue(first_argument, second_argument, third_argument, fourth_argument, fifth_argument);
 };
+
+void QualifiedTemplateCallWrapping() {
+    value = Record{
+        .cancel_price = decimal64::Decimal<4>::FromStringPermissive(laundry_tariff_estimating_result.paid_cancel_in_driving.value().cancel_price),
+    };
+    auto nested = units::Scale<2>::Ratio<3>::ConvertWithOriginalPrecision(source.original_value_with_unit_metadata_and_conversion_options);
+    auto mixed = container::Map<Key, units::Scale<4>>::template Rebind<Value>::Create(source.value);
+    bool ordered = (first < second) > ::third;
+}
