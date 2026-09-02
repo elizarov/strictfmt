@@ -1194,6 +1194,7 @@ private:
     const std::vector<PrintToken>* activeTokens_ = nullptr;
     size_t currentTokenIndex_ = 0;
     std::optional<int> pendingIndentLevel_;
+    std::optional<int> emittedBlockOpenIndent_;
     std::vector<BraceRole> compactRightBraceRoles_;
     int switchDepth_ = 0;
     int parenDepth_ = 0;
@@ -2400,6 +2401,15 @@ private:
         }
         const PrintToken& printToken = FormatBreakTokenValue(token);
         if (
+            continuationBaseIndent &&
+            printToken.kind == PrintTokenKind::Known &&
+            printToken.syntaxKind == SyntaxNodeKind::LeftBrace &&
+            !pendingTokens_.empty() &&
+            printToken.node == pendingTokens_.back().node
+        ) {
+            emittedBlockOpenIndent_ = std::max(0, *continuationBaseIndent - (printToken.inMacroValue ? 1 : 0));
+        }
+        if (
             printToken.macroDefinition != nullptr && !printToken.inMacroValue && atLineStart_ && !macroContinuationLine_
         ) {
             forceColumnZeroLine_ = true;
@@ -3076,6 +3086,7 @@ private:
     }
 
     std::vector<MandatoryBlockSplitListContext> FlushPendingTokens(const FormatBreakModelContext& context = {}) {
+        emittedBlockOpenIndent_.reset();
         if (pendingTokens_.empty()) {
             return {};
         }
@@ -4158,10 +4169,10 @@ private:
         RecordCrossBlockChainBaseIndents(splitListItemIndent.value_or(crossBlockFallbackBaseIndent));
         const bool functionBlock = token.parentKind == SyntaxNodeKind::CompoundStatement &&
             token.grandParentKind == SyntaxNodeKind::FunctionDefinition;
-        int openLineIndent = splitListItemIndent.value_or(
+        int openLineIndent = emittedBlockOpenIndent_.value_or(splitListItemIndent.value_or(
             token.inMacroValue || functionBlock ? indentLevel_ :
                 (lineHasText_ ? CurrentLineIndentLevel() : indentLevel_)
-        );
+        ));
         if (
             token.parentKind == SyntaxNodeKind::RequirementSeq && token.inTemplateDeclaration && token.inRequiresClause
         ) {
