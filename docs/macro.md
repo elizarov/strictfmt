@@ -12,9 +12,9 @@ Structured macro definitions are the default. Their replacement parses as a stru
 
 Token pasting, nested macro calls whose arguments are preprocessing-token sequences, and balanced parenthesized preprocessing tokens remain explicit recursive grammar nodes. They may use token-level rather than C++ expression-level structure because macro expansion determines their eventual C++ role, but they must not be collapsed into an opaque formatter leaf.
 
-A structured macro definition has two header-level forms. If the complete definition fits on one physical line, it stays on that line. Otherwise, the formatter breaks after the complete definition header and starts the replacement one continuation indentation level deeper. The header and replacement are part of the same solver model; the one-line form is legal only when it contains no selected break and has no column-limit overflow, while the replacement in the split form retains every ordinary internal break opportunity.
+A structured macro definition has two header-level forms. If the complete definition fits on one physical line, it stays on that line. Otherwise, the formatter breaks after the complete definition header and starts the replacement one continuation indentation level deeper.
 
-A replacement parsed as two or more top-level macro call units is a statement-like item sequence even when the calls have no separating commas or semicolons. The formatter breaks between every unit, and a standalone comment between units is a separate line. This rule depends on the replacement structure, not the spelling of its call target or the name of the definition parameter. A replacement containing one call unit is not an item sequence and follows the ordinary structured-macro rule.
+A replacement parsed as two or more top-level macro call units is a statement-like item sequence even when the calls have no separating commas or semicolons.
 
 ```cpp
 #define FORMAT_FIXTURE_ITEMS(X) \
@@ -30,7 +30,7 @@ A replacement parsed as two or more top-level macro call units is a statement-li
     callback();
 ```
 
-Every non-final physical line of a structured macro definition ends in ` \`. Those two emitted columns are part of that line's overflow cost. The final replacement line has no continuation suffix.
+Every non-final physical line of a structured macro definition ends in ` \`. The final replacement line has no continuation suffix.
 
 For structured macro definitions, the original placement of continuation backslashes is semantically inert. A backslash-newline inside the replacement is treated as whitespace, just like ordinary source whitespace. The replacement ends at the first bare preprocessor directive newline after the macro value, and the pretty printer chooses the formatted line breaks and continuation backslashes.
 
@@ -38,7 +38,7 @@ The parser/scanner split that makes this possible is described in [scanner.md](s
 
 It is a parse error when a structured macro replacement cannot be parsed structurally. Add that macro identifier to `RawMacroDefinitions` only when the replacement intentionally is not a supported C++ fragment.
 
-Raw macro definitions are the explicit exception. A macro whose identifier matches `RawMacroDefinitions` replacement is one raw string token instead of a structured replacement tree. The raw replacement printer collapses horizontal whitespace for single-line replacements. For multi-line replacements, it preserves the physical continuation-line structure, backslashes, and relative indentation, while rebasing the least-indented replacement line to one indentation level beyond `#define`. It also applies the same line-ending and trailing `//` comment-spacing normalization as other raw preprocessor text. This is the sole opaque-source exception specified by [architecture.md](architecture.md#structural-genericity); every other macro and non-macro construct remains structured.
+Raw macro definitions are the explicit exception. A macro whose identifier matches `RawMacroDefinitions` replacement is one raw string token instead of a structured replacement tree. The raw replacement printer collapses horizontal whitespace for single-line replacements. For multi-line replacements, it preserves the physical continuation-line structure, backslashes, and relative indentation, while rebasing the least-indented replacement line to one indentation level beyond `#define`. It also applies the same line-ending and trailing `//` comment-spacing normalization as other raw preprocessor text. This is the sole opaque-source exception specified by [architecture.md](architecture.md#structural-genericity).
 
 ## Macro Categories
 
@@ -323,7 +323,7 @@ using Types = Test<GMOCK_PP_FOR_EACH(TYPE_ELEMENT, ~, (int, float))>;
 
 ### StatementArgumentMacros
 
-`StatementArgumentMacros` names macro identifiers whose call syntax parses the first argument as a [source-item](glossary.md#source-item) sequence rather than requiring a C++ expression. Declarations retain normal initializer syntax. Remaining arguments are parsed as ordinary macro arguments.
+`StatementArgumentMacros` names macro identifiers whose call syntax parses the first argument as a [source-item](glossary.md#source-item) sequence rather than requiring a C++ expression. Remaining arguments are parsed as ordinary macro arguments.
 
 Macros that look like plain function calls and whose arguments are all normal expressions do not belong here. Use this category for assertion-style macros whose documented argument is a statement.
 

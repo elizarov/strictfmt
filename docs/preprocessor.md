@@ -33,12 +33,11 @@ Specialized contextual placements do not support `#elifdef` or `#elifndef` alter
 
 - Directive lines stay at column zero. Guarded code keeps the indentation it would have at that source location.
 - A branch-owned leading comma stays on the same line as the selected constructor initializer, declaration parameter, or template parameter that follows it.
-- Alternative function-prefix opening braces stay on their respective header lines. The shared body after `#endif` is indented once and the common closing brace returns to the function declaration indentation.
 - Conditional declaration-prefix modifiers force a break before the rest of the declaration. Comments, attributes, and modifier lines inside the conditional use the indentation of the declaration that follows.
-- Conditional function return types and their shared declarator each start on their own line. Selected return types use the function declaration's indentation while directive lines stay at column zero.
+- Conditional function return types and their shared declarator each start on their own line. Selected return types use the function declaration's indentation.
 - For conditional right-hand sides after `=`, the formatter always breaks after the `=` and formats branch contents with one continuation indent relative to the line that contains the `=`.
-- For an include-supplied variable initializer, the formatter breaks after `=`, keeps the directive at column zero, and places the terminating semicolon one continuation level beyond the declaration's indentation.
-- A conditional stream-shift chain separates its receiver from the shifted tail. Branch-owned links and shared links after the conditional use the stream chain's continuation indentation; multiple links within one branch otherwise follow the ordinary stream-chain rules in [format.md](format.md#operator-chains).
+- For an include-supplied variable initializer, the formatter breaks after `=` and places the terminating semicolon one continuation level beyond the declaration's indentation.
+- A conditional stream-shift chain separates its receiver from the shifted tail.
 
 ## Examples
 
