@@ -3644,6 +3644,9 @@ private:
             return false;
         }
         const SyntaxNode* level = token.node->parent;
+        if (!IsStatementItemContainer(level->kind) && !SyntaxNodeHasClass(*level, SyntaxNodeClass::CompoundBlock)) {
+            return false;
+        }
         const SyntaxNode* previousItem = DirectChildAtLevel(previous->node, level);
         const SyntaxNode* nextItem = DirectChildAtLevel(next->node, level);
         if (previousItem == nullptr || nextItem == nullptr || previousItem == nextItem) {
