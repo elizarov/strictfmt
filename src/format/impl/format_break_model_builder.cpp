@@ -557,7 +557,7 @@ private:
     }
 
     static bool ShouldPreservePendingBlankLine(const FormatBreakNode& list, bool pendingBlankLine, bool beforeComment) {
-        return pendingBlankLine && (beforeComment || IsStandaloneCommentItem(list, list.items.size() - 1));
+        return pendingBlankLine && (beforeComment || !list.items.empty());
     }
 
     void AppendListItem(FormatBreakNode& list, FormatBreakNode* item, bool blankLineBefore) {

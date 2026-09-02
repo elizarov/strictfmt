@@ -106,6 +106,7 @@ constexpr wchar_t kFilterCueText[] = L"Filter settings";
 
 constexpr auto kFixtureSyntaxKindMappings = std::to_array<SyntaxKindMapping>({
     Kind(SyntaxNodeKind::Tree, Bit(SyntaxNodeClass::Tree)),
+
     Tree(SyntaxNodeKind::TranslationUnit, "translation_unit"),
     Tree(SyntaxNodeKind::IncludeRun, "include_run"),
     Tree(SyntaxNodeKind::MacroReplacementList, "macro_replacement_list"),
@@ -3773,6 +3774,7 @@ auto BlankLinesBetweenMultilineListItems() {
                 Check(a);
                 return a.value;
             },
+
             [](const B& b) {
                 Check(b);
                 return b.value;
@@ -3824,3 +3826,36 @@ void RangeForExpressionSpacing() {
     }
     auto value = flag ? (left) : (right);
 }
+
+void PreserveListBlankLines() {
+    Consume(
+        first,
+
+        second,
+        third
+    );
+    auto values = Values{
+        first,
+
+        second,
+    };
+    Consume(
+        [] {
+            Prepare();
+            Finish();
+        },
+
+        value
+    );
+}
+
+void PreserveParameterBlankLines(
+    int first,
+
+    int second
+);
+
+struct PreserveBaseListBlankLines :
+    First,
+
+    Second {};
