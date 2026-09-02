@@ -179,6 +179,16 @@ Binary chain operators are the operators whose usual source meaning is a mostly 
 
 Other operators, including `.*` and `->*`, are ordinary operators.
 
+Ordinary binary and assignment breaks indent the right operand one level deeper, including inside parentheses and nested operators. This also applies to designated initializers and breaks between a condition declaration's type/pointer prefix and assigned declarator. Unary operators and declarator `*` or `&` do not introduce breaks.
+
+<!-- .cpp-format
+ColumnLimit: 28
+-->
+```cpp
+bool same = firstValue ==
+    secondValue;
+```
+
 Like [lists](#lists), chains stay compact on one line or split one item per line. Split items share the chain's base indentation, including any continuation indent from the surrounding context.
 
 <!-- .cpp-format
@@ -292,7 +302,7 @@ void Configure() {
 }
 ```
 
-### Ternaries and ordinary operators
+### Ternaries
 
 Nested ternaries within one chain stay compact or break after every `:`, with flat indentation. A single ternary may break after `?`, `:`, both, or inside an attached branch.
 
@@ -305,18 +315,18 @@ auto key = firstCondition ? firstKey :
     fallbackKey;
 ```
 
-Ordinary binary and assignment breaks indent the right operand one level deeper, including inside parentheses and nested operators. This also applies to designated initializers and breaks between a condition declaration's type/pointer prefix and assigned declarator. Unary operators and declarator `*` or `&` do not introduce breaks.
+### Parenthesized operator pieces
 
-Parentheses always divide operator chains into separately formatted pieces, for ternaries and every other operator. Each piece chooses its own layout and indentation; flat chain indentation does not cross a parenthesis boundary. Plain non-call parentheses add one body-indentation level to their piece.
+Parentheses always divide an operator chain into separately formatted pieces. This keeps explicit grouping visible rather than flattening it into the surrounding chain. Use parentheses when they expose structure beyond what the chain itself expresses. Plain non-call parentheses add one body-indentation level to their piece.
 
 <!-- .cpp-format
-ColumnLimit: 28
+ColumnLimit: 16
 -->
 ```cpp
-auto value = conditionLong ?
-    firstLong : (
-        secondLong +
-        thirdLong
+auto value =
+    one + (
+        two +
+        three
     );
 ```
 
