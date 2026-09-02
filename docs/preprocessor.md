@@ -62,7 +62,7 @@ std::vector<std::string> list{
     "three",
 #endif
 #if EVEN_MORE
-    "four"
+    "four",
 #endif
 };
 ```

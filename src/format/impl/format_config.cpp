@@ -34,7 +34,7 @@ constexpr std::array MACRO_CATEGORY_CONFIGS = {
     MacroCategoryConfig{"SemicolonlessCallMacros", &FormatterConfig::semicolonlessCallMacros},
     MacroCategoryConfig{"StatementArgumentMacros", &FormatterConfig::statementArgumentMacros},
     MacroCategoryConfig{"TypeSpecifierMacros", &FormatterConfig::typeSpecifierMacros},
-    MacroCategoryConfig{"PreprocessorArgumentMacros", &FormatterConfig::preprocessorArgumentMacros}
+    MacroCategoryConfig{"PreprocessorArgumentMacros", &FormatterConfig::preprocessorArgumentMacros},
 };
 
 struct FormatterConfigPatch {

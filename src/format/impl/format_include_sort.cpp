@@ -279,7 +279,7 @@ std::string FormatIncludeEntriesText(
             .target = include.target,
             .sortKey = ToLower(include.target),
             .priority = IncludePriority(context, include.target),
-            .originalIndex = includes.size()
+            .originalIndex = includes.size(),
         });
     }
 

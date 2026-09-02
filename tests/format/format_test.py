@@ -970,7 +970,7 @@ class FormatCommandTests(unittest.TestCase):
         self.assertIn("- kind: PreprocessorDirectiveElse\n", result.stdout)
         self.assertIn("- kind: PreprocessorDirectiveEndif\n", result.stdout)
 
-    def test_trailing_comma_normalization(self) -> None:
+    def test_trailing_comma_normalization_follows_brace_list_layout(self) -> None:
         result = native_format(
             "--stdin",
             input_text=(
@@ -978,6 +978,8 @@ class FormatCommandTests(unittest.TestCase):
                 "enum F { C, D, };\n"
                 "int values[] = {1, 2,};\n"
                 "void f(){ Use({1, 2,}); }\n"
+                "auto long_values = Values{firstValueWithAnExtremelyLongNameForTrailingCommaNormalization, "
+                "secondValueWithAnExtremelyLongNameForTrailingCommaNormalization};\n"
             ),
         )
 
@@ -995,7 +997,12 @@ class FormatCommandTests(unittest.TestCase):
             "\n"
             "int values[] = {1, 2};\n"
             "\n"
-            "void f() { Use({1, 2}); }\n",
+            "void f() { Use({1, 2}); }\n"
+            "\n"
+            "auto long_values = Values{\n"
+            "    firstValueWithAnExtremelyLongNameForTrailingCommaNormalization,\n"
+            "    secondValueWithAnExtremelyLongNameForTrailingCommaNormalization,\n"
+            "};\n",
             result.stdout,
         )
 
@@ -1598,7 +1605,9 @@ class FormatCommandTests(unittest.TestCase):
 
         self.assertEqual(0, formatted.returncode, msg=formatted.stderr)
         self.assert_no_unsupported_placement_warnings(formatted)
-        self.assertEqual(re.sub(r"\s+", "", source), re.sub(r"\s+", "", formatted.stdout))
+        compact_source = re.sub(r"\s+", "", source)
+        compact_formatted = re.sub(r",(?=})", "", re.sub(r"\s+", "", formatted.stdout))
+        self.assertEqual(compact_source, compact_formatted)
         self.assertIn("\n    .first = 1,\n", formatted.stdout)
         self.assertIn("Value{.first = 1, .second = Leaf{2, 3}}", formatted.stdout)
         self.assertLessEqual(max(map(len, formatted.stdout.splitlines())), 120)

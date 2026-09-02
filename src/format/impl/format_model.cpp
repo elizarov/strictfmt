@@ -704,7 +704,7 @@ constexpr auto kSyntaxKindMappings = std::to_array<SyntaxKindMapping>({
     Keyword(SyntaxNodeKind::KeywordDeclspec, "__declspec"),
     Keyword(SyntaxNodeKind::KeywordCoAwait, "co_await"),
     Keyword(SyntaxNodeKind::KeywordCoReturn, "co_return", Bit(SyntaxNodeClass::KeywordOwnedValue)),
-    Keyword(SyntaxNodeKind::KeywordCoYield, "co_yield", Bit(SyntaxNodeClass::KeywordOwnedValue))
+    Keyword(SyntaxNodeKind::KeywordCoYield, "co_yield", Bit(SyntaxNodeClass::KeywordOwnedValue)),
 });
 
 consteval bool HasOnlyRawMacroOpaqueSourceMapping() {
@@ -913,7 +913,7 @@ const SymbolInfoTable& SyntaxInfoBySymbol() {
             "typeid_expression",
             "unary_expression",
             "update_expression",
-            "user_defined_literal"
+            "user_defined_literal",
         };
         for (const std::string_view name : expressionNames) {
             StoreTreeSymbolClasses(result, name, Bit(SyntaxNodeClass::Expression));
@@ -936,7 +936,7 @@ const SymbolInfoTable& SyntaxInfoBySymbol() {
             "template_function",
             "template_method",
             "template_type",
-            "type_descriptor"
+            "type_descriptor",
         };
         constexpr std::string_view wholeTokenNames[] =
             {"null", "placeholder_type_specifier", "primitive_type", "storage_class_specifier", "type_qualifier"};

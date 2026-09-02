@@ -152,11 +152,11 @@ ColumnLimit: 25
 Point points[] = {
     {
         rect.left,
-        rect.top
+        rect.top,
     }, {
         rect.right,
-        rect.bottom
-    }
+        rect.bottom,
+    },
 };
 ```
 
@@ -341,7 +341,7 @@ ColumnLimit: 32
 const char* messages[] = {
     "A longer message "
         "needs two lines.",
-    "another message"
+    "another message",
 };
 ```
 
@@ -655,7 +655,17 @@ Without groups, retain source order and blank-separated blocks. These rules also
 
 ## Comma Normalization
 
-Normalize trailing commas: add them to non-empty enum bodies when missing, and remove them elsewhere. When conditional preprocessing selects the final non-enum list item, remove each final branch's terminal comma.
+For every non-empty comma-separated list inside `{ ... }`, omit the trailing comma in compact and packed layouts and add it in one-item-per-line layout. Remove trailing commas from lists with other delimiters. When conditional preprocessing selects the final list item, apply the same rule to every possible final branch.
+
+<!-- .cpp-format
+ColumnLimit: 30
+-->
+```cpp
+auto values = Values{
+    firstLongValue,
+    secondLongValue,
+};
+```
 
 ## Token Preservation
 

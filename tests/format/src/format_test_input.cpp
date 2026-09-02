@@ -2442,6 +2442,11 @@ optional::Map(request.cargo_options(), [&](const auto& cargo_options) { return S
 auto callback = [&](const auto& cargo_options) { builder[fields::kCargoOptions] = json::Serialize(cargo_options); };
 }
 
+void BraceListTrailingCommaLayout(){
+auto compact=BraceValues{first,second,};
+auto fullSplit=BraceValues{firstValueWithAnExtremelyLongNameForBraceListTrailingComma,secondValueWithAnExtremelyLongNameForBraceListTrailingComma};
+}
+
 namespace post_namespace_first_fixture {
 class First;
 }  // namespace post_namespace_first_fixture
