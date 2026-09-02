@@ -142,7 +142,7 @@ void GeneratedDependentTemplateMemberCall(Value value) {
                     Minimum<::dynamic_config::feature_flags::VariableTypeRaw::kTimeout_MsMinimum>
             >,
             std::chrono::milliseconds
-        >>>()
+        >>>(),
     };
 }
 
@@ -155,7 +155,7 @@ void MacroConcatenatedString() { throw Error("prefix " FORMAT_USERVER_VERSION " 
 void QualifiedTemplateCompoundLiteral(Token token, Writer& writer) {
     WriteToStream(
         fixture::chaotic::Primitive<std::string, fixture::chaotic::MinLength<128>, fixture::chaotic::MaxLength<128>>{
-            *token
+            *token,
         },
         writer
     );

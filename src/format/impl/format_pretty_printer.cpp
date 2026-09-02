@@ -511,6 +511,34 @@ bool HasSeparatedListAncestor(const SyntaxNode* node) {
     return false;
 }
 
+const SyntaxNode* BraceListTerminalCommaOpen(const PrintToken& token) {
+    if (
+        token.kind != PrintTokenKind::Known ||
+        token.syntaxKind != SyntaxNodeKind::Comma ||
+        token.node == nullptr ||
+        token.node->parent == nullptr ||
+        !SyntaxNodeHasClass(*token.node->parent, SyntaxNodeClass::AllowedListPreprocessorContainer)
+    ) {
+        return nullptr;
+    }
+    const SyntaxNode* open = nullptr;
+    bool afterComma = false;
+    for (const SyntaxNode* child : token.node->parent->children) {
+        if (child != nullptr && child->kind == SyntaxNodeKind::LeftBrace) {
+            open = child;
+        }
+        if (child == token.node) {
+            afterComma = true;
+            continue;
+        }
+        if (!afterComma || child == nullptr || SyntaxNodeHasClass(*child, SyntaxNodeClass::Trivia)) {
+            continue;
+        }
+        return child->kind == SyntaxNodeKind::RightBrace ? open : nullptr;
+    }
+    return nullptr;
+}
+
 bool IsFormatterOwnedChain(const SyntaxNode& node) {
     if (node.kind != SyntaxNodeKind::FieldExpression && node.kind != SyntaxNodeKind::BinaryExpression) {
         return false;
@@ -562,7 +590,7 @@ void AppendPreprocessorPrintToken(
         .structuredPreprocessor = structuredPreprocessor,
         .inMacroValue = inMacroValue,
         .node = &node,
-        .macroDefinition = macroDefinition
+        .macroDefinition = macroDefinition,
     });
     ApplyPrintTokenAncestryTraits(
         tokens.back(), ancestryFlags, declarationScopeItem, inTemplateDeclarationBlock, inTemplateDeclarationHeader
@@ -641,7 +669,7 @@ void AppendTokens(
             .kind = PrintTokenKind::BlankLine,
             .inMacroValue = childInMacroValue,
             .node = &node,
-            .macroDefinition = childMacroDefinition
+            .macroDefinition = childMacroDefinition,
         });
         applyAncestryTraits();
         return;
@@ -660,7 +688,7 @@ void AppendTokens(
             .inCompactSingleStatementBody = childInCompactSingleStatementBody,
             .inMacroValue = childInMacroValue,
             .node = &node,
-            .macroDefinition = childMacroDefinition
+            .macroDefinition = childMacroDefinition,
         });
         applyAncestryTraits();
         return;
@@ -678,7 +706,7 @@ void AppendTokens(
             .inCompactSingleStatementBody = childInCompactSingleStatementBody,
             .inMacroValue = childInMacroValue,
             .node = &node,
-            .macroDefinition = childMacroDefinition
+            .macroDefinition = childMacroDefinition,
         });
         applyAncestryTraits();
         return;
@@ -777,7 +805,7 @@ void AppendTokens(
             .inCompactSingleStatementBody = childInCompactSingleStatementBody,
             .inMacroValue = childInMacroValue,
             .node = &node,
-            .macroDefinition = childMacroDefinition
+            .macroDefinition = childMacroDefinition,
         });
         applyAncestryTraits();
         return;
@@ -794,7 +822,7 @@ void AppendTokens(
             .inCompactSingleStatementBody = childInCompactSingleStatementBody,
             .inMacroValue = childInMacroValue,
             .node = &node,
-            .macroDefinition = childMacroDefinition
+            .macroDefinition = childMacroDefinition,
         });
         applyAncestryTraits();
         return;
@@ -812,7 +840,7 @@ void AppendTokens(
             .inCompactSingleStatementBody = childInCompactSingleStatementBody,
             .inMacroValue = childInMacroValue,
             .node = &node,
-            .macroDefinition = childMacroDefinition
+            .macroDefinition = childMacroDefinition,
         });
         applyAncestryTraits();
         return;
@@ -830,7 +858,7 @@ void AppendTokens(
             .inCompactSingleStatementBody = childInCompactSingleStatementBody,
             .inMacroValue = childInMacroValue,
             .node = &node,
-            .macroDefinition = childMacroDefinition
+            .macroDefinition = childMacroDefinition,
         });
         applyAncestryTraits();
         return;
@@ -924,7 +952,60 @@ std::string RemoveTrailingListComma(std::string_view line) {
     return result;
 }
 
-std::string FormatListPreprocessorLines(std::string_view text, int itemIndent, int indentWidth, bool finalListItem) {
+std::string AddTrailingListComma(std::string_view line) {
+    const size_t commentStart = FindLineCommentStart(line);
+    const size_t codeEnd = commentStart == std::string_view::npos ? line.size() : commentStart;
+    size_t trimmedCodeEnd = codeEnd;
+    while (trimmedCodeEnd > 0 && (line[trimmedCodeEnd - 1] == ' ' || line[trimmedCodeEnd - 1] == '\t')) {
+        --trimmedCodeEnd;
+    }
+    if (trimmedCodeEnd == 0 || line[trimmedCodeEnd - 1] == ',') {
+        return std::string(line);
+    }
+
+    std::string result;
+    result.reserve(line.size() + 1);
+    result.append(line.substr(0, trimmedCodeEnd));
+    result.push_back(',');
+    if (commentStart != std::string_view::npos) {
+        result.append("  ");
+        result.append(line.substr(commentStart));
+    }
+    return result;
+}
+
+bool IsStandaloneCommentLine(std::string_view line) {
+    const size_t first = line.find_first_not_of(" \t");
+    if (first == std::string_view::npos) {
+        return true;
+    }
+    const std::string_view trimmed = line.substr(first);
+    return
+        trimmed.starts_with("//") || trimmed.starts_with("/*") || trimmed.starts_with("*") || trimmed.starts_with("*/");
+}
+
+void NormalizeConditionalListTerminalCommas(std::vector<std::string>& lines, bool trailingComma) {
+    for (size_t index = 0; index < lines.size(); ++index) {
+        if (
+            !PreprocessorLineHasClass(lines[index], SyntaxNodeClass::ConditionalBranchSeparatorDirective) &&
+            !PreprocessorLineHasClass(lines[index], SyntaxNodeClass::EndifDirective)
+        ) {
+            continue;
+        }
+        for (size_t previous = index; previous > 0; --previous) {
+            std::string& line = lines[previous - 1];
+            if (line.empty() || line.front() == '#' || IsStandaloneCommentLine(line)) {
+                continue;
+            }
+            line = trailingComma ? AddTrailingListComma(line) : RemoveTrailingListComma(line);
+            break;
+        }
+    }
+}
+
+std::string FormatListPreprocessorLines(
+    std::string_view text, int itemIndent, int indentWidth, bool finalListItem, bool trailingComma
+) {
     const std::string normalized = PreserveSourceLines(text);
     std::vector<std::string> lines;
     size_t start = 0;
@@ -941,19 +1022,7 @@ std::string FormatListPreprocessorLines(std::string_view text, int itemIndent, i
     }
 
     if (finalListItem) {
-        size_t finalConditionalStart = lines.size();
-        for (size_t index = lines.size(); index > 0; --index) {
-            if (PreprocessorLineHasClass(lines[index - 1], SyntaxNodeClass::ConditionalOpeningDirective)) {
-                finalConditionalStart = index - 1;
-                break;
-            }
-        }
-        const size_t firstLineToNormalize = finalConditionalStart == lines.size() ? 0 : finalConditionalStart + 1;
-        for (size_t index = firstLineToNormalize; index < lines.size(); ++index) {
-            if (!lines[index].empty() && lines[index].front() != '#') {
-                lines[index] = RemoveTrailingListComma(lines[index]);
-            }
-        }
+        NormalizeConditionalListTerminalCommas(lines, trailingComma);
     }
 
     std::string result;
@@ -1492,7 +1561,7 @@ private:
                         .startColumn = declarationIndent * indentWidth_,
                         .baseIndentLevel = declarationIndent,
                         .model = std::move(model),
-                        .solution = std::move(solution)
+                        .solution = std::move(solution),
                     });
             }
             ++index;
@@ -2080,7 +2149,7 @@ private:
                 .owner = token.node == nullptr ? nullptr : token.node->parent,
                 .commentOffset = output_.size(),
                 .commentColumn = currentColumn_,
-                .commentWidth = static_cast<int>(text.size())
+                .commentWidth = static_cast<int>(text.size()),
             });
         }
         Write(text);
@@ -2200,6 +2269,7 @@ private:
         bool previousStringLike = false;
         bool hasTemplateHeader = false;
         bool hasTemplateDeclaredEntity = false;
+        bool omittedTerminalComma = false;
         for (const PrintToken& token : pendingTokens_) {
             if (token.kind != PrintTokenKind::Known && token.kind != PrintTokenKind::Text) {
                 return false;
@@ -2226,13 +2296,23 @@ private:
             if (token.stringLike && previousStringLike) {
                 return false;
             }
-            if (token.spaceBefore && hasText) {
+            const SyntaxNode* terminalCommaOpen = BraceListTerminalCommaOpen(token);
+            const bool ownsBraceList = terminalCommaOpen != nullptr &&
+                std::any_of(pendingTokens_.begin(), pendingTokens_.end(), [&](const PrintToken& candidate) {
+                    return candidate.node == terminalCommaOpen;
+                });
+            if (ownsBraceList) {
+                omittedTerminalComma = true;
+                continue;
+            }
+            if (token.spaceBefore && hasText && !omittedTerminalComma) {
                 ++width;
             }
             const int tokenWidth = FormatTokenWidth(token);
             width += tokenWidth;
             hasText = hasText || tokenWidth > 0;
             previousStringLike = token.stringLike;
+            omittedTerminalComma = false;
         }
         if (hasTemplateHeader && (
             pendingTokens_.empty() ||
@@ -2245,11 +2325,22 @@ private:
     }
 
     void FlushPendingTokensCompact() {
+        bool omittedTerminalComma = false;
         for (const PrintToken& token : pendingTokens_) {
-            if (token.spaceBefore && !atLineStart_) {
+            const SyntaxNode* terminalCommaOpen = BraceListTerminalCommaOpen(token);
+            const bool ownsBraceList = terminalCommaOpen != nullptr &&
+                std::any_of(pendingTokens_.begin(), pendingTokens_.end(), [&](const PrintToken& candidate) {
+                    return candidate.node == terminalCommaOpen;
+                });
+            if (ownsBraceList) {
+                omittedTerminalComma = true;
+                continue;
+            }
+            if (token.spaceBefore && !atLineStart_ && !omittedTerminalComma) {
                 Space();
             }
             Write(FormatTokenText(token));
+            omittedTerminalComma = false;
         }
         pendingTokens_.clear();
     }
@@ -2590,6 +2681,9 @@ private:
             if (FormatBreakTokenKind(item.separator) == PrintTokenKind::Known) {
                 WriteBreakToken(item.separator);
             }
+            if (choice == FormatBreakChoice::Split && node.splitTrailingCommaItem == index) {
+                Write(",");
+            }
             if (HasTrailingComment(node, index)) {
                 WriteBreakToken(item.trailingComment);
             }
@@ -2684,6 +2778,9 @@ private:
             EmitBreakNode(*item.node, solution, baseIndent + 1);
             if (FormatBreakTokenKind(item.separator) == PrintTokenKind::Known) {
                 WriteBreakToken(item.separator);
+            }
+            if (node.splitTrailingCommaItem == index) {
+                Write(",");
             }
             if (HasTrailingComment(node, index)) {
                 WriteBreakToken(item.trailingComment);
@@ -3093,7 +3190,7 @@ private:
             result.breakContext.virtualDelimiters.push_back({
                 .open = listOpen,
                 .close = FormatBreakToken{&(*activeTokens_)[*closeIndex], false, true},
-                .forceSplit = hasFollowingListItem || HasDirectCommentChild(*list)
+                .forceSplit = hasFollowingListItem || HasDirectCommentChild(*list),
             });
             result
                 .deferredContexts
@@ -3138,8 +3235,8 @@ private:
                 .list = list,
                 .closeToken = listClose,
                 .itemIndent = itemIndentLevel,
-                .closeIndent = std::max(0, itemIndentLevel - 1)
-            }
+                .closeIndent = std::max(0, itemIndentLevel - 1),
+            },
         };
     }
 
@@ -3638,8 +3735,14 @@ private:
         const std::optional<int> includeInitializerContinuationIndent =
             isInclude && token.parentKind == SyntaxNodeKind::InitDeclarator && lineHasText_ ?
                 std::optional<int>(CurrentLineIndentLevel() + 1) : std::nullopt;
-        const bool listConditional =
-            StartsPreprocessorSplitList(token) && NearestPreprocessorSplitListAncestor(token) != nullptr;
+        const SyntaxNode* conditionalList =
+            StartsPreprocessorSplitList(token) ? NearestPreprocessorSplitListAncestor(token) : nullptr;
+        const bool listConditional = conditionalList != nullptr;
+        const SyntaxNode* conditionalListOpen =
+            conditionalList == nullptr ? nullptr : DirectOpeningDelimiterChild(*conditionalList);
+        const bool trailingListComma = conditionalListOpen != nullptr &&
+            conditionalListOpen->kind == SyntaxNodeKind::LeftBrace &&
+            SyntaxNodeHasClass(*conditionalList, SyntaxNodeClass::AllowedListPreprocessorContainer);
         const SyntaxNodeKind lineDirectiveKind = SyntaxNodeKindFromPreprocessorDirectiveLine(line);
         const bool closesConditionalFunctionHeader = (
             (token.node != nullptr && IsPreprocEndifToken(*token.node)) ||
@@ -3705,7 +3808,11 @@ private:
             }
             const std::string outputLine =
                 listConditional && !token.structuredPreprocessor && listItemIndent ? FormatListPreprocessorLines(
-                    token.text, *listItemIndent, indentWidth_, IsFinalPreprocessorSplitListItem(token)
+                    token.text,
+                    *listItemIndent,
+                    indentWidth_,
+                    IsFinalPreprocessorSplitListItem(token),
+                    trailingListComma
                 ) : line;
             output_.append(outputLine);
             AdvanceCurrentColumn(outputLine);
@@ -4024,7 +4131,7 @@ private:
             .role = role,
             .parenDepth = parenDepth_,
             .indentRestore = indentLevel_,
-            .closeIndent = role == BraceRole::Block || role == BraceRole::Enum ? openLineIndent : indentLevel_
+            .closeIndent = role == BraceRole::Block || role == BraceRole::Enum ? openLineIndent : indentLevel_,
         });
         if (
             token.parentKind == SyntaxNodeKind::CompoundStatement &&

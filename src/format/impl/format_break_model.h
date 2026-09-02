@@ -97,6 +97,7 @@ struct FormatBreakNode {
     bool chainStartsWithOperator = false;
     bool ternaryRequiresColonBreaks = false;
     bool splitTrailingBodyHeaderAtParentIndent = false;
+    std::optional<size_t> splitTrailingCommaItem;
     std::optional<int> requiredChainBreakBaseIndent;
     const SyntaxNode* declarationValueOwner = nullptr;
     FormatBreakToken leadingTrailingComment;

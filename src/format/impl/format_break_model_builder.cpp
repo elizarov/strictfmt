@@ -182,7 +182,7 @@ std::optional<OrdinaryStringLiteralParts> ParseOrdinaryStringLiteral(std::string
     return OrdinaryStringLiteralParts{
         .prefix = text.substr(0, open),
         .body = text.substr(open + 1, close - open - 1),
-        .suffix = text.substr(close + 1)
+        .suffix = text.substr(close + 1),
     };
 }
 
@@ -625,6 +625,32 @@ private:
         }
         list.items.back().separator = separator;
         return true;
+    }
+
+    static void MarkSplitTrailingComma(FormatBreakNode& list, const FormatBreakToken& open) {
+        const SyntaxNode* syntaxOpen = FormatBreakTokenValue(open).node;
+        const SyntaxNode* syntaxList = syntaxOpen == nullptr ? nullptr : syntaxOpen->parent;
+        const bool commaSeparatedList = syntaxList != nullptr && (
+            (syntaxList->classes & static_cast<std::uint64_t>(SyntaxNodeClass::AllowedListPreprocessorContainer)) !=
+                0 || SyntaxNodeKindHasClass(syntaxList->kind, SyntaxNodeClass::AllowedListPreprocessorContainer)
+        );
+        if (list.delimiterKind != FormatBreakDelimiterKind::Brace || !commaSeparatedList) {
+            return;
+        }
+        for (size_t index = list.items.size(); index > 0; --index) {
+            if (IsStandaloneCommentItem(list, index - 1)) {
+                continue;
+            }
+            FormatBreakListItem& item = list.items[index - 1];
+            list.splitTrailingCommaItem = index - 1;
+            if (FormatBreakTokenSyntaxKind(item.separator) == SyntaxNodeKind::Comma) {
+                item.separator = {};
+            }
+            if (list.suppressCompactDelimiterPadding) {
+                list.children.back()->token.spaceBefore = false;
+            }
+            return;
+        }
     }
 
     static bool EndsWithBodyHeader(const FormatBreakNode& node) {
@@ -3382,6 +3408,9 @@ private:
         }
         delimited->compactRequiresUnbrokenItems = IsMultiItemDesignatedInitializer(*delimited, *open);
         delimited->forceSplit = delimited->forceSplit || (hasVirtualClose && virtualDelimiter->forceSplit);
+        if (!hasVirtualClose) {
+            MarkSplitTrailingComma(*delimited, *open);
+        }
         afterDelimited = hasVirtualClose ? end : closeIndex + 1;
         return FinishDelimited(delimited);
     }

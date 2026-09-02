@@ -184,6 +184,56 @@ void RemoveTerminalConditionalListCommas(SyntaxNode& node) {
     }
 }
 
+void InsertCommaAfter(FormatModel& model, SyntaxNode& node, size_t index) {
+    SyntaxNode* comma = MakeTokenNode(model, SyntaxNodeKind::Comma);
+    comma->parent = &node;
+    comma->depth = node.depth + 1;
+    node.children.insert(node.children.begin() + static_cast<std::ptrdiff_t>(index + 1), comma);
+}
+
+void AddTerminalConditionalListCommas(FormatModel& model, SyntaxNode& node) {
+    SyntaxChildList& children = node.children;
+    const size_t headerChildren = node.kind == SyntaxNodeKind::PreprocElse ? 1 : 2;
+    for (size_t index = 0; index < children.size(); ++index) {
+        SyntaxNode* child = children[index];
+        if (child == nullptr) {
+            continue;
+        }
+        if (
+            SyntaxNodeKindHasClass(child->kind, SyntaxNodeClass::ConditionalBranchSeparatorDirective) ||
+            SyntaxNodeKindHasClass(child->kind, SyntaxNodeClass::EndifDirective)
+        ) {
+            const std::optional<size_t> previous = PreviousNonTriviaChildIndex(children, index);
+            if (
+                previous &&
+                *previous >= headerChildren &&
+                children[*previous]->kind != SyntaxNodeKind::Comma &&
+                !SyntaxNodeKindHasClass(children[*previous]->kind, SyntaxNodeClass::ConditionalPreprocessorTree)
+            ) {
+                InsertCommaAfter(model, node, *previous);
+                ++index;
+            }
+        }
+        if (SyntaxNodeKindHasClass(child->kind, SyntaxNodeClass::ConditionalPreprocessorTree)) {
+            AddTerminalConditionalListCommas(model, *child);
+        }
+    }
+    if (
+        SyntaxNodeKindHasClass(node.kind, SyntaxNodeClass::ConditionalPreprocessorTree) &&
+        !SyntaxNodeKindHasClass(node.kind, SyntaxNodeClass::ConditionalPreprocessorOpen)
+    ) {
+        const std::optional<size_t> previous = PreviousNonTriviaChildIndex(children, children.size());
+        if (
+            previous &&
+            *previous >= headerChildren &&
+            children[*previous]->kind != SyntaxNodeKind::Comma &&
+            !SyntaxNodeKindHasClass(children[*previous]->kind, SyntaxNodeClass::ConditionalPreprocessorTree)
+        ) {
+            InsertCommaAfter(model, node, *previous);
+        }
+    }
+}
+
 void NormalizeTrailingCommas(FormatModel& model, SyntaxNode& node) {
     SyntaxChildList& children = node.children;
     for (size_t index = 0; index < children.size(); ++index) {
@@ -202,21 +252,24 @@ void NormalizeTrailingCommas(FormatModel& model, SyntaxNode& node) {
         if (!previous) {
             continue;
         }
+        const bool braceList = children[index]->kind == SyntaxNodeKind::RightBrace &&
+            SyntaxNodeHasClass(node, SyntaxNodeClass::AllowedListPreprocessorContainer);
         if (
-            node.kind != SyntaxNodeKind::EnumeratorList &&
+            !braceList &&
             SyntaxNodeKindHasClass(children[*previous]->kind, SyntaxNodeClass::ConditionalPreprocessorTree)
         ) {
             RemoveTerminalConditionalListCommas(*children[*previous]);
         }
-        if (node.kind == SyntaxNodeKind::EnumeratorList) {
+        if (braceList) {
+            if (SyntaxNodeKindHasClass(children[*previous]->kind, SyntaxNodeClass::ConditionalPreprocessorTree)) {
+                AddTerminalConditionalListCommas(model, *children[*previous]);
+                continue;
+            }
             if (
                 children[*previous]->kind != SyntaxNodeKind::Comma &&
                 children[*previous]->kind != SyntaxNodeKind::LeftBrace
             ) {
-                SyntaxNode* comma = MakeTokenNode(model, SyntaxNodeKind::Comma);
-                comma->parent = &node;
-                comma->depth = node.depth + 1;
-                children.insert(children.begin() + static_cast<std::ptrdiff_t>(*previous + 1), comma);
+                InsertCommaAfter(model, node, *previous);
                 ++index;
             }
             continue;
@@ -862,7 +915,7 @@ inline TsNodeSyntax GetTsNodeSyntax(TSNode tsNode) {
         .kind = info.treeKind,
         .tokenKind = info.tokenKind,
         .classes = info.classes,
-        .wrapperRole = info.wrapperRole
+        .wrapperRole = info.wrapperRole,
     };
 }
 

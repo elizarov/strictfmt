@@ -921,13 +921,22 @@ private:
         Merge(result, tokenResult);
     }
 
+    static void AppendTrailingComma(NodeResult& result) {
+        ++result.endColumn;
+        result.endLineHasText = true;
+    }
+
     NodeResult AddToken(NodeResult result, const FormatBreakToken& token) {
         AppendToken(result, token);
         return result;
     }
 
     NodeResults SolveListItemWithSuffixAlternatives(
-        const FormatBreakListItem& listItem, int column, int indentLevel, bool lineHasText
+        const FormatBreakListItem& listItem,
+        int column,
+        int indentLevel,
+        bool lineHasText,
+        bool trailingComma = false
     ) {
         if (listItem.node == nullptr) {
             return {};
@@ -940,6 +949,9 @@ private:
             if (FormatBreakTokenKind(listItem.separator) == PrintTokenKind::Known) {
                 AppendToken(item, listItem.separator);
             }
+            if (trailingComma) {
+                AppendTrailingComma(item);
+            }
             if (IsCommentToken(FormatBreakTokenKind(listItem.trailingComment))) {
                 AppendToken(item, listItem.trailingComment);
             }
@@ -950,7 +962,13 @@ private:
     }
 
     NodeResult
-        SolveListItemWithSuffix(const FormatBreakListItem& listItem, int column, int indentLevel, bool lineHasText)
+        SolveListItemWithSuffix(
+            const FormatBreakListItem& listItem,
+            int column,
+            int indentLevel,
+            bool lineHasText,
+            bool trailingComma = false
+        )
     {
         if (listItem.node != nullptr) {
             std::optional<NodeResult> compact =
@@ -958,6 +976,9 @@ private:
             if (compact) {
                 if (FormatBreakTokenKind(listItem.separator) == PrintTokenKind::Known) {
                     AppendToken(*compact, listItem.separator);
+                }
+                if (trailingComma) {
+                    AppendTrailingComma(*compact);
                 }
                 if (IsCommentToken(FormatBreakTokenKind(listItem.trailingComment))) {
                     AppendToken(*compact, listItem.trailingComment);
@@ -970,7 +991,9 @@ private:
             }
         }
         NodeResult best;
-        for (const NodeResult& item : SolveListItemWithSuffixAlternatives(listItem, column, indentLevel, lineHasText)) {
+        for (const NodeResult& item : SolveListItemWithSuffixAlternatives(
+            listItem, column, indentLevel, lineHasText, trailingComma
+        )) {
             if (Better(item, best)) {
                 best = item;
             }
@@ -1521,8 +1544,13 @@ private:
         );
         for (size_t index = 0; index < node.items.size(); ++index) {
             const FormatBreakListItem& listItem = node.items[index];
-            NodeResult item =
-                SolveListItemWithSuffix(listItem, result.endColumn, result.endIndentLevel, result.endLineHasText);
+            NodeResult item = SolveListItemWithSuffix(
+                listItem,
+                result.endColumn,
+                result.endIndentLevel,
+                result.endLineHasText,
+                node.splitTrailingCommaItem == index
+            );
             Merge(result, item);
             const bool hasNextItem = index + 1 < node.items.size();
             AppendListBreakAfterOptionalComment(
@@ -3122,6 +3150,9 @@ private:
             Merge(result, item);
             if (FormatBreakTokenKind(listItem.separator) == PrintTokenKind::Known) {
                 AppendToken(result, listItem.separator);
+            }
+            if (node.splitTrailingCommaItem == index) {
+                AppendTrailingComma(result);
             }
             if (HasTrailingComment(node, index)) {
                 AppendToken(result, listItem.trailingComment);

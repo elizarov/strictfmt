@@ -70,6 +70,8 @@ deferred closers consume that choice and its selected base indentation. Chain co
 recorded from the selected chain layout before a mandatory block. Mandatory item separators exclude packed split.
 Function-signature parameter-list expansion considers both split forms.
 
+The builder records a comma-separated brace list's terminal comma as layout metadata instead of an ordinary item separator. Full-split candidates price it before a trailing comment; compact and packed candidates omit it. Emission follows that recorded list choice.
+
 Owner/value syntax uses one generic after-owner candidate shape.
 
 A structured macro definition is built as its header owner plus its complete replacement value. Its compact chain candidate is legal only when the whole definition fits on one physical line; all other candidates split after the owner and solve the complete replacement recursively. A replacement parsed as multiple top-level call units is represented by a force-split statement sequence inside that value, so its required unit boundaries compose with the required header boundary without printer inference. The solver's break-line suffix width accounts for text emitted only on taken breaks; structured macros use it for the trailing ` \`, including that physical suffix in overflow cost without making it a break heuristic.

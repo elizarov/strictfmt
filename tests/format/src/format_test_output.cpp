@@ -105,7 +105,7 @@ constexpr auto kFixtureSyntaxKindMappings = std::to_array<SyntaxKindMapping>({
     Tree(SyntaxNodeKind::IncludeRun, "include_run"),
     Tree(SyntaxNodeKind::MacroReplacementList, "macro_replacement_list"),
     Tree(SyntaxNodeKind::Declaration, "declaration", Bit(SyntaxNodeClass::MacroDeclarationFragment)),
-    Tree(SyntaxNodeKind::FieldDeclaration, "field_declaration", Bit(SyntaxNodeClass::MacroDeclarationFragment))
+    Tree(SyntaxNodeKind::FieldDeclaration, "field_declaration", Bit(SyntaxNodeClass::MacroDeclarationFragment)),
 });
 
 constexpr auto kFixtureCommentedSyntaxKindMappings = std::to_array<SyntaxKindMapping>({
@@ -114,7 +114,7 @@ constexpr auto kFixtureCommentedSyntaxKindMappings = std::to_array<SyntaxKindMap
     // tree nodes
 
     Tree(SyntaxNodeKind::TranslationUnit, "translation_unit"),
-    Tree(SyntaxNodeKind::IncludeRun, "include_run")
+    Tree(SyntaxNodeKind::IncludeRun, "include_run"),
 });
 
 class FormattingExample {
@@ -267,7 +267,7 @@ class DeclarationGroupingRules {
         secondDeclarationGroupingValue,
         thirdDeclarationGroupingValue,
         fourthDeclarationGroupingValue,
-        fifthDeclarationGroupingValue
+        fifthDeclarationGroupingValue,
     };
 
     int fieldFollowingIsolatedValues;
@@ -472,7 +472,7 @@ OklchColor NormalizeOklch(
     return OklchColor{
         std::clamp(*lightnessOverrideWithLongName, 0.0, 1.0),
         std::max(0.0, *chromaOverrideWithLongName),
-        std::clamp(*hueOverrideWithLongName, 0.0, 360.0)
+        std::clamp(*hueOverrideWithLongName, 0.0, 360.0),
     };
 }
 
@@ -820,7 +820,7 @@ auto DeferredListNestedLambdaBodies() {
                 [](const auto&) -> std::optional<double> { return std::nullopt; }
             );
         }),
-        .last = Call(first, second)
+        .last = Call(first, second),
     };
 }
 
@@ -848,7 +848,7 @@ void FinalBlockItemWithNestedCommaSuffix() {
 void DesignatedInitializerAssignmentBreak() {
     auto deps = Dependencies{{
         .delivery_corp_client_traits_fetcher =
-            internal::delivery_corp_client_traits::MakeDeliveryCorpClientTraitsFetcher(dependencies)
+            internal::delivery_corp_client_traits::MakeDeliveryCorpClientTraitsFetcher(dependencies),
     }};
     Use(deps);
 }
@@ -866,7 +866,7 @@ auto SplitDesignatedInitializerListAtFieldBoundaries() {
         .first = Convert(first),
         .second = ConvertLongValue(
             secondDesignatedInitializerArgument, designatedInitializerConfiguration, designatedInitializerContext
-        )
+        ),
     };
 }
 
@@ -983,7 +983,7 @@ void TemplatedCallArgumentOverflow() {
         experiments3::CargoPricingBatchedOrderRoutePriceCorrectionWithSpecificExtendedExperimentConfiguration
     >({
         .requirement_names =
-            experiments3::BatchedOrderRoutePriceCorrectionRequirementParamsWithSpecificExtendedConfiguration{}
+            experiments3::BatchedOrderRoutePriceCorrectionRequirementParamsWithSpecificExtendedConfiguration{},
     });
 }
 
@@ -995,11 +995,11 @@ auto CommentAnnotatedAggregateItems() {
                 Second();
                 Third();
             }),
-            .b = value
+            .b = value,
         },
         /*client_tariff_prices=*/ client_tariff_prices,
         /*performer_tariff_prices=*/ performer_tariff_prices,
-        /*client_pricing_rules_exps=*/ client_pricing_rules_exps
+        /*client_pricing_rules_exps=*/ client_pricing_rules_exps,
     };
 }
 
@@ -1508,7 +1508,7 @@ HBITMAP CreateBitmap(BITMAPINFOHEADER header) {
 void AttachCalloutBubble(Callout& callout, LayoutGuideSheetExitSide side) {
     callout.bubbleAttachment = RenderPoint{
         side == LayoutGuideSheetExitSide::Left ? callout.bubbleRect.right : callout.bubbleRect.left,
-        callout.bubbleRect.Center().y
+        callout.bubbleRect.Center().y,
     };
 }
 
@@ -1704,7 +1704,7 @@ void LambdaGeneralityCases(int left, int right) {
             Prepare(value);
             return value + 1;
         },
-        secondVeryLongArgumentName
+        secondVeryLongArgumentName,
     };
     Use(twoParameterLambda, twoCaptureLambda, splitParameterSingleStatementLambda, callbacks);
 }
@@ -1893,10 +1893,10 @@ constexpr FormatTableRow kFormatRows[] = {
         "alpha.metric.row.with.extra.detail.and.column.limit.coverage",
         100,
         200,
-        kPrimaryFlag | kSecondaryFlag | kTertiaryFlag
+        kPrimaryFlag | kSecondaryFlag | kTertiaryFlag,
     },
     {"beta.metric.row.with.extra.detail", 300, 400, kPrimaryFlag | kTertiaryFlag},
-    {"gamma.metric.row", 500, 600, kSecondaryFlag}
+    {"gamma.metric.row", 500, 600, kSecondaryFlag},
 };
 
 constexpr FormatTableRow kInitializerChainRows[] = {{
@@ -1906,7 +1906,7 @@ constexpr FormatTableRow kInitializerChainRows[] = {{
     firstInitializerFlagWithVeryLongName |
         secondInitializerFlagWithVeryLongName |
         thirdInitializerFlagWithVeryLongName |
-        fourthInitializerFlagWithVeryLongName
+        fourthInitializerFlagWithVeryLongName,
 }};
 
 static constexpr OutputPath kOutputPaths[] = {
@@ -1914,15 +1914,15 @@ static constexpr OutputPath kOutputPaths[] = {
         &DiagnosticsOptions::trace,
         &DiagnosticsOptions::tracePath,
         &DiagnosticsSession::tracePath_,
-        kDefaultTraceFileName
+        kDefaultTraceFileName,
     },
     {&DiagnosticsOptions::dump, &DiagnosticsOptions::dumpPath, &DiagnosticsSession::dumpPath_, kDefaultDumpFileName},
     {
         &DiagnosticsOptions::screenshot,
         &DiagnosticsOptions::screenshotPath,
         &DiagnosticsSession::screenshotPath_,
-        kDefaultScreenshotFileName
-    }
+        kDefaultScreenshotFileName,
+    },
 };
 
 void DiagnosticsSession::ResolveOutputPathMember(const OutputPath& outputPath, const FilePath& workingDirectory) {
@@ -1934,7 +1934,7 @@ inline constexpr std::array<ColorDialogControls, 4> kColorDialogControls = {{
     {IDC_LAYOUT_EDIT_COLOR_RED_LABEL, IDC_LAYOUT_EDIT_COLOR_RED_EDIT, IDC_LAYOUT_EDIT_COLOR_RED_SLIDER, "red"},
     {IDC_LAYOUT_EDIT_COLOR_GREEN_LABEL, IDC_LAYOUT_EDIT_COLOR_GREEN_EDIT, IDC_LAYOUT_EDIT_COLOR_GREEN_SLIDER, "green"},
     {IDC_LAYOUT_EDIT_COLOR_BLUE_LABEL, IDC_LAYOUT_EDIT_COLOR_BLUE_EDIT, IDC_LAYOUT_EDIT_COLOR_BLUE_SLIDER, "blue"},
-    {IDC_LAYOUT_EDIT_COLOR_ALPHA_LABEL, IDC_LAYOUT_EDIT_COLOR_ALPHA_EDIT, IDC_LAYOUT_EDIT_COLOR_ALPHA_SLIDER, "alpha"}
+    {IDC_LAYOUT_EDIT_COLOR_ALPHA_LABEL, IDC_LAYOUT_EDIT_COLOR_ALPHA_EDIT, IDC_LAYOUT_EDIT_COLOR_ALPHA_SLIDER, "alpha"},
 }};
 
 int kAlignedAssignment = 1;
@@ -1948,8 +1948,8 @@ using AlignedTrailingCommentTypes = TypeList<  //
 >;
 
 auto kAlignedTrailingCommentRows = RowList{
-    {1, 2},     // first
-    {100, 200}  // second
+    {1, 2},      // first
+    {100, 200},  // second
 };
 
 int kSingleTrailingComment = 0;  // single
@@ -2054,7 +2054,7 @@ void BuildTitlebarTooltipControls() {
         {DashboardTitlebarTooltipControl::EditLayout, editLayoutRect},
         {DashboardTitlebarTooltipControl::Layout, layoutComboRect},
         {DashboardTitlebarTooltipControl::Theme, themeComboRect},
-        {DashboardTitlebarTooltipControl::AppMenu, appMenuRect}
+        {DashboardTitlebarTooltipControl::AppMenu, appMenuRect},
     };
 }
 
@@ -2159,7 +2159,7 @@ void SplitOperatorChainPartsLineByLine() {
         rightValueWithLongName,
         bottomValueWithLongName,
         extraValueWithLongName,
-        finalValueWithLongName
+        finalValueWithLongName,
     };
     const bool loaded = !LoadString(values, DumpKey(historyPrefix, ".series_ref"), history.seriesRef, error) ||
         !LoadDoubleArrayField(values, DumpKey(historyPrefix, ".samples"), history.samples, error) ||
@@ -2260,7 +2260,7 @@ void TrailingListExpansionCases() {
         firstInitializerFlagWithVeryLongName |
             secondInitializerFlagWithVeryLongName |
             thirdInitializerFlagWithVeryLongName |
-            fourthInitializerFlagWithVeryLongName
+            fourthInitializerFlagWithVeryLongName,
     });
     UseTrailingListExpansion(firstValue, secondValue, conditionWithLongName ? firstValueWithLongName : BuildValue(
         firstArgumentWithLongName, secondArgumentWithLongName, thirdArgumentWithLongName, fourthArgumentWithLongName
@@ -2415,14 +2415,14 @@ void BuildTrianglePoints(const RECT& rect, const Geometry& geometry) {
     POINT points[] = {
         {
             rect.left + static_cast<LONG>(std::lround(geometry.leftX)),
-            rect.top + static_cast<LONG>(std::lround(geometry.topY))
+            rect.top + static_cast<LONG>(std::lround(geometry.topY)),
         }, {
             rect.left + static_cast<LONG>(std::lround(geometry.rightX)),
-            rect.top + static_cast<LONG>(std::lround(geometry.topY))
+            rect.top + static_cast<LONG>(std::lround(geometry.topY)),
         }, {
             rect.left + static_cast<LONG>(std::lround(geometry.bottomX)),
-            rect.top + static_cast<LONG>(std::lround(geometry.bottomY))
-        }
+            rect.top + static_cast<LONG>(std::lround(geometry.bottomY)),
+        },
     };
     Use(points);
 }
@@ -2478,13 +2478,13 @@ void RegisterStaticEditAnchor(
         .key = LayoutEditAnchorKey{
             LayoutEditWidgetIdentity{widget.cardId, widget.editCardId, widget.nodePath},
             WidgetHost::LayoutEditParameter::MetricListBarHeight,
-            rowIndex
+            rowIndex,
         },
         .targetRect = barRect,
         .anchorRect = anchorRect,
         .shape = AnchorShape::Circle,
         .value = config.barHeight,
-        .drag = LayoutEditAnchorDrag::AxisDelta(AnchorDragAxis::Horizontal, RenderPoint{anchorCenterX, anchorCenterY})
+        .drag = LayoutEditAnchorDrag::AxisDelta(AnchorDragAxis::Horizontal, RenderPoint{anchorCenterX, anchorCenterY}),
     });
 }
 
@@ -2496,7 +2496,7 @@ void AddThemeColorLeaf(
         sectionNode.label,
         token,
         leafNode.descriptionKey,
-        configschema::ValueFormat::ColorHex
+        configschema::ValueFormat::ColorHex,
     });
 }
 
@@ -3150,7 +3150,7 @@ constexpr BracedMacroInitializerStressEntry BracedMacroInitializerStressValues[]
     BRACED_MACRO_INITIALIZER_STRESS("field15", BracedMacroInitializerStressKind::Value, source.path15),
     BRACED_MACRO_INITIALIZER_STRESS("field16", BracedMacroInitializerStressKind::Value, source.path16),
     BRACED_MACRO_INITIALIZER_STRESS("field17", BracedMacroInitializerStressKind::Value, source.path17),
-    BRACED_MACRO_INITIALIZER_STRESS("field18", BracedMacroInitializerStressKind::Value, source.path18)
+    BRACED_MACRO_INITIALIZER_STRESS("field18", BracedMacroInitializerStressKind::Value, source.path18),
 };
 
 int DelimiterStackThresholdGenerality(
@@ -3207,12 +3207,12 @@ void DelimiterBoundaryCoalescingGenerality() {
         {
             firstBraceElementValueForCoalescingGenerality,
             secondBraceElementValueForCoalescingGenerality,
-            thirdBraceElementValueForCoalescing
+            thirdBraceElementValueForCoalescing,
         }, {
             fourthBraceElementValueForCoalescingGenerality,
             fifthBraceElementValueForCoalescingGenerality,
-            sixthBraceElementValueForCoalescing
-        }
+            sixthBraceElementValueForCoalescing,
+        },
     };
     int parenBoundaryValues[] = {
         (
@@ -3223,7 +3223,7 @@ void DelimiterBoundaryCoalescingGenerality() {
             fourthParenElementValueForCoalescingGenerality +
             fifthParenElementValueForCoalescingGenerality +
             sixthParenElementValueForCoalescing
-        )
+        ),
     };
     OuterAngleContainerForCoalescingGenerality<
         FirstAngleElementTemplateForCoalescingGenerality<
@@ -3465,7 +3465,7 @@ struct FriendOperators {
 
 int CommentedValues[] = {
     /** one */
-    1
+    1,
 };
 
 void TrailingBlockComment() {
@@ -3541,7 +3541,7 @@ auto ExpansionCostInitializerList() {
         secondLongValue,
         thirdLongValue,
         fourthLongValueWithSuffix,
-        BuildFinalValue(firstArgument, secondArgument)
+        BuildFinalValue(firstArgument, secondArgument),
     };
 }
 
@@ -3619,7 +3619,7 @@ auto SingleLambdaInitializerKeepsTemplateName() {
         [used_tariff, request, avalon_tags_fut, opt_edges_fut, deps = deps_] {
             Prepare();
             return Fetch();
-        }
+        },
     };
 }
 
@@ -3654,7 +3654,7 @@ void FinalLambdaDiscountExamples() {
     }};
     CallbackConfig commented{
         request.cargo_options(),
-        [&](const auto& cargo_options) { builder[fields::kCargoOptions] = json::Serialize(cargo_options); }
+        [&](const auto& cargo_options) { builder[fields::kCargoOptions] = json::Serialize(cargo_options); },
         /* callback */
     };
     optional::Map(
@@ -3672,6 +3672,14 @@ void FinalLambdaDiscountExamples() {
         );
     });
     auto callback = [&](const auto& cargo_options) { builder[fields::kCargoOptions] = json::Serialize(cargo_options); };
+}
+
+void BraceListTrailingCommaLayout() {
+    auto compact = BraceValues{first, second};
+    auto fullSplit = BraceValues{
+        firstValueWithAnExtremelyLongNameForBraceListTrailingComma,
+        secondValueWithAnExtremelyLongNameForBraceListTrailingComma,
+    };
 }
 
 namespace post_namespace_first_fixture {
