@@ -3942,7 +3942,10 @@ private:
                     NewLine(ShouldContinueMacroLine(token, next));
                     return;
                 }
-                if (token.parentKind == SyntaxNodeKind::RequiresClause && token.inTemplateDeclaration) {
+                if (
+                    token.parentKind == SyntaxNodeKind::RequiresClause &&
+                    token.grandParentKind == SyntaxNodeKind::TemplateDeclaration
+                ) {
                     FlushPendingTokens();
                     NewLine(ShouldContinueMacroLine(token, next));
                 }
@@ -3993,11 +3996,15 @@ private:
                     return;
                 }
                 BufferToken(token);
-                if (token.parentKind == SyntaxNodeKind::TemplateParameterList && token.inTemplateDeclaration && !(
-                    next != nullptr &&
-                    next->kind == PrintTokenKind::Known &&
-                    next->syntaxKind == SyntaxNodeKind::KeywordRequires
-                )) {
+                if (
+                    token.parentKind == SyntaxNodeKind::TemplateParameterList &&
+                    token.grandParentKind == SyntaxNodeKind::TemplateDeclaration &&
+                    !(
+                        next != nullptr &&
+                        next->kind == PrintTokenKind::Known &&
+                        next->syntaxKind == SyntaxNodeKind::KeywordRequires
+                    )
+                ) {
                     FlushPendingTokens();
                     NewLine(ShouldContinueMacroLine(token, next));
                 }

@@ -3781,3 +3781,30 @@ auto BlankLinesBetweenMultilineListItems() {
         value
     );
 }
+
+template <typename R>
+auto GenericLambdaInTemplate() {
+    return std::visit(
+        []<typename T>(const T& value) -> std::optional<R> {
+            if constexpr (std::is_same_v<T, R>) {
+                return value;
+            }
+            return std::nullopt;
+        },
+        variant
+    );
+}
+
+template <typename R>
+auto ConstrainedGenericLambdaInTemplate() {
+    return Visit(
+        []<typename T>(T value) requires(Accepts<T>) {
+            Prepare(value);
+            return value;
+        },
+        value
+    );
+}
+
+template <template <typename> class Container, typename Value>
+struct TemplateTemplateParameterOwner;
