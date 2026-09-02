@@ -2544,3 +2544,24 @@ void RangeForExpressionSpacing() {
     for (const auto& item : ::Items()) { Use(item); }
     auto value = flag ? (left) : (right);
 }
+
+void PreserveListBlankLines() {
+    Consume(first,
+
+
+        second, third);
+    auto values = Values{first,
+
+        second};
+    Consume([] { Prepare(); Finish(); },
+
+        value);
+}
+
+void PreserveParameterBlankLines(int first,
+
+    int second);
+
+struct PreserveBaseListBlankLines : First,
+
+    Second {};

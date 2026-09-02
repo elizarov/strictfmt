@@ -54,7 +54,7 @@ struct Key {
 - Preserve the source [line-ending style](glossary.md#line-ending-style). For mixed line endings, use the current platform default.
 - Use spaces for indentation and never emit tabs. `IndentWidth` in [config.md](config.md) selects the number of spaces per indentation level.
 - Preserve comments in source order. A trailing comment stays trailing only when it was trailing in source. A standalone comment stays standalone.
-- Preserve a source blank-line separator between declarations or statements at the same structural level, collapsing each run to one line.
+- Preserve source blank-line separators between declarations, statements, or list items at the same structural level, collapsing each run to one line.
 - Do not emit empty lines at the beginning or end of a file or block.
 - Apply the structured and raw replacement whitespace rules specified in [macro.md](macro.md).
 
@@ -347,7 +347,7 @@ const char* messages[] = {
 
 ## Source-Controlled Expansion
 
-A trailing comment on a list item or chain part, or a standalone comment between them, forces split form. A blank line between list items also forces split form, but is not retained as an empty output line. Standalone chain comments align with the following link.
+A trailing comment on a list item or chain part, or a standalone comment between them, forces split form. A blank line between list items also forces split form. Standalone chain comments align with the following link.
 
 Use end-of-line comments when expansion is essential for readability.
 

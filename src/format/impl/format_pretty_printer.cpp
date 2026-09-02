@@ -1182,6 +1182,7 @@ private:
     std::string output_;
     std::vector<TrailingCommentPosition> trailingComments_;
     std::vector<PrintToken> pendingTokens_;
+    bool pendingSourceBlankLine_ = false;
     int indentLevel_ = 0;
     bool atLineStart_ = true;
     bool lineHasText_ = false;
@@ -1808,8 +1809,8 @@ private:
         return closingKind == SyntaxNodeKind::Unknown ? nullptr : DirectTokenChild(node, closingKind);
     }
 
-    static bool IsListComma(const PrintToken& token, const SyntaxNode* list) {
-        if (token.kind != PrintTokenKind::Known || token.syntaxKind != SyntaxNodeKind::Comma || token.node == nullptr) {
+    static bool ListOwnsToken(const SyntaxNode* list, const PrintToken& token) {
+        if (token.node == nullptr) {
             return false;
         }
         for (const SyntaxNode* parent = token.node->parent; parent != nullptr; parent = parent->parent) {
@@ -1821,6 +1822,12 @@ private:
             }
         }
         return false;
+    }
+
+    static bool IsListComma(const PrintToken& token, const SyntaxNode* list) {
+        return token.kind == PrintTokenKind::Known &&
+            token.syntaxKind == SyntaxNodeKind::Comma &&
+            ListOwnsToken(list, token);
     }
 
     static bool ClosesContainingDelimiter(const PrintToken& token, const PrintToken& next) {
@@ -2261,6 +2268,9 @@ private:
     }
 
     bool CanFlushPendingTokensCompact(const FormatBreakModelContext& context) const {
+        if (pendingSourceBlankLine_) {
+            return false;
+        }
         if (!context.virtualDelimiters.empty() || (
             context.requiredChainBreakOperators != nullptr &&
             std::any_of(pendingTokens_.begin(), pendingTokens_.end(), [&](const PrintToken& token) {
@@ -3161,6 +3171,7 @@ private:
         }
         emittingMacroDefinition_ = previousEmittingMacroDefinition;
         pendingTokens_.clear();
+        pendingSourceBlankLine_ = false;
         if (pendingIndentRestoreAfterFlush_) {
             indentLevel_ = *pendingIndentRestoreAfterFlush_;
             pendingIndentRestoreAfterFlush_.reset();
@@ -3644,9 +3655,6 @@ private:
             return false;
         }
         const SyntaxNode* level = token.node->parent;
-        if (!IsStatementItemContainer(level->kind) && !SyntaxNodeHasClass(*level, SyntaxNodeClass::CompoundBlock)) {
-            return false;
-        }
         const SyntaxNode* previousItem = DirectChildAtLevel(previous->node, level);
         const SyntaxNode* nextItem = DirectChildAtLevel(next->node, level);
         if (previousItem == nullptr || nextItem == nullptr || previousItem == nextItem) {
@@ -3680,12 +3688,24 @@ private:
         PrepareBareMacroItemBoundary(rawPrevious, token);
         PrepareMacroBoundary(rawPrevious, token);
         if (token.kind == PrintTokenKind::BlankLine) {
+            pendingSourceBlankLine_ = pendingSourceBlankLine_ || !pendingTokens_.empty();
             const PrintToken* sourcePrevious =
                 rawPrevious != nullptr && rawPrevious->kind != PrintTokenKind::BlankLine ? rawPrevious : previous;
             const PrintToken* sourceNext =
                 rawNext != nullptr && rawNext->kind != PrintTokenKind::BlankLine ? rawNext : next;
             if (ShouldPreserveSourceBlankLine(token, sourcePrevious, sourceNext)) {
+                const bool continuesSplitList = std::any_of(
+                    mandatoryBlockSplitListContexts_.begin(),
+                    mandatoryBlockSplitListContexts_.end(),
+                    [&](const MandatoryBlockSplitListContext& context) { return ListOwnsToken(context.list, token); }
+                ) || std::any_of(
+                    preprocessorSplitListContexts_.begin(),
+                    preprocessorSplitListContexts_.end(),
+                    [&](const PreprocessorSplitListContext& context) { return ListOwnsToken(context.list, token); }
+                );
+                const std::optional<int> pendingIndent = continuesSplitList ? pendingIndentLevel_ : std::nullopt;
                 BlankLine();
+                pendingIndentLevel_ = pendingIndent;
             }
             return;
         }
