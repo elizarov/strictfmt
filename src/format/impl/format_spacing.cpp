@@ -782,6 +782,13 @@ bool FormatTokenNeedsSpace(const PrintToken* previous, const PrintToken& current
     if (IsAccessKeyword(*previous) && IsWordLike(current)) {
         return true;
     }
+    if (prev == SyntaxNodeKind::Colon) {
+        if (previous->parentKind == SyntaxNodeKind::SpliceSpecifier) {
+            return false;
+        }
+        return current.parentKind != SyntaxNodeKind::CaseStatement &&
+            !PrintTokenSyntaxHasClass(*previous, SyntaxNodeClass::AccessKeyword);
+    }
     if (cur == SyntaxNodeKind::LeftParen) {
         if (
             previous->kind == PrintTokenKind::Known &&
@@ -821,7 +828,6 @@ bool FormatTokenNeedsSpace(const PrintToken* previous, const PrintToken& current
             SyntaxNodeKindHasClass(prev, SyntaxNodeClass::AssignmentOperator) ||
             prev == SyntaxNodeKind::Comma ||
             prev == SyntaxNodeKind::Semicolon ||
-            (prev == SyntaxNodeKind::Colon && previous->parentKind == SyntaxNodeKind::ConditionalExpression) ||
             prev == SyntaxNodeKind::Question
         ))) {
             return true;
@@ -834,8 +840,7 @@ bool FormatTokenNeedsSpace(const PrintToken* previous, const PrintToken& current
                 SyntaxNodeKindHasClass(prev, SyntaxNodeClass::AssignmentOperator) ||
                 prev == SyntaxNodeKind::Comma ||
                 prev == SyntaxNodeKind::KeywordTypename ||
-                prev == SyntaxNodeKind::Question ||
-                (prev == SyntaxNodeKind::Colon && previous->parentKind == SyntaxNodeKind::ConditionalExpression)
+                prev == SyntaxNodeKind::Question
             );
         }
         if (current.parentKind == SyntaxNodeKind::StructuredBindingDeclarator) {
@@ -845,8 +850,7 @@ bool FormatTokenNeedsSpace(const PrintToken* previous, const PrintToken& current
             return previous->kind == PrintTokenKind::Known && (
                 SyntaxNodeKindHasClass(prev, SyntaxNodeClass::AssignmentOperator) ||
                 prev == SyntaxNodeKind::Comma ||
-                prev == SyntaxNodeKind::Question ||
-                (prev == SyntaxNodeKind::Colon && previous->parentKind == SyntaxNodeKind::ConditionalExpression)
+                prev == SyntaxNodeKind::Question
             );
         }
         return false;
@@ -859,8 +863,7 @@ bool FormatTokenNeedsSpace(const PrintToken* previous, const PrintToken& current
             return previous->kind == PrintTokenKind::Known && (
                 SyntaxNodeKindHasClass(prev, SyntaxNodeClass::AssignmentOperator) ||
                 prev == SyntaxNodeKind::Comma ||
-                prev == SyntaxNodeKind::Question ||
-                prev == SyntaxNodeKind::Colon
+                prev == SyntaxNodeKind::Question
             );
         }
         if (
@@ -889,13 +892,6 @@ bool FormatTokenNeedsSpace(const PrintToken* previous, const PrintToken& current
     }
     if (cur == SyntaxNodeKind::Question) {
         return true;
-    }
-    if (prev == SyntaxNodeKind::Colon) {
-        if (previous->parentKind == SyntaxNodeKind::SpliceSpecifier) {
-            return false;
-        }
-        return current.parentKind != SyntaxNodeKind::CaseStatement &&
-            !PrintTokenSyntaxHasClass(*previous, SyntaxNodeClass::AccessKeyword);
     }
     if (cur == SyntaxNodeKind::Less && prev == SyntaxNodeKind::KeywordTemplate) {
         return true;

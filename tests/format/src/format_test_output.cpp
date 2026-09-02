@@ -3808,3 +3808,19 @@ auto ConstrainedGenericLambdaInTemplate() {
 
 template <template <typename> class Container, typename Value>
 struct TemplateTemplateParameterOwner;
+
+void RangeForExpressionSpacing() {
+    for (const auto& item : (*items)->values) {
+        Use(item);
+    }
+    for (const auto& item : [](auto source) { return source; }(items)) {
+        Use(item);
+    }
+    for (int item : {1, 2, 3}) {
+        Use(item);
+    }
+    for (const auto& item : ::Items()) {
+        Use(item);
+    }
+    auto value = flag ? (left) : (right);
+}
