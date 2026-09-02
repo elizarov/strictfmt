@@ -347,7 +347,7 @@ const char* messages[] = {
 
 ## Source-Controlled Expansion
 
-A trailing comment on a list item or chain part, or a standalone comment between them, forces split form. A blank line between list items also forces split form. Standalone chain comments align with the following link.
+A trailing comment on a list item or chain part, or a standalone comment between them, forces split form. A blank line between list items also forces split form, but is not retained as an empty output line. Standalone chain comments align with the following link.
 
 Use end-of-line comments when expansion is essential for readability.
 

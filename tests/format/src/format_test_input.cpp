@@ -2498,3 +2498,20 @@ void ChainedLambdaInDesignatedInitializer() {
             .transform([](const Price& price) { return Format(price); }),
     };
 }
+
+auto BlankLinesBetweenMultilineListItems() {
+    return visit(
+        Overloaded{
+            [](const A& a) {
+                Check(a);
+                return a.value;
+            },
+
+            [](const B& b) {
+                Check(b);
+                return b.value;
+            },
+        },
+        value
+    );
+}
