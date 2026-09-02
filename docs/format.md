@@ -397,7 +397,19 @@ Functions and lambdas share body layout: keep a single-statement body on the hea
 int Next(int value) { return value + 1; }
 ```
 
-A function signature may break after the complete return type, indenting the name one level, before breaking inside that type. Split parameters may keep the return type and name together when the prefix fits.
+When a qualified type and its declarator need separation, first break after the complete type, including declarator `*` or `&`, and indent the declarator one level. This boundary is preferred to every break inside the type, including template-list and non-leading `::` breaks. Type-internal breaks are available when the complete type does not fit by itself.
+
+<!-- .cpp-format
+ColumnLimit: 80
+-->
+```cpp
+struct Dependencies {
+    const ::loans::storages::CheckoutRemindersStorageComponent&
+        checkout_reminders_storage_component_;
+};
+```
+
+A function signature uses the same boundary between its return type and name. Split parameters may keep the return type and name together when the prefix fits.
 
 <!-- .cpp-format
 ColumnLimit: 40
@@ -568,9 +580,11 @@ Remaining ties prefer compact choices in source order.
 
 The solver builds one tree per formatted segment. Raw depth starts at zero and increases at every construction layer. The dump retains tokens, decision nodes (`*`), and some grouping nodes; the trees below also show collapsed syntax layers (`-`) so raw depth can be counted.
 
+##### Surcharges and Discounts
+
 Surcharges and discounts express the relative cohesion of syntax constructs, so optimization favors the expected break locations.
 
-Each surcharge or discount recursively adjusts every decision in its subtree and changes neither indentation nor permitted layouts.
+Each adjustment changes only the effective costs of its specified decisions, never their indentation or permitted layouts. An adjustment applies recursively to a subtree where stated; a targeted adjustment changes only the named decisions.
 
 `effective = raw + surcharge - discount`. A decision below is annotated `[raw + surcharge - discount = effective]`.
 

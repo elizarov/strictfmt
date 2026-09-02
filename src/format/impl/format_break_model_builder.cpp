@@ -574,7 +574,11 @@ private:
         if (itemChildren.empty()) {
             return;
         }
-        FormatBreakNode* item = BuildDelimitedAssignmentItem(itemChildren, depth + 1);
+        const bool parameter = FormatBreakTokenValue(open).parentKind == SyntaxNodeKind::ParameterList;
+        FormatBreakNode* item = BuildDelimitedAssignmentItem(itemChildren, depth + 1, parameter);
+        if (item == nullptr && parameter) {
+            item = BuildTypedDeclarator(itemChildren, depth + 1, true);
+        }
         if (item == nullptr) {
             item = BuildSequenceFromPointers(itemChildren, depth + 1);
         }
@@ -846,11 +850,48 @@ private:
 
     static void NormalizeCallablePrefixBreakDepth(FormatBreakNode& prefix, const FormatBreakNode& declarator) {
         const std::optional<int> parameterDepth = FirstParameterListBreakDepth(declarator);
+        if (parameterDepth) {
+            NormalizePrefixBreakDepth(prefix, *parameterDepth);
+        }
+    }
+
+    static void NormalizePrefixBreakDepth(FormatBreakNode& prefix, int competingDepth) {
         const std::optional<int> prefixDepth = MinimumStructuralBreakDepth(prefix);
-        if (!parameterDepth || !prefixDepth || *prefixDepth > *parameterDepth) {
+        if (!prefixDepth || *prefixDepth > competingDepth) {
             return;
         }
-        ShiftStructuralDepth(prefix, *parameterDepth + 1 - *prefixDepth);
+        ShiftStructuralDepth(prefix, competingDepth + 1 - *prefixDepth);
+    }
+
+    static bool IsQualificationChain(const FormatBreakNode& node) {
+        return node.kind == FormatBreakNodeKind::Chain &&
+            node.chainKind == FormatBreakChainKind::AfterOperator &&
+            !node.operators.empty() &&
+            std::all_of(node.operators.begin(), node.operators.end(), [](const FormatBreakToken& token) {
+                return FormatBreakTokenSyntaxKind(token) == SyntaxNodeKind::ColonColon;
+            });
+    }
+
+    static bool ContainsQualificationBreak(const FormatBreakNode& node) {
+        if (IsQualificationChain(node)) {
+            return true;
+        }
+        for (const FormatBreakNode* child : node.children) {
+            if (child != nullptr && ContainsQualificationBreak(*child)) {
+                return true;
+            }
+        }
+        for (const FormatBreakListItem& item : node.items) {
+            if (item.node != nullptr && ContainsQualificationBreak(*item.node)) {
+                return true;
+            }
+        }
+        for (const FormatBreakNode* operand : node.operands) {
+            if (operand != nullptr && ContainsQualificationBreak(*operand)) {
+                return true;
+            }
+        }
+        return false;
     }
 
     static void MarkBodyHeaderSplitAtParentIndentWhenLineStarts(FormatBreakNode& node) {
@@ -1421,6 +1462,21 @@ private:
                 return signature;
             }
         }
+        if (
+            node.kind != SyntaxNodeKind::Declaration &&
+            node.kind != SyntaxNodeKind::FunctionDefinition &&
+            SyntaxNodeHasLocalClass(node, SyntaxNodeClass::DeclarationNode)
+        ) {
+            if (auto signature = BuildQualifiedFunctionSignature(node, depth)) {
+                return signature;
+            }
+        }
+        if (SyntaxNodeHasLocalClass(node, SyntaxNodeClass::DeclarationNode)) {
+            ConstSyntaxChildList children(node.children.begin(), node.children.end());
+            if (auto declaration = BuildTypedDeclarator(children, depth, true)) {
+                return declaration;
+            }
+        }
         if (node.kind == SyntaxNodeKind::LambdaExpression) {
             if (auto header = BuildLambdaBodyHeader(node, depth)) {
                 return header;
@@ -1890,7 +1946,7 @@ private:
             return nullptr;
         }
 
-        FormatBreakNode* header = BuildFunctionSignature(node, depth + 1, *bodyIndex);
+        FormatBreakNode* header = BuildFunctionSignature(node, depth + 1, *bodyIndex, false);
         if (header == nullptr) {
             header = BuildSequenceFromChildren(node.children, 0, *bodyIndex, depth + 1);
         }
@@ -1971,7 +2027,12 @@ private:
     }
 
     FormatBreakNode* BuildNestedFunctionSignature(
-        const SyntaxNode& node, size_t declaratorIndex, size_t functionDeclaratorIndex, int depth, size_t end
+        const SyntaxNode& node,
+        size_t declaratorIndex,
+        size_t functionDeclaratorIndex,
+        int depth,
+        size_t end,
+        bool requireQualifiedReturnType
     ) {
         const SyntaxNode* wrapper = node.children[declaratorIndex];
         if (wrapper == nullptr || !ContainsSelected(*wrapper->children[functionDeclaratorIndex])) {
@@ -2000,7 +2061,7 @@ private:
         FormatBreakNode* declarator = BuildSequenceFromChildren(
             wrapper->children, functionDeclaratorIndex, functionDeclaratorIndex + 1, depth + 1
         );
-        if (!returnType || !declarator) {
+        if (!returnType || !declarator || (requireQualifiedReturnType && !ContainsQualificationBreak(*returnType))) {
             return nullptr;
         }
 
@@ -2021,7 +2082,9 @@ private:
         return signature;
     }
 
-    FormatBreakNode* BuildFunctionSignature(const SyntaxNode& node, int depth, size_t end) {
+    FormatBreakNode*
+        BuildFunctionSignature(const SyntaxNode& node, int depth, size_t end, bool requireQualifiedReturnType)
+    {
         std::optional<size_t> declaratorIndex;
         std::optional<size_t> nestedFunctionDeclaratorIndex;
         for (size_t index = 0; index < end; ++index) {
@@ -2053,7 +2116,9 @@ private:
             }
         }
         if (nestedFunctionDeclaratorIndex) {
-            return BuildNestedFunctionSignature(node, *declaratorIndex, *nestedFunctionDeclaratorIndex, depth, end);
+            return BuildNestedFunctionSignature(
+                node, *declaratorIndex, *nestedFunctionDeclaratorIndex, depth, end, requireQualifiedReturnType
+            );
         }
         if (!ContainsSelected(*node.children[*declaratorIndex])) {
             return nullptr;
@@ -2062,7 +2127,7 @@ private:
         FormatBreakNode* returnType = BuildSequenceFromChildren(node.children, 0, *declaratorIndex, depth + 1);
         FormatBreakNode* declarator =
             BuildSequenceFromChildren(node.children, *declaratorIndex, *declaratorIndex + 1, depth + 1);
-        if (!returnType || !declarator) {
+        if (!returnType || !declarator || (requireQualifiedReturnType && !ContainsQualificationBreak(*returnType))) {
             return nullptr;
         }
 
@@ -2084,7 +2149,11 @@ private:
     }
 
     FormatBreakNode* BuildFunctionSignature(const SyntaxNode& node, int depth) {
-        return BuildFunctionSignature(node, depth, node.children.size());
+        return BuildFunctionSignature(node, depth, node.children.size(), false);
+    }
+
+    FormatBreakNode* BuildQualifiedFunctionSignature(const SyntaxNode& node, int depth) {
+        return BuildFunctionSignature(node, depth, node.children.size(), true);
     }
 
     static bool IsDirectInitializedDeclarator(const SyntaxNode& node) {
@@ -2116,6 +2185,122 @@ private:
     static bool IsAssignmentOperatorNode(const SyntaxNode& node) {
         return SyntaxNodeKindHasClass(node.kind, SyntaxNodeClass::Known) &&
             SyntaxNodeKindHasClass(node.kind, SyntaxNodeClass::AssignmentOperator);
+    }
+
+    static bool IsSplittableDeclaratorReference(const SyntaxNode& node) {
+        return SyntaxNodeHasLocalClass(node, SyntaxNodeClass::DeclaratorReferenceParent) &&
+            node.kind != SyntaxNodeKind::MemberPointerDeclarator;
+    }
+
+    bool SplitDeclaratorReference(
+        const SyntaxNode& node, ConstSyntaxChildList& typeChildren, ConstSyntaxChildList& declaratorChildren
+    ) const {
+        if (!IsSplittableDeclaratorReference(node)) {
+            return false;
+        }
+        std::optional<size_t> targetIndex;
+        for (size_t index = node.children.size(); index > 0; --index) {
+            const SyntaxNode* child = node.children[index - 1];
+            if (
+                child != nullptr &&
+                ContainsSelected(*child) &&
+                !SyntaxNodeKindHasClass(child->kind, SyntaxNodeClass::Trivia)
+            ) {
+                targetIndex = index - 1;
+                break;
+            }
+        }
+        if (!targetIndex) {
+            return false;
+        }
+        for (size_t index = 0; index < *targetIndex; ++index) {
+            if (node.children[index] != nullptr && ContainsSelected(*node.children[index])) {
+                typeChildren.push_back(node.children[index]);
+            }
+        }
+        const SyntaxNode* target = node.children[*targetIndex];
+        if (target == nullptr) {
+            return false;
+        }
+        if (IsSplittableDeclaratorReference(*target)) {
+            if (!SplitDeclaratorReference(*target, typeChildren, declaratorChildren)) {
+                return false;
+            }
+        } else {
+            declaratorChildren.push_back(target);
+        }
+        for (size_t index = *targetIndex + 1; index < node.children.size(); ++index) {
+            if (node.children[index] != nullptr && ContainsSelected(*node.children[index])) {
+                declaratorChildren.push_back(node.children[index]);
+            }
+        }
+        return !typeChildren.empty() && !declaratorChildren.empty();
+    }
+
+    FormatBreakNode* BuildTypedDeclarator(const ConstSyntaxChildList& children, int depth, bool allowDirectDeclarator) {
+        if (
+            std::any_of(children.begin(), children.end(), [](const SyntaxNode* child) {
+                return child != nullptr && IsAssignmentOperatorNode(*child);
+            })
+        ) {
+            return nullptr;
+        }
+        std::optional<size_t> declaratorIndex;
+        bool wrappedDeclarator = false;
+        for (size_t index = children.size(); index > 0; --index) {
+            const SyntaxNode* child = children[index - 1];
+            if (child == nullptr || !ContainsSelected(*child)) {
+                continue;
+            }
+            if (IsSplittableDeclaratorReference(*child)) {
+                declaratorIndex = index - 1;
+                wrappedDeclarator = true;
+                break;
+            }
+            if (
+                allowDirectDeclarator &&
+                (child->kind == SyntaxNodeKind::Identifier || child->kind == SyntaxNodeKind::FunctionDeclarator)
+            ) {
+                declaratorIndex = index - 1;
+                break;
+            }
+        }
+        if (!declaratorIndex || *declaratorIndex == 0) {
+            return nullptr;
+        }
+
+        ConstSyntaxChildList typeChildren;
+        ConstSyntaxChildList declaratorChildren;
+        for (size_t index = 0; index < *declaratorIndex; ++index) {
+            if (children[index] != nullptr && ContainsSelected(*children[index])) {
+                typeChildren.push_back(children[index]);
+            }
+        }
+        if (wrappedDeclarator) {
+            if (!SplitDeclaratorReference(*children[*declaratorIndex], typeChildren, declaratorChildren)) {
+                return nullptr;
+            }
+        } else {
+            declaratorChildren.push_back(children[*declaratorIndex]);
+        }
+        for (size_t index = *declaratorIndex + 1; index < children.size(); ++index) {
+            if (children[index] != nullptr && ContainsSelected(*children[index])) {
+                declaratorChildren.push_back(children[index]);
+            }
+        }
+
+        FormatBreakNode* type = BuildSequenceFromPointers(typeChildren, depth + 1);
+        FormatBreakNode* declarator = BuildSequenceFromPointers(declaratorChildren, depth + 1);
+        if (type == nullptr || declarator == nullptr) {
+            return nullptr;
+        }
+        if (!ContainsQualificationBreak(*type)) {
+            return nullptr;
+        }
+        auto typedDeclarator = MakeNode(FormatBreakNodeKind::Chain, depth);
+        typedDeclarator->operands = StoreNodePointers({type, declarator});
+        typedDeclarator->operators = StoreTokens({{}});
+        return typedDeclarator;
     }
 
     FormatBreakNode* BuildCommaSeparatedDeclaration(const SyntaxNode& node, int depth) {
@@ -2234,7 +2419,10 @@ private:
 
         auto chain = MakeNode(FormatBreakNodeKind::Chain, depth);
         chain->declarationValueOwner = &node;
-        FormatBreakNode* left = BuildSequenceFromPointers(leftChildren, depth + 1);
+        FormatBreakNode* left = BuildTypedDeclarator(leftChildren, depth + 1, true);
+        if (left == nullptr) {
+            left = BuildSequenceFromPointers(leftChildren, depth + 1);
+        }
         FormatBreakNode* right =
             BuildSequenceFromChildren(declarator.children, *operatorIndex + 1, declarator.children.size(), depth + 1);
         if (right != nullptr) {
@@ -2753,7 +2941,14 @@ private:
             return chain;
         }
 
-        FormatBreakNode* left = BuildSequenceFromChildren(node.children, 0, *opIndex, depth + 1);
+        FormatBreakNode* left = nullptr;
+        if (node.kind == SyntaxNodeKind::FieldDeclaration) {
+            ConstSyntaxChildList leftChildren(node.children.begin(), node.children.begin() + *opIndex);
+            left = BuildTypedDeclarator(leftChildren, depth + 1, true);
+        }
+        if (left == nullptr) {
+            left = BuildSequenceFromChildren(node.children, 0, *opIndex, depth + 1);
+        }
         FormatBreakNode* right =
             BuildSequenceFromChildren(node.children, *opIndex + 1, node.children.size(), depth + 1);
         if (right != nullptr) {
@@ -2840,7 +3035,9 @@ private:
         return BuildBinaryOrAssignmentExpression(node, depth);
     }
 
-    FormatBreakNode* BuildDelimitedAssignmentItem(const ConstSyntaxChildList& children, int depth) {
+    FormatBreakNode*
+        BuildDelimitedAssignmentItem(const ConstSyntaxChildList& children, int depth, bool typedDeclarator)
+    {
         std::optional<size_t> operatorIndex;
         std::optional<FormatBreakToken> op;
         for (size_t index = 0; index < children.size(); ++index) {
@@ -2863,7 +3060,10 @@ private:
 
         ConstSyntaxChildList leftChildren(children.begin(), children.begin() + *operatorIndex);
         ConstSyntaxChildList rightChildren(children.begin() + *operatorIndex + 1, children.end());
-        FormatBreakNode* left = BuildSequenceFromPointers(leftChildren, depth + 1);
+        FormatBreakNode* left = typedDeclarator ? BuildTypedDeclarator(leftChildren, depth + 1, true) : nullptr;
+        if (left == nullptr) {
+            left = BuildSequenceFromPointers(leftChildren, depth + 1);
+        }
         FormatBreakNode* right = BuildSequenceFromPointers(rightChildren, depth + 1);
         if (left == nullptr || right == nullptr) {
             return nullptr;

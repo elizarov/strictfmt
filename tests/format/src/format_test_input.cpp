@@ -642,6 +642,14 @@ int MemberTemplate<FirstTemplateArgumentWithLongName,SecondTemplateArgumentWithL
 using CompactMemberPointer=int Object::*;
 int Object::*compactMember;
 
+struct QualifiedTypeDeclaratorBreaks {
+const ::loans::storages::CheckoutRemindersStorageComponent& loan_checkout_reminders_subscriptions_storage_component_;
+virtual yango_wallet::agreements::AgreementSignEntry InsertAgreementWithAnIntentionallyLongNameThatRequiresBreakingAfterTheReturnType() const=0;
+ProviderResult<model::providers::TransferDoc> ExecuteTransfer(const model::providers::ServiceTransferParams& service_transfer) const override;
+void SetCommunications(communication_namespaces::with_a_long_name::CommunicationCollectionType communications_by_name_with_an_intentionally_long_name);
+const ::first_global_qualification_namespace_with_long_name::second_global_qualification_namespace_with_long_name::FinalGlobalQualifiedTypeName& fallback_value;
+};
+
 template<typename Struct,typename Descriptor,typename Descriptor::Value(Struct::*member)>
 struct MemberPointerTemplateParameter;
 
