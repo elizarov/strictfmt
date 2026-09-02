@@ -44,6 +44,8 @@ tie-break. Independent binary choices also enumerate the layouts with multiple q
 global-scope `::` remains attached to the first operand. Syntax metadata applies the same construction to scoped
 declarators and namespace names.
 
+A qualified declaration type and its declarator form an independent outer break node. Its type subtree is structurally deeper, so the boundary is cheaper than every break inside the type without a surcharge. Pointer and reference wrappers are partitioned with the type, assignment tails remain outside this grouping, and callable declarations retain the ordinary function-signature model and its prefix surcharge.
+
 An adjacent-string node stores the exact safely joined spellings of its compact ordinary-literal runs. Compact solving
 prices those spellings rather than the original separated tokens, and compact one-line probes use the same widths.
 The split candidate continues to solve and emit the original literal tokens. The pretty printer consumes the stored
