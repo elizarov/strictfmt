@@ -406,6 +406,8 @@ constexpr auto kSyntaxKindMappings = std::to_array<SyntaxKindMapping>({
     ),
     Tree(SyntaxNodeKind::PreprocElif, "preproc_elifdef"),
     Tree(SyntaxNodeKind::BinaryExpression, "binary_expression"),
+    Tree(SyntaxNodeKind::BinaryExpression, "constraint_conjunction"),
+    Tree(SyntaxNodeKind::BinaryExpression, "constraint_disjunction"),
     Tree(SyntaxNodeKind::UnaryExpression, "unary_expression"),
     Tree(SyntaxNodeKind::UnaryExpression, "pointer_expression"),
     Tree(SyntaxNodeKind::UnaryExpression, "qualified_address_expression"),
@@ -595,7 +597,9 @@ constexpr auto kSyntaxKindMappings = std::to_array<SyntaxKindMapping>({
     Token(
         SyntaxNodeKind::AmpersandAmpersand, "&&", kChainBinaryClasses | Bit(SyntaxNodeClass::DeclaratorReferenceToken)
     ),
+    Token(SyntaxNodeKind::AmpersandAmpersand, "and", kChainBinaryClasses),
     Token(SyntaxNodeKind::PipePipe, "||", kChainBinaryClasses),
+    Token(SyntaxNodeKind::PipePipe, "or", kChainBinaryClasses),
     Token(SyntaxNodeKind::PlusPlus, "++", Bit(SyntaxNodeClass::UnaryOperator)),
     Token(SyntaxNodeKind::MinusMinus, "--", Bit(SyntaxNodeClass::UnaryOperator)),
     Token(SyntaxNodeKind::Arrow, "->", Bit(SyntaxNodeClass::MemberOperator)),

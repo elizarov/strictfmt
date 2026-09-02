@@ -171,7 +171,7 @@ second)");
 
 Binary chain operators are the operators whose usual source meaning is a mostly associative aggregation or a a repeated separator sequence. Formatting them as a chain avoids implying that the first operand owns a subordinate "rest of expression" branch.
 
-- Binary chains: `+`, `*`, `&`, `|`, `^`, `&&`, and `||`.
+- Binary chains: `+`, `*`, `&`, `|`, `^`, `&&`/`and`, and `||`/`or`.
 - Comma chains: commas in comma expressions.
 - Stream chains: `<<` and `>>`.
 - Member-call chains: `.` and `->`.
@@ -444,7 +444,7 @@ auto update = [context, options](
 
 ### Templates
 
-A template prefix precedes the declaration on a separate line. Keep `requires` on the template line only when the complete prefix and compact clause fit; otherwise move it one indent deeper and wrap structurally.
+A template prefix precedes the declaration on a separate line. Keep `requires` on the template line only when the complete prefix and compact clause fit; otherwise move it one indent deeper and wrap structurally. Constraint conjunctions and disjunctions use ordinary operator chains, so break after their logical operator before breaking inside either operand.
 
 <!-- .cpp-format
 ColumnLimit: 40

@@ -759,6 +759,10 @@ requires(ExtremelyLongConceptNameWithoutLogicalOperatorsThatStillNeedsSubordinat
     value.Use();
 }
 
+template<typename RevertedEvent>
+requires std::is_same_v<RevertedEvent,::handlers::PaymentAuthorizationRevertFullSucceededEvent>||std::is_same_v<RevertedEvent,::handlers::PaymentAuthorizationRevertPartialSucceededEvent>
+FlowMetadata OnReverted(const FlowMetadata& flow_metadata,const Event& event){return {};}
+
 template<typename T>
 requires C<T>
 void CompactRequiresPrefix();
@@ -2267,6 +2271,8 @@ auto QualifiedCallableTemplateInNestedCall(const Item& item){return decimal64::T
 bool AlternativeBinaryOperatorSpacing(bool first,bool second,bool third){return first and (!second or third);}
 
 bool AlternativeBinaryOperatorBeforeUnary(bool first,bool second){return first and !second;}
+
+bool AlternativeLogicalOperatorChain(){return FirstConditionWithAnIntentionallyLongNameForAlternativeOperatorCoverage() or SecondConditionWithAnIntentionallyLongNameForAlternativeOperatorCoverage() or ThirdConditionWithAnIntentionallyLongNameForAlternativeOperatorCoverage();}
 
 using TemplateArgumentBinary=A<N + 1>;
 template<class... T> using TemplateArgumentFold=A<(T::value && ...)>;
