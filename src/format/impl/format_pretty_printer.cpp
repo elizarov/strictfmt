@@ -456,6 +456,23 @@ bool HasDirectCommentChild(const SyntaxNode& node) {
     return false;
 }
 
+bool SyntaxSubtreeEndsWith(const SyntaxNode& node, SyntaxNodeKind kind) {
+    if (node.kind == kind) {
+        return true;
+    }
+    for (auto child = node.children.rbegin(); child != node.children.rend(); ++child) {
+        if (
+            *child == nullptr ||
+            (*child)->kind == SyntaxNodeKind::Comment ||
+            (*child)->kind == SyntaxNodeKind::TrailingComment
+        ) {
+            continue;
+        }
+        return SyntaxSubtreeEndsWith(**child, kind);
+    }
+    return false;
+}
+
 bool TrailingCommentReturnsToStructuralIndent(const PrintToken& token) {
     if (token.node == nullptr || token.node->parent == nullptr) {
         return false;
@@ -474,6 +491,7 @@ bool TrailingCommentReturnsToStructuralIndent(const PrintToken& token) {
     }
     return previous != nullptr && (
         previous->kind == SyntaxNodeKind::LeftBrace ||
+        SyntaxSubtreeEndsWith(*previous, SyntaxNodeKind::RightBrace) ||
         (previous->kind == SyntaxNodeKind::Colon && token.node->parent->kind == SyntaxNodeKind::CaseStatement)
     );
 }
