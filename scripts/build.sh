@@ -65,13 +65,27 @@ require_tool "$CXX"
 
 mkdir -p "$build_temp_dir"
 
-cmake -S "$repo_root" -B "$cmake_build_dir" -G "Unix Makefiles" \
-    -DCMAKE_BUILD_TYPE=Release \
-    -DCMAKE_RUNTIME_OUTPUT_DIRECTORY="$build_root" \
-    -DCMAKE_ARCHIVE_OUTPUT_DIRECTORY="$build_temp_dir/lib" \
-    -DCMAKE_LIBRARY_OUTPUT_DIRECTORY="$build_temp_dir/lib" \
-    -DSTRICTFMT_TEST_TEMP_ROOT="$build_temp_dir/tests" \
+cmake_args=(
+    -S "$repo_root" -B "$cmake_build_dir" -G "Unix Makefiles"
+    -DCMAKE_BUILD_TYPE=Release
+    -DCMAKE_RUNTIME_OUTPUT_DIRECTORY="$build_root"
+    -DCMAKE_ARCHIVE_OUTPUT_DIRECTORY="$build_temp_dir/lib"
+    -DCMAKE_LIBRARY_OUTPUT_DIRECTORY="$build_temp_dir/lib"
+    -DSTRICTFMT_TEST_TEMP_ROOT="$build_temp_dir/tests"
     -DSTRICTFMT_VERSION="${STRICTFMT_VERSION:-}"
+)
+if [ "$os_name" = "macos" ]; then
+    osx_architectures="${CMAKE_OSX_ARCHITECTURES:-}"
+    if [ -z "$osx_architectures" ] && [ -f "$cmake_build_dir/CMakeCache.txt" ]; then
+        osx_architectures="$(sed -n 's/^CMAKE_OSX_ARCHITECTURES:[^=]*=//p' "$cmake_build_dir/CMakeCache.txt")"
+    fi
+    if [ -z "$osx_architectures" ]; then
+        osx_architectures="$(uname -m)"
+    fi
+    cmake_args+=("-DCMAKE_OSX_ARCHITECTURES=$osx_architectures")
+fi
+
+cmake "${cmake_args[@]}"
 
 cmake --build "$cmake_build_dir" --target strictfmt
 
