@@ -855,6 +855,25 @@ template<typename T>
 concept GroupedConcept=true;
 using AfterGroupedConcept=int;
 
+template<typename T>
+concept HasEnvironmentAndDependenciesConstructor=std::constructible_from<T,const EnvironmentHolder&,const handlers::Dependencies&>;
+template<typename T>
+concept HasQualifiedRequirements=std::same_as<typename T::template Rebind<Value>,ExpectedReboundValue>&&requires(T value){value.First();value.Second();};
+template<typename T>
+concept HasCommentedRequirements=/* constraint */std::constructible_from<T,const EnvironmentHolder&,const handlers::Dependencies&>;
+namespace ExplicitNamespaceAssignmentBoundary=::first_namespace::second_namespace::third_namespace::fourth_namespace::last_namespace;
+
+void QualifiedTemplatePrefixCohesion(){
+Prepare();
+AddFetcherHelpers<route_fetchers::ImpreciseTransportMotionModelFetcher<::clients::contractor_transport::TransportType::kPedestrian>>(fetcher_helpers);
+Use<outer::Container<FirstArgument,SecondArgument>::template Rebind<AnotherArgument,YetAnotherArgument>::NestedType<LastArgument>>(first_argument,second_argument);
+auto value=qualified_models::Container<FirstTemplateArgumentWithLongName,SecondTemplateArgumentWithLongName,ThirdTemplateArgumentWithLongName>{first_value,second_value};
+}
+
+using QualifiedTemplateAlias=qualified_models::Container<FirstTemplateArgumentWithLongName,SecondTemplateArgumentWithLongName,ThirdTemplateArgumentWithLongName>;
+using DependentQualifiedTemplateAlias=typename outer::Container<FirstTemplateArgumentWithLongName,SecondTemplateArgumentWithLongName>::template Rebind<ThirdTemplateArgumentWithLongName,FourthTemplateArgumentWithLongName>::type;
+void QualifiedTemplateParameter(const std::variant<first_namespace::FirstAlternativeTypeWithLongName,second_namespace::SecondAlternativeTypeWithLongName>& value);
+
 void PreserveSiblingBlankLines(int value) {
 First();
 

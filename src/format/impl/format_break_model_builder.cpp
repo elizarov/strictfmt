@@ -1070,9 +1070,10 @@ private:
                     strings->compactStringTexts.emplace_back(text);
                     continue;
                 }
-                if (std::optional<std::string> joined = JoinOrdinaryStringLiterals(
-                    strings->compactStringTexts[compactRunStart], text
-                )) {
+                if (
+                    std::optional<std::string> joined =
+                        JoinOrdinaryStringLiterals(strings->compactStringTexts[compactRunStart], text)
+                ) {
                     strings->compactStringTexts[compactRunStart] = std::move(*joined);
                     strings->compactStringTexts.emplace_back();
                 } else {
@@ -1086,7 +1087,9 @@ private:
         sequence.children = StoreNodePointers(grouped);
     }
 
-    static void NormalizeNamedListBreakDepth(std::vector<FormatBreakNode*>& children) {
+    static void NormalizeNamedListBreakDepth(
+        std::span<FormatBreakNode* const> children, FormatBreakNode* qualification = nullptr
+    ) {
         for (size_t index = 1; index < children.size(); ++index) {
             const FormatBreakNode* list = children[index];
             if (list->kind != FormatBreakNodeKind::Delimited || list->children.empty()) {
@@ -1098,6 +1101,14 @@ private:
                 !SyntaxNodeKindHasClass(FormatBreakTokenValue(*open).parentKind, SyntaxNodeClass::NamedList)
             ) {
                 continue;
+            }
+            if (qualification != nullptr && qualification->structuralDepth <= list->structuralDepth) {
+                // The qualifier precedes this list syntactically, but owns its right operand in the break tree.
+                // Surcharge only the qualification decision and its left prefix, not the attached list.
+                const int delta = list->structuralDepth + 1 - qualification->structuralDepth;
+                qualification->structuralDepth += delta;
+                qualification->breakCost += delta;
+                ShiftStructuralDepth(*qualification->operands.front(), delta, false);
             }
             for (size_t prefixIndex = 0; prefixIndex < index; ++prefixIndex) {
                 FormatBreakNode& prefix = *children[prefixIndex];
@@ -1570,6 +1581,7 @@ private:
         if (
             node.kind == SyntaxNodeKind::BinaryExpression ||
             node.kind == SyntaxNodeKind::AssignmentExpression ||
+            node.kind == SyntaxNodeKind::Declaration ||
             node.kind == SyntaxNodeKind::InitDeclarator ||
             node.kind == SyntaxNodeKind::FieldDeclaration ||
             node.kind == SyntaxNodeKind::AliasDeclaration ||
@@ -1678,6 +1690,9 @@ private:
         auto binary = MakeNode(FormatBreakNodeKind::Chain, depth);
         binary->operands = StoreNodePointers({left, right});
         binary->operators = StoreTokens({parts.operators[operandCount - 2]});
+        if (right->kind == FormatBreakNodeKind::Sequence) {
+            NormalizeNamedListBreakDepth(right->children, binary);
+        }
         return binary;
     }
 
@@ -2619,14 +2634,8 @@ private:
             }
             if (
                 (node.kind == SyntaxNodeKind::BinaryExpression && IsBinaryOperatorForNode(*token)) ||
-                (node.kind == SyntaxNodeKind::CommaExpression && IsCommaOperatorForNode(*token)) || (
-                    (
-                        node.kind == SyntaxNodeKind::AssignmentExpression ||
-                        node.kind == SyntaxNodeKind::InitDeclarator ||
-                        node.kind == SyntaxNodeKind::FieldDeclaration ||
-                        node.kind == SyntaxNodeKind::AliasDeclaration
-                    ) && IsAssignmentOperatorForNode(*token)
-                )
+                (node.kind == SyntaxNodeKind::CommaExpression && IsCommaOperatorForNode(*token)) ||
+                IsAssignmentOperatorForNode(*token)
             ) {
                 return index;
             }
@@ -3164,7 +3173,7 @@ private:
         }
 
         FormatBreakNode* left = nullptr;
-        if (node.kind == SyntaxNodeKind::FieldDeclaration) {
+        if (SyntaxNodeKindHasClass(node.kind, SyntaxNodeClass::DeclarationNode)) {
             ConstSyntaxChildList leftChildren(node.children.begin(), node.children.begin() + *opIndex);
             left = BuildTypedDeclarator(leftChildren, depth + 1, true);
         }

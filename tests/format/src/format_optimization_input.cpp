@@ -109,5 +109,32 @@ P m={F({1}),{first,second}};
 P n={{first,second}};
 P o={P{1},P{Q{first,second}}};
 
+// direct declaration assignments do not need an initializer-declarator wrapper
+template<class T>concept C=ns::C<T>;
+template<class T>concept LongName=ns::C<T>;
+template<class T>concept Both=ns::C<T>&&ns::D<T>;
+namespace A=ns::inner;
+namespace Name=aa::bb::cc;
+namespace Global=::aa::bb;
+
+// template arguments expand before their qualified name, including nested prefixes
+using A=space::C<int>;
+using B=a::b::C<int>;
+using C=a::B<int>::C<long>;
+using D=a::B<int>::C<long>::D<char>;
+using E=::space::C<int>;
+using F=space::C<ns::T>;
+using G=LongNamespace::LongType<int>;
+using H=space::C<>;
+using I=typename T::template Rebind<int>::type;
+void f25(){space::F<int>(x);}
+void f26(){space::F<int>{x};}
+void f27(){space::F<int,long>(x,y);}
+void f28(){space::C<int> value;}
+void f29(){if(space::C<int> value=Get()){Use(value);}}
+
+// callable tail markers remain attached rather than acquiring assignment breaks
+struct TailMarkers {TailMarkers()=default;TailMarkers(const TailMarkers&)=delete;virtual void Method()=0;};
+
 // macro continuation suffix prevents a pair
 #define JOIN a+""+b+c

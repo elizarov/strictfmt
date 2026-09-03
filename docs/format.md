@@ -639,7 +639,7 @@ A **callable-prefix surcharge** is the smallest amount that places the prefix's 
 
 The angle list starts at raw depth 3 and the parameter list at 4. A surcharge of 2 moves the prefix's shallowest decision one level below the parameter decision, giving the angle list effective cost 5.
 
-A **name-prefix surcharge** similarly places name-internal decisions one level deeper than the attached list; chain links retain their expression depth. In the statement segment `make<int>(value);`, both lists start at raw depth 2:
+A **name-prefix surcharge** similarly places name-internal decisions one level deeper than the attached list, including template arguments; the attached list is outside that surcharge, and chain links retain their expression depth. In the statement segment `make<int>(value);`, both lists start at raw depth 2:
 
 ```text
 0 - expression Sequence
@@ -648,6 +648,17 @@ A **name-prefix surcharge** similarly places name-internal decisions one level d
 2 │  └─ * Delimited(angle) "<int>" [2 + 1 - 0 = 3]
 1 └─ - ArgumentList syntax
 2    └─ * Delimited(paren) "(value)" [2 + 0 - 0 = 2]
+```
+
+This keeps a qualified template name together before expanding its arguments:
+
+<!-- .cpp-format
+ColumnLimit: 40
+-->
+```cpp
+using X = model::Record<
+    FirstType, SecondType
+>;
 ```
 
 A **final-lambda discount** equals the body's current cost and applies to the body subtree; the header remains outside it. In `visit(items, [] { return Serialize(); });`:
