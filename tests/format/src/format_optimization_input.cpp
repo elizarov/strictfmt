@@ -133,6 +133,12 @@ void f27(){space::F<int,long>(x,y);}
 void f28(){space::C<int> value;}
 void f29(){if(space::C<int> value=Get()){Use(value);}}
 
+// a brace comment contributes to the header's line width
+void f30(){if(a)
+{  // x
+Run();
+}}
+
 // callable tail markers remain attached rather than acquiring assignment breaks
 struct TailMarkers {TailMarkers()=default;TailMarkers(const TailMarkers&)=delete;virtual void Method()=0;};
 

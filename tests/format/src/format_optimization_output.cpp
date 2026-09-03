@@ -459,6 +459,15 @@ void f29() {
     }
 }
 
+// a brace comment contributes to the header's line width
+void f30() {
+    if (
+        a
+    ) {  // x
+        Run();
+    }
+}
+
 // callable tail markers remain attached rather than acquiring assignment breaks
 struct TailMarkers
 {
