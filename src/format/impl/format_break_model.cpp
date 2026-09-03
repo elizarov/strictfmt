@@ -81,7 +81,7 @@ bool IsFormatBreakQualifiedName(const FormatBreakNode& node) {
         FormatBreakTokenSyntaxKind(node.operators.front()) == SyntaxNodeKind::ColonColon;
 }
 
-bool IsFormatBreakStreamLiteralOperand(const FormatBreakNode& node, SyntaxNodeClass literalClass) {
+bool IsFormatBreakLiteralOperand(const FormatBreakNode& node, SyntaxNodeClass literalClass) {
     if (node.kind == FormatBreakNodeKind::Token) {
         const PrintToken& token = FormatBreakTokenValue(node.token);
         if (IsStringLike(token)) {
@@ -95,13 +95,13 @@ bool IsFormatBreakStreamLiteralOperand(const FormatBreakNode& node, SyntaxNodeCl
     if (node.kind == FormatBreakNodeKind::Sequence) {
         return !node.children.empty() &&
             std::all_of(node.children.begin(), node.children.end(), [literalClass](const FormatBreakNode* child) {
-                return child != nullptr && IsFormatBreakStreamLiteralOperand(*child, literalClass);
+                return child != nullptr && IsFormatBreakLiteralOperand(*child, literalClass);
             });
     }
     return node.kind == FormatBreakNodeKind::AdjacentStrings &&
         !node.operands.empty() &&
         std::all_of(node.operands.begin(), node.operands.end(), [literalClass](const FormatBreakNode* operand) {
-            return operand != nullptr && IsFormatBreakStreamLiteralOperand(*operand, literalClass);
+            return operand != nullptr && IsFormatBreakLiteralOperand(*operand, literalClass);
         });
 }
 

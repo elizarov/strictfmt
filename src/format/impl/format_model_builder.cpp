@@ -1275,12 +1275,9 @@ std::string ParseProblemMessage(const ProblemNode& problem) {
     const TSPoint point = ts_node_start_point(problem.node);
     const std::string nodeType = problem.missing ? "missing " + std::string(ts_node_type(problem.node)) :
         std::string(ts_node_type(problem.node));
-    return "parse failed at " +
-        std::to_string(static_cast<int>(point.row) + 1) +
-        ":" +
-        std::to_string(static_cast<int>(point.column) + 1) +
-        " near " +
-        nodeType;
+    return "parse failed at " + std::to_string(static_cast<int>(point.row) + 1) +
+        ":" + std::to_string(static_cast<int>(point.column) + 1) +
+        " near " + nodeType;
 }
 
 ParseResult ParseFailure(TSNode root) {

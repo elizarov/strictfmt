@@ -36,7 +36,7 @@ The solver compares complete candidates with `Better`. Intermediate candidate se
 
 Composite candidates retain nondominated child layouts until their shared continuation has been costed. Parent legality constraints filter each child alternative independently; the child's locally best layout does not determine legality for other alternatives.
 
-Stream literal binding retains both the attached-follower candidate and the insertion-break candidate until their continuation is costed. A pair fitting inside the stream subtree does not prove that enclosing punctuation or following syntax fits. The normal overflow, expansion, and line-count comparison selects the complete layout; an early binding decision must not discard the shorter continuation state.
+Literal pairing in `+` chains and stream insertions shares the literal classifier and compact follower probe. The probe requires complete operands, excluding partial views with context-only tokens across mandatory blocks. Both the attached-follower candidate and the operator-break candidate remain available until their continuation is costed. A pair fitting inside the chain subtree does not prove that enclosing punctuation or following syntax fits. The normal overflow, expansion, and line-count comparison selects the complete layout; an early binding decision must not discard the shorter continuation state. Selected pairs record their intervening operator in the solution, so emission omits exactly those chain breaks.
 
 Qualified names are normalized into left-associated binary break nodes. Every node owns one non-leading `::` and uses the ordinary after-operator
 compact and split candidates. Consequently, the final qualification operator is closest to the break-model root and

@@ -30,3 +30,24 @@ void f9(){a //
 // comment moved before a stream operator
 void f10(){Get(1,2) << /* x */
 a << b;}
+
+// literal pair fits with the terminating semicolon
+void f11(){aa+""+b;}
+
+// enclosing semicolon prevents a pair
+void f12(){a+""+bb;}
+
+// trailing chain operator prevents a pair
+void f13(){a+""+b+c;}
+
+// closing parentheses prevent a pair
+void f14(){F(a+""+b);}
+
+// pairs stay independent across the chain
+void f15(){a+""+b+""+c;}
+
+// an expanded operand does not form a pair
+void f16(){a+""+F(aa,bb)+c;}
+
+// macro continuation suffix prevents a pair
+#define JOIN a+""+b+c
