@@ -71,6 +71,7 @@ struct FormatBreakListItem {
     FormatBreakToken separator;
     FormatBreakToken trailingComment;
     bool blankLineBefore = false;
+    bool bracedInitializerRecord = false;
 };
 
 struct FormatBreakNode {

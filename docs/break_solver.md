@@ -76,6 +76,8 @@ deferred closers consume that choice and its selected base indentation. Chain co
 recorded from the selected chain layout before a mandatory block. Mandatory item separators exclude packed split.
 Function-signature parameter-list expansion considers both split forms.
 
+The builder classifies list items by their outer syntax and marks sibling initializer-record lists with the shared unbroken-item requirement used by compact and packed candidates.
+
 The builder records a comma-separated brace list's terminal comma as layout metadata instead of an ordinary item separator. Full-split candidates price it before a trailing comment; compact and packed candidates omit it. Emission follows that recorded list choice.
 
 Owner/value syntax uses one generic after-owner candidate shape.

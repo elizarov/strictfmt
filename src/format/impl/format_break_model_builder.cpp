@@ -131,6 +131,30 @@ bool IsMultiItemDesignatedInitializer(const FormatBreakNode& delimited, const Fo
         });
 }
 
+bool IsBracedInitializerRecord(std::span<const SyntaxNode* const> children) {
+    const SyntaxNode* last = nullptr;
+    for (const SyntaxNode* child : children) {
+        if (child == nullptr || SyntaxNodeHasLocalClass(*child, SyntaxNodeClass::Trivia)) {
+            continue;
+        }
+        if (SyntaxNodeKindHasClass(child->kind, SyntaxNodeClass::AssignmentOperator)) {
+            return false;
+        }
+        last = child;
+    }
+    // Typed initializer expressions are flattened to their type prefix and initializer list.
+    // Do not descend into calls, lambdas, or other expressions that merely contain an initializer.
+    return last != nullptr && last->kind == SyntaxNodeKind::InitializerList;
+}
+
+bool HasSiblingInitializerRecords(const FormatBreakNode& list) {
+    return list.items.size() > 1 &&
+        list.items.back().bracedInitializerRecord &&
+        std::any_of(list.items.begin(), list.items.end() - 1, [](const FormatBreakListItem& item) {
+            return item.bracedInitializerRecord;
+        });
+}
+
 bool IsChainOperatorToken(const FormatBreakToken& token) {
     return FormatBreakTokenKind(token) == PrintTokenKind::Known &&
         SyntaxNodeKindHasClass(FormatBreakTokenSyntaxKind(token), SyntaxNodeClass::ChainOperator);
@@ -597,6 +621,7 @@ private:
             item->flatSplitIndent = true;
         }
         AppendListItem(delimited, item, blankLineBefore);
+        delimited.items.back().bracedInitializerRecord = IsBracedInitializerRecord(itemChildren);
         itemChildren.clear();
     }
 
@@ -3577,7 +3602,8 @@ private:
         ) {
             AppendEmptyDelimitedItem(*delimited, depth);
         }
-        delimited->compactRequiresUnbrokenItems = IsMultiItemDesignatedInitializer(*delimited, *open);
+        delimited->compactRequiresUnbrokenItems =
+            IsMultiItemDesignatedInitializer(*delimited, *open) || HasSiblingInitializerRecords(*delimited);
         delimited->forceSplit = delimited->forceSplit || (hasVirtualClose && virtualDelimiter->forceSplit);
         if (!hasVirtualClose) {
             MarkSplitTrailingComma(*delimited, *open);
