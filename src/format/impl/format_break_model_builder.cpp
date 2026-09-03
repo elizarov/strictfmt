@@ -90,14 +90,7 @@ bool IsBinaryOperatorForNode(const FormatBreakToken& token) {
 bool IsAssignmentOperatorForNode(const FormatBreakToken& token) {
     const PrintToken& printToken = FormatBreakTokenValue(token);
     return printToken.kind == PrintTokenKind::Known &&
-        PrintTokenSyntaxHasClass(printToken, SyntaxNodeClass::AssignmentOperator) && (
-            printToken.parentKind == SyntaxNodeKind::AssignmentExpression ||
-            printToken.parentKind == SyntaxNodeKind::InitDeclarator ||
-            printToken.parentKind == SyntaxNodeKind::FieldDeclaration ||
-            printToken.parentKind == SyntaxNodeKind::AliasDeclaration ||
-            printToken.parentKind == SyntaxNodeKind::FunctionPointerAliasDeclaration ||
-            printToken.parentKind == SyntaxNodeKind::InitializerList
-        );
+        PrintTokenSyntaxHasClass(printToken, SyntaxNodeClass::AssignmentOperator);
 }
 
 bool IsConditionalOperatorForNode(const FormatBreakToken& token) {
@@ -564,6 +557,18 @@ private:
         list.items.push_back(FormatBreakListItem{.node = item, .blankLineBefore = blankLineBefore});
     }
 
+    FormatBreakNode* BuildListItem(const ConstSyntaxChildList& children, int depth, bool parameter) {
+        if (auto item = BuildDelimitedAssignmentItem(children, depth, parameter)) {
+            return item;
+        }
+        if (parameter) {
+            if (auto item = BuildTypedDeclarator(children, depth, true)) {
+                return item;
+            }
+        }
+        return BuildSequenceFromPointers(children, depth);
+    }
+
     void AppendDelimitedItem(
         FormatBreakNode& delimited,
         ConstSyntaxChildList& itemChildren,
@@ -575,13 +580,7 @@ private:
             return;
         }
         const bool parameter = FormatBreakTokenValue(open).parentKind == SyntaxNodeKind::ParameterList;
-        FormatBreakNode* item = BuildDelimitedAssignmentItem(itemChildren, depth + 1, parameter);
-        if (item == nullptr && parameter) {
-            item = BuildTypedDeclarator(itemChildren, depth + 1, true);
-        }
-        if (item == nullptr) {
-            item = BuildSequenceFromPointers(itemChildren, depth + 1);
-        }
+        FormatBreakNode* item = BuildListItem(itemChildren, depth + 1, parameter);
         const bool virtualDelimiter = FormatBreakTokenValue(open).parentKind == SyntaxNodeKind::Unknown;
         if (
             delimited.delimiterKind == FormatBreakDelimiterKind::Paren &&
@@ -1418,6 +1417,37 @@ private:
         return definition;
     }
 
+    FormatBreakNode* BuildPartialListItem(const SyntaxNode& node, int depth) {
+        const SyntaxNode* list = &node;
+        while (list != nullptr && SyntaxNodeKindHasClass(list->kind, SyntaxNodeClass::ConditionalPreprocessorTree)) {
+            list = list->parent;
+        }
+        if (list == nullptr || !SyntaxNodeKindHasClass(list->kind, SyntaxNodeClass::PreprocessorSplitList)) {
+            return nullptr;
+        }
+        ConstSyntaxChildList children;
+        for (const SyntaxNode* child : node.children) {
+            if (child == nullptr || !ContainsSelected(*child)) {
+                continue;
+            }
+            const std::optional<FormatBreakToken> token = TokenForNode(*child);
+            if (token && (
+                OpeningDelimiter(*token) != FormatBreakDelimiterKind::None ||
+                ClosingDelimiter(*token) != FormatBreakDelimiterKind::None
+            )) {
+                return nullptr;
+            }
+            children.push_back(child);
+        }
+        for (size_t index = 1; index + 1 < children.size(); ++index) {
+            if (const auto token = TokenForNode(*children[index]); token && IsSelectedSeparator(*token)) {
+                return nullptr;
+            }
+        }
+        // Mandatory preprocessor breaks can leave just one list item in this segment, without its delimiters.
+        return BuildListItem(children, depth, list->kind == SyntaxNodeKind::ParameterList);
+    }
+
     FormatBreakNode* BuildSyntaxNode(const SyntaxNode& node, int depth) {
         if (!ContainsSelected(node)) {
             return nullptr;
@@ -1427,6 +1457,11 @@ private:
         }
         if (!SyntaxNodeKindHasClass(node.kind, SyntaxNodeClass::Tree)) {
             return nullptr;
+        }
+        if (&node == root_) {
+            if (auto item = BuildPartialListItem(node, depth)) {
+                return item;
+            }
         }
         if (SyntaxNodeHasLocalClass(node, SyntaxNodeClass::QualifiedName)) {
             if (auto qualifiedName = BuildQualifiedName(node, depth)) {

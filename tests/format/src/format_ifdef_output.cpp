@@ -166,6 +166,23 @@ template <
 >
 struct ConditionalLeadingTemplateParameter {};
 
+void ConditionalDefaultArgument(
+    int mode
+#ifdef FORMAT_USERVER_EXTRA_PARAMETER
+    , const application::configuration::DefaultParameterValue& value =
+        application::configuration::DefaultParameterValue::Default
+#endif
+);
+
+template <
+    typename Value
+#ifdef FORMAT_USERVER_EXTRA_TEMPLATE_PARAMETER
+    , int default_parameter_with_a_long_name =
+        application::configuration::DefaultParameterValues::kDefaultValueForTemplateParameter
+#endif
+>
+struct ConditionalDefaultTemplateArgument;
+
 struct ConditionalLeadingFieldInitializers {
     ConditionalLeadingFieldInitializers() : size(0), sp(0)
 #if defined(FORMAT_USERVER_USE_SEGMENTED_STACKS)
