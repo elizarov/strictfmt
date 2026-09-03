@@ -2152,8 +2152,10 @@ private:
         lineHasText_ = lineHasText_ || !text.empty();
     }
 
-    void WriteTrailingComment(const PrintToken& token, std::string_view text) {
-        Space();
+    void WriteTrailingComment(const PrintToken& token, std::string_view text, bool spaceBefore) {
+        if (spaceBefore || IsLineCommentToken(token)) {
+            Space();
+        }
         if (IsLineCommentToken(token)) {
             output_.push_back(' ');
             ++currentColumn_;
@@ -2360,8 +2362,10 @@ private:
         pendingTokens_.clear();
     }
 
-    void BufferToken(const PrintToken& token) {
-        const PrintToken* previous = pendingTokens_.empty() ? nullptr : &pendingTokens_.back();
+    void BufferToken(const PrintToken& token, const PrintToken* previous = nullptr) {
+        if (!pendingTokens_.empty()) {
+            previous = &pendingTokens_.back();
+        }
         const bool sourceAdjacent = previous != nullptr && previous->sourceIndex + 1 == token.sourceIndex;
         const bool spaceBefore =
             sourceAdjacent && token.spaceBeforeKnown ? token.spaceBefore : FormatTokenNeedsSpace(previous, token);
@@ -2439,7 +2443,7 @@ private:
                 *continuationBaseIndent + (*continuationBaseIndent == indentLevel_ ? 1 : 0) : 0;
             const int continuationIndent = std::max(CurrentLineIndentLevel(), breakModelContinuationIndent);
             if (!atLineStart_) {
-                WriteTrailingComment(printToken, text);
+                WriteTrailingComment(printToken, text, token.spaceBefore);
             } else {
                 Write(text);
             }
@@ -3711,14 +3715,14 @@ private:
         }
         if (IsCommentToken(token.kind)) {
             if (KeepsStructuralCommentInBreakModel(token)) {
-                BufferToken(token);
+                BufferToken(token, rawPrevious);
                 return;
             }
             if (
                 token.kind == PrintTokenKind::TrailingComment &&
                 !CanAttachToPreviousPreprocessorLine(token, rawPrevious)
             ) {
-                BufferToken(token);
+                BufferToken(token, rawPrevious);
                 FlushPendingTokens();
                 return;
             }
@@ -3757,7 +3761,7 @@ private:
 
     void PrintComment(const PrintToken& token, const PrintToken* previous, const PrintToken* next) {
         if (token.kind == PrintTokenKind::TrailingComment && lineHasText_) {
-            WriteTrailingComment(token, token.text);
+            WriteTrailingComment(token, token.text, FormatTokenNeedsSpace(previous, token));
             NewLine(ShouldContinueMacroLine(token, next));
             if (
                 previous != nullptr &&

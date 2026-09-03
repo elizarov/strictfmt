@@ -477,8 +477,8 @@ private:
         if (!lineHasText) {
             return 0;
         }
-        if (IsCommentToken(FormatBreakTokenKind(token))) {
-            return IsLineCommentToken(FormatBreakTokenValue(token)) ? 2 : 1;
+        if (IsLineCommentToken(FormatBreakTokenValue(token))) {
+            return 2;
         }
         return token.spaceBefore ? 1 : 0;
     }

@@ -336,8 +336,8 @@ public:
         bool firstToken = true;
         for (size_t index = 0; index < tokens.size(); ++index) {
             const PrintToken& token = tokens[index];
-            const bool spaceBefore = previous == nullptr ? false :
-                (token.spaceBeforeKnown ? token.spaceBefore : FormatTokenNeedsSpace(previous, token));
+            const bool spaceBefore =
+                token.spaceBeforeKnown ? token.spaceBefore : FormatTokenNeedsSpace(previous, token);
             if (token.node != nullptr) {
                 token.node->formatPrintToken = &token;
                 token.node->formatSpaceBefore = spaceBefore;

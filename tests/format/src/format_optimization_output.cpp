@@ -66,3 +66,10 @@ void f7() {
         }
     }
 }
+
+// comment spacing at the column limit
+void f8() {
+    f1(
+        /**/ ""
+    );
+}
