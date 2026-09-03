@@ -383,9 +383,8 @@ using GenericPrepareUnaryCall = std::unique_ptr<grpc::ClientAsyncResponseReader<
     (grpc::GenericStub::*)(grpc::ClientContext*, const grpc::string&);
 using AuthCheckerFactoryFactory = utils::UniqueRef<AuthCheckerFactoryBase> (*)(const components::ComponentContext&);
 
-PrepareUnaryCallProxy(
-    GenericPrepareUnaryCall, const grpc::string&
-) -> PrepareUnaryCallProxy<grpc::GenericStub, grpc::ByteBuffer, grpc::ByteBuffer>;
+PrepareUnaryCallProxy(GenericPrepareUnaryCall, const grpc::string&) ->
+    PrepareUnaryCallProxy<grpc::GenericStub, grpc::ByteBuffer, grpc::ByteBuffer>;
 
 Data& operator*() & FORMAT_USERVER_LIFETIME_BOUND { return data_; }
 

@@ -1529,8 +1529,11 @@ private:
                 return declaration;
             }
         }
-        if (SyntaxNodeHasLocalClass(node, SyntaxNodeClass::KeywordOwnedValue)) {
-            if (auto ownedValue = BuildKeywordOwnedValue(node, depth)) {
+        if (
+            SyntaxNodeHasLocalClass(node, SyntaxNodeClass::KeywordOwnedValue) ||
+            node.kind == SyntaxNodeKind::TrailingReturnType
+        ) {
+            if (auto ownedValue = BuildPrefixedValue(node, depth)) {
                 return ownedValue;
             }
         }
@@ -1707,7 +1710,7 @@ private:
         return BuildQualifiedNamePrefix(parts, parts.operands.size(), depth);
     }
 
-    FormatBreakNode* BuildKeywordOwnedValue(const SyntaxNode& node, int depth) {
+    FormatBreakNode* BuildPrefixedValue(const SyntaxNode& node, int depth) {
         std::optional<size_t> valueIndex;
         std::optional<size_t> semicolonIndex;
         for (size_t index = 0; index < node.children.size(); ++index) {
@@ -1786,8 +1789,7 @@ private:
         return prefix;
     }
 
-    FormatBreakNode*
-        BuildDetachedTemplateDeclaration(FormatBreakNode* prefix, FormatBreakNode* declaration, int depth)
+    FormatBreakNode* BuildDetachedTemplateDeclaration(FormatBreakNode* prefix, FormatBreakNode* declaration, int depth)
     {
         if (prefix == nullptr || declaration == nullptr) {
             return nullptr;
@@ -2032,12 +2034,7 @@ private:
                 break;
             }
         }
-        if (
-            !bodyIndex ||
-            *bodyIndex == 0 ||
-            !CallableBodyAllowsCompactSingleStatementForm(*node.children[*bodyIndex], node.kind) ||
-            !ContainsSelected(*node.children[*bodyIndex])
-        ) {
+        if (!bodyIndex || *bodyIndex == 0 || !ContainsSelected(*node.children[*bodyIndex])) {
             return nullptr;
         }
 
@@ -2051,7 +2048,8 @@ private:
         }
 
         FormatBreakNode* result = BuildCodeBlockBodyHeader(*node.children[*bodyIndex], header, body, depth);
-        result->bodyHeaderSingleStatementBody = true;
+        result->bodyHeaderSingleStatementBody =
+            CallableBodyAllowsCompactSingleStatementForm(*node.children[*bodyIndex], node.kind);
         return result;
     }
 
@@ -3266,8 +3264,7 @@ private:
         return BuildBinaryOrAssignmentExpression(node, depth);
     }
 
-    FormatBreakNode*
-        BuildDelimitedAssignmentItem(const ConstSyntaxChildList& children, int depth, bool typedDeclarator)
+    FormatBreakNode* BuildDelimitedAssignmentItem(const ConstSyntaxChildList& children, int depth, bool typedDeclarator)
     {
         std::optional<size_t> operatorIndex;
         std::optional<FormatBreakToken> op;

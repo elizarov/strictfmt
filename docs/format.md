@@ -8,7 +8,7 @@ This document specifies the source layout produced by `strictfmt`. Wrapping exam
 - Put no space between the name and `(` in [call-like syntax](glossary.md#call-like-syntax), e.g. `Run(`.
 - Put no padding inside compact [delimiter groups](glossary.md#delimiter-group), e.g. `call(value)`.
 - Put one space before a code-block `{`, e.g. `if (ok) {`.
-- Put spaces around lambda trailing-return arrows, e.g. `[]() -> int`.
+- Put spaces around trailing-return arrows, e.g. `[]() -> int`.
 - Put one space before trailing function qualifiers, e.g. `Run() const`.
 - Put one space between `template` and `<`, e.g. `template <typename T>`.
 - Keep declaration modifiers compact and separate them from the modified type with one space, e.g. `alignas(8) int`.
@@ -74,6 +74,7 @@ Mandatory line breaks are structural boundaries. The break is always taken befor
 Optional breaks within a [formatted segment](glossary.md#formatted-segment) occur:
 
 - After assignment, binary, or ternary operators.
+- After `->` introducing a trailing return type, with the type indented one continuation level.
 - After non-leading `::` in names. Qualification is left-associated.
 - After delimiter-group openers and before their matching closers.
 - After a list's introducing `:`.
@@ -445,6 +446,8 @@ ColumnLimit: 40
 ```cpp
 Result
     Load(const Input& input, int mode);
+auto ComputeLongResult() ->
+    namespace_name::Result;
 ```
 
 Function-pointer aliases, typedefs, and declarations put a space between the return type and compact pointer declarator; long forms may break there before breaking inside the declarator.

@@ -2618,7 +2618,8 @@ private:
         Merge(result, returnType);
         bool splitParameterList = false;
         bool compactHeaderFits = true;
-        NodeResult declarator = SolveWithFirstParameterListSplit(
+        // Only the prefix through the opener must fit; an empty parameter list need not have a split layout.
+        SolveWithFirstParameterListSplit(
             *node.children[1],
             result.endColumn,
             result.endIndentLevel,
@@ -2626,7 +2627,7 @@ private:
             splitParameterList,
             compactHeaderFits
         );
-        return splitParameterList && compactHeaderFits && declarator.valid;
+        return splitParameterList && compactHeaderFits;
     }
 
     NodeResult SolveWithFirstParameterListSplit(

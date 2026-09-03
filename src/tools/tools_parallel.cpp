@@ -5,8 +5,7 @@
 #include <limits>
 #include <system_error>
 
-bool
-    ParseToolConcurrency(std::string_view value, size_t& concurrency, std::string& error, std::string_view optionName)
+bool ParseToolConcurrency(std::string_view value, size_t& concurrency, std::string& error, std::string_view optionName)
 {
     if (value.empty()) {
         error = std::string(optionName) + " requires a value";

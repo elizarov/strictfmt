@@ -136,5 +136,38 @@ void f29(){if(space::C<int> value=Get()){Use(value);}}
 // callable tail markers remain attached rather than acquiring assignment breaks
 struct TailMarkers {TailMarkers()=default;TailMarkers(const TailMarkers&)=delete;virtual void Method()=0;};
 
+// trailing-return arrows own a break before the complete type, even with empty parameters
+auto f()->R;
+auto f()->ns::R;
+auto f()->const R&;
+auto f()->R*;
+auto f()->Box<A>;
+auto f()->decltype(x);
+auto f(int x)->ns::R;
+auto f()->ns::R{}
+auto f()->ns::R{return {};}
+auto f()->ns::R{Prepare();return {};}
+
+// lambdas share the arrow break and body-header rules
+auto a=[]()->R{};
+auto b=[]()->ns::R{return {};};
+auto c=[x]()->ns::R{Prep();return {};};
+auto d=[](T x)->ns::R{Prep();return {};};
+void f(){Use([]()->ns::R{Prep();return {};});}
+
+// nested declarators, aliases, and deduction guides share trailing-return syntax
+auto (*f())()->ns::R;
+using F=auto(*)()->ns::R;
+Box(int)->Box<int>;
+
+// comments remain attached to their original side of the arrow
+auto f()->/*r*/ns::R;
+auto f()/*r*/->ns::R;
+auto f()->//r
+ns::R;
+
+// member-access arrows still break before the arrow, not after it
+void f(){object->member();}
+
 // macro continuation suffix prevents a pair
 #define JOIN a+""+b+c
