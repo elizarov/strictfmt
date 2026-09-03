@@ -2745,7 +2745,8 @@ private:
         size_t end,
         SyntaxNodeKind op,
         int depth,
-        bool detachTrailingComments
+        bool detachTrailingComments,
+        bool& forceSplit
     ) {
         if (
             end == begin + 1 &&
@@ -2753,7 +2754,7 @@ private:
             SyntaxNodeKindHasClass(op, SyntaxNodeClass::ChainOperator) &&
             HasSameDirectBinaryOperator(*children[begin], op)
         ) {
-            AppendBinaryChain(*children[begin], op, operands, operators, commentsBeforeOperators, depth);
+            AppendBinaryChain(*children[begin], op, operands, operators, commentsBeforeOperators, depth, forceSplit);
             return {};
         }
         FormatBreakNode* operand = BuildSequenceFromChildren(children, begin, end, depth + 1);
@@ -2765,6 +2766,7 @@ private:
             FormatBreakChainKind::StreamBeforeOperator : FormatBreakChainKind::AfterOperator;
         FormatBreakNode* prefix = MatchingChain(operand, chainKind, op);
         if (prefix != nullptr) {
+            forceSplit = forceSplit || prefix->forceSplit;
             operands.insert(operands.end(), prefix->operands.begin(), prefix->operands.end());
             operators.insert(operators.end(), prefix->operators.begin(), prefix->operators.end());
             commentsBeforeOperators.insert(
@@ -2778,13 +2780,119 @@ private:
         return trailingComments;
     }
 
+    bool IsSelectedChainTrivia(const SyntaxNode* node) const {
+        if (node == nullptr) {
+            return false;
+        }
+        if (node->kind == SyntaxNodeKind::BlankLine) {
+            return true;
+        }
+        const std::optional<FormatBreakToken> token = TokenForNode(*node);
+        return token &&
+            (IsCommentToken(FormatBreakTokenKind(*token)) || FormatBreakTokenKind(*token) == PrintTokenKind::BlankLine);
+    }
+
+    bool SetFirstSelectedTokenSpace(const SyntaxNode& node, const PrintToken& previous) const {
+        if (const std::optional<FormatBreakToken> token = TokenForNode(node)) {
+            node.formatSpaceBefore = FormatTokenNeedsSpace(&previous, FormatBreakTokenValue(*token));
+            return true;
+        }
+        for (const SyntaxNode* child : node.children) {
+            if (child != nullptr && SetFirstSelectedTokenSpace(*child, previous)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    FormatBreakNode*
+        ExtendChainOperand(FormatBreakNode* operand, std::span<const FormatBreakToken> tokens, bool prefix, int depth)
+    {
+        if (tokens.empty()) {
+            return operand;
+        }
+        std::vector<FormatBreakNode*> children;
+        if (!prefix) {
+            children.push_back(operand);
+        }
+        for (const FormatBreakToken& token : tokens) {
+            children.push_back(BuildToken(token, depth));
+        }
+        if (prefix) {
+            children.push_back(operand);
+        }
+        auto sequence = MakeNode(FormatBreakNodeKind::Sequence, depth);
+        sequence->children = StoreNodePointers(children);
+        return sequence;
+    }
+
+    struct ChainOperatorBoundary {
+        size_t leftEnd;
+        size_t rightBegin;
+        FormatBreakToken token;
+        std::vector<FormatBreakToken> comments;
+    };
+
+    ChainOperatorBoundary
+        ReadChainOperatorBoundary(const SyntaxNode& node, size_t opIndex, size_t begin, size_t end) const
+    {
+        ChainOperatorBoundary boundary{opIndex, opIndex + 1, *TokenForNode(*node.children[opIndex]), {}};
+        while (boundary.leftEnd > begin && IsSelectedChainTrivia(node.children[boundary.leftEnd - 1])) {
+            --boundary.leftEnd;
+        }
+        while (boundary.rightBegin < end && IsSelectedChainTrivia(node.children[boundary.rightBegin])) {
+            ++boundary.rightBegin;
+        }
+        for (size_t index = boundary.leftEnd; index < boundary.rightBegin; ++index) {
+            if (index == opIndex) {
+                continue;
+            }
+            const std::optional<FormatBreakToken> comment = TokenForNode(*node.children[index]);
+            if (comment && IsCommentToken(FormatBreakTokenKind(*comment))) {
+                boundary.comments.push_back(*comment);
+            }
+        }
+        return boundary;
+    }
+
+    void PlaceChainOperatorComments(
+        const SyntaxNode& node,
+        ChainOperatorBoundary& boundary,
+        FormatBreakNode*& left,
+        bool streamChain,
+        bool hasReceiver,
+        int depth,
+        bool& forceSplit
+    ) {
+        if (boundary.comments.empty()) {
+            return;
+        }
+        forceSplit = true;
+        std::vector<FormatBreakToken> suffix;
+        if (!streamChain) {
+            suffix.push_back(boundary.token);
+            boundary.token.contextOnly = true;
+        }
+        const auto standalone = hasReceiver ?
+            std::find_if(boundary.comments.begin(), boundary.comments.end(), [](const FormatBreakToken& comment) {
+                return FormatBreakTokenKind(comment) != PrintTokenKind::TrailingComment;
+            }) : boundary.comments.begin();
+        suffix.insert(suffix.end(), boundary.comments.begin(), standalone);
+        boundary.comments.erase(boundary.comments.begin(), standalone);
+        left = ExtendChainOperand(left, suffix, false, depth + 1);
+        if (boundary.rightBegin < node.children.size()) {
+            SetFirstSelectedTokenSpace(*node.children[boundary.rightBegin], FormatBreakTokenValue(boundary.token));
+        }
+    }
+
     void AppendBinaryChain(
         const SyntaxNode& node,
         SyntaxNodeKind op,
         std::vector<FormatBreakNode*>& operands,
         std::vector<FormatBreakToken>& operators,
         std::vector<std::vector<FormatBreakToken>>& commentsBeforeOperators,
-        int depth
+        int depth,
+        bool& forceSplit
     ) {
         const std::optional<size_t> opIndex = DirectOperatorIndex(node);
         if (!opIndex || !node.children[*opIndex]) {
@@ -2793,29 +2901,45 @@ private:
         }
 
         const bool streamChain = op == SyntaxNodeKind::LessLess || op == SyntaxNodeKind::GreaterGreater;
+        ChainOperatorBoundary boundary = ReadChainOperatorBoundary(node, *opIndex, 0, node.children.size());
         std::vector<FormatBreakToken> commentsBeforeOperator = AppendBinaryChainOperand(
-            operands, operators, commentsBeforeOperators, node.children, 0, *opIndex, op, depth, streamChain
+            operands,
+            operators,
+            commentsBeforeOperators,
+            node.children,
+            0,
+            boundary.leftEnd,
+            op,
+            depth,
+            streamChain,
+            forceSplit
         );
-        if (std::optional<FormatBreakToken> token = TokenForNode(*node.children[*opIndex])) {
-            operators.push_back(*token);
-            commentsBeforeOperators.push_back(std::move(commentsBeforeOperator));
-        }
+        boundary
+            .comments.insert(boundary.comments.begin(), commentsBeforeOperator.begin(), commentsBeforeOperator.end());
+        PlaceChainOperatorComments(node, boundary, operands.back(), streamChain, true, depth, forceSplit);
+        operators.push_back(boundary.token);
+        commentsBeforeOperators.push_back(streamChain ? boundary.comments : std::vector<FormatBreakToken>{});
+        const size_t rightOperandIndex = operands.size();
         AppendBinaryChainOperand(
             operands,
             operators,
             commentsBeforeOperators,
             node.children,
-            *opIndex + 1,
+            boundary.rightBegin,
             node.children.size(),
             op,
             depth,
-            false
+            false,
+            forceSplit
         );
+        if (!streamChain) {
+            operands[rightOperandIndex] =
+                ExtendChainOperand(operands[rightOperandIndex], boundary.comments, true, depth + 1);
+        }
     }
 
     FormatBreakNode* BuildLeadingStreamOperatorChain(const SyntaxNode& node, int depth) {
         std::vector<size_t> operatorIndices;
-        std::vector<FormatBreakToken> directOperators;
         for (size_t index = 0; index < node.children.size(); ++index) {
             if (!node.children[index]) {
                 continue;
@@ -2829,7 +2953,6 @@ private:
                 continue;
             }
             operatorIndices.push_back(index);
-            directOperators.push_back(*token);
         }
         if (operatorIndices.empty()) {
             return nullptr;
@@ -2838,28 +2961,40 @@ private:
         std::vector<FormatBreakNode*> operands;
         std::vector<FormatBreakToken> operators;
         std::vector<std::vector<FormatBreakToken>> commentsBeforeOperators;
-        std::vector<FormatBreakToken> pendingComments;
+        std::vector<ChainOperatorBoundary> boundaries;
+        for (size_t index = 0; index < operatorIndices.size(); ++index) {
+            boundaries.push_back(ReadChainOperatorBoundary(
+                node,
+                operatorIndices[index],
+                index == 0 ? 0 : operatorIndices[index - 1] + 1,
+                index + 1 < operatorIndices.size() ? operatorIndices[index + 1] : node.children.size()
+            ));
+        }
+        bool forceSplit = false;
         auto emptyReceiver = MakeNode(FormatBreakNodeKind::Sequence, depth + 1);
         operands.push_back(emptyReceiver);
         for (size_t index = 0; index < operatorIndices.size(); ++index) {
-            operators.push_back(directOperators[index]);
-            commentsBeforeOperators.push_back(std::move(pendingComments));
-            const size_t operandBegin = operatorIndices[index] + 1;
+            ChainOperatorBoundary& boundary = boundaries[index];
+            PlaceChainOperatorComments(node, boundary, operands.back(), true, index != 0, depth, forceSplit);
+            operators.push_back(boundary.token);
+            commentsBeforeOperators.push_back(std::move(boundary.comments));
+            const size_t operandBegin = boundary.rightBegin;
             const size_t operandEnd =
-                index + 1 < operatorIndices.size() ? operatorIndices[index + 1] : node.children.size();
+                index + 1 < boundaries.size() ? boundaries[index + 1].leftEnd : node.children.size();
             if (operandBegin >= operandEnd) {
                 return nullptr;
             }
-            pendingComments = AppendBinaryChainOperand(
+            AppendBinaryChainOperand(
                 operands,
                 operators,
                 commentsBeforeOperators,
                 node.children,
                 operandBegin,
                 operandEnd,
-                FormatBreakTokenSyntaxKind(directOperators[index]),
+                FormatBreakTokenSyntaxKind(boundary.token),
                 depth,
-                index + 1 < operatorIndices.size()
+                false,
+                forceSplit
             );
         }
         if (operands.size() != operators.size() + 1) {
@@ -2869,6 +3004,7 @@ private:
         auto chain = MakeNode(FormatBreakNodeKind::Chain, depth);
         chain->chainKind = FormatBreakChainKind::StreamBeforeOperator;
         chain->chainStartsWithOperator = true;
+        chain->forceSplit = forceSplit;
         chain->operands = StoreNodePointers(operands);
         chain->operators = StoreTokens(operators);
         chain->commentsBeforeOperators = std::move(commentsBeforeOperators);
@@ -2931,7 +3067,9 @@ private:
             std::vector<std::vector<FormatBreakToken>> commentsBeforeOperators;
             operands.reserve(2);
             operators.reserve(1);
-            AppendBinaryChain(node, operatorKind, operands, operators, commentsBeforeOperators, depth);
+            AppendBinaryChain(
+                node, operatorKind, operands, operators, commentsBeforeOperators, depth, chain->forceSplit
+            );
             for (size_t index = 1; index < operands.size(); ++index) {
                 if (operands[index] != nullptr) {
                     MarkForceSplitAdjacentStringsFlat(*operands[index]);

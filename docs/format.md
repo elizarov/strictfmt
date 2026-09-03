@@ -228,6 +228,17 @@ void Scan() {
 }
 ```
 
+### Comments at operator boundaries
+
+In binary and stream chains, place intervening trailing or standalone comments after operators that break after themselves, and before operators that break before themselves.
+
+```cpp
+auto count = items.size() +  // items
+    separators.size() +  // separators
+    before +
+    after;
+```
+
 ### Streams
 
 Stream chains break before shift operators. A compact shifted tail may occupy one continuation line after the receiver. Otherwise each insertion starts a continuation line, except a string or character insertion binds to the following non-literal value insertion when the pair fits. Configured manipulators bind to the following value.
@@ -666,6 +677,7 @@ Only spaces and line breaks change, except for:
 
 - [Include sorting](#include-sorting).
 - [Comma normalization](#comma-normalization).
+- [Operator/comment reordering](#comments-at-operator-boundaries).
 - Control-brace normalization.
 - Removal of optional null declarations and statements.
 - Safe joining of adjacent ordinary string literals on the same physical line.

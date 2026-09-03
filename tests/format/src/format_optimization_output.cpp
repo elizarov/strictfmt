@@ -73,3 +73,19 @@ void f8() {
         /**/ ""
     );
 }
+
+// operator and comment suffix width
+void f9() {
+    a +  //
+        b +  //
+        c;
+}
+
+// comment moved before a stream operator
+void f10() {
+    Get(
+        1, 2
+    ) /* x */
+        << a
+        << b;
+}
