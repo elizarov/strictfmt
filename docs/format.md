@@ -62,7 +62,6 @@ struct Key {
 Mandatory line breaks are structural boundaries. The break is always taken before optional wrapping is considered.
 
 - Break between complete statements and declarations, except inside a single-line function or lambda body.
-- Remove structurally optional null declarations and statements.
 - Put block-opening braces at the end of the introducing line, then break.
 - For a non-empty block, if a multiline header ends at body indentation, put `{` on its own line at the block owner's indentation.
 - Keep an empty code block as `{}` without a body break.
@@ -335,7 +334,7 @@ auto value =
 
 ### String fragments
 
-Adjacent strings form an implicit concatenation chain, subject to [Token Preservation](#token-preservation). Forced multiline fragments align at expression indentation in single-value contexts and one continuation level deeper in lists.
+Adjacent strings form an implicit concatenation chain, subject to [string-literal joining](#string-literal-joining). Forced multiline fragments align at expression indentation in single-value contexts and one continuation level deeper in lists.
 
 <!-- .cpp-format
 ColumnLimit: 32
@@ -671,18 +670,24 @@ auto values = Values{
 };
 ```
 
-## Token Preservation
+## Optional Null Declarations And Statements
 
-Only spaces and line breaks change, except for:
+Remove structurally optional null declarations and statements.
 
-- [Include sorting](#include-sorting).
-- [Comma normalization](#comma-normalization).
-- [Operator/comment reordering](#comments-at-operator-boundaries).
-- Control-brace normalization.
-- Removal of optional null declarations and statements.
-- Safe joining of adjacent ordinary string literals on the same physical line.
+```cpp
+int count;
 
-Join ordinary literals only when their encoding prefixes and suffixes are compatible and joining cannot extend an escape. Preserve the compatible prefix and suffix. For example, `"\x1" "a"` stays separate.
+/*;*/  // would be removed if uncommented
+
+void Example() {
+    Work();
+    /*;*/  // would be removed if uncommented
+}
+```
+
+## String-Literal Joining
+
+Join adjacent ordinary string literals on the same physical line only when their encoding prefixes and suffixes are compatible and joining cannot extend an escape. Preserve the compatible prefix and suffix. For example, `"\x1" "a"` stays separate.
 
 A literal ending in escaped `\n` or `\r\n` forces a break before the next literal.
 
@@ -692,6 +697,17 @@ const char* text =
     "second\r\n"
     "third";
 ```
+
+## Token Preservation
+
+Only spaces and line breaks change, except for:
+
+- [Include sorting](#include-sorting).
+- [Comma normalization](#comma-normalization).
+- [Operator/comment reordering](#comments-at-operator-boundaries).
+- [Control-brace normalization](#control-flow).
+- [Removal of optional null declarations and statements](#optional-null-declarations-and-statements).
+- [String-literal joining](#string-literal-joining).
 
 ## Further reading
 
