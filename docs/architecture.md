@@ -35,6 +35,8 @@ Print-token construction materializes canonical known-token text and immutable s
 - `src/tools/tools_progress.h|cpp` own elapsed-time formatting and terminal progress rendering.
 - `src/util/file_path.h|cpp` own portable path wrappers and binary file I/O.
 - `src/util/strings.h|cpp` own general string normalization, splitting, matching, joining, and sorting helpers.
+- `src/util/utf8.h|cpp` own UTF-8 character counting shared by layout estimation and emission.
+- `vendor/unicode/` owns the pinned grapheme property data and conformance fixture; see its [README](../vendor/unicode/README.md).
 
 ## Build Ownership
 
@@ -46,6 +48,7 @@ Print-token construction materializes canonical known-token text and immutable s
 - `strictfmt` owns the standalone executable when `STRICTFMT_BUILD_STANDALONE` is enabled.
 - `strictfmt_tests` owns the custom test runner target backed by `tests/format/format_test.py` when Python is available.
 - `StrictfmtFormatTests` owns the CTest entry for the formatter test suite when Python is available.
+- `strictfmt_utf8_tests` and `StrictfmtUtf8Tests` own the Unicode utility test executable and its CTest entry.
 
 ## Upstream Tree-Sitter Runtime
 
