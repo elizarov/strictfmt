@@ -114,6 +114,21 @@ auto result = call(first, Point{
 });
 ```
 
+If the final item is a braced initializer and an earlier item is also one, expanding it requires one-item-per-line layout. This includes bare and explicitly typed initializers, but not initializers nested inside other expressions.
+
+<!-- .cpp-format
+ColumnLimit: 40
+-->
+```cpp
+Pair p = {
+    {1, 2},
+    {
+        first_coordinate,
+        second_coordinate,
+    },
+};
+```
+
 Enum bodies always split one enumerator per line.
 
 ```cpp
@@ -140,7 +155,7 @@ auto r = render(transform(
 ));
 ```
 
-A direct close-comma-open boundary may share one line only when both neighboring items use split delimiter expansion.
+In one-item-per-line layout, a direct close-comma-open boundary may share one line only when both neighboring items use split delimiter expansion.
 
 <!-- .cpp-format
 ColumnLimit: 25

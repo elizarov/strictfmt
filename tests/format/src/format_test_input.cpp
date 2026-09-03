@@ -623,6 +623,20 @@ auto PositionalInitializerTailExpansion(){
 return PositionalPair{Convert(first),ConvertLongValue(firstPositionalInitializerArgument,secondPositionalInitializerArgument,thirdPositionalInitializerArgument)};
 }
 
+void SiblingInitializerRecordContexts(){
+Use(Point{1,2},Point{firstInitializerRecordCoordinateWithLongName,secondInitializerRecordCoordinateWithLongName,thirdInitializerRecordCoordinateWithLongName});
+Use(model::Point<int>{1,2},model::Point<int>{firstInitializerRecordCoordinateWithLongName,secondInitializerRecordCoordinateWithLongName,thirdInitializerRecordCoordinateWithLongName});
+Use(context,Point{firstInitializerRecordCoordinateWithLongName,secondInitializerRecordCoordinateWithLongName,thirdInitializerRecordCoordinateWithLongName});
+Use(MakeOptions({1,2}),Point{firstInitializerRecordCoordinateWithLongName,secondInitializerRecordCoordinateWithLongName,thirdInitializerRecordCoordinateWithLongName});
+Use(Options{},[]{Prepare();Finish();});
+Use([]{return 1;},Point{firstInitializerRecordCoordinateWithLongName,secondInitializerRecordCoordinateWithLongName,thirdInitializerRecordCoordinateWithLongName});
+Use(Point{1,2},Wrap(Point{firstInitializerRecordCoordinateWithLongName,secondInitializerRecordCoordinateWithLongName,thirdInitializerRecordCoordinateWithLongName}));
+Use(Point{1,2},Point{first,[]{Prepare();Finish();},last});
+Use(Point{1,2},Point{{firstInitializerRecordCoordinateWithLongName,secondInitializerRecordCoordinateWithLongName,thirdInitializerRecordCoordinateWithLongName}});
+}
+
+void InitializerRecordDefaultArguments(Point first=Point{},Point second=Point{firstInitializerRecordCoordinateWithLongName,secondInitializerRecordCoordinateWithLongName,thirdInitializerRecordCoordinateWithLongName});
+
 defs::internal::psp_pricer::BatchedOrderRoutePriceCorrectionRequirementNames ConvertRoutePriceCorrectionRequirementNames(const experiments3::cargo_pricing_batched_order_route_price_correction::BatchedOrderRoutePriceCorrectionRequirementNames& exp_value){
 return {};
 }

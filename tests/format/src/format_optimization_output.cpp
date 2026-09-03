@@ -240,6 +240,117 @@ void f24(
         a[2]
 );
 
+// initializer-record siblings: compact, bare, typed, mixed, and empty records
+P a =
+    {{1}, {2}};
+
+P b = {
+    {1},
+    {
+        first,
+        second,
+    },
+};
+
+P c = {
+    P{1},
+    P{
+        first,
+        second,
+    },
+};
+
+P d = {
+    {1},
+    P{
+        first,
+        second,
+    },
+};
+
+P e = {
+    P{},
+    {
+        first,
+        second,
+    },
+};
+
+auto f = Call(
+    {1},
+    {
+        first,
+        second,
+    }
+);
+
+auto g = Call(
+    P{1},
+    P{
+        first,
+        second,
+    }
+);
+
+// split/compact stays separate; split/split keeps its bridge; siblings need not be adjacent
+P h = {
+    {
+        first,
+        second,
+    },
+    {1},
+};
+
+P i = {
+    {
+        first,
+        second,
+    }, {
+        third,
+        fourth,
+    },
+};
+
+P j = {
+    {1},
+    0,
+    {
+        first,
+        second,
+    },
+};
+
+// ordinary trailing payloads and initializers nested inside calls are not sibling records
+P k = {0, {
+    first,
+    second,
+}};
+
+P l = {{1}, F(
+    first,
+    second
+)};
+
+P m = {
+    F({1}), {
+        first,
+        second,
+    }
+};
+
+P n = {{
+    first,
+    second,
+}};
+
+P o = {
+    P{1},
+    P{Q{
+        first,
+        second,
+    }},
+};
+
 // macro continuation suffix prevents a pair
 #define JOIN \
     a + \
