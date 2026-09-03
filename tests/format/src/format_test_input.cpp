@@ -2525,6 +2525,10 @@ auto compact=BraceValues{first,second,};
 auto fullSplit=BraceValues{firstValueWithAnExtremelyLongNameForBraceListTrailingComma,secondValueWithAnExtremelyLongNameForBraceListTrailingComma};
 }
 
+void PackedBraceListInRangeFor(){
+for(auto value:RangeContainerWhoseTypeNameMakesOnlyTheInitializerDelimitersSplit{firstValue,secondValue,thirdValue}){Use(value);}
+}
+
 namespace post_namespace_first_fixture {
 class First;
 }  // namespace post_namespace_first_fixture

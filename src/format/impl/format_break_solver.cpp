@@ -317,8 +317,7 @@ private:
             text.find_first_of("\r\n") == std::string_view::npos;
     }
 
-    static void
-        AppendCompactTokenShape(CompactLineShape& result, const FormatBreakToken& token, std::string_view text)
+    static void AppendCompactTokenShape(CompactLineShape& result, const FormatBreakToken& token, std::string_view text)
     {
         result.hasContextOnlyTokens = result.hasContextOnlyTokens || token.contextOnly;
         if (!result.valid || token.contextOnly) {
@@ -616,7 +615,7 @@ private:
             .indentLevel = indentLevel,
             .lineHasText = lineHasText,
             .result = std::move(result),
-            .next = head
+            .next = head,
         });
         head = &memoEntries_.back();
     }
@@ -643,7 +642,7 @@ private:
             .indentLevel = indentLevel,
             .lineHasText = lineHasText,
             .results = std::move(results),
-            .next = head
+            .next = head,
         });
         head = &alternativesMemoEntries_.back();
         return head->results;
@@ -788,7 +787,7 @@ private:
                     for (const FormatBreakChoice choice : {
                         FormatBreakChoice::TernaryBreakAfterQuestion,
                         FormatBreakChoice::TernaryBreakAfterColon,
-                        FormatBreakChoice::Split
+                        FormatBreakChoice::Split,
                     }) {
                         for (NodeResult candidate : SolveSingleTernaryAlternatives(
                             node, column, indentLevel, lineHasText, choice
@@ -820,8 +819,7 @@ private:
         return {};
     }
 
-    NodeResult
-        SolveChildren(std::span<FormatBreakNode* const> children, int column, int indentLevel, bool lineHasText)
+    NodeResult SolveChildren(std::span<FormatBreakNode* const> children, int column, int indentLevel, bool lineHasText)
     {
         NodeResult best;
         for (const NodeResult& candidate : SolveChildrenAlternatives(children, column, indentLevel, lineHasText)) {
@@ -943,11 +941,7 @@ private:
     }
 
     NodeResults SolveListItemWithSuffixAlternatives(
-        const FormatBreakListItem& listItem,
-        int column,
-        int indentLevel,
-        bool lineHasText,
-        bool trailingComma = false
+        const FormatBreakListItem& listItem, int column, int indentLevel, bool lineHasText, bool trailingComma = false
     ) {
         if (listItem.node == nullptr) {
             return {};
@@ -972,15 +966,9 @@ private:
         return alternatives;
     }
 
-    NodeResult
-        SolveListItemWithSuffix(
-            const FormatBreakListItem& listItem,
-            int column,
-            int indentLevel,
-            bool lineHasText,
-            bool trailingComma = false
-        )
-    {
+    NodeResult SolveListItemWithSuffix(
+        const FormatBreakListItem& listItem, int column, int indentLevel, bool lineHasText, bool trailingComma = false
+    ) {
         if (listItem.node != nullptr) {
             std::optional<NodeResult> compact =
                 SolveCompactPhysicalLine(*listItem.node, column, indentLevel, lineHasText, true);
@@ -1503,7 +1491,7 @@ private:
             .endColumn = prefix.endColumn,
             .endIndentLevel = prefix.endIndentLevel,
             .endLineHasText = false,
-            .ownExpansionCharged = prefix.ownExpansionCharged
+            .ownExpansionCharged = prefix.ownExpansionCharged,
         };
         if (DelimitedInlinePrefixRequiresOverflowOrBreak(node, start)) {
             return {};
@@ -2460,8 +2448,7 @@ private:
         return current;
     }
 
-    NodeResults
-        SolvePrefixListAlternatives(const FormatBreakNode& node, int column, int indentLevel, bool lineHasText)
+    NodeResults SolvePrefixListAlternatives(const FormatBreakNode& node, int column, int indentLevel, bool lineHasText)
     {
         NodeResults alternatives;
         for (NodeResult compact : SolvePrefixListCompactAlternatives(node, column, indentLevel, lineHasText)) {
@@ -2491,8 +2478,7 @@ private:
         return best;
     }
 
-    NodeResult
-        SolveStatementSequenceCompact(const FormatBreakNode& node, int column, int indentLevel, bool lineHasText)
+    NodeResult SolveStatementSequenceCompact(const FormatBreakNode& node, int column, int indentLevel, bool lineHasText)
     {
         NodeResult
             result{.valid = true, .endColumn = column, .endIndentLevel = indentLevel, .endLineHasText = lineHasText};
@@ -2575,8 +2561,7 @@ private:
         return current;
     }
 
-    NodeResult
-        SolveFunctionSignatureCompact(const FormatBreakNode& node, int column, int indentLevel, bool lineHasText)
+    NodeResult SolveFunctionSignatureCompact(const FormatBreakNode& node, int column, int indentLevel, bool lineHasText)
     {
         NodeResult best;
         for (const NodeResult& candidate : SolveFunctionSignatureCompactAlternatives(
@@ -2603,8 +2588,7 @@ private:
         return open.parentKind == SyntaxNodeKind::ParameterList;
     }
 
-    bool
-        FunctionSignatureCompactPrefixFits(const FormatBreakNode& node, int column, int indentLevel, bool lineHasText)
+    bool FunctionSignatureCompactPrefixFits(const FormatBreakNode& node, int column, int indentLevel, bool lineHasText)
     {
         if (node.children.size() < 2) {
             return false;
@@ -2815,9 +2799,9 @@ private:
             header.endIndentLevel == ownerIndentLevel + 1;
     }
 
-    NodeResults SolveBodyHeaderCompactAlternatives(
-        const FormatBreakNode& node, int column, int indentLevel, bool lineHasText
-    ) {
+    NodeResults
+        SolveBodyHeaderCompactAlternatives(const FormatBreakNode& node, int column, int indentLevel, bool lineHasText)
+    {
         if (node.children.size() < 2 || node.bodyHeaderRequiresDetachedBody) {
             return {};
         }
@@ -2825,8 +2809,11 @@ private:
         for (const NodeResult& header : SolveAlternatives(*node.children[0], column, indentLevel, lineHasText)) {
             if (
                 ExpandedBodyHeaderNeedsDetachedBody(node, header, indentLevel) ||
-                (node.bodyHeaderSingleStatementBody && header.extraLines > 0) ||
-                (!lineHasText && node.bodyHeaderSplitAtParentIndentWhenLineStarts && !node.bodyHeaderSingleStatementBody)
+                (node.bodyHeaderSingleStatementBody && header.extraLines > 0) || (
+                    !lineHasText &&
+                    node.bodyHeaderSplitAtParentIndentWhenLineStarts &&
+                    !node.bodyHeaderSingleStatementBody
+                )
             ) {
                 continue;
             }
@@ -2849,8 +2836,7 @@ private:
         return alternatives;
     }
 
-    NodeResults
-        SolveBodyHeaderAlternatives(const FormatBreakNode& node, int column, int indentLevel, bool lineHasText)
+    NodeResults SolveBodyHeaderAlternatives(const FormatBreakNode& node, int column, int indentLevel, bool lineHasText)
     {
         NodeResults alternatives = SolveBodyHeaderCompactAlternatives(node, column, indentLevel, lineHasText);
         for (NodeResult candidate : SolveBodyHeaderSplitWithChoiceAlternatives(
@@ -2867,8 +2853,13 @@ private:
         }
         if (!lineHasText && node.bodyHeaderSplitAtParentIndentWhenLineStarts) {
             for (NodeResult candidate : SolveBodyHeaderSplitWithChoiceAlternatives(
-                node, column, indentLevel, lineHasText, FormatBreakChoice::BodyHeaderSplitAtParentIndent,
-                std::max(0, indentLevel - 1), node.bodyHeaderSingleStatementBody
+                node,
+                column,
+                indentLevel,
+                lineHasText,
+                FormatBreakChoice::BodyHeaderSplitAtParentIndent,
+                std::max(0, indentLevel - 1),
+                node.bodyHeaderSingleStatementBody
             )) {
                 alternatives.push_back(std::move(candidate));
             }
@@ -2891,9 +2882,8 @@ private:
         NodeResults alternatives;
         for (const NodeResult& header : SolveAlternatives(*node.children[0], column, indentLevel, lineHasText)) {
             if (
-                choice == FormatBreakChoice::Split && (
-                    node.bodyHeaderRequiresDetachedBody || ExpandedBodyHeaderNeedsDetachedBody(node, header, indentLevel)
-                )
+                choice == FormatBreakChoice::Split &&
+                (node.bodyHeaderRequiresDetachedBody || ExpandedBodyHeaderNeedsDetachedBody(node, header, indentLevel))
             ) {
                 continue;
             }
@@ -3075,7 +3065,9 @@ private:
             if (IsFormatBreakLiteralOperand(*node.operands[index + 1])) {
                 return false;
             }
-            if (!streamChain && index + 1 < node.operators.size() &&
+            if (
+                !streamChain &&
+                index + 1 < node.operators.size() &&
                 !AddCompactToken(prefix, node.operators[index + 1], true)
             ) {
                 return false;
@@ -3163,7 +3155,7 @@ private:
             .valid = true,
             .endColumn = prefix.endColumn,
             .endIndentLevel = prefix.endIndentLevel,
-            .endLineHasText = prefix.endLineHasText
+            .endLineHasText = prefix.endLineHasText,
         };
         AddChoice(result, node.id, FormatBreakChoice::SplitAttachedOpen, baseIndent);
         AppendToken(result, node.children[0]->token);
@@ -3209,9 +3201,9 @@ private:
             operand.delimiterKind == FormatBreakDelimiterKind::Paren;
     }
 
-    NodeResults
-        SolveChainSplitAfterOperatorAlternatives(const FormatBreakNode& node, int column, int indentLevel, bool lineHasText)
-    {
+    NodeResults SolveChainSplitAfterOperatorAlternatives(
+        const FormatBreakNode& node, int column, int indentLevel, bool lineHasText
+    ) {
         const int splitBaseIndent = node.requiredChainBreakBaseIndent.value_or(indentLevel);
         const int continuationIndent = node.flatSplitIndent ? splitBaseIndent : splitBaseIndent + 1;
         NodeResult
@@ -3238,7 +3230,11 @@ private:
                 const FormatBreakToken* nextSuffix =
                     index + 1 < node.operators.size() ? &node.operators[index + 1] : nullptr;
                 NodeResult operand = SolveNodeWithSuffix(
-                    *node.operands[index + 1], nextSuffix, normal.endColumn, normal.endIndentLevel, normal.endLineHasText
+                    *node.operands[index + 1],
+                    nextSuffix,
+                    normal.endColumn,
+                    normal.endIndentLevel,
+                    normal.endLineHasText
                 );
                 if (splitTrailingBodyHeaderAtParentIndent) {
                     NodeResult parentIndentOperand = SolveTrailingBodyHeaderSplitAtParentIndent(
@@ -3289,8 +3285,7 @@ private:
         return current;
     }
 
-    NodeResult
-        SolveChainSplitAfterOperator(const FormatBreakNode& node, int column, int indentLevel, bool lineHasText)
+    NodeResult SolveChainSplitAfterOperator(const FormatBreakNode& node, int column, int indentLevel, bool lineHasText)
     {
         NodeResult best;
         for (const NodeResult& candidate : SolveChainSplitAfterOperatorAlternatives(
@@ -3303,8 +3298,7 @@ private:
         return best;
     }
 
-    NodeResult
-        SolveChainSplitBeforeOperator(const FormatBreakNode& node, int column, int indentLevel, bool lineHasText)
+    NodeResult SolveChainSplitBeforeOperator(const FormatBreakNode& node, int column, int indentLevel, bool lineHasText)
     {
         const int splitBaseIndent = node.requiredChainBreakBaseIndent.value_or(indentLevel);
         NodeResult
@@ -3698,7 +3692,7 @@ private:
                     node, column, indentLevel, lineHasText, FormatBreakChoice::TernaryBreakAfterQuestion
                 ),
                 SolveSingleTernary(node, column, indentLevel, lineHasText, FormatBreakChoice::TernaryBreakAfterColon),
-                SolveSingleTernary(node, column, indentLevel, lineHasText, FormatBreakChoice::Split)
+                SolveSingleTernary(node, column, indentLevel, lineHasText, FormatBreakChoice::Split),
             };
             for (const NodeResult& alternative : alternatives) {
                 if (Better(alternative, best)) {

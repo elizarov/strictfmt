@@ -116,8 +116,10 @@ bool IsCommaOperatorForNode(const FormatBreakToken& token) {
 
 bool IsForHeaderDelimiter(const FormatBreakToken& open) {
     const PrintToken& printToken = FormatBreakTokenValue(open);
-    return printToken.parentKind == SyntaxNodeKind::ForStatement ||
-        printToken.grandParentKind == SyntaxNodeKind::ForStatement;
+    return printToken.syntaxKind == SyntaxNodeKind::LeftParen && (
+        printToken.parentKind == SyntaxNodeKind::ForStatement ||
+        printToken.grandParentKind == SyntaxNodeKind::ForStatement
+    );
 }
 
 bool IsMultiItemDesignatedInitializer(const FormatBreakNode& delimited, const FormatBreakToken& open) {
