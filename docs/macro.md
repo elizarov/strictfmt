@@ -6,6 +6,10 @@ This document specifies the macro configuration and macro formatting for `strict
 
 Definition-side and use-side macro categories are independent. `RawMacroDefinitions` affects only how a `#define` replacement is parsed and printed; every other macro category affects only how macro identifiers are parsed when used elsewhere in source.
 
+## Macro Arguments
+
+Macro argument lists permit empty and comment-only arguments in any position. Separator commas are preserved, including a comma immediately before the closing parenthesis.
+
 ## Macro Replacements
 
 Structured macro definitions are the default. Their replacement parses as a structured token stream and parse tree, and the formatter owns its complete layout. Macro replacement lists that form declaration fragments are recursively formatted before continuation backslashes are added.
@@ -301,7 +305,7 @@ typedef typename GTEST_BIND_(Selector, Type) BoundTest;
 
 `PreprocessorArgumentMacros` names function-like macros whose arguments are preprocessing-token sequences rather than C++ syntax. Use it only when the invocation deliberately inspects or transforms its arguments as tokens, for example a test helper that stringizes an unexpanded macro invocation.
 
-The outer call remains a structured list that the formatter can split. The complete call composes in expression and type-specifier positions. Within each argument, recursively nested parentheses are recognized while the complete preprocessing-token sequence is preserved as one formatter atom. Separator commas around empty arguments are preserved, including a comma immediately before the closing parenthesis. Only parentheses protect an inner comma from separating outer arguments.
+The outer call remains a structured list that the formatter can split. The complete call composes in expression and type-specifier positions. Within each argument, recursively nested parentheses are recognized while the complete preprocessing-token sequence is preserved as one formatter atom. Only parentheses protect an inner comma from separating outer arguments.
 
 <!-- .cpp-format
 MacroCategories:

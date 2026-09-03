@@ -149,6 +149,35 @@ RunDirectTypedThreadedTest<TypeParam>();
 
 INSTANTIATE_UTEST_SUITE_P(/* no prefix */, FormatterMacroFixture, testing::Values(true));
 
+#define FORMAT_EMPTY_TEST(suite, name) void suite()
+FORMAT_EMPTY_TEST(EmptyTestName, /* no name */) {}
+FORMAT_EMPTY_TEST(EmptyTestNameWithoutComment,) {}
+#undef FORMAT_EMPTY_TEST
+
+FORMAT_API_(, /* empty */) void EmptyPrefix();
+void EmptySuffix() FORMAT_USERVER_LIFETIME_BOUND(,,);
+
+TEST_COMMAND(,);
+TEST_COMMAND(,,);
+TEST_COMMAND(/* first */, /* middle */, /* last */);
+TEST_COMMAND(/* only */ /* more */);
+TEST_COMMAND(,value,,other,);
+TEST_COMMAND(value, // empty final argument
+);
+
+void EmptyMacroArguments() {
+GTEST_DISABLE_DEPRECATED_PUSH_(, /* empty */)
+TEST_COMMAND(, TEST_COMMAND(value,,), TEST_COMMAND(TEST_COMMAND(,)),);
+TEST_COMMAND(firstArgumentWithAnIntentionallyLongNameToForceWrapping,secondArgumentWithAnIntentionallyLongNameToForceWrapping,,);
+UEXPECT_THROW(Work(), /* empty */, Error,,);
+UEXPECT_THROW(, Error);
+UASSERT_NO_THROW(/* empty */);
+UASSERT_NO_THROW(UEXPECT_THROW(, Error));
+}
+
+#define FORWARD_EMPTY_ARGUMENTS(value) TEST_COMMAND(value,, /* empty */)
+#define NESTED_EMPTY_ARGUMENTS(value) TEST_COMMAND(, TEST_COMMAND(value,,), TEST_COMMAND(TEST_COMMAND(,)),)
+
 BENCHMARK_TEMPLATE(FormatterBenchmark, std::string)->Range(1, 8);
 
 void DependentTemplateMemberCall(DependentStorage& storage) {

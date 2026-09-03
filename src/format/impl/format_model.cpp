@@ -60,7 +60,7 @@ constexpr std::uint64_t kPreprocessorSplitListClasses = kAllowedListPreprocessor
     Bit(SyntaxNodeClass::PreprocessorSplitList) |
     Bit(SyntaxNodeClass::SemanticDelimitedParent);
 
-constexpr std::uint64_t kPreprocessingTokenArgumentListClasses =
+constexpr std::uint64_t kMacroArgumentListClasses =
     kPreprocessorSplitListClasses | Bit(SyntaxNodeClass::PreserveTrailingComma);
 
 constexpr std::uint64_t kConditionalPreprocessorTreeClasses = kAllowedPreprocessorContainerClasses |
@@ -310,7 +310,7 @@ constexpr auto kSyntaxKindMappings = std::to_array<SyntaxKindMapping>({
     Tree(SyntaxNodeKind::Tree, "function_pointer_type_descriptor"),
     Tree(SyntaxNodeKind::Tree, "type_specifier_macro_call"),
     Tree(SyntaxNodeKind::Tree, "preprocessing_token_macro_call"),
-    Tree(SyntaxNodeKind::ArgumentList, "preprocessing_token_argument_list", kPreprocessingTokenArgumentListClasses),
+    Tree(SyntaxNodeKind::ArgumentList, "preprocessing_token_argument_list", kMacroArgumentListClasses),
     Tree(SyntaxNodeKind::Tree, "preprocessing_token_argument"),
     Tree(SyntaxNodeKind::Tree, "preprocessing_parenthesized_tokens", Bit(SyntaxNodeClass::PreserveTrailingComma)),
     Tree(SyntaxNodeKind::Tree, "macro_expression_without_semicolon"),
@@ -467,8 +467,9 @@ constexpr auto kSyntaxKindMappings = std::to_array<SyntaxKindMapping>({
         SyntaxNodeKind::ArgumentList, "argument_list", kPreprocessorSplitListClasses | Bit(SyntaxNodeClass::NamedList)
     ),
     Tree(SyntaxNodeKind::ArgumentList, "primitive_braced_argument_list", kPreprocessorSplitListClasses),
-    Tree(SyntaxNodeKind::ArgumentList, "macro_argument_list", kPreprocessorSplitListClasses),
-    Tree(SyntaxNodeKind::ArgumentList, "macro_statement_argument_list", kPreprocessorSplitListClasses),
+    Tree(SyntaxNodeKind::ArgumentList, "macro_argument_list", kMacroArgumentListClasses),
+    Tree(SyntaxNodeKind::ArgumentList, "macro_parenthesized_argument", kMacroArgumentListClasses),
+    Tree(SyntaxNodeKind::ArgumentList, "macro_statement_argument_list", kMacroArgumentListClasses),
     Tree(SyntaxNodeKind::MacroStatementSequence, "macro_statement_sequence_argument"),
     Tree(SyntaxNodeKind::MacroStatementSequence, "structured_statement_macro_argument"),
     Tree(SyntaxNodeKind::SubscriptArgumentList, "subscript_argument_list", kPreprocessorSplitListClasses),
