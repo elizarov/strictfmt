@@ -506,3 +506,23 @@ void CommentedConditionalStreams() {
 #endif
         >> last;
 }
+
+template <typename T>
+concept ConditionalQualifiedRequirements =
+#if FORMAT_FIRST_REQUIREMENT
+    std::constructible_from<T,const FirstEnvironmentHolder&,const FirstNamespace::FirstDependencies&>;
+#else
+    std::constructible_from<T,const SecondEnvironmentHolder&,const SecondNamespace::SecondDependencies&>;
+#endif
+
+void ConditionalQualifiedTemplateArguments() {
+    Use<
+        outer::Container<
+#if FORMAT_FIRST_ARGUMENT
+            first_namespace::LongTemplate<FirstArgumentWithLongName,SecondArgumentWithLongName>
+#else
+            second_namespace::LongTemplate<ThirdArgumentWithLongName,FourthArgumentWithLongName>
+#endif
+        >
+    >(value);
+}

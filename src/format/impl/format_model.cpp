@@ -146,6 +146,7 @@ constexpr auto kSyntaxKindMappings = std::to_array<SyntaxKindMapping>({
     ),
     Tree(SyntaxNodeKind::FieldDeclaration, "macro_method_declaration", Bit(SyntaxNodeClass::MacroDeclarationFragment)),
     Tree(SyntaxNodeKind::AliasDeclaration, "alias_declaration", Bit(SyntaxNodeClass::MacroDeclarationFragment)),
+    Tree(SyntaxNodeKind::AliasDeclaration, "namespace_alias_definition"),
     Tree(
         SyntaxNodeKind::FunctionPointerAliasDeclaration,
         "function_pointer_alias_declaration",
@@ -472,7 +473,11 @@ constexpr auto kSyntaxKindMappings = std::to_array<SyntaxKindMapping>({
     Tree(SyntaxNodeKind::MacroStatementSequence, "structured_statement_macro_argument"),
     Tree(SyntaxNodeKind::SubscriptArgumentList, "subscript_argument_list", kPreprocessorSplitListClasses),
     Tree(SyntaxNodeKind::TemplateParameterList, "template_parameter_list", kPreprocessorSplitListClasses),
-    Tree(SyntaxNodeKind::TemplateArgumentList, "template_argument_list", kPreprocessorSplitListClasses),
+    Tree(
+        SyntaxNodeKind::TemplateArgumentList,
+        "template_argument_list",
+        kPreprocessorSplitListClasses | Bit(SyntaxNodeClass::NamedList)
+    ),
     Tree(SyntaxNodeKind::TemplateDeclaration, "template_declaration", Bit(SyntaxNodeClass::MacroDeclarationFragment)),
     Tree(SyntaxNodeKind::TemplateInstantiation, "template_instantiation"),
     Tree(SyntaxNodeKind::RequiresClause, "requires_clause"),

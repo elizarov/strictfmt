@@ -138,8 +138,9 @@ void GeneratedDependentTemplateMemberCall(Value value) {
         .timeout_ms = value["timeout_ms"].template As<std::optional<USERVER_NAMESPACE::chaotic::WithType<
             USERVER_NAMESPACE::chaotic::Primitive<
                 std::int64_t,
-                USERVER_NAMESPACE::chaotic::
-                    Minimum<::dynamic_config::feature_flags::VariableTypeRaw::kTimeout_MsMinimum>
+                USERVER_NAMESPACE::chaotic::Minimum<
+                    ::dynamic_config::feature_flags::VariableTypeRaw::kTimeout_MsMinimum
+                >
             >,
             std::chrono::milliseconds
         >>>(),
@@ -198,8 +199,8 @@ void DeclarationMacroArgument(Source& source) {
 
 void SplitConstDeclarationMacroArgument(Source& source) {
     EXPECT_THROW(
-        [[maybe_unused]] const auto bytes_read = source
-            .ReadSome(kVeryLongBufferNameForFormatterFixture, kVeryLongDeadlineNameForFormatterFixture),
+        [[maybe_unused]] const auto bytes_read =
+            source.ReadSome(kVeryLongBufferNameForFormatterFixture, kVeryLongDeadlineNameForFormatterFixture),
         IoTimeout
     );
 }
