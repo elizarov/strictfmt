@@ -1217,6 +1217,7 @@ private:
     std::vector<PreprocessorSplitListContext> preprocessorSplitListContexts_;
     std::vector<int> conditionalFunctionIndents_;
     std::optional<int> pendingIndentRestoreAfterFlush_;
+    std::optional<std::uint32_t> prebufferedTrailingCommentSourceIndex_;
     std::unordered_set<const SyntaxNode*> isolatedDeclarationItems_;
     std::unordered_map<const SyntaxNode*, DeclarationGroupState> declarationGroupStates_;
     std::vector<std::unique_ptr<CachedDeclarationLayout>> declarationLayoutsBySourceIndex_;
@@ -3701,6 +3702,10 @@ private:
         const PrintToken* next,
         const PrintToken* rawNext
     ) {
+        if (prebufferedTrailingCommentSourceIndex_ == token.sourceIndex) {
+            prebufferedTrailingCommentSourceIndex_.reset();
+            return;
+        }
         RetireFinishedMandatoryBlockSplitListContexts(token);
         if (PrepareDeclarationGroupBoundary(token)) {
             return;
@@ -4160,6 +4165,10 @@ private:
         const bool followedByTrailingComment = rawNext != nullptr && rawNext->kind == PrintTokenKind::TrailingComment;
         if (token.inConditionalFunctionHeader) {
             BufferToken(token);
+            if (followedByTrailingComment) {
+                BufferToken(*rawNext);
+                prebufferedTrailingCommentSourceIndex_ = rawNext->sourceIndex;
+            }
             FlushPendingTokens();
             RecordCrossBlockChainBaseIndents(crossBlockFallbackBaseIndent);
             if (!followedByTrailingComment) {
@@ -4193,6 +4202,10 @@ private:
         BufferToken(token);
         if (role == BraceRole::Compact || IsCompactSingleStatementFunctionBodyBrace(token)) {
             return;
+        }
+        if (followedByTrailingComment) {
+            BufferToken(*rawNext);
+            prebufferedTrailingCommentSourceIndex_ = rawNext->sourceIndex;
         }
         const std::vector<MandatoryBlockSplitListContext> splitContexts =
             FlushPendingTokens(splitListPlan ? splitListPlan->breakContext : FormatBreakModelContext{});
