@@ -62,6 +62,8 @@ Generated-source compaction may change only the C spelling of values emitted by 
 
 Grammar must model C++ constructs generically, following the shape of the C++ language rather than the source samples. Every piece of the grammar must work and parse in a recursive way. A grammar rule must not encode a shallow convenience shape that only works for the current nesting level or current fixture; if adding one more nesting level would require another special case, the rule is not generic enough. If a construct can appear where another C++ construct can appear, the grammar must compose through the same recursive nonterminal.
 
+Resolving syntactic ambiguity in the grammar is a hard architectural constraint. Grammar conflicts and precedence must select the intended complete recursive production. Later formatter stages must consume that selected syntax category as-is; the format model, spacing logic, and break model must not reinterpret expression tokens as declarations, templates, or other competing syntax.
+
 Project-specific tokens are used only for intentionally non-C++ macro fragments or scanner-owned lexical features documented in [scanner.md](scanner.md) and are taken from configuration, not hard-coded. Otherwise, structured grammar productions compose with existing C++ declarators, type names, expressions, and statements.
 
 Composite syntax must remain recursive in both the tree-sitter tree and the formatter model. A grammar token or formatter leaf must not hide any composite source span. The replacement text of a macro explicitly configured under `RawMacroDefinitions` is the sole opaque-source exception. The only other leaves are ordinary lexical tokens.

@@ -983,6 +983,14 @@ bool TemplateExpressionWorkaround() {
 return (a < b) > (c);
 }
 
+void QualifiedLiteralTemplateDeclarations(){
+ns::Box<1,2,true,false> object;
+ns::Box<1,2,true,false>* pointer=nullptr;
+ns::Box<1,2,true,false>& reference=object;
+ns::Outer<1,ns::Middle<2,ns::Inner<3,4>>> nested;
+ns::Box<111111111111111111111111111111111111,222222222222222222222222222222222222,333333333333333333333333333333333333,444444444444444444444444444444444444> expanded;
+}
+
 HRESULT CreateWriteFactory(ComPtr<IDWriteFactory>& dwriteFactory_) {
     return DWriteCreateFactory(
         DWRITE_FACTORY_TYPE_SHARED,

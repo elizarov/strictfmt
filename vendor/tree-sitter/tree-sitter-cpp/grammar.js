@@ -2176,20 +2176,20 @@ module.exports = grammar(C, {
       ),
     ),
 
-    template_type: $ => seq(
+    template_type: $ => prec.dynamic(3, seq(
       field('name', $._type_identifier),
       field('arguments', $.template_argument_list),
-    ),
+    )),
 
-    template_method: $ => seq(
+    template_method: $ => prec.dynamic(3, seq(
       field('name', choice($._field_identifier, $.operator_name)),
       field('arguments', $.template_argument_list),
-    ),
+    )),
 
-    template_function: $ => seq(
+    template_function: $ => prec.dynamic(3, seq(
       field('name', $.identifier),
       field('arguments', $.template_argument_list),
-    ),
+    )),
 
     template_argument_list: $ => seq(
       '<',
@@ -3693,17 +3693,17 @@ module.exports = grammar(C, {
         ['*', PREC.MULTIPLY],
         ['/', PREC.MULTIPLY],
         ['%', PREC.MULTIPLY],
-        ['||', PREC.LOGICAL_OR, true],
-        ['&&', PREC.LOGICAL_AND, true],
+        ['||', PREC.LOGICAL_OR, 2],
+        ['&&', PREC.LOGICAL_AND, 2],
         ['|', PREC.INCLUSIVE_OR],
         ['^', PREC.EXCLUSIVE_OR],
         ['&', PREC.BITWISE_AND],
         ['==', PREC.EQUAL],
         ['!=', PREC.EQUAL],
-        ['>', PREC.RELATIONAL, true],
-        ['>=', PREC.RELATIONAL, true],
-        ['<=', PREC.RELATIONAL, true],
-        ['<', PREC.RELATIONAL, true],
+        ['>', PREC.RELATIONAL, 1],
+        ['>=', PREC.RELATIONAL, 1],
+        ['<=', PREC.RELATIONAL, 1],
+        ['<', PREC.RELATIONAL, 1],
         ['<<', PREC.SHIFT],
         ['>>', PREC.SHIFT],
         ['<=>', PREC.THREE_WAY],
@@ -3743,7 +3743,7 @@ module.exports = grammar(C, {
           field('operator', '&&'),
           $.preproc_logical_tail_expression_fragment,
         )),
-        ...table.map(([operator, precedence, preferBinary]) => {
+        ...table.map(([operator, precedence, binaryPreference]) => {
           const rule = prec.left(precedence, seq(
             field('left', $.expression),
             // @ts-ignore
@@ -3752,7 +3752,7 @@ module.exports = grammar(C, {
           ));
           // Prefer real binary expressions over template-id recovery for
           // relational/logical chains such as "value < min || value > max".
-          return preferBinary ? prec.dynamic(1, rule) : rule;
+          return binaryPreference ? prec.dynamic(binaryPreference, rule) : rule;
         }));
     },
 
