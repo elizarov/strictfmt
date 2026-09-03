@@ -66,4 +66,6 @@ Project-specific tokens are used only for intentionally non-C++ macro fragments 
 
 Composite syntax must remain recursive in both the tree-sitter tree and the formatter model. A grammar token or formatter leaf must not hide any composite source span. The replacement text of a macro explicitly configured under `RawMacroDefinitions` is the sole opaque-source exception. The only other leaves are ordinary lexical tokens.
 
+The format model preserves grammar declarator-field roles through wrapper flattening, so declaration boundaries do not depend on the declarator's spelling or shape.
+
 Formatter behavior follows the same principle: rules use shared structural or configured semantic categories and apply at every supported recursion depth. Source spelling, incidental parser wrappers, and golden-fixture shape must not create one-off formatting categories.

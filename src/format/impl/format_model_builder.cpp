@@ -1107,9 +1107,12 @@ void AppendTsChildren(
     uint32_t previousEndRow = ts_node_start_point(tsNode).row;
     uint32_t previousEndColumn = ts_node_start_point(tsNode).column;
     bool hasPreviousSibling = !parent.children.empty();
+    TSTreeCursor cursor = ts_tree_cursor_new(tsNode);
+    ts_tree_cursor_goto_first_child(&cursor);
     for (uint32_t index = 0; index < childCount; ++index) {
-        TSNode child = ts_node_child(tsNode, index);
+        TSNode child = ts_tree_cursor_current_node(&cursor);
         const TSPoint childEndPoint = ts_node_end_point(child);
+        const size_t childBegin = parent.children.size();
         AppendTsChild(
             model,
             child,
@@ -1123,7 +1126,18 @@ void AppendTsChildren(
             previousEndColumn,
             hasPreviousSibling
         );
+        const char* fieldName = ts_tree_cursor_current_field_name(&cursor);
+        if (fieldName != nullptr && std::string_view(fieldName) == "declarator") {
+            for (size_t childIndex = childBegin; childIndex < parent.children.size(); ++childIndex) {
+                SyntaxNode* childNode = parent.children[childIndex];
+                if (childNode != nullptr && !SyntaxNodeHasClass(*childNode, SyntaxNodeClass::Trivia)) {
+                    childNode->isDeclarator = true;
+                }
+            }
+        }
+        ts_tree_cursor_goto_next_sibling(&cursor);
     }
+    ts_tree_cursor_delete(&cursor);
 }
 
 struct ProblemNode {

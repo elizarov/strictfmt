@@ -389,6 +389,7 @@ struct SyntaxNode {
 
     // Keep nodes maximally generic and space-efficient; avoid fields that only apply to one node kind.
     SyntaxNodeKind kind = SyntaxNodeKind::Unknown;
+    bool isDeclarator = false;
     std::uint64_t classes = 0;
     std::string_view text;
     const SyntaxNode* parent = nullptr;

@@ -655,6 +655,19 @@ void SetCommunications(communication_namespaces::with_a_long_name::Communication
 const ::first_global_qualification_namespace_with_long_name::second_global_qualification_namespace_with_long_name::FinalGlobalQualifiedTypeName& fallback_value;
 };
 
+typedef std::function<std::optional<double>(const TransformParams&, const double, const double)> ConfigurationTransformFunction;
+
+struct QualifiedTypedefDeclaratorBreaks {
+typedef const ::loans::storages::CheckoutRemindersStorageComponent* LoanCheckoutRemindersStorageComponentPointerAlias;
+typedef ::loans::storages::CheckoutRemindersStorageComponent QualifiedCheckoutRemindersStorageComponentArrayAliasWithExtent[10];
+typedef ::loans::storages::CheckoutRemindersStorageComponent FirstCheckoutRemindersStorageAlias,SecondCheckoutRemindersStorageAlias;
+};
+
+void QualifiedLocalDeclaratorBoundary() {
+std::vector<application::configuration::ValueType> configured_values(configuration_values.size(),application::configuration::ValueType{});
+Use(configured_values);
+}
+
 void DefaultQualifiedReference(int mode,const application::configuration::DefaultParameterValue& value=application::configuration::DefaultParameterValue::Default);
 void DefaultQualifiedPointer(application::configuration::DefaultParameterValue* value=application::configuration::FindDefaultParameterValue());
 void DefaultQualifiedUnnamed(const application::configuration::DefaultParameterValue& =application::configuration::DefaultParameterValue::Default);

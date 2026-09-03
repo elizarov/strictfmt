@@ -974,6 +974,24 @@ struct QualifiedTypeDeclaratorBreaks {
         FinalGlobalQualifiedTypeName& fallback_value;
 };
 
+typedef std::function<std::optional<double>(const TransformParams&, const double, const double)>
+    ConfigurationTransformFunction;
+
+struct QualifiedTypedefDeclaratorBreaks {
+    typedef const ::loans::storages::CheckoutRemindersStorageComponent*
+        LoanCheckoutRemindersStorageComponentPointerAlias;
+    typedef ::loans::storages::CheckoutRemindersStorageComponent
+        QualifiedCheckoutRemindersStorageComponentArrayAliasWithExtent[10];
+    typedef ::loans::storages::CheckoutRemindersStorageComponent
+        FirstCheckoutRemindersStorageAlias, SecondCheckoutRemindersStorageAlias;
+};
+
+void QualifiedLocalDeclaratorBoundary() {
+    std::vector<application::configuration::ValueType>
+        configured_values(configuration_values.size(), application::configuration::ValueType{});
+    Use(configured_values);
+}
+
 void DefaultQualifiedReference(
     int mode,
     const application::configuration::DefaultParameterValue& value =

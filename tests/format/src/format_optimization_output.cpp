@@ -195,6 +195,51 @@ template <
 >
 struct C;
 
+// typedefs share the qualified-type boundary for every declarator shape
+typedef a::B C;
+typedef a::B
+    Name;
+typedef a::B*
+    Ptr;
+typedef a::B&
+    Ref;
+typedef a::B**
+    PP;
+typedef a::B
+    A, B;
+typedef a::B
+    A[2];
+typedef a::B
+    (*P)[2];
+typedef a::B
+    (P);
+typedef a::B
+    F();
+typedef a::B
+    (*P)();
+typedef a::B
+    (C::*M)();
+typedef a::B
+    C::* M;
+typedef a::B A,
+    B[2],
+    * P;
+typedef a::T<B>
+    Name;
+typedef a::B
+    F(), G();
+
+// the same boundary applies to array and multiple-object declarations
+a::B
+    Object[20];
+a::LongType
+    A, B;
+
+void f24(
+    a::LongType
+        a[2]
+);
+
 // macro continuation suffix prevents a pair
 #define JOIN \
     a + \
