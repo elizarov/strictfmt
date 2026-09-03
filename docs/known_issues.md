@@ -19,3 +19,9 @@ Planned work: Decide whether to honor these comments. If strictfmt does not hono
 Current behavior: Trailing commas in brace lists are normalized from the selected layout, which causes many changes in real code.
 
 Planned work: Decide whether to further tune the rule or stop normalization and preserve trailing commas as written in the source.
+
+## DETACHED_KEYWORD
+
+Current behavior: A [value-owning keyword](glossary.md#value-owning-keyword) can occupy its own line, keeping the following expression compact.
+
+Planned work: Decide whether to keep this break opportunity to preserve a compact next line, or remove it and wrap the expression instead.
