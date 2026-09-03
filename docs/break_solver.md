@@ -34,7 +34,7 @@ Syntax-local `PrefixList` metadata routes colon-prefixed lists through the same 
 
 The solver compares complete candidates with `Better`. Intermediate candidate sets may be pruned only when the removed candidate cannot win any continuation under the same solver contract.
 
-Composite candidates retain nondominated child layouts until their shared continuation has been costed. This includes function-signature children, ternary operands and operators, and list items with separators. A flat-only parent filters the child's flat alternatives; it does not reject the parent merely because the child's locally best layout breaks.
+Composite candidates retain nondominated child layouts until their shared continuation has been costed. Parent legality constraints filter each child alternative independently; the child's locally best layout does not determine legality for other alternatives.
 
 Stream literal binding retains both the attached-follower candidate and the insertion-break candidate until their continuation is costed. A pair fitting inside the stream subtree does not prove that enclosing punctuation or following syntax fits. The normal overflow, expansion, and line-count comparison selects the complete layout; an early binding decision must not discard the shorter continuation state.
 

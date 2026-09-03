@@ -3889,3 +3889,17 @@ void StreamPairsRequireNonLiteralValues() {
         << "unfinished="
         << std::hex;
 }
+
+auto VisitWithCompetingLambdaHeaders() {
+    return std::visit(
+        Overloaded{
+            [context](
+                const RequestConfiguration& config, const ResponseParameters& response_parameters
+            ) -> std::optional<Result> {
+                Prepare();
+                return {};
+            },
+        },
+        value
+    );
+}
