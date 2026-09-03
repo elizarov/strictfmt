@@ -84,6 +84,7 @@ struct FormatBreakNode {
     FormatBreakDelimiterKind delimiterKind = FormatBreakDelimiterKind::None;
     FormatBreakChainKind chainKind = FormatBreakChainKind::AfterOperator;
     bool forceSplit = false;
+    bool blankLineBeforeClose = false;
     bool compactRequiresUnbrokenItems = false;
     bool flatSplitIndent = false;
     bool suppressCompactDelimiterPadding = false;

@@ -218,6 +218,7 @@ void
         std::fputc('\n', output);
     }
     WriteBooleanField(output, fieldIndent, "force-split", node.forceSplit);
+    WriteBooleanField(output, fieldIndent, "blank-line-before-close", node.blankLineBeforeClose);
     WriteBooleanField(output, fieldIndent, "compact-requires-unbroken-items", node.compactRequiresUnbrokenItems);
     WriteBooleanField(output, fieldIndent, "flat-split-indent", node.flatSplitIndent);
     WriteBooleanField(output, fieldIndent, "function-signature-has-body", node.functionSignatureHasBody);

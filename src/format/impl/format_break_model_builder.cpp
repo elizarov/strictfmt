@@ -3530,6 +3530,7 @@ private:
 
         ConstSyntaxChildList itemChildren;
         bool pendingBlankLine = false;
+        bool blankLineBeforeCurrentItem = false;
         for (size_t index = openIndex + 1; index < closeIndex; ++index) {
             const SyntaxNode* child = children[index];
             if (child == nullptr) {
@@ -3547,17 +3548,14 @@ private:
                 }
                 if (child->kind == SyntaxNodeKind::TrailingComment) {
                     if (!itemChildren.empty()) {
-                        const bool blankLineBefore =
-                            ShouldPreservePendingBlankLine(*delimited, pendingBlankLine, false);
-                        AppendDelimitedItem(*delimited, itemChildren, *open, depth, blankLineBefore);
+                        AppendDelimitedItem(*delimited, itemChildren, *open, depth, blankLineBeforeCurrentItem);
+                        blankLineBeforeCurrentItem = false;
                     }
                     AttachTrailingCommentToPreviousItem(*delimited, *comment);
                 } else {
                     if (!itemChildren.empty()) {
-                        const bool blankLineBefore =
-                            ShouldPreservePendingBlankLine(*delimited, pendingBlankLine, false);
-                        AppendDelimitedItem(*delimited, itemChildren, *open, depth, blankLineBefore);
-                        pendingBlankLine = false;
+                        AppendDelimitedItem(*delimited, itemChildren, *open, depth, blankLineBeforeCurrentItem);
+                        blankLineBeforeCurrentItem = false;
                     }
                     const bool blankLineBefore = ShouldPreservePendingBlankLine(*delimited, pendingBlankLine, true);
                     AppendStandaloneCommentItem(*delimited, *comment, depth, blankLineBefore);
@@ -3577,13 +3575,17 @@ private:
                 )) {
                     const bool blankLineBefore = ShouldPreservePendingBlankLine(*delimited, pendingBlankLine, false);
                     AppendEmptyDelimitedItem(*delimited, depth, blankLineBefore);
+                    pendingBlankLine = false;
                 } else {
-                    const bool blankLineBefore = ShouldPreservePendingBlankLine(*delimited, pendingBlankLine, false);
-                    AppendDelimitedItem(*delimited, itemChildren, *open, depth, blankLineBefore);
+                    AppendDelimitedItem(*delimited, itemChildren, *open, depth, blankLineBeforeCurrentItem);
                 }
-                pendingBlankLine = false;
+                blankLineBeforeCurrentItem = false;
                 AttachSeparatorToPreviousItem(*delimited, *token);
                 continue;
+            }
+            if (itemChildren.empty() && pendingBlankLine) {
+                blankLineBeforeCurrentItem = ShouldPreservePendingBlankLine(*delimited, pendingBlankLine, false);
+                pendingBlankLine = false;
             }
             itemChildren.push_back(child);
             if (
@@ -3594,13 +3596,12 @@ private:
                 itemChildren.size() == 1 &&
                 (child->kind == SyntaxNodeKind::Declaration || child->kind == SyntaxNodeKind::InitStatement)
             ) {
-                const bool blankLineBefore = ShouldPreservePendingBlankLine(*delimited, pendingBlankLine, false);
-                AppendDelimitedItem(*delimited, itemChildren, *open, depth, blankLineBefore);
-                pendingBlankLine = false;
+                AppendDelimitedItem(*delimited, itemChildren, *open, depth, blankLineBeforeCurrentItem);
+                blankLineBeforeCurrentItem = false;
             }
         }
-        const bool blankLineBefore = ShouldPreservePendingBlankLine(*delimited, pendingBlankLine, false);
-        AppendDelimitedItem(*delimited, itemChildren, *open, depth, blankLineBefore);
+        AppendDelimitedItem(*delimited, itemChildren, *open, depth, blankLineBeforeCurrentItem);
+        delimited->blankLineBeforeClose = pendingBlankLine && !delimited->items.empty();
         if (
             itemChildren.empty() &&
             IsForHeaderDelimiter(*open) &&

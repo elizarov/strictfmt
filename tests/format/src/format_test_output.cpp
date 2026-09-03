@@ -4094,6 +4094,12 @@ void PreserveParameterBlankLines(
     int second
 );
 
+void PreserveFinalParameterBlankLine(
+    int first,
+    int second
+
+);
+
 struct PreserveBaseListBlankLines :
     First,
 
