@@ -65,6 +65,17 @@ Unix state under an OS-specific subdirectory (either `build/linux/` or `build/ma
 
 Windows and Linux builds can coexist in the same checkout because their generated state lives under separate subdirectories.
 
+## Incremental Builds
+
+The build wrappers reconfigure CMake and build incrementally. Unchanged objects
+and libraries are reused; `Built target` lines alone do not indicate recompilation.
+
+On macOS, `scripts/build.sh` pins `CMAKE_OSX_ARCHITECTURES` to the environment
+override, an existing non-empty cache value, or `uname -m`, in that order. This
+keeps compiler flags stable when CMake's hardware probes have different access
+in a terminal and a sandbox. Set the environment variable explicitly to change
+architectures, including a semicolon-separated list for a universal build.
+
 ## Formatting Project Sources
 
 Before committing changes, build the current formatter and format all project
