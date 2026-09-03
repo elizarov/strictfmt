@@ -5,6 +5,7 @@ This document owns the general testing strategy and test file placement for `str
 ## Strategy
 
 Formatter tests are driven by `tests/format/format_test.py` through the `strictfmt_tests` CMake target and the `scripts/test.sh|cmd` wrappers described in [build.md](build.md).
+The same target runs the UTF-8 utility's [Unicode conformance tests](../vendor/unicode/README.md).
 The Python runner uses verbose `unittest` output with compact method names, so
 test logs list each test with its pass/fail status instead of dot-only progress.
 
@@ -77,6 +78,7 @@ target passes its resolved version to the Python harness, which requires
 - `tests/format/.cpp-format` owns the default test formatter configuration.
 - `tests/format/.cpp-format-optimization` owns the 15-column break-selection
   golden configuration.
+- `tests/format/.cpp-format-non-ascii` owns the 40-column Unicode golden configuration.
 - `tests/format/.cpp-format-userver` owns the userver-oriented test formatter
   configuration.
 - `tests/format/src/` owns golden input, formatted output, and diagnostic output
@@ -98,6 +100,8 @@ and exist only to exercise one command or configuration edge.
 - `tests/format/src/format_optimization_input.cpp` ->
   `tests/format/src/format_optimization_output.cpp`: reduced-width corner cases
   for profiles, delimiter partitions, and suffix-sensitive pruning.
+- `tests/format/src/format_non_ascii_input.cpp` ->
+  `tests/format/src/format_non_ascii_output.cpp`: UTF-8 identifiers, literals, comments, and grapheme-cluster widths.
 - `tests/format/src/format_userver_input.cpp` ->
   `tests/format/src/format_userver_output.cpp`: userver-oriented formatting
   coverage using `.cpp-format-userver`, including configured macro categories as documented in [macro.md] and include grouping.

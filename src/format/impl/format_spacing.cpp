@@ -351,7 +351,11 @@ bool IsUserDefinedLiteralSuffix(const PrintToken& previous, const PrintToken& cu
 }
 
 bool IsWordBoundaryChar(char ch) {
-    return (ch >= 'A' && ch <= 'Z') || (ch >= 'a' && ch <= 'z') || (ch >= '0' && ch <= '9') || ch == '_';
+    return (ch >= 'A' && ch <= 'Z') ||
+        (ch >= 'a' && ch <= 'z') ||
+        (ch >= '0' && ch <= '9') ||
+        ch == '_' ||
+        static_cast<unsigned char>(ch) >= 0x80;
 }
 
 bool StartsWithWordBoundary(const PrintToken& token) {

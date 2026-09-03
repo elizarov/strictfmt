@@ -92,9 +92,11 @@ add_library(strictfmt_util STATIC
     src/tools/tools_progress.cpp
     src/util/file_path.cpp
     src/util/strings.cpp
+    src/util/utf8.cpp
 )
 target_include_directories(strictfmt_util PUBLIC
     "${CMAKE_CURRENT_SOURCE_DIR}/src"
+    PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/vendor/unicode"
 )
 strictfmt_apply_common_options(strictfmt_util)
 
@@ -200,13 +202,21 @@ if(Python3_FOUND)
     set_tests_properties(StrictfmtFormatTests PROPERTIES
         ENVIRONMENT "${strictfmt_format_test_env}"
     )
+    add_executable(strictfmt_utf8_tests EXCLUDE_FROM_ALL tests/util/utf8_test.cpp)
+    target_link_libraries(strictfmt_utf8_tests PRIVATE strictfmt_util)
+    strictfmt_apply_common_options(strictfmt_utf8_tests)
+    add_test(NAME StrictfmtUtf8Tests
+        COMMAND strictfmt_utf8_tests "${CMAKE_CURRENT_SOURCE_DIR}/vendor/unicode/GraphemeBreakTest.txt"
+    )
     add_custom_target(strictfmt_tests
+        COMMAND strictfmt_utf8_tests "${CMAKE_CURRENT_SOURCE_DIR}/vendor/unicode/GraphemeBreakTest.txt"
         COMMAND
             ${CMAKE_COMMAND} -E env ${strictfmt_format_test_env}
             "${Python3_EXECUTABLE}"
             "${CMAKE_CURRENT_SOURCE_DIR}/tests/format/format_test.py"
         VERBATIM
     )
+    add_dependencies(strictfmt_tests strictfmt_utf8_tests)
     if(strictfmt_format_test_depends)
         add_dependencies(strictfmt_tests ${strictfmt_format_test_depends})
     endif()

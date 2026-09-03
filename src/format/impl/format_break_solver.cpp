@@ -14,6 +14,7 @@
 
 #include "format/impl/format_break_model_inline_helpers.h"
 #include "format/impl/format_value_profile.h"
+#include "util/utf8.h"
 
 namespace {
 
@@ -327,7 +328,7 @@ private:
             result.valid = false;
             return;
         }
-        const int width = static_cast<int>(text.size());
+        const int width = Utf8CharacterCount(text);
         const int spaceWithoutLeadingText = result.producesText && token.spaceBefore ? 1 : 0;
         const int spaceWithLeadingText = token.spaceBefore ? 1 : 0;
         result.widthWithoutLeadingText += spaceWithoutLeadingText + width;
@@ -516,20 +517,23 @@ private:
         NodeResult result{
             .valid = true, .endColumn = column + space, .endIndentLevel = indentLevel, .endLineHasText = lineHasText
         };
-        for (size_t index = 0; index < text.size(); ++index) {
-            if (text[index] == '\r' && index + 1 < text.size() && text[index + 1] == '\n') {
-                continue;
+        while (!text.empty()) {
+            const size_t newline = text.find('\n');
+            std::string_view line = text.substr(0, newline);
+            if (newline != std::string_view::npos && line.ends_with('\r')) {
+                line.remove_suffix(1);
             }
-            if (text[index] == '\n') {
-                FinishCurrentLine(result);
-                ++result.extraLines;
-                result.endColumn = 0;
-                result.endLineHasText = false;
-                result.currentLineOverflowRecorded = false;
-                continue;
+            result.endColumn += Utf8CharacterCount(line);
+            result.endLineHasText = result.endLineHasText || !line.empty();
+            if (newline == std::string_view::npos) {
+                break;
             }
-            ++result.endColumn;
-            result.endLineHasText = true;
+            FinishCurrentLine(result);
+            ++result.extraLines;
+            result.endColumn = 0;
+            result.endLineHasText = false;
+            result.currentLineOverflowRecorded = false;
+            text.remove_prefix(newline + 1);
         }
         if (IsCommentToken(FormatBreakTokenKind(token))) {
             FinishCurrentLine(result);
@@ -1243,7 +1247,7 @@ private:
             return false;
         }
         const int space = SpaceBeforeToken(token, result.endLineHasText);
-        const int width = static_cast<int>(text.size());
+        const int width = Utf8CharacterCount(text);
         result.endColumn += space + width;
         result.endLineHasText = result.endLineHasText || width > 0;
         return !requireFit || !result.endLineHasText || result.endColumn <= config_.columnLimit;

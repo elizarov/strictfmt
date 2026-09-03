@@ -577,6 +577,8 @@ int Select(int value) {
 
 ## Break Selection
 
+Token widths count Unicode [extended grapheme clusters](https://www.unicode.org/reports/tr29/#Grapheme_Cluster_Boundaries).
+
 ### Break Cost
 
 An expansion's raw depth is its construct's structural depth in the formatted segment: zero at the root, increasing by one per nested level. The adjustments that turn raw depth into effective break cost are specified under [Break-Decision Trees](#break-decision-trees).

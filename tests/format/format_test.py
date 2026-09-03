@@ -50,6 +50,8 @@ MAIN_INCLUDE_INPUT_FIXTURE = Path("src") / "format_main_include_input.cpp"
 MAIN_INCLUDE_OUTPUT_FIXTURE = Path("src") / "format_main_include_output.cpp"
 OPTIMIZATION_INPUT_FIXTURE = Path("src") / "format_optimization_input.cpp"
 OPTIMIZATION_OUTPUT_FIXTURE = Path("src") / "format_optimization_output.cpp"
+NON_ASCII_INPUT_FIXTURE = Path("src") / "format_non_ascii_input.cpp"
+NON_ASCII_OUTPUT_FIXTURE = Path("src") / "format_non_ascii_output.cpp"
 USERVER_INPUT_FIXTURE = Path("src") / "format_userver_input.cpp"
 USERVER_OUTPUT_FIXTURE = Path("src") / "format_userver_output.cpp"
 IFDEF_INPUT_FIXTURE = Path("src") / "format_ifdef_input.cpp"
@@ -62,9 +64,11 @@ ERROR_OUTPUT_FIXTURE = Path("src") / "format_error_output.txt"
 USERVER_FORMAT_CONFIG = TEST_ROOT / ".cpp-format-userver"
 DEFAULT_FORMAT_CONFIG = TEST_ROOT / ".cpp-format"
 OPTIMIZATION_FORMAT_CONFIG = TEST_ROOT / ".cpp-format-optimization"
+NON_ASCII_FORMAT_CONFIG = TEST_ROOT / ".cpp-format-non-ascii"
 FORMATTED_GOLDEN_OUTPUTS = (
     ("default", OUTPUT_FIXTURE, None),
     ("optimization", OPTIMIZATION_OUTPUT_FIXTURE, OPTIMIZATION_FORMAT_CONFIG),
+    ("non-ascii", NON_ASCII_OUTPUT_FIXTURE, NON_ASCII_FORMAT_CONFIG),
     ("userver", USERVER_OUTPUT_FIXTURE, USERVER_FORMAT_CONFIG),
     ("ifdef", IFDEF_OUTPUT_FIXTURE, USERVER_FORMAT_CONFIG),
     ("unsupported", UNSUPPORTED_OUTPUT_FIXTURE, USERVER_FORMAT_CONFIG),
@@ -400,6 +404,23 @@ class FormatCommandTests(unittest.TestCase):
         self.assertEqual(0, result.returncode, msg=f"stdout:\n{result.stdout}\n\nstderr:\n{result.stderr}")
         self.assertNotIn("parse failed", result.stderr)
         self.assert_no_unsupported_placement_warnings(result)
+
+    def test_non_ascii_stdin_formats_to_expected_output(self) -> None:
+        source = read_fixture(NON_ASCII_INPUT_FIXTURE).encode("utf-8")
+        expected = read_fixture(NON_ASCII_OUTPUT_FIXTURE).encode("utf-8")
+        for ending in (b"\n", b"\r\n"):
+            with self.subTest(line_ending=ending):
+                result = native_format_bytes(
+                    "--stdin",
+                    "--style",
+                    str(NON_ASCII_FORMAT_CONFIG),
+                    cwd=TEST_ROOT,
+                    input_bytes=source.replace(b"\n", ending),
+                )
+
+                self.assertEqual(0, result.returncode, msg=result.stderr)
+                self.assertEqual(expected.replace(b"\n", ending), result.stdout)
+                self.assertNotIn(b": warning at ", result.stderr)
 
     def test_golden_outputs_reparse_and_format_idempotently(self) -> None:
         for name, fixture, style in FORMATTED_GOLDEN_OUTPUTS:

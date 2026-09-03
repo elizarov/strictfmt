@@ -3,6 +3,7 @@
 #include <string_view>
 
 #include "format/impl/format_model.h"
+#include "util/utf8.h"
 
 enum class PrintTokenKind {
     Known,
@@ -63,4 +64,4 @@ bool FormatTokensShareMacroDefinition(const PrintToken* left, const PrintToken* 
 bool IsTemplateAnglePrintToken(const PrintToken& token);
 bool FormatTokenNeedsSpace(const PrintToken* previous, const PrintToken& current);
 inline std::string_view FormatTokenText(const PrintToken& token) { return token.text; }
-inline int FormatTokenWidth(const PrintToken& token) { return static_cast<int>(token.text.size()); }
+inline int FormatTokenWidth(const PrintToken& token) { return Utf8CharacterCount(token.text); }

@@ -19,6 +19,7 @@
 #include "format/impl/format_raw_macro.h"
 #include "format/impl/format_spacing.h"
 #include "tools/tools_common.h"
+#include "util/utf8.h"
 
 namespace {
 
@@ -2102,9 +2103,8 @@ private:
         if (!output_.empty() && output_.back() == '\n') {
             output_.pop_back();
         }
-        const size_t lineStart = output_.find_last_of('\n');
-        currentColumn_ = lineStart == std::string::npos ? static_cast<int>(output_.size()) :
-            static_cast<int>(output_.size() - lineStart - 1);
+        currentColumn_ = 0;
+        AdvanceCurrentColumn(output_);
         atLineStart_ = false;
         lineHasText_ = currentColumn_ > 0;
         macroContinuationLine_ = false;
@@ -2163,7 +2163,7 @@ private:
                 .owner = token.node == nullptr ? nullptr : token.node->parent,
                 .commentOffset = output_.size(),
                 .commentColumn = currentColumn_,
-                .commentWidth = static_cast<int>(text.size()),
+                .commentWidth = Utf8CharacterCount(text),
             });
         }
         Write(text);
@@ -2252,10 +2252,10 @@ private:
     void AdvanceCurrentColumn(std::string_view text) {
         const size_t newline = text.find_last_of('\n');
         if (newline == std::string_view::npos) {
-            currentColumn_ += static_cast<int>(text.size());
+            currentColumn_ += Utf8CharacterCount(text);
             return;
         }
-        currentColumn_ = static_cast<int>(text.size() - newline - 1);
+        currentColumn_ = Utf8CharacterCount(text.substr(newline + 1));
     }
 
     int CurrentLineIndentLevel() const {
