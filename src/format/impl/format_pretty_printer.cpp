@@ -541,14 +541,24 @@ const SyntaxNode* BraceListTerminalCommaOpen(const PrintToken& token) {
 }
 
 bool IsFormatterOwnedChain(const SyntaxNode& node) {
-    if (node.kind != SyntaxNodeKind::FieldExpression && node.kind != SyntaxNodeKind::BinaryExpression) {
+    if (
+        node.kind != SyntaxNodeKind::FieldExpression &&
+        node.kind != SyntaxNodeKind::BinaryExpression &&
+        node.kind != SyntaxNodeKind::ConditionalExpression
+    ) {
         return false;
     }
     return std::any_of(node.children.begin(), node.children.end(), [&node](const SyntaxNode* child) {
-        return child != nullptr && (SyntaxNodeKindHasClass(child->kind, SyntaxNodeClass::ChainOperator) || (
-            node.kind == SyntaxNodeKind::FieldExpression &&
-            (child->kind == SyntaxNodeKind::Dot || child->kind == SyntaxNodeKind::Arrow)
-        ));
+        return child != nullptr && (
+            SyntaxNodeKindHasClass(child->kind, SyntaxNodeClass::ChainOperator) || (
+                node.kind == SyntaxNodeKind::FieldExpression &&
+                (child->kind == SyntaxNodeKind::Dot || child->kind == SyntaxNodeKind::Arrow)
+            ) ||
+            (
+                node.kind == SyntaxNodeKind::ConditionalExpression &&
+                (child->kind == SyntaxNodeKind::Question || child->kind == SyntaxNodeKind::Colon)
+            )
+        );
     });
 }
 

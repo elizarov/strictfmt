@@ -1698,6 +1698,20 @@ value_pos=thread_local_values.insert(std::make_pair(thread_local_instance,std::s
 ::testing::UnitTest::GetInstance()->parameterized_test_registry().GetTestSuitePatternHolder<test_suite_name>(GTEST_STRINGIFY_(test_suite_name),::testing::internal::CodeLocation(__FILE__,__LINE__))->AddTestPattern(GTEST_STRINGIFY_(test_suite_name),GTEST_STRINGIFY_(test_name),new ::testing::internal::TestMetaFactory<GTEST_TEST_CLASS_NAME_(test_suite_name,test_name)>(),::testing::internal::CodeLocation(__FILE__,__LINE__));
 }
 
+bool TernaryBranchCommentIndent(bool a,bool b,bool c){
+bool value=a?
+// true case
+b:c;
+return value;
+}
+
+bool TernaryFalseBranchCommentIndent(bool a,bool b,bool c){
+bool value=a?b:
+// false case
+c;
+return value;
+}
+
 void UniversalBreakSelectionCases() {
     const int singleBinaryValue=firstValue+BuildValue(firstArgumentWithLongName,secondArgumentWithLongName,thirdArgumentWithLongName,fourthArgumentWithLongName);
     const int tailCallChainValue=firstValue+secondValue+BuildValue(firstArgumentWithLongName,secondArgumentWithLongName,thirdArgumentWithLongName,fourthArgumentWithLongName);
