@@ -186,7 +186,7 @@ bool same = firstValue ==
     secondValue;
 ```
 
-Like [lists](#lists), chains stay compact on one line or split one item per line. Split items share the chain's base indentation.
+Like [lists](#lists), chains stay compact on one line or split one item per line. Split continuations share one extra indentation level, except in explicitly specified fixed-arity contexts; in calls, this distinguishes operands from separate arguments.
 
 <!-- .cpp-format
 ColumnLimit: 35
