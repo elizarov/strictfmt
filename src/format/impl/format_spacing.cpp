@@ -407,8 +407,8 @@ bool IsAttributeOpenToken(const PrintToken& token) {
 
 bool IsFunctionSuffixMacro(const PrintToken& token) { return token.syntaxKind == SyntaxNodeKind::FunctionSuffixMacro; }
 
-bool IsInlineBlockCommentToken(const PrintToken& token) {
-    return token.kind == PrintTokenKind::Text && token.text.size() >= 4 && token.text.substr(0, 2) == "/*";
+bool IsBlockCommentToken(const PrintToken& token) {
+    return (token.kind == PrintTokenKind::Text || IsCommentToken(token.kind)) && token.text.starts_with("/*");
 }
 
 const SyntaxNode* LastNonTriviaLeaf(const SyntaxNode& node) {
@@ -573,7 +573,7 @@ bool IsTemplateAnglePrintToken(const PrintToken& token) {
     ) {
         return false;
     }
-    return IsTemplateDelimiterContext(token) || (
+    return (IsTemplateDelimiterContext(token) && !IsBinaryContext(token) && !IsOperatorSpellingContext(token)) || (
             token.node != nullptr &&
             (token.node->classes & static_cast<std::uint64_t>(SyntaxNodeClass::RecoveredTemplateDelimiter)) != 0
         ) ||
@@ -587,8 +587,30 @@ bool IsTemplateAnglePrintToken(const PrintToken& token) {
 }
 
 bool FormatTokenNeedsSpace(const PrintToken* previous, const PrintToken& current) {
+    if (previous == nullptr) {
+        return false;
+    }
+    if (IsBlockCommentToken(current)) {
+        if (current.kind == PrintTokenKind::TrailingComment) {
+            return true;
+        }
+        return !IsAttributeOpenToken(*previous) && !(
+            previous->kind == PrintTokenKind::Known &&
+            PrintTokenSyntaxHasClass(*previous, SyntaxNodeClass::OpeningDelimiter) &&
+            (previous->syntaxKind != SyntaxNodeKind::Less || IsTemplateAnglePrintToken(*previous))
+        );
+    }
+    if (IsBlockCommentToken(*previous)) {
+        return !IsAttributeCloseToken(current) && !(current.kind == PrintTokenKind::Known && (
+            current.syntaxKind == SyntaxNodeKind::RightParen ||
+            current.syntaxKind == SyntaxNodeKind::RightBracket ||
+            current.syntaxKind == SyntaxNodeKind::RightBrace ||
+            current.syntaxKind == SyntaxNodeKind::Comma ||
+            current.syntaxKind == SyntaxNodeKind::Semicolon ||
+            (current.syntaxKind == SyntaxNodeKind::Greater && IsTemplateAnglePrintToken(current))
+        ));
+    }
     if (
-        previous == nullptr ||
         (IsPreprocessorLikeToken(*previous) && previous->macroDefinition == nullptr) ||
         (IsPreprocessorLikeToken(current) && current.macroDefinition == nullptr)
     ) {
@@ -614,16 +636,6 @@ bool FormatTokenNeedsSpace(const PrintToken* previous, const PrintToken& current
     }
     if (IsUserDefinedLiteralSuffix(*previous, current)) {
         return false;
-    }
-    if (IsInlineBlockCommentToken(current)) {
-        const SyntaxNodeKind previousSyntax =
-            previous->kind == PrintTokenKind::Known ? previous->syntaxKind : SyntaxNodeKind::Unknown;
-        return previousSyntax != SyntaxNodeKind::LeftParen &&
-            previousSyntax != SyntaxNodeKind::LeftBracket &&
-            previousSyntax != SyntaxNodeKind::LeftBrace;
-    }
-    if (IsInlineBlockCommentToken(*previous) && IsWordLike(current)) {
-        return true;
     }
     if (current.kind == PrintTokenKind::Text && !current.text.empty() && current.text.front() == '=') {
         return true;

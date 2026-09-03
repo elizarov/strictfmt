@@ -32,7 +32,7 @@ This document specifies the source layout produced by `strictfmt`. Wrapping exam
 - Put no space before access-specifier, label, or `case` colons, e.g. `public:`.
 - Put no spaces around qualification or member-access operators, e.g. `std::string`.
 - Put two spaces before a trailing `//` comment, e.g. `value;  // note`.
-- Put one space before a trailing `/* ... */` comment, e.g. `Type& /*name*/`.
+- Separate inline `/* ... */` comments from neighboring tokens by one space, except after opening delimiters for non-trailing comments or before closing delimiters, commas, or semicolons.
 - Put no space between `#` and any preprocessor directive keyword, e.g. `#include`.
 - Put one space after a preprocessor directive keyword before its operand, e.g. `#pragma once`.
 

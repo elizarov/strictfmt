@@ -18,3 +18,6 @@ void f6(){auto x=((a+b));}
 
 // exact runs
 void f7(){if(a){if(b){throw ((((((((((((((((((((value))))))))))))))))))));}}}
+
+// comment spacing at the column limit
+void f8(){f1(/**/"");}

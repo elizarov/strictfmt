@@ -2578,3 +2578,68 @@ auto VisitWithCompetingLambdaHeaders() {
             return {};
         }}, value);
 }
+
+void InlineBlockCommentSpacing() {
+Configure( /* mode = */"default",/* options = */{},/* enabled = */true);
+Consume(/* number = */42,/* character = */'x',/* null = */nullptr);
+Consume(/* wide = */L"text",/* raw = */R"(raw)",/* suffix = */"text"sv);
+Consume(/* first */  /* second */"value");
+Consume(value/* explanation */ ,other);
+Consume( /* no arguments */ );
+auto index = items[ /* index = */0/* last */ ];
+auto grouped = ( /* first */value/* last */ );
+auto values = Values{ /* first */1,/* second */2/* last */ };
+auto empty = Values{ /* no values */ };
+auto constructed = Type/* explanation */{};
+auto initialized = Type/* explanation */{1};
+auto lambda = [ /* capture */value/* last */ ] { return /* explanation */value; };
+bool negated = !/* explanation */ready;
+bool inversion = /* explanation */!ready;
+auto dereferenced = * /* explanation */pointer;
+auto indirect = /* explanation */*pointer;
+auto address = /* explanation */&value;
+auto negative = /* explanation */-value;
+auto member = object/* explanation */.member;
+auto pointerMember = pointer/* explanation */->member;
+auto memberPointer = object/* explanation */.*member;
+auto pointerMemberPointer = pointer/* explanation */->*member;
+auto selected = object./* explanation */member;
+auto pointed = pointer->/* explanation */member;
+auto qualified = ns::/* explanation */value;
+auto scope = ns/* explanation */::value;
+auto invoked = Run/* explanation */(value);
+auto sum = left/* explanation */+right;
+auto difference = left-/* explanation */right;
+auto lesser = left</* explanation */right;
+auto greater = left/* explanation */>right;
+value/* explanation */++;
+value++/* explanation */ ;
+for (int i = 0/* initial */ ;i < count/* condition */ ;++i) { Use(i); }
+return /* explanation */result;
+}
+
+void UnnamedCommentedParameter(Type&/* unused */ );
+
+template < /* parameter */typename T/* last */ >
+struct CommentedTemplateArguments {
+using Type = Container< /* argument */T/* last */ >;
+using Compared = Container<(left/* before */</* after */right), (left/* before */>/* after */right)>;
+bool operator</* name */(const T&);
+bool operator/* name */>(const T&);
+};
+
+[[ /* attribute */maybe_unused/* last */ ]] int commentedAttribute;
+
+#define COMMENTED_ARGUMENTS(value) Configure(/* mode = */"default",/* options = */{},/* value = */value)
+
+void BlockCommentLineBoundaries() {
+/* standalone */
+Use();/* trailing */
+Finish(); // trailing line comment
+Call( /* arguments */
+value);
+auto values = Values{ /* items */
+1};
+Call(/* first */value, /* more */
+other);
+}
