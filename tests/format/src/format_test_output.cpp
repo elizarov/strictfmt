@@ -2442,6 +2442,20 @@ void GoogletestMemberCallChains() {
         );
 }
 
+bool TernaryBranchCommentIndent(bool a, bool b, bool c) {
+    bool value = a ?
+        // true case
+        b : c;
+    return value;
+}
+
+bool TernaryFalseBranchCommentIndent(bool a, bool b, bool c) {
+    bool value = a ? b :
+        // false case
+        c;
+    return value;
+}
+
 void UniversalBreakSelectionCases() {
     const int singleBinaryValue = firstValue + BuildValue(
         firstArgumentWithLongName, secondArgumentWithLongName, thirdArgumentWithLongName, fourthArgumentWithLongName

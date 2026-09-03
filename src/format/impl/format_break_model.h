@@ -97,6 +97,7 @@ struct FormatBreakNode {
     bool chainPrefersSplitWhenCompactBreaks = false;
     bool chainCompactRequiresFitOnOneLine = false;
     bool chainStartsWithOperator = false;
+    bool ternaryRequiresQuestionBreak = false;
     bool ternaryRequiresColonBreaks = false;
     bool splitTrailingBodyHeaderAtParentIndent = false;
     std::optional<size_t> splitTrailingCommaItem;

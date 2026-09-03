@@ -3239,11 +3239,22 @@ private:
     }
 
     FormatBreakNode* BuildConditionalExpression(const SyntaxNode& node, int depth) {
-        if (!DirectConditionalOperatorIndices(node)) {
+        const std::optional<std::pair<size_t, size_t>> operatorIndices = DirectConditionalOperatorIndices(node);
+        if (!operatorIndices) {
             return nullptr;
         }
         auto chain = MakeNode(FormatBreakNodeKind::Chain, depth);
         chain->chainKind = FormatBreakChainKind::Ternary;
+        for (size_t index = operatorIndices->first + 1; index < node.children.size(); ++index) {
+            if (!IsSelectedChainTrivia(node.children[index])) {
+                continue;
+            }
+            if (index < operatorIndices->second) {
+                chain->ternaryRequiresQuestionBreak = true;
+            } else if (index > operatorIndices->second) {
+                chain->ternaryRequiresColonBreaks = true;
+            }
+        }
         std::vector<FormatBreakNode*> operands;
         std::vector<FormatBreakToken> operators;
         operands.reserve(3);

@@ -372,7 +372,7 @@ private:
         // Break nodes and token spacing are immutable during a solve. This summary performs the same legality and
         // width calculation as recursively appending the compact form, with line-start text as its only input.
         cached.computed = true;
-        cached.valid = !node.forceSplit && !node.ternaryRequiresColonBreaks;
+        cached.valid = !node.forceSplit && !node.ternaryRequiresQuestionBreak && !node.ternaryRequiresColonBreaks;
         if (!cached.valid) {
             return cached;
         }
@@ -733,14 +733,16 @@ private:
                     }
                     return SolveChainSplitAfterOperatorAlternatives(node, column, indentLevel, lineHasText);
                 }
-                if (node.ternaryRequiresColonBreaks) {
+                if (node.ternaryRequiresQuestionBreak || node.ternaryRequiresColonBreaks) {
                     if (node.operators.size() > 2) {
                         return SolveTernaryChainSplitAlternatives(node, column, indentLevel, lineHasText);
                     }
                     if (node.operators.size() == 2) {
-                        return SolveSingleTernaryAlternatives(
-                            node, column, indentLevel, lineHasText, FormatBreakChoice::TernaryBreakAfterColon
-                        );
+                        const FormatBreakChoice choice = node.ternaryRequiresQuestionBreak &&
+                            node.ternaryRequiresColonBreaks ? FormatBreakChoice::Split :
+                            node.ternaryRequiresQuestionBreak ? FormatBreakChoice::TernaryBreakAfterQuestion :
+                            FormatBreakChoice::TernaryBreakAfterColon;
+                        return SolveSingleTernaryAlternatives(node, column, indentLevel, lineHasText, choice);
                     }
                 }
                 NodeResults alternatives;
@@ -3628,14 +3630,16 @@ private:
             }
             return SolveChainSplitAfterOperator(node, column, indentLevel, lineHasText);
         }
-        if (node.ternaryRequiresColonBreaks) {
+        if (node.ternaryRequiresQuestionBreak || node.ternaryRequiresColonBreaks) {
             if (node.operators.size() > 2) {
                 return SolveTernaryChainSplit(node, column, indentLevel, lineHasText);
             }
             if (node.operators.size() == 2) {
-                return SolveSingleTernary(
-                    node, column, indentLevel, lineHasText, FormatBreakChoice::TernaryBreakAfterColon
-                );
+                const FormatBreakChoice choice =
+                    node.ternaryRequiresQuestionBreak && node.ternaryRequiresColonBreaks ? FormatBreakChoice::Split :
+                        node.ternaryRequiresQuestionBreak ? FormatBreakChoice::TernaryBreakAfterQuestion :
+                        FormatBreakChoice::TernaryBreakAfterColon;
+                return SolveSingleTernary(node, column, indentLevel, lineHasText, choice);
             }
         }
         NodeResult compact = SolveChainCompact(node, column, indentLevel, lineHasText);
