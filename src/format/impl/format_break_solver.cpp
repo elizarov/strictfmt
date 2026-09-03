@@ -195,7 +195,7 @@ struct ChoiceTree {
     int nodeId = -1;
     int indentLevel = -1;
     int declarationValueContinuationLines = -1;
-    std::uint32_t attachedStreamOperator = std::numeric_limits<std::uint32_t>::max();
+    std::uint32_t attachedChainOperator = std::numeric_limits<std::uint32_t>::max();
     FormatBreakChoice choice = FormatBreakChoice::Compact;
     bool leaf = false;
 };
@@ -279,6 +279,7 @@ public:
 
 private:
     struct CompactLineShape {
+        bool hasContextOnlyTokens = false;
         bool computed = false;
         bool valid = false;
         bool producesText = false;
@@ -318,6 +319,7 @@ private:
     static void
         AppendCompactTokenShape(CompactLineShape& result, const FormatBreakToken& token, std::string_view text)
     {
+        result.hasContextOnlyTokens = result.hasContextOnlyTokens || token.contextOnly;
         if (!result.valid || token.contextOnly) {
             return;
         }
@@ -346,6 +348,7 @@ private:
             result.producesText ? childShape.widthWithLeadingText : childShape.widthWithoutLeadingText;
         result.widthWithLeadingText += childShape.widthWithLeadingText;
         result.producesText = result.producesText || childShape.producesText;
+        result.hasContextOnlyTokens = result.hasContextOnlyTokens || childShape.hasContextOnlyTokens;
     }
 
     void AppendCompactListShape(CompactLineShape& result, const FormatBreakNode& node) const {
@@ -570,9 +573,9 @@ private:
         result.choices = ConcatChoices(result.choices, &choiceArena_.back());
     }
 
-    void AddAttachedStreamOperator(NodeResult& result, const FormatBreakToken& op) {
+    void AddAttachedChainOperator(NodeResult& result, const FormatBreakToken& op) {
         choiceArena_
-            .push_back(ChoiceTree{.attachedStreamOperator = FormatBreakTokenValue(op).sourceIndex, .leaf = true});
+            .push_back(ChoiceTree{.attachedChainOperator = FormatBreakTokenValue(op).sourceIndex, .leaf = true});
         result.choices = ConcatChoices(result.choices, &choiceArena_.back());
     }
 
@@ -725,7 +728,7 @@ private:
                             node, column, indentLevel, lineHasText, FormatBreakChoice::Split
                         );
                     }
-                    return {SolveChainSplitAfterOperator(node, column, indentLevel, lineHasText)};
+                    return SolveChainSplitAfterOperatorAlternatives(node, column, indentLevel, lineHasText);
                 }
                 if (node.ternaryRequiresColonBreaks) {
                     if (node.operators.size() > 2) {
@@ -790,7 +793,11 @@ private:
                         }
                     }
                 } else {
-                    alternatives.push_back(SolveChainSplitAfterOperator(node, column, indentLevel, lineHasText));
+                    for (NodeResult candidate : SolveChainSplitAfterOperatorAlternatives(
+                        node, column, indentLevel, lineHasText
+                    )) {
+                        alternatives.push_back(std::move(candidate));
+                    }
                 }
                 return alternatives;
             }
@@ -3033,29 +3040,43 @@ private:
         }
     }
 
-    static bool IsOutputStreamOperator(const FormatBreakToken& op) {
-        return FormatBreakTokenKind(op) == PrintTokenKind::Known &&
-            FormatBreakTokenSyntaxKind(op) == SyntaxNodeKind::LessLess;
-    }
-
-    bool CompactStreamFollowerFits(const FormatBreakNode& node, size_t operatorIndex, NodeResult prefix) const {
+    bool CompactLiteralFollowerFits(const FormatBreakNode& node, size_t operatorIndex, NodeResult prefix) const {
+        if (
+            !prefix.endLineHasText ||
+            !IsFormatBreakLiteralOperand(*node.operands[operatorIndex], SyntaxNodeClass::StringLike) ||
+            !BuildCompactLineShape(*node.operands[operatorIndex]).valid
+        ) {
+            return false;
+        }
+        const bool streamChain = node.chainKind == FormatBreakChainKind::StreamBeforeOperator;
         for (size_t index = operatorIndex; index < node.operators.size(); ++index) {
+            const FormatBreakToken& op = node.operators[index];
             if (
-                !IsOutputStreamOperator(node.operators[index]) ||
+                FormatBreakTokenKind(op) != PrintTokenKind::Known ||
+                FormatBreakTokenSyntaxKind(op) != (streamChain ? SyntaxNodeKind::LessLess : SyntaxNodeKind::Plus) ||
+                op.contextOnly ||
                 (index < node.commentsBeforeOperators.size() && !node.commentsBeforeOperators[index].empty()) ||
-                !AddCompactToken(prefix, node.operators[index], true) ||
+                (streamChain && !AddCompactToken(prefix, op, true)) ||
+                BuildCompactLineShape(*node.operands[index + 1]).hasContextOnlyTokens ||
                 !AppendCompactOneLine(*node.operands[index + 1], prefix, true)
             ) {
                 return false;
             }
-            if (!IsFormatBreakStreamConfigurationOperand(
+            if (streamChain && IsFormatBreakStreamConfigurationOperand(
                 *node.operands[index + 1], config_.streamShiftConfigurationMethods
             )) {
-                return !IsFormatBreakStreamLiteralOperand(*node.operands[index + 1]) && (
-                    index + 1 < node.operators.size() ||
-                    prefix.endColumn + breakLineSuffixWidth_ <= config_.columnLimit
-                );
+                continue;
             }
+            if (IsFormatBreakLiteralOperand(*node.operands[index + 1])) {
+                return false;
+            }
+            if (!streamChain && index + 1 < node.operators.size() &&
+                !AddCompactToken(prefix, node.operators[index + 1], true)
+            ) {
+                return false;
+            }
+            return (streamChain && index + 1 < node.operators.size()) ||
+                prefix.endColumn + breakLineSuffixWidth_ <= config_.columnLimit;
         }
         return false;
     }
@@ -3183,8 +3204,8 @@ private:
             operand.delimiterKind == FormatBreakDelimiterKind::Paren;
     }
 
-    NodeResult
-        SolveChainSplitAfterOperator(const FormatBreakNode& node, int column, int indentLevel, bool lineHasText)
+    NodeResults
+        SolveChainSplitAfterOperatorAlternatives(const FormatBreakNode& node, int column, int indentLevel, bool lineHasText)
     {
         const int splitBaseIndent = node.requiredChainBreakBaseIndent.value_or(indentLevel);
         const int continuationIndent = node.flatSplitIndent ? splitBaseIndent : splitBaseIndent + 1;
@@ -3192,7 +3213,7 @@ private:
             result{.valid = true, .endColumn = column, .endIndentLevel = indentLevel, .endLineHasText = lineHasText};
         AddChoice(result, node.id, FormatBreakChoice::Split, splitBaseIndent);
         if (node.operands.empty()) {
-            return result;
+            return {result};
         }
         const FormatBreakToken* firstSuffix = node.operators.empty() ? nullptr : &node.operators.front();
         NodeResult first = SolveNodeWithSuffix(
@@ -3202,47 +3223,79 @@ private:
             return {};
         }
         Merge(result, first);
+        NodeResults current{result};
         for (size_t index = 0; index < node.operators.size(); ++index) {
-            NodeResult normal = AddBreak(result, continuationIndent, node.breakCost);
-            const bool splitTrailingBodyHeaderAtParentIndent =
-                node.splitTrailingBodyHeaderAtParentIndent && index + 1 == node.operands.size() - 1;
-            const FormatBreakToken* nextSuffix =
-                index + 1 < node.operators.size() ? &node.operators[index + 1] : nullptr;
-            NodeResult operand = SolveNodeWithSuffix(
-                *node.operands[index + 1], nextSuffix, normal.endColumn, normal.endIndentLevel, normal.endLineHasText
-            );
-            if (splitTrailingBodyHeaderAtParentIndent) {
-                NodeResult parentIndentOperand = SolveTrailingBodyHeaderSplitAtParentIndent(
-                    *node.operands[index + 1], normal.endColumn, normal.endIndentLevel, normal.endLineHasText
+            NodeResults next;
+            for (const NodeResult& prefix : current) {
+                NodeResult normal = AddBreak(prefix, continuationIndent, node.breakCost);
+                const bool splitTrailingBodyHeaderAtParentIndent =
+                    node.splitTrailingBodyHeaderAtParentIndent && index + 1 == node.operands.size() - 1;
+                const FormatBreakToken* nextSuffix =
+                    index + 1 < node.operators.size() ? &node.operators[index + 1] : nullptr;
+                NodeResult operand = SolveNodeWithSuffix(
+                    *node.operands[index + 1], nextSuffix, normal.endColumn, normal.endIndentLevel, normal.endLineHasText
                 );
-                if (nextSuffix != nullptr && parentIndentOperand.valid) {
-                    AppendToken(parentIndentOperand, *nextSuffix);
+                if (splitTrailingBodyHeaderAtParentIndent) {
+                    NodeResult parentIndentOperand = SolveTrailingBodyHeaderSplitAtParentIndent(
+                        *node.operands[index + 1], normal.endColumn, normal.endIndentLevel, normal.endLineHasText
+                    );
+                    if (nextSuffix != nullptr && parentIndentOperand.valid) {
+                        AppendToken(parentIndentOperand, *nextSuffix);
+                    }
+                    if (
+                        !TrailingBodyHeaderHeaderHasSelectedBreak(*node.operands[index + 1], operand) &&
+                        (operand.extraLines > 0 || ContainsNonSingleStatementBodyHeader(*node.operands[index + 1])) &&
+                        parentIndentOperand.valid
+                    ) {
+                        operand = parentIndentOperand;
+                    } else {
+                        operand = Better(parentIndentOperand, operand) ? parentIndentOperand : operand;
+                    }
                 }
-                if (
-                    !TrailingBodyHeaderHeaderHasSelectedBreak(*node.operands[index + 1], operand) &&
-                    (operand.extraLines > 0 || ContainsNonSingleStatementBodyHeader(*node.operands[index + 1])) &&
-                    parentIndentOperand.valid
-                ) {
-                    operand = parentIndentOperand;
-                } else {
-                    operand = Better(parentIndentOperand, operand) ? parentIndentOperand : operand;
+                Merge(normal, operand);
+                if (node.declarationValueOwner != nullptr && index + 2 == node.operands.size()) {
+                    AddDeclarationValueContinuationLines(normal, node.id, operand.extraLines + 1);
                 }
-            }
-            Merge(normal, operand);
-            if (node.declarationValueOwner != nullptr && index + 2 == node.operands.size()) {
-                AddDeclarationValueContinuationLines(normal, node.id, operand.extraLines + 1);
-            }
 
-            NodeResult attached;
-            if (CanAttachSplitOpenAfterOperator(node.operators[index], *node.operands[index + 1])) {
-                attached = SolveDelimitedSplitAttachedOpen(*node.operands[index + 1], result, continuationIndent);
-                if (nextSuffix != nullptr && attached.valid) {
-                    AppendToken(attached, *nextSuffix);
+                NodeResult attached;
+                if (CanAttachSplitOpenAfterOperator(node.operators[index], *node.operands[index + 1])) {
+                    attached = SolveDelimitedSplitAttachedOpen(*node.operands[index + 1], prefix, continuationIndent);
+                    if (nextSuffix != nullptr && attached.valid) {
+                        AppendToken(attached, *nextSuffix);
+                    }
+                }
+                AddPrunedResult(next, Better(attached, normal) ? std::move(attached) : std::move(normal));
+                if (CompactLiteralFollowerFits(node, index, prefix)) {
+                    NodeResult paired = prefix;
+                    NodeResult follower = SolveNodeWithoutBreaks(
+                        *node.operands[index + 1], paired.endColumn, paired.endIndentLevel, paired.endLineHasText
+                    );
+                    Merge(paired, follower);
+                    if (nextSuffix != nullptr) {
+                        AppendToken(paired, *nextSuffix);
+                    }
+                    AddAttachedChainOperator(paired, node.operators[index]);
+                    AddPrunedResult(next, std::move(paired));
                 }
             }
-            result = Better(attached, normal) ? attached : normal;
+            SortPrunedResults(next);
+            current = std::move(next);
         }
-        return result;
+        return current;
+    }
+
+    NodeResult
+        SolveChainSplitAfterOperator(const FormatBreakNode& node, int column, int indentLevel, bool lineHasText)
+    {
+        NodeResult best;
+        for (const NodeResult& candidate : SolveChainSplitAfterOperatorAlternatives(
+            node, column, indentLevel, lineHasText
+        )) {
+            if (Better(candidate, best)) {
+                best = candidate;
+            }
+        }
+        return best;
     }
 
     NodeResult
@@ -3432,12 +3485,9 @@ private:
                             *node.operands[index + 1], config_.streamShiftConfigurationMethods
                         )
                     ) {
-                        if (
-                            IsFormatBreakStreamLiteralOperand(*node.operands[index + 1], SyntaxNodeClass::StringLike) &&
-                            CompactStreamFollowerFits(node, index + 1, candidate)
-                        ) {
+                        if (CompactLiteralFollowerFits(node, index + 1, candidate)) {
                             NodeResult attached = candidate;
-                            AddAttachedStreamOperator(attached, node.operators[index + 1]);
+                            AddAttachedChainOperator(attached, node.operators[index + 1]);
                             attached.compactNextStreamOperand = true;
                             AddPrunedResult(next, std::move(attached));
                         }
@@ -3763,18 +3813,18 @@ void AppendDeclarationValueContinuationLines(const ChoiceTree* tree, std::vector
     AppendDeclarationValueContinuationLines(tree->right, continuationLines);
 }
 
-void AppendAttachedStreamOperators(const ChoiceTree* tree, std::vector<std::uint32_t>& sourceIndices) {
+void AppendAttachedChainOperators(const ChoiceTree* tree, std::vector<std::uint32_t>& sourceIndices) {
     if (tree == nullptr) {
         return;
     }
     if (tree->leaf) {
-        if (tree->attachedStreamOperator != std::numeric_limits<std::uint32_t>::max()) {
-            sourceIndices.push_back(tree->attachedStreamOperator);
+        if (tree->attachedChainOperator != std::numeric_limits<std::uint32_t>::max()) {
+            sourceIndices.push_back(tree->attachedChainOperator);
         }
         return;
     }
-    AppendAttachedStreamOperators(tree->left, sourceIndices);
-    AppendAttachedStreamOperators(tree->right, sourceIndices);
+    AppendAttachedChainOperators(tree->left, sourceIndices);
+    AppendAttachedChainOperators(tree->right, sourceIndices);
 }
 
 }  // namespace
@@ -3803,11 +3853,11 @@ FormatBreakSolution SolveFormatBreaks(
     std::vector<bool> assigned(choiceCount, false);
     AppendChoices(result.choices, solution.choices, solution.indentLevels, assigned);
     AppendDeclarationValueContinuationLines(result.choices, solution.declarationValueContinuationLines);
-    AppendAttachedStreamOperators(result.choices, solution.attachedStreamOperators);
-    std::sort(solution.attachedStreamOperators.begin(), solution.attachedStreamOperators.end());
-    solution.attachedStreamOperators.erase(
-        std::unique(solution.attachedStreamOperators.begin(), solution.attachedStreamOperators.end()),
-        solution.attachedStreamOperators.end()
+    AppendAttachedChainOperators(result.choices, solution.attachedChainOperators);
+    std::sort(solution.attachedChainOperators.begin(), solution.attachedChainOperators.end());
+    solution.attachedChainOperators.erase(
+        std::unique(solution.attachedChainOperators.begin(), solution.attachedChainOperators.end()),
+        solution.attachedChainOperators.end()
     );
     return solution;
 }

@@ -46,12 +46,9 @@ void ToolFileProgress::Update(size_t completedFiles) {
         return;
     }
     const std::string progress = label_ +
-        " completed " +
-        std::to_string(completedFiles) +
-        "/" +
-        std::to_string(totalFiles_) +
-        " files in " +
-        FormatToolElapsed(std::chrono::steady_clock::now() - started_);
+        " completed " + std::to_string(completedFiles) +
+        "/" + std::to_string(totalFiles_) +
+        " files in " + FormatToolElapsed(std::chrono::steady_clock::now() - started_);
     const std::string padding(previousLength_ > progress.size() ? previousLength_ - progress.size() : 0, ' ');
     std::fprintf(output_, "\r%s%s", progress.c_str(), padding.c_str());
     std::fflush(output_);

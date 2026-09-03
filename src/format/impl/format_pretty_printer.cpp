@@ -2382,10 +2382,10 @@ private:
         return solution.choices[static_cast<size_t>(nodeId)];
     }
 
-    static bool IsAttachedStreamOperator(const FormatBreakSolution& solution, const FormatBreakToken& op) {
+    static bool IsAttachedChainOperator(const FormatBreakSolution& solution, const FormatBreakToken& op) {
         const std::uint32_t sourceIndex = FormatBreakTokenValue(op).sourceIndex;
         return std::binary_search(
-            solution.attachedStreamOperators.begin(), solution.attachedStreamOperators.end(), sourceIndex
+            solution.attachedChainOperators.begin(), solution.attachedChainOperators.end(), sourceIndex
         );
     }
 
@@ -2923,7 +2923,7 @@ private:
                     !IsFormatBreakStreamConfigurationOperand(
                         *node.operands[index + 1], config_.streamShiftConfigurationMethods
                     ) &&
-                    !IsAttachedStreamOperator(solution, node.operators[index + 1])
+                    !IsAttachedChainOperator(solution, node.operators[index + 1])
                 ) {
                     NewLineWithIndent(splitBaseIndent + 1);
                 }
@@ -3006,6 +3006,9 @@ private:
             EmitBreakNode(*node.operands[index], solution, index == 0 ? baseIndent : continuationIndent);
             if (index < node.operators.size()) {
                 WriteBreakToken(node.operators[index]);
+                if (IsAttachedChainOperator(solution, node.operators[index])) {
+                    continue;
+                }
                 if (
                     index + 1 < node.operands.size() &&
                     node.operands[index + 1]->kind == FormatBreakNodeKind::Delimited &&

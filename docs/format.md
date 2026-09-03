@@ -227,6 +227,20 @@ void Scan() {
 }
 ```
 
+### Literal pairing
+
+In split `+` chains and stream insertions, a string or character literal binds to the following non-literal value when the pair fits.
+
+<!-- .cpp-format
+ColumnLimit: 40
+-->
+```cpp
+auto text = first +
+    "|" + second +
+    "|" + third +
+    "|" + fourth;
+```
+
 ### Comments at operator boundaries
 
 In binary and stream chains, place intervening trailing or standalone comments after operators that break after themselves, and before operators that break before themselves.
@@ -240,7 +254,7 @@ auto count = items.size() +  // items
 
 ### Streams
 
-Stream chains break before shift operators. A compact shifted tail may occupy one continuation line after the receiver. Otherwise each insertion starts a continuation line, except a string or character insertion binds to the following non-literal value insertion when the pair fits. Configured manipulators bind to the following value.
+Stream chains break before shift operators. A compact shifted tail may occupy one continuation line after the receiver. Otherwise insertions split according to [literal pairing](#literal-pairing). Configured manipulators bind to the following value.
 
 <!-- .cpp-format
 ColumnLimit: 45

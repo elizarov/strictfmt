@@ -4132,3 +4132,141 @@ continued */
         << first
         << second;
 }
+
+auto JoinLabelAtoms() {
+    return first_attribute_label +
+        "|" + second_attribute_label +
+        "|" + third_attribute_label +
+        "|" + fourth_attribute_label;
+}
+
+void AdditionLiteralPairs() {
+    auto compact = "name=" + value;
+    auto forward = first +  // first
+        "name=" + value +
+        "count=" + count;
+    auto startsWithLiteral = "name=" + value +
+        other +  // other
+        last;
+    auto literalFollowers = first +  // first
+        "one" +
+        "two" + value +
+        ':' +
+        'x' + next +
+        "number=" +
+        42 +
+        last;
+    auto otherLiterals = first +  // first
+        42 +
+        value +
+        true +
+        ready +
+        nullptr +
+        tail;
+    auto stringKinds = first +  // first
+        L"wide=" + wide +
+        u8"utf8=" + utf8 +
+        R"(raw=)" + raw +
+        "owned="s + owned;
+    auto fragments = first +  // first
+        "longer label=" + value +
+        '\n' + tail;
+    auto expressions = first +  // first
+        "call=" + Build(value) +
+        "field=" + object.member +
+        "nested=" + (left + right);
+    auto configuredName = first +  // first
+        "hex=" + std::hex +
+        value;
+    auto mixed = first +  // first
+        "product=" + value * factor +
+        "difference=" + (left - right);
+    auto otherOperators = first *  // first
+        "factor=" *
+        value *
+        "next=" *
+        other;
+    auto logical = first ||  // first
+        "value=" ||
+        value ||
+        "next=" ||
+        other;
+}
+
+void AdditionPairsWithComments() {
+    auto trailing = first +
+        "label=" +  // label
+        value +
+        "tail=" + tail;
+    auto followerComment = first +  // first
+        "label=" +
+        value +  // value
+        "tail=" + tail;
+    auto standalone = first +
+        "label=" +
+        // value
+        value +
+        "tail=" + tail;
+    auto blocks = first +  // first
+        "label=" /* label */ +
+        value +
+        "tail=" + tail;
+}
+
+void NestedAdditionPairs() {
+    Use(
+        first +  // first
+            "label=" + value +
+            "tail=" + tail,
+        other
+    );
+    auto nested = outer + (
+        first +  // first
+        "label=" + value +
+        "tail=" + tail
+    );
+    output << "joined=" << (
+        first +  // first
+        "label=" + value +
+        "tail=" + tail
+    );
+    auto callback = first +  // first
+        "value=" +
+        Make([] {
+            First();
+            Second();
+        }) +
+        "tail=" + tail;
+}
+
+void LiteralPairsWithBodiesAndNewlines() {
+    auto empty = first +  // first
+        "value=" + Make([] {}) +
+        "tail=" + tail;
+    auto single = first +  // first
+        "value=" + Make([] { return value; }) +
+        "tail=" + tail;
+    output
+        << "value="
+        << Make([] {
+            First();
+            Second();
+        })
+        << "tail=" << tail;
+    auto multiline = first +  // first
+        R"(first
+second)" +
+        value +
+        "tail=" + tail;
+    output
+        << R"(first
+second)"
+        << value
+        << "tail=" << tail;
+    auto fragments =
+        first +  // first
+            "line\n"
+            "next" +
+            value +
+            "tail=" + tail;
+}
