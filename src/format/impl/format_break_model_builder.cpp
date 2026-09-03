@@ -3568,12 +3568,11 @@ private:
             }
             const std::optional<FormatBreakToken> token = TokenForNode(*child);
             if (token && IsSelectedSeparator(*token)) {
-                if (
-                    itemChildren.empty() &&
-                    IsForHeaderDelimiter(*open) &&
-                    FormatBreakTokenKind(*token) == PrintTokenKind::Known &&
-                    FormatBreakTokenSyntaxKind(*token) == SyntaxNodeKind::Semicolon
-                ) {
+                if (itemChildren.empty() && (
+                    delimited->items.empty() ||
+                    FormatBreakTokenKind(delimited->items.back().separator) == PrintTokenKind::Known ||
+                    (IsForHeaderDelimiter(*open) && FormatBreakTokenSyntaxKind(*token) == SyntaxNodeKind::Semicolon)
+                )) {
                     const bool blankLineBefore = ShouldPreservePendingBlankLine(*delimited, pendingBlankLine, false);
                     AppendEmptyDelimitedItem(*delimited, depth, blankLineBefore);
                 } else {

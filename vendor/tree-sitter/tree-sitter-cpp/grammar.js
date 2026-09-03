@@ -2919,14 +2919,14 @@ module.exports = grammar(C, {
     ),
 
     macro_argument_sequence: $ => {
-      const separator = ',';
       const comment = choice($.comment, alias($.macro_comment_argument, $.comment));
-      const item = seq(repeat(comment), $._macro_argument_list_item);
-      const items = seq(item, repeat(seq(separator, item)), optional(separator));
+      const item = choice(
+        $._macro_argument_list_item,
+        seq(repeat1(comment), optional($._macro_argument_list_item)),
+      );
       return choice(
-        alias($.macro_comment_argument, $.comment),
-        items,
-        seq(repeat(comment), separator, optional(items)),
+        item,
+        seq(optional(item), repeat1(seq(',', optional(item)))),
       );
     },
 
@@ -3149,18 +3149,14 @@ module.exports = grammar(C, {
 
     macro_statement_argument_list: $ => seq(
       '(',
-      field('statement', choice(
+      repeat(alias($.macro_comment_argument, $.comment)),
+      optional(field('statement', choice(
         $.structured_statement_macro_argument,
         $.macro_call_statement_argument,
         $._macro_statement_argument_expression,
         $._argument_list_item,
-      )),
-      repeat(seq(
-        ',',
-        optional(alias($.macro_comment_argument, $.comment)),
-        field('argument', $._macro_argument_list_item),
-      )),
-      optional(','),
+      ))),
+      optional(seq(',', optional($.macro_argument_sequence))),
       ')',
     ),
 
