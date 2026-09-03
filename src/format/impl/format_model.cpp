@@ -127,6 +127,11 @@ constexpr auto kSyntaxKindMappings = std::to_array<SyntaxKindMapping>({
         "declaration",
         Bit(SyntaxNodeClass::MacroDeclarationFragment) | Bit(SyntaxNodeClass::DeclarationNode)
     ),
+    Tree(
+        SyntaxNodeKind::Declaration,
+        "type_definition",
+        Bit(SyntaxNodeClass::MacroDeclarationFragment) | Bit(SyntaxNodeClass::DeclarationNode)
+    ),
     Tree(SyntaxNodeKind::Declaration, "macro_declaration_fragment", Bit(SyntaxNodeClass::MacroDeclarationFragment)),
     Tree(SyntaxNodeKind::Declaration, "preproc_value_declaration", Bit(SyntaxNodeClass::MacroDeclarationFragment)),
     Tree(
