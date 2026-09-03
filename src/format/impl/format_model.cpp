@@ -816,8 +816,7 @@ using SymbolInfoTable = std::vector<SyntaxSymbolInfo>;
 
 SymbolInfoTable MakeSymbolInfoTable() { return SymbolInfoTable(ts_language_symbol_count(tree_sitter_cpp())); }
 
-void
-    StoreTreeSymbolInfo(SymbolInfoTable& table, std::string_view name, SyntaxNodeKind kind, std::uint64_t classes = 0)
+void StoreTreeSymbolInfo(SymbolInfoTable& table, std::string_view name, SyntaxNodeKind kind, std::uint64_t classes = 0)
 {
     const TSSymbol symbol =
         ts_language_symbol_for_name(tree_sitter_cpp(), name.data(), static_cast<uint32_t>(name.size()), true);

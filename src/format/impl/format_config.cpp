@@ -128,8 +128,7 @@ int ParseInt(std::string_view text, std::string_view key) {
     }
 }
 
-std::vector<std::string>
-    ParseIndentedStringList(const std::vector<ConfigLine>& lines, size_t& index, int parentIndent)
+std::vector<std::string> ParseIndentedStringList(const std::vector<ConfigLine>& lines, size_t& index, int parentIndent)
 {
     std::vector<std::string> values;
     for (++index; index < lines.size(); ++index) {

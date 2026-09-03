@@ -1318,6 +1318,21 @@ Visit([&](const VeryLongQualifiedCalculationTypeForLambdaCaptureBreakPreferenceW
 Visit([&context](const VeryLongQualifiedCalculationTypeForLambdaCaptureBreakPreferenceWithAdditionalSuffixMoreId& calculation){Use(calculation);});
 }
 
+void TrailingReturnTypeBreaks(){
+Use([first_capture_with_long_name,second_capture_with_long_name,third_capture_with_long_name]() -> namespace_name::Result {Prepare();return {};});
+Use([first_capture_with_long_name,second_capture_with_long_name,third_capture_with_long_name]() noexcept -> const namespace_name::Result& {Prepare();return result;});
+auto callback=[first_capture_with_long_name,second_capture_with_long_name,third_capture_with_long_name]<class T>(T value) -> namespace_name::Result<T> {Prepare();return value;};
+}
+
+auto ComputeResultForCurrentEnvironmentAndConfiguration() noexcept -> const application::dispatch::DeliveryCalculationResult& {Prepare();return result;}
+auto ComputeResultForCurrentEnvironmentAndConfiguration() noexcept -> const application::dispatch::DeliveryCalculationResult&;
+struct TrailingReturnMembers {
+virtual auto ComputeResultForCurrentEnvironmentAndConfiguration() const noexcept -> const application::dispatch::DeliveryCalculationResult& =0;
+auto ComputeResultForCurrentEnvironmentAndConfiguration() & -> const application::dispatch::DeliveryCalculationResult& =delete;
+};
+template<class T>auto ComputeResultForCurrentEnvironmentAndConfiguration(T value) -> typename application::dispatch::Result<T> requires C<T> {Prepare();return value;}
+template<class T>auto ComputeResultForCurrentEnvironmentAndConfiguration() noexcept -> typename application::dispatch::Result<T> requires C<T> {Prepare();return value;}
+
 void LongLambdaCapturePrefixMaySplit(){
 Visit([firstVeryLongLambdaCaptureName,secondVeryLongLambdaCaptureName,thirdVeryLongLambdaCaptureName,fourthVeryLongLambdaCaptureName](int value){Use(value);});
 }
