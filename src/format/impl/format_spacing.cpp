@@ -578,13 +578,10 @@ bool IsTemplateAnglePrintToken(const PrintToken& token) {
         return false;
     }
     return (IsTemplateDelimiterContext(token) && !IsBinaryContext(token) && !IsOperatorSpellingContext(token)) || (
-            token.node != nullptr &&
-            (token.node->classes & static_cast<std::uint64_t>(SyntaxNodeClass::RecoveredTemplateDelimiter)) != 0
-        ) ||
-        (
             token.syntaxKind == SyntaxNodeKind::Less ?
                 IsCallableTemplateLessToken(token) : IsCallableTemplateGreaterToken(token)
-        ) || (
+        ) ||
+        (
             token.syntaxKind == SyntaxNodeKind::Less ?
                 IsConditionDeclarationTemplateLessToken(token) : IsConditionDeclarationTemplateGreaterToken(token)
         );

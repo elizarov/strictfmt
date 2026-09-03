@@ -358,7 +358,6 @@ enum class SyntaxNodeClass : std::uint64_t {
     DeclarationGroupForwardType = 1ull << 60,
     NamedList = 1ull << 61,
     ContainsConditionalPreprocessor = 1ull << 62,
-    RecoveredTemplateDelimiter = 1ull << 63,
 };
 
 enum class SyntaxWrapperRole : std::uint8_t {
