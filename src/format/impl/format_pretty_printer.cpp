@@ -2441,7 +2441,8 @@ private:
         if (printToken.kind == PrintTokenKind::TrailingComment) {
             const int breakModelContinuationIndent = continuationBaseIndent ?
                 *continuationBaseIndent + (*continuationBaseIndent == indentLevel_ ? 1 : 0) : 0;
-            const int continuationIndent = std::max(CurrentLineIndentLevel(), breakModelContinuationIndent);
+            const int commentIndent = atLineStart_ ? CurrentColumn() / indentWidth_ : CurrentLineIndentLevel();
+            const int continuationIndent = std::max(commentIndent, breakModelContinuationIndent);
             if (!atLineStart_) {
                 WriteTrailingComment(printToken, text, token.spaceBefore);
             } else {

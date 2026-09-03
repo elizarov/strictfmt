@@ -451,3 +451,32 @@ int formatterPreprocessorCommentSpacing;
 }  // namespace format_userver_fixture
 
 #endif  // FORMAT_IFDEF_FIXTURE_HPP
+
+void CommentedConditionalStreams() {
+output
+#if OUTER // directive
+<< // first
+first << /* second */
+second
+#ifdef INNER
+// nested insertion
+
+<< nested << // nested value
+value
+#endif
+#else
+// alternative
+<< alternate
+#endif
+<< // shared
+last;
+input
+#ifndef FIRST
+>> /* read */
+first >> second
+#else
+// alternative
+>> other
+#endif
+>> last;
+}

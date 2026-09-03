@@ -3975,3 +3975,160 @@ void BlockCommentLineBoundaries() {
         other
     );
 }
+
+void CommentedBinaryOperators() {
+    const auto count = items.size() +  // items
+        separators.size() +  // separators
+        before +
+        after;
+    const auto already = items.size() +  // items
+        separators.size() +  // separators
+        before +
+        after;
+    auto blocks = first + /* first */
+        second +
+        third;
+    auto standalone = first +
+        // next term
+        second +
+        third;
+    auto mixedComments = first +  // first term
+        // next term
+        second +
+        third;
+    auto bothSides = first +  // first term
+        // operator note
+        second +
+        third;
+    auto product = first *  // first factor
+        second *
+        third;
+    auto bits = (
+        first &  // mask
+        second
+    ) | (third ^ fourth);
+    if (
+        enabled &&  // feature
+        ready &&  // readiness
+        available
+    ) {
+        Run();
+    }
+    if (
+        enabled and  // feature
+            ready or fallback
+    ) {
+        Run();
+    }
+    auto nested = (
+        first +  // inner term
+        second
+    ) * factor +  // outer term
+        third;
+    Consume(
+        first +  // argument term
+            second,
+        third
+    );
+    auto inlineComment = first /* inline */ + second;
+}
+
+void CommentedStreamOperators() {
+    output  // first value
+        << first  // second value
+        << second
+        << third;
+    output  // first value
+        << first  // second value
+        << second
+        << third;
+    input /* first value */
+        >> first
+        >> second;
+    output
+        // next insertion
+        << first
+        << second;
+    output
+        // next insertion
+        << first
+        << second;
+    output  // receiver
+        // first insertion
+        << first
+        << second;
+    output
+        << "name="  // name
+        << name
+        << "count=" << count;
+    output
+        << std::hex  // hexadecimal value
+        << value
+        << other;
+    output
+        << "value="
+        << std::hex  // hexadecimal value
+        << value
+        << "tail=" << tail;
+    Consume(
+        output  // argument insertion
+            << value,
+        other
+    );
+    output
+        << (
+            first +  // sum term
+            second
+        )
+        << third;
+    auto result = first + (
+        output  // nested insertion
+            << value
+    );
+    output << /* inline */ value;
+}
+
+#define COMMENTED_SUM(first, second) \
+    ( \
+        first + /* first term */ \
+        second \
+    )
+#define COMMENTED_STREAM(out, value) \
+    out /* insertion */ \
+        << value
+
+void CommentedOperatorsAcrossBlocks() {
+    auto sum = Make([] {
+        First();
+        Second();
+    }) +  // term
+        value +
+        other;
+    output
+        << Make([] {
+            First();
+            Second();
+        })  // final
+        << value
+        << other;
+}
+
+void CommentedOperatorsWithBlankLines() {
+    auto sum = first +  // first
+        second +
+        third;
+    output  // first
+        << first
+        << second;
+}
+
+void MultilineOperatorComments() {
+    auto sum = first + /* first term
+continued */
+        second +
+        third;
+    output /* first insertion
+continued */
+        << first
+        << second;
+}

@@ -526,6 +526,37 @@ void NormalizeColonPrefixedListComments(SyntaxNode& node) {
     }
 }
 
+void NormalizeLeadingStreamComments(SyntaxNode& node) {
+    for (size_t index = 0; index < node.children.size(); ++index) {
+        SyntaxNode* chain = node.children[index];
+        if (chain == nullptr || !SyntaxNodeHasClass(*chain, SyntaxNodeClass::LeadingStreamOperatorChain)) {
+            continue;
+        }
+        size_t commentBegin = index;
+        while (commentBegin > 0) {
+            const SyntaxNode* previous = node.children[commentBegin - 1];
+            if (
+                previous == nullptr ||
+                (previous->kind != SyntaxNodeKind::Comment && previous->kind != SyntaxNodeKind::BlankLine)
+            ) {
+                break;
+            }
+            --commentBegin;
+        }
+        if (commentBegin == index) {
+            continue;
+        }
+        const auto begin = node.children.begin() + static_cast<std::ptrdiff_t>(commentBegin);
+        const auto end = node.children.begin() + static_cast<std::ptrdiff_t>(index);
+        chain->children.insert(chain->children.begin(), begin, end);
+        for (auto comment = begin; comment != end; ++comment) {
+            SetParentRecursive(**comment, chain);
+        }
+        node.children.erase(begin, end);
+        index = commentBegin;
+    }
+}
+
 void NormalizeBlockHeaderTrailingComment(SyntaxNode& node) {
     for (size_t index = 0; index < node.children.size(); ++index) {
         SyntaxNode* comment = node.children[index];
@@ -896,6 +927,7 @@ void NormalizeSyntaxNode(FormatModel& model, SyntaxNode& node) {
     NormalizeTrailingCommas(model, node);
     NormalizeControlBodies(model, node);
     NormalizeColonPrefixedListComments(node);
+    NormalizeLeadingStreamComments(node);
     NormalizeBlockHeaderTrailingComment(node);
 }
 
