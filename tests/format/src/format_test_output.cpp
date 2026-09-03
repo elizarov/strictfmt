@@ -3916,6 +3916,14 @@ void BraceListTrailingCommaLayout() {
     };
 }
 
+void PackedBraceListInRangeFor() {
+    for (auto value : RangeContainerWhoseTypeNameMakesOnlyTheInitializerDelimitersSplit{
+        firstValue, secondValue, thirdValue
+    }) {
+        Use(value);
+    }
+}
+
 namespace post_namespace_first_fixture {
 
 class First;
