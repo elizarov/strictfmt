@@ -747,6 +747,11 @@ bool FormatTokenNeedsSpace(const PrintToken* previous, const PrintToken& current
         cur == SyntaxNodeKind::DotStar ||
         cur == SyntaxNodeKind::ArrowStar
     ) {
+        if (
+            cur == SyntaxNodeKind::ColonColon && IsCompactSingleStatementBodyBrace(*previous, SyntaxNodeKind::LeftBrace)
+        ) {
+            return true;
+        }
         if (cur == SyntaxNodeKind::ColonColon && IsLeadingGlobalScopeToken(current) && (
             prev == SyntaxNodeKind::Comma ||
             prev == SyntaxNodeKind::Semicolon ||
