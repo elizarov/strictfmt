@@ -49,5 +49,21 @@ void f15(){a+""+b+""+c;}
 // an expanded operand does not form a pair
 void f16(){a+""+F(aa,bb)+c;}
 
+// default values use the assignment break, including non-final and unnamed parameters
+void f17(int x=Default);
+void f18(T& x=Get(),int y=Default);
+void f19(T* =Default);
+
+// defaults with calls, braced values, comments, and nested assignments
+void f20(T x=Make(a,b));
+void f21(T x={a,b,c});
+void f22(int x=/*d*/y);
+void f23(int x=F(a=b));
+
+// template defaults share the same list-item assignment handling
+template<int n=Default>struct A;
+template<class T=A::B>struct B;
+template<template<class T=A::B>class C=Box>struct C;
+
 // macro continuation suffix prevents a pair
 #define JOIN a+""+b+c

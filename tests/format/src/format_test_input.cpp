@@ -655,6 +655,16 @@ void SetCommunications(communication_namespaces::with_a_long_name::Communication
 const ::first_global_qualification_namespace_with_long_name::second_global_qualification_namespace_with_long_name::FinalGlobalQualifiedTypeName& fallback_value;
 };
 
+void DefaultQualifiedReference(int mode,const application::configuration::DefaultParameterValue& value=application::configuration::DefaultParameterValue::Default);
+void DefaultQualifiedPointer(application::configuration::DefaultParameterValue* value=application::configuration::FindDefaultParameterValue());
+void DefaultQualifiedUnnamed(const application::configuration::DefaultParameterValue& =application::configuration::DefaultParameterValue::Default);
+void DefaultCallback(void(*callback)(int)=application::configuration::CreateCallback(first_configuration_value,second_configuration_value));
+
+void NestedDefaultArguments() {
+auto callback=[](int mode,const application::configuration::DefaultParameterValue& value=application::configuration::DefaultParameterValue::Default){return value;};
+Use(callback);
+}
+
 template<typename Struct,typename Descriptor,typename Descriptor::Value(Struct::*member)>
 struct MemberPointerTemplateParameter;
 
