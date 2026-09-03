@@ -2645,6 +2645,12 @@ void PreserveParameterBlankLines(int first,
 
     int second);
 
+void PreserveFinalParameterBlankLine(
+int first,
+int second
+
+);
+
 struct PreserveBaseListBlankLines : First,
 
     Second {};

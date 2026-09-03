@@ -2557,6 +2557,7 @@ private:
             HasRealSeparators(node) ||
             HasTrailingComment(node, 0) ||
             HasBlankLineBeforeItem(node, 0) ||
+            node.blankLineBeforeClose ||
             node.items.front().node == nullptr
         ) {
             return false;
@@ -2727,7 +2728,7 @@ private:
                 if (hasNextItem) {
                     BreakListLine(baseIndent + 1, HasBlankLineBeforeItem(node, index + 1));
                 } else {
-                    BreakListLine(baseIndent, false);
+                    BreakListLine(baseIndent, node.blankLineBeforeClose);
                 }
             }
         }
@@ -2821,7 +2822,8 @@ private:
             } else {
                 const bool hasNextItem = index + 1 < node.items.size();
                 BreakListLine(
-                    hasNextItem ? baseIndent + 1 : baseIndent, hasNextItem && HasBlankLineBeforeItem(node, index + 1)
+                    hasNextItem ? baseIndent + 1 : baseIndent,
+                    hasNextItem ? HasBlankLineBeforeItem(node, index + 1) : node.blankLineBeforeClose
                 );
             }
         }
