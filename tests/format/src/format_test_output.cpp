@@ -4488,3 +4488,7 @@ second)"
             value +
             "tail=" + tail;
 }
+
+void CompactBodiesStartingWithGlobalScope() { ::RunGlobal(); }
+
+auto compactGlobalLambda = [] { ::RunGlobal(); };

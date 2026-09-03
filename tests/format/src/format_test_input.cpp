@@ -2883,3 +2883,6 @@ second)" << value << "tail=" << tail;
 auto fragments = first // first
 + "line\n" "next" + value + "tail=" + tail;
 }
+
+void CompactBodiesStartingWithGlobalScope() {::RunGlobal();}
+auto compactGlobalLambda = [] {::RunGlobal();};
