@@ -1,0 +1,38 @@
+# Formatter Module Refactoring
+
+Preserve formatter behavior while extracting internal modules with concise header
+contracts. Complete each numbered step, format project sources, run the full
+`scripts/test.sh` suite, inspect the diff, and commit before starting the next step.
+`docs/architecture.md` remains the owner of the resulting module ownership map.
+
+1. Print-token construction: extract syntax traversal and token metadata into
+   `format_print_token_builder`, with shared token types in `format_print_token.h`.
+2. Syntax normalization: extract formatter-owned node transformations into
+   `format_model_normalize`, preserving bottom-up construction order.
+3. Compact physical-line measurement: extract immutable break-model measurement
+   and caching into `format_compact_layout`.
+4. Declaration-group analysis: extract advance analysis, grouping decisions, and
+   exact layout reuse into `format_declaration_layout`.
+5. Solved break-model emission: extract recursive solution rendering into
+   `format_break_emitter`, with explicit output and continuation contracts.
+6. Preprocessor text formatting: extract directive and payload text normalization
+   into `format_preprocessor_text`.
+7. Adjacent-string analysis: extract safe spelling joins and split requirements
+   into `format_string_literals`.
+8. Break-depth and cost normalization: extract structural prefix adjustments and
+   final subtree discounts into `format_break_cost`.
+
+## Progress
+
+- Baseline validation: all 78 tests passed.
+- Step 1: complete; all 78 tests and 21 baseline comparisons passed.
+- Steps 2–8: pending.
+
+## Validation
+
+Each step uses the repository build and source-formatting wrappers, then the full
+test wrapper. Existing golden, optimization, Unicode, preprocessor, macro,
+diagnostic, source-formatting, and external-project idempotence checks must pass.
+Compare representative syntax and break-tree dumps against the baseline as the
+model, solver, and emitter boundaries move. Add focused coverage if an extraction
+introduces a contract that existing behavioral tests do not exercise.

@@ -27,9 +27,11 @@ Print-token construction materializes canonical known-token text and immutable s
 - `src/format/impl/format_model_dump.h|cpp` own syntax-tree and break-tree dump command orchestration.
 - `src/format/impl/format_model_parse.h|cpp` own tree-sitter parser setup, macro-category callbacks, and parse-to-format-model wiring.
 - `vendor/tree-sitter/tree-sitter-cpp/src/scanner.c` owns custom tree-sitter external tokens, including runtime-configured macro identifiers, raw string delimiter state, and preprocessor directive newline ownership; see [scanner.md](scanner.md).
-- `src/format/impl/format_pretty_printer.h|cpp` own print token production, mandatory line breaks, break model solving integration, and formatted source emission.
+- `src/format/impl/format_print_token.h` owns print-token data and borrowed-source metadata.
+- `src/format/impl/format_print_token_builder.h|cpp` own normalized syntax traversal, print-token production, ancestry facts, comment continuations, and initial adjacent-source spacing.
+- `src/format/impl/format_pretty_printer.h|cpp` own mandatory line breaks, break model solving integration, and formatted source emission.
 - `src/format/impl/format_raw_macro.h|cpp` own raw macro replacement whitespace normalization and the raw preprocessor line-preservation helpers used by the pretty printer.
-- `src/format/impl/format_spacing.h|cpp` own print token text, width, classification, and spacing rules.
+- `src/format/impl/format_spacing.h|cpp` own print token text/width accessors, classification, and spacing rules.
 - `src/tools/tools_common.h|cpp` own shared tool helpers for paths, recursive discovery, file lists, source lines, include text, counts, and lightweight string operations.
 - `src/tools/tools_parallel.h|cpp` own tool concurrency parsing, default worker selection, and indexed parallel execution.
 - `src/tools/tools_progress.h|cpp` own elapsed-time formatting and terminal progress rendering.

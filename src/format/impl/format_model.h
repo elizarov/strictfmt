@@ -416,3 +416,8 @@ struct FormatModel {
     std::vector<SyntaxNode> nodes;
     SyntaxNode* root = nullptr;
 };
+
+inline bool SyntaxNodeHasClass(const SyntaxNode& node, SyntaxNodeClass syntaxNodeClass) {
+    return (node.classes & static_cast<std::uint64_t>(syntaxNodeClass)) != 0 ||
+        SyntaxNodeKindHasClass(node.kind, syntaxNodeClass);
+}
