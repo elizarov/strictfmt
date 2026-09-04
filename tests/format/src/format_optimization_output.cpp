@@ -76,7 +76,7 @@ void f8() {
 
 // operator and comment suffix width
 void f9() {
-    a +  //
+    a +      //
         b +  //
         c;
 }

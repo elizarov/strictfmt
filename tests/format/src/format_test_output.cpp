@@ -4291,6 +4291,27 @@ struct CommentContinuationLayout {
     bool after_alignment;
 };
 
+void TrailingCommentAlignmentGroups(bool a, bool b, bool c, bool d) {
+    if (
+        a ||      // first
+        b ||      // second
+        (c && d)  // third
+    ) {
+        Run();
+    }
+    Use(
+        a +            // first operand
+            b +        // second operand
+            Nested(c)  // third operand
+    );
+    Use(
+        Nested(
+            a  // nested group
+        ),  // outer group
+        b
+    );
+}
+
 void UnnamedCommentedParameter(Type& /* unused */);
 
 template </* parameter */ typename T /* last */>
@@ -4324,11 +4345,11 @@ void BlockCommentLineBoundaries() {
 
 void CommentedBinaryOperators() {
     const auto count = items.size() +  // items
-        separators.size() +  // separators
+        separators.size() +            // separators
         before +
         after;
     const auto already = items.size() +  // items
-        separators.size() +  // separators
+        separators.size() +              // separators
         before +
         after;
     auto blocks = first + /* first */
@@ -4355,7 +4376,7 @@ void CommentedBinaryOperators() {
     ) | (third ^ fourth);
     if (
         enabled &&  // feature
-        ready &&  // readiness
+        ready &&    // readiness
         available
     ) {
         Run();
@@ -4380,11 +4401,11 @@ void CommentedBinaryOperators() {
 }
 
 void CommentedStreamOperators() {
-    output  // first value
+    output        // first value
         << first  // second value
         << second
         << third;
-    output  // first value
+    output        // first value
         << first  // second value
         << second
         << third;
