@@ -3606,6 +3606,14 @@ private:
             }
             itemChildren.push_back(child);
             if (
+                child->kind == SyntaxNodeKind::MacroStatementSequence &&
+                std::any_of(child->children.begin(), child->children.end(), [](const SyntaxNode* statementChild) {
+                    return statementChild != nullptr && statementChild->kind == SyntaxNodeKind::Semicolon;
+                })
+            ) {
+                delimited->forceSplit = true;
+            }
+            if (
                 (
                     SyntaxNodeKindHasClass(FormatBreakTokenValue(*open).parentKind, SyntaxNodeClass::ControlHeader) ||
                     SyntaxNodeKindHasClass(FormatBreakTokenValue(*open).grandParentKind, SyntaxNodeClass::ControlHeader)

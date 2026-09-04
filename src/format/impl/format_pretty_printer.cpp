@@ -4486,6 +4486,18 @@ private:
             }
             BufferToken(token);
             MarkMandatoryBlockSplitListItemClosed(token);
+            std::optional<int> splitListContinuationIndent;
+            if (
+                MandatoryBlockSplitListContext* context = ActiveMandatoryBlockSplitListContext();
+                context != nullptr &&
+                context->afterItemClose &&
+                next != nullptr &&
+                next->node != context->closeToken &&
+                !IsListComma(*next, context->list) &&
+                ListOwnsToken(context->list, *next)
+            ) {
+                splitListContinuationIndent = context->itemIndent;
+            }
             if (isSwitchBody) {
                 switchDepth_ = std::max(0, switchDepth_ - 1);
             }
@@ -4495,6 +4507,7 @@ private:
             FlushPendingTokens();
             if (rawNext == nullptr || rawNext->kind != PrintTokenKind::TrailingComment) {
                 NewLine(ShouldContinueMacroLine(token, next));
+                pendingIndentLevel_ = splitListContinuationIndent;
             }
             return;
         }
