@@ -2777,6 +2777,24 @@ struct CommentContinuationLayout {
     bool after_alignment;
 };
 
+void TrailingCommentAlignmentGroups(bool a, bool b, bool c, bool d) {
+    if (a || // first
+        b || // second
+        (c && d) // third
+    ) { Run(); }
+    Use(
+        a + // first operand
+        b + // second operand
+        Nested(c) // third operand
+    );
+    Use(
+        Nested(
+            a // nested group
+        ), // outer group
+        b
+    );
+}
+
 void UnnamedCommentedParameter(Type&/* unused */ );
 
 template < /* parameter */typename T/* last */ >

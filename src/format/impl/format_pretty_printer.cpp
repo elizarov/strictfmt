@@ -1129,7 +1129,7 @@ struct PreprocessorSplitListPlan {
 constexpr size_t kNoCommentPosition = static_cast<size_t>(-1);
 
 struct LineCommentPosition {
-    const SyntaxNode* owner = nullptr;
+    const SyntaxNode* alignmentGroup = nullptr;
     size_t commentOffset = 0;
     int commentColumn = 0;
     int commentWidth = 0;
@@ -2169,6 +2169,18 @@ private:
         lineHasText_ = lineHasText_ || !text.empty();
     }
 
+    static const SyntaxNode* LineCommentAlignmentGroup(const PrintToken& token) {
+        const SyntaxNode* group = token.node == nullptr ? nullptr : token.node->parent;
+        while (
+            group != nullptr &&
+            SyntaxNodeHasClass(*group, SyntaxNodeClass::Expression) &&
+            !HasDirectListDelimiterPair(*group)
+        ) {
+            group = group->parent;
+        }
+        return group;
+    }
+
     size_t RecordLineCommentPosition(
         const PrintToken& token,
         std::string_view text,
@@ -2177,7 +2189,7 @@ private:
     ) {
         const size_t index = lineComments_.size();
         lineComments_.push_back({
-            .owner = token.node == nullptr ? nullptr : token.node->parent,
+            .alignmentGroup = LineCommentAlignmentGroup(token),
             .commentOffset = output_.size(),
             .commentColumn = currentColumn_,
             .commentWidth = Utf8CharacterCount(text),
@@ -2246,8 +2258,8 @@ private:
             while (
                 end < lineComments_.size() &&
                 lineComments_[end].alignTrailingRun &&
-                lineComments_[begin].owner != nullptr &&
-                lineComments_[end].owner == lineComments_[begin].owner &&
+                lineComments_[begin].alignmentGroup != nullptr &&
+                lineComments_[end].alignmentGroup == lineComments_[begin].alignmentGroup &&
                 AreOnAdjacentLines(lineComments_[end - 1], lineComments_[end])
             ) {
                 ++end;

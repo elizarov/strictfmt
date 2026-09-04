@@ -38,7 +38,7 @@ This document specifies the source layout produced by `strictfmt`. Wrapping exam
 
 ## Vertical Alignment
 
-Do not vertically align tokens across lines. As the sole exception, align a run of trailing `//` comments on consecutive lines in the same syntactic group when the aligned run fits within the line limit.
+Do not vertically align tokens across lines. As the sole exception, align a run of trailing `//` comments on consecutive lines in the same syntactic group when the aligned run fits within the line limit. Non-delimiting expression wrappers do not divide an alignment group; a nested delimiter group does.
 
 A standalone `//` comment immediately following a trailing `//` comment, or its continuation, is a continuation when their `//` tokens start in the same original source column. Align it with the anchor's formatted column. This is the only rule for which an original source column affects formatting.
 
@@ -48,6 +48,15 @@ struct Key {
     int64_t id;         // primary key
                         // within the shard
 };
+
+void Check(bool a, bool b, bool c) {
+    if (
+        a ||      // first alternative
+        (b && c)  // second alternative
+    ) {
+        Run();
+    }
+}
 ```
 
 ## Line Hygiene
@@ -266,7 +275,7 @@ In binary and stream chains, place intervening trailing or standalone comments a
 
 ```cpp
 auto count = items.size() +  // items
-    separators.size() +  // separators
+    separators.size() +      // separators
     before +
     after;
 ```
