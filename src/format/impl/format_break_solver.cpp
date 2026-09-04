@@ -2183,14 +2183,7 @@ private:
             return CompactTailExpansionKind::Structural;
         }
         if (node.kind == FormatBreakNodeKind::Delimited) {
-            if (IsBreakingChoice(ChoiceFor(compact, node))) {
-                return CompactTailExpansionKind::Structural;
-            }
-            if (node.items.size() != 1 || HasRealSeparators(node)) {
-                return CompactTailExpansionKind::None;
-            }
-            const FormatBreakNode* item = node.items.front().node;
-            return item == nullptr ? CompactTailExpansionKind::None : CompactTailExpansion(*item, compact);
+            return DelimitedCompactTailExpansion(node, compact);
         }
         if (node.kind == FormatBreakNodeKind::Chain) {
             if (node.operands.empty() || ChoiceFor(compact, node) != FormatBreakChoice::Compact) {

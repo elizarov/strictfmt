@@ -3766,12 +3766,9 @@ void WeightedExpansionExamples() {
     optional::Map(request.cargo_options(), [&](const auto& cargo_options) {
         builder[fields::kCargoOptions] = json::Serialize(cargo_options);
     });
-    auto result = BuildResult(
-        request,
-        TransformCargoOptions(request.cargo_options(), [&](const auto& cargo_options) {
-            return json::Serialize(cargo_options);
-        })
-    );
+    auto result = BuildResult(request, TransformCargoOptions(request.cargo_options(), [&](const auto& cargo_options) {
+        return json::Serialize(cargo_options);
+    }));
     DispatchCargoOptions(
         [&](const auto& cargo_options) {
             PrepareCargoOptions(cargo_options);
@@ -3781,9 +3778,9 @@ void WeightedExpansionExamples() {
     );
     auto& component_block = wb_utils::AddCollapsible(builder, component_text)
         .SetValue<wb::BlockList>(/*orientation=*/ wb::Orientation::kVertical);
-    output
-        << firstLabel
-        << BuildDetailedCargoOptions(request, [](const auto& cargo_options) { return json::Serialize(cargo_options); });
+    output << firstLabel << BuildDetailedCargoOptions(request, [](const auto& cargo_options) {
+        return json::Serialize(cargo_options);
+    });
 }
 
 auto ExpansionCostArgumentList() {
@@ -3903,6 +3900,12 @@ auto RecursiveFinalLambdaDiscountKeepsTemplateName() {
             }
         );
     }
+}
+
+void PreferCompactWrappersAroundExpandedFinalLambda() {
+    Outer(Middle(Async(task_name, [first, second] {
+        UpdateAnIntentionallyLongValue(first, second, third, fourth, fifth, sixth);
+    })));
 }
 
 void FinalLambdaDiscountExamples() {
