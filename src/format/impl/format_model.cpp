@@ -1651,3 +1651,26 @@ bool CallableBodyAllowsCompactSingleStatementForm(const SyntaxNode& node, Syntax
     node.compactCallableBodyCache = result ? 2 : 1;
     return result;
 }
+
+SyntaxNode* MakeSyntaxNode(FormatModel& model, SyntaxNodeKind kind) {
+    SyntaxNode* node = &model.nodes.emplace_back(model.childStorage.get());
+    node->kind = kind;
+    return node;
+}
+
+void ReparentSyntaxNode(SyntaxNode& node, const SyntaxNode* parent) {
+    node.parent = parent;
+    node.depth = parent == nullptr ? 0 : parent->depth + 1;
+    for (SyntaxNode* child : node.children) {
+        if (child != nullptr) {
+            ReparentSyntaxNode(*child, &node);
+        }
+    }
+}
+
+void AppendSyntaxChild(SyntaxNode& parent, SyntaxNode* child) {
+    if (child != nullptr) {
+        ReparentSyntaxNode(*child, &parent);
+    }
+    parent.children.push_back(child);
+}
