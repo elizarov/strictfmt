@@ -20,12 +20,14 @@ IncludeIsMainRegex: '(Test)?$'
 
 MacroCategories:
   RawMacroDefinitions:
+    - FORMAT_FIXTURE_STATEMENT_ARGUMENT
     - FORMAT_FIXTURE_STRINGIZE
     - FORMAT_FIXTURE_TOKEN_PASTE
   BareIdentifierMacros:
     - WINAPI
   CallSyntaxMacros:
     - ENUM_STRING_DECLARE
+    - FORMAT_FIXTURE_STATEMENT_ARGUMENT
     - FORMAT_FIXTURE_DECLARE_OPTION
   SemicolonlessCallMacros:
     - FORMAT_FIXTURE_CREATE_METRIC

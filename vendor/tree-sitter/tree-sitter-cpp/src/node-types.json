@@ -1646,6 +1646,108 @@
     }
   },
   {
+    "type": "call_syntax_macro_argument_list",
+    "named": true,
+    "fields": {},
+    "children": {
+      "multiple": false,
+      "required": false,
+      "types": [
+        {
+          "type": "call_syntax_macro_argument_sequence",
+          "named": true
+        }
+      ]
+    }
+  },
+  {
+    "type": "call_syntax_macro_argument_sequence",
+    "named": true,
+    "fields": {},
+    "children": {
+      "multiple": true,
+      "required": false,
+      "types": [
+        {
+          "type": "comment",
+          "named": true
+        },
+        {
+          "type": "compound_statement",
+          "named": true
+        },
+        {
+          "type": "expression",
+          "named": true
+        },
+        {
+          "type": "function_pointer_type_descriptor",
+          "named": true
+        },
+        {
+          "type": "initializer_list",
+          "named": true
+        },
+        {
+          "type": "macro_argument_punctuator",
+          "named": true
+        },
+        {
+          "type": "macro_dependent_type_argument",
+          "named": true
+        },
+        {
+          "type": "macro_expression_without_semicolon",
+          "named": true
+        },
+        {
+          "type": "macro_preprocessing_token_call",
+          "named": true
+        },
+        {
+          "type": "macro_preprocessing_token_sequence_argument",
+          "named": true
+        },
+        {
+          "type": "macro_return_argument",
+          "named": true
+        },
+        {
+          "type": "macro_statement_sequence_argument",
+          "named": true
+        },
+        {
+          "type": "macro_token_paste_expression",
+          "named": true
+        },
+        {
+          "type": "noexcept",
+          "named": true
+        },
+        {
+          "type": "primitive_type",
+          "named": true
+        },
+        {
+          "type": "sized_type_specifier",
+          "named": true
+        },
+        {
+          "type": "type_descriptor",
+          "named": true
+        },
+        {
+          "type": "type_qualifier",
+          "named": true
+        },
+        {
+          "type": "virtual_specifier",
+          "named": true
+        }
+      ]
+    }
+  },
+  {
     "type": "calling_convention_macro",
     "named": true,
     "fields": {},
@@ -2189,6 +2291,10 @@
         },
         {
           "type": "function_type_alias_declaration",
+          "named": true
+        },
+        {
+          "type": "member_pointer_alias_declaration",
           "named": true
         },
         {
@@ -2938,6 +3044,10 @@
         "required": false,
         "types": [
           {
+            "type": "call_syntax_macro_argument_list",
+            "named": true
+          },
+          {
             "type": "macro_argument_list",
             "named": true
           }
@@ -3159,6 +3269,10 @@
         },
         {
           "type": "macro_function_definition",
+          "named": true
+        },
+        {
+          "type": "member_pointer_alias_declaration",
           "named": true
         },
         {
@@ -3921,6 +4035,10 @@
         },
         {
           "type": "macro_prefixed_field_declaration_item",
+          "named": true
+        },
+        {
+          "type": "member_pointer_alias_declaration",
           "named": true
         },
         {
@@ -6141,6 +6259,10 @@
         "required": true,
         "types": [
           {
+            "type": "call_syntax_macro_argument_list",
+            "named": true
+          },
+          {
             "type": "macro_argument_list",
             "named": true
           }
@@ -6163,25 +6285,6 @@
     }
   },
   {
-    "type": "macro_call_identifier",
-    "named": true,
-    "fields": {},
-    "children": {
-      "multiple": false,
-      "required": true,
-      "types": [
-        {
-          "type": "call_syntax_macro_identifier",
-          "named": true
-        },
-        {
-          "type": "semicolonless_call_macro_identifier",
-          "named": true
-        }
-      ]
-    }
-  },
-  {
     "type": "macro_call_item",
     "named": true,
     "fields": {
@@ -6189,6 +6292,10 @@
         "multiple": false,
         "required": true,
         "types": [
+          {
+            "type": "call_syntax_macro_argument_list",
+            "named": true
+          },
           {
             "type": "macro_argument_list",
             "named": true
@@ -6200,7 +6307,11 @@
         "required": true,
         "types": [
           {
-            "type": "macro_call_identifier",
+            "type": "call_syntax_macro_identifier",
+            "named": true
+          },
+          {
+            "type": "semicolonless_call_macro_identifier",
             "named": true
           }
         ]
@@ -6469,7 +6580,7 @@
         "required": true,
         "types": [
           {
-            "type": "macro_argument_list",
+            "type": "call_syntax_macro_argument_list",
             "named": true
           }
         ]
@@ -6561,7 +6672,7 @@
         "required": true,
         "types": [
           {
-            "type": "macro_argument_list",
+            "type": "call_syntax_macro_argument_list",
             "named": true
           }
         ]
@@ -7365,11 +7476,35 @@
       "required": true,
       "types": [
         {
+          "type": "compound_statement",
+          "named": true
+        },
+        {
+          "type": "for_statement",
+          "named": true
+        },
+        {
+          "type": "if_statement",
+          "named": true
+        },
+        {
           "type": "macro_call_statement_item",
           "named": true
         },
         {
           "type": "macro_complete_statement_item",
+          "named": true
+        },
+        {
+          "type": "switch_statement",
+          "named": true
+        },
+        {
+          "type": "try_statement",
+          "named": true
+        },
+        {
+          "type": "while_statement",
           "named": true
         }
       ]
@@ -7526,6 +7661,10 @@
             "named": true
           },
           {
+            "type": "qualified_type_identifier",
+            "named": true
+          },
+          {
             "type": "template_type",
             "named": true
           },
@@ -7563,6 +7702,80 @@
           }
         ]
       }
+    }
+  },
+  {
+    "type": "member_pointer_alias_declaration",
+    "named": true,
+    "fields": {
+      "class": {
+        "multiple": false,
+        "required": true,
+        "types": [
+          {
+            "type": "qualified_identifier",
+            "named": true
+          },
+          {
+            "type": "qualified_type_identifier",
+            "named": true
+          },
+          {
+            "type": "template_type",
+            "named": true
+          },
+          {
+            "type": "type_identifier",
+            "named": true
+          }
+        ]
+      },
+      "name": {
+        "multiple": false,
+        "required": true,
+        "types": [
+          {
+            "type": "type_identifier",
+            "named": true
+          }
+        ]
+      },
+      "type": {
+        "multiple": false,
+        "required": true,
+        "types": [
+          {
+            "type": "primitive_type",
+            "named": true
+          },
+          {
+            "type": "qualified_identifier",
+            "named": true
+          },
+          {
+            "type": "qualified_type_identifier",
+            "named": true
+          },
+          {
+            "type": "sized_type_specifier",
+            "named": true
+          },
+          {
+            "type": "template_type",
+            "named": true
+          }
+        ]
+      }
+    },
+    "children": {
+      "multiple": true,
+      "required": false,
+      "types": [
+        {
+          "type": "type_qualifier",
+          "named": true
+        }
+      ]
     }
   },
   {
@@ -7859,6 +8072,10 @@
           "named": true
         },
         {
+          "type": "member_pointer_alias_declaration",
+          "named": true
+        },
+        {
           "type": "module_declaration",
           "named": true
         },
@@ -8102,6 +8319,10 @@
         },
         {
           "type": "macro_function_definition",
+          "named": true
+        },
+        {
+          "type": "member_pointer_alias_declaration",
           "named": true
         },
         {
@@ -9105,6 +9326,10 @@
             "named": true
           },
           {
+            "type": "update_expression",
+            "named": true
+          },
+          {
             "type": "user_defined_literal",
             "named": true
           }
@@ -9645,6 +9870,10 @@
           "named": true
         },
         {
+          "type": "member_pointer_alias_declaration",
+          "named": true
+        },
+        {
           "type": "module_declaration",
           "named": true
         },
@@ -9802,6 +10031,10 @@
         },
         {
           "type": "function_type_alias_declaration",
+          "named": true
+        },
+        {
+          "type": "member_pointer_alias_declaration",
           "named": true
         },
         {
@@ -10000,6 +10233,10 @@
         },
         {
           "type": "macro_prefixed_field_declaration_item",
+          "named": true
+        },
+        {
+          "type": "member_pointer_alias_declaration",
           "named": true
         },
         {
@@ -10210,7 +10447,7 @@
         "required": true,
         "types": [
           {
-            "type": "macro_argument_list",
+            "type": "call_syntax_macro_argument_list",
             "named": true
           }
         ]
@@ -10488,6 +10725,10 @@
         },
         {
           "type": "macro_prefixed_field_declaration_item",
+          "named": true
+        },
+        {
+          "type": "member_pointer_alias_declaration",
           "named": true
         },
         {
@@ -10892,7 +11133,7 @@
         "required": true,
         "types": [
           {
-            "type": "macro_argument_list",
+            "type": "call_syntax_macro_argument_list",
             "named": true
           }
         ]
@@ -11128,6 +11369,10 @@
         },
         {
           "type": "macro_prefixed_field_declaration_item",
+          "named": true
+        },
+        {
+          "type": "member_pointer_alias_declaration",
           "named": true
         },
         {
@@ -11749,6 +11994,10 @@
         },
         {
           "type": "function_type_alias_declaration",
+          "named": true
+        },
+        {
+          "type": "member_pointer_alias_declaration",
           "named": true
         },
         {
@@ -13679,6 +13928,10 @@
         },
         {
           "type": "function_type_alias_declaration",
+          "named": true
+        },
+        {
+          "type": "member_pointer_alias_declaration",
           "named": true
         },
         {
@@ -16699,7 +16952,7 @@
         "required": true,
         "types": [
           {
-            "type": "macro_argument_list",
+            "type": "call_syntax_macro_argument_list",
             "named": true
           }
         ]
@@ -16877,6 +17130,10 @@
         },
         {
           "type": "macro_function_definition",
+          "named": true
+        },
+        {
+          "type": "member_pointer_alias_declaration",
           "named": true
         },
         {

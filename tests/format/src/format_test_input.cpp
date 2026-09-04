@@ -28,6 +28,8 @@
         (thirdValue))
 #define FORMAT_FIXTURE_SHORT_MACRO(value) (value)
 #define FORMAT_FIXTURE_MUCH_LONGER_MACRO(value) (value)
+#define FORMAT_FIXTURE_STATEMENT_ARGUMENT(MethodName, ParamType, ParamName, ...) \
+auto& MethodName(ParamType ParamName) { __VA_ARGS__ return *this; }
 #define FORMAT_FIXTURE_STRUCTURED_LAMBDA [](){a();b();}
 #define FORMAT_FIXTURE_DECLARE_OPTION(name,type) void name(type)
 #define FORMAT_FIXTURE_LOAD_OPTIONAL(function,name) \
@@ -129,6 +131,15 @@ class MacroSeparatedMethodHost{
     void MethodAfterMacro() {}
 
     int fieldAfterMethod;
+};
+
+class MacroStatementArgumentHost{
+    FORMAT_FIXTURE_STATEMENT_ARGUMENT(SetValue,int,value,
+        value_=value;
+        if(value<0){value_=0;}
+    );
+
+    int value_;
 };
 
 class DashboardShellHost{
@@ -904,6 +915,9 @@ using ConfigMetricAvailabilityResolver = bool (*)(std::string_view metricRef);
 using RuntimeConfigDynamicItemVisitor = void (*)(void* context, std::string_view key, const void* item);
 using RuntimeConfigEnsureDynamicItem = void* (*)(AppConfig& config, std::string_view key);
 using RuntimeConfigFindDynamicItem = const void* (*)(const AppConfig& config, std::string_view key);
+using MemberPointerAlias=ns::Value(ns::Owner::*);
+using QualifiedFunctionTypeAlias=ns::Result(ns::Argument);
+using TemplateFunctionTypeAlias=box::Result<int>(deep::ns::Argument);
 using RuntimeConfigForEachDynamicItem =
     void (*)(const AppConfig& config, void* context, RuntimeConfigDynamicItemVisitor visitor);
 using ZesDriver = void*;
@@ -2749,6 +2763,8 @@ auto lesser = left</* explanation */right;
 auto greater = left/* explanation */>right;
 value/* explanation */++;
 value++/* explanation */ ;
+output++=value;
+++output=value;
 for (int i = 0/* initial */ ;i < count/* condition */ ;++i) { Use(i); }
 return /* explanation */result;
 }

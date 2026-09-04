@@ -8,7 +8,7 @@ Definition-side and use-side macro categories are independent. `RawMacroDefiniti
 
 ## Macro Arguments
 
-Macro argument lists permit empty and comment-only arguments in any position. Separator commas are preserved, including a comma immediately before the closing parenthesis.
+Macro argument lists permit empty and comment-only arguments in any position. `CallSyntaxMacros` also permit a statement sequence as a structured argument in any position, including a sequence whose final statement ends in a semicolon. Separator commas are preserved, including a comma immediately before the closing parenthesis.
 
 ## Macro Replacements
 

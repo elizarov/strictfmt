@@ -152,6 +152,11 @@ constexpr auto kSyntaxKindMappings = std::to_array<SyntaxKindMapping>({
         "function_pointer_alias_declaration",
         Bit(SyntaxNodeClass::MacroDeclarationFragment)
     ),
+    Tree(
+        SyntaxNodeKind::FunctionPointerAliasDeclaration,
+        "member_pointer_alias_declaration",
+        Bit(SyntaxNodeClass::MacroDeclarationFragment)
+    ),
     Tree(SyntaxNodeKind::Declaration, "deduction_guide_declaration", Bit(SyntaxNodeClass::MacroDeclarationFragment)),
     Tree(SyntaxNodeKind::Declaration, "module_declaration"),
     Tree(SyntaxNodeKind::Declaration, "module_import_declaration"),
@@ -468,6 +473,7 @@ constexpr auto kSyntaxKindMappings = std::to_array<SyntaxKindMapping>({
     ),
     Tree(SyntaxNodeKind::ArgumentList, "primitive_braced_argument_list", kPreprocessorSplitListClasses),
     Tree(SyntaxNodeKind::ArgumentList, "macro_argument_list", kMacroArgumentListClasses),
+    Tree(SyntaxNodeKind::ArgumentList, "call_syntax_macro_argument_list", kMacroArgumentListClasses),
     Tree(SyntaxNodeKind::ArgumentList, "macro_parenthesized_argument", kMacroArgumentListClasses),
     Tree(SyntaxNodeKind::ArgumentList, "macro_statement_argument_list", kMacroArgumentListClasses),
     Tree(SyntaxNodeKind::MacroStatementSequence, "macro_statement_sequence_argument"),
@@ -944,6 +950,7 @@ const SymbolInfoTable& SyntaxInfoBySymbol() {
             "compound_literal_expression",
             "initializer_pair",
             "macro_argument_sequence",
+            "call_syntax_macro_argument_sequence",
             "optional_parameter_declaration",
             "optional_type_parameter_declaration",
             "parameter_declaration",
