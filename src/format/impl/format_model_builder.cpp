@@ -153,6 +153,29 @@ std::optional<size_t> NextNonTriviaChildIndex(const SyntaxChildList& children, s
     return std::nullopt;
 }
 
+// Structural lookup uses effective classes because inline block comments print as lexical tokens while retaining
+// their trivia class. Token-rewriting lookups above intentionally use only static kind classes to preserve position.
+std::optional<size_t> PreviousStructuralChildIndex(const SyntaxChildList& children, size_t before) {
+    while (before > 0) {
+        --before;
+        const SyntaxNode* child = children[before];
+        if (child == nullptr || !SyntaxNodeHasClass(*child, SyntaxNodeClass::Trivia)) {
+            return before;
+        }
+    }
+    return std::nullopt;
+}
+
+std::optional<size_t> NextStructuralChildIndex(const SyntaxChildList& children, size_t after) {
+    for (size_t index = after; index < children.size(); ++index) {
+        const SyntaxNode* child = children[index];
+        if (child == nullptr || !SyntaxNodeHasClass(*child, SyntaxNodeClass::Trivia)) {
+            return index;
+        }
+    }
+    return std::nullopt;
+}
+
 void RemovePreviousComma(SyntaxChildList& children, size_t before) {
     const std::optional<size_t> previous = PreviousNonTriviaChildIndex(children, before);
     if (previous && children[*previous]->kind == SyntaxNodeKind::Comma) {
@@ -395,7 +418,7 @@ void NormalizeElseClauseBody(FormatModel& model, SyntaxNode& node) {
         if (node.children[index] == nullptr || node.children[index]->kind != SyntaxNodeKind::KeywordElse) {
             continue;
         }
-        const std::optional<size_t> bodyIndex = NextNonTriviaChildIndex(node.children, index + 1);
+        const std::optional<size_t> bodyIndex = NextStructuralChildIndex(node.children, index + 1);
         if (!bodyIndex) {
             return;
         }
@@ -429,7 +452,7 @@ void NormalizeIfStatementBody(FormatModel& model, SyntaxNode& node) {
             break;
         }
     }
-    const std::optional<size_t> consequenceIndex = PreviousNonTriviaChildIndex(node.children, before);
+    const std::optional<size_t> consequenceIndex = PreviousStructuralChildIndex(node.children, before);
     if (consequenceIndex) {
         WrapControlBody(model, node, *consequenceIndex);
     }
@@ -440,7 +463,7 @@ void NormalizeDoStatementBody(FormatModel& model, SyntaxNode& node) {
         if (node.children[index] == nullptr || node.children[index]->kind != SyntaxNodeKind::KeywordWhile) {
             continue;
         }
-        const std::optional<size_t> bodyIndex = PreviousNonTriviaChildIndex(node.children, index);
+        const std::optional<size_t> bodyIndex = PreviousStructuralChildIndex(node.children, index);
         if (bodyIndex) {
             WrapControlBody(model, node, *bodyIndex);
         }
@@ -449,7 +472,7 @@ void NormalizeDoStatementBody(FormatModel& model, SyntaxNode& node) {
 }
 
 void NormalizeLastControlBody(FormatModel& model, SyntaxNode& node) {
-    const std::optional<size_t> bodyIndex = PreviousNonTriviaChildIndex(node.children, node.children.size());
+    const std::optional<size_t> bodyIndex = PreviousStructuralChildIndex(node.children, node.children.size());
     if (bodyIndex) {
         WrapControlBody(model, node, *bodyIndex);
     }
@@ -564,7 +587,7 @@ void NormalizeLeadingStreamComments(SyntaxNode& node) {
     }
 }
 
-void NormalizeBlockHeaderTrailingComment(SyntaxNode& node) {
+void NormalizeAttachedTrailingBlockComment(SyntaxNode& node) {
     for (size_t index = 0; index < node.children.size(); ++index) {
         SyntaxNode* comment = node.children[index];
         if (
@@ -573,11 +596,10 @@ void NormalizeBlockHeaderTrailingComment(SyntaxNode& node) {
             continue;
         }
         const std::optional<size_t> nextIndex = NextNonTriviaChildIndex(node.children, index + 1);
-        if (
-            nextIndex &&
-            node.children[*nextIndex] != nullptr &&
-            SyntaxNodeKindHasClass(node.children[*nextIndex]->kind, SyntaxNodeClass::CompoundBlock)
-        ) {
+        if (nextIndex && node.children[*nextIndex] != nullptr && (
+            SyntaxNodeKindHasClass(node.children[*nextIndex]->kind, SyntaxNodeClass::CompoundBlock) ||
+            node.children[*nextIndex]->kind == SyntaxNodeKind::RequiresClause
+        )) {
             comment->kind = SyntaxNodeKind::LexicalToken;
         }
     }
@@ -809,7 +831,7 @@ void NormalizeSyntaxNode(FormatModel& model, SyntaxNode& node) {
     NormalizeControlBodies(model, node);
     NormalizeColonPrefixedListComments(node);
     NormalizeLeadingStreamComments(node);
-    NormalizeBlockHeaderTrailingComment(node);
+    NormalizeAttachedTrailingBlockComment(node);
 }
 
 struct TsNodeSyntax {

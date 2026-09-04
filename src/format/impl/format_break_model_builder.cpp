@@ -19,6 +19,12 @@ bool SyntaxNodeHasLocalClass(const SyntaxNode& node, SyntaxNodeClass syntaxNodeC
     return (node.classes & static_cast<std::uint64_t>(syntaxNodeClass)) != 0;
 }
 
+bool IsSyntaxTriviaNode(const SyntaxNode* node) {
+    return node == nullptr ||
+        SyntaxNodeHasLocalClass(*node, SyntaxNodeClass::Trivia) ||
+        SyntaxNodeKindHasClass(node->kind, SyntaxNodeClass::Trivia);
+}
+
 bool IsTemplateAngleToken(const FormatBreakToken& token) {
     return IsTemplateAnglePrintToken(FormatBreakTokenValue(token));
 }
@@ -1822,6 +1828,10 @@ private:
         }
 
         size_t declarationIndex = *parametersIndex + 1;
+        while (declarationIndex < node.children.size() && IsSyntaxTriviaNode(node.children[declarationIndex])) {
+            templateHeadChildren.push_back(node.children[declarationIndex]);
+            ++declarationIndex;
+        }
         const SyntaxNode* requiresNode = nullptr;
         if (
             declarationIndex < node.children.size() &&

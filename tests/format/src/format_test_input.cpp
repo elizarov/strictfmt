@@ -2090,6 +2090,46 @@ if(first){Use(first);}else{[[likely]] if(second){Use(second);}}
 if(first){Use(first);}else [[likely]] if(second){Use(second);}else{[[likely]] [[likely]] if(third){Use(third);}}
 }
 
+void CommentedControlBodyBoundaries(bool first,bool second,int count){
+if(first)/* if body */{Use(first);}else/* else body */{Use(second);}
+if(first){Use(first);}else/* braced else-if */{if(second){Use(second);}else/* nested else body */{Use(count);}}
+if(first){Use(first);}else/* else-if */if(second){Use(second);}
+if(first){Use(first);}else/* unbraced else */Use(second);
+if(first){Use(first);}/* before else */else{Use(second);}
+if(first){Use(first);}/* first before else *//* second before else */else{Use(second);}
+if(first){}/* before empty else */else{Use(second);}
+if(second){}/* first empty *//* second empty */else{Use(first);}
+if(first){Use(first);}else/* first *//* second */{Use(second);}
+while(count>0)/* while body */{--count;}
+for(int i=0;i<count;++i)/* for body */{Use(i);}
+do/* do body */{++count;}/* before while */while(count<0);
+do{}/* before empty while */while(count<0);
+switch(count)/* switch body */{default:break;}
+}
+
+void CommentedBlockAttachments(bool first,int count){
+try{Use(first);}/* before catch */catch(...){Use(count);}
+try{Use(first);}/* before finally */finally{Use(count);}
+Consume([&]{Use(first);}/* before comma */,count);
+Consume([&]{Use(first);}/* before close */);
+auto action=[&]{Use(first);}/* before semicolon */;
+auto result=[&]{return count;}/* before call */();
+auto constrained=[]<typename T>/* before lambda requires */requires C<T>(T value){return value;};
+}
+
+template<typename T>/* before requires */requires C<T>
+void CommentedRequiresAttachment();
+
+struct CommentedLabels{
+public/* before access colon */:
+void Use();
+};
+
+void CommentedCaseLabels(int value){
+switch(value){case 1:/* before case block */{Use(value);break;}default/* before default colon */:break;}
+retry/* before label colon */:Use(value);
+}
+
 void EmptyElseIfSpacing(bool first,bool second,bool third){
 if(first){}else if(second){}else if(third){Use(third);}
 }
