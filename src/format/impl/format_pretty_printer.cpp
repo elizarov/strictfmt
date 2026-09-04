@@ -3790,12 +3790,15 @@ private:
         )) {
             return false;
         }
-        return next->kind != PrintTokenKind::Known || (
-            next->syntaxKind != SyntaxNodeKind::RightParen &&
+        if (next->kind != PrintTokenKind::Known) {
+            return true;
+        }
+        if (next->syntaxKind == SyntaxNodeKind::RightBrace) {
+            return SyntaxNodeHasClass(*level, SyntaxNodeClass::CompoundBlock);
+        }
+        return next->syntaxKind != SyntaxNodeKind::RightParen &&
             next->syntaxKind != SyntaxNodeKind::RightBracket &&
-            next->syntaxKind != SyntaxNodeKind::RightBrace &&
-            next->syntaxKind != SyntaxNodeKind::Greater
-        );
+            next->syntaxKind != SyntaxNodeKind::Greater;
     }
 
     void PrintOne(
