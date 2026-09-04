@@ -129,3 +129,13 @@ void SortUniqueStrings(std::vector<std::string>& values) {
     }
     values.resize(out);
 }
+
+std::string_view TrimWhitespaceView(std::string_view line) {
+    while (!line.empty() && (line.front() == ' ' || line.front() == '\t')) {
+        line.remove_prefix(1);
+    }
+    while (!line.empty() && (line.back() == ' ' || line.back() == '\t')) {
+        line.remove_suffix(1);
+    }
+    return line;
+}

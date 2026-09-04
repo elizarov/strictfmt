@@ -16,3 +16,6 @@ std::string JoinNames(const std::vector<std::string>& names);
 size_t StableStringHash(std::string_view value);
 void SortStrings(std::vector<std::string>& values);
 void SortUniqueStrings(std::vector<std::string>& values);
+
+// Trim horizontal source whitespace without allocating.
+std::string_view TrimWhitespaceView(std::string_view value);

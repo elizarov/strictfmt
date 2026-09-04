@@ -127,11 +127,6 @@ bool IsBlockComment(std::string_view source, uint32_t commentStart) {
     return commentStart + 1 < source.size() && source[commentStart] == '/' && source[commentStart + 1] == '*';
 }
 
-bool SyntaxNodeHasClass(const SyntaxNode& node, SyntaxNodeClass syntaxNodeClass) {
-    return (node.classes & static_cast<std::uint64_t>(syntaxNodeClass)) != 0 ||
-        SyntaxNodeKindHasClass(node.kind, syntaxNodeClass);
-}
-
 std::optional<size_t> PreviousNonTriviaChildIndex(const SyntaxChildList& children, size_t before) {
     while (before > 0) {
         --before;
