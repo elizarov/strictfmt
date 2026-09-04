@@ -1345,7 +1345,12 @@ void LongLambdaCapturePrefixMaySplit(){
 Visit([firstVeryLongLambdaCaptureName,secondVeryLongLambdaCaptureName,thirdVeryLongLambdaCaptureName,fourthVeryLongLambdaCaptureName](int value){Use(value);});
 }
 
-auto FinalLambdaHeaderBreakEscalates(const handlers::PriceFor& priceFor) -> const Sequence& {
+void LambdaHeaderCompactTailIsDepthIndependent(){
+Visit(first,[](const IntentionallyLongParameterTypeForLambdaHeaderScoring& first,const IntentionallyLongParameterTypeForLambdaHeaderScoring& second){Use(first,second);});
+Visit(first,Wrapper(([](const IntentionallyLongParameterTypeForLambdaHeaderScoring& first,const IntentionallyLongParameterTypeForLambdaHeaderScoring& second){Use(first,second);})));
+}
+
+auto FinalLambdaHeaderBreakSelectedByScore(const handlers::PriceFor& priceFor) -> const Sequence& {
 return variant::Visit(plan, [](const Sequence& sequence) -> const Sequence& { return sequence; }, [&](const AgentPlan& agentPlan) -> const Sequence& { switch (priceFor) { case handlers::PriceFor::kPerformer: { return agentPlan.performerSequence; } case handlers::PriceFor::kClient: { return agentPlan.clientSequence; } } });
 }
 

@@ -2229,7 +2229,7 @@ private:
             return CompactTailExpansionKind::None;
         }
         const FormatBreakNode* tail = node.items.back().node;
-        if (tail == nullptr || TrailingBodyHeaderHeaderHasSelectedBreak(*tail, compact)) {
+        if (tail == nullptr) {
             return CompactTailExpansionKind::None;
         }
         if (node.items.size() == 1 && !HasRealSeparators(node)) {

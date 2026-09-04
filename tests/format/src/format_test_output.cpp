@@ -1900,39 +1900,31 @@ void LambdaGeneralityCases(int left, int right) {
 }
 
 void LambdaCapturePrefixDepthPreference() {
-    Visit(
-        [&](
-            const VeryLongQualifiedCalculationTypeForLambdaCaptureBreakPreferenceWithAdditionalSuffixMoreId& calculation
-        ) {
-            Use(calculation);
-        }
-    );
-    Visit(
-        [&context](
-            const VeryLongQualifiedCalculationTypeForLambdaCaptureBreakPreferenceWithAdditionalSuffixMoreId& calculation
-        ) {
-            Use(calculation);
-        }
-    );
+    Visit([&](
+        const VeryLongQualifiedCalculationTypeForLambdaCaptureBreakPreferenceWithAdditionalSuffixMoreId& calculation
+    ) {
+        Use(calculation);
+    });
+    Visit([&context](
+        const VeryLongQualifiedCalculationTypeForLambdaCaptureBreakPreferenceWithAdditionalSuffixMoreId& calculation
+    ) {
+        Use(calculation);
+    });
 }
 
 void TrailingReturnTypeBreaks() {
-    Use(
-        [first_capture_with_long_name, second_capture_with_long_name, third_capture_with_long_name]() ->
-            namespace_name::Result
-        {
-            Prepare();
-            return {};
-        }
-    );
-    Use(
-        [first_capture_with_long_name, second_capture_with_long_name, third_capture_with_long_name]() noexcept ->
-            const namespace_name::Result&
-        {
-            Prepare();
-            return result;
-        }
-    );
+    Use([first_capture_with_long_name, second_capture_with_long_name, third_capture_with_long_name]() ->
+        namespace_name::Result
+    {
+        Prepare();
+        return {};
+    });
+    Use([first_capture_with_long_name, second_capture_with_long_name, third_capture_with_long_name]() noexcept ->
+        const namespace_name::Result&
+    {
+        Prepare();
+        return result;
+    });
     auto callback =
         [first_capture_with_long_name, second_capture_with_long_name, third_capture_with_long_name]<class T>(
             T value
@@ -1974,19 +1966,32 @@ auto ComputeResultForCurrentEnvironmentAndConfiguration() noexcept ->
 }
 
 void LongLambdaCapturePrefixMaySplit() {
-    Visit(
-        [
-            firstVeryLongLambdaCaptureName,
-            secondVeryLongLambdaCaptureName,
-            thirdVeryLongLambdaCaptureName,
-            fourthVeryLongLambdaCaptureName
-        ](int value) {
-            Use(value);
-        }
-    );
+    Visit([
+        firstVeryLongLambdaCaptureName,
+        secondVeryLongLambdaCaptureName,
+        thirdVeryLongLambdaCaptureName,
+        fourthVeryLongLambdaCaptureName
+    ](int value) {
+        Use(value);
+    });
 }
 
-auto FinalLambdaHeaderBreakEscalates(const handlers::PriceFor& priceFor) -> const Sequence& {
+void LambdaHeaderCompactTailIsDepthIndependent() {
+    Visit(first, [](
+        const IntentionallyLongParameterTypeForLambdaHeaderScoring& first,
+        const IntentionallyLongParameterTypeForLambdaHeaderScoring& second
+    ) {
+        Use(first, second);
+    });
+    Visit(first, Wrapper(([](
+        const IntentionallyLongParameterTypeForLambdaHeaderScoring& first,
+        const IntentionallyLongParameterTypeForLambdaHeaderScoring& second
+    ) {
+        Use(first, second);
+    })));
+}
+
+auto FinalLambdaHeaderBreakSelectedByScore(const handlers::PriceFor& priceFor) -> const Sequence& {
     return variant::Visit(
         plan,
         [](const Sequence& sequence) -> const Sequence& { return sequence; },
@@ -3921,15 +3926,11 @@ void FinalLambdaDiscountExamples() {
         [&](const auto& cargo_options) { builder[fields::kCargoOptions] = json::Serialize(cargo_options); },
         /* callback */
     };
-    optional::Map(
-        request.cargo_options(),
-        [&](
-            const VeryLongCargoOptionsTypeName& cargo_options,
-            const SerializationContextWithAdditionalCargoOptions& context
-        ) {
-            return Serialize(cargo_options, context);
-        }
-    );
+    optional::Map(request.cargo_options(), [&](
+        const VeryLongCargoOptionsTypeName& cargo_options, const SerializationContextWithAdditionalCargoOptions& context
+    ) {
+        return Serialize(cargo_options, context);
+    });
     optional::Map(request.cargo_options(), [&](const auto& cargo_options) {
         return SerializeCargoOptionsWithContext(
             cargo_options, serialization_context, additional_serialization_options, serialization_fallback_policy
