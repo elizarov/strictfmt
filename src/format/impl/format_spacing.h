@@ -40,6 +40,7 @@ struct PrintToken {
     bool inFieldInitializerList : 1;
     bool inTemplateDeclarationBlock : 1;
     bool inTemplateDeclarationHeader : 1;
+    bool commentContinuation : 1;
     bool spaceBefore : 1;
     bool spaceBeforeKnown : 1;
     mutable unsigned templateArgumentExpressionOperator : 2;

@@ -40,10 +40,13 @@ This document specifies the source layout produced by `strictfmt`. Wrapping exam
 
 Do not vertically align tokens across lines. As the sole exception, align a run of trailing `//` comments on consecutive lines in the same syntactic group when the aligned run fits within the line limit.
 
+A standalone `//` comment immediately following a trailing `//` comment, or its continuation, is a continuation when their `//` tokens start in the same original source column. Align it with the anchor's formatted column. This is the only rule for which an original source column affects formatting.
+
 ```cpp
 struct Key {
     std::string shard;  // shard key
     int64_t id;         // primary key
+                        // within the shard
 };
 ```
 

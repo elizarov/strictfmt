@@ -1126,11 +1126,16 @@ struct PreprocessorSplitListPlan {
     PreprocessorSplitListContext deferredContext;
 };
 
-struct TrailingCommentPosition {
+constexpr size_t kNoCommentPosition = static_cast<size_t>(-1);
+
+struct LineCommentPosition {
     const SyntaxNode* owner = nullptr;
     size_t commentOffset = 0;
     int commentColumn = 0;
     int commentWidth = 0;
+    int continuationWidth = 0;
+    size_t continuationAnchor = kNoCommentPosition;
+    bool alignTrailingRun = false;
 };
 
 class Printer {
@@ -1179,7 +1184,7 @@ public:
         if (!output_.empty() && output_.back() != '\n') {
             output_.push_back('\n');
         }
-        AlignTrailingCommentRuns();
+        AlignLineComments();
         return output_;
     }
 
@@ -1191,7 +1196,8 @@ private:
     int indentWidth_ = 4;
     int tabWidth_ = 4;
     std::string output_;
-    std::vector<TrailingCommentPosition> trailingComments_;
+    std::vector<LineCommentPosition> lineComments_;
+    std::optional<size_t> activeCommentContinuationAnchor_;
     std::vector<PrintToken> pendingTokens_;
     bool pendingSourceBlankLine_ = false;
     int indentLevel_ = 0;
@@ -2163,6 +2169,28 @@ private:
         lineHasText_ = lineHasText_ || !text.empty();
     }
 
+    size_t RecordLineCommentPosition(
+        const PrintToken& token,
+        std::string_view text,
+        bool alignTrailingRun,
+        size_t continuationAnchor = kNoCommentPosition
+    ) {
+        const size_t index = lineComments_.size();
+        lineComments_.push_back({
+            .owner = token.node == nullptr ? nullptr : token.node->parent,
+            .commentOffset = output_.size(),
+            .commentColumn = currentColumn_,
+            .commentWidth = Utf8CharacterCount(text),
+            .continuationAnchor = continuationAnchor,
+            .alignTrailingRun = alignTrailingRun,
+        });
+        if (continuationAnchor != kNoCommentPosition) {
+            LineCommentPosition& anchor = lineComments_[continuationAnchor];
+            anchor.continuationWidth = std::max(anchor.continuationWidth, Utf8CharacterCount(text));
+        }
+        return index;
+    }
+
     void WriteTrailingComment(const PrintToken& token, std::string_view text, bool spaceBefore) {
         if (spaceBefore || IsLineCommentToken(token)) {
             Space();
@@ -2170,17 +2198,36 @@ private:
         if (IsLineCommentToken(token)) {
             output_.push_back(' ');
             ++currentColumn_;
-            trailingComments_.push_back({
-                .owner = token.node == nullptr ? nullptr : token.node->parent,
-                .commentOffset = output_.size(),
-                .commentColumn = currentColumn_,
-                .commentWidth = Utf8CharacterCount(text),
-            });
+            activeCommentContinuationAnchor_ = RecordLineCommentPosition(token, text, true);
+        } else {
+            activeCommentContinuationAnchor_.reset();
         }
         Write(text);
     }
 
-    bool AreOnAdjacentLines(const TrailingCommentPosition& left, const TrailingCommentPosition& right) const {
+    void WriteStandaloneTrailingComment(const PrintToken& token, std::string_view text) {
+        WriteIndentIfNeeded();
+        if (IsLineCommentToken(token)) {
+            activeCommentContinuationAnchor_ = RecordLineCommentPosition(token, text, false);
+        } else {
+            activeCommentContinuationAnchor_.reset();
+        }
+        Write(text);
+    }
+
+    void WriteCommentContinuation(const PrintToken& token, std::string_view text) {
+        if (IsLineCommentToken(token) && activeCommentContinuationAnchor_) {
+            if (atLineStart_) {
+                forceColumnZeroLine_ = true;
+                pendingIndentLevel_.reset();
+            }
+            WriteIndentIfNeeded();
+            RecordLineCommentPosition(token, text, false, *activeCommentContinuationAnchor_);
+        }
+        Write(text);
+    }
+
+    bool AreOnAdjacentLines(const LineCommentPosition& left, const LineCommentPosition& right) const {
         return std::count(
             output_.begin() + static_cast<std::ptrdiff_t>(left.commentOffset),
             output_.begin() + static_cast<std::ptrdiff_t>(right.commentOffset),
@@ -2188,37 +2235,54 @@ private:
         ) == 1;
     }
 
-    void AlignTrailingCommentRuns() {
-        std::vector<int> padding(trailingComments_.size());
-        for (size_t begin = 0; begin < trailingComments_.size();) {
+    void AlignLineComments() {
+        std::vector<int> padding(lineComments_.size());
+        for (size_t begin = 0; begin < lineComments_.size();) {
+            if (!lineComments_[begin].alignTrailingRun) {
+                ++begin;
+                continue;
+            }
             size_t end = begin + 1;
             while (
-                end < trailingComments_.size() &&
-                trailingComments_[begin].owner != nullptr &&
-                trailingComments_[end].owner == trailingComments_[begin].owner &&
-                AreOnAdjacentLines(trailingComments_[end - 1], trailingComments_[end])
+                end < lineComments_.size() &&
+                lineComments_[end].alignTrailingRun &&
+                lineComments_[begin].owner != nullptr &&
+                lineComments_[end].owner == lineComments_[begin].owner &&
+                AreOnAdjacentLines(lineComments_[end - 1], lineComments_[end])
             ) {
                 ++end;
             }
             if (end - begin >= 2) {
                 int alignedColumn = 0;
                 for (size_t index = begin; index < end; ++index) {
-                    alignedColumn = std::max(alignedColumn, trailingComments_[index].commentColumn);
+                    alignedColumn = std::max(alignedColumn, lineComments_[index].commentColumn);
                 }
                 bool fits = true;
                 for (size_t index = begin; index < end; ++index) {
-                    if (alignedColumn + trailingComments_[index].commentWidth > config_.columnLimit) {
+                    if (
+                        alignedColumn +
+                            std::max(lineComments_[index].commentWidth, lineComments_[index].continuationWidth) >
+                            config_.columnLimit
+                    ) {
                         fits = false;
                         break;
                     }
                 }
                 if (fits) {
                     for (size_t index = begin; index < end; ++index) {
-                        padding[index] = alignedColumn - trailingComments_[index].commentColumn;
+                        padding[index] = alignedColumn - lineComments_[index].commentColumn;
                     }
                 }
             }
             begin = end;
+        }
+        for (size_t index = 0; index < lineComments_.size(); ++index) {
+            const size_t anchor = lineComments_[index].continuationAnchor;
+            if (anchor == kNoCommentPosition) {
+                continue;
+            }
+            const int anchorColumn = lineComments_[anchor].commentColumn + padding[anchor];
+            padding[index] = std::max(0, anchorColumn - lineComments_[index].commentColumn);
         }
         const size_t totalPadding = std::accumulate(padding.begin(), padding.end(), size_t{0});
         if (totalPadding == 0) {
@@ -2227,8 +2291,8 @@ private:
         std::string aligned;
         aligned.reserve(output_.size() + totalPadding);
         size_t copied = 0;
-        for (size_t index = 0; index < trailingComments_.size(); ++index) {
-            const size_t commentOffset = trailingComments_[index].commentOffset;
+        for (size_t index = 0; index < lineComments_.size(); ++index) {
+            const size_t commentOffset = lineComments_[index].commentOffset;
             aligned.append(output_, copied, commentOffset - copied);
             aligned.append(static_cast<size_t>(padding[index]), ' ');
             copied = commentOffset;
@@ -2445,7 +2509,11 @@ private:
             if (!atLineStart_) {
                 NewLineWithIndent(commentIndent);
             }
-            Write(text);
+            if (printToken.commentContinuation) {
+                WriteCommentContinuation(printToken, text);
+            } else {
+                Write(text);
+            }
             NewLineWithIndent(commentIndent);
             return;
         }
@@ -2457,7 +2525,7 @@ private:
             if (!atLineStart_) {
                 WriteTrailingComment(printToken, text, token.spaceBefore);
             } else {
-                Write(text);
+                WriteStandaloneTrailingComment(printToken, text);
             }
             if (TrailingCommentReturnsToStructuralIndent(printToken)) {
                 NewLine(false);
@@ -3702,6 +3770,9 @@ private:
         const PrintToken* next,
         const PrintToken* rawNext
     ) {
+        if (!token.commentContinuation && token.kind != PrintTokenKind::TrailingComment) {
+            activeCommentContinuationAnchor_.reset();
+        }
         if (prebufferedTrailingCommentSourceIndex_ == token.sourceIndex) {
             prebufferedTrailingCommentSourceIndex_.reset();
             return;
@@ -3797,7 +3868,13 @@ private:
         if (lineHasText_) {
             NewLine(ShouldContinueMacroLine(token, next));
         }
-        Write(token.text);
+        if (token.commentContinuation) {
+            WriteCommentContinuation(token, token.text);
+        } else if (token.kind == PrintTokenKind::TrailingComment) {
+            WriteStandaloneTrailingComment(token, token.text);
+        } else {
+            Write(token.text);
+        }
         NewLine(ShouldContinueMacroLine(token, next));
     }
 
@@ -4392,7 +4469,89 @@ private:
 
 namespace {
 
-std::vector<PrintToken> BuildPrintTokens(const FormatModel& model, FormatModelTextStats* stats) {
+std::optional<size_t> SourceTextOffset(std::string_view source, std::string_view tokenText) {
+    if (source.empty() || tokenText.empty()) {
+        return std::nullopt;
+    }
+    const std::uintptr_t sourceBegin = reinterpret_cast<std::uintptr_t>(source.data());
+    const std::uintptr_t sourceEnd = sourceBegin + source.size();
+    const std::uintptr_t tokenBegin = reinterpret_cast<std::uintptr_t>(tokenText.data());
+    const std::uintptr_t tokenEnd = tokenBegin + tokenText.size();
+    if (tokenBegin < sourceBegin || tokenEnd > sourceEnd) {
+        return std::nullopt;
+    }
+    return static_cast<size_t>(tokenBegin - sourceBegin);
+}
+
+size_t SourceLineStart(std::string_view source, size_t offset) {
+    if (offset == 0) {
+        return 0;
+    }
+    const size_t newline = source.rfind('\n', offset - 1);
+    return newline == std::string_view::npos ? 0 : newline + 1;
+}
+
+int SourceDisplayColumn(std::string_view source, size_t offset, int tabWidth) {
+    const size_t lineStart = SourceLineStart(source, offset);
+    const std::string_view prefix = source.substr(lineStart, offset - lineStart);
+    int column = 0;
+    size_t begin = 0;
+    while (begin < prefix.size()) {
+        const size_t tab = prefix.find('\t', begin);
+        if (tab == std::string_view::npos) {
+            column += Utf8CharacterCount(prefix.substr(begin));
+            break;
+        }
+        column += Utf8CharacterCount(prefix.substr(begin, tab - begin));
+        column += tabWidth - column % tabWidth;
+        begin = tab + 1;
+    }
+    return column;
+}
+
+bool IsNextSourceLine(std::string_view source, size_t previousEnd, size_t currentStart) {
+    if (currentStart < previousEnd) {
+        return false;
+    }
+    std::string_view between = source.substr(previousEnd, currentStart - previousEnd);
+    if (between.empty() || !IsSourceLineBreak(between.front())) {
+        return false;
+    }
+    const char lineBreak = between.front();
+    between.remove_prefix(1);
+    if (lineBreak == '\r' && !between.empty() && between.front() == '\n') {
+        between.remove_prefix(1);
+    }
+    return std::all_of(between.begin(), between.end(), [](char value) { return value == ' ' || value == '\t'; });
+}
+
+void MarkCommentContinuations(std::vector<PrintToken>& tokens, std::string_view source, int tabWidth) {
+    for (size_t index = 1; index < tokens.size(); ++index) {
+        PrintToken& comment = tokens[index];
+        const PrintToken& previous = tokens[index - 1];
+        if (
+            comment.kind != PrintTokenKind::Comment ||
+            !IsLineCommentToken(comment) ||
+            !IsLineCommentToken(previous) ||
+            (previous.kind != PrintTokenKind::TrailingComment && !previous.commentContinuation)
+        ) {
+            continue;
+        }
+        const std::optional<size_t> previousOffset = SourceTextOffset(source, previous.text);
+        const std::optional<size_t> commentOffset = SourceTextOffset(source, comment.text);
+        if (!previousOffset || !commentOffset) {
+            continue;
+        }
+        const size_t previousEnd = *previousOffset + previous.text.size();
+        comment.commentContinuation = IsNextSourceLine(source, previousEnd, *commentOffset) &&
+            SourceDisplayColumn(source, *previousOffset, tabWidth) ==
+                SourceDisplayColumn(source, *commentOffset, tabWidth);
+    }
+}
+
+std::vector<PrintToken>
+    BuildPrintTokens(const FormatterConfig& config, const FormatModel& model, FormatModelTextStats* stats)
+{
     const auto tokenizeStart =
         stats == nullptr ? std::chrono::steady_clock::time_point{} : std::chrono::steady_clock::now();
     std::vector<PrintToken> tokens;
@@ -4414,6 +4573,9 @@ std::vector<PrintToken> BuildPrintTokens(const FormatModel& model, FormatModelTe
         false,
         tokens
     );
+    if (model.sourceText != nullptr) {
+        MarkCommentContinuations(tokens, *model.sourceText, std::max(1, config.tabWidth));
+    }
     const PrintToken* previous = nullptr;
     for (size_t index = 0; index < tokens.size(); ++index) {
         PrintToken& token = tokens[index];
@@ -4441,7 +4603,7 @@ std::string PrintFormatModel(
     if (!model.root) {
         return {};
     }
-    std::vector<PrintToken> tokens = BuildPrintTokens(model, stats);
+    std::vector<PrintToken> tokens = BuildPrintTokens(config, model, stats);
     const auto printStart =
         stats == nullptr ? std::chrono::steady_clock::time_point{} : std::chrono::steady_clock::now();
     const size_t sourceSize = model.sourceText == nullptr ? 0 : model.sourceText->size();
