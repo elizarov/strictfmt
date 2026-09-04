@@ -304,8 +304,8 @@ bool IsEmptyStatementNode(const SyntaxNode& node) {
     return content != nullptr && content->kind == SyntaxNodeKind::Semicolon;
 }
 
-bool IsBracedControlBody(const SyntaxNode& node) {
-    if (node.kind == SyntaxNodeKind::CompoundStatement) {
+bool IsStatementKindThroughAttributes(const SyntaxNode& node, SyntaxNodeKind kind) {
+    if (node.kind == kind) {
         return true;
     }
     if (node.kind != SyntaxNodeKind::AttributedStatement) {
@@ -314,7 +314,11 @@ bool IsBracedControlBody(const SyntaxNode& node) {
     const std::optional<size_t> statementIndex = PreviousNonTriviaChildIndex(node.children, node.children.size());
     return statementIndex &&
         node.children[*statementIndex] != nullptr &&
-        IsBracedControlBody(*node.children[*statementIndex]);
+        IsStatementKindThroughAttributes(*node.children[*statementIndex], kind);
+}
+
+bool IsBracedControlBody(const SyntaxNode& node) {
+    return IsStatementKindThroughAttributes(node, SyntaxNodeKind::CompoundStatement);
 }
 
 void WrapControlBody(FormatModel& model, SyntaxNode& node, size_t childIndex) {
@@ -377,7 +381,7 @@ std::optional<size_t> FindOnlyIfInBraceBlock(const SyntaxNode& node) {
         if (child->kind == SyntaxNodeKind::LeftBrace || child->kind == SyntaxNodeKind::RightBrace) {
             continue;
         }
-        if (child->kind == SyntaxNodeKind::IfStatement && !ifIndex) {
+        if (IsStatementKindThroughAttributes(*child, SyntaxNodeKind::IfStatement) && !ifIndex) {
             ifIndex = index;
             continue;
         }
@@ -395,7 +399,10 @@ void NormalizeElseClauseBody(FormatModel& model, SyntaxNode& node) {
         if (!bodyIndex) {
             return;
         }
-        if (node.children[*bodyIndex] != nullptr && node.children[*bodyIndex]->kind == SyntaxNodeKind::IfStatement) {
+        if (
+            node.children[*bodyIndex] != nullptr &&
+            IsStatementKindThroughAttributes(*node.children[*bodyIndex], SyntaxNodeKind::IfStatement)
+        ) {
             return;
         }
         if (
