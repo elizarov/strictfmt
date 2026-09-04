@@ -20,6 +20,34 @@ Current behavior: Trailing commas in brace lists are normalized from the selecte
 
 Planned work: Decide whether to further tune the rule or stop normalization and preserve trailing commas as written in the source.
 
+## Empty branches detach following keywords (EMPTY_BRANCH_ATTACHMENT)
+
+Current behavior: An empty control-flow branch is kept as `{}` and ends its line before a following attachment keyword such as `else` or `catch`.
+
+Open question: Decide whether the mandatory “keep `{}`” rule needs a targeted exclusion for branches followed by an attachment keyword, allowing the empty body to expand so the keyword remains attached.
+
+Current formatting:
+
+```cpp
+void Check() {
+    if (ready) {}
+    else {
+        Wait();
+    }
+}
+```
+
+Alternative formatting:
+
+```text
+void Check() {
+    if (ready) {
+    } else {
+        Wait();
+    }
+}
+```
+
 ## Keywords can occupy a separate line before their expressions (DETACHED_KEYWORD)
 
 Current behavior: A [value-owning keyword](glossary.md#value-owning-keyword) can occupy its own line, keeping the following expression compact.
