@@ -2320,11 +2320,9 @@ private:
     }
 
     FormatBreakNode* BuildTypedDeclarator(const ConstSyntaxChildList& children, int depth, bool allowDirectDeclarator) {
-        if (
-            std::any_of(children.begin(), children.end(), [](const SyntaxNode* child) {
-                return child != nullptr && IsAssignmentOperatorNode(*child);
-            })
-        ) {
+        if (std::any_of(children.begin(), children.end(), [](const SyntaxNode* child) {
+            return child != nullptr && IsAssignmentOperatorNode(*child);
+        })) {
             return nullptr;
         }
         std::optional<size_t> declaratorIndex;
@@ -2422,11 +2420,9 @@ private:
     }
 
     FormatBreakNode* BuildCommaSeparatedDeclaration(const SyntaxNode& node, int depth) {
-        if (
-            std::none_of(node.children.begin(), node.children.end(), [this](const SyntaxNode* child) {
-                return child != nullptr && child->kind == SyntaxNodeKind::Comma && ContainsSelected(*child);
-            })
-        ) {
+        if (std::none_of(node.children.begin(), node.children.end(), [this](const SyntaxNode* child) {
+            return child != nullptr && child->kind == SyntaxNodeKind::Comma && ContainsSelected(*child);
+        })) {
             return nullptr;
         }
         ConstSyntaxChildList children(node.children.begin(), node.children.end());

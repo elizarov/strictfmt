@@ -2531,6 +2531,8 @@ return subrequests | ranges::MapTo<std::unordered_map<SlotId, std::optional<mem:
 }
 }
 
+void PreferCompactWrappersAroundExpandedFinalLambda(){Outer(Middle(Async(task_name,[first,second]{UpdateAnIntentionallyLongValue(first,second,third,fourth,fifth,sixth);})));}
+
 void FinalLambdaDiscountExamples() {
 optional::Map([&](const auto& cargo_options) { builder[fields::kCargoOptions] = json::Serialize(cargo_options); }, request.cargo_options());
 CallbackConfig config{request.cargo_options(), [&](const auto& cargo_options) { builder[fields::kCargoOptions] = json::Serialize(cargo_options); }};
