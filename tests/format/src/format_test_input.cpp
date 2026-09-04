@@ -2059,6 +2059,11 @@ do [[unlikely]] { ++count; } while(count<0);
 switch(count) [[likely]] { default: break; }
 }
 
+void AttributedElseIfCollapse(bool first,bool second,bool third){
+if(first){Use(first);}else{[[likely]] if(second){Use(second);}}
+if(first){Use(first);}else [[likely]] if(second){Use(second);}else{[[likely]] [[likely]] if(third){Use(third);}}
+}
+
 void EmptyElseIfSpacing(bool first,bool second,bool third){
 if(first){}else if(second){}else if(third){Use(third);}
 }
