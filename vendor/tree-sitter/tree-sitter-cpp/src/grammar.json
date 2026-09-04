@@ -10446,6 +10446,15 @@
                     {
                       "type": "SYMBOL",
                       "name": "template_function"
+                    },
+                    {
+                      "type": "ALIAS",
+                      "content": {
+                        "type": "SYMBOL",
+                        "name": "_callable_template_function"
+                      },
+                      "named": true,
+                      "value": "template_function"
                     }
                   ]
                 }
@@ -29448,6 +29457,56 @@
         }
       ]
     },
+    "_callable_template_function": {
+      "type": "PREC_DYNAMIC",
+      "value": 3,
+      "content": {
+        "type": "SEQ",
+        "members": [
+          {
+            "type": "FIELD",
+            "name": "name",
+            "content": {
+              "type": "SYMBOL",
+              "name": "_callable_template_callee"
+            }
+          },
+          {
+            "type": "FIELD",
+            "name": "arguments",
+            "content": {
+              "type": "SYMBOL",
+              "name": "template_argument_list"
+            }
+          }
+        ]
+      }
+    },
+    "_callable_template_callee": {
+      "type": "CHOICE",
+      "members": [
+        {
+          "type": "SYMBOL",
+          "name": "parenthesized_expression"
+        },
+        {
+          "type": "SYMBOL",
+          "name": "call_expression"
+        },
+        {
+          "type": "SYMBOL",
+          "name": "subscript_expression"
+        },
+        {
+          "type": "SYMBOL",
+          "name": "macro_call_expression"
+        },
+        {
+          "type": "SYMBOL",
+          "name": "bare_macro_identifier"
+        }
+      ]
+    },
     "co_await_expression": {
       "type": "PREC_LEFT",
       "value": 14,
@@ -34351,6 +34410,12 @@
     [
       "template_function",
       "template_type",
+      "expression",
+      "_callable_template_callee"
+    ],
+    [
+      "template_function",
+      "template_type",
       "qualified_identifier"
     ],
     [
@@ -34471,6 +34536,10 @@
     [
       "structured_binding_declarator",
       "_lambda_capture_identifier"
+    ],
+    [
+      "expression",
+      "_callable_template_callee"
     ],
     [
       "parameter_list",

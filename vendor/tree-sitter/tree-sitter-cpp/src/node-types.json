@@ -16424,7 +16424,27 @@
         "required": true,
         "types": [
           {
+            "type": "bare_macro_identifier",
+            "named": true
+          },
+          {
+            "type": "call_expression",
+            "named": true
+          },
+          {
             "type": "identifier",
+            "named": true
+          },
+          {
+            "type": "macro_call_expression",
+            "named": true
+          },
+          {
+            "type": "parenthesized_expression",
+            "named": true
+          },
+          {
+            "type": "subscript_expression",
             "named": true
           }
         ]

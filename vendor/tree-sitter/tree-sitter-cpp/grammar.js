@@ -193,6 +193,7 @@ module.exports = grammar(C, {
     [$._type_declarator, $.template_type, $.template_function],
     [$.pointer_type_declarator, $.member_pointer_type_declarator],
     [$.template_function, $.template_type, $.expression],
+    [$.template_function, $.template_type, $.expression, $._callable_template_callee],
     [$.template_function, $.template_type, $.qualified_identifier],
     [$.template_function, $.template_type, $.macro_qualified_identifier],
     [$.template_type, $.macro_qualified_identifier],
@@ -222,6 +223,7 @@ module.exports = grammar(C, {
     [$.expression, $._lambda_capture],
     [$.expression, $.structured_binding_declarator, $._lambda_capture_identifier],
     [$.structured_binding_declarator, $._lambda_capture_identifier],
+    [$.expression, $._callable_template_callee],
     [$.parameter_list, $.argument_list],
     [$.parameter_list],
     [$.parameter_list, $.abstract_parenthesized_declarator],
@@ -3368,6 +3370,7 @@ module.exports = grammar(C, {
         field('function', choice(
           $.qualified_identifier,
           $.template_function,
+          alias($._callable_template_function, $.template_function),
         )),
         field('arguments', choice($.argument_list, $.bare_macro_identifier)),
       )),
@@ -3379,6 +3382,22 @@ module.exports = grammar(C, {
         )),
         field('arguments', $.argument_list),
       ),
+    ),
+
+    _callable_template_function: $ => prec.dynamic(3, seq(
+      field('name', $._callable_template_callee),
+      field('arguments', $.template_argument_list),
+    )),
+
+    // A complete callable-template shape owns its angle list. This recursive
+    // callable subset composes through parentheses, calls, and subscripts while
+    // leaving an explicitly parenthesized relational expression as an expression.
+    _callable_template_callee: $ => choice(
+      $.parenthesized_expression,
+      $.call_expression,
+      $.subscript_expression,
+      $.macro_call_expression,
+      $.bare_macro_identifier,
     ),
 
     co_await_expression: $ => prec.left(PREC.UNARY, seq(
