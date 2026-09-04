@@ -1513,6 +1513,25 @@ void PreserveSiblingBlankLines(int value) {
     }
 }
 
+void PreserveFinalBlockBlankLines(bool ready) {
+    if (ready) {
+        First();
+
+    }
+    try {
+        Second();
+
+    } catch (...) {
+        Third();
+
+    }
+    auto callback = [] {
+        Fourth();
+
+    };
+
+}
+
 template <typename T>
 concept PreserveRequirementBlankLines = requires {
     typename T::first;

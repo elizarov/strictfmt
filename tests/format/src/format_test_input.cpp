@@ -910,6 +910,21 @@ switch(value){case 1:First();
 Second();break;}
 }
 
+void PreserveFinalBlockBlankLines(bool ready) {
+if(ready){First();
+
+}
+try{Second();
+
+}catch(...){Third();
+
+}
+auto callback=[] {Fourth();
+
+};
+
+}
+
 template<typename T>
 concept PreserveRequirementBlankLines=requires{typename T::first;
 
