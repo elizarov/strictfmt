@@ -674,13 +674,26 @@ DirectTypeDeclarationKind DirectTypeDeclaration(const SyntaxNode& declaration) {
     return DirectTypeDeclarationKind::None;
 }
 
-std::uint64_t SingleIntroducedDeclarationGroup(const SyntaxNode& node) {
+std::uint64_t SingleIntroducedDeclarationGroup(const SyntaxNode& node, bool root = true) {
+    const std::uint64_t nodeGroup = node.classes & kDeclarationGroupClasses;
+    if (nodeGroup != 0) {
+        return nodeGroup;
+    }
+    if (node.kind == SyntaxNodeKind::MacroDefinition) {
+        return 0;
+    }
+    if (!root && (
+        SyntaxNodeHasClass(node, SyntaxNodeClass::DeclarationScope) ||
+        SyntaxNodeHasClass(node, SyntaxNodeClass::ConditionalPreprocessorTree)
+    )) {
+        return 0;
+    }
     std::uint64_t result = 0;
     for (const SyntaxNode* child : node.children) {
         if (child == nullptr) {
             continue;
         }
-        const std::uint64_t childGroup = child->classes & kDeclarationGroupClasses;
+        const std::uint64_t childGroup = SingleIntroducedDeclarationGroup(*child, false);
         if (childGroup == 0) {
             continue;
         }

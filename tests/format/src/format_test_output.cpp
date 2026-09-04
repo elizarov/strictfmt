@@ -219,6 +219,38 @@ int topLevelDeclarationGroupingObject;
 
 void TopLevelDeclarationGroupingCallable();
 
+template <class T>
+struct DeclarationWrapperOwner {
+    template <class U>
+    static void Twice(U);
+
+    template <class U>
+    struct Nested {
+        template <class V>
+        static void ThreeTimes(V);
+    };
+};
+
+int beforeOnce;
+
+template <class T>
+void Once(T) {}
+
+int beforeTwice;
+
+template <class T>
+template <class U>
+void DeclarationWrapperOwner<T>::Twice(U) {}
+
+int beforeThreeTimes;
+
+template <class T>
+template <class U>
+template <class V>
+void DeclarationWrapperOwner<T>::Nested<U>::ThreeTimes(V) {}
+
+int afterThreeTimes;
+
 class DeclarationGroupingRules {
     int firstField;
 
