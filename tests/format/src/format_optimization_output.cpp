@@ -536,15 +536,13 @@ auto d = [](
 };
 
 void f() {
-    Use(
-        []() ->
-            ns::R
-        {
-            Prep();
-            return
-                {};
-        }
-    );
+    Use([]() ->
+        ns::R
+    {
+        Prep();
+        return
+            {};
+    });
 }
 
 // nested declarators, aliases, and deduction guides share trailing-return syntax
