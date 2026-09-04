@@ -142,6 +142,14 @@ class MacroStatementArgumentHost{
     int value_;
 };
 
+class MacroSemicolonStatementArgumentHost{
+    FORMAT_FIXTURE_STATEMENT_ARGUMENT(SetSingle,int,value,value_=value;);
+    FORMAT_FIXTURE_STATEMENT_ARGUMENT(SetPair,int,value,first_=value;second_=value;);
+    FORMAT_FIXTURE_STATEMENT_ARGUMENT(SetMiddle,value_=value;,int,value);
+    FORMAT_FIXTURE_STATEMENT_ARGUMENT(SetAfterControl,int,value,if(value<0){value=0;}value_=value;);
+    FORMAT_FIXTURE_DECLARE_OPTION(SetOrdinary,int);
+};
+
 class DashboardShellHost{
 public:
 virtual~DashboardShellHost()=default;
