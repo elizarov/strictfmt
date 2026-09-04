@@ -85,6 +85,12 @@ int a; // 01234567890123456789012345é
 int longer; // outside the limit
 };
 
+struct CommentContinuationWidths{
+    int   счёт;      // UTF-8 spacing-normalized anchor
+                     // follows the formatted UTF-8 anchor
+    bool after_utf8;
+};
+
 void CommentWrapping(){
 Prepare();
 Use("доставка", /* é 𝄞 👩🏽‍💻 */ value);

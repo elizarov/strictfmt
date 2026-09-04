@@ -4267,6 +4267,30 @@ void InlineBlockCommentSpacing() {
     return /* explanation */ result;
 }
 
+struct CommentContinuationLayout {
+    int count;  // Number of active items
+                // including pending ones.
+    bool ready;
+
+    int multiple;  // first line
+                   // second line
+                   // third line
+    bool after_multiple;
+
+    int independent;  // describes independent
+    // Describes the next field, not independent.
+    bool next;
+
+    int shifted;  // spacing-normalized anchor
+                  // follows the formatted anchor
+    bool after_shifted;
+
+    int aMuchLongerName;  // first
+    int x;                // anchor moved by trailing-comment alignment
+                          // follows the moved anchor
+    bool after_alignment;
+};
+
 void UnnamedCommentedParameter(Type& /* unused */);
 
 template </* parameter */ typename T /* last */>
