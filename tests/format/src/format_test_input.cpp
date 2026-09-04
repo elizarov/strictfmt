@@ -991,6 +991,18 @@ bool TemplateExpressionWorkaround() {
 return (a < b) > (c);
 }
 
+bool RecursiveCallableTemplateDefault(X a,X b,X c,X d,X e,X f){
+return (a+b)<Outer<Inner<c>>>(d);
+return (a+b)<c>(d)<e>(f);
+}
+
+bool ParenthesizedCallableExpression(X a,X b,X c,X d){return ((a+b)<c)>(d);}
+
+void DeclarationTemplateDefault(){
+box<a,b> c;
+(box<a),(b>c);
+}
+
 void QualifiedLiteralTemplateDeclarations(){
 ns::Box<1,2,true,false> object;
 ns::Box<1,2,true,false>* pointer=nullptr;

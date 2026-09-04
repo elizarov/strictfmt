@@ -1074,6 +1074,38 @@ class FormatCommandTests(unittest.TestCase):
         )
         self.assertIn("text: \"other\"", reversed_result.stdout)
 
+    def test_callable_template_ambiguity_is_resolved_by_grammar(self) -> None:
+        cases = (
+            ("(a+b)<Outer<Inner<c>>>(d)", 3, 1),
+            ("(a+b)<c>(d)<e>(f)", 2, 1),
+            ("((a+b)<c)>(d)", 0, 3),
+        )
+        for expression, template_lists, binary_expressions in cases:
+            with self.subTest(expression=expression):
+                result = native_format(
+                    "--stdin",
+                    "--dump-syntax-tree",
+                    input_text=f"auto f(){{return {expression};}}\n",
+                )
+
+                self.assertEqual(
+                    0,
+                    result.returncode,
+                    msg=f"stdout:\n{result.stdout}\n\nstderr:\n{result.stderr}",
+                )
+                self.assertEqual(template_lists, result.stdout.count("- kind: TemplateArgumentList\n"))
+                self.assertEqual(binary_expressions, result.stdout.count("- kind: BinaryExpression\n"))
+
+    def test_declaration_template_ambiguity_is_resolved_by_grammar(self) -> None:
+        source = "void f(){box<a,b> c;(box<a),(b>c);}\n"
+        result = native_format("--stdin", "--dump-syntax-tree", input_text=source)
+
+        self.assertEqual(0, result.returncode, msg=f"stdout:\n{result.stdout}\n\nstderr:\n{result.stderr}")
+        self.assertEqual(1, result.stdout.count("- kind: Declaration\n"))
+        self.assertEqual(1, result.stdout.count("- kind: TemplateArgumentList\n"))
+        self.assertEqual(1, result.stdout.count("- kind: CommaExpression\n"))
+        self.assertEqual(2, result.stdout.count("- kind: BinaryExpression\n"))
+
     def test_break_tree_dump_shows_costs_and_final_lambda_discount(self) -> None:
         result = native_format(
             "--stdin",

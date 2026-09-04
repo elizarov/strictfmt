@@ -34,15 +34,18 @@ C++ expressions and templates can have the same token shape:
 bool inRange = value < (min)(a, b) && value > (max)(a, b);  // expression
 
 auto result = function<((min)(a, b) && flag)>((max)(a, b));  // template function call
+
+box<a, b> c;  // template declaration, or potentially two comparisons separated by comma
 ```
 
 Formatter parses expressions and templates using the following rules:
 
-- Callable template shapes parse as template calls: `name<args>(...)`, `qualified::name<args>(...)`.
+- Complete callable template shapes parse as template calls, recursively through callable expressions:
+  `name<args>(...)`, `qualified::name<args>(...)`, `(callable)<args>(...)`, and `callable()<args>(...)`.
 - A template-id immediately followed by qualification parses as a template: `Name<args>::member`.
-- A declaration-like angle chain parses as a template when the name is qualified or the argument is syntactically
-  distinctive as a template argument, such as a literal, pack, `sizeof`, or qualified name:
-  `qualified::Name<T> object`, `Name<4> object`.
+- A declaration-shaped angle sequence parses as a template declaration. This preference includes ambiguous
+  identifiers such as `box<a, b> c;`, as well as qualified names and arguments that are syntactically distinctive
+  as template arguments: `qualified::Name<T> object`, `Name<4> object`.
 - Relational chains that do not form a callable template parse as expressions, e.g. `value < min || value > max` and `a < b > c`.
 - Template argument lists prefer type-like arguments when a name could be either a type or a value.
 
@@ -56,4 +59,12 @@ Parenthesize expression chains that look like callable templates:
 
 ```cpp
 bool ordered = (a < b) > (c);  // expression
+```
+
+Likewise, parenthesize the comparisons when a comma expression looks like a template declaration:
+
+```cpp
+void compare() {
+    (box < a), (b > c);  // comma expression containing two comparisons
+}
 ```
