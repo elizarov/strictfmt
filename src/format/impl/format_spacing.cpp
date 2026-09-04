@@ -45,7 +45,9 @@ bool IsAlternativeBinaryOperatorToken(const PrintToken& token) {
 }
 
 bool IsTriviaNode(const SyntaxNode* node) {
-    return node == nullptr || SyntaxNodeKindHasClass(node->kind, SyntaxNodeClass::Trivia);
+    return node == nullptr ||
+        (node->classes & static_cast<std::uint64_t>(SyntaxNodeClass::Trivia)) != 0 ||
+        SyntaxNodeKindHasClass(node->kind, SyntaxNodeClass::Trivia);
 }
 
 bool NodeOrAncestorHasClass(const SyntaxNode* node, SyntaxNodeClass syntaxNodeClass) {

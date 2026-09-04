@@ -65,6 +65,13 @@ bool SyntaxNodeHasClass(const SyntaxNode& node, SyntaxNodeClass syntaxNodeClass)
         SyntaxNodeKindHasClass(node.kind, syntaxNodeClass);
 }
 
+bool IsStructuralTriviaToken(const PrintToken& token) {
+    // Inline block comments are text tokens for emission, but remain trivia for grammar-neighbor decisions.
+    return token.kind == PrintTokenKind::BlankLine ||
+        IsCommentToken(token.kind) ||
+        (token.node != nullptr && SyntaxNodeHasClass(*token.node, SyntaxNodeClass::Trivia));
+}
+
 bool BreakModelHasLayoutChoice(const FormatBreakModel& model) {
     // Token and sequence nodes have exactly one layout. Emitting them with the default compact solution is the same
     // as running the solver, while a dump still runs it so the diagnostic model remains complete. The builder sets
@@ -382,7 +389,7 @@ bool IsFirstConditionalBranchChild(const SyntaxNode& node) {
         ) {
             continue;
         }
-        if (SyntaxNodeKindHasClass(child->kind, SyntaxNodeClass::Trivia)) {
+        if (SyntaxNodeHasClass(*child, SyntaxNodeClass::Trivia)) {
             continue;
         }
         return child == &node;
@@ -462,11 +469,7 @@ bool SyntaxSubtreeEndsWith(const SyntaxNode& node, SyntaxNodeKind kind) {
         return true;
     }
     for (auto child = node.children.rbegin(); child != node.children.rend(); ++child) {
-        if (
-            *child == nullptr ||
-            (*child)->kind == SyntaxNodeKind::Comment ||
-            (*child)->kind == SyntaxNodeKind::TrailingComment
-        ) {
+        if (*child == nullptr || SyntaxNodeHasClass(**child, SyntaxNodeClass::Trivia)) {
             continue;
         }
         return SyntaxSubtreeEndsWith(**child, kind);
@@ -486,7 +489,7 @@ bool TrailingCommentReturnsToStructuralIndent(const PrintToken& token) {
         if (child == token.node) {
             break;
         }
-        if (child != nullptr && child->kind != SyntaxNodeKind::Comment) {
+        if (child != nullptr && !SyntaxNodeHasClass(*child, SyntaxNodeClass::Trivia)) {
             previous = child;
         }
     }
@@ -1163,17 +1166,14 @@ public:
         for (size_t index = 0; index < tokens.size(); ++index) {
             currentTokenIndex_ = index;
             nextIndex = std::max(nextIndex, index + 1);
-            while (
-                nextIndex < tokens.size() &&
-                (tokens[nextIndex].kind == PrintTokenKind::BlankLine || IsCommentToken(tokens[nextIndex].kind))
-            ) {
+            while (nextIndex < tokens.size() && IsStructuralTriviaToken(tokens[nextIndex])) {
                 ++nextIndex;
             }
             const PrintToken* rawPrevious = index == 0 ? nullptr : &tokens[index - 1];
             const PrintToken* next = nextIndex < tokens.size() ? &tokens[nextIndex] : nullptr;
             const PrintToken* rawNext = RawNextToken(tokens, index);
             PrintOne(tokens[index], previous, rawPrevious, next, rawNext);
-            if (tokens[index].kind != PrintTokenKind::BlankLine && !IsCommentToken(tokens[index].kind)) {
+            if (!IsStructuralTriviaToken(tokens[index])) {
                 previous = &tokens[index];
             }
         }
@@ -1223,7 +1223,7 @@ private:
     std::vector<PreprocessorSplitListContext> preprocessorSplitListContexts_;
     std::vector<int> conditionalFunctionIndents_;
     std::optional<int> pendingIndentRestoreAfterFlush_;
-    std::optional<std::uint32_t> prebufferedTrailingCommentSourceIndex_;
+    std::unordered_set<std::uint32_t> prebufferedTokenSourceIndices_;
     std::unordered_set<const SyntaxNode*> isolatedDeclarationItems_;
     std::unordered_map<const SyntaxNode*, DeclarationGroupState> declarationGroupStates_;
     std::vector<std::unique_ptr<CachedDeclarationLayout>> declarationLayoutsBySourceIndex_;
@@ -1235,6 +1235,29 @@ private:
 
     static const PrintToken* RawNextToken(const std::vector<PrintToken>& tokens, size_t index) {
         return index + 1 < tokens.size() ? &tokens[index + 1] : nullptr;
+    }
+
+    void BufferFollowingAttachedComments() {
+        if (activeTokens_ == nullptr) {
+            return;
+        }
+        for (size_t index = currentTokenIndex_ + 1; index < activeTokens_->size(); ++index) {
+            const PrintToken& candidate = (*activeTokens_)[index];
+            if (candidate.kind == PrintTokenKind::TrailingComment) {
+                BufferToken(candidate);
+                prebufferedTokenSourceIndices_.insert(candidate.sourceIndex);
+                return;
+            }
+            if (
+                candidate.kind != PrintTokenKind::Text ||
+                candidate.node == nullptr ||
+                !SyntaxNodeHasClass(*candidate.node, SyntaxNodeClass::Comment)
+            ) {
+                return;
+            }
+            BufferToken(candidate);
+            prebufferedTokenSourceIndices_.insert(candidate.sourceIndex);
+        }
     }
 
     static const SyntaxNode* CrossBlockSourceItem(const SyntaxNode* block) {
@@ -3441,7 +3464,7 @@ private:
 
         for (size_t index = currentTokenIndex_ + 1; index < activeTokens_->size(); ++index) {
             const PrintToken& candidate = (*activeTokens_)[index];
-            if (candidate.kind == PrintTokenKind::BlankLine || IsCommentToken(candidate.kind)) {
+            if (IsStructuralTriviaToken(candidate)) {
                 continue;
             }
             if (!SyntaxPathContains(candidate, list)) {
@@ -3785,8 +3808,7 @@ private:
         if (!token.commentContinuation && token.kind != PrintTokenKind::TrailingComment) {
             activeCommentContinuationAnchor_.reset();
         }
-        if (prebufferedTrailingCommentSourceIndex_ == token.sourceIndex) {
-            prebufferedTrailingCommentSourceIndex_.reset();
+        if (prebufferedTokenSourceIndices_.erase(token.sourceIndex) != 0) {
             return;
         }
         RetireFinishedMandatoryBlockSplitListContexts(token);
@@ -3860,7 +3882,7 @@ private:
             NewLine();
             return;
         }
-        BufferToken(token);
+        BufferToken(token, rawPrevious);
     }
 
     void PrintComment(const PrintToken& token, const PrintToken* previous, const PrintToken* next) {
@@ -4210,9 +4232,9 @@ private:
                     ++indentLevel_;
                     activeCaseBodySwitchDepths_.push_back(switchDepth_);
                     if (
-                        rawNext != nullptr &&
-                        rawNext->kind == PrintTokenKind::Known &&
-                        rawNext->syntaxKind == SyntaxNodeKind::LeftBrace
+                        next != nullptr &&
+                        next->kind == PrintTokenKind::Known &&
+                        next->syntaxKind == SyntaxNodeKind::LeftBrace
                     ) {
                         return;
                     }
@@ -4256,7 +4278,7 @@ private:
             BufferToken(token);
             if (followedByTrailingComment) {
                 BufferToken(*rawNext);
-                prebufferedTrailingCommentSourceIndex_ = rawNext->sourceIndex;
+                prebufferedTokenSourceIndices_.insert(rawNext->sourceIndex);
             }
             FlushPendingTokens();
             RecordCrossBlockChainBaseIndents(crossBlockFallbackBaseIndent);
@@ -4294,7 +4316,7 @@ private:
         }
         if (followedByTrailingComment) {
             BufferToken(*rawNext);
-            prebufferedTrailingCommentSourceIndex_ = rawNext->sourceIndex;
+            prebufferedTokenSourceIndices_.insert(rawNext->sourceIndex);
         }
         const std::vector<MandatoryBlockSplitListContext> splitContexts =
             FlushPendingTokens(splitListPlan ? splitListPlan->breakContext : FormatBreakModelContext{});
@@ -4364,12 +4386,14 @@ private:
             if (role == BraceRole::Compact) {
                 return;
             }
+            const bool followedByAttachmentKeyword = next != nullptr && AttachesToFollowingBlockKeyword(token, *next);
             if (
-                role != BraceRole::CaseBlock &&
-                !(next != nullptr && AttachesToFollowingBlockKeyword(token, *next)) &&
-                ShouldAttachAfterBlockClose(token, next)
+                role != BraceRole::CaseBlock && !followedByAttachmentKeyword && ShouldAttachAfterBlockClose(token, next)
             ) {
                 return;
+            }
+            if (followedByAttachmentKeyword) {
+                BufferFollowingAttachedComments();
             }
             FlushPendingTokens();
             if (rawNext == nullptr || rawNext->kind != PrintTokenKind::TrailingComment) {

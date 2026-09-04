@@ -581,3 +581,139 @@ void f() {
         "" + \
         b + \
         c
+
+// comment-transparent structural adjacency still contributes to optimized width
+void f31() {
+    if (
+        a
+    ) /*1234*/ {
+        b();
+    } else /*1234*/ {
+        c();
+    }
+}
+void f32() {
+    while (
+        a
+    ) /*1234*/ {
+        b();
+    }
+}
+void f33() {
+    for (
+        ;
+        a;
+    ) /*1234*/ {
+        b();
+    }
+}
+void f34() {
+    do /*1234*/ {
+        b();
+    } /*1234*/ while (
+        a
+    );
+}
+void f35() {
+    switch (
+        a
+    ) /*1234*/ {
+        default:
+            break;
+    }
+}
+void f36() {
+    if (a) {
+        b();
+    } /*1234*/ else {
+        c();
+    }
+}
+void f37() {
+    if (
+        a
+    ) {} /*1234*/
+    else {
+        b();
+    }
+}
+void f38() {
+    if (
+        a
+    ) {} /*1*/ /*234*/
+    else {
+        b();
+    }
+}
+void f39() {
+    try {
+        b();
+    } /*1234*/ catch (
+        ...
+    ) {
+        c();
+    }
+}
+void f40() {
+    try {
+        b();
+    } /*1234*/ finally {
+        c();
+    }
+}
+void f44() {
+    if (a) {
+        b();
+    } else /*1234*/ if (
+        c
+    ) {
+        d();
+    }
+}
+
+T q = [] {};
+T r =
+    []
+{} /*1234*/;
+T s = [] {}();
+T t =
+    [] {} /*1234*/ ();
+T u = F([] {});
+
+T v = F(
+    [] {} /*1234*/
+);
+
+T w = F(
+    [] {} /*1234*/,
+    a
+);
+
+template <
+    class T
+> /*1234*/
+    requires C<
+        T
+    >
+void f41();
+
+struct W {
+public /*1234*/ :
+    int x;
+};
+
+void f42() {
+    label /*1234*/ : b();
+}
+void f43() {
+    switch (
+        a
+    ) {
+        case 1: /*1234*/ {
+            b();
+            break;
+        }
+        default /*1234*/ :
+            break;
+    }
+}
