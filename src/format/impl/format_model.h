@@ -421,3 +421,8 @@ inline bool SyntaxNodeHasClass(const SyntaxNode& node, SyntaxNodeClass syntaxNod
     return (node.classes & static_cast<std::uint64_t>(syntaxNodeClass)) != 0 ||
         SyntaxNodeKindHasClass(node.kind, syntaxNodeClass);
 }
+
+// Construction operations share the model arena and maintain parent/depth metadata.
+SyntaxNode* MakeSyntaxNode(FormatModel& model, SyntaxNodeKind kind = SyntaxNodeKind::Unknown);
+void ReparentSyntaxNode(SyntaxNode& node, const SyntaxNode* parent);
+void AppendSyntaxChild(SyntaxNode& parent, SyntaxNode* child);

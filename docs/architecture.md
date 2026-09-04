@@ -22,8 +22,10 @@ Print-token construction materializes canonical known-token text and immutable s
 - `src/format/impl/format_value_profile.h|cpp` own the sparse value profile shared by break optimization costs.
 - `src/format/impl/format_config.h|cpp` own formatter configuration, ignore files, upward discovery, inheritance, parsing, and caching.
 - `src/format/impl/format_include_sort.h|cpp` own include run normalization, grouping, main-include detection, and sorting.
-- `src/format/impl/format_model.h|cpp` own format model node kinds, `SyntaxNodeClass`, symbol mappings, and syntax metadata; category checks must use `SyntaxNodeClass` helpers, not duplicated `SyntaxNodeKind` lists, with exact kind comparisons reserved for one concrete syntax rule.
-- `src/format/impl/format_model_builder.h|cpp` own conversion from tree-sitter nodes to the normalized format model, including syntax normalization and preprocessor placement checks.
+- `src/format/impl/format_model.h|cpp` own format model storage/construction, node kinds, `SyntaxNodeClass`, symbol mappings, and syntax metadata; category checks must use `SyntaxNodeClass` helpers, not duplicated `SyntaxNodeKind` lists, with exact kind comparisons reserved for one concrete syntax rule.
+- `src/format/impl/format_model_builder.h|cpp` own conversion from tree-sitter nodes to the format model, source trivia, declarator-field preservation, and opening include-run grouping.
+- `src/format/impl/format_model_normalize.h|cpp` own bottom-up syntax normalization and materialized semantic facts on formatter-owned nodes.
+- `src/format/impl/format_preprocessor_validation.h|cpp` own preprocessor placement validation.
 - `src/format/impl/format_model_dump.h|cpp` own syntax-tree and break-tree dump command orchestration.
 - `src/format/impl/format_model_parse.h|cpp` own tree-sitter parser setup, macro-category callbacks, and parse-to-format-model wiring.
 - `vendor/tree-sitter/tree-sitter-cpp/src/scanner.c` owns custom tree-sitter external tokens, including runtime-configured macro identifiers, raw string delimiter state, and preprocessor directive newline ownership; see [scanner.md](scanner.md).
