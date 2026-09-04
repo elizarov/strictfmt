@@ -744,7 +744,9 @@ void Example() {
 
 ## String-Literal Joining
 
-Join adjacent ordinary string literals on the same physical line only when their encoding prefixes and suffixes are compatible and joining cannot extend an escape. Preserve the compatible prefix and suffix. For example, `"\x1" "a"` stays separate.
+Treat adjacent string literals as a chain with compact and split layouts. In compact layout, join each maximal compatible run of ordinary string literals emitted on one formatted physical line. Original source-line boundaries do not prevent joining. The literals are compatible only when their encoding prefixes and suffixes can be preserved and joining cannot extend an escape. For example, `"\x1" "a"` stays separate.
+
+In split layout, preserve the original literal tokens and do not join across a selected formatted line break.
 
 A literal ending in escaped `\n` or `\r\n` forces a break before the next literal.
 
