@@ -93,6 +93,28 @@ void TestOutput() {
 }
 
 
+void TestParseMacroConfiguration() {
+    FormatterConfig config;
+    const auto check = [&](std::string_view name, bool expected) {
+        const auto model = ParseFormatModel(std::string(name) + "\n", config);
+        Check(model.parse.ok == expected, "macro classification follows the current parse configuration");
+    };
+    config.bareIdentifierMacros = {"LEFT"};
+    check("LEFT", true);
+    check("LONG", false);
+    check("RIGHT", false);
+    config.bareIdentifierMacros = {"R*"};
+    check("RIGHT", true);
+    check("LEFT", false);
+    // Direct API configurations retain the matcher's empty-prefix behavior.
+    config.bareIdentifierMacros = {"*"};
+    check("LEFT", true);
+    check("RIGHT", true);
+    config.bareIdentifierMacros.clear();
+    check("LEFT", false);
+    check("RIGHT", false);
+}
+
 void TestChainContinuation() {
     FormatterConfig config;
     FormatModel model = ParseFormatModel(
@@ -343,6 +365,7 @@ void TestDelimiterStack() {
 int main() {
     try {
         TestOutput();
+        TestParseMacroConfiguration();
         TestChainContinuation();
         TestListContinuation();
         TestChoiceHistory();

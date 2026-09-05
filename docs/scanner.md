@@ -21,6 +21,8 @@ The scanner uses four inputs:
 
 `src/format/impl/format_model_parse.cpp` owns the callback bridge from parser to formatter configuration. `ParseFormatModel` installs a thread-local `FormatterConfig` for the parse, and the scanner calls back into that config when it needs to know whether an identifier belongs to `RawMacroDefinitions`, `BareIdentifierMacros`, `DeclarationPrefixMacros`, `CallSyntaxMacros`, `SemicolonlessCallMacros`, `StatementArgumentMacros`, `TypeSpecifierMacros`, or `PreprocessorArgumentMacros`.
 
+The parse scope builds a first-byte category mask to reject impossible macro matches cheaply. Every possible match still uses the exact-name or prefix matcher; the mask has the same configuration lifetime and thread isolation as the callback bridge.
+
 The scanner checks higher-risk stateful tokens before it skips scanner-local whitespace. In particular, preprocessor directive endings must be recognized before any whitespace skipping, otherwise a bare newline that should end a directive can disappear as ordinary whitespace.
 
 ## External Tokens
