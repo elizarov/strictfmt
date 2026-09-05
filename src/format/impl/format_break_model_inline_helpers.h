@@ -22,3 +22,18 @@ inline bool FormatBreakHasTrailingComment(const FormatBreakNode& node, size_t in
 inline bool FormatBreakHasLeadingTrailingComment(const FormatBreakNode& node) {
     return IsCommentToken(FormatBreakTokenKind(node.leadingTrailingComment));
 }
+
+inline const FormatBreakToken* FormatBreakNodeToken(const FormatBreakNode* node) {
+    if (!node || node->kind != FormatBreakNodeKind::Token) {
+        return nullptr;
+    }
+    return &node->token;
+}
+
+inline bool FormatBreakIsStandaloneCommentItem(const FormatBreakNode& node, size_t index) {
+    if (index >= node.items.size()) {
+        return false;
+    }
+    const FormatBreakToken* token = FormatBreakNodeToken(node.items[index].node);
+    return token != nullptr && FormatBreakTokenKind(*token) == PrintTokenKind::Comment;
+}

@@ -3,13 +3,13 @@
 
 #include <algorithm>
 #include <array>
-#include <cassert>
 #include <cstdint>
 #include <initializer_list>
 #include <optional>
 #include <span>
 #include <utility>
 
+#include "format/impl/format_break_cost.h"
 #include "format/impl/format_break_model_inline_helpers.h"
 
 namespace {
@@ -275,9 +275,7 @@ public:
             // With no required operator, every predicate in the recursive pass is false and the model is unchanged.
             ApplyRequiredChainBreaks(*model_.root);
         }
-        if (hasFinalLambdaBody_) {
-            NormalizeBreakCosts(*model_.root);
-        }
+        costNormalizer_.Finalize(*model_.root);
         return std::move(model_);
     }
 
@@ -287,7 +285,7 @@ private:
     const SyntaxNode* root_ = nullptr;
     std::uint32_t selectionMark_ = 0;
     int nextId_ = 1;
-    bool hasFinalLambdaBody_ = false;
+    FormatBreakCostNormalizer costNormalizer_;
 
     static size_t AncestorCount(const SyntaxNode* node) { return node == nullptr ? 0 : node->depth + 1; }
 
@@ -428,15 +426,8 @@ private:
         return node;
     }
 
-    static const FormatBreakToken* TokenChild(const FormatBreakNode* node) {
-        if (!node || node->kind != FormatBreakNodeKind::Token) {
-            return nullptr;
-        }
-        return &node->token;
-    }
-
     static bool IsStringTokenChild(const FormatBreakNode* node) {
-        const FormatBreakToken* token = TokenChild(node);
+        const FormatBreakToken* token = FormatBreakNodeToken(node);
         return token != nullptr && IsStringLike(FormatBreakTokenValue(*token));
     }
 
@@ -444,22 +435,14 @@ private:
         if (node == nullptr) {
             return false;
         }
-        if (const FormatBreakToken* atom = TokenChild(node)) {
+        if (const FormatBreakToken* atom = FormatBreakNodeToken(node)) {
             return FormatBreakTokenSyntaxKind(*atom) == SyntaxNodeKind::ArgumentList;
         }
         if (node->kind != FormatBreakNodeKind::Delimited || node->children.empty()) {
             return false;
         }
-        const FormatBreakToken* open = TokenChild(node->children.front());
+        const FormatBreakToken* open = FormatBreakNodeToken(node->children.front());
         return open != nullptr && FormatBreakTokenValue(*open).parentKind == SyntaxNodeKind::ArgumentList;
-    }
-
-    static bool IsStandaloneCommentItem(const FormatBreakNode& node, size_t index) {
-        if (index >= node.items.size()) {
-            return false;
-        }
-        const FormatBreakToken* token = TokenChild(node.items[index].node);
-        return token != nullptr && FormatBreakTokenKind(*token) == PrintTokenKind::Comment;
     }
 
     static bool ShouldPreservePendingBlankLine(const FormatBreakNode& list, bool pendingBlankLine, bool beforeComment) {
@@ -551,7 +534,7 @@ private:
             return;
         }
         for (size_t index = list.items.size(); index > 0; --index) {
-            if (IsStandaloneCommentItem(list, index - 1)) {
+            if (FormatBreakIsStandaloneCommentItem(list, index - 1)) {
                 continue;
             }
             FormatBreakListItem& item = list.items[index - 1];
@@ -624,182 +607,11 @@ private:
         return false;
     }
 
-    static bool OwnsStructuralBreak(const FormatBreakNode& node) {
-        return node.kind != FormatBreakNodeKind::Token && node.kind != FormatBreakNodeKind::Sequence;
-    }
-
-    static std::optional<int> MinimumStructuralBreakDepth(const FormatBreakNode& node) {
-        std::optional<int> result = OwnsStructuralBreak(node) ? std::optional(node.structuralDepth) : std::nullopt;
-        const auto include = [&](const FormatBreakNode* child) {
-            if (child == nullptr) {
-                return;
-            }
-            const std::optional<int> childDepth = MinimumStructuralBreakDepth(*child);
-            if (childDepth && (!result || *childDepth < *result)) {
-                result = childDepth;
-            }
-        };
-        for (const FormatBreakNode* child : node.children) {
-            include(child);
-        }
-        for (const FormatBreakListItem& item : node.items) {
-            include(item.node);
-        }
-        for (const FormatBreakNode* operand : node.operands) {
-            include(operand);
-        }
-        return result;
-    }
-
-    static std::optional<int> FirstParameterListBreakDepth(const FormatBreakNode& node) {
-        if (node.kind == FormatBreakNodeKind::Delimited && !node.children.empty()) {
-            const FormatBreakNode* open = node.children.front();
-            if (
-                open != nullptr &&
-                open->kind == FormatBreakNodeKind::Token &&
-                FormatBreakTokenValue(open->token).parentKind == SyntaxNodeKind::ParameterList
-            ) {
-                return node.structuralDepth;
-            }
-        }
-        for (const FormatBreakNode* child : node.children) {
-            if (child == nullptr) {
-                continue;
-            }
-            if (std::optional<int> depth = FirstParameterListBreakDepth(*child)) {
-                return depth;
-            }
-        }
-        for (const FormatBreakListItem& item : node.items) {
-            if (item.node == nullptr) {
-                continue;
-            }
-            if (std::optional<int> depth = FirstParameterListBreakDepth(*item.node)) {
-                return depth;
-            }
-        }
-        for (const FormatBreakNode* operand : node.operands) {
-            if (operand == nullptr) {
-                continue;
-            }
-            if (std::optional<int> depth = FirstParameterListBreakDepth(*operand)) {
-                return depth;
-            }
-        }
-        return std::nullopt;
-    }
-
-    static void ShiftStructuralDepth(FormatBreakNode& node, int delta, bool includeChainLinks = true) {
-        if (includeChainLinks || !IsFormatBreakUniformChain(node)) {
-            node.structuralDepth += delta;
-            node.breakCost += delta;
-        }
-        for (FormatBreakNode* child : node.children) {
-            if (child != nullptr) {
-                ShiftStructuralDepth(*child, delta, includeChainLinks);
-            }
-        }
-        for (FormatBreakListItem& item : node.items) {
-            if (item.node != nullptr) {
-                ShiftStructuralDepth(*item.node, delta, includeChainLinks);
-            }
-        }
-        for (FormatBreakNode* operand : node.operands) {
-            if (operand != nullptr) {
-                ShiftStructuralDepth(*operand, delta, includeChainLinks);
-            }
-        }
-    }
-
-    static FormatBreakNode* UnwrapSingleChildSequence(FormatBreakNode* node) {
-        while (node != nullptr && node->kind == FormatBreakNodeKind::Sequence && node->children.size() == 1) {
-            node = node->children.front();
-        }
-        return node;
-    }
-
-    static void DiscountBreakCostsRecursively(FormatBreakNode& node, int discount) {
-        assert(node.breakCost >= discount);
-        node.breakCost -= discount;
-        for (FormatBreakNode* child : node.children) {
-            if (child != nullptr) {
-                DiscountBreakCostsRecursively(*child, discount);
-            }
-        }
-        for (FormatBreakListItem& item : node.items) {
-            if (item.node != nullptr) {
-                DiscountBreakCostsRecursively(*item.node, discount);
-            }
-        }
-        for (FormatBreakNode* operand : node.operands) {
-            if (operand != nullptr) {
-                DiscountBreakCostsRecursively(*operand, discount);
-            }
-        }
-    }
-
-    static FormatBreakNode* FinalLambdaBody(FormatBreakNode& list) {
-        size_t end = list.items.size();
-        while (end != 0 && IsStandaloneCommentItem(list, end - 1)) {
-            --end;
-        }
-        FormatBreakNode* lambda = end == 0 ? nullptr : UnwrapSingleChildSequence(list.items[end - 1].node);
-        if (lambda == nullptr || !lambda->bodyHeaderIsLambda || lambda->children.size() != 2) {
-            return nullptr;
-        }
-        FormatBreakNode* body = UnwrapSingleChildSequence(lambda->children.back());
-        return body != nullptr && body->kind == FormatBreakNodeKind::Delimited ? body : nullptr;
-    }
-
-    static void DiscountFinalLambdaBody(FormatBreakNode& list) {
-        if (FormatBreakNode* body = FinalLambdaBody(list)) {
-            DiscountBreakCostsRecursively(*body, body->breakCost);
-        }
-    }
-
     FormatBreakNode* FinishDelimited(FormatBreakNode* node) {
-        // Final-lambda discounting is the only normalization pass. Every delimited node is completed here, so no
-        // recorded body proves that the full recursive normalization walk would be an identity operation.
-        hasFinalLambdaBody_ = hasFinalLambdaBody_ || (node != nullptr && FinalLambdaBody(*node) != nullptr);
+        if (node != nullptr) {
+            costNormalizer_.ObserveDelimited(*node);
+        }
         return node;
-    }
-
-    static void ApplyFinalLambdaDiscounts(FormatBreakNode& node) {
-        if (node.kind == FormatBreakNodeKind::Delimited) {
-            DiscountFinalLambdaBody(node);
-        }
-        for (FormatBreakNode* child : node.children) {
-            if (child != nullptr) {
-                ApplyFinalLambdaDiscounts(*child);
-            }
-        }
-        for (FormatBreakListItem& item : node.items) {
-            if (item.node != nullptr) {
-                ApplyFinalLambdaDiscounts(*item.node);
-            }
-        }
-        for (FormatBreakNode* operand : node.operands) {
-            if (operand != nullptr) {
-                ApplyFinalLambdaDiscounts(*operand);
-            }
-        }
-    }
-
-    static void NormalizeBreakCosts(FormatBreakNode& node) { ApplyFinalLambdaDiscounts(node); }
-
-    static void NormalizeCallablePrefixBreakDepth(FormatBreakNode& prefix, const FormatBreakNode& declarator) {
-        const std::optional<int> parameterDepth = FirstParameterListBreakDepth(declarator);
-        if (parameterDepth) {
-            NormalizePrefixBreakDepth(prefix, *parameterDepth);
-        }
-    }
-
-    static void NormalizePrefixBreakDepth(FormatBreakNode& prefix, int competingDepth) {
-        const std::optional<int> prefixDepth = MinimumStructuralBreakDepth(prefix);
-        if (!prefixDepth || *prefixDepth > competingDepth) {
-            return;
-        }
-        ShiftStructuralDepth(prefix, competingDepth + 1 - *prefixDepth);
     }
 
     static bool IsQualificationChain(const FormatBreakNode& node) {
@@ -951,7 +763,9 @@ private:
             spellings.reserve(index - begin);
             for (size_t cursor = begin; cursor < index; ++cursor) {
                 operands.push_back(sequence.children[cursor]);
-                spellings.push_back(FormatTokenText(FormatBreakTokenValue(*TokenChild(sequence.children[cursor]))));
+                spellings.push_back(
+                    FormatTokenText(FormatBreakTokenValue(*FormatBreakNodeToken(sequence.children[cursor])))
+                );
             }
             FormatAdjacentStrings analysis = AnalyzeAdjacentStrings(spellings);
             strings->forceSplit = analysis.requiresSplit;
@@ -960,39 +774,6 @@ private:
             grouped.push_back(strings);
         }
         sequence.children = StoreNodePointers(grouped);
-    }
-
-    static void NormalizeNamedListBreakDepth(
-        std::span<FormatBreakNode* const> children, FormatBreakNode* qualification = nullptr
-    ) {
-        for (size_t index = 1; index < children.size(); ++index) {
-            const FormatBreakNode* list = children[index];
-            if (list->kind != FormatBreakNodeKind::Delimited || list->children.empty()) {
-                continue;
-            }
-            const FormatBreakToken* open = TokenChild(list->children.front());
-            if (
-                open == nullptr ||
-                !SyntaxNodeKindHasClass(FormatBreakTokenValue(*open).parentKind, SyntaxNodeClass::NamedList)
-            ) {
-                continue;
-            }
-            if (qualification != nullptr && qualification->structuralDepth <= list->structuralDepth) {
-                // The qualifier precedes this list syntactically, but owns its right operand in the break tree.
-                // Surcharge only the qualification decision and its left prefix, not the attached list.
-                const int delta = list->structuralDepth + 1 - qualification->structuralDepth;
-                qualification->structuralDepth += delta;
-                qualification->breakCost += delta;
-                ShiftStructuralDepth(*qualification->operands.front(), delta, false);
-            }
-            for (size_t prefixIndex = 0; prefixIndex < index; ++prefixIndex) {
-                FormatBreakNode& prefix = *children[prefixIndex];
-                const std::optional<int> prefixDepth = MinimumStructuralBreakDepth(prefix);
-                if (prefixDepth && *prefixDepth <= list->structuralDepth) {
-                    ShiftStructuralDepth(prefix, list->structuralDepth + 1 - *prefixDepth, false);
-                }
-            }
-        }
     }
 
     void GroupMemberCallArguments(std::vector<FormatBreakNode*>& children, int depth) {
@@ -1059,7 +840,7 @@ private:
     FormatBreakNode* BuildRequiredTernarySuffix(std::vector<FormatBreakNode*>& children, int depth) {
         std::vector<size_t> operatorIndices;
         for (size_t index = 0; index < children.size(); ++index) {
-            const FormatBreakToken* token = TokenChild(children[index]);
+            const FormatBreakToken* token = FormatBreakNodeToken(children[index]);
             if (
                 token != nullptr &&
                 FormatBreakTokenSyntaxKind(*token) == SyntaxNodeKind::Colon &&
@@ -1089,7 +870,7 @@ private:
         size_t operandBegin = 0;
         for (size_t operatorIndex : operatorIndices) {
             operands.push_back(buildOperand(operandBegin, operatorIndex));
-            operators.push_back(*TokenChild(children[operatorIndex]));
+            operators.push_back(*FormatBreakNodeToken(children[operatorIndex]));
             operandBegin = operatorIndex + 1;
         }
         operands.push_back(buildOperand(operandBegin, children.size()));
@@ -1184,7 +965,7 @@ private:
         }
 
         auto signature = MakeNode(FormatBreakNodeKind::FunctionSignature, depth + 1);
-        NormalizeCallablePrefixBreakDepth(*returnType, *declarator);
+        FormatBreakCostNormalizer::NormalizeCallablePrefix(*returnType, *declarator);
         signature->children = StoreNodePointers({returnType, declarator});
 
         auto chain = MakeNode(FormatBreakNodeKind::Chain, depth);
@@ -1219,7 +1000,7 @@ private:
         }
 
         auto signature = MakeNode(FormatBreakNodeKind::FunctionSignature, depth);
-        NormalizeCallablePrefixBreakDepth(*returnType, *declarator);
+        FormatBreakCostNormalizer::NormalizeCallablePrefix(*returnType, *declarator);
         std::array<FormatBreakNode*, 3> signatureChildren{returnType, declarator, nullptr};
         size_t signatureChildCount = 2;
         if (*declaratorIndex + 1 < node.children.size()) {
@@ -1569,7 +1350,7 @@ private:
         binary->operands = StoreNodePointers({left, right});
         binary->operators = StoreTokens({parts.operators[operandCount - 2]});
         if (right->kind == FormatBreakNodeKind::Sequence) {
-            NormalizeNamedListBreakDepth(right->children, binary);
+            FormatBreakCostNormalizer::NormalizeNamedListPrefixes(right->children, binary);
         }
         return binary;
     }
@@ -1874,7 +1655,7 @@ private:
         if (prefix == nullptr || declarator == nullptr) {
             return nullptr;
         }
-        NormalizeCallablePrefixBreakDepth(*prefix, *declarator);
+        FormatBreakCostNormalizer::NormalizeCallablePrefix(*prefix, *declarator);
 
         auto header = MakeNode(FormatBreakNodeKind::Sequence, depth);
         header->children = StoreNodePointers({prefix, declarator});
@@ -2035,7 +1816,7 @@ private:
         auto signature = MakeNode(FormatBreakNodeKind::FunctionSignature, depth);
         signature->functionSignatureHasBody =
             node.kind == SyntaxNodeKind::FunctionDefinition && end == node.children.size();
-        NormalizeCallablePrefixBreakDepth(*returnType, *declarator);
+        FormatBreakCostNormalizer::NormalizeCallablePrefix(*returnType, *declarator);
         std::array<FormatBreakNode*, 3> signatureChildren{returnType, declarator, nullptr};
         size_t signatureChildCount = 2;
         if (!tailChildren.empty()) {
@@ -2097,7 +1878,7 @@ private:
         auto signature = MakeNode(FormatBreakNodeKind::FunctionSignature, depth);
         signature->functionSignatureHasBody =
             node.kind == SyntaxNodeKind::FunctionDefinition && end == node.children.size();
-        NormalizeCallablePrefixBreakDepth(*returnType, *declarator);
+        FormatBreakCostNormalizer::NormalizeCallablePrefix(*returnType, *declarator);
         std::array<FormatBreakNode*, 3> signatureChildren{returnType, declarator, nullptr};
         size_t signatureChildCount = 2;
         if (*declaratorIndex + 1 < end) {
@@ -2436,7 +2217,7 @@ private:
                 builtChildren.push_back(built);
             }
         }
-        NormalizeNamedListBreakDepth(builtChildren);
+        FormatBreakCostNormalizer::NormalizeNamedListPrefixes(builtChildren);
         GroupRepeatedCallApplications(builtChildren, depth);
         GroupMemberCallArguments(builtChildren, depth);
         if (FormatBreakNode* suffix = BuildRequiredTernarySuffix(builtChildren, depth)) {
@@ -2481,7 +2262,7 @@ private:
             }
             ++index;
         }
-        NormalizeNamedListBreakDepth(builtChildren);
+        FormatBreakCostNormalizer::NormalizeNamedListPrefixes(builtChildren);
         GroupRepeatedCallApplications(builtChildren, depth);
         GroupMemberCallArguments(builtChildren, depth);
         if (FormatBreakNode* suffix = BuildRequiredTernarySuffix(builtChildren, depth)) {
