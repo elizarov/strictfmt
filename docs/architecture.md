@@ -18,6 +18,7 @@ Print-token construction materializes canonical known-token text and immutable s
 - `src/format/impl/format_break_model_builder.h|cpp` own conversion from print tokens to break models.
 - `src/format/impl/format_break_model_dump.h|cpp` own serialization of break-decision trees.
 - `src/format/impl/format_break_model_inline_helpers.h` owns small inline accessors for optional break model tokens.
+- `src/format/impl/format_compact_layout.h|cpp` own exact compact physical-line measurement and its immutable-model cache.
 - `src/format/impl/format_break_solver.h|cpp` own the break optimizer; see [break_solver.md].
 - `src/format/impl/format_value_profile.h|cpp` own the sparse value profile shared by break optimization costs.
 - `src/format/impl/format_config.h|cpp` own formatter configuration, ignore files, upward discovery, inheritance, parsing, and caching.

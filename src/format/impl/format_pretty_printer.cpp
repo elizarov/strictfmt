@@ -2101,7 +2101,7 @@ private:
             FormatBreakTokenSyntaxKind(item.separator) == SyntaxNodeKind::Comma &&
             IsDirectSplitDelimitedItem(*item.node, solution) &&
             IsDirectSplitDelimitedItem(*nextItem.node, solution) &&
-            !HasTrailingComment(node, index) &&
+            !FormatBreakHasTrailingComment(node, index) &&
             !HasBlankLineBeforeItem(node, index + 1);
     }
 
@@ -2129,7 +2129,7 @@ private:
             node.children.size() < 2 ||
             node.items.size() != 1 ||
             HasRealSeparators(node) ||
-            HasTrailingComment(node, 0) ||
+            FormatBreakHasTrailingComment(node, 0) ||
             HasBlankLineBeforeItem(node, 0) ||
             node.blankLineBeforeClose ||
             node.items.front().node == nullptr
@@ -2225,14 +2225,6 @@ private:
         }
     }
 
-    static bool HasTrailingComment(const FormatBreakNode& node, size_t index) {
-        return index < node.items.size() && IsCommentToken(FormatBreakTokenKind(node.items[index].trailingComment));
-    }
-
-    static bool HasLeadingTrailingComment(const FormatBreakNode& node) {
-        return IsCommentToken(FormatBreakTokenKind(node.leadingTrailingComment));
-    }
-
     static bool HasBlankLineBeforeItem(const FormatBreakNode& node, size_t index) {
         return index < node.items.size() && node.items[index].blankLineBefore;
     }
@@ -2248,7 +2240,7 @@ private:
         }
         if (!IsSplitChoice(choice) || node.items.empty()) {
             EmitBreakNode(*node.children[0], solution, baseIndent);
-            if (HasLeadingTrailingComment(node)) {
+            if (FormatBreakHasLeadingTrailingComment(node)) {
                 WriteBreakToken(node.leadingTrailingComment);
             }
             for (size_t index = 0; index < node.items.size(); ++index) {
@@ -2260,7 +2252,7 @@ private:
                 if (FormatBreakTokenKind(item.separator) == PrintTokenKind::Known) {
                     WriteBreakToken(item.separator);
                 }
-                if (HasTrailingComment(node, index)) {
+                if (FormatBreakHasTrailingComment(node, index)) {
                     WriteBreakToken(item.trailingComment);
                 }
             }
@@ -2272,7 +2264,7 @@ private:
         }
 
         EmitBreakNode(*node.children[0], solution, baseIndent);
-        if (HasLeadingTrailingComment(node)) {
+        if (FormatBreakHasLeadingTrailingComment(node)) {
             WriteBreakToken(node.leadingTrailingComment);
         }
         const bool closesInContext = node.children.size() > 1 &&
@@ -2288,7 +2280,7 @@ private:
             if (choice == FormatBreakChoice::Split && node.splitTrailingCommaItem == index) {
                 Write(",");
             }
-            if (HasTrailingComment(node, index)) {
+            if (FormatBreakHasTrailingComment(node, index)) {
                 WriteBreakToken(item.trailingComment);
             }
             if (ShouldCombineSplitDelimitedItemBoundary(node, solution, index)) {
@@ -2313,7 +2305,7 @@ private:
         const FormatBreakChoice choice = ChoiceFor(solution, node.id);
         if (!IsSplitChoice(choice)) {
             EmitBreakNode(*node.children[0], solution, baseIndent);
-            if (HasLeadingTrailingComment(node)) {
+            if (FormatBreakHasLeadingTrailingComment(node)) {
                 WriteBreakToken(node.leadingTrailingComment);
             }
             for (size_t index = 0; index < node.items.size(); ++index) {
@@ -2322,7 +2314,7 @@ private:
                 if (FormatBreakTokenKind(item.separator) == PrintTokenKind::Known) {
                     WriteBreakToken(item.separator);
                 }
-                if (HasTrailingComment(node, index)) {
+                if (FormatBreakHasTrailingComment(node, index)) {
                     WriteBreakToken(item.trailingComment);
                 }
             }
@@ -2330,7 +2322,7 @@ private:
         }
 
         EmitBreakNode(*node.children[0], solution, baseIndent);
-        if (HasLeadingTrailingComment(node)) {
+        if (FormatBreakHasLeadingTrailingComment(node)) {
             WriteBreakToken(node.leadingTrailingComment);
         }
         BreakListLine(baseIndent + 1, HasBlankLineBeforeItem(node, 0));
@@ -2340,7 +2332,7 @@ private:
             if (FormatBreakTokenKind(item.separator) == PrintTokenKind::Known) {
                 WriteBreakToken(item.separator);
             }
-            if (HasTrailingComment(node, index)) {
+            if (FormatBreakHasTrailingComment(node, index)) {
                 WriteBreakToken(item.trailingComment);
             }
             if (choice != FormatBreakChoice::SplitPacked && index + 1 < node.items.size()) {
@@ -2360,7 +2352,7 @@ private:
             if (FormatBreakTokenKind(item.separator) == PrintTokenKind::Known) {
                 WriteBreakToken(item.separator);
             }
-            if (HasTrailingComment(node, index)) {
+            if (FormatBreakHasTrailingComment(node, index)) {
                 WriteBreakToken(item.trailingComment);
             }
         }
@@ -2370,7 +2362,7 @@ private:
         const FormatBreakNode& node, const FormatBreakSolution& solution, int baseIndent
     ) {
         EmitBreakNode(*node.children[0], solution, baseIndent);
-        if (HasLeadingTrailingComment(node)) {
+        if (FormatBreakHasLeadingTrailingComment(node)) {
             WriteBreakToken(node.leadingTrailingComment);
         }
         const bool closesInContext = node.children.size() > 1 &&
@@ -2386,7 +2378,7 @@ private:
             if (node.splitTrailingCommaItem == index) {
                 Write(",");
             }
-            if (HasTrailingComment(node, index)) {
+            if (FormatBreakHasTrailingComment(node, index)) {
                 WriteBreakToken(item.trailingComment);
             }
             if (ShouldCombineSplitDelimitedItemBoundary(node, solution, index)) {

@@ -27,7 +27,8 @@ contracts. Complete each numbered step, format project sources, run the full
 - Baseline validation: all 78 tests passed.
 - Step 1: complete; all 78 tests and 21 baseline comparisons passed.
 - Step 2: complete; all 78 tests and 21 baseline comparisons passed.
-- Steps 3–8: pending.
+- Step 3: complete; all 78 tests and 21 baseline comparisons passed.
+- Steps 4–8: pending.
 
 ## Validation
 
