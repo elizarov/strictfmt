@@ -5,7 +5,7 @@
 #include <span>
 
 #include "format/impl/format_break_model.h"
-#include "format/impl/format_break_solver.h"
+#include "format/impl/format_break_solution.h"
 
 class FormatBreakModelDumpWriter {
 public:

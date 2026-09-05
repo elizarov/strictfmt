@@ -5,6 +5,7 @@
 
 #include "format/impl/format_model.h"
 #include "format/impl/format_output.h"
+#include "format/impl/format_choice_history.h"
 #include "format/impl/format_break_emitter.h"
 #include "format/impl/format_break_model.h"
 #include "format/impl/format_list_continuation.h"
@@ -144,12 +145,47 @@ void TestListContinuation() {
     Check(!continuation.TakeBoundary(tokens[4], FormatListContinuationKind::Block), "closer consumes its continuation once");
 }
 
+
+void TestChoiceHistory() {
+    FormatChoiceHistory history;
+    const auto first = history.AddChoice(nullptr, 1, FormatBreakChoice::Split, 2);
+    const auto latest = history.AddChoice(first, 1, FormatBreakChoice::Compact, 9);
+    Check(history.Concat(nullptr, latest) == latest && history.Concat(latest, nullptr) == latest,
+        "empty history is a concatenation identity");
+    Check(FormatChoiceHistory::Find(latest, 1) == FormatBreakChoice::Compact, "lookup gives the latest matching record");
+    auto records = history.AddContinuationLines(latest, 1, 4);
+    records = history.AddContinuationLines(records, 1, 7);
+    records = history.AddAttachedOperator(records, 9);
+    records = history.AddAttachedOperator(records, 4);
+    records = history.AddAttachedOperator(records, 9);
+    const auto solution = FormatChoiceHistory::Materialize(records, 4);
+    Check(solution.choices[1] == FormatBreakChoice::Split && solution.indentLevels[1] == 2,
+        "materialization retains the first choice and render base");
+    Check(solution.declarationValueContinuationLines[1] == 7, "materialization retains the last continuation count");
+    Check(solution.attachedChainOperators == std::vector<std::uint32_t>({4, 9}), "attached operator indexes are sorted and unique");
+    Check(solution.choices[3] == FormatBreakChoice::Compact && solution.indentLevels[3] == -1,
+        "unassigned nodes retain materialization defaults");
+    auto branch = history.AddContinuationLines(first, 2, 3);
+    branch = history.AddChoice(branch, 2, FormatBreakChoice::Split, 5);
+    const auto branchSolution = FormatChoiceHistory::Materialize(branch, 4);
+    Check(branchSolution.choices[2] == FormatBreakChoice::Compact && branchSolution.indentLevels[2] == -1,
+        "metadata records preserve their existing position in choice precedence");
+    for (int index = 0; index < 1024; ++index) {
+        records = history.AddChoice(records, 99, FormatBreakChoice::Split, index);
+    }
+    Check(FormatChoiceHistory::Find(first, 1) == FormatBreakChoice::Split && !FormatChoiceHistory::Find(first, 2),
+        "arena growth and branch appends leave earlier handles unchanged");
+    Check(FormatChoiceHistory::Materialize(records, 4).choices.size() == 4,
+        "records outside the model index range do not grow the solution");
+}
+
 }  // namespace
 
 int main() {
     try {
         TestOutput();
         TestListContinuation();
+        TestChoiceHistory();
     } catch (const std::exception& error) {
         std::cerr << "Layout contract test failed: " << error.what() << '\n';
         return 1;

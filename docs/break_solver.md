@@ -10,6 +10,8 @@ The solver receives a `FormatBreakModel` for one formatted segment and returns a
 
 `FormatCompactLayout` owns cached compact physical-line measurement; its results contain no search or cost state.
 
+`FormatChoiceHistory` owns immutable shared decision histories and their lookup/materialization precedence. Solver candidates carry opaque handles; `FormatBreakSolution` is the materialized contract consumed by emission and diagnostics.
+
 `FormatValueProfile` stores sorted occurrence counts for both cost profiles. It keeps four values inline, allocates overflow storage only for a fifth distinct value, and ignores zero. Profile comparison proceeds from greatest value to least, and `Merge` adds child occurrence counts. Adding a shared surrounding profile therefore cannot change the greatest value where two alternatives differ.
 
 The overflow-size profile contains completed physical lines. The current unfinished line is compared as one virtual occurrence and enters the stored profile only when a token newline, comment termination, or selected break completes it. A child that completes the caller's current line owns that occurrence, so profiles remain additive across `Merge`. Exact delimiter-stack search may price and then restore an outer line; its result marks that line as already recorded until the next break to prevent duplicate occurrences.

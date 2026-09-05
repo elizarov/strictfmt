@@ -58,6 +58,8 @@ measurements justify them; retain exact layout decisions throughout.
   comparisons passed.
 - Step 11b: list continuation complete; the full test wrapper (including focused
   list-ownership checks) and 21 baseline comparisons passed.
+- Step 12: choice histories complete; the full test wrapper (including focused
+  precedence/immutability checks) and 21 baseline comparisons passed.
 
 ## Validation
 
