@@ -33,6 +33,8 @@ Continue with the same format/test/review/commit cycle. The next candidates are:
     chain constraints/render bases, followed by deferred list layouts.
 12. Isolate solver choice-history storage and materialization.
 13. Isolate candidate continuation-state comparison and frontier maintenance.
+14. Share delimiter-stack recognition while preserving consumer-specific legality.
+15. Separate syntax metadata and parser-symbol mapping from model storage.
 
 Reassess the remaining builder, solver, and metadata modules after these steps.
 Completion requires cohesive ownership, explicit lifetime/state contracts, and no
@@ -63,6 +65,8 @@ measurements justify them; retain exact layout decisions throughout.
 - Step 13: candidate state/storage/pruning complete; the full test wrapper
   (including focused dominance and value-storage checks) and 21 baseline
   comparisons passed.
+- Step 14: delimiter-stack recognition complete; the full test wrapper (including
+  consumer-policy checks) and 21 baseline comparisons passed.
 
 ## Validation
 
