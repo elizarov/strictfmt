@@ -36,7 +36,8 @@ Print-token construction materializes canonical known-token text and immutable s
 - `vendor/tree-sitter/tree-sitter-cpp/src/scanner.c` owns custom tree-sitter external tokens, including runtime-configured macro identifiers, raw string delimiter state, and preprocessor directive newline ownership; see [scanner.md](scanner.md).
 - `src/format/impl/format_print_token.h` owns print-token data and borrowed-source metadata.
 - `src/format/impl/format_print_token_builder.h|cpp` own normalized syntax traversal through a private inherited context, centralized print-token construction, ancestry facts, comment continuations, and initial adjacent-source spacing.
-- `src/format/impl/format_pretty_printer.h|cpp` own mandatory line breaks, segment build/solve/emit orchestration, deferred structural state, and physical output/comment handling.
+- `src/format/impl/format_pretty_printer.h|cpp` own mandatory line breaks, segment build/solve/emit orchestration, deferred structural state, and syntax-based comment placement.
+- `src/format/impl/format_output.h|cpp` own physical text, columns, pending line indentation, macro continuation suffixes, and deferred comment alignment through a syntax-independent output buffer.
 - `src/format/impl/format_preprocessor_text.h|cpp` own directive text canonicalization, preserved payload indentation, and conditional payload terminal-comma normalization.
 - `src/format/impl/format_raw_macro.h|cpp` own raw macro replacement whitespace normalization and the raw preprocessor line-preservation helpers used by the pretty printer.
 - `src/format/impl/format_string_literals.h|cpp` own safe adjacent-string spelling joins and escaped-newline split requirements.
@@ -60,6 +61,7 @@ Print-token construction materializes canonical known-token text and immutable s
 - `strictfmt_tests` owns the custom test runner target backed by `tests/format/format_test.py` when Python is available.
 - `StrictfmtFormatTests` owns the CTest entry for the formatter test suite when Python is available.
 - `strictfmt_utf8_tests` and `StrictfmtUtf8Tests` own the Unicode utility test executable and its CTest entry.
+- `strictfmt_layout_tests` and `StrictfmtLayoutTests` own the internal layout-contract test executable and its CTest entry.
 
 ## Upstream Tree-Sitter Runtime
 

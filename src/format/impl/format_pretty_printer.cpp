@@ -4,7 +4,6 @@
 #include <chrono>
 #include <cstdint>
 #include <memory>
-#include <numeric>
 #include <optional>
 #include <string>
 #include <unordered_map>
@@ -22,6 +21,7 @@
 #include "format/impl/format_preprocessor_text.h"
 #include "format/impl/format_print_token_builder.h"
 #include "format/impl/format_spacing.h"
+#include "format/impl/format_output.h"
 #include "tools/tools_common.h"
 #include "util/utf8.h"
 
@@ -315,18 +315,6 @@ struct PreprocessorSplitListPlan {
     PreprocessorSplitListContext deferredContext;
 };
 
-constexpr size_t kNoCommentPosition = static_cast<size_t>(-1);
-
-struct LineCommentPosition {
-    const SyntaxNode* alignmentGroup = nullptr;
-    size_t commentOffset = 0;
-    int commentColumn = 0;
-    int commentWidth = 0;
-    int continuationWidth = 0;
-    size_t continuationAnchor = kNoCommentPosition;
-    bool alignTrailingRun = false;
-};
-
 class Printer final : private FormatBreakOutput {
 public:
     Printer(
@@ -340,7 +328,8 @@ public:
         stats_(stats),
         breakModelDump_(breakModelDump),
         indentWidth_(std::max(1, config.indentWidth)),
-        tabWidth_(std::max(1, config.tabWidth)) {}
+        tabWidth_(std::max(1, config.tabWidth)),
+        output_(indentWidth_, config.columnLimit) {}
 
     std::string Print(const std::vector<PrintToken>& tokens, size_t sourceSize) {
         activeTokens_ = &tokens;
@@ -349,7 +338,7 @@ public:
             mandatoryBlockOpens[index] = IsMandatoryBlockOpen(index);
         }
         declarationLayout_ = std::make_unique<FormatDeclarationLayout>(config_, tokens, mandatoryBlockOpens, stats_);
-        output_.reserve(std::max(tokens.size() * 8, sourceSize));
+        output_.Reserve(std::max(tokens.size() * 8, sourceSize));
         pendingTokens_.reserve(64);
         const PrintToken* previous = nullptr;
         size_t nextIndex = 0;
@@ -369,13 +358,7 @@ public:
         }
         activeTokens_ = nullptr;
         FlushPendingTokens();
-        FinishLine();
-        TrimTrailingBlankLines();
-        if (!output_.empty() && output_.back() != '\n') {
-            output_.push_back('\n');
-        }
-        AlignLineComments();
-        return output_;
+        return output_.Finish();
     }
 
 private:
@@ -385,23 +368,15 @@ private:
     FormatBreakModelDumpWriter* breakModelDump_ = nullptr;
     int indentWidth_ = 4;
     int tabWidth_ = 4;
-    std::string output_;
-    std::vector<LineCommentPosition> lineComments_;
-    std::optional<size_t> activeCommentContinuationAnchor_;
+    FormatOutput output_;
     std::vector<PrintToken> pendingTokens_;
     std::unique_ptr<FormatDeclarationLayout> declarationLayout_;
     bool pendingSourceBlankLine_ = false;
     int indentLevel_ = 0;
-    bool atLineStart_ = true;
-    bool lineHasText_ = false;
-    int currentColumn_ = 0;
-    bool macroContinuationLine_ = false;
-    bool forceColumnZeroLine_ = false;
     bool emittingMacroDefinition_ = false;
     bool firstIncludeRun_ = true;
     const std::vector<PrintToken>* activeTokens_ = nullptr;
     size_t currentTokenIndex_ = 0;
-    std::optional<int> pendingIndentLevel_;
     std::optional<int> emittedBlockOpenIndent_;
     std::vector<BraceRole> compactRightBraceRoles_;
     int switchDepth_ = 0;
@@ -956,54 +931,25 @@ private:
         return std::nullopt;
     }
 
-    void TrimTrailingSpaces() {
-        while (!output_.empty() && output_.back() == ' ') {
-            output_.pop_back();
-            currentColumn_ = std::max(0, currentColumn_ - 1);
-        }
-    }
-
-    bool HasOutputContent() const {
-        for (char ch : output_) {
-            if (ch != '\n') {
-                return true;
-            }
-        }
-        return false;
-    }
-
-    void FinishLine() { TrimTrailingSpaces(); }
-
-    void TrimTrailingBlankLines() {
-        while (output_.size() >= 2 && output_.back() == '\n' && output_[output_.size() - 2] == '\n') {
-            output_.pop_back();
-        }
-    }
-
-    void NewLine(bool macroContinuation = false) {
-        FinishLine();
-        if (macroContinuation && lineHasText_) {
-            output_.append(" \\");
-        }
-        if (output_.empty() || output_.back() != '\n') {
-            output_.push_back('\n');
-        }
-        atLineStart_ = true;
-        lineHasText_ = false;
-        currentColumn_ = 0;
-        macroContinuationLine_ = macroContinuation;
-        forceColumnZeroLine_ = false;
-        pendingIndentLevel_.reset();
+    void NewLine(bool macroContinuation = false) { output_.NewLine(macroContinuation); }
+    void BlankLine() { output_.BlankLine(); }
+    void ReopenLastOutputLine() { output_.ReopenLastLine(); }
+    void Write(std::string_view text) override { output_.Write(text, indentLevel_); }
+    void Space() override { output_.Space(); }
+    int CurrentColumn() const { return output_.CurrentColumn(indentLevel_); }
+    int CurrentLineIndentLevel() const { return output_.CurrentLineIndentLevel(); }
+    void WriteWithIndentOffset(std::string_view text, int offset) {
+        output_.WriteAtIndent(text, indentLevel_ + offset);
     }
 
     void NewLineWithIndent(int indentLevel) {
         NewLine(emittingMacroDefinition_);
-        pendingIndentLevel_ = std::max(0, indentLevel);
+        output_.SetPendingIndent(std::max(0, indentLevel));
     }
 
     void BlankLineWithIndent(int indentLevel) {
         BlankLine();
-        pendingIndentLevel_ = std::max(0, indentLevel);
+        output_.SetPendingIndent(std::max(0, indentLevel));
     }
 
     void BreakListLine(int indentLevel, bool blankLine) {
@@ -1012,80 +958,6 @@ private:
             return;
         }
         NewLineWithIndent(indentLevel);
-    }
-
-    void BlankLine() {
-        if (!HasOutputContent() && !lineHasText_) {
-            atLineStart_ = true;
-            currentColumn_ = 0;
-            macroContinuationLine_ = false;
-            forceColumnZeroLine_ = false;
-            pendingIndentLevel_.reset();
-            return;
-        }
-        NewLine(false);
-        if (output_.size() < 2 || output_[output_.size() - 2] != '\n') {
-            output_.push_back('\n');
-        }
-        atLineStart_ = true;
-        lineHasText_ = false;
-        currentColumn_ = 0;
-        macroContinuationLine_ = false;
-        forceColumnZeroLine_ = false;
-        pendingIndentLevel_.reset();
-    }
-
-    void ReopenLastOutputLine() {
-        if (!output_.empty() && output_.back() == '\n') {
-            output_.pop_back();
-        }
-        currentColumn_ = 0;
-        AdvanceCurrentColumn(output_);
-        atLineStart_ = false;
-        lineHasText_ = currentColumn_ > 0;
-        macroContinuationLine_ = false;
-        forceColumnZeroLine_ = false;
-        pendingIndentLevel_.reset();
-    }
-
-    void WriteIndentIfNeeded() {
-        if (!atLineStart_) {
-            return;
-        }
-        const int macroOffset = macroContinuationLine_ ? 1 : 0;
-        const int indentLevel = pendingIndentLevel_.value_or(forceColumnZeroLine_ ? 0 : indentLevel_ + macroOffset);
-        currentColumn_ = std::max(0, indentLevel) * indentWidth_;
-        output_.append(static_cast<size_t>(currentColumn_), ' ');
-        atLineStart_ = false;
-        macroContinuationLine_ = false;
-        forceColumnZeroLine_ = false;
-        pendingIndentLevel_.reset();
-    }
-
-    void WriteWithIndentOffset(std::string_view text, int indentOffset) {
-        if (!atLineStart_) {
-            output_.append(text);
-            AdvanceCurrentColumn(text);
-            lineHasText_ = lineHasText_ || !text.empty();
-            return;
-        }
-        const int adjustedIndent = std::max(0, indentLevel_ + indentOffset);
-        currentColumn_ = adjustedIndent * indentWidth_;
-        output_.append(static_cast<size_t>(currentColumn_), ' ');
-        atLineStart_ = false;
-        macroContinuationLine_ = false;
-        forceColumnZeroLine_ = false;
-        pendingIndentLevel_.reset();
-        output_.append(text);
-        AdvanceCurrentColumn(text);
-        lineHasText_ = lineHasText_ || !text.empty();
-    }
-
-    void Write(std::string_view text) override {
-        WriteIndentIfNeeded();
-        output_.append(text);
-        AdvanceCurrentColumn(text);
-        lineHasText_ = lineHasText_ || !text.empty();
     }
 
     static const SyntaxNode* LineCommentAlignmentGroup(const PrintToken& token) {
@@ -1100,136 +972,35 @@ private:
         return group;
     }
 
-    size_t RecordLineCommentPosition(
-        const PrintToken& token,
-        std::string_view text,
-        bool alignTrailingRun,
-        size_t continuationAnchor = kNoCommentPosition
-    ) {
-        const size_t index = lineComments_.size();
-        lineComments_.push_back({
-            .alignmentGroup = LineCommentAlignmentGroup(token),
-            .commentOffset = output_.size(),
-            .commentColumn = currentColumn_,
-            .commentWidth = Utf8CharacterCount(text),
-            .continuationAnchor = continuationAnchor,
-            .alignTrailingRun = alignTrailingRun,
-        });
-        if (continuationAnchor != kNoCommentPosition) {
-            LineCommentPosition& anchor = lineComments_[continuationAnchor];
-            anchor.continuationWidth = std::max(anchor.continuationWidth, Utf8CharacterCount(text));
-        }
-        return index;
-    }
-
     void WriteTrailingComment(const PrintToken& token, std::string_view text, bool spaceBefore) {
-        if (spaceBefore || IsLineCommentToken(token)) {
-            Space();
-        }
-        if (IsLineCommentToken(token)) {
-            output_.push_back(' ');
-            ++currentColumn_;
-            activeCommentContinuationAnchor_ = RecordLineCommentPosition(token, text, true);
-        } else {
-            activeCommentContinuationAnchor_.reset();
-        }
-        Write(text);
+        output_.WriteComment(
+            text,
+            indentLevel_,
+            LineCommentAlignmentGroup(token),
+            FormatOutputComment::Trailing,
+            IsLineCommentToken(token),
+            spaceBefore
+        );
     }
 
     void WriteStandaloneTrailingComment(const PrintToken& token, std::string_view text) {
-        WriteIndentIfNeeded();
-        if (IsLineCommentToken(token)) {
-            activeCommentContinuationAnchor_ = RecordLineCommentPosition(token, text, false);
-        } else {
-            activeCommentContinuationAnchor_.reset();
-        }
-        Write(text);
+        output_.WriteComment(
+            text,
+            indentLevel_,
+            LineCommentAlignmentGroup(token),
+            FormatOutputComment::Standalone,
+            IsLineCommentToken(token)
+        );
     }
 
     void WriteCommentContinuation(const PrintToken& token, std::string_view text) {
-        if (IsLineCommentToken(token) && activeCommentContinuationAnchor_) {
-            if (atLineStart_) {
-                forceColumnZeroLine_ = true;
-                pendingIndentLevel_.reset();
-            }
-            WriteIndentIfNeeded();
-            RecordLineCommentPosition(token, text, false, *activeCommentContinuationAnchor_);
-        }
-        Write(text);
-    }
-
-    bool AreOnAdjacentLines(const LineCommentPosition& left, const LineCommentPosition& right) const {
-        return std::count(
-            output_.begin() + static_cast<std::ptrdiff_t>(left.commentOffset),
-            output_.begin() + static_cast<std::ptrdiff_t>(right.commentOffset),
-            '\n'
-        ) == 1;
-    }
-
-    void AlignLineComments() {
-        std::vector<int> padding(lineComments_.size());
-        for (size_t begin = 0; begin < lineComments_.size();) {
-            if (!lineComments_[begin].alignTrailingRun) {
-                ++begin;
-                continue;
-            }
-            size_t end = begin + 1;
-            while (
-                end < lineComments_.size() &&
-                lineComments_[end].alignTrailingRun &&
-                lineComments_[begin].alignmentGroup != nullptr &&
-                lineComments_[end].alignmentGroup == lineComments_[begin].alignmentGroup &&
-                AreOnAdjacentLines(lineComments_[end - 1], lineComments_[end])
-            ) {
-                ++end;
-            }
-            if (end - begin >= 2) {
-                int alignedColumn = 0;
-                for (size_t index = begin; index < end; ++index) {
-                    alignedColumn = std::max(alignedColumn, lineComments_[index].commentColumn);
-                }
-                bool fits = true;
-                for (size_t index = begin; index < end; ++index) {
-                    if (
-                        alignedColumn +
-                            std::max(lineComments_[index].commentWidth, lineComments_[index].continuationWidth) >
-                            config_.columnLimit
-                    ) {
-                        fits = false;
-                        break;
-                    }
-                }
-                if (fits) {
-                    for (size_t index = begin; index < end; ++index) {
-                        padding[index] = alignedColumn - lineComments_[index].commentColumn;
-                    }
-                }
-            }
-            begin = end;
-        }
-        for (size_t index = 0; index < lineComments_.size(); ++index) {
-            const size_t anchor = lineComments_[index].continuationAnchor;
-            if (anchor == kNoCommentPosition) {
-                continue;
-            }
-            const int anchorColumn = lineComments_[anchor].commentColumn + padding[anchor];
-            padding[index] = std::max(0, anchorColumn - lineComments_[index].commentColumn);
-        }
-        const size_t totalPadding = std::accumulate(padding.begin(), padding.end(), size_t{0});
-        if (totalPadding == 0) {
-            return;
-        }
-        std::string aligned;
-        aligned.reserve(output_.size() + totalPadding);
-        size_t copied = 0;
-        for (size_t index = 0; index < lineComments_.size(); ++index) {
-            const size_t commentOffset = lineComments_[index].commentOffset;
-            aligned.append(output_, copied, commentOffset - copied);
-            aligned.append(static_cast<size_t>(padding[index]), ' ');
-            copied = commentOffset;
-        }
-        aligned.append(output_, copied, output_.size() - copied);
-        output_ = std::move(aligned);
+        output_.WriteComment(
+            text,
+            indentLevel_,
+            LineCommentAlignmentGroup(token),
+            FormatOutputComment::Continuation,
+            IsLineCommentToken(token)
+        );
     }
 
     void CloseCaseBodyIndentIfNeeded() {
@@ -1237,42 +1008,6 @@ private:
             indentLevel_ = std::max(0, indentLevel_ - 1);
             activeCaseBodySwitchDepths_.pop_back();
         }
-    }
-
-    void Space() override {
-        if (!atLineStart_ && !output_.empty() && output_.back() != ' ' && output_.back() != '\n') {
-            output_.push_back(' ');
-            ++currentColumn_;
-        }
-    }
-
-    int CurrentColumn() const {
-        if (atLineStart_) {
-            const int macroOffset = macroContinuationLine_ ? 1 : 0;
-            const int indentLevel = pendingIndentLevel_.value_or(forceColumnZeroLine_ ? 0 : indentLevel_ + macroOffset);
-            return std::max(0, indentLevel) * indentWidth_;
-        }
-        return currentColumn_;
-    }
-
-    void AdvanceCurrentColumn(std::string_view text) {
-        const size_t newline = text.find_last_of('\n');
-        if (newline == std::string_view::npos) {
-            currentColumn_ += Utf8CharacterCount(text);
-            return;
-        }
-        currentColumn_ = Utf8CharacterCount(text.substr(newline + 1));
-    }
-
-    int CurrentLineIndentLevel() const {
-        const size_t lineStart = output_.find_last_of('\n');
-        size_t cursor = lineStart == std::string::npos ? 0 : lineStart + 1;
-        int spaces = 0;
-        while (cursor < output_.size() && output_[cursor] == ' ') {
-            ++spaces;
-            ++cursor;
-        }
-        return spaces / indentWidth_;
     }
 
     bool CanFlushPendingTokensCompact(const FormatBreakModelContext& context) const {
@@ -1288,7 +1023,7 @@ private:
             return false;
         }
         int width = 0;
-        bool hasText = lineHasText_;
+        bool hasText = output_.State().lineHasText;
         bool previousStringLike = false;
         bool hasTemplateHeader = false;
         bool hasTemplateDeclaredEntity = false;
@@ -1359,7 +1094,7 @@ private:
                 omittedTerminalComma = true;
                 continue;
             }
-            if (token.spaceBefore && !atLineStart_ && !omittedTerminalComma) {
+            if (token.spaceBefore && !output_.State().atLineStart && !omittedTerminalComma) {
                 Space();
             }
             Write(FormatTokenText(token));
@@ -1392,14 +1127,17 @@ private:
         }
         const PrintToken& printToken = FormatBreakTokenValue(token);
         if (
-            printToken.macroDefinition != nullptr && !printToken.inMacroValue && atLineStart_ && !macroContinuationLine_
+            printToken.macroDefinition != nullptr &&
+            !printToken.inMacroValue &&
+            output_.State().atLineStart &&
+            !output_.State().macroContinuation
         ) {
-            forceColumnZeroLine_ = true;
-            pendingIndentLevel_.reset();
+            output_.ForceColumnZero();
         }
         if (printToken.kind == PrintTokenKind::Comment) {
-            const int commentIndent = atLineStart_ ? CurrentColumn() / indentWidth_ : CurrentLineIndentLevel();
-            if (!atLineStart_) {
+            const int commentIndent =
+                output_.State().atLineStart ? CurrentColumn() / indentWidth_ : CurrentLineIndentLevel();
+            if (!output_.State().atLineStart) {
                 NewLineWithIndent(commentIndent);
             }
             if (printToken.commentContinuation) {
@@ -1413,9 +1151,10 @@ private:
         if (printToken.kind == PrintTokenKind::TrailingComment) {
             const int breakModelContinuationIndent = continuationBaseIndent ?
                 *continuationBaseIndent + (*continuationBaseIndent == indentLevel_ ? 1 : 0) : 0;
-            const int commentIndent = atLineStart_ ? CurrentColumn() / indentWidth_ : CurrentLineIndentLevel();
+            const int commentIndent =
+                output_.State().atLineStart ? CurrentColumn() / indentWidth_ : CurrentLineIndentLevel();
             const int continuationIndent = std::max(commentIndent, breakModelContinuationIndent);
-            if (!atLineStart_) {
+            if (!output_.State().atLineStart) {
                 WriteTrailingComment(printToken, text, token.spaceBefore);
             } else {
                 WriteStandaloneTrailingComment(printToken, text);
@@ -1427,18 +1166,22 @@ private:
             }
             return;
         }
-        if (token.spaceBefore && !suppressSpace && !atLineStart_) {
+        if (token.spaceBefore && !suppressSpace && !output_.State().atLineStart) {
             Space();
         }
         Write(text);
     }
 
     FormatBreakOutputState State() const override {
-        return {.atLineStart = atLineStart_, .lineHasText = lineHasText_, .pendingIndentLevel = pendingIndentLevel_};
+        return {
+            .atLineStart = output_.State().atLineStart,
+            .lineHasText = output_.State().lineHasText,
+            .pendingIndentLevel = output_.State().pendingIndentLevel,
+        };
     }
 
     void BreakLine(int indentLevel, bool blankLine) override { BreakListLine(indentLevel, blankLine); }
-    void SetPendingIndent(int indentLevel) override { pendingIndentLevel_ = indentLevel; }
+    void SetPendingIndent(int indentLevel) override { output_.SetPendingIndent(indentLevel); }
 
     std::vector<MandatoryBlockSplitListContext> FlushPendingTokens(const FormatBreakModelContext& context = {}) {
         emittedBlockOpenIndent_.reset();
@@ -1471,10 +1214,10 @@ private:
             std::any_of(pendingTokens_.begin(), pendingTokens_.end(), [](const PrintToken& token) {
                 return token.macroDefinition != nullptr;
             });
-        if (emittingMacroDefinition_ && pendingTokens_.front().inMacroValue && atLineStart_) {
-            pendingIndentLevel_ = std::max(pendingIndentLevel_.value_or(0), indentLevel_ + 1);
+        if (emittingMacroDefinition_ && pendingTokens_.front().inMacroValue && output_.State().atLineStart) {
+            output_.SetPendingIndent(std::max(output_.State().pendingIndentLevel.value_or(0), indentLevel_ + 1));
         }
-        const int baseIndentLevel = pendingIndentLevel_.value_or(indentLevel_);
+        const int baseIndentLevel = output_.State().pendingIndentLevel.value_or(indentLevel_);
         const int startColumn = CurrentColumn();
         const int breakLineSuffixWidth = emittingMacroDefinition_ ? 2 : 0;
         const std::optional<FormatDeclarationLayoutView> cached =
@@ -1541,7 +1284,7 @@ private:
         return splitContexts;
     }
 
-    bool HasBufferedLineText() const { return lineHasText_ || !pendingTokens_.empty(); }
+    bool HasBufferedLineText() const { return output_.State().lineHasText || !pendingTokens_.empty(); }
 
     std::optional<MandatoryBlockSplitListPlan> BuildMandatoryBlockSplitListPlan(const PrintToken& token) const {
         if (
@@ -1635,7 +1378,7 @@ private:
         }
         listClose = (*activeTokens_)[*closeIndex].node;
         FormatBreakToken virtualClose{&(*activeTokens_)[*closeIndex], false, true};
-        const int itemIndentLevel = pendingIndentLevel_.value_or(indentLevel_ + 1);
+        const int itemIndentLevel = output_.State().pendingIndentLevel.value_or(indentLevel_ + 1);
         return PreprocessorSplitListPlan{
             .breakContext = {.virtualDelimiters = {{.open = listOpen, .close = virtualClose, .forceSplit = true}}},
             .deferredContext = {
@@ -1836,9 +1579,8 @@ private:
     }
 
     void PrepareMacroBoundary(const PrintToken* previous, const PrintToken& current) {
-        if (current.macroDefinition != nullptr && !current.inMacroValue && atLineStart_) {
-            forceColumnZeroLine_ = true;
-            pendingIndentLevel_.reset();
+        if (current.macroDefinition != nullptr && !current.inMacroValue && output_.State().atLineStart) {
+            output_.ForceColumnZero();
         }
         if (
             previous != nullptr &&
@@ -1850,8 +1592,7 @@ private:
                 NewLine(false);
             }
             if (current.macroDefinition != nullptr && !current.inMacroValue) {
-                forceColumnZeroLine_ = true;
-                pendingIndentLevel_.reset();
+                output_.ForceColumnZero();
             }
         }
         if (
@@ -1862,8 +1603,7 @@ private:
             FlushPendingTokens();
             NewLine(false);
             if (!current.inMacroValue) {
-                forceColumnZeroLine_ = true;
-                pendingIndentLevel_.reset();
+                output_.ForceColumnZero();
             }
         }
     }
@@ -1875,7 +1615,7 @@ private:
         if (HasBufferedLineText()) {
             FlushPendingTokens();
         }
-        if (lineHasText_) {
+        if (output_.State().lineHasText) {
             NewLine(ShouldContinueMacroLine(*previous, &current));
         }
     }
@@ -2044,7 +1784,7 @@ private:
         const PrintToken* rawNext
     ) {
         if (!token.commentContinuation && token.kind != PrintTokenKind::TrailingComment) {
-            activeCommentContinuationAnchor_.reset();
+            output_.ResetCommentContinuation();
         }
         if (prebufferedTokenSourceIndices_.erase(token.sourceIndex) != 0) {
             return;
@@ -2072,9 +1812,10 @@ private:
                     preprocessorSplitListContexts_.end(),
                     [&](const PreprocessorSplitListContext& context) { return ListOwnsToken(context.list, token); }
                 );
-                const std::optional<int> pendingIndent = continuesSplitList ? pendingIndentLevel_ : std::nullopt;
+                const std::optional<int> pendingIndent =
+                    continuesSplitList ? output_.State().pendingIndentLevel : std::nullopt;
                 BlankLine();
-                pendingIndentLevel_ = pendingIndent;
+                output_.SetPendingIndent(pendingIndent);
             }
             return;
         }
@@ -2092,7 +1833,12 @@ private:
                 return;
             }
             FlushPendingTokens();
-            if (token.kind == PrintTokenKind::Comment && atLineStart_ && next != nullptr && IsCaseLabelKeyword(*next)) {
+            if (
+                token.kind == PrintTokenKind::Comment &&
+                output_.State().atLineStart &&
+                next != nullptr &&
+                IsCaseLabelKeyword(*next)
+            ) {
                 CloseCaseBodyIndentIfNeeded();
             }
             if (CanAttachToPreviousPreprocessorLine(token, rawPrevious)) {
@@ -2125,7 +1871,7 @@ private:
     }
 
     void PrintComment(const PrintToken& token, const PrintToken* previous, const PrintToken* next) {
-        if (token.kind == PrintTokenKind::TrailingComment && lineHasText_) {
+        if (token.kind == PrintTokenKind::TrailingComment && output_.State().lineHasText) {
             WriteTrailingComment(token, token.text, FormatTokenNeedsSpace(previous, token));
             NewLine(ShouldContinueMacroLine(token, next));
             if (
@@ -2138,7 +1884,7 @@ private:
             }
             return;
         }
-        if (lineHasText_) {
+        if (output_.State().lineHasText) {
             NewLine(ShouldContinueMacroLine(token, next));
         }
         if (token.commentContinuation) {
@@ -2155,15 +1901,12 @@ private:
         if (token.node == nullptr) {
             return;
         }
-        if (lineHasText_) {
+        if (output_.State().lineHasText) {
             NewLine();
         }
         const std::string text = FormatIncludeRunText(config_, *token.node, sourcePath_, firstIncludeRun_);
         firstIncludeRun_ = false;
-        output_.append(text);
-        currentColumn_ = 0;
-        atLineStart_ = true;
-        lineHasText_ = false;
+        output_.AppendCompleteLines(text);
         if (
             !text.empty() &&
             next != nullptr &&
@@ -2179,7 +1922,7 @@ private:
         const bool isInclude = PrintTokenSyntaxHasClass(token, SyntaxNodeClass::IncludeDirective) ||
             SyntaxNodeKindHasClass(lineDirectiveKind, SyntaxNodeClass::IncludeDirective);
         const std::optional<int> includeInitializerContinuationIndent =
-            isInclude && token.parentKind == SyntaxNodeKind::InitDeclarator && lineHasText_ ?
+            isInclude && token.parentKind == SyntaxNodeKind::InitDeclarator && output_.State().lineHasText ?
                 std::optional<int>(CurrentLineIndentLevel() + 1) : std::nullopt;
         const SyntaxNode* conditionalList =
             StartsPreprocessorSplitList(token) ? NearestPreprocessorSplitListAncestor(token) : nullptr;
@@ -2198,16 +1941,13 @@ private:
             if (HasBufferedLineText()) {
                 FlushPendingTokens();
             }
-            const int continuationIndent = (lineHasText_ ? CurrentLineIndentLevel() : indentLevel_) + 1;
-            if (lineHasText_) {
+            const int continuationIndent = (output_.State().lineHasText ? CurrentLineIndentLevel() : indentLevel_) + 1;
+            if (output_.State().lineHasText) {
                 NewLine();
             }
             const std::string outputLine =
                 FormatPreprocessorText(token.text, {.payloadIndent = continuationIndent, .indentWidth = indentWidth_});
-            output_.append(outputLine);
-            AdvanceCurrentColumn(outputLine);
-            lineHasText_ = true;
-            atLineStart_ = false;
+            output_.WriteVerbatim(outputLine);
             NewLine();
             return;
         }
@@ -2215,18 +1955,15 @@ private:
             if (HasBufferedLineText()) {
                 FlushPendingTokens();
             }
-            if (lineHasText_) {
+            if (output_.State().lineHasText) {
                 NewLine();
             }
-            const int declarationIndent = pendingIndentLevel_.value_or(indentLevel_);
+            const int declarationIndent = output_.State().pendingIndentLevel.value_or(indentLevel_);
             const std::string outputLine =
                 FormatPreprocessorText(token.text, {.payloadIndent = declarationIndent, .indentWidth = indentWidth_});
-            output_.append(outputLine);
-            AdvanceCurrentColumn(outputLine);
-            lineHasText_ = true;
-            atLineStart_ = false;
+            output_.WriteVerbatim(outputLine);
             NewLine();
-            pendingIndentLevel_ = declarationIndent;
+            output_.SetPendingIndent(declarationIndent);
             return;
         }
         if (token.structuredPreprocessor || isInclude || listConditional) {
@@ -2246,9 +1983,9 @@ private:
             if (splitContext != nullptr) {
                 listItemIndent = splitContext->itemIndent;
             } else if (listConditional) {
-                listItemIndent = pendingIndentLevel_.value_or(indentLevel_ + 1);
+                listItemIndent = output_.State().pendingIndentLevel.value_or(indentLevel_ + 1);
             }
-            if (lineHasText_) {
+            if (output_.State().lineHasText) {
                 NewLine();
             }
             const std::string outputLine = listConditional && !token.structuredPreprocessor && listItemIndent ?
@@ -2258,29 +1995,23 @@ private:
                     .terminalComma = !IsFinalPreprocessorSplitListItem(token) ? FormatPreprocessorComma::Preserve :
                         (trailingListComma ? FormatPreprocessorComma::Add : FormatPreprocessorComma::Remove),
                 }) : line;
-            output_.append(outputLine);
-            AdvanceCurrentColumn(outputLine);
-            lineHasText_ = true;
-            atLineStart_ = false;
+            output_.WriteVerbatim(outputLine);
             NewLine();
             if (closesConditionalFunctionHeader) {
                 conditionalFunctionIndents_.push_back(indentLevel_);
                 ++indentLevel_;
             }
             if (listItemIndent) {
-                pendingIndentLevel_ = *listItemIndent;
+                output_.SetPendingIndent(*listItemIndent);
             } else if (includeInitializerContinuationIndent) {
-                pendingIndentLevel_ = *includeInitializerContinuationIndent;
+                output_.SetPendingIndent(*includeInitializerContinuationIndent);
             }
             return;
         }
-        if (lineHasText_) {
+        if (output_.State().lineHasText) {
             NewLine();
         }
-        output_.append(line);
-        AdvanceCurrentColumn(line);
-        lineHasText_ = true;
-        atLineStart_ = false;
+        output_.WriteVerbatim(line);
         NewLine();
         if (closesConditionalFunctionHeader) {
             conditionalFunctionIndents_.push_back(indentLevel_);
@@ -2420,9 +2151,8 @@ private:
             case SyntaxNodeKind::Semicolon:
                 if (IsRemovableNullTerminator(token, previous)) {
                     if (rawNext != nullptr && rawNext->kind == PrintTokenKind::TrailingComment) {
-                        if (!HasBufferedLineText() && atLineStart_) {
-                            TrimTrailingBlankLines();
-                            ReopenLastOutputLine();
+                        if (!HasBufferedLineText() && output_.State().atLineStart) {
+                            output_.ReopenLastLine(true);
                         }
                     } else if (!token.inCompactSingleStatementBody && HasBufferedLineText()) {
                         FlushPendingTokens();
@@ -2489,7 +2219,7 @@ private:
                 }
                 return;
             default:
-                if (IsCaseLabelKeyword(token) && atLineStart_) {
+                if (IsCaseLabelKeyword(token) && output_.State().atLineStart) {
                     CloseCaseBodyIndentIfNeeded();
                 }
                 if (IsAccessLabel(token, next)) {
@@ -2506,7 +2236,7 @@ private:
         if (IsMandatoryBlockOpen(currentTokenIndex_)) {
             AnalyzeCrossBlockChains(token);
         }
-        const int crossBlockFallbackBaseIndent = std::max(0, pendingIndentLevel_.value_or(indentLevel_));
+        const int crossBlockFallbackBaseIndent = std::max(0, output_.State().pendingIndentLevel.value_or(indentLevel_));
         const bool followedByTrailingComment = rawNext != nullptr && rawNext->kind == PrintTokenKind::TrailingComment;
         if (token.inConditionalFunctionHeader) {
             BufferToken(token);
@@ -2531,7 +2261,7 @@ private:
             previous->syntaxKind == SyntaxNodeKind::Colon &&
             previous->parentKind == SyntaxNodeKind::CaseStatement;
         const BraceRole role = isCaseBlock ? BraceRole::CaseBlock : RoleForBrace(token);
-        if (role == BraceRole::CaseBlock && lineHasText_) {
+        if (role == BraceRole::CaseBlock && output_.State().lineHasText) {
             Space();
         }
         if (isEmptyBracePair) {
@@ -2579,7 +2309,7 @@ private:
             token.grandParentKind == SyntaxNodeKind::FunctionDefinition;
         int openLineIndent = emittedBlockOpenIndent_.value_or(splitListItemIndent.value_or(
             token.inMacroValue || functionBlock ? indentLevel_ :
-                (lineHasText_ ? CurrentLineIndentLevel() : indentLevel_)
+                (output_.State().lineHasText ? CurrentLineIndentLevel() : indentLevel_)
         ));
         if (
             token.parentKind == SyntaxNodeKind::RequirementSeq && token.inTemplateDeclaration && token.inRequiresClause
@@ -2644,7 +2374,7 @@ private:
             !conditionalFunctionIndents_.empty()
         ) {
             FlushPendingTokens();
-            if (lineHasText_) {
+            if (output_.State().lineHasText) {
                 NewLine(token.inMacroValue);
             }
             indentLevel_ = conditionalFunctionIndents_.back();
@@ -2674,7 +2404,7 @@ private:
         FlushPendingTokens();
         // A non-compact closing brace is positioned by its brace frame, never by a pending
         // declaration or list-item indent left by the preceding construct.
-        pendingIndentLevel_.reset();
+        output_.SetPendingIndent(std::nullopt);
         std::optional<int> restoreIndent;
         std::optional<int> closeIndent;
         if (!braceStack_.empty()) {
@@ -2683,7 +2413,7 @@ private:
             braceStack_.pop_back();
         }
         if (role == BraceRole::NamespaceLike) {
-            if (lineHasText_) {
+            if (output_.State().lineHasText) {
                 NewLine(token.inMacroValue);
             }
             BlankLine();
@@ -2696,7 +2426,7 @@ private:
             return;
         }
         if (role == BraceRole::CaseBlock) {
-            if (lineHasText_) {
+            if (output_.State().lineHasText) {
                 NewLine(token.inMacroValue);
             }
             WriteWithIndentOffset("}", -1);
@@ -2706,7 +2436,7 @@ private:
             return;
         }
         if (role != BraceRole::Compact) {
-            if (lineHasText_) {
+            if (output_.State().lineHasText) {
                 NewLine(token.inMacroValue);
             }
             const bool isSwitchBody = token.parentKind == SyntaxNodeKind::CompoundStatement &&
@@ -2741,7 +2471,7 @@ private:
             FlushPendingTokens();
             if (rawNext == nullptr || rawNext->kind != PrintTokenKind::TrailingComment) {
                 NewLine(ShouldContinueMacroLine(token, next));
-                pendingIndentLevel_ = splitListContinuationIndent;
+                output_.SetPendingIndent(splitListContinuationIndent);
             }
             return;
         }
