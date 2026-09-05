@@ -11,6 +11,10 @@
 #include "format/impl/format_break_emitter.h"
 #include "format/impl/format_break_model.h"
 #include "format/impl/format_list_continuation.h"
+#include "format/impl/format_chain_continuation.h"
+#include "format/impl/format_config.h"
+#include "format/impl/format_model_parse.h"
+#include "format/impl/format_print_token_builder.h"
 
 namespace {
 
@@ -88,6 +92,49 @@ void TestOutput() {
     }
 }
 
+
+void TestChainContinuation() {
+    FormatterConfig config;
+    FormatModel model = ParseFormatModel(
+        "void f(int x, int y) { use(a + [] { work(); return b + c + e; }() + d); }", config
+    );
+    Check(model.parse.ok, "chain continuation fixture parses");
+    const auto tokens = BuildPrintTokens(model, config.tabWidth);
+    FormatChainContinuation continuation(tokens);
+    size_t blocks = 0;
+    for (size_t index = 0; index < tokens.size(); ++index) {
+        const PrintToken& token = tokens[index];
+        if (token.syntaxKind != SyntaxNodeKind::LeftBrace) {
+            continue;
+        }
+        ++blocks;
+        continuation.AnalyzeBlock(index);
+        FormatBreakModelContext context;
+        continuation.Constrain(context);
+        if (blocks == 1) {
+            Check(context.requiredChainBreakOperators == nullptr,
+                "operators inside the function body do not cross its opening brace");
+        } else {
+            Check(context.requiredChainBreakOperators != nullptr && context.requiredChainBreakOperators->size() == 2,
+                "only the two enclosing plus operators cross the lambda body");
+            const SyntaxNode* body = token.node->parent;
+            for (const PrintToken& candidate : tokens) {
+                if (candidate.syntaxKind == SyntaxNodeKind::Plus) {
+                    Check(context.requiredChainBreakOperators->contains(candidate.node) !=
+                        PrintTokenSyntaxPathContains(candidate, body), "inner and enclosing chain operators stay distinct");
+                }
+            }
+            continuation.FinishBlock(3);
+            continuation.Constrain(context);
+            Check(context.requiredChainBreakBaseIndents != nullptr && context.requiredChainBreakBaseIndents->size() == 2,
+                "enclosing operators retain their cross-block render base");
+            for (const auto& [node, indent] : *context.requiredChainBreakBaseIndents) {
+                Check(indent == 3, "unresolved chain render bases use the selected block fallback");
+            }
+        }
+    }
+    Check(blocks == 2, "both function and lambda block boundaries were exercised");
+}
 
 void TestListContinuation() {
     SyntaxNode list;
@@ -296,6 +343,7 @@ void TestDelimiterStack() {
 int main() {
     try {
         TestOutput();
+        TestChainContinuation();
         TestListContinuation();
         TestChoiceHistory();
         TestCandidates();
