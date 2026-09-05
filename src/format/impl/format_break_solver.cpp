@@ -3,7 +3,6 @@
 #include <algorithm>
 #include <cstddef>
 #include <deque>
-#include <limits>
 #include <memory>
 #include <new>
 #include <optional>
@@ -15,6 +14,7 @@
 #include "format/impl/format_break_model_inline_helpers.h"
 #include "format/impl/format_value_profile.h"
 #include "format/impl/format_compact_layout.h"
+#include "format/impl/format_choice_history.h"
 #include "util/utf8.h"
 
 namespace {
@@ -31,7 +31,7 @@ struct NodeResult {
     FormatValueProfile expansionDepthProfile;
     bool ownExpansionCharged = false;
     bool compactNextStreamOperand = false;
-    const struct ChoiceTree* choices = nullptr;
+    FormatChoiceHistory::Handle choices = nullptr;
 };
 
 class NodeResults {
@@ -191,17 +191,6 @@ struct AlternativesMemoEntry {
     AlternativesMemoEntry* next = nullptr;
 };
 
-struct ChoiceTree {
-    const ChoiceTree* left = nullptr;
-    const ChoiceTree* right = nullptr;
-    int nodeId = -1;
-    int indentLevel = -1;
-    int declarationValueContinuationLines = -1;
-    std::uint32_t attachedChainOperator = std::numeric_limits<std::uint32_t>::max();
-    FormatBreakChoice choice = FormatBreakChoice::Compact;
-    bool leaf = false;
-};
-
 struct DelimiterStackView {
     std::vector<const FormatBreakNode*> delimiters;
     const FormatBreakNode* leaf = nullptr;
@@ -293,7 +282,7 @@ private:
     std::deque<ResultMemoEntry> memoEntries_;
     std::vector<AlternativesMemoEntry*> alternativesMemoHeads_;
     std::deque<AlternativesMemoEntry> alternativesMemoEntries_;
-    std::deque<ChoiceTree> choiceArena_;
+    FormatChoiceHistory choiceHistory_;
     std::deque<DelimiterStackPartitionPath> delimiterStackPartitionPathArena_;
     FormatCompactLayout compactLayout_;
     std::vector<signed char> containsForceSplitAdjacentStrings_;
@@ -377,38 +366,14 @@ private:
         return SolveTokenText(token, FormatTokenText(FormatBreakTokenValue(token)), column, indentLevel, lineHasText);
     }
 
-    const ChoiceTree* MakeChoice(int nodeId, FormatBreakChoice choice, int indentLevel) {
-        choiceArena_
-            .push_back(ChoiceTree{.nodeId = nodeId, .indentLevel = indentLevel, .choice = choice, .leaf = true});
-        return &choiceArena_.back();
-    }
-
-    const ChoiceTree* ConcatChoices(const ChoiceTree* left, const ChoiceTree* right) {
-        if (left == nullptr) {
-            return right;
-        }
-        if (right == nullptr) {
-            return left;
-        }
-        choiceArena_.push_back(ChoiceTree{.left = left, .right = right});
-        return &choiceArena_.back();
-    }
-
     void AddChoice(NodeResult& result, int nodeId, FormatBreakChoice choice, int indentLevel = -1) {
-        result.choices = ConcatChoices(result.choices, MakeChoice(nodeId, choice, indentLevel));
+        result.choices = choiceHistory_.AddChoice(result.choices, nodeId, choice, indentLevel);
     }
-
     void AddDeclarationValueContinuationLines(NodeResult& result, int nodeId, int continuationLines) {
-        choiceArena_.push_back(
-            ChoiceTree{.nodeId = nodeId, .declarationValueContinuationLines = continuationLines, .leaf = true}
-        );
-        result.choices = ConcatChoices(result.choices, &choiceArena_.back());
+        result.choices = choiceHistory_.AddContinuationLines(result.choices, nodeId, continuationLines);
     }
-
     void AddAttachedChainOperator(NodeResult& result, const FormatBreakToken& op) {
-        choiceArena_
-            .push_back(ChoiceTree{.attachedChainOperator = FormatBreakTokenValue(op).sourceIndex, .leaf = true});
-        result.choices = ConcatChoices(result.choices, &choiceArena_.back());
+        result.choices = choiceHistory_.AddAttachedOperator(result.choices, FormatBreakTokenValue(op).sourceIndex);
     }
 
     void Merge(NodeResult& left, const NodeResult& right) {
@@ -421,7 +386,7 @@ private:
         left.overflowSizeProfile.Add(right.overflowSizeProfile);
         left.expansionDepthProfile.Add(right.expansionDepthProfile);
         // A child's expansion charge does not pay for its parent's own breaks.
-        left.choices = ConcatChoices(left.choices, right.choices);
+        left.choices = choiceHistory_.Concat(left.choices, right.choices);
     }
 
     const NodeResult* FindMemoizedResult(int nodeId, int column, int indentLevel, bool lineHasText) const {
@@ -1907,24 +1872,11 @@ private:
     }
 
     static FormatBreakChoice ChoiceFor(const NodeResult& result, const FormatBreakNode& node) {
-        const std::optional<FormatBreakChoice> choice = FindChoice(result.choices, node.id);
+        const std::optional<FormatBreakChoice> choice = FormatChoiceHistory::Find(result.choices, node.id);
         return choice.value_or(FormatBreakChoice::Compact);
     }
 
     static bool IsBreakingChoice(FormatBreakChoice choice) { return choice != FormatBreakChoice::Compact; }
-
-    static std::optional<FormatBreakChoice> FindChoice(const ChoiceTree* tree, int nodeId) {
-        if (tree == nullptr) {
-            return std::nullopt;
-        }
-        if (tree->leaf) {
-            return tree->nodeId == nodeId ? std::optional(tree->choice) : std::nullopt;
-        }
-        if (std::optional<FormatBreakChoice> choice = FindChoice(tree->right, nodeId)) {
-            return choice;
-        }
-        return FindChoice(tree->left, nodeId);
-    }
 
     static bool HasSelectedBreak(const FormatBreakNode& node, const NodeResult& result) {
         if (node.kind != FormatBreakNodeKind::Token && IsBreakingChoice(ChoiceFor(result, node))) {
@@ -3607,57 +3559,6 @@ private:
     }
 };
 
-void AppendChoices(
-    const ChoiceTree* tree,
-    std::vector<FormatBreakChoice>& choices,
-    std::vector<int>& indentLevels,
-    std::vector<bool>& assigned
-) {
-    if (tree == nullptr) {
-        return;
-    }
-    if (tree->leaf) {
-        const size_t index = static_cast<size_t>(tree->nodeId);
-        if (index < choices.size() && !assigned[index]) {
-            choices[index] = tree->choice;
-            indentLevels[index] = tree->indentLevel;
-            assigned[index] = true;
-        }
-        return;
-    }
-    AppendChoices(tree->left, choices, indentLevels, assigned);
-    AppendChoices(tree->right, choices, indentLevels, assigned);
-}
-
-void AppendDeclarationValueContinuationLines(const ChoiceTree* tree, std::vector<int>& continuationLines) {
-    if (tree == nullptr) {
-        return;
-    }
-    if (tree->leaf) {
-        const size_t index = static_cast<size_t>(tree->nodeId);
-        if (index < continuationLines.size() && tree->declarationValueContinuationLines >= 0) {
-            continuationLines[index] = tree->declarationValueContinuationLines;
-        }
-        return;
-    }
-    AppendDeclarationValueContinuationLines(tree->left, continuationLines);
-    AppendDeclarationValueContinuationLines(tree->right, continuationLines);
-}
-
-void AppendAttachedChainOperators(const ChoiceTree* tree, std::vector<std::uint32_t>& sourceIndices) {
-    if (tree == nullptr) {
-        return;
-    }
-    if (tree->leaf) {
-        if (tree->attachedChainOperator != std::numeric_limits<std::uint32_t>::max()) {
-            sourceIndices.push_back(tree->attachedChainOperator);
-        }
-        return;
-    }
-    AppendAttachedChainOperators(tree->left, sourceIndices);
-    AppendAttachedChainOperators(tree->right, sourceIndices);
-}
-
 }  // namespace
 
 FormatBreakSolution SolveFormatBreaks(
@@ -3678,17 +3579,5 @@ FormatBreakSolution SolveFormatBreaks(
         return solution;
     }
     const size_t choiceCount = model.nodes == nullptr ? 0 : model.nodes->size() + 1;
-    solution.choices.assign(choiceCount, FormatBreakChoice::Compact);
-    solution.indentLevels.assign(choiceCount, -1);
-    solution.declarationValueContinuationLines.assign(choiceCount, -1);
-    std::vector<bool> assigned(choiceCount, false);
-    AppendChoices(result.choices, solution.choices, solution.indentLevels, assigned);
-    AppendDeclarationValueContinuationLines(result.choices, solution.declarationValueContinuationLines);
-    AppendAttachedChainOperators(result.choices, solution.attachedChainOperators);
-    std::sort(solution.attachedChainOperators.begin(), solution.attachedChainOperators.end());
-    solution.attachedChainOperators.erase(
-        std::unique(solution.attachedChainOperators.begin(), solution.attachedChainOperators.end()),
-        solution.attachedChainOperators.end()
-    );
-    return solution;
+    return FormatChoiceHistory::Materialize(result.choices, choiceCount);
 }

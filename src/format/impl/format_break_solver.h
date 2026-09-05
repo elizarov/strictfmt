@@ -1,20 +1,7 @@
 #pragma once
 
-#include <cstdint>
-#include <vector>
-
-#include "format/impl/format_break_model.h"
+#include "format/impl/format_break_solution.h"
 #include "format/impl/format_config.h"
-
-struct FormatBreakSolution {
-    std::vector<FormatBreakChoice> choices;
-    // Selected structural choices record the render base used to solve their node.
-    std::vector<int> indentLevels;
-    // Declaration owner/value nodes record the selected number of continuation lines in their value.
-    std::vector<int> declarationValueContinuationLines;
-    // Operators whose adjacent operands form a selected literal-value pair.
-    std::vector<std::uint32_t> attachedChainOperators;
-};
 
 FormatBreakSolution SolveFormatBreaks(
     const FormatterConfig& config,

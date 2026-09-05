@@ -4,7 +4,8 @@
 #include <utility>
 
 #include "format/impl/format_break_model_inline_helpers.h"
-#include "format/impl/format_break_solver.h"
+#include "format/impl/format_break_solution.h"
+#include "format/impl/format_config.h"
 
 namespace {
 
