@@ -38,6 +38,7 @@ Print-token construction materializes canonical known-token text and immutable s
 - `src/format/impl/format_pretty_printer.h|cpp` own mandatory line breaks, segment build/solve/emit orchestration, deferred structural state, and physical output/comment handling.
 - `src/format/impl/format_preprocessor_text.h|cpp` own directive text canonicalization, preserved payload indentation, and conditional payload terminal-comma normalization.
 - `src/format/impl/format_raw_macro.h|cpp` own raw macro replacement whitespace normalization and the raw preprocessor line-preservation helpers used by the pretty printer.
+- `src/format/impl/format_string_literals.h|cpp` own safe adjacent-string spelling joins and escaped-newline split requirements.
 - `src/format/impl/format_spacing.h|cpp` own print token text/width accessors, classification, and spacing rules.
 - `src/tools/tools_common.h|cpp` own shared tool helpers for paths, recursive discovery, file lists, source lines, include text, counts, and lightweight string operations.
 - `src/tools/tools_parallel.h|cpp` own tool concurrency parsing, default worker selection, and indexed parallel execution.
