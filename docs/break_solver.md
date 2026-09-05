@@ -6,7 +6,7 @@ This document owns developer-facing details of the break solver and its shared c
 
 The solver receives a `FormatBreakModel` for one formatted segment and returns a `FormatBreakSolution`, which records the selected `FormatBreakChoice` and render base indentation for each selected structural break-model node. Recording every structural render base is necessary because a compact parent may contain an earlier child that changes the current indentation before a later child is emitted. The solution also records the selected continuation-line count for declaration owner/value nodes because declaration grouping depends on the physical size of the selected value layout. The break emitter must emit exactly the selected choices and render bases; it must not re-run local layout decisions or infer hidden choices from child nodes.
 
-`Better` implements the break-selection cost from [format.md].
+`FormatCandidateOrder::Better` implements the break-selection cost from [format.md]. The candidate module also owns continuation-state comparison and dominance pruning; specialized delimiter-partition tie-breaking remains in the solver.
 
 `FormatCompactLayout` owns cached compact physical-line measurement; its results contain no search or cost state.
 

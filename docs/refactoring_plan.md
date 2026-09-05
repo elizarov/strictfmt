@@ -60,6 +60,9 @@ measurements justify them; retain exact layout decisions throughout.
   list-ownership checks) and 21 baseline comparisons passed.
 - Step 12: choice histories complete; the full test wrapper (including focused
   precedence/immutability checks) and 21 baseline comparisons passed.
+- Step 13: candidate state/storage/pruning complete; the full test wrapper
+  (including focused dominance and value-storage checks) and 21 baseline
+  comparisons passed.
 
 ## Validation
 
