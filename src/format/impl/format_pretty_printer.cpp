@@ -6,7 +6,6 @@
 #include <memory>
 #include <optional>
 #include <string>
-#include <unordered_map>
 #include <unordered_set>
 #include <vector>
 
@@ -22,6 +21,7 @@
 #include "format/impl/format_print_token_builder.h"
 #include "format/impl/format_spacing.h"
 #include "format/impl/format_output.h"
+#include "format/impl/format_chain_continuation.h"
 #include "tools/tools_common.h"
 #include "util/utf8.h"
 
@@ -333,6 +333,7 @@ public:
 
     std::string Print(const std::vector<PrintToken>& tokens, size_t sourceSize) {
         activeTokens_ = &tokens;
+        chainContinuation_ = std::make_unique<FormatChainContinuation>(tokens);
         std::vector<std::uint8_t> mandatoryBlockOpens(tokens.size());
         for (size_t index = 0; index < tokens.size(); ++index) {
             mandatoryBlockOpens[index] = IsMandatoryBlockOpen(index);
@@ -369,6 +370,7 @@ private:
     int indentWidth_ = 4;
     int tabWidth_ = 4;
     FormatOutput output_;
+    std::unique_ptr<FormatChainContinuation> chainContinuation_;
     std::vector<PrintToken> pendingTokens_;
     std::unique_ptr<FormatDeclarationLayout> declarationLayout_;
     bool pendingSourceBlankLine_ = false;
@@ -389,10 +391,6 @@ private:
     std::vector<int> conditionalFunctionIndents_;
     std::optional<int> pendingIndentRestoreAfterFlush_;
     std::unordered_set<std::uint32_t> prebufferedTokenSourceIndices_;
-    std::unordered_set<const SyntaxNode*> requiredChainBreakOperators_;
-    std::unordered_map<const SyntaxNode*, const SyntaxNode*> requiredChainBreakGroups_;
-    std::unordered_map<const SyntaxNode*, int> requiredChainBreakBaseIndents_;
-    std::unordered_set<const SyntaxNode*> pendingCrossBlockChainGroups_;
 
     static const PrintToken* RawNextToken(const std::vector<PrintToken>& tokens, size_t index) {
         return index + 1 < tokens.size() ? &tokens[index + 1] : nullptr;
@@ -421,19 +419,6 @@ private:
         }
     }
 
-    static const SyntaxNode* CrossBlockSourceItem(const SyntaxNode* block) {
-        for (
-            const SyntaxNode* cursor = block;
-            cursor != nullptr && cursor->parent != nullptr;
-            cursor = cursor->parent
-        ) {
-            if (SyntaxNodeHasClass(*cursor->parent, SyntaxNodeClass::SourceItemScope)) {
-                return cursor;
-            }
-        }
-        return nullptr;
-    }
-
     bool IsMandatoryBlockOpen(size_t index) const {
         if (activeTokens_ == nullptr || index >= activeTokens_->size()) {
             return false;
@@ -452,155 +437,6 @@ private:
         return !(
             next != nullptr && next->kind == PrintTokenKind::Known && next->syntaxKind == SyntaxNodeKind::RightBrace
         ) && !BecomesEmptyAfterNullItemRemoval(token);
-    }
-
-    static bool HasUniformSplitForm(const FormatBreakNode& node) {
-        if (node.kind != FormatBreakNodeKind::Chain || node.operators.size() < 2) {
-            return false;
-        }
-        if (
-            node.chainKind == FormatBreakChainKind::MemberBeforeOperator ||
-            node.chainKind == FormatBreakChainKind::StreamBeforeOperator
-        ) {
-            return true;
-        }
-        if (node.chainKind == FormatBreakChainKind::Ternary) {
-            return node.operators.size() > 2;
-        }
-        return std::all_of(node.operators.begin(), node.operators.end(), [](const FormatBreakToken& token) {
-            return FormatBreakTokenKind(token) == PrintTokenKind::Known &&
-                SyntaxNodeKindHasClass(FormatBreakTokenSyntaxKind(token), SyntaxNodeClass::ChainOperator);
-        });
-    }
-
-    size_t ActiveTokenIndex(const FormatBreakToken& token) const {
-        if (activeTokens_ == nullptr || token.token == nullptr) {
-            return activeTokens_ == nullptr ? 0 : activeTokens_->size();
-        }
-        const PrintToken* begin = activeTokens_->data();
-        const PrintToken* end = begin + activeTokens_->size();
-        return token.token >= begin && token.token < end ? static_cast<size_t>(token.token - begin) :
-            activeTokens_->size();
-    }
-
-    void CollectCrossBlockChainBreaks(const FormatBreakNode& node, size_t blockIndex) {
-        if (HasUniformSplitForm(node)) {
-            size_t firstOperator = activeTokens_ == nullptr ? 0 : activeTokens_->size();
-            size_t lastOperator = 0;
-            for (const FormatBreakToken& token : node.operators) {
-                const size_t index = ActiveTokenIndex(token);
-                firstOperator = std::min(firstOperator, index);
-                lastOperator = std::max(lastOperator, index);
-            }
-            const bool crossesBlock = firstOperator < blockIndex && blockIndex < lastOperator;
-            if (crossesBlock) {
-                const SyntaxNode* group = FormatBreakTokenValue(node.operators.front()).node;
-                pendingCrossBlockChainGroups_.insert(group);
-                for (const FormatBreakToken& token : node.operators) {
-                    const PrintToken& printToken = FormatBreakTokenValue(token);
-                    if (printToken.node != nullptr) {
-                        requiredChainBreakGroups_.insert_or_assign(printToken.node, group);
-                        if (
-                            node.chainKind != FormatBreakChainKind::Ternary ||
-                            printToken.syntaxKind == SyntaxNodeKind::Colon
-                        ) {
-                            requiredChainBreakOperators_.insert(printToken.node);
-                        }
-                    }
-                }
-            }
-        }
-        for (const FormatBreakNode* child : node.children) {
-            if (child != nullptr) {
-                CollectCrossBlockChainBreaks(*child, blockIndex);
-            }
-        }
-        for (const FormatBreakListItem& listItem : node.items) {
-            if (listItem.node != nullptr) {
-                CollectCrossBlockChainBreaks(*listItem.node, blockIndex);
-            }
-        }
-        for (const FormatBreakNode* operand : node.operands) {
-            if (operand != nullptr) {
-                CollectCrossBlockChainBreaks(*operand, blockIndex);
-            }
-        }
-    }
-
-    void RecordCrossBlockChainBaseIndents(int baseIndent, const SyntaxNode* selectedGroup = nullptr) {
-        for (const auto& [operatorNode, group] : requiredChainBreakGroups_) {
-            if (pendingCrossBlockChainGroups_.contains(group) && (selectedGroup == nullptr || group == selectedGroup)) {
-                requiredChainBreakBaseIndents_.insert_or_assign(operatorNode, baseIndent);
-            }
-        }
-        if (selectedGroup == nullptr) {
-            pendingCrossBlockChainGroups_.clear();
-        } else {
-            pendingCrossBlockChainGroups_.erase(selectedGroup);
-        }
-    }
-
-    static bool CanParticipateInUniformCrossBlockChain(const PrintToken& token) {
-        if (token.kind != PrintTokenKind::Known) {
-            return false;
-        }
-        if (PrintTokenSyntaxHasClass(token, SyntaxNodeClass::ChainOperator)) {
-            return true;
-        }
-        switch (token.syntaxKind) {
-            case SyntaxNodeKind::Comma:
-            case SyntaxNodeKind::Dot:
-            case SyntaxNodeKind::Arrow:
-            case SyntaxNodeKind::DotStar:
-            case SyntaxNodeKind::ArrowStar:
-            case SyntaxNodeKind::Question:
-            case SyntaxNodeKind::Colon:
-                return true;
-            default:
-                return false;
-        }
-    }
-
-    bool MayHaveCrossBlockChain(size_t begin, size_t block, size_t end) const {
-        const auto hasCandidate = [&](size_t first, size_t last) {
-            return std::any_of(
-                activeTokens_->begin() + static_cast<std::ptrdiff_t>(first),
-                activeTokens_->begin() + static_cast<std::ptrdiff_t>(last),
-                CanParticipateInUniformCrossBlockChain
-            );
-        };
-        // Every uniform chain recognized by HasUniformSplitForm has at least one of these operators on each side
-        // of a crossed block. Absence on either side therefore proves that building the exact model cannot add a
-        // required cross-block break. Extra operators only cause a conservative fallthrough to exact analysis.
-        return hasCandidate(begin, block) && hasCandidate(block + 1, end);
-    }
-
-    void AnalyzeCrossBlockChains(const PrintToken& token) {
-        pendingCrossBlockChainGroups_.clear();
-        if (activeTokens_ == nullptr) {
-            return;
-        }
-        const SyntaxNode* block = token.node == nullptr ? nullptr : token.node->parent;
-        const SyntaxNode* item = CrossBlockSourceItem(block);
-        if (item == nullptr) {
-            return;
-        }
-        size_t begin = currentTokenIndex_;
-        while (begin > 0 && PrintTokenSyntaxPathContains((*activeTokens_)[begin - 1], item)) {
-            --begin;
-        }
-        size_t end = currentTokenIndex_ + 1;
-        while (end < activeTokens_->size() && PrintTokenSyntaxPathContains((*activeTokens_)[end], item)) {
-            ++end;
-        }
-        if (!MayHaveCrossBlockChain(begin, currentTokenIndex_, end)) {
-            return;
-        }
-        FormatBreakModel model =
-            BuildFormatBreakModel(std::span<const PrintToken>{activeTokens_->data() + begin, end - begin});
-        if (model.root != nullptr) {
-            CollectCrossBlockChainBreaks(*model.root, currentTokenIndex_);
-        }
     }
 
     static const SyntaxNode* DirectTokenChild(const SyntaxNode& node, SyntaxNodeKind known) {
@@ -1189,12 +1025,7 @@ private:
             return {};
         }
         FormatBreakModelContext effectiveContext = context;
-        if (!requiredChainBreakOperators_.empty()) {
-            effectiveContext.requiredChainBreakOperators = &requiredChainBreakOperators_;
-        }
-        if (!requiredChainBreakBaseIndents_.empty()) {
-            effectiveContext.requiredChainBreakBaseIndents = &requiredChainBreakBaseIndents_;
-        }
+        chainContinuation_->Constrain(effectiveContext);
         if (breakModelDump_ == nullptr && CanFlushPendingTokensCompact(effectiveContext)) {
             FlushPendingTokensCompact();
             if (pendingIndentRestoreAfterFlush_) {
@@ -1262,14 +1093,7 @@ private:
                     {.openToken = list.openToken, .itemIndent = list.itemIndent, .closeIndent = list.closeIndent}
                 );
             }
-            for (const FormatBreakChainIndent& chain : emission.chainIndents) {
-                for (const FormatBreakToken& op : chain.chain->operators) {
-                    const auto group = requiredChainBreakGroups_.find(FormatBreakTokenValue(op).node);
-                    if (group != requiredChainBreakGroups_.end()) {
-                        RecordCrossBlockChainBaseIndents(chain.baseIndent, group->second);
-                    }
-                }
-            }
+            chainContinuation_->AcceptEmission(emission.chainIndents);
             if (stats_ != nullptr) {
                 stats_->emit += std::chrono::steady_clock::now() - emitStart;
             }
@@ -2234,7 +2058,7 @@ private:
 
     void PrintLeftBrace(const PrintToken& token, const PrintToken* previous, const PrintToken* rawNext) {
         if (IsMandatoryBlockOpen(currentTokenIndex_)) {
-            AnalyzeCrossBlockChains(token);
+            chainContinuation_->AnalyzeBlock(currentTokenIndex_);
         }
         const int crossBlockFallbackBaseIndent = std::max(0, output_.State().pendingIndentLevel.value_or(indentLevel_));
         const bool followedByTrailingComment = rawNext != nullptr && rawNext->kind == PrintTokenKind::TrailingComment;
@@ -2245,7 +2069,7 @@ private:
                 prebufferedTokenSourceIndices_.insert(rawNext->sourceIndex);
             }
             FlushPendingTokens();
-            RecordCrossBlockChainBaseIndents(crossBlockFallbackBaseIndent);
+            chainContinuation_->FinishBlock(crossBlockFallbackBaseIndent);
             if (!followedByTrailingComment) {
                 NewLine(ShouldContinueMacroLine(token, rawNext));
             }
@@ -2304,7 +2128,7 @@ private:
                 }
             }
         }
-        RecordCrossBlockChainBaseIndents(splitListItemIndent.value_or(crossBlockFallbackBaseIndent));
+        chainContinuation_->FinishBlock(splitListItemIndent.value_or(crossBlockFallbackBaseIndent));
         const bool functionBlock = token.parentKind == SyntaxNodeKind::CompoundStatement &&
             token.grandParentKind == SyntaxNodeKind::FunctionDefinition;
         int openLineIndent = emittedBlockOpenIndent_.value_or(splitListItemIndent.value_or(

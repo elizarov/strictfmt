@@ -29,7 +29,8 @@ Continue with the same format/test/review/commit cycle. The next candidates are:
 9. Replace repeated print-token initializers and recursive argument lists with a
    private token factory and inherited syntax context.
 10. Extract physical output buffering and comment alignment from the printer.
-11. Extract continuation state across mandatory block boundaries.
+11. Extract continuation state across mandatory block boundaries in two commits:
+    chain constraints/render bases, followed by deferred list layouts.
 12. Isolate solver choice-history storage and materialization.
 13. Isolate candidate continuation-state comparison and frontier maintenance.
 
@@ -53,6 +54,8 @@ measurements justify them; retain exact layout decisions throughout.
 - Step 9: complete; all 78 tests and 21 baseline comparisons passed.
 - Step 10: complete; all 78 end-to-end tests, focused layout-contract tests,
   Unicode checks, and 21 baseline comparisons passed.
+- Step 11a: chain continuation complete; the full test wrapper and 21 baseline
+  comparisons passed.
 
 ## Validation
 
