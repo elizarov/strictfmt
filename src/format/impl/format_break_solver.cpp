@@ -4,7 +4,6 @@
 #include <cstddef>
 #include <deque>
 #include <memory>
-#include <new>
 #include <optional>
 #include <span>
 #include <string_view>
@@ -12,168 +11,15 @@
 #include <vector>
 
 #include "format/impl/format_break_model_inline_helpers.h"
-#include "format/impl/format_value_profile.h"
+#include "format/impl/format_candidates.h"
 #include "format/impl/format_compact_layout.h"
 #include "format/impl/format_choice_history.h"
 #include "util/utf8.h"
 
 namespace {
 
-struct NodeResult {
-    bool valid = false;
-    int endColumn = 0;
-    int endIndentLevel = 0;
-    bool endLineHasText = false;
-    // Exact delimiter-stack search can rewind a line after pricing it. Normal results keep this false.
-    bool currentLineOverflowRecorded = false;
-    int extraLines = 0;
-    FormatValueProfile overflowSizeProfile;
-    FormatValueProfile expansionDepthProfile;
-    bool ownExpansionCharged = false;
-    bool compactNextStreamOperand = false;
-    FormatChoiceHistory::Handle choices = nullptr;
-};
-
-class NodeResults {
-public:
-    using iterator = NodeResult*;
-    using const_iterator = const NodeResult*;
-
-    NodeResults() = default;
-
-    NodeResults(std::initializer_list<NodeResult> values) {
-        for (const NodeResult& value : values) {
-            push_back(value);
-        }
-    }
-
-    NodeResults(const NodeResults& other) {
-        for (const NodeResult& value : other) {
-            push_back(value);
-        }
-    }
-
-    NodeResults(NodeResults&& other) noexcept { MoveFrom(std::move(other)); }
-
-    ~NodeResults() { clear(); }
-
-    NodeResults& operator=(const NodeResults& other) {
-        if (this != &other) {
-            clear();
-            usingHeap_ = false;
-            for (const NodeResult& value : other) {
-                push_back(value);
-            }
-        }
-        return *this;
-    }
-
-    NodeResults& operator=(NodeResults&& other) noexcept {
-        if (this != &other) {
-            clear();
-            usingHeap_ = false;
-            MoveFrom(std::move(other));
-        }
-        return *this;
-    }
-
-    iterator begin() { return usingHeap_ ? heap_.data() : InlineData(); }
-
-    iterator end() { return begin() + size(); }
-
-    const_iterator begin() const { return usingHeap_ ? heap_.data() : InlineData(); }
-
-    const_iterator end() const { return begin() + size(); }
-
-    bool empty() const { return size() == 0; }
-
-    size_t size() const { return usingHeap_ ? heap_.size() : inlineSize_; }
-
-    NodeResult& operator[](size_t index) { return begin()[index]; }
-
-    const NodeResult& operator[](size_t index) const { return begin()[index]; }
-
-    void push_back(const NodeResult& value) { PushBack(value); }
-
-    void push_back(NodeResult&& value) { PushBack(std::move(value)); }
-
-private:
-    template <typename Value>
-    void PushBack(Value&& value) {
-        if (usingHeap_) {
-            heap_.push_back(std::forward<Value>(value));
-            return;
-        }
-        if (inlineSize_ < kInlineCapacity) {
-            std::construct_at(InlineData() + inlineSize_, std::forward<Value>(value));
-            ++inlineSize_;
-            return;
-        }
-        MoveInlineToHeap();
-        heap_.push_back(std::forward<Value>(value));
-    }
-
-public:
-    iterator erase(iterator it) {
-        const size_t index = static_cast<size_t>(it - begin());
-        if (usingHeap_) {
-            heap_.erase(heap_.begin() + static_cast<std::ptrdiff_t>(index));
-            return heap_.data() + index;
-        }
-        for (size_t cursor = index + 1; cursor < inlineSize_; ++cursor) {
-            InlineData()[cursor - 1] = std::move(InlineData()[cursor]);
-        }
-        --inlineSize_;
-        std::destroy_at(InlineData() + inlineSize_);
-        return InlineData() + index;
-    }
-
-    void clear() {
-        if (usingHeap_) {
-            heap_.clear();
-            return;
-        }
-        for (size_t index = 0; index < inlineSize_; ++index) {
-            std::destroy_at(InlineData() + index);
-        }
-        inlineSize_ = 0;
-    }
-
-private:
-    static constexpr size_t kInlineCapacity = 8;
-
-    NodeResult* InlineData() { return std::launder(reinterpret_cast<NodeResult*>(inlineStorage_)); }
-
-    const NodeResult* InlineData() const { return std::launder(reinterpret_cast<const NodeResult*>(inlineStorage_)); }
-
-    void MoveFrom(NodeResults&& other) {
-        if (other.usingHeap_) {
-            heap_ = std::move(other.heap_);
-            usingHeap_ = true;
-            other.usingHeap_ = false;
-            return;
-        }
-        for (NodeResult& value : other) {
-            push_back(std::move(value));
-        }
-        other.clear();
-    }
-
-    void MoveInlineToHeap() {
-        heap_.reserve(kInlineCapacity * 2);
-        for (size_t index = 0; index < inlineSize_; ++index) {
-            heap_.push_back(std::move(InlineData()[index]));
-            std::destroy_at(InlineData() + index);
-        }
-        inlineSize_ = 0;
-        usingHeap_ = true;
-    }
-
-    alignas(NodeResult) std::byte inlineStorage_[sizeof(NodeResult) * kInlineCapacity];
-    size_t inlineSize_ = 0;
-    bool usingHeap_ = false;
-    std::vector<NodeResult> heap_;
-};
+using NodeResult = FormatLayoutCandidate;
+using NodeResults = FormatLayoutCandidates;
 
 struct ResultMemoEntry {
     int column = 0;
@@ -216,6 +62,7 @@ class Solver {
 public:
     Solver(const FormatterConfig& config, const FormatBreakModel& model, int indentWidth, int breakLineSuffixWidth) :
         config_(config),
+        candidateOrder_(config.columnLimit),
         indentWidth_(indentWidth),
         breakLineSuffixWidth_(breakLineSuffixWidth),
         memoHeads_(model.nodes == nullptr ? 1 : model.nodes->size() + 1, nullptr),
@@ -276,6 +123,7 @@ private:
     };
 
     const FormatterConfig& config_;
+    FormatCandidateOrder candidateOrder_;
     int indentWidth_ = 4;
     int breakLineSuffixWidth_ = 0;
     std::vector<ResultMemoEntry*> memoHeads_;
@@ -304,25 +152,24 @@ private:
         return token.spaceBefore ? 1 : 0;
     }
 
-    int CurrentLineOverflow(const NodeResult& result) const {
-        return result.endLineHasText && !result.currentLineOverflowRecorded ?
-            std::max(0, result.endColumn - config_.columnLimit) : 0;
-    }
-
-    int MaximumOverflow(const NodeResult& result) const {
-        return std::max(result.overflowSizeProfile.GreatestValue(), CurrentLineOverflow(result));
-    }
-
-    bool HasOverflow(const NodeResult& result) const {
-        return !result.overflowSizeProfile.Empty() || CurrentLineOverflow(result) > 0;
-    }
-
+    int MaximumOverflow(const NodeResult& result) const { return candidateOrder_.MaximumOverflow(result); }
+    bool HasOverflow(const NodeResult& result) const { return candidateOrder_.HasOverflow(result); }
     void FinishCurrentLine(NodeResult& result, int suffixWidth = 0) const {
-        if (result.endLineHasText && !result.currentLineOverflowRecorded) {
-            result.overflowSizeProfile.AddValue(std::max(0, result.endColumn + suffixWidth - config_.columnLimit));
-            result.currentLineOverflowRecorded = true;
-        }
+        candidateOrder_.FinishCurrentLine(result, suffixWidth);
     }
+    bool Better(const NodeResult& candidate, const NodeResult& incumbent) const {
+        return candidateOrder_.Better(candidate, incumbent);
+    }
+    static bool SameResultState(const NodeResult& left, const NodeResult& right) {
+        return FormatCandidateOrder::SameState(left, right);
+    }
+    bool DominatesResult(const NodeResult& left, const NodeResult& right) const {
+        return candidateOrder_.Dominates(left, right);
+    }
+    void AddPrunedResult(NodeResults& results, NodeResult candidate) const {
+        candidateOrder_.AddPruned(results, std::move(candidate));
+    }
+    static void SortPrunedResults(NodeResults& results) { FormatCandidateOrder::Sort(results); }
 
     NodeResult SolveTokenText(
         const FormatBreakToken& token, std::string_view text, int column, int indentLevel, bool lineHasText
@@ -830,108 +677,6 @@ private:
         return best;
     }
 
-    bool Better(const NodeResult& candidate, const NodeResult& incumbent) const {
-        if (!candidate.valid) {
-            return false;
-        }
-        if (!incumbent.valid) {
-            return true;
-        }
-        const int overflowProfileComparison = CompareFormatValueProfilesWithAdditionalValues(
-            candidate.overflowSizeProfile,
-            CurrentLineOverflow(candidate),
-            incumbent.overflowSizeProfile,
-            CurrentLineOverflow(incumbent)
-        );
-        if (overflowProfileComparison != 0) {
-            return overflowProfileComparison < 0;
-        }
-        const int depthProfileComparison =
-            CompareFormatValueProfiles(candidate.expansionDepthProfile, incumbent.expansionDepthProfile);
-        if (depthProfileComparison != 0) {
-            return depthProfileComparison < 0;
-        }
-        if (candidate.extraLines != incumbent.extraLines) {
-            return candidate.extraLines < incumbent.extraLines;
-        }
-        return false;
-    }
-
-    static bool SameResultState(const NodeResult& left, const NodeResult& right) {
-        return left.endColumn == right.endColumn &&
-            left.endIndentLevel == right.endIndentLevel &&
-            left.endLineHasText == right.endLineHasText &&
-            left.currentLineOverflowRecorded == right.currentLineOverflowRecorded &&
-            left.ownExpansionCharged == right.ownExpansionCharged &&
-            left.compactNextStreamOperand == right.compactNextStreamOperand;
-    }
-
-    bool DominatesResult(const NodeResult& left, const NodeResult& right) const {
-        if (
-            left.endIndentLevel != right.endIndentLevel ||
-            left.endLineHasText != right.endLineHasText ||
-            left.currentLineOverflowRecorded != right.currentLineOverflowRecorded ||
-            left.ownExpansionCharged != right.ownExpansionCharged ||
-            left.compactNextStreamOperand != right.compactNextStreamOperand
-        ) {
-            return false;
-        }
-        if (left.endColumn > right.endColumn) {
-            return false;
-        }
-        const int overflowProfileComparison = CompareFormatValueProfilesWithAdditionalValues(
-            left.overflowSizeProfile, CurrentLineOverflow(left), right.overflowSizeProfile, CurrentLineOverflow(right)
-        );
-        const int depthProfileComparison =
-            CompareFormatValueProfiles(left.expansionDepthProfile, right.expansionDepthProfile);
-        if (overflowProfileComparison > 0 || depthProfileComparison > 0 || left.extraLines > right.extraLines) {
-            return false;
-        }
-        return overflowProfileComparison < 0 || depthProfileComparison < 0 || left.extraLines < right.extraLines;
-    }
-
-    static bool ResultStateLess(const NodeResult& left, const NodeResult& right) {
-        if (left.endColumn != right.endColumn) {
-            return left.endColumn < right.endColumn;
-        }
-        if (left.endIndentLevel != right.endIndentLevel) {
-            return left.endIndentLevel < right.endIndentLevel;
-        }
-        if (left.endLineHasText != right.endLineHasText) {
-            return left.endLineHasText < right.endLineHasText;
-        }
-        if (left.currentLineOverflowRecorded != right.currentLineOverflowRecorded) {
-            return left.currentLineOverflowRecorded < right.currentLineOverflowRecorded;
-        }
-        if (left.ownExpansionCharged != right.ownExpansionCharged) {
-            return left.ownExpansionCharged < right.ownExpansionCharged;
-        }
-        return left.compactNextStreamOperand < right.compactNextStreamOperand;
-    }
-
-    void AddPrunedResult(NodeResults& results, NodeResult candidate) const {
-        if (!candidate.valid) {
-            return;
-        }
-        for (auto it = results.begin(); it != results.end();) {
-            if (SameResultState(*it, candidate)) {
-                if (Better(candidate, *it)) {
-                    *it = std::move(candidate);
-                }
-                return;
-            }
-            if (DominatesResult(*it, candidate)) {
-                return;
-            }
-            if (DominatesResult(candidate, *it)) {
-                it = results.erase(it);
-                continue;
-            }
-            ++it;
-        }
-        results.push_back(std::move(candidate));
-    }
-
     const DelimiterStackPartitionPath*
         ExtendDelimiterStackPartitionPath(const DelimiterStackPartitionPath* previous, size_t runStart)
     {
@@ -985,8 +730,6 @@ private:
         }
         candidates.push_back(std::move(candidate));
     }
-
-    static void SortPrunedResults(NodeResults& results) { std::sort(results.begin(), results.end(), ResultStateLess); }
 
     bool CompactLineEndsOverLimit(const NodeResult& compact) const {
         return compact.endLineHasText && compact.endColumn > config_.columnLimit;

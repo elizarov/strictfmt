@@ -126,6 +126,7 @@ add_library(strictfmt_core STATIC
     src/format/impl/format_break_model_dump.cpp
     src/format/impl/format_break_solver.cpp
     src/format/impl/format_value_profile.cpp
+    src/format/impl/format_candidates.cpp
     src/format/impl/format_chain_continuation.cpp
     src/format/impl/format_choice_history.cpp
     src/format/impl/format_compact_layout.cpp

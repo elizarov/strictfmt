@@ -6,6 +6,7 @@
 #include "format/impl/format_model.h"
 #include "format/impl/format_output.h"
 #include "format/impl/format_choice_history.h"
+#include "format/impl/format_candidates.h"
 #include "format/impl/format_break_emitter.h"
 #include "format/impl/format_break_model.h"
 #include "format/impl/format_list_continuation.h"
@@ -179,6 +180,77 @@ void TestChoiceHistory() {
         "records outside the model index range do not grow the solution");
 }
 
+
+void TestCandidates() {
+    FormatCandidateOrder order(10);
+    FormatLayoutCandidate unfinished{.valid = true, .endColumn = 12, .endLineHasText = true};
+    Check(order.CurrentLineOverflow(unfinished) == 2, "unfinished physical line contributes virtual overflow");
+    order.FinishCurrentLine(unfinished, 2);
+    const auto finishedProfile = unfinished.overflowSizeProfile;
+    order.FinishCurrentLine(unfinished, 2);
+    Check(order.CurrentLineOverflow(unfinished) == 0 && order.MaximumOverflow(unfinished) == 4 &&
+        CompareFormatValueProfiles(finishedProfile, unfinished.overflowSizeProfile) == 0,
+        "completed line overflow includes the suffix exactly once");
+
+    FormatLayoutCandidate shortLine{.valid = true, .endColumn = 5, .endLineHasText = true, .extraLines = 1};
+    auto longLine = shortLine;
+    longLine.endColumn = 6;
+    longLine.extraLines = 2;
+    Check(order.Dominates(shortLine, longLine), "no-worse costs and shorter continuation permit dominance");
+    for (bool FormatLayoutCandidate::* flag : {&FormatLayoutCandidate::currentLineOverflowRecorded,
+             &FormatLayoutCandidate::ownExpansionCharged, &FormatLayoutCandidate::compactNextStreamOperand}) {
+        auto distinct = longLine;
+        distinct.*flag = true;
+        Check(!FormatCandidateOrder::SameState(longLine, distinct) && !order.Dominates(shortLine, distinct),
+            "continuation-sensitive flags prevent state merging and dominance");
+    }
+    auto expensive = shortLine;
+    expensive.expansionDepthProfile.AddValue(100);
+    auto overflowing = shortLine;
+    overflowing.endColumn = 11;
+    Check(order.Better(expensive, overflowing), "overflow has priority over expansion cost");
+
+    FormatChoiceHistory history;
+    shortLine.choices = history.AddChoice(nullptr, 1, FormatBreakChoice::Compact);
+    auto equal = shortLine;
+    equal.choices = history.AddChoice(nullptr, 1, FormatBreakChoice::Split);
+    FormatLayoutCandidates frontier;
+    order.AddPruned(frontier, longLine);
+    order.AddPruned(frontier, shortLine);
+    order.AddPruned(frontier, equal);
+    Check(frontier.size() == 1 && frontier[0].choices == shortLine.choices,
+        "frontier removes dominated candidates and retains the first equal-cost history");
+    auto different = shortLine;
+    different.compactNextStreamOperand = true;
+    order.AddPruned(frontier, different);
+    FormatCandidateOrder::Sort(frontier);
+    Check(frontier.size() == 2 && !frontier[0].compactNextStreamOperand && frontier[1].compactNextStreamOperand,
+        "frontier retains distinct continuation states in deterministic order");
+
+    FormatLayoutCandidates values;
+    for (int index = 0; index < 12; ++index) {
+        auto value = shortLine;
+        value.endColumn = index;
+        for (int depth = 1; depth <= 6; ++depth) {
+            value.expansionDepthProfile.AddValue(depth);
+        }
+        values.push_back(std::move(value));
+    }
+    auto copy = values;
+    copy.erase(copy.begin() + 3);
+    copy[0].expansionDepthProfile.AddValue(20);
+    Check(values.size() == 12 && copy.size() == 11 && copy[3].endColumn == 4 &&
+        values[0].expansionDepthProfile.GreatestValue() == 6, "spilled candidate copies own profiles and preserve erase order");
+    auto moved = std::move(copy);
+    Check(copy.empty() && moved.size() == 11, "spilled candidate move transfers storage");
+    moved = frontier;
+    Check(moved.size() == 2, "copy assignment transitions heap storage back to inline values");
+    moved.erase(moved.begin());
+    FormatLayoutCandidates inlineMove = std::move(moved);
+    Check(moved.empty() && inlineMove.size() == 1 && inlineMove[0].compactNextStreamOperand,
+        "inline move and erase preserve candidate state");
+}
+
 }  // namespace
 
 int main() {
@@ -186,6 +258,7 @@ int main() {
         TestOutput();
         TestListContinuation();
         TestChoiceHistory();
+        TestCandidates();
     } catch (const std::exception& error) {
         std::cerr << "Layout contract test failed: " << error.what() << '\n';
         return 1;

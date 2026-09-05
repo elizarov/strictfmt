@@ -74,7 +74,7 @@ byte-for-byte idempotence after the first pass.
 - `tests/format/layout_test.cpp` owns focused internal layout-contract checks,
   including physical output state, macro indentation, comment alignment, and
   deferred list ownership across block boundaries, plus immutable choice-history
-  precedence and materialization.
+  precedence and materialization, candidate pruning, and inline/heap value storage.
 
 Command-line coverage includes the build-time version string: the CMake test
 target passes its resolved version to the Python harness, which requires

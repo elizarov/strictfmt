@@ -26,6 +26,7 @@ Print-token construction materializes canonical known-token text and immutable s
 - `src/format/impl/format_syntax_helpers.h` owns shared direct-child lexical queries used by structural printing and continuation planning.
 - `src/format/impl/format_break_solver.h|cpp` own the break optimizer; see [break_solver.md].
 - `src/format/impl/format_choice_history.h|cpp` own immutable choice-history storage, lookup, concatenation, and materialization.
+- `src/format/impl/format_candidates.h|cpp` own layout-candidate value storage, overflow accounting, cost comparison, continuation-state equivalence, and dominance pruning.
 - `src/format/impl/format_break_solution.h` owns the materialized layout data shared by solving, emission, diagnostics, and declaration analysis.
 - `src/format/impl/format_value_profile.h|cpp` own the sparse value profile shared by break optimization costs.
 - `src/format/impl/format_config.h|cpp` own formatter configuration, ignore files, upward discovery, inheritance, parsing, and caching.
