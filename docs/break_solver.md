@@ -4,7 +4,7 @@ This document owns developer-facing details of the break solver and its shared c
 
 ## Solver Contract
 
-The solver receives a `FormatBreakModel` for one formatted segment and returns a `FormatBreakSolution`, which records the selected `FormatBreakChoice` and render base indentation for each selected structural break-model node. Recording every structural render base is necessary because a compact parent may contain an earlier child that changes the current indentation before a later child is emitted. The solution also records the selected continuation-line count for declaration owner/value nodes because declaration grouping depends on the physical size of the selected value layout. The pretty printer must emit exactly the selected choices and render bases; it must not re-run local layout decisions or infer hidden choices from child nodes.
+The solver receives a `FormatBreakModel` for one formatted segment and returns a `FormatBreakSolution`, which records the selected `FormatBreakChoice` and render base indentation for each selected structural break-model node. Recording every structural render base is necessary because a compact parent may contain an earlier child that changes the current indentation before a later child is emitted. The solution also records the selected continuation-line count for declaration owner/value nodes because declaration grouping depends on the physical size of the selected value layout. The break emitter must emit exactly the selected choices and render bases; it must not re-run local layout decisions or infer hidden choices from child nodes.
 
 `Better` implements the break-selection cost from [format.md].
 
@@ -18,7 +18,7 @@ The overflow-size profile contains completed physical lines. The current unfinis
 
 A packed list's separately evaluated body inherits the opener's charged flag, but starts without the prefix's profile; the profiles merge afterward. Attached-open solving starts a fresh child result before merging it into the operator prefix. Both paths therefore obey the same ownership rule as ordinary recursive solving.
 
-The builder retains initial depth in `rawDepth` and materializes the depth adjustments specified in [format.md] in `structuralDepth`. `breakCost` starts at the same depth and every structural-depth shift updates both values. After building the complete model, normalization applies the specified subtree discounts from outer subtrees inward. Costs are fixed before solving, so memoization needs no layout-history state, and the pretty printer's choices and indentation rules are unchanged.
+The builder retains initial depth in `rawDepth` and materializes the depth adjustments specified in [format.md] in `structuralDepth`. `breakCost` starts at the same depth and every structural-depth shift updates both values. After building the complete model, normalization applies the specified subtree discounts from outer subtrees inward. Costs are fixed before solving, so memoization needs no layout-history state, and the emission choices and indentation rules are unchanged.
 
 ## Search Shape
 
