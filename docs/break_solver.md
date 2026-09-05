@@ -8,6 +8,8 @@ The solver receives a `FormatBreakModel` for one formatted segment and returns a
 
 `FormatCandidateOrder::Better` implements the break-selection cost from [format.md]. The candidate module also owns continuation-state comparison and dominance pruning; specialized delimiter-partition tie-breaking remains in the solver.
 
+Candidate storage keeps small append paths and simple state checks inline so one-candidate temporaries can be optimized at their call sites. Heap spill, copying, cost ordering, and pruning remain implemented in the candidate module.
+
 `FormatCompactLayout` owns cached compact physical-line measurement; its results contain no search or cost state.
 
 `FormatChoiceHistory` owns immutable shared decision histories and their lookup/materialization precedence. Solver candidates carry opaque handles; `FormatBreakSolution` is the materialized contract consumed by emission and diagnostics.

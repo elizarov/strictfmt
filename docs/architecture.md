@@ -2,7 +2,19 @@
 
 ## Overview
 
-`strictfmt` formats one source text at a time. Source text and formatter configuration enter `FormatSourceText`, tree-sitter parses the text, `BuildFormatModel` converts the syntax tree into the formatter-owned format model, the pretty printer turns that model into print tokens, `BuildFormatBreakModel` creates break models for formatted segments, the break optimizer chooses compact or split layouts, and the pretty printer emits formatted source with the original line ending style preserved.
+`strictfmt` formats one source text at a time. Source text and configuration enter `FormatSourceText`; tree-sitter parsing and bottom-up normalization produce the formatter-owned model. `BuildPrintTokens` projects that model into tokens. The printer chooses mandatory boundaries and coordinates declaration and continuation analysis. Each segment passes through break-model construction, exact layout solving, solution emission, and physical output buffering. The outer formatting pipeline preserves the original line ending style.
+
+```mermaid
+flowchart LR
+    source[Source and configuration] --> syntax[Parse and normalize]
+    syntax --> tokens[Build print tokens]
+    tokens --> printer[Choose mandatory boundaries]
+    printer --> model[Build break model and costs]
+    model --> solver[Solve segment layout]
+    solver --> emitter[Emit selected solution]
+    emitter --> output[Buffer physical output]
+    emitter -. Continuation summaries .-> printer
+```
 
 Print-token construction materializes canonical known-token text and immutable syntax traits used by later compact checks, spacing, and break-model construction. Ancestry traits are propagated during the same syntax traversal that emits tokens. Syntax normalization materializes targeted immutable descendant facts on their owning nodes when later formatting would otherwise repeat the recursive query. Adjacent-source spacing is cached once and reused only when consecutive source indices prove that the same tokens remain adjacent in a buffered segment; spacing at formatter-controlled segment boundaries is recomputed.
 

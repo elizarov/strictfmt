@@ -24,7 +24,7 @@ contracts. Complete each numbered step, format project sources, run the full
 
 ## Continued Architecture Review
 
-Continue with the same format/test/review/commit cycle. The next candidates are:
+The continued review used the same format/test/review/commit cycle:
 
 9. Replace repeated print-token initializers and recursive argument lists with a
    private token factory and inherited syntax context.
@@ -35,6 +35,8 @@ Continue with the same format/test/review/commit cycle. The next candidates are:
 13. Isolate candidate continuation-state comparison and frontier maintenance.
 14. Share delimiter-stack recognition while preserving consumer-specific legality.
 15. Separate syntax metadata and parser-symbol mapping from model storage.
+16. Keep measured hot candidate append/state checks inline without moving cost
+    ordering or pruning back into the solver.
 
 Reassess the remaining builder, solver, and metadata modules after these steps.
 Completion requires cohesive ownership, explicit lifetime/state contracts, and no
@@ -69,6 +71,27 @@ measurements justify them; retain exact layout decisions throughout.
   consumer-policy checks) and 21 baseline comparisons passed.
 - Step 15: syntax metadata complete; the full test wrapper and 21 baseline
   comparisons passed. Targeted layout modules also passed ASan/UBSan checks.
+- Step 16: candidate fast paths complete; the full test wrapper, 21 baseline
+  comparisons, and targeted ASan/UBSan checks passed. Paired timing checks retained
+  identical output; final local medians were 1.1–4.3% slower than the original
+  executable across three fixtures, leaving a profiling follow-up.
+
+## Final Review
+
+The planned extractions and continued review are complete. Module ownership and
+the resulting pipeline are documented in [architecture.md](architecture.md).
+The printer now coordinates formatting policy; supporting analysis, continuation
+state, output buffering, and solver bookkeeping have their own boundaries.
+
+Keep the recursive break-model builder and solver together for now. Their remaining
+operations share construction state or search/memoization state; splitting them
+by syntax case would require broad internal interfaces. The large syntax metadata
+module is mostly declarative tables and does not mix storage with classification.
+
+Further work should start from measured costs or a concrete behavior/change need,
+especially the remaining call-boundary overhead, repeated token-index scans, and
+the solver/emitter closing-blank-line policy difference. The working observations
+and decisions are recorded in `tmp/furhter_refactor_ideas.md`.
 
 ## Validation
 
