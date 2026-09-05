@@ -192,9 +192,7 @@ struct GraphemeState {
     }
 };
 
-}  // namespace
-
-int Utf8CharacterCount(std::string_view text) {
+int CountGraphemes(std::string_view text) {
     int count = 0;
     GraphemeState state;
     while (!text.empty()) {
@@ -205,4 +203,17 @@ int Utf8CharacterCount(std::string_view text) {
         state.Advance(properties);
     }
     return count;
+}
+
+}  // namespace
+
+int Utf8CharacterCount(std::string_view text) {
+    // ASCII has one cluster per byte except CR/LF pairs. Check the entire text:
+    // a following non-ASCII combining mark can still join its ASCII predecessor.
+    for (unsigned char byte : text) {
+        if (byte >= 0x80 || byte == '\r') {
+            return CountGraphemes(text);
+        }
+    }
+    return static_cast<int>(text.size());
 }
