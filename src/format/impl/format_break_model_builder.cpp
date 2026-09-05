@@ -1445,7 +1445,8 @@ private:
         return prefix;
     }
 
-    FormatBreakNode* BuildDetachedTemplateDeclaration(FormatBreakNode* prefix, FormatBreakNode* declaration, int depth)
+    FormatBreakNode*
+        BuildDetachedTemplateDeclaration(FormatBreakNode* prefix, FormatBreakNode* declaration, int depth)
     {
         if (prefix == nullptr || declaration == nullptr) {
             return nullptr;
@@ -2931,7 +2932,8 @@ private:
         return BuildBinaryOrAssignmentExpression(node, depth);
     }
 
-    FormatBreakNode* BuildDelimitedAssignmentItem(const ConstSyntaxChildList& children, int depth, bool typedDeclarator)
+    FormatBreakNode*
+        BuildDelimitedAssignmentItem(const ConstSyntaxChildList& children, int depth, bool typedDeclarator)
     {
         std::optional<size_t> operatorIndex;
         std::optional<FormatBreakToken> op;

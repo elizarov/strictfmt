@@ -205,3 +205,13 @@ void f41();
 struct W{public/*1234*/:int x;};
 void f42(){label/*1234*/:b();}
 void f43(){switch(a){case 1:/*1234*/{b();break;}default/*1234*/:break;}}
+
+// block openers stay attached when a one-line header alone fits
+void F(int x){A();B();}
+void Ff(int x){A();B();}
+void Fff(int x){A();B();}
+int Foo(int x){return x;}
+struct Widget_{int x;};
+struct C{void Fff(){A();B();}};
+auto f=[](int x){A();B();};
+auto g=[](int x){return x;};

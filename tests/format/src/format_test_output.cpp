@@ -213,7 +213,8 @@ public:
     DialogRedrawScope& operator=(const DialogRedrawScope&) = delete;
 };
 
-__declspec(noinline) bool DashboardController::FinishConfigMutation(DashboardShellHost& shell, bool refreshThemedIcons)
+__declspec(noinline) bool
+    DashboardController::FinishConfigMutation(DashboardShellHost& shell, bool refreshThemedIcons)
 {
     return refreshThemedIcons;
 }
@@ -603,7 +604,8 @@ bool RuntimeConfigFieldEquals(const RuntimeConfigFieldDescriptor& field, const v
 // Implemented by generated file build/cmake/generated/config/config_meta.generated.cpp.
 std::span<const RuntimeConfigSectionDescriptor> RuntimeConfigSectionDescriptors();
 
-std::vector<std::string> ParseIndentedStringList(const std::vector<ConfigLine>& lines, size_t& index, int parentIndent)
+std::vector<std::string>
+    ParseIndentedStringList(const std::vector<ConfigLine>& lines, size_t& index, int parentIndent)
 {
     return {};
 }
@@ -657,9 +659,9 @@ void SaveBoardSectionDifferences(
 ) {
     DynamicSectionSaveContext<UpdateKeyFn> context{&board, compareBoard, &updateKey};
     updateKey(board, compareBoard, sectionName);
-    const auto saveBoardKey =
-        [&](const std::string& key, const std::string& currentValue, const std::string& compareValue)
-    {
+    const auto saveBoardKey = [&](
+        const std::string& key, const std::string& currentValue, const std::string& compareValue
+    ) {
         if (compareBoard == nullptr || currentValue != compareValue) {
             updateKey(sectionName, key, currentValue);
         }
@@ -1963,9 +1965,9 @@ const auto updateKey = [&lines, &ensureSection, &ensureSectionAfter, &findSectio
     Use(sectionName, key, value);
 };
 
-const auto ensureSectionAfter =
-    [&lines, &findSectionIndex, shape](const std::string& sectionName, const std::string& afterSectionName) -> size_t
-{
+const auto ensureSectionAfter = [&lines, &findSectionIndex, shape](
+    const std::string& sectionName, const std::string& afterSectionName
+) -> size_t {
     const size_t existingIndex = findSectionIndex(sectionName);
     if (existingIndex < lines.size()) {
         return existingIndex;
@@ -1975,9 +1977,9 @@ const auto ensureSectionAfter =
     return afterIndex;
 };
 
-const auto guideSheetLookup =
-    [&config, activeTheme, &colorsSection](std::string_view name) -> std::optional<ColorConfig>
-{
+const auto guideSheetLookup = [&config, activeTheme, &colorsSection](
+    std::string_view name
+) -> std::optional<ColorConfig> {
     if (std::optional<ColorConfig> themeColor = FindThemeToken(*activeTheme, name); themeColor.has_value()) {
         return themeColor;
     }

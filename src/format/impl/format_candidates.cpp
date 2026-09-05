@@ -97,7 +97,8 @@ void FormatCandidateOrder::FinishCurrentLine(FormatLayoutCandidate& result, int 
     }
 }
 
-bool FormatCandidateOrder::Better(const FormatLayoutCandidate& candidate, const FormatLayoutCandidate& incumbent) const
+bool
+    FormatCandidateOrder::Better(const FormatLayoutCandidate& candidate, const FormatLayoutCandidate& incumbent) const
 {
     if (!candidate.valid) {
         return false;

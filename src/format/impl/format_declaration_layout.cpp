@@ -159,7 +159,8 @@ struct FormatDeclarationLayout::Impl {
         return true;
     }
 
-    void AnalyzeDeclarationGroups(std::span<const PrintToken> tokens, std::span<const std::uint8_t> mandatoryBlockOpens)
+    void
+        AnalyzeDeclarationGroups(std::span<const PrintToken> tokens, std::span<const std::uint8_t> mandatoryBlockOpens)
     {
         // A large declaration value must be known before its first token is emitted so the mandatory blank line
         // can precede it. Pre-solving uses the ordinary break model and solver; the printer only observes the

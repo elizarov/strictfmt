@@ -24,7 +24,8 @@ struct FormatCompactLayout::Impl {
             text.find_first_of("\r\n") == std::string_view::npos;
     }
 
-    static void AppendCompactTokenShape(FormatCompactLine& result, const FormatBreakToken& token, std::string_view text)
+    static void
+        AppendCompactTokenShape(FormatCompactLine& result, const FormatBreakToken& token, std::string_view text)
     {
         result.hasContextOnlyTokens = result.hasContextOnlyTokens || token.contextOnly;
         if (!result.valid || token.contextOnly) {

@@ -469,8 +469,7 @@ void f30() {
 }
 
 // callable tail markers remain attached rather than acquiring assignment breaks
-struct TailMarkers
-{
+struct TailMarkers {
     TailMarkers() = default;
     TailMarkers(
         const TailMarkers&
@@ -509,15 +508,16 @@ auto f() ->
 
 // lambdas share the arrow break and body-header rules
 auto a =
-    []() -> R
-{};
+    []() ->
+        R {};
 
 auto b =
     []() ->
         ns::R
-{
-    return {};
-};
+    {
+        return
+            {};
+    };
 
 auto c =
     [x]() ->
@@ -673,8 +673,7 @@ void f44() {
 
 T q = [] {};
 T r =
-    []
-{} /*1234*/;
+    [] {} /*1234*/;
 T s = [] {}();
 T t =
     [] {} /*1234*/ ();
@@ -717,3 +716,52 @@ void f43() {
             break;
     }
 }
+
+// block openers stay attached when a one-line header alone fits
+void F(int x) {
+    A();
+    B();
+}
+void
+    Ff(int x)
+{
+    A();
+    B();
+}
+void
+    Fff(int x)
+{
+    A();
+    B();
+}
+int
+    Foo(int x)
+{
+    return x;
+}
+
+struct Widget_ {
+    int x;
+};
+
+struct C {
+    void
+        Fff()
+    {
+        A();
+        B();
+    }
+};
+
+auto f = [](
+    int x
+) {
+    A();
+    B();
+};
+
+auto g = [](
+    int x
+) {
+    return x;
+};
