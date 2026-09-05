@@ -3829,8 +3829,7 @@ void FallthroughSpaceBeforeSemicolon(int value) {
 }
 
 formats::json::Value SerializeWithUnnamedParameter(
-    const CallCenterTariffSettings& data,
-    const formats::serialize::To<formats::json::Value>& /*to*/
+    const CallCenterTariffSettings& data, const formats::serialize::To<formats::json::Value>& /*to*/
 ) {}
 
 void ForEmptyInitSpacingOrBody(size_t count) {

@@ -14,6 +14,10 @@ struct SourceFormatResult {
     std::vector<std::string> warnings;
 };
 
-SourceFormatResult FormatSourceText(std::string_view text, const FormatterConfig& config, std::string_view sourcePath);
+// Formats parsed source once. Optional validation reparses the output and checks
+// idempotence; any parse or validation failure is returned as an error, never as unchanged input.
+SourceFormatResult FormatSourceText(
+    std::string_view text, const FormatterConfig& config, std::string_view sourcePath, bool validate = false
+);
 
 int RunFormat(int argc, char** argv);

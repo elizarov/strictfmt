@@ -22,7 +22,7 @@ Print-token construction materializes canonical known-token text and immutable s
 
 - `src/strictfmt_main.cpp` owns the standalone executable `main` entry point.
 - `src/format/strictfmt_cli.h|cpp` own the embeddable `RunStrictfmtCli(argc, argv)` entry point.
-- `src/format/format.h|cpp` own source text formatting, line ending preservation, and second-pass verification.
+- `src/format/format.h|cpp` own source text formatting, line ending preservation, and optional output validation.
 - `src/format/format_cli.cpp` owns the end-user formatter command orchestration: input collection, configuration lookup, ignore filtering, parallel file formatting, output routing, summaries, and exit codes.
 - `src/format/impl/format_args.h|cpp` own command-line option parsing and usage text.
 - `src/format/impl/format_diff.h|cpp` own greedy line synchronization and unified-diff emission for `--diff`.
@@ -101,6 +101,17 @@ Project-specific tokens are used only for intentionally non-C++ macro fragments 
 
 Composite syntax must remain recursive in both the tree-sitter tree and the formatter model. A grammar token or formatter leaf must not hide any composite source span. The replacement text of a macro explicitly configured under `RawMacroDefinitions` is the sole opaque-source exception. The only other leaves are ordinary lexical tokens.
 
-The format model preserves grammar declarator-field roles through wrapper flattening, so declaration boundaries do not depend on the declarator's spelling or shape.
+The format model preserves grammar declarator, condition, and name field roles through wrapper flattening, so declaration and preprocessor-header boundaries do not depend on spelling or expression shape.
 
 Formatter behavior follows the same principle: rules use shared structural or configured semantic categories and apply at every supported recursion depth. Source spelling, incidental parser wrappers, and golden-fixture shape must not create one-off formatting categories.
+
+## No Silent Failure
+
+Reporting failures is a hard architectural constraint. Every failure to parse input,
+and every failed check performed during output validation, must propagate as an
+explicit error to the caller and a nonzero command-line exit status. Never restore
+original text, report a failed transformation as unchanged success, or suppress a
+diagnostic to make a formatting run or test pass. Normal formatting performs one
+pass; optional validation reparses its output and checks that formatting that
+output again produces identical text. Validation failures must prevent the affected
+output from being emitted or written.

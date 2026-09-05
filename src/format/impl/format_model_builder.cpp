@@ -93,6 +93,19 @@ bool CommentConsumesLineTail(std::string_view source, uint32_t commentStart, uin
     return true;
 }
 
+bool HasTextBeforeCommentOnLine(std::string_view source, uint32_t start) {
+    while (start > 0) {
+        const char ch = source[--start];
+        if (ch == '\r' || ch == '\n') {
+            return false;
+        }
+        if (ch != ' ' && ch != '\t') {
+            return true;
+        }
+    }
+    return false;
+}
+
 bool IsBlockComment(std::string_view source, uint32_t commentStart) {
     return commentStart + 1 < source.size() && source[commentStart] == '/' && source[commentStart + 1] == '*';
 }
@@ -252,8 +265,12 @@ inline void AppendTsChild(
     const bool isComment = childSyntax.kind == SyntaxNodeKind::Comment;
     const bool isBlock = isComment && IsBlockComment(source, childStart);
     const bool consumesLineTail = !isComment || CommentConsumesLineTail(source, childStart, childEnd);
-    const bool isTrailingComment =
-        isComment && hasPreviousSibling && previousEndRow == childStartRow && previousEndColumn > 0 && consumesLineTail;
+    const bool isTrailingComment = isComment &&
+        hasPreviousSibling &&
+        previousEndRow == childStartRow &&
+        previousEndColumn > 0 &&
+        consumesLineTail &&
+        HasTextBeforeCommentOnLine(source, childStart);
     const bool isInlineBlockComment = isBlock && !consumesLineTail;
     AppendTsNode(model, child, source, parent, childSyntax, isTrailingComment, isInlineBlockComment);
     previousEnd = childEnd;
@@ -293,11 +310,16 @@ void AppendTsChildren(
             hasPreviousSibling
         );
         const char* fieldName = ts_tree_cursor_current_field_name(&cursor);
-        if (fieldName != nullptr && std::string_view(fieldName) == "declarator") {
+        const bool isDeclarator = fieldName != nullptr && std::string_view(fieldName) == "declarator";
+        const bool isCondition = fieldName != nullptr && std::string_view(fieldName) == "condition";
+        const bool isName = fieldName != nullptr && std::string_view(fieldName) == "name";
+        if (isDeclarator || isCondition || isName) {
             for (size_t childIndex = childBegin; childIndex < parent.children.size(); ++childIndex) {
                 SyntaxNode* childNode = parent.children[childIndex];
                 if (childNode != nullptr && !SyntaxNodeHasClass(*childNode, SyntaxNodeClass::Trivia)) {
-                    childNode->isDeclarator = true;
+                    childNode->isDeclarator = childNode->isDeclarator || isDeclarator;
+                    childNode->isCondition = childNode->isCondition || isCondition;
+                    childNode->isName = childNode->isName || isName;
                 }
             }
         }

@@ -22,6 +22,7 @@ enum class FormatDumpKind {
 struct FormatOptions {
     FormatMode mode = FormatMode::Stdout;
     bool verbose = false;
+    bool validate = false;
     bool help = false;
     bool version = false;
     bool readStdin = false;

@@ -32,13 +32,8 @@
           "name": "preproc_value_declaration"
         },
         {
-          "type": "ALIAS",
-          "content": {
-            "type": "SYMBOL",
-            "name": "preproc_guarded_namespace_definition"
-          },
-          "named": true,
-          "value": "namespace_definition"
+          "type": "SYMBOL",
+          "name": "preproc_guarded_namespace_definition"
         },
         {
           "type": "ALIAS",
@@ -311,13 +306,8 @@
           "name": "preproc_selected_braced_if_else_statement"
         },
         {
-          "type": "ALIAS",
-          "content": {
-            "type": "SYMBOL",
-            "name": "preproc_ended_consequence_statement"
-          },
-          "named": true,
-          "value": "if_statement"
+          "type": "SYMBOL",
+          "name": "preproc_ended_consequence_statement"
         },
         {
           "type": "SYMBOL",
@@ -7374,13 +7364,8 @@
           "name": "preproc_selected_braced_if_else_statement"
         },
         {
-          "type": "ALIAS",
-          "content": {
-            "type": "SYMBOL",
-            "name": "preproc_ended_consequence_statement"
-          },
-          "named": true,
-          "value": "if_statement"
+          "type": "SYMBOL",
+          "name": "preproc_ended_consequence_statement"
         },
         {
           "type": "SYMBOL",

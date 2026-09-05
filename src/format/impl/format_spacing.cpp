@@ -465,6 +465,10 @@ bool FormatTokenNeedsSpace(const PrintToken* previous, const PrintToken& current
             previous->syntaxKind == SyntaxNodeKind::Question
         );
     }
+    // Adjacent digits and dots form one preprocessing number instead of a number followed by an ellipsis.
+    if (previous->syntaxKind == SyntaxNodeKind::NumberLiteral && current.syntaxKind == SyntaxNodeKind::Ellipsis) {
+        return true;
+    }
     if (IsStringLike(*previous) && IsStringLike(current)) {
         return true;
     }

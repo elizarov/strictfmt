@@ -149,11 +149,19 @@ def documentation_code_examples() -> list[DocumentationCodeExample]:
     return examples
 
 
+def format_command(args: tuple[str, ...], validate: bool) -> list[str]:
+    validation = ["--validate"] if validate and not any(
+        arg in {"--dump-syntax-tree", "--dump-break-tree"} for arg in args
+    ) else []
+    return [str(FORMAT_EXE), *FORMAT_EXE_ARGS, *validation, *args]
+
+
 def native_format(
-    *args: str, cwd: Path = STRICTFMT_ROOT, input_text: str | None = None, timeout: float | None = None
+    *args: str, cwd: Path = STRICTFMT_ROOT, input_text: str | None = None, timeout: float | None = None,
+    validate: bool = True
 ) -> subprocess.CompletedProcess[str]:
     return subprocess.run(
-        [str(FORMAT_EXE), *FORMAT_EXE_ARGS, *args],
+        format_command(args, validate),
         cwd=cwd,
         input=input_text,
         check=False,
@@ -164,10 +172,10 @@ def native_format(
 
 
 def native_format_bytes(
-    *args: str, cwd: Path = STRICTFMT_ROOT, input_bytes: bytes | None = None
+    *args: str, cwd: Path = STRICTFMT_ROOT, input_bytes: bytes | None = None, validate: bool = True
 ) -> subprocess.CompletedProcess[bytes]:
     return subprocess.run(
-        [str(FORMAT_EXE), *FORMAT_EXE_ARGS, *args],
+        format_command(args, validate),
         cwd=cwd,
         input=input_bytes,
         check=False,
@@ -2010,13 +2018,92 @@ class FormatCommandTests(unittest.TestCase):
             result.stdout,
         )
 
-    def test_parse_error_rejects_stdout_formatting(self) -> None:
-        result = native_format("--stdin", input_text="int main( { return 1; }\n")
+    def test_validation_regressions(self) -> None:
+        cases = (
+            (
+                "conditional calls",
+                "#if HAS(feature)\nint a;\n#elif CHECK(major, minor)\nint b;\n#else\nint c;\n#endif\n",
+                "#if HAS(feature)\nint a;\n#elif CHECK(major, minor)\nint b;\n#else\nint c;\n#endif\n",
+            ),
+            (
+                "header and body comments with identical text",
+                "#ifdef /* guard */ FEATURE\n/* guard */ int a;\n#endif\n",
+                "#ifdef /* guard */ FEATURE\n/* guard */ int a;\n#endif\n",
+            ),
+            (
+                "leading macro replacement comment",
+                "#define FIELD(data, elem) \\\n    /* annotation */ \\\n    decltype(data::elem) elem;\n",
+                "#define FIELD(data, elem) \\\n    /* annotation */ \\\n    decltype(data::elem) elem;\n",
+            ),
+            (
+                "terminal macro comment before endif",
+                "#if HAS(feature)\n#define FLAG 1 // note\n#endif\nint n;\n",
+                "#if HAS(feature)\n#define FLAG \\\n    1  // note\n#endif\nint n;\n",
+            ),
+            (
+                "packed parameter block comment",
+                "void SomeQuiteLongFunctionName(LongType a, LongType /*b*/);\n",
+                "void SomeQuiteLongFunctionName(\n    LongType a, LongType /*b*/\n);\n",
+            ),
+            (
+                "template header comment",
+                "template <typename T> // element type\nclass Queue;\n",
+                "template <typename T>  // element type\nclass Queue;\n",
+            ),
+            (
+                "number before pack expansion",
+                "template<int... I> void f() { use({ I ? I : 0 ... }); }\n",
+                "template <int... I>\nvoid f() { use({I ? I : 0 ...}); }\n",
+            ),
+            (
+                "macro terminators and standalone comment",
+                "void f(){\n    ITEM(one);\n    ITEM(two); // tail\n    ITEM(three)\n"
+                "    // standalone\n    int a;\n}\n",
+                "void f() {\n    ITEM(one);\n    ITEM(two);  // tail\n    ITEM(three)\n"
+                "    // standalone\n    int a;\n}\n",
+            ),
+            (
+                "partially guarded namespace",
+                "#if FEATURE\nnamespace {\nint x;\n#endif\n}\n",
+                "#if FEATURE\nnamespace {\nint x;\n#endif\n}\n",
+            ),
+            (
+                "conditional ends before consequence",
+                "void f() {\n#if FEATURE\nif (a) { g(); } else if (b)\n#endif\nh();\n}\n",
+                "void f() {\n#if FEATURE\nif (a) { g(); } else if (b)\n#endif\nh();\n}\n",
+            ),
+            (
+                "conditional ends before else",
+                "void f() {\n#if FEATURE\nif (a) { g(); }\n#endif\nelse { h(); }\n}\n",
+                "void f() {\n#if FEATURE\nif (a) { g(); }\n#endif\nelse { h(); }\n}\n",
+            ),
+        )
+        TEST_TEMP_ROOT.mkdir(exist_ok=True)
+        with tempfile.TemporaryDirectory(prefix="format_validation_", dir=TEST_TEMP_ROOT) as temp_dir:
+            config = Path(temp_dir) / ".cpp-format"
+            config.write_text(
+                "ColumnLimit: 50\nIndentWidth: 4\nMacroCategories:\n  SemicolonlessCallMacros:\n    - ITEM\n",
+                encoding="utf-8",
+            )
+            for name, source, expected in cases:
+                with self.subTest(name=name):
+                    checked = native_format("--stdin", "--style", str(config), input_text=source)
+                    self.assertEqual(0, checked.returncode, msg=checked.stderr)
+                    self.assertEqual(expected, checked.stdout)
+                    # Normal mode emits the same transformation without spending another parse/format pass.
+                    normal = native_format("--stdin", "--style", str(config), input_text=source, validate=False)
+                    self.assertEqual(0, normal.returncode, msg=normal.stderr)
+                    self.assertEqual(expected, normal.stdout)
 
-        self.assertEqual(1, result.returncode, msg=f"stdout:\n{result.stdout}\n\nstderr:\n{result.stderr}")
-        self.assertEqual("", result.stdout)
-        self.assertIn("parse failed", result.stderr)
-        self.assertNotIn("tree-sitter", result.stderr)
+
+    def test_parse_error_rejects_stdout_formatting(self) -> None:
+        for validate in (False, True):
+            with self.subTest(validate=validate):
+                result = native_format("--stdin", input_text="int main( { return 1; }\n", validate=validate)
+                self.assertEqual(1, result.returncode, msg=f"stdout:\n{result.stdout}\n\nstderr:\n{result.stderr}")
+                self.assertEqual("", result.stdout)
+                self.assertIn("parse failed", result.stderr)
+                self.assertNotIn("tree-sitter", result.stderr)
 
     def test_parse_error_does_not_write_in_place_batch(self) -> None:
         build_dir = TEST_TEMP_ROOT
@@ -2037,7 +2124,7 @@ class FormatCommandTests(unittest.TestCase):
             self.assertEqual("int main(){return 1;}\n", valid.read_text(encoding="utf-8").replace("\r\n", "\n"))
             self.assertIn("parse failed", result.stderr)
             self.assertNotIn("tree-sitter", result.stderr)
-            self.assertIn("parsed with errors", result.stdout)
+            self.assertIn("failed formatting", result.stdout)
 
     def test_explicit_style_file_and_upward_discovery(self) -> None:
         build_dir = TEST_TEMP_ROOT
@@ -2295,6 +2382,8 @@ class FormatCommandTests(unittest.TestCase):
             ("--dump-syntax-tree", str(TEST_ROOT / OUTPUT_FIXTURE), "--dry-run"),
             ("--dump-syntax-tree", str(TEST_ROOT / OUTPUT_FIXTURE), "--diff"),
             ("--dump-break-tree", str(TEST_ROOT / OUTPUT_FIXTURE), "--concurrency", "1"),
+            ("--stdin", "--dump-syntax-tree", "--validate"),
+            ("--stdin", "--dump-break-tree", "--validate"),
             ("--stdin", "--dump-syntax-tree", "--dump-break-tree"),
             ("--files",),
             ("-r",),

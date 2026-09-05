@@ -48,7 +48,7 @@ specified in [config.md](config.md).
 - `--dump-syntax-tree <file>` or `--stdin --dump-syntax-tree` prints the normalized syntax tree used by the formatter.
 - `--dump-break-tree <file>` or `--stdin --dump-break-tree` prints each formatted segment's break-decision tree, including raw depth, surcharge, discount, effective cost, and the selected layout at each decision node.
 
-Dump modes help inspect parsing and layout decisions. A syntax-tree dump includes `Error` and `Missing` nodes when parsing fails; either mode reports the failure to stderr and exits with code `1`. Dump modes do not format, check, rewrite, or honor ignore files. They are mutually exclusive and incompatible with formatting inputs, `-i`, `--dry-run`, `--diff`, and `--concurrency`.
+Dump modes help inspect parsing and layout decisions. A syntax-tree dump includes `Error` and `Missing` nodes when parsing fails; either mode reports the failure to stderr and exits with code `1`. Dump modes do not format, check, rewrite, or honor ignore files. They are mutually exclusive and incompatible with formatting inputs, `-i`, `--dry-run`, `--diff`, `--concurrency`, and `--validate`.
 
 ## Configuration
 
@@ -60,6 +60,7 @@ are specified in [config.md](config.md).
 
 ## Execution Options
 
+- `--validate` enables slower output validation in any formatting mode: reparse the formatted text and format it again to check idempotence. A failed check reports an error and exits with code `1`; the affected output is neither emitted nor written. Without this option, formatting performs one pass. Input parse errors always fail. This follows the [no-silent-failure constraint](architecture.md#no-silent-failure).
 - `--concurrency <n>` limits worker threads for file formatting. The value must be a positive integer. When omitted, `strictfmt` uses hardware concurrency, falling back to `4` workers when the platform does not report a value. The effective worker count is capped by the number of files.
 - `-v` and `--verbose` print one line before and after each file is formatted. Each line includes the file's index in the input list and its absolute path; the completion line also includes that file's elapsed formatting time. Verbose progress uses the summary stream and replaces the terminal's in-place aggregate progress line. With multiple workers, lines reflect actual worker start and completion order. Final summaries are printed regardless of this flag. The summary stream is stderr in default and diff modes, and stdout otherwise.
 - `--version` prints `strictfmt <version>` to stdout and exits with code `0` without loading configuration or formatting inputs. Release executables print the release tag version without its leading `v`.
@@ -68,7 +69,7 @@ are specified in [config.md](config.md).
 For file inputs, when the summary stream is a terminal, `strictfmt` updates an
 in-place progress line with completed file count and elapsed time. Final
 summaries report completed files, lines of code, elapsed time, ignored files,
-files needing formatting, and parse errors when applicable.
+files needing formatting, and formatting errors when applicable.
 
 ## Unknown arguments
 
@@ -79,5 +80,5 @@ with `-` must be passed in a spelling that does not begin with `-`, such as
 ## Exit Codes
 
 - `0` means formatting, checking, help, or no-input usage completed successfully.
-- `1` means formatting failed for source-level reasons, including parse errors, read or write failures, or dry-run/diff inputs that require formatting changes.
+- `1` means formatting failed for source-level reasons, including input parse errors, output validation errors, read or write failures, or dry-run/diff inputs that require formatting changes.
 - `2` means command-line usage, input discovery, file-list reading, configuration loading, or configuration parsing failed.

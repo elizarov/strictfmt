@@ -79,6 +79,31 @@ bool CallableBodyAllowsCompactSingleStatementForm(const SyntaxNode& node, Syntax
     return result;
 }
 
+bool IsConditionalPreprocessorHeaderChild(const SyntaxNode& node, size_t index) {
+    const SyntaxNode& child = *node.children[index];
+    if (
+        index == 0 ||
+        (child.kind == SyntaxNodeKind::LexicalToken && child.text.find_first_of("\r\n") != std::string_view::npos)
+    ) {
+        return true;
+    }
+    const SyntaxNodeKind directive = node.children.front()->kind;
+    if (
+        directive == SyntaxNodeKind::PreprocessorDirectiveIf || directive == SyntaxNodeKind::PreprocessorDirectiveElif
+    ) {
+        return child.isCondition;
+    }
+    if (
+        directive == SyntaxNodeKind::PreprocessorDirectiveIfdef ||
+        directive == SyntaxNodeKind::PreprocessorDirectiveIfndef ||
+        directive == SyntaxNodeKind::PreprocessorDirectiveElifdef ||
+        directive == SyntaxNodeKind::PreprocessorDirectiveElifndef
+    ) {
+        return child.isName;
+    }
+    return false;
+}
+
 SyntaxNode* MakeSyntaxNode(FormatModel& model, SyntaxNodeKind kind) {
     SyntaxNode* node = &model.nodes.emplace_back(model.childStorage.get());
     node->kind = kind;

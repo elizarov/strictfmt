@@ -87,48 +87,27 @@ std::string_view ContinuedPreprocessorHeader(std::string_view text) {
     return text;
 }
 
-bool IsPreprocHeaderSeparator(const SyntaxNode& node) {
-    return node.kind == SyntaxNodeKind::LexicalToken && ContainsSourceLineBreak(node.text);
-}
-
-bool IsPreprocIfdefHeaderChild(const SyntaxNode& node, size_t index) {
-    if (index < 2) {
-        return true;
-    }
-    return index == 2 && IsPreprocHeaderSeparator(node);
-}
-
-bool IsPreprocElseHeaderChild(const SyntaxNode& node, size_t index) {
-    if (index == 0) {
-        return true;
-    }
-    return index == 1 && IsPreprocHeaderSeparator(node);
-}
-
-bool IsPreprocIfHeaderChild(const SyntaxNode& node, size_t index, bool& inHeader) {
-    if (!inHeader) {
-        return false;
-    }
-    if (IsPreprocHeaderSeparator(node)) {
-        inHeader = false;
-        return true;
-    }
-    if (index < 2) {
-        return true;
-    }
-    inHeader = false;
-    return false;
-}
-
 bool IsPreprocEndifToken(const SyntaxNode& node) {
     return SyntaxNodeKindHasClass(node.kind, SyntaxNodeClass::EndifDirective);
 }
 
-bool IsCommentAlreadyInPreprocessorHeader(const SyntaxNode& parent, const SyntaxNode& child) {
-    if (child.kind != SyntaxNodeKind::Comment && child.kind != SyntaxNodeKind::TrailingComment) {
-        return false;
+std::optional<size_t> SourceTextOffset(std::string_view source, std::string_view tokenText) {
+    if (source.empty() || tokenText.empty()) {
+        return std::nullopt;
     }
-    return FirstSourceLine(parent.text).find(child.text) != std::string_view::npos;
+    const std::uintptr_t sourceBegin = reinterpret_cast<std::uintptr_t>(source.data());
+    const std::uintptr_t sourceEnd = sourceBegin + source.size();
+    const std::uintptr_t tokenBegin = reinterpret_cast<std::uintptr_t>(tokenText.data());
+    const std::uintptr_t tokenEnd = tokenBegin + tokenText.size();
+    if (tokenBegin < sourceBegin || tokenEnd > sourceEnd) {
+        return std::nullopt;
+    }
+    return static_cast<size_t>(tokenBegin - sourceBegin);
+}
+
+bool IsCommentAlreadyInPreprocessorHeader(const SyntaxNode& parent, const SyntaxNode& child) {
+    return SyntaxNodeHasClass(child, SyntaxNodeClass::Trivia) &&
+        SourceTextOffset(ContinuedPreprocessorHeader(parent.text), child.text).has_value();
 }
 
 bool IsFirstConditionalBranchChild(const SyntaxNode& node) {
@@ -137,7 +116,6 @@ bool IsFirstConditionalBranchChild(const SyntaxNode& node) {
         return false;
     }
 
-    bool inPreprocIfHeader = true;
     for (size_t index = 0; index < parent->children.size(); ++index) {
         const SyntaxNode* child = parent->children[index];
         if (child == nullptr) {
@@ -146,16 +124,7 @@ bool IsFirstConditionalBranchChild(const SyntaxNode& node) {
         if (IsCommentAlreadyInPreprocessorHeader(*parent, *child)) {
             continue;
         }
-        if (parent->kind == SyntaxNodeKind::PreprocIfdef && IsPreprocIfdefHeaderChild(*child, index)) {
-            continue;
-        }
-        if (parent->kind == SyntaxNodeKind::PreprocElse && IsPreprocElseHeaderChild(*child, index)) {
-            continue;
-        }
-        if (
-            (parent->kind == SyntaxNodeKind::PreprocIf || parent->kind == SyntaxNodeKind::PreprocElif) &&
-            IsPreprocIfHeaderChild(*child, index, inPreprocIfHeader)
-        ) {
+        if (IsConditionalPreprocessorHeaderChild(*parent, index)) {
             continue;
         }
         if (SyntaxNodeHasClass(*child, SyntaxNodeClass::Trivia)) {
@@ -287,7 +256,6 @@ void AppendTokens(const SyntaxNode& node, TokenContext context, std::vector<Prin
             tokens.push_back(token);
         };
         appendDirective(node, ContinuedPreprocessorHeader(node.text));
-        bool inPreprocIfHeader = true;
         for (size_t index = 0; index < node.children.size(); ++index) {
             const SyntaxNode* child = node.children[index];
             if (child == nullptr) {
@@ -300,16 +268,7 @@ void AppendTokens(const SyntaxNode& node, TokenContext context, std::vector<Prin
             if (IsCommentAlreadyInPreprocessorHeader(node, *child)) {
                 continue;
             }
-            if (nodeKind == SyntaxNodeKind::PreprocIfdef && IsPreprocIfdefHeaderChild(*child, index)) {
-                continue;
-            }
-            if (nodeKind == SyntaxNodeKind::PreprocElse && IsPreprocElseHeaderChild(*child, index)) {
-                continue;
-            }
-            if (
-                (nodeKind == SyntaxNodeKind::PreprocIf || nodeKind == SyntaxNodeKind::PreprocElif) &&
-                IsPreprocIfHeaderChild(*child, index, inPreprocIfHeader)
-            ) {
+            if (IsConditionalPreprocessorHeaderChild(node, index)) {
                 continue;
             }
             AppendTokens(*child, context.ForChildren(nodeKind), tokens);
@@ -339,20 +298,6 @@ void AppendTokens(const SyntaxNode& node, TokenContext context, std::vector<Prin
             AppendTokens(*child, context.ForChildren(nodeKind), tokens);
         }
     }
-}
-
-std::optional<size_t> SourceTextOffset(std::string_view source, std::string_view tokenText) {
-    if (source.empty() || tokenText.empty()) {
-        return std::nullopt;
-    }
-    const std::uintptr_t sourceBegin = reinterpret_cast<std::uintptr_t>(source.data());
-    const std::uintptr_t sourceEnd = sourceBegin + source.size();
-    const std::uintptr_t tokenBegin = reinterpret_cast<std::uintptr_t>(tokenText.data());
-    const std::uintptr_t tokenEnd = tokenBegin + tokenText.size();
-    if (tokenBegin < sourceBegin || tokenEnd > sourceEnd) {
-        return std::nullopt;
-    }
-    return static_cast<size_t>(tokenBegin - sourceBegin);
 }
 
 size_t SourceLineStart(std::string_view source, size_t offset) {

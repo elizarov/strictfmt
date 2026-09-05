@@ -10,6 +10,11 @@ It also runs focused C++ layout-contract tests for stateful internal interfaces.
 The Python runner uses verbose `unittest` output with compact method names, so
 test logs list each test with its pass/fail status instead of dot-only progress.
 
+Formatter invocations in the test harness enable `--validate` by default, so
+proposed output must parse and format idempotently before a test can succeed.
+Dump commands inspect input directly; only focused tests of the normal execution
+mode opt out of validation.
+
 These are end-to-end tests: cases run the built formatter with real command-line
 arguments, formatter configuration, and temporary files when file-system
 behavior matters. Golden fixture pairs cover broad formatter behavior, while
@@ -117,7 +122,7 @@ and exist only to exercise one command or configuration edge.
 - `tests/format/src/format_unsupported_input.cpp` ->
   `tests/format/src/format_unsupported_output.cpp` and
   `tests/format/src/format_unsupported_output.txt`: current formatting and
-  warning output for parser-recovered unsupported syntactic shapes. These
+  warning output for parsed syntactic shapes whose layout is unsupported. These
   fixtures record observed output only; stable indentation and spacing are not
   guaranteed, but the recorded source output must still reparse and format
   idempotently.

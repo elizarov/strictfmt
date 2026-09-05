@@ -91,7 +91,9 @@ std::string WithLineEndings(std::string text, std::string_view lineEnding) {
 
 }  // namespace
 
-SourceFormatResult FormatSourceText(std::string_view text, const FormatterConfig& config, std::string_view sourcePath) {
+SourceFormatResult
+    FormatSourceText(std::string_view text, const FormatterConfig& config, std::string_view sourcePath, bool validate)
+{
     FormatModel model = ParseFormatModel(text, config);
     SourceFormatResult result;
     if (!model.parse.ok) {
@@ -102,17 +104,23 @@ SourceFormatResult FormatSourceText(std::string_view text, const FormatterConfig
     result.warnings = ValidatePreprocessorPlacement(model);
     result.formatted =
         WithLineEndings(FormatModelText(config, model, sourcePath), SourceOutputLineEnding(*model.sourceText));
-    if (model.sourceText != nullptr && *model.sourceText != result.formatted) {
+    if (validate) {
         FormatModel verification = ParseFormatModel(result.formatted, config);
         if (!verification.parse.ok) {
-            result.formatted = *model.sourceText;
+            result.ok = false;
+            result.error = "validation failed: formatted output does not parse\n" + verification.parse.error;
         } else {
             std::string verified = WithLineEndings(
                 FormatModelText(config, verification, sourcePath), SourceOutputLineEnding(result.formatted)
             );
             if (verified != result.formatted) {
-                result.formatted = *model.sourceText;
+                result.ok = false;
+                result.error = "validation failed: formatting is not idempotent";
             }
+        }
+        if (!result.ok) {
+            result.formatted.clear();
+            return result;
         }
     }
     result.changed = model.sourceText != nullptr && *model.sourceText != result.formatted;
