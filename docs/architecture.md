@@ -14,6 +14,7 @@ Print-token construction materializes canonical known-token text and immutable s
 - `src/format/format_cli.cpp` owns the end-user formatter command orchestration: input collection, configuration lookup, ignore filtering, parallel file formatting, output routing, summaries, and exit codes.
 - `src/format/impl/format_args.h|cpp` own command-line option parsing and usage text.
 - `src/format/impl/format_diff.h|cpp` own greedy line synchronization and unified-diff emission for `--diff`.
+- `src/format/impl/format_break_emitter.h|cpp` own recursive solved-layout emission through a physical-output adapter and report deferred list/chain/block indentation to the printer.
 - `src/format/impl/format_break_model.h|cpp` own the break model data structures and shared break model predicates.
 - `src/format/impl/format_break_model_builder.h|cpp` own conversion from print tokens to break models.
 - `src/format/impl/format_break_model_dump.h|cpp` own serialization of break-decision trees.
@@ -34,7 +35,7 @@ Print-token construction materializes canonical known-token text and immutable s
 - `vendor/tree-sitter/tree-sitter-cpp/src/scanner.c` owns custom tree-sitter external tokens, including runtime-configured macro identifiers, raw string delimiter state, and preprocessor directive newline ownership; see [scanner.md](scanner.md).
 - `src/format/impl/format_print_token.h` owns print-token data and borrowed-source metadata.
 - `src/format/impl/format_print_token_builder.h|cpp` own normalized syntax traversal, print-token production, ancestry facts, comment continuations, and initial adjacent-source spacing.
-- `src/format/impl/format_pretty_printer.h|cpp` own mandatory line breaks, break model solving integration, and formatted source emission.
+- `src/format/impl/format_pretty_printer.h|cpp` own mandatory line breaks, segment build/solve/emit orchestration, deferred structural state, and physical output/comment handling.
 - `src/format/impl/format_raw_macro.h|cpp` own raw macro replacement whitespace normalization and the raw preprocessor line-preservation helpers used by the pretty printer.
 - `src/format/impl/format_spacing.h|cpp` own print token text/width accessors, classification, and spacing rules.
 - `src/tools/tools_common.h|cpp` own shared tool helpers for paths, recursive discovery, file lists, source lines, include text, counts, and lightweight string operations.

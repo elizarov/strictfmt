@@ -119,6 +119,7 @@ endif()
 
 add_library(strictfmt_core STATIC
     src/format/format.cpp
+    src/format/impl/format_break_emitter.cpp
     src/format/impl/format_break_model.cpp
     src/format/impl/format_break_model_builder.cpp
     src/format/impl/format_break_model_dump.cpp
