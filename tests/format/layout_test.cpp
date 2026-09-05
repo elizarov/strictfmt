@@ -24,14 +24,14 @@ void TestOutput() {
     {
         FormatOutput output(2, 80);
         output.SetPendingIndent(3);
-        output.Write("é", 1);
+        output.Write("\xc3\xa9", 1);
         Check(output.CurrentColumn(1) == 7, "columns count Unicode characters after pending indent");
         Check(!output.State().pendingIndentLevel, "writing consumes pending indentation");
         output.Space();
         output.NewLine(true);
         Check(output.State().macroContinuation && output.CurrentColumn(1) == 4, "macro continuation adds one indent");
         output.Write("z", 1);
-        Check(output.Finish() == "      é \\\n    z\n", "macro suffix follows trimmed content");
+        Check(output.Finish() == "      \xc3\xa9 \\\n    z\n", "macro suffix follows trimmed content");
     }
     {
         FormatOutput output(2, 80);

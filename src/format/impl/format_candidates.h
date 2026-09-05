@@ -1,6 +1,9 @@
 #pragma once
 
+#include <algorithm>
 #include <cstddef>
+#include <memory>
+#include <utility>
 #include <initializer_list>
 #include <new>
 #include <vector>
@@ -28,13 +31,18 @@ struct FormatLayoutCandidate {
 
 // Ordered candidate storage with eight inline entries. It preserves value
 // semantics and contiguous iteration; allocation/spill mechanics stay private.
+// Tiny append paths stay inline so one-candidate temporaries avoid call/copy overhead.
 class FormatLayoutCandidates {
 public:
     using iterator = FormatLayoutCandidate*;
     using const_iterator = const FormatLayoutCandidate*;
 
     FormatLayoutCandidates() = default;
-    FormatLayoutCandidates(std::initializer_list<FormatLayoutCandidate> values);
+    FormatLayoutCandidates(std::initializer_list<FormatLayoutCandidate> values) {
+        for (const FormatLayoutCandidate& value : values) {
+            push_back(value);
+        }
+    }
     FormatLayoutCandidates(const FormatLayoutCandidates& other);
     FormatLayoutCandidates(FormatLayoutCandidates&& other) noexcept;
     ~FormatLayoutCandidates();
@@ -48,8 +56,8 @@ public:
     size_t size() const { return usingHeap_ ? heap_.size() : inlineSize_; }
     FormatLayoutCandidate& operator[](size_t index) { return begin()[index]; }
     const FormatLayoutCandidate& operator[](size_t index) const { return begin()[index]; }
-    void push_back(const FormatLayoutCandidate& value);
-    void push_back(FormatLayoutCandidate&& value);
+    void push_back(const FormatLayoutCandidate& value) { PushBack(value); }
+    void push_back(FormatLayoutCandidate&& value) { PushBack(std::move(value)); }
     iterator erase(iterator it);
     void clear();
 
@@ -64,7 +72,19 @@ private:
     }
 
     template <typename Value>
-    void PushBack(Value && value);
+    void PushBack(Value&& value) {
+        if (usingHeap_) {
+            heap_.push_back(std::forward<Value>(value));
+            return;
+        }
+        if (inlineSize_ < kInlineCapacity) {
+            std::construct_at(InlineData() + inlineSize_, std::forward<Value>(value));
+            ++inlineSize_;
+            return;
+        }
+        MoveInlineToHeap();
+        heap_.push_back(std::forward<Value>(value));
+    }
 
     void MoveFrom(FormatLayoutCandidates&& other);
     void MoveInlineToHeap();
@@ -82,12 +102,22 @@ private:
 class FormatCandidateOrder {
 public:
     explicit FormatCandidateOrder(int columnLimit) : columnLimit_(columnLimit) {}
-    int CurrentLineOverflow(const FormatLayoutCandidate& result) const;
+    int CurrentLineOverflow(const FormatLayoutCandidate& result) const {
+        return result.endLineHasText && !result.currentLineOverflowRecorded ?
+            std::max(0, result.endColumn - columnLimit_) : 0;
+    }
     int MaximumOverflow(const FormatLayoutCandidate& result) const;
     bool HasOverflow(const FormatLayoutCandidate& result) const;
     void FinishCurrentLine(FormatLayoutCandidate& result, int suffixWidth = 0) const;
     bool Better(const FormatLayoutCandidate& candidate, const FormatLayoutCandidate& incumbent) const;
-    static bool SameState(const FormatLayoutCandidate& left, const FormatLayoutCandidate& right);
+    static bool SameState(const FormatLayoutCandidate& left, const FormatLayoutCandidate& right) {
+        return left.endColumn == right.endColumn &&
+            left.endIndentLevel == right.endIndentLevel &&
+            left.endLineHasText == right.endLineHasText &&
+            left.currentLineOverflowRecorded == right.currentLineOverflowRecorded &&
+            left.ownExpansionCharged == right.ownExpansionCharged &&
+            left.compactNextStreamOperand == right.compactNextStreamOperand;
+    }
     bool Dominates(const FormatLayoutCandidate& left, const FormatLayoutCandidate& right) const;
     void AddPruned(FormatLayoutCandidates& results, FormatLayoutCandidate candidate) const;
     static void Sort(FormatLayoutCandidates& results);

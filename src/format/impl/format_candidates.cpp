@@ -4,12 +4,6 @@
 #include <memory>
 #include <utility>
 
-FormatLayoutCandidates::FormatLayoutCandidates(std::initializer_list<FormatLayoutCandidate> values) {
-    for (const FormatLayoutCandidate& value : values) {
-        push_back(value);
-    }
-}
-
 FormatLayoutCandidates::FormatLayoutCandidates(const FormatLayoutCandidates& other) {
     for (const FormatLayoutCandidate& value : other) {
         push_back(value);
@@ -39,25 +33,6 @@ FormatLayoutCandidates& FormatLayoutCandidates::operator=(FormatLayoutCandidates
     }
     return *this;
 }
-
-template <typename Value>
-void FormatLayoutCandidates::PushBack(Value&& value) {
-    if (usingHeap_) {
-        heap_.push_back(std::forward<Value>(value));
-        return;
-    }
-    if (inlineSize_ < kInlineCapacity) {
-        std::construct_at(InlineData() + inlineSize_, std::forward<Value>(value));
-        ++inlineSize_;
-        return;
-    }
-    MoveInlineToHeap();
-    heap_.push_back(std::forward<Value>(value));
-}
-
-void FormatLayoutCandidates::push_back(const FormatLayoutCandidate& value) { PushBack(value); }
-
-void FormatLayoutCandidates::push_back(FormatLayoutCandidate&& value) { PushBack(std::move(value)); }
 
 FormatLayoutCandidates::iterator FormatLayoutCandidates::erase(iterator it) {
     const size_t index = static_cast<size_t>(it - begin());
@@ -107,11 +82,6 @@ void FormatLayoutCandidates::MoveInlineToHeap() {
     usingHeap_ = true;
 }
 
-int FormatCandidateOrder::CurrentLineOverflow(const FormatLayoutCandidate& result) const {
-    return
-        result.endLineHasText && !result.currentLineOverflowRecorded ? std::max(0, result.endColumn - columnLimit_) : 0;
-}
-
 int FormatCandidateOrder::MaximumOverflow(const FormatLayoutCandidate& result) const {
     return std::max(result.overflowSizeProfile.GreatestValue(), CurrentLineOverflow(result));
 }
@@ -153,15 +123,6 @@ bool FormatCandidateOrder::Better(const FormatLayoutCandidate& candidate, const 
         return candidate.extraLines < incumbent.extraLines;
     }
     return false;
-}
-
-bool FormatCandidateOrder::SameState(const FormatLayoutCandidate& left, const FormatLayoutCandidate& right) {
-    return left.endColumn == right.endColumn &&
-        left.endIndentLevel == right.endIndentLevel &&
-        left.endLineHasText == right.endLineHasText &&
-        left.currentLineOverflowRecorded == right.currentLineOverflowRecorded &&
-        left.ownExpansionCharged == right.ownExpansionCharged &&
-        left.compactNextStreamOperand == right.compactNextStreamOperand;
 }
 
 bool FormatCandidateOrder::Dominates(const FormatLayoutCandidate& left, const FormatLayoutCandidate& right) const {
