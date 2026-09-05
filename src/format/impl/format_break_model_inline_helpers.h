@@ -14,3 +14,11 @@ inline PrintTokenKind FormatBreakTokenKind(const FormatBreakToken& token) {
 inline SyntaxNodeKind FormatBreakTokenSyntaxKind(const FormatBreakToken& token) {
     return token.token == nullptr ? SyntaxNodeKind::Unknown : token.token->syntaxKind;
 }
+
+inline bool FormatBreakHasTrailingComment(const FormatBreakNode& node, size_t index) {
+    return index < node.items.size() && IsCommentToken(FormatBreakTokenKind(node.items[index].trailingComment));
+}
+
+inline bool FormatBreakHasLeadingTrailingComment(const FormatBreakNode& node) {
+    return IsCommentToken(FormatBreakTokenKind(node.leadingTrailingComment));
+}

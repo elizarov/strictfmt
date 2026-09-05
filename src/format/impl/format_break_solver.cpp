@@ -14,6 +14,7 @@
 
 #include "format/impl/format_break_model_inline_helpers.h"
 #include "format/impl/format_value_profile.h"
+#include "format/impl/format_compact_layout.h"
 #include "util/utf8.h"
 
 namespace {
@@ -230,7 +231,7 @@ public:
         breakLineSuffixWidth_(breakLineSuffixWidth),
         memoHeads_(model.nodes == nullptr ? 1 : model.nodes->size() + 1, nullptr),
         alternativesMemoHeads_(model.nodes == nullptr ? 1 : model.nodes->size() + 1, nullptr),
-        compactLineShapes_(model.nodes == nullptr ? 1 : model.nodes->size() + 1),
+        compactLayout_(model),
         containsForceSplitAdjacentStrings_(model.nodes == nullptr ? 1 : model.nodes->size() + 1, -1),
         containsNonSingleStatementBodyHeader_(model.nodes == nullptr ? 1 : model.nodes->size() + 1, -1) {}
 
@@ -279,15 +280,6 @@ public:
     }
 
 private:
-    struct CompactLineShape {
-        bool hasContextOnlyTokens = false;
-        bool computed = false;
-        bool valid = false;
-        bool producesText = false;
-        int widthWithoutLeadingText = 0;
-        int widthWithLeadingText = 0;
-    };
-
     enum class CompactTailExpansionKind {
         None,
         IntrinsicMultilineLiteral,
@@ -303,174 +295,11 @@ private:
     std::deque<AlternativesMemoEntry> alternativesMemoEntries_;
     std::deque<ChoiceTree> choiceArena_;
     std::deque<DelimiterStackPartitionPath> delimiterStackPartitionPathArena_;
-    mutable std::vector<CompactLineShape> compactLineShapes_;
+    FormatCompactLayout compactLayout_;
     std::vector<signed char> containsForceSplitAdjacentStrings_;
     std::vector<signed char> containsNonSingleStatementBodyHeader_;
 
-    static bool CompactTokenTextIsValid(const FormatBreakToken& token, std::string_view text) {
-        if (token.contextOnly) {
-            return true;
-        }
-        const PrintToken& printToken = FormatBreakTokenValue(token);
-        return printToken.kind != PrintTokenKind::BlankLine &&
-            !IsCommentToken(printToken.kind) &&
-            text.find_first_of("\r\n") == std::string_view::npos;
-    }
-
-    static void AppendCompactTokenShape(CompactLineShape& result, const FormatBreakToken& token, std::string_view text)
-    {
-        result.hasContextOnlyTokens = result.hasContextOnlyTokens || token.contextOnly;
-        if (!result.valid || token.contextOnly) {
-            return;
-        }
-        if (!CompactTokenTextIsValid(token, text)) {
-            result.valid = false;
-            return;
-        }
-        const int width = Utf8CharacterCount(text);
-        const int spaceWithoutLeadingText = result.producesText && token.spaceBefore ? 1 : 0;
-        const int spaceWithLeadingText = token.spaceBefore ? 1 : 0;
-        result.widthWithoutLeadingText += spaceWithoutLeadingText + width;
-        result.widthWithLeadingText += spaceWithLeadingText + width;
-        result.producesText = result.producesText || width > 0;
-    }
-
-    void AppendCompactNodeShape(CompactLineShape& result, const FormatBreakNode* child) const {
-        if (!result.valid || child == nullptr) {
-            return;
-        }
-        const CompactLineShape& childShape = BuildCompactLineShape(*child);
-        if (!childShape.valid) {
-            result.valid = false;
-            return;
-        }
-        result.widthWithoutLeadingText +=
-            result.producesText ? childShape.widthWithLeadingText : childShape.widthWithoutLeadingText;
-        result.widthWithLeadingText += childShape.widthWithLeadingText;
-        result.producesText = result.producesText || childShape.producesText;
-        result.hasContextOnlyTokens = result.hasContextOnlyTokens || childShape.hasContextOnlyTokens;
-    }
-
-    void AppendCompactListShape(CompactLineShape& result, const FormatBreakNode& node) const {
-        for (size_t index = 0; result.valid && index < node.items.size(); ++index) {
-            const FormatBreakListItem& item = node.items[index];
-            AppendCompactNodeShape(result, item.node);
-            if (FormatBreakTokenKind(item.separator) == PrintTokenKind::Known) {
-                AppendCompactTokenShape(result, item.separator, FormatTokenText(FormatBreakTokenValue(item.separator)));
-            }
-            if (HasTrailingComment(node, index)) {
-                result.valid = false;
-            }
-        }
-    }
-
-    const CompactLineShape& BuildCompactLineShape(const FormatBreakNode& node) const {
-        CompactLineShape& cached = compactLineShapes_[static_cast<size_t>(node.id)];
-        if (cached.computed) {
-            return cached;
-        }
-        // Break nodes and token spacing are immutable during a solve. This summary performs the same legality and
-        // width calculation as recursively appending the compact form, with line-start text as its only input.
-        cached.computed = true;
-        cached.valid = !node.forceSplit && !node.ternaryRequiresQuestionBreak && !node.ternaryRequiresColonBreaks;
-        if (!cached.valid) {
-            return cached;
-        }
-        switch (node.kind) {
-            case FormatBreakNodeKind::Token:
-                AppendCompactTokenShape(cached, node.token, FormatTokenText(FormatBreakTokenValue(node.token)));
-                break;
-            case FormatBreakNodeKind::Sequence:
-            case FormatBreakNodeKind::FunctionSignature:
-                for (const FormatBreakNode* child : node.children) {
-                    AppendCompactNodeShape(cached, child);
-                }
-                break;
-            case FormatBreakNodeKind::BodyHeader:
-                if (node.bodyHeaderRequiresDetachedBody) {
-                    cached.valid = false;
-                    break;
-                }
-                for (const FormatBreakNode* child : node.children) {
-                    AppendCompactNodeShape(cached, child);
-                }
-                break;
-            case FormatBreakNodeKind::Delimited:
-                if (node.children.size() < 2) {
-                    cached.valid = false;
-                    break;
-                }
-                AppendCompactNodeShape(cached, node.children[0]);
-                if (HasLeadingTrailingComment(node)) {
-                    cached.valid = false;
-                    break;
-                }
-                AppendCompactListShape(cached, node);
-                AppendCompactNodeShape(cached, node.children[1]);
-                break;
-            case FormatBreakNodeKind::PrefixList:
-                if (node.children.empty()) {
-                    cached.valid = false;
-                    break;
-                }
-                AppendCompactNodeShape(cached, node.children[0]);
-                if (HasLeadingTrailingComment(node)) {
-                    cached.valid = false;
-                    break;
-                }
-                AppendCompactListShape(cached, node);
-                break;
-            case FormatBreakNodeKind::StatementSequence:
-                AppendCompactListShape(cached, node);
-                break;
-            case FormatBreakNodeKind::Chain:
-                if (node.chainStartsWithOperator) {
-                    cached.valid = false;
-                    break;
-                }
-                for (size_t index = 0; cached.valid && index < node.operands.size(); ++index) {
-                    AppendCompactNodeShape(cached, node.operands[index]);
-                    if (index < node.commentsBeforeOperators.size() && !node.commentsBeforeOperators[index].empty()) {
-                        cached.valid = false;
-                        break;
-                    }
-                    if (index < node.operators.size()) {
-                        AppendCompactTokenShape(
-                            cached, node.operators[index], FormatTokenText(FormatBreakTokenValue(node.operators[index]))
-                        );
-                    }
-                }
-                break;
-            case FormatBreakNodeKind::AdjacentStrings:
-                if (node.compactStringTexts.size() != node.operands.size()) {
-                    cached.valid = false;
-                    break;
-                }
-                for (size_t index = 0; cached.valid && index < node.operands.size(); ++index) {
-                    if (node.compactStringTexts[index].empty()) {
-                        continue;
-                    }
-                    const FormatBreakNode* operand = node.operands[index];
-                    if (operand == nullptr || operand->kind != FormatBreakNodeKind::Token) {
-                        cached.valid = false;
-                        break;
-                    }
-                    AppendCompactTokenShape(cached, operand->token, node.compactStringTexts[index]);
-                }
-                break;
-        }
-        return cached;
-    }
-
     int IndentColumn(int indentLevel) const { return std::max(0, indentLevel) * indentWidth_; }
-
-    static bool HasTrailingComment(const FormatBreakNode& node, size_t index) {
-        return index < node.items.size() && IsCommentToken(FormatBreakTokenKind(node.items[index].trailingComment));
-    }
-
-    static bool HasLeadingTrailingComment(const FormatBreakNode& node) {
-        return IsCommentToken(FormatBreakTokenKind(node.leadingTrailingComment));
-    }
 
     static bool HasBlankLineBeforeItem(const FormatBreakNode& node, size_t index) {
         return index < node.items.size() && node.items[index].blankLineBefore;
@@ -1228,18 +1057,12 @@ private:
         if (token.contextOnly) {
             return true;
         }
-        const PrintToken& printToken = FormatBreakTokenValue(token);
-        if (
-            printToken.kind == PrintTokenKind::BlankLine ||
-            IsCommentToken(printToken.kind) ||
-            text.find_first_of("\r\n") != std::string_view::npos
-        ) {
+        const FormatCompactLine shape = FormatCompactLayout::MeasureToken(token, text);
+        if (!shape.valid) {
             return false;
         }
-        const int space = SpaceBeforeToken(token, result.endLineHasText);
-        const int width = Utf8CharacterCount(text);
-        result.endColumn += space + width;
-        result.endLineHasText = result.endLineHasText || width > 0;
+        result.endColumn += result.endLineHasText ? shape.widthWithLeadingText : shape.widthWithoutLeadingText;
+        result.endLineHasText = result.endLineHasText || shape.producesText;
         return !requireFit || !result.endLineHasText || result.endColumn <= config_.columnLimit;
     }
 
@@ -1255,7 +1078,7 @@ private:
             ) {
                 return false;
             }
-            if (HasTrailingComment(node, index)) {
+            if (FormatBreakHasTrailingComment(node, index)) {
                 return false;
             }
         }
@@ -1263,7 +1086,7 @@ private:
     }
 
     bool AppendCompactOneLine(const FormatBreakNode& node, NodeResult& result, bool requireFit) const {
-        const CompactLineShape& shape = BuildCompactLineShape(node);
+        const FormatCompactLine& shape = compactLayout_.Measure(node);
         if (!shape.valid) {
             return false;
         }
@@ -1284,7 +1107,7 @@ private:
             ) {
                 return true;
             }
-            if (HasTrailingComment(node, index)) {
+            if (FormatBreakHasTrailingComment(node, index)) {
                 return true;
             }
         }
@@ -1322,7 +1145,7 @@ private:
             node.children.size() < 2 ||
             node.items.size() != 1 ||
             HasRealSeparators(node) ||
-            HasTrailingComment(node, 0) ||
+            FormatBreakHasTrailingComment(node, 0) ||
             HasBlankLineBeforeItem(node, 0) ||
             node.items.front().node == nullptr
         ) {
@@ -1398,7 +1221,7 @@ private:
                     if (FormatBreakTokenKind(listItem.separator) == PrintTokenKind::Known) {
                         AppendToken(next, listItem.separator);
                     }
-                    if (HasTrailingComment(node, index)) {
+                    if (FormatBreakHasTrailingComment(node, index)) {
                         AppendToken(next, listItem.trailingComment);
                     }
                     AddPrunedResult(nextByState, std::move(next));
@@ -1416,7 +1239,7 @@ private:
                         if (FormatBreakTokenKind(listItem.separator) == PrintTokenKind::Known) {
                             AppendToken(next, listItem.separator);
                         }
-                        if (HasTrailingComment(node, index)) {
+                        if (FormatBreakHasTrailingComment(node, index)) {
                             AppendToken(next, listItem.trailingComment);
                         }
                         AddPrunedResult(nextByState, std::move(next));
@@ -1440,7 +1263,7 @@ private:
                     if (FormatBreakTokenKind(listItem.separator) == PrintTokenKind::Known) {
                         AppendToken(next, listItem.separator);
                     }
-                    if (HasTrailingComment(node, index)) {
+                    if (FormatBreakHasTrailingComment(node, index)) {
                         AppendToken(next, listItem.trailingComment);
                     }
                     AddPrunedResult(nextByState, std::move(next));
@@ -1459,7 +1282,7 @@ private:
             result{.valid = true, .endColumn = column, .endIndentLevel = indentLevel, .endLineHasText = lineHasText};
         AddChoice(result, node.id, FormatBreakChoice::Compact, indentLevel);
         AppendToken(result, node.children[0]->token);
-        if (HasLeadingTrailingComment(node)) {
+        if (FormatBreakHasLeadingTrailingComment(node)) {
             AppendToken(result, node.leadingTrailingComment);
         }
 
@@ -1537,11 +1360,15 @@ private:
             result{.valid = true, .endColumn = column, .endIndentLevel = indentLevel, .endLineHasText = lineHasText};
         AddChoice(result, node.id, FormatBreakChoice::Split, indentLevel);
         AppendToken(result, node.children[0]->token);
-        if (HasLeadingTrailingComment(node)) {
+        if (FormatBreakHasLeadingTrailingComment(node)) {
             AppendToken(result, node.leadingTrailingComment);
         }
         AppendListBreakAfterOptionalComment(
-            result, indentLevel + 1, node.breakCost, HasBlankLineBeforeItem(node, 0), HasLeadingTrailingComment(node)
+            result,
+            indentLevel + 1,
+            node.breakCost,
+            HasBlankLineBeforeItem(node, 0),
+            FormatBreakHasLeadingTrailingComment(node)
         );
         for (size_t index = 0; index < node.items.size(); ++index) {
             const FormatBreakListItem& listItem = node.items[index];
@@ -1559,7 +1386,7 @@ private:
                 hasNextItem ? indentLevel + 1 : indentLevel,
                 node.breakCost,
                 hasNextItem && HasBlankLineBeforeItem(node, index + 1),
-                HasTrailingComment(node, index)
+                FormatBreakHasTrailingComment(node, index)
             );
         }
         AppendToken(result, node.children[1]->token);
@@ -2134,7 +1961,7 @@ private:
         if (node.kind == FormatBreakNodeKind::Token) {
             return TokenHasPhysicalLineBreak(node.token);
         }
-        if (IsBreakingChoice(ChoiceFor(result, node)) || HasLeadingTrailingComment(node)) {
+        if (IsBreakingChoice(ChoiceFor(result, node)) || FormatBreakHasLeadingTrailingComment(node)) {
             return true;
         }
         for (const FormatBreakNode* child : node.children) {
@@ -2144,7 +1971,7 @@ private:
         }
         for (size_t index = 0; index < node.items.size(); ++index) {
             if (
-                HasTrailingComment(node, index) ||
+                FormatBreakHasTrailingComment(node, index) ||
                 (node.items[index].node != nullptr && HasPhysicalLineBreak(*node.items[index].node, result))
             ) {
                 return true;
@@ -2363,7 +2190,7 @@ private:
             result{.valid = true, .endColumn = column, .endIndentLevel = indentLevel, .endLineHasText = lineHasText};
         AddChoice(result, node.id, FormatBreakChoice::Compact, indentLevel);
         AppendToken(result, node.children[0]->token);
-        if (HasLeadingTrailingComment(node)) {
+        if (FormatBreakHasLeadingTrailingComment(node)) {
             AppendToken(result, node.leadingTrailingComment);
         }
         NodeResults current{result};
@@ -2386,7 +2213,7 @@ private:
     }
 
     NodeResult SolvePrefixListPacked(const FormatBreakNode& node, int column, int indentLevel, bool lineHasText) {
-        if (node.forceSplit || node.items.size() < 2 || HasLeadingTrailingComment(node)) {
+        if (node.forceSplit || node.items.size() < 2 || FormatBreakHasLeadingTrailingComment(node)) {
             return {};
         }
         NodeResult
@@ -2409,11 +2236,15 @@ private:
             result{.valid = true, .endColumn = column, .endIndentLevel = indentLevel, .endLineHasText = lineHasText};
         AddChoice(result, node.id, FormatBreakChoice::Split, indentLevel);
         AppendToken(result, node.children[0]->token);
-        if (HasLeadingTrailingComment(node)) {
+        if (FormatBreakHasLeadingTrailingComment(node)) {
             AppendToken(result, node.leadingTrailingComment);
         }
         AppendListBreakAfterOptionalComment(
-            result, indentLevel + 1, node.breakCost, HasBlankLineBeforeItem(node, 0), HasLeadingTrailingComment(node)
+            result,
+            indentLevel + 1,
+            node.breakCost,
+            HasBlankLineBeforeItem(node, 0),
+            FormatBreakHasLeadingTrailingComment(node)
         );
         NodeResults current{result};
         for (size_t index = 0; index < node.items.size(); ++index) {
@@ -2431,7 +2262,7 @@ private:
                             indentLevel + 1,
                             node.breakCost,
                             HasBlankLineBeforeItem(node, index + 1),
-                            HasTrailingComment(node, index)
+                            FormatBreakHasTrailingComment(node, index)
                         );
                     }
                     AddPrunedResult(next, std::move(candidate));
@@ -2498,7 +2329,7 @@ private:
                     indentLevel,
                     node.breakCost,
                     HasBlankLineBeforeItem(node, index),
-                    HasTrailingComment(node, index - 1)
+                    FormatBreakHasTrailingComment(node, index - 1)
                 );
             }
             const FormatBreakListItem& listItem = node.items[index];
@@ -3034,7 +2865,7 @@ private:
         if (
             !prefix.endLineHasText ||
             !IsFormatBreakLiteralOperand(*node.operands[operatorIndex], SyntaxNodeClass::StringLike) ||
-            !BuildCompactLineShape(*node.operands[operatorIndex]).valid
+            !compactLayout_.Measure(*node.operands[operatorIndex]).valid
         ) {
             return false;
         }
@@ -3047,7 +2878,7 @@ private:
                 op.contextOnly ||
                 (index < node.commentsBeforeOperators.size() && !node.commentsBeforeOperators[index].empty()) ||
                 (streamChain && !AddCompactToken(prefix, op, true)) ||
-                BuildCompactLineShape(*node.operands[index + 1]).hasContextOnlyTokens ||
+                compactLayout_.Measure(*node.operands[index + 1]).hasContextOnlyTokens ||
                 !AppendCompactOneLine(*node.operands[index + 1], prefix, true)
             ) {
                 return false;
@@ -3154,11 +2985,15 @@ private:
         };
         AddChoice(result, node.id, FormatBreakChoice::SplitAttachedOpen, baseIndent);
         AppendToken(result, node.children[0]->token);
-        if (HasLeadingTrailingComment(node)) {
+        if (FormatBreakHasLeadingTrailingComment(node)) {
             AppendToken(result, node.leadingTrailingComment);
         }
         AppendListBreakAfterOptionalComment(
-            result, baseIndent + 1, node.breakCost, HasBlankLineBeforeItem(node, 0), HasLeadingTrailingComment(node)
+            result,
+            baseIndent + 1,
+            node.breakCost,
+            HasBlankLineBeforeItem(node, 0),
+            FormatBreakHasLeadingTrailingComment(node)
         );
         for (size_t index = 0; index < node.items.size(); ++index) {
             const FormatBreakListItem& listItem = node.items[index];
@@ -3170,7 +3005,7 @@ private:
             if (node.splitTrailingCommaItem == index) {
                 AppendTrailingComma(result);
             }
-            if (HasTrailingComment(node, index)) {
+            if (FormatBreakHasTrailingComment(node, index)) {
                 AppendToken(result, listItem.trailingComment);
             }
             const bool hasNextItem = index + 1 < node.items.size();
@@ -3179,7 +3014,7 @@ private:
                 hasNextItem ? baseIndent + 1 : baseIndent,
                 node.breakCost,
                 hasNextItem && HasBlankLineBeforeItem(node, index + 1),
-                HasTrailingComment(node, index)
+                FormatBreakHasTrailingComment(node, index)
             );
         }
         AppendToken(result, node.children[1]->token);
