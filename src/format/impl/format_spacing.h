@@ -18,3 +18,10 @@ bool IsTemplateAnglePrintToken(const PrintToken& token);
 bool FormatTokenNeedsSpace(const PrintToken* previous, const PrintToken& current);
 inline std::string_view FormatTokenText(const PrintToken& token) { return token.text; }
 inline int FormatTokenWidth(const PrintToken& token) { return Utf8CharacterCount(token.text); }
+
+inline bool IsStructuralTriviaToken(const PrintToken& token) {
+    // Inline block comments are text tokens for emission, but remain trivia for grammar-neighbor decisions.
+    return token.kind == PrintTokenKind::BlankLine ||
+        IsCommentToken(token.kind) ||
+        (token.node != nullptr && SyntaxNodeHasClass(*token.node, SyntaxNodeClass::Trivia));
+}

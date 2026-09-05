@@ -21,6 +21,8 @@
 #include "format/impl/format_print_token_builder.h"
 #include "format/impl/format_spacing.h"
 #include "format/impl/format_output.h"
+#include "format/impl/format_list_continuation.h"
+#include "format/impl/format_syntax_helpers.h"
 #include "format/impl/format_chain_continuation.h"
 #include "tools/tools_common.h"
 #include "util/utf8.h"
@@ -41,13 +43,6 @@ struct BraceFrame {
     int indentRestore = 0;
     int closeIndent = 0;
 };
-
-bool IsStructuralTriviaToken(const PrintToken& token) {
-    // Inline block comments are text tokens for emission, but remain trivia for grammar-neighbor decisions.
-    return token.kind == PrintTokenKind::BlankLine ||
-        IsCommentToken(token.kind) ||
-        (token.node != nullptr && SyntaxNodeHasClass(*token.node, SyntaxNodeClass::Trivia));
-}
 
 bool BreakModelHasLayoutChoice(const FormatBreakModel& model) {
     // Token and sequence nodes have exactly one layout. Emitting them with the default compact solution is the same
@@ -116,30 +111,6 @@ bool IsConditionalRhsPreprocessorToken(const PrintToken& token) {
         (token.node->classes & static_cast<std::uint64_t>(SyntaxNodeClass::ConditionalRhsPreprocessor)) != 0;
 }
 
-SyntaxNodeKind MatchingListCloseToken(SyntaxNodeKind kind) {
-    switch (kind) {
-        case SyntaxNodeKind::LeftParen:
-            return SyntaxNodeKind::RightParen;
-        case SyntaxNodeKind::LeftBracket:
-            return SyntaxNodeKind::RightBracket;
-        case SyntaxNodeKind::LeftBrace:
-            return SyntaxNodeKind::RightBrace;
-        case SyntaxNodeKind::Less:
-            return SyntaxNodeKind::Greater;
-        default:
-            return SyntaxNodeKind::Unknown;
-    }
-}
-
-bool HasDirectKnownChild(const SyntaxNode& node, SyntaxNodeKind kind) {
-    for (const SyntaxNode* child : node.children) {
-        if (child != nullptr && child->kind == kind) {
-            return true;
-        }
-    }
-    return false;
-}
-
 bool HasDirectListDelimiterPair(const SyntaxNode& node) {
     for (const SyntaxNode* child : node.children) {
         if (child == nullptr || !SyntaxNodeKindHasClass(child->kind, SyntaxNodeClass::OpeningDelimiter)) {
@@ -165,18 +136,6 @@ bool IsSeparatedListContainer(const SyntaxNode& node) {
     }
     return
         HasDirectKnownChild(node, SyntaxNodeKind::Semicolon) && HasDirectDelimiterPair(node, SyntaxNodeKind::LeftParen);
-}
-
-bool HasDirectCommentChild(const SyntaxNode& node) {
-    for (const SyntaxNode* child : node.children) {
-        if (
-            child != nullptr &&
-            (child->kind == SyntaxNodeKind::Comment || child->kind == SyntaxNodeKind::TrailingComment)
-        ) {
-            return true;
-        }
-    }
-    return false;
 }
 
 bool SyntaxSubtreeEndsWith(const SyntaxNode& node, SyntaxNodeKind kind) {
@@ -288,33 +247,6 @@ bool KeepsStructuralCommentInBreakModel(const PrintToken& token) {
         (token.node != nullptr && token.node->parent != nullptr && IsFormatterOwnedChain(*token.node->parent));
 }
 
-struct MandatoryBlockSplitListContext {
-    const SyntaxNode* openToken = nullptr;
-    const SyntaxNode* list = nullptr;
-    const SyntaxNode* itemRightBrace = nullptr;
-    const SyntaxNode* closeToken = nullptr;
-    int itemIndent = 0;
-    int closeIndent = 0;
-    bool afterItemClose = false;
-};
-
-struct MandatoryBlockSplitListPlan {
-    FormatBreakModelContext breakContext;
-    std::vector<MandatoryBlockSplitListContext> deferredContexts;
-};
-
-struct PreprocessorSplitListContext {
-    const SyntaxNode* list = nullptr;
-    const SyntaxNode* closeToken = nullptr;
-    int itemIndent = 0;
-    int closeIndent = 0;
-};
-
-struct PreprocessorSplitListPlan {
-    FormatBreakModelContext breakContext;
-    PreprocessorSplitListContext deferredContext;
-};
-
 class Printer final : private FormatBreakOutput {
 public:
     Printer(
@@ -333,6 +265,7 @@ public:
 
     std::string Print(const std::vector<PrintToken>& tokens, size_t sourceSize) {
         activeTokens_ = &tokens;
+        listContinuation_ = std::make_unique<FormatListContinuation>(tokens);
         chainContinuation_ = std::make_unique<FormatChainContinuation>(tokens);
         std::vector<std::uint8_t> mandatoryBlockOpens(tokens.size());
         for (size_t index = 0; index < tokens.size(); ++index) {
@@ -370,6 +303,7 @@ private:
     int indentWidth_ = 4;
     int tabWidth_ = 4;
     FormatOutput output_;
+    std::unique_ptr<FormatListContinuation> listContinuation_;
     std::unique_ptr<FormatChainContinuation> chainContinuation_;
     std::vector<PrintToken> pendingTokens_;
     std::unique_ptr<FormatDeclarationLayout> declarationLayout_;
@@ -386,8 +320,6 @@ private:
     int bracketDepth_ = 0;
     std::vector<BraceFrame> braceStack_;
     std::vector<int> activeCaseBodySwitchDepths_;
-    std::vector<MandatoryBlockSplitListContext> mandatoryBlockSplitListContexts_;
-    std::vector<PreprocessorSplitListContext> preprocessorSplitListContexts_;
     std::vector<int> conditionalFunctionIndents_;
     std::optional<int> pendingIndentRestoreAfterFlush_;
     std::unordered_set<std::uint32_t> prebufferedTokenSourceIndices_;
@@ -437,19 +369,6 @@ private:
         return !(
             next != nullptr && next->kind == PrintTokenKind::Known && next->syntaxKind == SyntaxNodeKind::RightBrace
         ) && !BecomesEmptyAfterNullItemRemoval(token);
-    }
-
-    static const SyntaxNode* DirectTokenChild(const SyntaxNode& node, SyntaxNodeKind known) {
-        for (const SyntaxNode* child : node.children) {
-            if (child && child->kind == known) {
-                return child;
-            }
-        }
-        return nullptr;
-    }
-
-    static bool HasDirectTokenChild(const SyntaxNode& node, SyntaxNodeKind known) {
-        return DirectTokenChild(node, known) != nullptr;
     }
 
     static bool ContinuesBlockExpression(const PrintToken& token, const PrintToken& next) {
@@ -527,57 +446,6 @@ private:
         return ClosesDeclaredTypeBody(token);
     }
 
-    static SyntaxNodeKind MatchingClosingDelimiterToken(SyntaxNodeKind kind) {
-        switch (kind) {
-            case SyntaxNodeKind::LeftParen:
-                return SyntaxNodeKind::RightParen;
-            case SyntaxNodeKind::LeftBracket:
-                return SyntaxNodeKind::RightBracket;
-            case SyntaxNodeKind::LeftBrace:
-                return SyntaxNodeKind::RightBrace;
-            case SyntaxNodeKind::Less:
-                return SyntaxNodeKind::Greater;
-            default:
-                return SyntaxNodeKind::Unknown;
-        }
-    }
-
-    static const SyntaxNode* DirectOpeningDelimiterChild(const SyntaxNode& node) {
-        for (const SyntaxNode* child : node.children) {
-            if (child && SyntaxNodeKindHasClass(child->kind, SyntaxNodeClass::OpeningDelimiter)) {
-                return child;
-            }
-        }
-        return nullptr;
-    }
-
-    static const SyntaxNode* DirectMatchingClosingDelimiterChild(const SyntaxNode& node, const SyntaxNode* open) {
-        const SyntaxNodeKind closingKind =
-            open == nullptr ? SyntaxNodeKind::Unknown : MatchingClosingDelimiterToken(open->kind);
-        return closingKind == SyntaxNodeKind::Unknown ? nullptr : DirectTokenChild(node, closingKind);
-    }
-
-    static bool ListOwnsToken(const SyntaxNode* list, const PrintToken& token) {
-        if (token.node == nullptr) {
-            return false;
-        }
-        for (const SyntaxNode* parent = token.node->parent; parent != nullptr; parent = parent->parent) {
-            if (parent == list) {
-                return true;
-            }
-            if (DirectOpeningDelimiterChild(*parent) != nullptr) {
-                return false;
-            }
-        }
-        return false;
-    }
-
-    static bool IsListComma(const PrintToken& token, const SyntaxNode* list) {
-        return token.kind == PrintTokenKind::Known &&
-            token.syntaxKind == SyntaxNodeKind::Comma &&
-            ListOwnsToken(list, token);
-    }
-
     static bool ClosesContainingDelimiter(const PrintToken& token, const PrintToken& next) {
         if (token.node == nullptr || next.node == nullptr || next.node->parent == nullptr) {
             return false;
@@ -588,28 +456,6 @@ private:
         }
         return PrintTokenSyntaxPathContains(token, container) &&
             DirectMatchingClosingDelimiterChild(*container, DirectOpeningDelimiterChild(*container)) == next.node;
-    }
-
-    static std::vector<const SyntaxNode*> ListAncestorsBefore(const PrintToken& token, const SyntaxNode* before) {
-        for (const SyntaxNode* cursor = token.node; cursor != nullptr; cursor = cursor->parent) {
-            if (cursor == before) {
-                std::vector<const SyntaxNode*> result;
-                for (cursor = cursor->parent; cursor != nullptr; cursor = cursor->parent) {
-                    if (RoleForBraceParent(cursor->kind) == BraceRole::Block) {
-                        break;
-                    }
-                    const SyntaxNode* open = DirectOpeningDelimiterChild(*cursor);
-                    if (
-                        SyntaxNodeHasClass(*cursor, SyntaxNodeClass::PrefixList) ||
-                        (open != nullptr && DirectMatchingClosingDelimiterChild(*cursor, open) != nullptr)
-                    ) {
-                        result.push_back(cursor);
-                    }
-                }
-                return result;
-            }
-        }
-        return {};
     }
 
     static const SyntaxNode* NearestAncestor(const PrintToken& token, SyntaxNodeKind kind) {
@@ -656,20 +502,6 @@ private:
         }
         const SyntaxNode* macroCallParent = macroCall->parent;
         return macroCallParent != nullptr && IsStatementItemContainer(macroCallParent->kind);
-    }
-
-    static bool StartsPreprocessorSplitList(const PrintToken& token) {
-        return token.kind == PrintTokenKind::Preprocessor &&
-            PrintTokenSyntaxHasClass(token, SyntaxNodeClass::ConditionalPreprocessorOpen);
-    }
-
-    static const SyntaxNode* NearestPreprocessorSplitListAncestor(const PrintToken& token) {
-        for (const SyntaxNode* cursor = token.node; cursor != nullptr; cursor = cursor->parent) {
-            if (SyntaxNodeKindHasClass(cursor->kind, SyntaxNodeClass::PreprocessorSplitList)) {
-                return cursor;
-            }
-        }
-        return nullptr;
     }
 
     const SyntaxNode* ImmediateConditionalPreprocessorListParent(const PrintToken& token) {
@@ -719,52 +551,6 @@ private:
             next != nullptr &&
             next->kind == PrintTokenKind::Known &&
             next->syntaxKind == SyntaxNodeKind::Colon;
-    }
-
-    std::optional<size_t> FindTokenIndex(const SyntaxNode* node, size_t begin) const {
-        if (node == nullptr || activeTokens_ == nullptr) {
-            return std::nullopt;
-        }
-        for (size_t index = begin; index < activeTokens_->size(); ++index) {
-            if ((*activeTokens_)[index].node == node) {
-                return index;
-            }
-        }
-        return std::nullopt;
-    }
-
-    const SyntaxNode* FindPendingOpeningDelimiterFor(const SyntaxNode* list) const {
-        for (auto token = pendingTokens_.rbegin(); token != pendingTokens_.rend(); ++token) {
-            if (
-                token->kind == PrintTokenKind::Known &&
-                PrintTokenSyntaxHasClass(*token, SyntaxNodeClass::OpeningDelimiter) &&
-                PrintTokenSyntaxPathContains(*token, list)
-            ) {
-                return token->node;
-            }
-        }
-        return nullptr;
-    }
-
-    std::optional<size_t> FindFutureClosingDelimiterFor(const SyntaxNode* list, SyntaxNodeKind openKind) const {
-        if (activeTokens_ == nullptr) {
-            return std::nullopt;
-        }
-        const SyntaxNodeKind closeKind = MatchingClosingDelimiterToken(openKind);
-        if (closeKind == SyntaxNodeKind::Unknown) {
-            return std::nullopt;
-        }
-        for (size_t index = currentTokenIndex_ + 1; index < activeTokens_->size(); ++index) {
-            const PrintToken& candidate = (*activeTokens_)[index];
-            if (
-                candidate.kind == PrintTokenKind::Known &&
-                candidate.syntaxKind == closeKind &&
-                PrintTokenSyntaxPathContains(candidate, list)
-            ) {
-                return index;
-            }
-        }
-        return std::nullopt;
     }
 
     void NewLine(bool macroContinuation = false) { output_.NewLine(macroContinuation); }
@@ -1019,7 +805,7 @@ private:
     void BreakLine(int indentLevel, bool blankLine) override { BreakListLine(indentLevel, blankLine); }
     void SetPendingIndent(int indentLevel) override { output_.SetPendingIndent(indentLevel); }
 
-    std::vector<MandatoryBlockSplitListContext> FlushPendingTokens(const FormatBreakModelContext& context = {}) {
+    std::vector<FormatBreakSplitList> FlushPendingTokens(const FormatBreakModelContext& context = {}) {
         emittedBlockOpenIndent_.reset();
         if (pendingTokens_.empty()) {
             return {};
@@ -1080,7 +866,7 @@ private:
                 pendingTokens_, effectiveModel, *effectiveSolution, startColumn, baseIndentLevel, breakLineSuffixWidth
             );
         }
-        std::vector<MandatoryBlockSplitListContext> splitContexts;
+        std::vector<FormatBreakSplitList> splitContexts;
         if (effectiveModel.root) {
             const auto emitStart =
                 stats_ == nullptr ? std::chrono::steady_clock::time_point{} : std::chrono::steady_clock::now();
@@ -1088,11 +874,7 @@ private:
                 config_, effectiveModel, *effectiveSolution, baseIndentLevel, pendingTokens_.back().node, *this
             );
             emittedBlockOpenIndent_ = emission.blockOpenIndent;
-            for (const FormatBreakSplitList& list : emission.splitLists) {
-                splitContexts.push_back(
-                    {.openToken = list.openToken, .itemIndent = list.itemIndent, .closeIndent = list.closeIndent}
-                );
-            }
+            splitContexts = emission.splitLists;
             chainContinuation_->AcceptEmission(emission.chainIndents);
             if (stats_ != nullptr) {
                 stats_->emit += std::chrono::steady_clock::now() - emitStart;
@@ -1109,110 +891,6 @@ private:
     }
 
     bool HasBufferedLineText() const { return output_.State().lineHasText || !pendingTokens_.empty(); }
-
-    std::optional<MandatoryBlockSplitListPlan> BuildMandatoryBlockSplitListPlan(const PrintToken& token) const {
-        if (
-            activeTokens_ == nullptr ||
-            token.kind != PrintTokenKind::Known ||
-            token.syntaxKind != SyntaxNodeKind::LeftBrace ||
-            RoleForBrace(token) != BraceRole::Block ||
-            token.node == nullptr ||
-            token.node->parent == nullptr
-        ) {
-            return std::nullopt;
-        }
-        const SyntaxNode* block = token.node->parent;
-        const std::vector<const SyntaxNode*> lists = ListAncestorsBefore(token, block);
-        if (lists.empty()) {
-            return std::nullopt;
-        }
-        const SyntaxNode* itemClose = DirectTokenChild(*block, SyntaxNodeKind::RightBrace);
-        if (itemClose == nullptr) {
-            return std::nullopt;
-        }
-        const std::optional<size_t> itemCloseIndex = FindTokenIndex(itemClose, currentTokenIndex_ + 1);
-        if (!itemCloseIndex) {
-            return std::nullopt;
-        }
-
-        MandatoryBlockSplitListPlan result;
-        for (const SyntaxNode* list : lists) {
-            if (SyntaxNodeHasClass(*list, SyntaxNodeClass::PrefixList)) {
-                const SyntaxNode* prefix = DirectTokenChild(*list, SyntaxNodeKind::Colon);
-                if (prefix != nullptr) {
-                    result.deferredContexts.push_back({.openToken = prefix, .list = list, .itemRightBrace = itemClose});
-                }
-                continue;
-            }
-            const SyntaxNode* listOpen = DirectOpeningDelimiterChild(*list);
-            const SyntaxNode* listClose = DirectMatchingClosingDelimiterChild(*list, listOpen);
-            if (listOpen == nullptr || listClose == nullptr) {
-                continue;
-            }
-            const std::optional<size_t> closeIndex = FindTokenIndex(listClose, currentTokenIndex_ + 1);
-            if (!closeIndex || *itemCloseIndex >= *closeIndex) {
-                continue;
-            }
-            bool hasFollowingListItem = false;
-            for (size_t index = *itemCloseIndex + 1; index < *closeIndex; ++index) {
-                const PrintToken& candidate = (*activeTokens_)[index];
-                if (IsListComma(candidate, list)) {
-                    hasFollowingListItem = true;
-                    break;
-                }
-            }
-            result.breakContext.virtualDelimiters.push_back({
-                .open = listOpen,
-                .close = FormatBreakToken{&(*activeTokens_)[*closeIndex], false, true},
-                .forceSplit = hasFollowingListItem || HasDirectCommentChild(*list),
-            });
-            result
-                .deferredContexts
-                .push_back({.openToken = listOpen, .list = list, .itemRightBrace = itemClose, .closeToken = listClose});
-        }
-        if (result.deferredContexts.empty()) {
-            return std::nullopt;
-        }
-        return result;
-    }
-
-    std::optional<PreprocessorSplitListPlan> BuildPreprocessorSplitListPlan(const PrintToken& token) const {
-        if (activeTokens_ == nullptr || token.node == nullptr || !StartsPreprocessorSplitList(token)) {
-            return std::nullopt;
-        }
-        const SyntaxNode* list = NearestPreprocessorSplitListAncestor(token);
-        if (list == nullptr) {
-            return std::nullopt;
-        }
-        const SyntaxNode* listOpen = DirectOpeningDelimiterChild(*list);
-        const SyntaxNode* pendingOpen = FindPendingOpeningDelimiterFor(list);
-        if (pendingOpen != nullptr) {
-            listOpen = pendingOpen;
-        }
-        if (listOpen == nullptr) {
-            return std::nullopt;
-        }
-        const SyntaxNode* listClose = DirectMatchingClosingDelimiterChild(*list, listOpen);
-        std::optional<size_t> closeIndex = FindTokenIndex(listClose, currentTokenIndex_ + 1);
-        if (!closeIndex) {
-            closeIndex = FindFutureClosingDelimiterFor(list, listOpen->kind);
-        }
-        if (!closeIndex) {
-            return std::nullopt;
-        }
-        listClose = (*activeTokens_)[*closeIndex].node;
-        FormatBreakToken virtualClose{&(*activeTokens_)[*closeIndex], false, true};
-        const int itemIndentLevel = output_.State().pendingIndentLevel.value_or(indentLevel_ + 1);
-        return PreprocessorSplitListPlan{
-            .breakContext = {.virtualDelimiters = {{.open = listOpen, .close = virtualClose, .forceSplit = true}}},
-            .deferredContext = {
-                .list = list,
-                .closeToken = listClose,
-                .itemIndent = itemIndentLevel,
-                .closeIndent = std::max(0, itemIndentLevel - 1),
-            },
-        };
-    }
 
     bool ShouldBreakAfterSemicolon() const {
         if (braceStack_.empty()) {
@@ -1232,76 +910,24 @@ private:
         return &(*activeTokens_)[currentTokenIndex_ + offset];
     }
 
-    MandatoryBlockSplitListContext* ActiveMandatoryBlockSplitListContext() {
-        return mandatoryBlockSplitListContexts_.empty() ? nullptr : &mandatoryBlockSplitListContexts_.back();
-    }
-
-    PreprocessorSplitListContext* ActivePreprocessorSplitListContextFor(const PrintToken& token) {
-        for (
-            auto context = preprocessorSplitListContexts_.rbegin();
-            context != preprocessorSplitListContexts_.rend();
-            ++context
-        ) {
-            if (PrintTokenSyntaxPathContains(token, context->list)) {
-                return &*context;
+    bool TryPrintListBoundary(const PrintToken& token, FormatListContinuationKind kind) {
+        const auto boundary = listContinuation_->TakeBoundary(token, kind);
+        if (!boundary) {
+            return false;
+        }
+        if (boundary->beforeToken) {
+            if (HasBufferedLineText()) {
+                FlushPendingTokens();
+            }
+            NewLineWithIndent(*boundary->indent);
+            BufferToken(token);
+        } else {
+            BufferToken(token);
+            if (boundary->indent) {
+                FlushPendingTokens();
+                NewLineWithIndent(*boundary->indent);
             }
         }
-        return nullptr;
-    }
-
-    static bool IsForcedLeadingPreprocessorListComma(const PrintToken& token) {
-        return token.forcedLeadingPreprocessorListComma;
-    }
-
-    bool IsFinalPreprocessorSplitListItem(const PrintToken& token) const {
-        if (activeTokens_ == nullptr || token.node == nullptr) {
-            return false;
-        }
-        const SyntaxNode* list = NearestPreprocessorSplitListAncestor(token);
-        const SyntaxNode* open = list == nullptr ? nullptr : DirectOpeningDelimiterChild(*list);
-        const SyntaxNode* close = list == nullptr ? nullptr : DirectMatchingClosingDelimiterChild(*list, open);
-        if (close == nullptr) {
-            return false;
-        }
-
-        for (size_t index = currentTokenIndex_ + 1; index < activeTokens_->size(); ++index) {
-            const PrintToken& candidate = (*activeTokens_)[index];
-            if (IsStructuralTriviaToken(candidate)) {
-                continue;
-            }
-            if (!PrintTokenSyntaxPathContains(candidate, list)) {
-                continue;
-            }
-            return candidate.kind == PrintTokenKind::Known && candidate.node == close;
-        }
-        return false;
-    }
-
-    bool TryPrintPreprocessorSplitListComma(const PrintToken& token) {
-        PreprocessorSplitListContext* context = ActivePreprocessorSplitListContextFor(token);
-        if (context == nullptr || !IsListComma(token, context->list)) {
-            return false;
-        }
-        BufferToken(token);
-        if (IsForcedLeadingPreprocessorListComma(token)) {
-            return true;
-        }
-        FlushPendingTokens();
-        NewLineWithIndent(context->itemIndent);
-        return true;
-    }
-
-    bool TryPrintPreprocessorSplitListClose(const PrintToken& token) {
-        PreprocessorSplitListContext* context = ActivePreprocessorSplitListContextFor(token);
-        if (context == nullptr || token.kind != PrintTokenKind::Known || context->closeToken != token.node) {
-            return false;
-        }
-        if (HasBufferedLineText()) {
-            FlushPendingTokens();
-        }
-        NewLineWithIndent(context->closeIndent);
-        BufferToken(token);
-        preprocessorSplitListContexts_.pop_back();
         return true;
     }
 
@@ -1336,7 +962,7 @@ private:
     bool TryPrintConditionalPreprocessorListClose(const PrintToken& token) {
         if (
             token.kind != PrintTokenKind::Known ||
-            MatchingClosingDelimiterToken(token.syntaxKind) != SyntaxNodeKind::Unknown ||
+            MatchingListCloseToken(token.syntaxKind) != SyntaxNodeKind::Unknown ||
             ImmediateConditionalPreprocessorListParent(token) == nullptr
         ) {
             return false;
@@ -1346,59 +972,6 @@ private:
         }
         NewLineWithIndent(indentLevel_);
         BufferToken(token);
-        return true;
-    }
-
-    void MarkMandatoryBlockSplitListItemClosed(const PrintToken& token) {
-        for (MandatoryBlockSplitListContext& context : mandatoryBlockSplitListContexts_) {
-            if (context.itemRightBrace == token.node) {
-                context.afterItemClose = true;
-            }
-        }
-    }
-
-    void RetireFinishedMandatoryBlockSplitListContexts(const PrintToken& token) {
-        while (!mandatoryBlockSplitListContexts_.empty()) {
-            const MandatoryBlockSplitListContext& context = mandatoryBlockSplitListContexts_.back();
-            if (
-                context.closeToken != nullptr ||
-                !context.afterItemClose ||
-                token.node == nullptr ||
-                PrintTokenSyntaxPathContains(token, context.list)
-            ) {
-                return;
-            }
-            mandatoryBlockSplitListContexts_.pop_back();
-        }
-    }
-
-    bool TryPrintDeferredSplitListComma(const PrintToken& token) {
-        MandatoryBlockSplitListContext* context = ActiveMandatoryBlockSplitListContext();
-        if (context == nullptr || !context->afterItemClose || !IsListComma(token, context->list)) {
-            return false;
-        }
-        BufferToken(token);
-        FlushPendingTokens();
-        NewLineWithIndent(context->itemIndent);
-        return true;
-    }
-
-    bool TryPrintDeferredSplitListClose(const PrintToken& token) {
-        MandatoryBlockSplitListContext* context = ActiveMandatoryBlockSplitListContext();
-        if (
-            context == nullptr ||
-            !context->afterItemClose ||
-            token.kind != PrintTokenKind::Known ||
-            context->closeToken != token.node
-        ) {
-            return false;
-        }
-        if (HasBufferedLineText()) {
-            FlushPendingTokens();
-        }
-        NewLineWithIndent(context->closeIndent);
-        BufferToken(token);
-        mandatoryBlockSplitListContexts_.pop_back();
         return true;
     }
 
@@ -1613,7 +1186,7 @@ private:
         if (prebufferedTokenSourceIndices_.erase(token.sourceIndex) != 0) {
             return;
         }
-        RetireFinishedMandatoryBlockSplitListContexts(token);
+        listContinuation_->BeforeToken(token);
         if (declarationLayout_->NeedsBlankLineBefore(currentTokenIndex_)) {
             FlushPendingTokens();
             BlankLine();
@@ -1627,15 +1200,7 @@ private:
             const PrintToken* sourceNext =
                 rawNext != nullptr && rawNext->kind != PrintTokenKind::BlankLine ? rawNext : next;
             if (ShouldPreserveSourceBlankLine(token, sourcePrevious, sourceNext)) {
-                const bool continuesSplitList = std::any_of(
-                    mandatoryBlockSplitListContexts_.begin(),
-                    mandatoryBlockSplitListContexts_.end(),
-                    [&](const MandatoryBlockSplitListContext& context) { return ListOwnsToken(context.list, token); }
-                ) || std::any_of(
-                    preprocessorSplitListContexts_.begin(),
-                    preprocessorSplitListContexts_.end(),
-                    [&](const PreprocessorSplitListContext& context) { return ListOwnsToken(context.list, token); }
-                );
+                const bool continuesSplitList = listContinuation_->ContinuesList(token);
                 const std::optional<int> pendingIndent =
                     continuesSplitList ? output_.State().pendingIndentLevel : std::nullopt;
                 BlankLine();
@@ -1748,14 +1313,9 @@ private:
         const std::optional<int> includeInitializerContinuationIndent =
             isInclude && token.parentKind == SyntaxNodeKind::InitDeclarator && output_.State().lineHasText ?
                 std::optional<int>(CurrentLineIndentLevel() + 1) : std::nullopt;
-        const SyntaxNode* conditionalList =
-            StartsPreprocessorSplitList(token) ? NearestPreprocessorSplitListAncestor(token) : nullptr;
-        const bool listConditional = conditionalList != nullptr;
-        const SyntaxNode* conditionalListOpen =
-            conditionalList == nullptr ? nullptr : DirectOpeningDelimiterChild(*conditionalList);
-        const bool trailingListComma = conditionalListOpen != nullptr &&
-            conditionalListOpen->kind == SyntaxNodeKind::LeftBrace &&
-            SyntaxNodeHasClass(*conditionalList, SyntaxNodeClass::AllowedListPreprocessorContainer);
+        const std::optional<bool> conditionalComma = listContinuation_->ConditionalDirectiveComma(currentTokenIndex_);
+        const bool listConditional = conditionalComma.has_value();
+        const bool trailingListComma = conditionalComma.value_or(false);
         const bool closesConditionalFunctionHeader = (
             (token.node != nullptr && SyntaxNodeKindHasClass(token.node->kind, SyntaxNodeClass::EndifDirective)) ||
             token.syntaxKind == SyntaxNodeKind::PreprocessorDirectiveEndif ||
@@ -1791,22 +1351,18 @@ private:
             return;
         }
         if (token.structuredPreprocessor || isInclude || listConditional) {
-            PreprocessorSplitListContext* splitContext = ActivePreprocessorSplitListContextFor(token);
-            const std::optional<PreprocessorSplitListPlan> splitListPlan =
-                splitContext == nullptr ? BuildPreprocessorSplitListPlan(token) : std::nullopt;
-            std::optional<int> listItemIndent;
-            if (splitListPlan) {
-                FlushPendingTokens(splitListPlan->breakContext);
-                preprocessorSplitListContexts_.push_back(splitListPlan->deferredContext);
-                splitContext = &preprocessorSplitListContexts_.back();
-            } else if (splitContext != nullptr && HasBufferedLineText()) {
-                FlushPendingTokens();
-            } else if (token.structuredPreprocessor && HasBufferedLineText()) {
+            std::optional<int> listItemIndent = listContinuation_->PreprocessorIndent(token);
+            const FormatBreakModelContext* splitListPlan =
+                listItemIndent ? nullptr : listContinuation_->PlanPreprocessor(
+                    currentTokenIndex_, pendingTokens_, output_.State().pendingIndentLevel.value_or(indentLevel_ + 1)
+                );
+            if (splitListPlan != nullptr) {
+                FlushPendingTokens(*splitListPlan);
+                listItemIndent = listContinuation_->AcceptPreprocessor();
+            } else if ((listItemIndent || token.structuredPreprocessor) && HasBufferedLineText()) {
                 FlushPendingTokens();
             }
-            if (splitContext != nullptr) {
-                listItemIndent = splitContext->itemIndent;
-            } else if (listConditional) {
+            if (!listItemIndent && listConditional) {
                 listItemIndent = output_.State().pendingIndentLevel.value_or(indentLevel_ + 1);
             }
             if (output_.State().lineHasText) {
@@ -1816,7 +1372,8 @@ private:
                 FormatPreprocessorText(token.text, {
                     .payloadIndent = *listItemIndent,
                     .indentWidth = indentWidth_,
-                    .terminalComma = !IsFinalPreprocessorSplitListItem(token) ? FormatPreprocessorComma::Preserve :
+                    .terminalComma = !listContinuation_->IsFinalPreprocessorItem(currentTokenIndex_) ?
+                        FormatPreprocessorComma::Preserve :
                         (trailingListComma ? FormatPreprocessorComma::Add : FormatPreprocessorComma::Remove),
                 }) : line;
             output_.WriteVerbatim(outputLine);
@@ -1857,7 +1414,7 @@ private:
                 ++parenDepth_;
                 return;
             case SyntaxNodeKind::RightParen:
-                if (TryPrintPreprocessorSplitListClose(token)) {
+                if (TryPrintListBoundary(token, FormatListContinuationKind::Preprocessor)) {
                     if (parenDepth_ > 0) {
                         --parenDepth_;
                     }
@@ -1869,7 +1426,7 @@ private:
                     }
                     return;
                 }
-                if (TryPrintDeferredSplitListClose(token)) {
+                if (TryPrintListBoundary(token, FormatListContinuationKind::Block)) {
                     if (parenDepth_ > 0) {
                         --parenDepth_;
                     }
@@ -1904,7 +1461,7 @@ private:
                 ++bracketDepth_;
                 return;
             case SyntaxNodeKind::RightBracket:
-                if (TryPrintPreprocessorSplitListClose(token)) {
+                if (TryPrintListBoundary(token, FormatListContinuationKind::Preprocessor)) {
                     if (bracketDepth_ > 0) {
                         --bracketDepth_;
                     }
@@ -1916,7 +1473,7 @@ private:
                     }
                     return;
                 }
-                if (TryPrintDeferredSplitListClose(token)) {
+                if (TryPrintListBoundary(token, FormatListContinuationKind::Block)) {
                     if (bracketDepth_ > 0) {
                         --bracketDepth_;
                     }
@@ -1934,7 +1491,7 @@ private:
                 BufferToken(token);
                 return;
             case SyntaxNodeKind::Greater:
-                if (TryPrintPreprocessorSplitListClose(token)) {
+                if (TryPrintListBoundary(token, FormatListContinuationKind::Preprocessor)) {
                     return;
                 }
                 if (TryPrintConditionalPreprocessorListClose(token)) {
@@ -1961,13 +1518,13 @@ private:
                 PrintLeftBrace(token, previous, rawNext);
                 return;
             case SyntaxNodeKind::RightBrace:
-                if (TryPrintPreprocessorSplitListClose(token)) {
+                if (TryPrintListBoundary(token, FormatListContinuationKind::Preprocessor)) {
                     return;
                 }
                 if (TryPrintConditionalPreprocessorListClose(token)) {
                     return;
                 }
-                if (TryPrintDeferredSplitListClose(token)) {
+                if (TryPrintListBoundary(token, FormatListContinuationKind::Block)) {
                     return;
                 }
                 PrintRightBrace(token, next, rawNext);
@@ -1998,10 +1555,10 @@ private:
                 if (TryPrintConditionalPreprocessorListComma(token)) {
                     return;
                 }
-                if (TryPrintPreprocessorSplitListComma(token)) {
+                if (TryPrintListBoundary(token, FormatListContinuationKind::Preprocessor)) {
                     return;
                 }
-                if (TryPrintDeferredSplitListComma(token)) {
+                if (TryPrintListBoundary(token, FormatListContinuationKind::Block)) {
                     return;
                 }
                 BufferToken(token);
@@ -2097,7 +1654,8 @@ private:
             compactRightBraceRoles_.push_back(role);
             return;
         }
-        std::optional<MandatoryBlockSplitListPlan> splitListPlan = BuildMandatoryBlockSplitListPlan(token);
+        const FormatBreakModelContext* splitListPlan =
+            RoleForBrace(token) == BraceRole::Block ? listContinuation_->PlanBlock(currentTokenIndex_) : nullptr;
         BufferToken(token);
         if (role == BraceRole::Compact || IsCompactSingleStatementFunctionBodyBrace(token)) {
             return;
@@ -2106,28 +1664,10 @@ private:
             BufferToken(*rawNext);
             prebufferedTokenSourceIndices_.insert(rawNext->sourceIndex);
         }
-        const std::vector<MandatoryBlockSplitListContext> splitContexts =
-            FlushPendingTokens(splitListPlan ? splitListPlan->breakContext : FormatBreakModelContext{});
-        std::optional<int> splitListItemIndent;
-        if (splitListPlan) {
-            for (
-                auto context = splitListPlan->deferredContexts.rbegin();
-                context != splitListPlan->deferredContexts.rend();
-                ++context
-            ) {
-                const auto selected = std::find_if(
-                    splitContexts.begin(), splitContexts.end(), [&](const MandatoryBlockSplitListContext& candidate) {
-                        return candidate.openToken == context->openToken;
-                    }
-                );
-                if (selected != splitContexts.end()) {
-                    context->itemIndent = selected->itemIndent;
-                    context->closeIndent = selected->closeIndent;
-                    splitListItemIndent = context->itemIndent;
-                    mandatoryBlockSplitListContexts_.push_back(*context);
-                }
-            }
-        }
+        const std::vector<FormatBreakSplitList> splitContexts =
+            FlushPendingTokens(splitListPlan != nullptr ? *splitListPlan : FormatBreakModelContext{});
+        const std::optional<int> splitListItemIndent =
+            splitListPlan == nullptr ? std::nullopt : listContinuation_->AcceptBlock(splitContexts);
         chainContinuation_->FinishBlock(splitListItemIndent.value_or(crossBlockFallbackBaseIndent));
         const bool functionBlock = token.parentKind == SyntaxNodeKind::CompoundStatement &&
             token.grandParentKind == SyntaxNodeKind::FunctionDefinition;
@@ -2194,7 +1734,7 @@ private:
             token.grandParentKind == SyntaxNodeKind::FunctionDefinition &&
             token.node != nullptr &&
             token.node->parent != nullptr &&
-            !HasDirectTokenChild(*token.node->parent, SyntaxNodeKind::LeftBrace) &&
+            !HasDirectKnownChild(*token.node->parent, SyntaxNodeKind::LeftBrace) &&
             !conditionalFunctionIndents_.empty()
         ) {
             FlushPendingTokens();
@@ -2273,19 +1813,7 @@ private:
                 pendingIndentRestoreAfterFlush_ = *restoreIndent;
             }
             BufferToken(token);
-            MarkMandatoryBlockSplitListItemClosed(token);
-            std::optional<int> splitListContinuationIndent;
-            if (
-                MandatoryBlockSplitListContext* context = ActiveMandatoryBlockSplitListContext();
-                context != nullptr &&
-                context->afterItemClose &&
-                next != nullptr &&
-                next->node != context->closeToken &&
-                !IsListComma(*next, context->list) &&
-                ListOwnsToken(context->list, *next)
-            ) {
-                splitListContinuationIndent = context->itemIndent;
-            }
+            const std::optional<int> splitListContinuationIndent = listContinuation_->CloseBlock(token, next);
             if (isSwitchBody) {
                 switchDepth_ = std::max(0, switchDepth_ - 1);
             }

@@ -72,7 +72,8 @@ byte-for-byte idempotence after the first pass.
 - `tests/format/format_test.py` owns the Python test harness and individual test
   cases.
 - `tests/format/layout_test.cpp` owns focused internal layout-contract checks,
-  including physical output state, macro indentation, and comment alignment.
+  including physical output state, macro indentation, comment alignment, and
+  deferred list ownership across block boundaries.
 
 Command-line coverage includes the build-time version string: the CMake test
 target passes its resolved version to the Python harness, which requires

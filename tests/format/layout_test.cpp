@@ -1,9 +1,13 @@
+#include <array>
 #include <iostream>
 #include <stdexcept>
 #include <string_view>
 
 #include "format/impl/format_model.h"
 #include "format/impl/format_output.h"
+#include "format/impl/format_break_emitter.h"
+#include "format/impl/format_break_model.h"
+#include "format/impl/format_list_continuation.h"
 
 namespace {
 
@@ -81,11 +85,71 @@ void TestOutput() {
     }
 }
 
+
+void TestListContinuation() {
+    SyntaxNode list;
+    list.kind = SyntaxNodeKind::ArgumentList;
+    SyntaxNode lambda;
+    lambda.kind = SyntaxNodeKind::LambdaExpression;
+    lambda.parent = &list;
+    SyntaxNode body;
+    body.kind = SyntaxNodeKind::CompoundStatement;
+    body.parent = &lambda;
+    SyntaxNode open;
+    open.kind = SyntaxNodeKind::LeftParen;
+    open.parent = &list;
+    SyntaxNode blockOpen;
+    blockOpen.kind = SyntaxNodeKind::LeftBrace;
+    blockOpen.parent = &body;
+    SyntaxNode blockClose;
+    blockClose.kind = SyntaxNodeKind::RightBrace;
+    blockClose.parent = &body;
+    SyntaxNode comma;
+    comma.kind = SyntaxNodeKind::Comma;
+    comma.parent = &list;
+    SyntaxNode close;
+    close.kind = SyntaxNodeKind::RightParen;
+    close.parent = &list;
+    list.children = {&open, &lambda, &comma, &close};
+    lambda.children = {&body};
+    body.children = {&blockOpen, &blockClose};
+    const auto token = [](const SyntaxNode& node) {
+        return PrintToken{.kind = PrintTokenKind::Known, .syntaxKind = node.kind, .node = &node};
+    };
+    const std::array tokens{token(open), token(blockOpen), token(blockClose), token(comma), token(close)};
+    FormatListContinuation continuation(tokens);
+    const auto* plan = continuation.PlanBlock(1);
+    Check(plan != nullptr && plan->virtualDelimiters.size() == 1, "block plan retains its enclosing list delimiter");
+    Check(plan->virtualDelimiters.front().forceSplit, "following list item requires the virtual list to split");
+    const std::array selected{FormatBreakSplitList{&open, 3, 1}};
+    Check(continuation.AcceptBlock(selected) == 3, "selected list indentation is retained across the block");
+    Check(!continuation.TakeBoundary(tokens[3], FormatListContinuationKind::Block), "list continuation waits for its block to close");
+    continuation.CloseBlock(tokens[2], &tokens[3]);
+
+    SyntaxNode nested;
+    nested.kind = SyntaxNodeKind::ArgumentList;
+    nested.parent = &list;
+    SyntaxNode nestedOpen;
+    nestedOpen.kind = SyntaxNodeKind::LeftParen;
+    nestedOpen.parent = &nested;
+    SyntaxNode nestedComma;
+    nestedComma.kind = SyntaxNodeKind::Comma;
+    nestedComma.parent = &nested;
+    nested.children = {&nestedOpen, &nestedComma};
+    Check(!continuation.TakeBoundary(token(nestedComma), FormatListContinuationKind::Block), "nested list separator cannot consume its enclosing continuation");
+    const auto separator = continuation.TakeBoundary(tokens[3], FormatListContinuationKind::Block);
+    Check(separator && !separator->beforeToken && separator->indent == 3, "separator breaks after itself at the selected item indent");
+    const auto closer = continuation.TakeBoundary(tokens[4], FormatListContinuationKind::Block);
+    Check(closer && closer->beforeToken && closer->indent == 1, "closer breaks before itself at the selected close indent");
+    Check(!continuation.TakeBoundary(tokens[4], FormatListContinuationKind::Block), "closer consumes its continuation once");
+}
+
 }  // namespace
 
 int main() {
     try {
         TestOutput();
+        TestListContinuation();
     } catch (const std::exception& error) {
         std::cerr << "Layout contract test failed: " << error.what() << '\n';
         return 1;
