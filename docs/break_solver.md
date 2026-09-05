@@ -28,6 +28,8 @@ The builder retains initial depth in `rawDepth`; `FormatBreakCostNormalizer` mat
 
 `Solver::Solve` evaluates a subproblem identified by break node, current column, current indentation level, and whether the current line already has text. Both the best result and the complete ordered alternative set are memoized by this state. Reusing alternatives avoids repeating recursive search through nested layout combinations; it preserves candidate order and retains every continuation-sensitive choice. Cached results and their choice trees remain immutable for the lifetime of the segment's solver.
 
+Mutable candidate frontiers use inline storage. Memoized frontiers store only their live candidates in a solver-owned arena and expose immutable spans, which remain valid through recursive cache insertions. The memo entries destroy their owned cost profiles before the arena is released.
+
 Each node kind exposes legal layout candidates through `SolveAlternatives`:
 
 - Tokens produce one candidate.

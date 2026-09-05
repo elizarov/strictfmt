@@ -3,7 +3,9 @@
 #include <algorithm>
 #include <cstddef>
 #include <deque>
+#include <iterator>
 #include <memory>
+#include <memory_resource>
 #include <optional>
 #include <span>
 #include <string_view>
@@ -34,7 +36,7 @@ struct AlternativesMemoEntry {
     int column = 0;
     int indentLevel = 0;
     bool lineHasText = false;
-    NodeResults results;
+    std::pmr::vector<NodeResult> results;
     AlternativesMemoEntry* next = nullptr;
 };
 
@@ -125,6 +127,7 @@ private:
     std::vector<ResultMemoEntry*> memoHeads_;
     std::deque<ResultMemoEntry> memoEntries_;
     std::vector<AlternativesMemoEntry*> alternativesMemoHeads_;
+    std::pmr::monotonic_buffer_resource alternativesStorage_;
     std::deque<AlternativesMemoEntry> alternativesMemoEntries_;
     FormatChoiceHistory choiceHistory_;
     std::deque<DelimiterStackPartitionPath> delimiterStackPartitionPathArena_;
@@ -257,37 +260,45 @@ private:
         head = &memoEntries_.back();
     }
 
-    const NodeResults* FindMemoizedAlternatives(int nodeId, int column, int indentLevel, bool lineHasText) const {
+    const AlternativesMemoEntry*
+        FindMemoizedAlternatives(int nodeId, int column, int indentLevel, bool lineHasText) const
+    {
         for (
             const AlternativesMemoEntry* entry = alternativesMemoHeads_[static_cast<size_t>(nodeId)];
             entry != nullptr;
             entry = entry->next
         ) {
             if (entry->column == column && entry->indentLevel == indentLevel && entry->lineHasText == lineHasText) {
-                return &entry->results;
+                return entry;
             }
         }
         return nullptr;
     }
 
-    const NodeResults&
+    std::span<const NodeResult>
         StoreMemoizedAlternatives(int nodeId, int column, int indentLevel, bool lineHasText, NodeResults results)
     {
+        // Memoized frontiers never change size. Keep only their live candidates in the solver arena;
+        // mutable enumeration retains its inline storage, and recursive solves cannot invalidate these spans.
         AlternativesMemoEntry*& head = alternativesMemoHeads_[static_cast<size_t>(nodeId)];
         alternativesMemoEntries_.push_back({
             .column = column,
             .indentLevel = indentLevel,
             .lineHasText = lineHasText,
-            .results = std::move(results),
+            .results = std::pmr::vector<NodeResult>(
+                std::make_move_iterator(results.begin()), std::make_move_iterator(results.end()), &alternativesStorage_
+            ),
             .next = head,
         });
         head = &alternativesMemoEntries_.back();
         return head->results;
     }
 
-    const NodeResults& SolveAlternatives(const FormatBreakNode& node, int column, int indentLevel, bool lineHasText) {
-        if (const NodeResults* found = FindMemoizedAlternatives(node.id, column, indentLevel, lineHasText)) {
-            return *found;
+    std::span<const NodeResult>
+        SolveAlternatives(const FormatBreakNode& node, int column, int indentLevel, bool lineHasText)
+    {
+        if (const AlternativesMemoEntry* found = FindMemoizedAlternatives(node.id, column, indentLevel, lineHasText)) {
+            return found->results;
         }
         return StoreMemoizedAlternatives(
             node.id, column, indentLevel, lineHasText, EnumerateAlternatives(node, column, indentLevel, lineHasText)
@@ -2422,18 +2433,18 @@ private:
             const bool last = index + 1 == sequenceChildren.size();
             for (const NodeResult& prefix : current) {
                 NodeResults trailingResults;
-                const NodeResults* childResults = nullptr;
+                std::span<const NodeResult> childResults;
                 if (last) {
                     trailingResults.push_back(SolveTrailingBodyHeaderSplitAtParentIndent(
                         *sequenceChildren[index], prefix.endColumn, prefix.endIndentLevel, prefix.endLineHasText
                     ));
-                    childResults = &trailingResults;
+                    childResults = {trailingResults.begin(), trailingResults.size()};
                 } else {
-                    childResults = &SolveAlternatives(
+                    childResults = SolveAlternatives(
                         *sequenceChildren[index], prefix.endColumn, prefix.endIndentLevel, prefix.endLineHasText
                     );
                 }
-                for (const NodeResult& child : *childResults) {
+                for (const NodeResult& child : childResults) {
                     if (!child.valid) {
                         continue;
                     }
@@ -2549,7 +2560,7 @@ private:
                         ) && index == 0
                     );
                 NodeResults compactOperands;
-                const NodeResults* operands = nullptr;
+                std::span<const NodeResult> operands;
                 if (mustRemainStructurallyCompact) {
                     const std::optional<NodeResult> compact = SolveCompactPhysicalLine(
                         *node.operands[index], prefix.endColumn, prefix.endIndentLevel, prefix.endLineHasText, false
@@ -2568,13 +2579,13 @@ private:
                             }
                         }
                     }
-                    operands = &compactOperands;
+                    operands = {compactOperands.begin(), compactOperands.size()};
                 } else {
-                    operands = &SolveAlternatives(
+                    operands = SolveAlternatives(
                         *node.operands[index], prefix.endColumn, prefix.endIndentLevel, prefix.endLineHasText
                     );
                 }
-                for (const NodeResult& operand : *operands) {
+                for (const NodeResult& operand : operands) {
                     if (!operand.valid) {
                         continue;
                     }
@@ -2907,7 +2918,7 @@ private:
                 AppendCommentsBeforeChainOperator(node, index, withOperator);
                 AppendToken(withOperator, node.operators[index]);
                 NodeResults compactTailOperands;
-                const NodeResults* operands = nullptr;
+                std::span<const NodeResult> operands;
                 if (choice == FormatBreakChoice::StreamCompactTail || attachedLiteralFollower) {
                     compactTailOperands.push_back(SolveNodeWithoutBreaks(
                         *node.operands[index + 1],
@@ -2915,16 +2926,16 @@ private:
                         withOperator.endIndentLevel,
                         withOperator.endLineHasText
                     ));
-                    operands = &compactTailOperands;
+                    operands = {compactTailOperands.begin(), compactTailOperands.size()};
                 } else {
-                    operands = &SolveAlternatives(
+                    operands = SolveAlternatives(
                         *node.operands[index + 1],
                         withOperator.endColumn,
                         withOperator.endIndentLevel,
                         withOperator.endLineHasText
                     );
                 }
-                for (const NodeResult& operand : *operands) {
+                for (const NodeResult& operand : operands) {
                     if (!operand.valid) {
                         continue;
                     }
