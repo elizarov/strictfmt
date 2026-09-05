@@ -73,7 +73,7 @@ byte-for-byte idempotence after the first pass.
   cases.
 - `tests/format/layout_test.cpp` owns focused internal layout-contract checks,
   including physical output state, macro indentation, comment alignment, and
-  deferred list ownership across block boundaries, plus immutable choice-history
+  deferred list and chain ownership across block boundaries, plus immutable choice-history
   precedence and materialization, candidate pruning, inline/heap value storage,
   and delimiter-stack recognition policies.
 

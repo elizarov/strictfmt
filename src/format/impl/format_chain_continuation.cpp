@@ -136,7 +136,7 @@ struct FormatChainContinuation::Impl {
         }
     }
 
-    bool MayHaveCrossBlockChain(size_t begin, size_t block, size_t end) const {
+    bool MayHaveCrossBlockChain(size_t begin, size_t block, size_t afterBlock, size_t end) const {
         const auto hasCandidate = [&](size_t first, size_t last) {
             return std::any_of(
                 tokens_.begin() + static_cast<std::ptrdiff_t>(first),
@@ -144,10 +144,10 @@ struct FormatChainContinuation::Impl {
                 CanParticipateInUniformCrossBlockChain
             );
         };
-        // Every uniform chain recognized by HasUniformSplitForm has at least one of these operators on each side
-        // of a crossed block. Absence on either side therefore proves that building the exact model cannot add a
-        // required cross-block break. Extra operators only cause a conservative fallthrough to exact analysis.
-        return hasCandidate(begin, block) && hasCandidate(block + 1, end);
+        // A chain crossing a block has operators outside both ends of the block: its body is a separate subtree,
+        // so operators inside it cannot belong to the enclosing chain. Missing closers retain the broader scan.
+        // Extra operators only cause a conservative fallthrough to exact analysis.
+        return hasCandidate(begin, block) && hasCandidate(afterBlock, end);
     }
 
     void AnalyzeBlock(size_t currentTokenIndex_) {
@@ -166,10 +166,18 @@ struct FormatChainContinuation::Impl {
             --begin;
         }
         size_t end = currentTokenIndex_ + 1;
+        size_t afterBlock = end;
         while (end < tokens_.size() && PrintTokenSyntaxPathContains(tokens_[end], item)) {
+            if (
+                tokens_[end].syntaxKind == SyntaxNodeKind::RightBrace &&
+                tokens_[end].node != nullptr &&
+                tokens_[end].node->parent == block
+            ) {
+                afterBlock = end + 1;
+            }
             ++end;
         }
-        if (!MayHaveCrossBlockChain(begin, currentTokenIndex_, end)) {
+        if (!MayHaveCrossBlockChain(begin, currentTokenIndex_, afterBlock, end)) {
             return;
         }
         FormatBreakModel model =
