@@ -138,6 +138,7 @@ add_library(strictfmt_core STATIC
     src/format/impl/format_preprocessor_text.cpp
     src/format/impl/format_preprocessor_validation.cpp
     src/format/impl/format_raw_macro.cpp
+    src/format/impl/format_string_literals.cpp
     src/format/impl/format_spacing.cpp
 )
 target_include_directories(strictfmt_core PUBLIC
