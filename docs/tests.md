@@ -6,6 +6,7 @@ This document owns the general testing strategy and test file placement for `str
 
 Formatter tests are driven by `tests/format/format_test.py` through the `strictfmt_tests` CMake target and the `scripts/test.sh|cmd` wrappers described in [build.md](build.md).
 The same target runs the UTF-8 utility's [Unicode conformance tests](../vendor/unicode/README.md).
+It also runs focused C++ layout-contract tests for stateful internal interfaces.
 The Python runner uses verbose `unittest` output with compact method names, so
 test logs list each test with its pass/fail status instead of dot-only progress.
 
@@ -70,6 +71,8 @@ byte-for-byte idempotence after the first pass.
 
 - `tests/format/format_test.py` owns the Python test harness and individual test
   cases.
+- `tests/format/layout_test.cpp` owns focused internal layout-contract checks,
+  including physical output state, macro indentation, and comment alignment.
 
 Command-line coverage includes the build-time version string: the CMake test
 target passes its resolved version to the Python harness, which requires

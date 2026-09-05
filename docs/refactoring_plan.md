@@ -51,6 +51,8 @@ measurements justify them; retain exact layout decisions throughout.
 - Step 7: complete; all 78 tests and 21 baseline comparisons passed.
 - Step 8: complete; all 78 tests and 21 baseline comparisons passed.
 - Step 9: complete; all 78 tests and 21 baseline comparisons passed.
+- Step 10: complete; all 78 end-to-end tests, focused layout-contract tests,
+  Unicode checks, and 21 baseline comparisons passed.
 
 ## Validation
 
