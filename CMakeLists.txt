@@ -135,6 +135,7 @@ add_library(strictfmt_core STATIC
     src/format/impl/format_delimiter_stack.cpp
     src/format/impl/format_include_sort.cpp
     src/format/impl/format_model.cpp
+    src/format/impl/format_syntax_info.cpp
     src/format/impl/format_model_builder.cpp
     src/format/impl/format_model_normalize.cpp
     src/format/impl/format_model_parse.cpp
