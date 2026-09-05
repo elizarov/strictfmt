@@ -67,6 +67,8 @@ measurements justify them; retain exact layout decisions throughout.
   comparisons passed.
 - Step 14: delimiter-stack recognition complete; the full test wrapper (including
   consumer-policy checks) and 21 baseline comparisons passed.
+- Step 15: syntax metadata complete; the full test wrapper and 21 baseline
+  comparisons passed. Targeted layout modules also passed ASan/UBSan checks.
 
 ## Validation
 
