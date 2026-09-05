@@ -386,11 +386,12 @@ struct FormatListContinuation::Impl {
             mandatoryBlockSplitListContexts_.begin(),
             mandatoryBlockSplitListContexts_.end(),
             [&](const MandatoryBlockSplitListContext& context) { return ListOwnsToken(context.list, token); }
-        ) || std::any_of(
-            preprocessorSplitListContexts_.begin(),
-            preprocessorSplitListContexts_.end(),
-            [&](const PreprocessorSplitListContext& context) { return ListOwnsToken(context.list, token); }
-        );
+        ) ||
+            std::any_of(
+                preprocessorSplitListContexts_.begin(),
+                preprocessorSplitListContexts_.end(),
+                [&](const PreprocessorSplitListContext& context) { return ListOwnsToken(context.list, token); }
+            );
     }
     std::optional<int> CloseBlock(const PrintToken& token, const PrintToken* next) {
         MarkMandatoryBlockSplitListItemClosed(token);

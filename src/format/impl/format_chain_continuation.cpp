@@ -31,7 +31,7 @@ struct FormatChainContinuation::Impl {
     }
 
     static bool HasUniformSplitForm(const FormatBreakNode& node) {
-        if (node.kind != FormatBreakNodeKind::Chain || node.operators.size() < 2) {
+        if (node.kind != FormatBreakNodeKind::Chain || node.operators.empty()) {
             return false;
         }
         if (
@@ -49,57 +49,44 @@ struct FormatChainContinuation::Impl {
         });
     }
 
-    size_t ActiveTokenIndex(const FormatBreakToken& token) const {
-        if (token.token == nullptr) {
-            return tokens_.size();
-        }
-        const PrintToken* begin = tokens_.data();
-        const PrintToken* end = begin + tokens_.size();
-        return token.token >= begin && token.token < end ? static_cast<size_t>(token.token - begin) : tokens_.size();
-    }
-
-    void CollectCrossBlockChainBreaks(const FormatBreakNode& node, size_t blockIndex) {
-        if (HasUniformSplitForm(node)) {
-            size_t firstOperator = tokens_.size();
-            size_t lastOperator = 0;
-            for (const FormatBreakToken& token : node.operators) {
-                const size_t index = ActiveTokenIndex(token);
-                firstOperator = std::min(firstOperator, index);
-                lastOperator = std::max(lastOperator, index);
+    bool CollectCrossBlockChainBreaks(const FormatBreakNode& node, const PrintToken& block) {
+        bool containsBlock = node.kind == FormatBreakNodeKind::Token && node.token.token == &block;
+        for (const FormatBreakNode* child : node.children) {
+            if (child != nullptr && CollectCrossBlockChainBreaks(*child, block)) {
+                containsBlock = true;
             }
-            const bool crossesBlock = firstOperator < blockIndex && blockIndex < lastOperator;
-            if (crossesBlock) {
-                const SyntaxNode* group = FormatBreakTokenValue(node.operators.front()).node;
-                pendingCrossBlockChainGroups_.insert(group);
-                for (const FormatBreakToken& token : node.operators) {
-                    const PrintToken& printToken = FormatBreakTokenValue(token);
-                    if (printToken.node != nullptr) {
-                        requiredChainBreakGroups_.insert_or_assign(printToken.node, group);
-                        if (
-                            node.chainKind != FormatBreakChainKind::Ternary ||
-                            printToken.syntaxKind == SyntaxNodeKind::Colon
-                        ) {
-                            requiredChainBreakOperators_.insert(printToken.node);
-                        }
+        }
+        for (const FormatBreakListItem& listItem : node.items) {
+            if (listItem.node != nullptr && CollectCrossBlockChainBreaks(*listItem.node, block)) {
+                containsBlock = true;
+            }
+        }
+        const bool receiverMayExpand = node.chainKind == FormatBreakChainKind::MemberBeforeOperator ||
+            node.chainKind == FormatBreakChainKind::CallApplication;
+        bool requiresSplit = false;
+        for (size_t index = 0; index < node.operands.size(); ++index) {
+            if (node.operands[index] != nullptr && CollectCrossBlockChainBreaks(*node.operands[index], block)) {
+                containsBlock = true;
+                requiresSplit = index + 1 < node.operands.size() && !(index == 0 && receiverMayExpand);
+            }
+        }
+        if (requiresSplit && HasUniformSplitForm(node)) {
+            const SyntaxNode* group = FormatBreakTokenValue(node.operators.front()).node;
+            pendingCrossBlockChainGroups_.insert(group);
+            for (const FormatBreakToken& token : node.operators) {
+                const PrintToken& printToken = FormatBreakTokenValue(token);
+                if (printToken.node != nullptr) {
+                    requiredChainBreakGroups_.insert_or_assign(printToken.node, group);
+                    if (
+                        node.chainKind != FormatBreakChainKind::Ternary ||
+                        printToken.syntaxKind == SyntaxNodeKind::Colon
+                    ) {
+                        requiredChainBreakOperators_.insert(printToken.node);
                     }
                 }
             }
         }
-        for (const FormatBreakNode* child : node.children) {
-            if (child != nullptr) {
-                CollectCrossBlockChainBreaks(*child, blockIndex);
-            }
-        }
-        for (const FormatBreakListItem& listItem : node.items) {
-            if (listItem.node != nullptr) {
-                CollectCrossBlockChainBreaks(*listItem.node, blockIndex);
-            }
-        }
-        for (const FormatBreakNode* operand : node.operands) {
-            if (operand != nullptr) {
-                CollectCrossBlockChainBreaks(*operand, blockIndex);
-            }
-        }
+        return containsBlock;
     }
 
     void RecordCrossBlockChainBaseIndents(int baseIndent, const SyntaxNode* selectedGroup = nullptr) {
@@ -136,18 +123,14 @@ struct FormatChainContinuation::Impl {
         }
     }
 
-    bool MayHaveCrossBlockChain(size_t begin, size_t block, size_t afterBlock, size_t end) const {
-        const auto hasCandidate = [&](size_t first, size_t last) {
-            return std::any_of(
-                tokens_.begin() + static_cast<std::ptrdiff_t>(first),
-                tokens_.begin() + static_cast<std::ptrdiff_t>(last),
-                CanParticipateInUniformCrossBlockChain
-            );
-        };
-        // A chain crossing a block has operators outside both ends of the block: its body is a separate subtree,
-        // so operators inside it cannot belong to the enclosing chain. Missing closers retain the broader scan.
-        // Extra operators only cause a conservative fallthrough to exact analysis.
-        return hasCandidate(begin, block) && hasCandidate(afterBlock, end);
+    bool MayHaveCrossBlockChain(size_t afterBlock, size_t end) const {
+        // A non-final operand has a following operator outside the block. Operators inside the body belong to a
+        // separate subtree; exact operand ownership below rejects unrelated operators later in the source item.
+        return std::any_of(
+            tokens_.begin() + static_cast<std::ptrdiff_t>(afterBlock),
+            tokens_.begin() + static_cast<std::ptrdiff_t>(end),
+            CanParticipateInUniformCrossBlockChain
+        );
     }
 
     void AnalyzeBlock(size_t currentTokenIndex_) {
@@ -177,13 +160,13 @@ struct FormatChainContinuation::Impl {
             }
             ++end;
         }
-        if (!MayHaveCrossBlockChain(begin, currentTokenIndex_, afterBlock, end)) {
+        if (!MayHaveCrossBlockChain(afterBlock, end)) {
             return;
         }
         FormatBreakModel model =
             BuildFormatBreakModel(std::span<const PrintToken>{tokens_.data() + begin, end - begin});
         if (model.root != nullptr) {
-            CollectCrossBlockChainBreaks(*model.root, currentTokenIndex_);
+            CollectCrossBlockChainBreaks(*model.root, token);
         }
     }
 

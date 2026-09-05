@@ -50,6 +50,8 @@ MAIN_INCLUDE_INPUT_FIXTURE = Path("src") / "format_main_include_input.cpp"
 MAIN_INCLUDE_OUTPUT_FIXTURE = Path("src") / "format_main_include_output.cpp"
 OPTIMIZATION_INPUT_FIXTURE = Path("src") / "format_optimization_input.cpp"
 OPTIMIZATION_OUTPUT_FIXTURE = Path("src") / "format_optimization_output.cpp"
+CHAIN_INPUT_FIXTURE = Path("src") / "format_chain_input.cpp"
+CHAIN_OUTPUT_FIXTURE = Path("src") / "format_chain_output.cpp"
 NON_ASCII_INPUT_FIXTURE = Path("src") / "format_non_ascii_input.cpp"
 NON_ASCII_OUTPUT_FIXTURE = Path("src") / "format_non_ascii_output.cpp"
 USERVER_INPUT_FIXTURE = Path("src") / "format_userver_input.cpp"
@@ -64,10 +66,12 @@ ERROR_OUTPUT_FIXTURE = Path("src") / "format_error_output.txt"
 USERVER_FORMAT_CONFIG = TEST_ROOT / ".cpp-format-userver"
 DEFAULT_FORMAT_CONFIG = TEST_ROOT / ".cpp-format"
 OPTIMIZATION_FORMAT_CONFIG = TEST_ROOT / ".cpp-format-optimization"
+CHAIN_FORMAT_CONFIG = TEST_ROOT / ".cpp-format-chain"
 NON_ASCII_FORMAT_CONFIG = TEST_ROOT / ".cpp-format-non-ascii"
 FORMATTED_GOLDEN_OUTPUTS = (
     ("default", OUTPUT_FIXTURE, None),
     ("optimization", OPTIMIZATION_OUTPUT_FIXTURE, OPTIMIZATION_FORMAT_CONFIG),
+    ("chain", CHAIN_OUTPUT_FIXTURE, CHAIN_FORMAT_CONFIG),
     ("non-ascii", NON_ASCII_OUTPUT_FIXTURE, NON_ASCII_FORMAT_CONFIG),
     ("userver", USERVER_OUTPUT_FIXTURE, USERVER_FORMAT_CONFIG),
     ("ifdef", IFDEF_OUTPUT_FIXTURE, USERVER_FORMAT_CONFIG),
@@ -411,6 +415,19 @@ class FormatCommandTests(unittest.TestCase):
 
         self.assertEqual(0, result.returncode, msg=f"stdout:\n{result.stdout}\n\nstderr:\n{result.stderr}")
         self.assertNotIn("parse failed", result.stderr)
+        self.assert_no_unsupported_placement_warnings(result)
+
+    def test_chain_stdin_formats_to_expected_output(self) -> None:
+        result = native_format(
+            "--stdin",
+            "--style",
+            str(CHAIN_FORMAT_CONFIG),
+            cwd=TEST_ROOT,
+            input_text=read_fixture(CHAIN_INPUT_FIXTURE),
+        )
+
+        self.assertEqual(0, result.returncode, msg=f"stdout:\n{result.stdout}\n\nstderr:\n{result.stderr}")
+        self.assertEqual(read_fixture(CHAIN_OUTPUT_FIXTURE), result.stdout)
         self.assert_no_unsupported_placement_warnings(result)
 
     def test_non_ascii_stdin_formats_to_expected_output(self) -> None:

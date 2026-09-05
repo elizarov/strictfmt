@@ -737,10 +737,11 @@ void NormalizeSyntaxNode(FormatModel& model, SyntaxNode& node) {
         const bool continuesConditionalStream =
             std::any_of(node.children.begin(), node.children.end(), [](const SyntaxNode* child) {
                 return child != nullptr && SyntaxNodeHasClass(*child, SyntaxNodeClass::ConditionalStreamOperatorChain);
-            }) && std::any_of(node.children.begin(), node.children.end(), [](const SyntaxNode* child) {
-                return child != nullptr &&
-                    (child->kind == SyntaxNodeKind::LessLess || child->kind == SyntaxNodeKind::GreaterGreater);
-            });
+            }) &&
+                std::any_of(node.children.begin(), node.children.end(), [](const SyntaxNode* child) {
+                    return child != nullptr &&
+                        (child->kind == SyntaxNodeKind::LessLess || child->kind == SyntaxNodeKind::GreaterGreater);
+                });
         if (startsConditionalStream || continuesConditionalStream) {
             node.classes |= static_cast<std::uint64_t>(SyntaxNodeClass::ConditionalStreamOperatorChain);
         }

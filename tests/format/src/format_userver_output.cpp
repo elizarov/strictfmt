@@ -272,7 +272,8 @@ void NestedOrdinaryCallStatementArgumentMacro() {
         ASSERT_THAT(n, Gt(10)),
         "Value of: n\n"
             "Expected: is > 10\n"
-            "  Actual: 5" + OfType("unsigned short")
+            "  Actual: 5" +
+            OfType("unsigned short")
     );
 }
 

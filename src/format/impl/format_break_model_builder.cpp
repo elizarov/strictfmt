@@ -528,7 +528,8 @@ private:
         const SyntaxNode* syntaxList = syntaxOpen == nullptr ? nullptr : syntaxOpen->parent;
         const bool commaSeparatedList = syntaxList != nullptr && (
             (syntaxList->classes & static_cast<std::uint64_t>(SyntaxNodeClass::AllowedListPreprocessorContainer)) !=
-                0 || SyntaxNodeKindHasClass(syntaxList->kind, SyntaxNodeClass::AllowedListPreprocessorContainer)
+                0 ||
+            SyntaxNodeKindHasClass(syntaxList->kind, SyntaxNodeClass::AllowedListPreprocessorContainer)
         );
         if (list.delimiterKind != FormatBreakDelimiterKind::Brace || !commaSeparatedList) {
             return;

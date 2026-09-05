@@ -511,7 +511,8 @@ void ReserveGroupedRegionCount(LayoutEditActiveRegions& regions) {
             (
                 layoutResolver_->staticEditableAnchorRegions_.size() +
                 layoutResolver_->dynamicEditableAnchorRegions_.size()
-            ) * 2 +
+            ) *
+                2 +
             layoutResolver_->staticColorEditRegions_.size() +
             layoutResolver_->dynamicColorEditRegions_.size()
     );
@@ -2126,7 +2127,8 @@ auto FinalLambdaHeaderBreakSelectedByScore(const handlers::PriceFor& priceFor) -
 
 bool NestedLambdaContinuationIndent() {
     return firstOperandWithAnExtremelyLongNameThatNearlyConsumesTheEntireConfiguredLineWidthAllByItselfAndKeepsGoing !=
-        nullptr && call(firstArgumentWithEnoughLength, secondArgumentWithEnoughLength, [&](const Node& node) {
+        nullptr &&
+        call(firstArgumentWithEnoughLength, secondArgumentWithEnoughLength, [&](const Node& node) {
             return node.member != nullptr;
         });
 }
@@ -2740,7 +2742,8 @@ void GenericNestedCallDelimiterCombining() {
 int MeasureHexLabelWidth(HWND hwnd) {
     const int hexLabelWidth = MeasureTextWidthForControl(
         hwnd, IDC_LAYOUT_EDIT_COLOR_HEX_LABEL, ReadDialogControlText(hwnd, IDC_LAYOUT_EDIT_COLOR_HEX_LABEL)
-    ) + 8;
+    ) +
+        8;
     return hexLabelWidth;
 }
 
@@ -4547,7 +4550,8 @@ void CommentedBinaryOperators() {
     auto bits = (
         first &  // mask
         second
-    ) | (third ^ fourth);
+    ) |
+        (third ^ fourth);
     if (
         enabled &&  // feature
         ready &&    // readiness
@@ -4557,14 +4561,16 @@ void CommentedBinaryOperators() {
     }
     if (
         enabled and  // feature
-            ready or fallback
+            ready or
+        fallback
     ) {
         Run();
     }
     auto nested = (
         first +  // inner term
         second
-    ) * factor +  // outer term
+    ) *
+        factor +  // outer term
         third;
     Consume(
         first +  // argument term

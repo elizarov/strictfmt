@@ -1721,14 +1721,14 @@ private:
             node.chainKind == FormatBreakChainKind::MemberBeforeOperator
         ) {
             for (size_t index = 1; index + 1 < node.operands.size(); ++index) {
-                if (node.operands[index] != nullptr && HasSelectedBreak(*node.operands[index], compact)) {
+                if (node.operands[index] != nullptr && HasPhysicalLineBreak(*node.operands[index], compact)) {
                     return false;
                 }
             }
             return true;
         }
         for (size_t index = 0; index + 1 < node.operands.size(); ++index) {
-            if (node.operands[index] != nullptr && HasSelectedBreak(*node.operands[index], compact)) {
+            if (node.operands[index] != nullptr && HasPhysicalLineBreak(*node.operands[index], compact)) {
                 return false;
             }
         }
@@ -1749,7 +1749,7 @@ private:
         if (node.chainKind == FormatBreakChainKind::CallApplication) {
             return node.operands.size() > 2;
         }
-        return IsFormatBreakUniformChain(node) && node.operators.size() > 1;
+        return IsFormatBreakUniformChain(node);
     }
 
     bool ContainsForceSplitAdjacentStrings(const FormatBreakNode& node) {
@@ -2559,16 +2559,16 @@ private:
         for (size_t index = 0; index < node.operands.size(); ++index) {
             NodeResults nextByState;
             for (const NodeResult& prefix : current) {
-                const bool mustRemainStructurallyCompact =
-                    restrictIntermediateBreaks && index + 1 < node.operands.size() && !(
-                        (
-                            node.chainKind == FormatBreakChainKind::CallApplication ||
-                            node.chainKind == FormatBreakChainKind::MemberBeforeOperator
-                        ) && index == 0
-                    );
+                const bool mustRemainOnOneLine = restrictIntermediateBreaks && index + 1 < node.operands.size() && !(
+                    (
+                        node.chainKind == FormatBreakChainKind::CallApplication ||
+                        node.chainKind == FormatBreakChainKind::MemberBeforeOperator
+                    ) &&
+                    index == 0
+                );
                 NodeResults compactOperands;
                 std::span<const NodeResult> operands;
-                if (mustRemainStructurallyCompact) {
+                if (mustRemainOnOneLine) {
                     const std::optional<NodeResult> compact = SolveCompactPhysicalLine(
                         *node.operands[index], prefix.endColumn, prefix.endIndentLevel, prefix.endLineHasText, false
                     );
@@ -2581,7 +2581,7 @@ private:
                         for (const NodeResult& operand : SolveAlternatives(
                             *node.operands[index], prefix.endColumn, prefix.endIndentLevel, prefix.endLineHasText
                         )) {
-                            if (!HasSelectedBreak(*node.operands[index], operand)) {
+                            if (!HasPhysicalLineBreak(*node.operands[index], operand)) {
                                 compactOperands.push_back(operand);
                             }
                         }

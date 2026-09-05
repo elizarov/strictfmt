@@ -89,6 +89,7 @@ target passes its resolved version to the Python harness, which requires
 - `tests/format/.cpp-format` owns the default test formatter configuration.
 - `tests/format/.cpp-format-optimization` owns the 15-column break-selection
   golden configuration.
+- `tests/format/.cpp-format-chain` owns the 40-column operator-chain golden configuration.
 - `tests/format/.cpp-format-non-ascii` owns the 40-column Unicode golden configuration.
 - `tests/format/.cpp-format-userver` owns the userver-oriented test formatter
   configuration.
@@ -111,6 +112,9 @@ and exist only to exercise one command or configuration edge.
 - `tests/format/src/format_optimization_input.cpp` ->
   `tests/format/src/format_optimization_output.cpp`: reduced-width corner cases
   for profiles, delimiter partitions, and suffix-sensitive pruning.
+- `tests/format/src/format_chain_input.cpp` ->
+  `tests/format/src/format_chain_output.cpp`: operand expansion, closing-line
+  continuations, and operator-chain ownership across mandatory block boundaries.
 - `tests/format/src/format_non_ascii_input.cpp` ->
   `tests/format/src/format_non_ascii_output.cpp`: UTF-8 identifiers, literals, comments, and grapheme-cluster widths.
 - `tests/format/src/format_userver_input.cpp` ->

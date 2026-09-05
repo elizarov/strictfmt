@@ -70,9 +70,9 @@ Source blank-line separators between modeled list items are recorded on the foll
 
 Deferred list separators belong to their nearest enclosing list. The shared ownership check traverses delimiter-free syntax wrappers, including comma expressions and conditional branches, but stops at nested delimiter groups or blocks. Both following-item detection and deferred comma emission (including prefix and preprocessor lists) use this check, so an outer list cannot force breaks or indentation inside an item.
 
-Before a mandatory block is printed, `FormatChainContinuation` builds the containing source item's break model and records the break opportunities belonging to every uniform chain that crosses the block. Each formatted segment receives those requirements and the original chain base indentation, so it can select and emit the same split form on both sides of the boundary. Nested ternaries carry their colon breaks, while parenthesized comma expressions use the corresponding deferred-list state.
+Before a mandatory block is printed, `FormatChainContinuation` builds the containing source item's break model and identifies the operand containing its opener. It records the enclosing chain's break opportunities when that operand cannot expand in compact form, including the first operand of a binary chain with one operator. Receiver expansion remains allowed for member chains, and unrelated sibling chains acquire no constraint. Each formatted segment receives those requirements and the original chain base indentation, so it can select and emit the same split form on both sides of the boundary. Nested ternaries carry their colon breaks, while parenthesized comma expressions use the corresponding deferred-list state.
 
-Chain lookahead skips exact model construction when either side of the complete block has no possible chain operator. Operators inside the block cannot belong to an enclosing chain because the body is a separate syntax subtree. When the closing brace is not represented, the check conservatively scans from the opener instead.
+Chain lookahead skips exact model construction when the suffix after the complete block has no possible chain operator. Operators inside the block cannot belong to an enclosing chain because the body is a separate syntax subtree. When the closing brace is not represented, the check conservatively scans from the opener instead.
 
 The function-signature candidate that keeps the return type and function name together while splitting the parameter list is legal only when the physical prefix through the parameter opener fits the column limit. A later unavoidable overflow, such as an atomic parameter type, does not make an additional avoidable prefix overflow legal.
 
@@ -142,7 +142,7 @@ For compact and packed-split lists, every non-final item must remain on the body
 
 The final item is excluded from the probe because eligible non-angle layout may give it a multiline tail; angle lists reject that candidate later. These probes change search work, not candidate ordering or tie-breaking.
 
-A compact uniform-chain candidate may solve an intermediate operand with the all-compact physical-line walker when the chain legality check would reject every selected break in that operand. A successful walk is the unique no-selected-break candidate, including when it overflows. If comments or intrinsic newlines make the walk inapplicable, normal alternative enumeration and exact filtering remain in use.
+A compact uniform-chain candidate may solve a non-final operand with the all-compact physical-line walker when the chain legality check requires that operand to occupy one physical line. A successful walk is the unique unbroken candidate, including when it overflows. If comments or intrinsic newlines make the walk inapplicable, normal alternative enumeration and physical-line filtering remain in use.
 
 ## Delimiter Stacks
 

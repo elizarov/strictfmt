@@ -777,7 +777,8 @@ bool FormatTokenNeedsSpace(const PrintToken* previous, const PrintToken& current
     if (
         (
             previous->kind == PrintTokenKind::Known && SyntaxNodeKindHasClass(prev, SyntaxNodeClass::AssignmentOperator)
-        ) || IsBinaryOperatorSpacingContext(*previous)
+        ) ||
+        IsBinaryOperatorSpacingContext(*previous)
     ) {
         return true;
     }

@@ -371,7 +371,8 @@ private:
         const PrintToken* next = index + 1 < activeTokens_->size() ? &(*activeTokens_)[index + 1] : nullptr;
         return !(
             next != nullptr && next->kind == PrintTokenKind::Known && next->syntaxKind == SyntaxNodeKind::RightBrace
-        ) && !BecomesEmptyAfterNullItemRemoval(token);
+        ) &&
+            !BecomesEmptyAfterNullItemRemoval(token);
     }
 
     static bool ContinuesBlockExpression(const PrintToken& token, const PrintToken& next) {
@@ -429,7 +430,8 @@ private:
         return (
             token.parentKind == SyntaxNodeKind::FieldDeclarationList ||
             token.parentKind == SyntaxNodeKind::EnumeratorList
-        ) && SyntaxNodeKindHasClass(token.grandParentKind, SyntaxNodeClass::DeclaredTypeSpecifier);
+        ) &&
+            SyntaxNodeKindHasClass(token.grandParentKind, SyntaxNodeClass::DeclaredTypeSpecifier);
     }
 
     static bool ShouldAttachAfterBlockClose(const PrintToken& token, const PrintToken* next) {
@@ -1329,7 +1331,8 @@ private:
             (token.node != nullptr && SyntaxNodeKindHasClass(token.node->kind, SyntaxNodeClass::EndifDirective)) ||
             token.syntaxKind == SyntaxNodeKind::PreprocessorDirectiveEndif ||
             lineDirectiveKind == SyntaxNodeKind::PreprocessorDirectiveEndif
-        ) && token.inConditionalFunctionHeader;
+        ) &&
+            token.inConditionalFunctionHeader;
         if (IsConditionalRhsPreprocessorToken(token)) {
             if (HasBufferedLineText()) {
                 FlushPendingTokens();
@@ -1645,7 +1648,8 @@ private:
             rawNext != nullptr &&
             rawNext->kind == PrintTokenKind::Known &&
             rawNext->syntaxKind == SyntaxNodeKind::RightBrace
-        ) || BecomesEmptyAfterNullItemRemoval(token);
+        ) ||
+            BecomesEmptyAfterNullItemRemoval(token);
         const bool isCaseBlock = previous != nullptr &&
             previous->kind == PrintTokenKind::Known &&
             previous->syntaxKind == SyntaxNodeKind::Colon &&
