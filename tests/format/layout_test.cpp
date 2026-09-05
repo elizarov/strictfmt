@@ -7,6 +7,7 @@
 #include "format/impl/format_output.h"
 #include "format/impl/format_choice_history.h"
 #include "format/impl/format_candidates.h"
+#include "format/impl/format_delimiter_stack.h"
 #include "format/impl/format_break_emitter.h"
 #include "format/impl/format_break_model.h"
 #include "format/impl/format_list_continuation.h"
@@ -251,6 +252,45 @@ void TestCandidates() {
         "inline move and erase preserve candidate state");
 }
 
+
+void TestDelimiterStack() {
+    PrintToken opener{.kind = PrintTokenKind::Known, .syntaxKind = SyntaxNodeKind::LeftParen};
+    FormatBreakNode open;
+    open.kind = FormatBreakNodeKind::Token;
+    open.token = {&opener};
+    FormatBreakNode close;
+    close.kind = FormatBreakNodeKind::Token;
+    FormatBreakNode leaf;
+    leaf.kind = FormatBreakNodeKind::Token;
+    std::array delimiters{&open, &close};
+    FormatBreakNode inner;
+    inner.kind = FormatBreakNodeKind::Delimited;
+    inner.delimiterKind = FormatBreakDelimiterKind::Paren;
+    inner.children = delimiters;
+    inner.items = {{.node = &leaf}};
+    FormatBreakNode wrapper;
+    wrapper.kind = FormatBreakNodeKind::Sequence;
+    std::array wrapped{&inner};
+    wrapper.children = wrapped;
+    FormatBreakNode outer;
+    outer.kind = FormatBreakNodeKind::Delimited;
+    outer.delimiterKind = FormatBreakDelimiterKind::Paren;
+    outer.children = delimiters;
+    outer.items = {{.node = &wrapper}};
+    const auto view = CollectFormatDelimiterStack(outer, FormatDelimiterStackPolicy::Solving);
+    Check(view && view->delimiters.size() == 2 && view->delimiters[0] == &outer &&
+        view->delimiters[1] == &inner && view->leaf == &leaf, "stack recognition unwraps only transparent sequences in order");
+    inner.blankLineBeforeClose = true;
+    Check(CollectFormatDelimiterStack(outer, FormatDelimiterStackPolicy::Solving).has_value() &&
+        !CollectFormatDelimiterStack(outer, FormatDelimiterStackPolicy::Emission), "closing blank lines retain distinct solver and emitter contracts");
+    inner.blankLineBeforeClose = false;
+    inner.forceSplit = true;
+    Check(!CollectFormatDelimiterStack(outer, FormatDelimiterStackPolicy::Solving), "required split interrupts transparent stacks");
+    inner.forceSplit = false;
+    opener.parentKind = SyntaxNodeKind::ArgumentList;
+    Check(!CollectFormatDelimiterStack(outer, FormatDelimiterStackPolicy::Solving), "semantic argument lists are not transparent parentheses");
+}
+
 }  // namespace
 
 int main() {
@@ -259,6 +299,7 @@ int main() {
         TestListContinuation();
         TestChoiceHistory();
         TestCandidates();
+        TestDelimiterStack();
     } catch (const std::exception& error) {
         std::cerr << "Layout contract test failed: " << error.what() << '\n';
         return 1;

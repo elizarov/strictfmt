@@ -12,6 +12,7 @@
 
 #include "format/impl/format_break_model_inline_helpers.h"
 #include "format/impl/format_candidates.h"
+#include "format/impl/format_delimiter_stack.h"
 #include "format/impl/format_compact_layout.h"
 #include "format/impl/format_choice_history.h"
 #include "util/utf8.h"
@@ -35,11 +36,6 @@ struct AlternativesMemoEntry {
     bool lineHasText = false;
     NodeResults results;
     AlternativesMemoEntry* next = nullptr;
-};
-
-struct DelimiterStackView {
-    std::vector<const FormatBreakNode*> delimiters;
-    const FormatBreakNode* leaf = nullptr;
 };
 
 struct DelimiterStackRun {
@@ -305,7 +301,10 @@ private:
             case FormatBreakNodeKind::Sequence:
                 return SolveChildrenAlternatives(node.children, column, indentLevel, lineHasText);
             case FormatBreakNodeKind::Delimited: {
-                if (std::optional<DelimiterStackView> stack = CollectDelimiterStack(node)) {
+                if (
+                    std::optional<FormatDelimiterStack> stack =
+                        CollectFormatDelimiterStack(node, FormatDelimiterStackPolicy::Solving)
+                ) {
                     return SolveTransparentDelimiterStackAlternatives(node, *stack, column, indentLevel, lineHasText);
                 }
                 NodeResult split = SolveDelimitedSplit(node, column, indentLevel, lineHasText);
@@ -840,77 +839,6 @@ private:
             DelimitedInlinePrefixRequiresOverflowOrBreak(node, prefix);
     }
 
-    static bool HasRealSeparators(const FormatBreakNode& node) {
-        return std::any_of(node.items.begin(), node.items.end(), [](const FormatBreakListItem& item) {
-            return FormatBreakTokenKind(item.separator) == PrintTokenKind::Known;
-        });
-    }
-
-    static bool IsTransparentSingleItemDelimiter(const FormatBreakNode& node) {
-        if (
-            node.forceSplit ||
-            node.delimiterKind != FormatBreakDelimiterKind::Paren ||
-            node.children.size() < 2 ||
-            node.items.size() != 1 ||
-            HasRealSeparators(node) ||
-            FormatBreakHasTrailingComment(node, 0) ||
-            HasBlankLineBeforeItem(node, 0) ||
-            node.items.front().node == nullptr
-        ) {
-            return false;
-        }
-        const FormatBreakNode* open = node.children[0];
-        if (open == nullptr || open->kind != FormatBreakNodeKind::Token) {
-            return false;
-        }
-        const PrintToken& token = FormatBreakTokenValue(open->token);
-        return !SyntaxNodeKindHasClass(token.parentKind, SyntaxNodeClass::SemanticDelimitedParent) &&
-            !SyntaxNodeKindHasClass(token.grandParentKind, SyntaxNodeClass::SemanticDelimitedParent);
-    }
-
-    static const FormatBreakNode* SingleChildSequenceNode(const FormatBreakNode& node) {
-        if (node.kind != FormatBreakNodeKind::Sequence || node.children.size() != 1) {
-            return nullptr;
-        }
-        return node.children.front();
-    }
-
-    static const FormatBreakNode* TransparentStackChild(const FormatBreakNode& node) {
-        if (!IsTransparentSingleItemDelimiter(node)) {
-            return nullptr;
-        }
-        const FormatBreakNode* item = node.items.front().node;
-        while (item != nullptr) {
-            if (IsTransparentSingleItemDelimiter(*item)) {
-                return item;
-            }
-            item = SingleChildSequenceNode(*item);
-        }
-        return nullptr;
-    }
-
-    static bool IsDelimiterStackItem(const FormatBreakNode& node) {
-        return IsTransparentSingleItemDelimiter(node) && TransparentStackChild(node) != nullptr;
-    }
-
-    static std::optional<DelimiterStackView> CollectDelimiterStack(const FormatBreakNode& node) {
-        if (!IsDelimiterStackItem(node)) {
-            return std::nullopt;
-        }
-        DelimiterStackView stack;
-        const FormatBreakNode* current = &node;
-        while (current != nullptr) {
-            stack.delimiters.push_back(current);
-            const FormatBreakNode* child = TransparentStackChild(*current);
-            if (child == nullptr) {
-                stack.leaf = current->items.front().node;
-                break;
-            }
-            current = child;
-        }
-        return stack.leaf != nullptr && stack.delimiters.size() > 1 ? std::optional(stack) : std::nullopt;
-    }
-
     NodeResults SolveDelimitedInlineItems(const FormatBreakNode& node, const NodeResult& result) {
         NodeResults current{result};
         for (size_t index = 0; index < node.items.size(); ++index) {
@@ -1102,7 +1030,7 @@ private:
     }
 
     NodeResult SolveTransparentDelimiterStackSuffix(
-        const DelimiterStackView& stack, size_t firstDelimiter, int column, int indentLevel, bool lineHasText
+        const FormatDelimiterStack& stack, size_t firstDelimiter, int column, int indentLevel, bool lineHasText
     ) {
         NodeResult
             result{.valid = true, .endColumn = column, .endIndentLevel = indentLevel, .endLineHasText = lineHasText};
@@ -1123,7 +1051,7 @@ private:
     }
 
     NodeResult SolveTransparentDelimiterStackSplit(
-        const FormatBreakNode& node, const DelimiterStackView& stack, int column, int indentLevel, bool lineHasText
+        const FormatBreakNode& node, const FormatDelimiterStack& stack, int column, int indentLevel, bool lineHasText
     ) {
         NodeResult
             result{.valid = true, .endColumn = column, .endIndentLevel = indentLevel, .endLineHasText = lineHasText};
@@ -1146,7 +1074,7 @@ private:
     }
 
     NodeResults SolveTransparentDelimiterStackAlternatives(
-        const FormatBreakNode& node, const DelimiterStackView& stack, int column, int indentLevel, bool lineHasText
+        const FormatBreakNode& node, const FormatDelimiterStack& stack, int column, int indentLevel, bool lineHasText
     ) {
         NodeResults alternatives;
         NodeResult compact = SolveTransparentDelimiterStackSuffix(stack, 0, column, indentLevel, lineHasText);
@@ -1188,7 +1116,7 @@ private:
     }
 
     void AddDelimiterStackPartitionChoices(
-        NodeResult& result, const DelimiterStackView& stack, const DelimiterStackPartitionPath* path
+        NodeResult& result, const FormatDelimiterStack& stack, const DelimiterStackPartitionPath* path
     ) {
         for (const size_t runStart : DelimiterStackRunStarts(path)) {
             if (runStart >= stack.delimiters.size()) {
@@ -1201,7 +1129,7 @@ private:
 
     NodeResult SolveGreedyDelimiterStack(
         const FormatBreakNode& node,
-        const DelimiterStackView& stack,
+        const FormatDelimiterStack& stack,
         int column,
         int indentLevel,
         bool lineHasText,
@@ -1263,7 +1191,7 @@ private:
 
     NodeResult SolveDelimiterStackPartition(
         const FormatBreakNode& node,
-        const DelimiterStackView& stack,
+        const FormatDelimiterStack& stack,
         int column,
         int indentLevel,
         bool lineHasText,
@@ -1329,7 +1257,7 @@ private:
     }
 
     NodeResult SolveZeroOverflowAttachedDelimiterStack(
-        const FormatBreakNode& node, const DelimiterStackView& stack, int column, int indentLevel, bool lineHasText
+        const FormatBreakNode& node, const FormatDelimiterStack& stack, int column, int indentLevel, bool lineHasText
     ) {
         NodeResult best;
         std::vector<size_t> bestRunStarts;
@@ -1385,7 +1313,7 @@ private:
 
     NodeResult SolveExactDelimiterStackWithInitialBreak(
         const FormatBreakNode& node,
-        const DelimiterStackView& stack,
+        const FormatDelimiterStack& stack,
         int column,
         int indentLevel,
         bool lineHasText,
@@ -1565,7 +1493,7 @@ private:
 
     NodeResult SolveExactDelimiterStack(
         const FormatBreakNode& node,
-        const DelimiterStackView& stack,
+        const FormatDelimiterStack& stack,
         int column,
         int indentLevel,
         bool lineHasText,
@@ -1591,7 +1519,7 @@ private:
 
     NodeResult SolveDelimiterStack(
         const FormatBreakNode& node,
-        const DelimiterStackView& stack,
+        const FormatDelimiterStack& stack,
         int column,
         int indentLevel,
         bool lineHasText,
@@ -1754,10 +1682,10 @@ private:
         if (tail == nullptr) {
             return CompactTailExpansionKind::None;
         }
-        if (node.items.size() == 1 && !HasRealSeparators(node)) {
+        if (node.items.size() == 1 && !FormatBreakHasRealSeparators(node)) {
             return CompactTailExpansion(*tail, compact);
         }
-        if (!HasRealSeparators(node)) {
+        if (!FormatBreakHasRealSeparators(node)) {
             return CompactTailExpansionKind::None;
         }
         for (size_t index = 0; index + 1 < node.items.size(); ++index) {

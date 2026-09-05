@@ -37,3 +37,9 @@ inline bool FormatBreakIsStandaloneCommentItem(const FormatBreakNode& node, size
     const FormatBreakToken* token = FormatBreakNodeToken(node.items[index].node);
     return token != nullptr && FormatBreakTokenKind(*token) == PrintTokenKind::Comment;
 }
+
+inline bool FormatBreakHasRealSeparators(const FormatBreakNode& node) {
+    return std::any_of(node.items.begin(), node.items.end(), [](const FormatBreakListItem& item) {
+        return FormatBreakTokenKind(item.separator) == PrintTokenKind::Known;
+    });
+}

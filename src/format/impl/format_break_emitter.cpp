@@ -6,6 +6,7 @@
 #include "format/impl/format_break_model_inline_helpers.h"
 #include "format/impl/format_break_solution.h"
 #include "format/impl/format_config.h"
+#include "format/impl/format_delimiter_stack.h"
 
 namespace {
 
@@ -153,87 +154,15 @@ private:
             !HasBlankLineBeforeItem(node, index + 1);
     }
 
-    static bool HasRealSeparators(const FormatBreakNode& node) {
-        return std::any_of(node.items.begin(), node.items.end(), [](const FormatBreakListItem& item) {
-            return FormatBreakTokenKind(item.separator) == PrintTokenKind::Known;
-        });
-    }
-
-    struct DelimiterStackEmitView {
-        std::vector<const FormatBreakNode*> delimiters;
-        const FormatBreakNode* leaf = nullptr;
-    };
-
     struct DelimiterStackRun {
         size_t begin = 0;
         size_t end = 0;
         int indentLevel = 0;
     };
 
-    static bool IsTransparentSingleItemDelimiter(const FormatBreakNode& node) {
-        if (
-            node.forceSplit ||
-            node.delimiterKind != FormatBreakDelimiterKind::Paren ||
-            node.children.size() < 2 ||
-            node.items.size() != 1 ||
-            HasRealSeparators(node) ||
-            FormatBreakHasTrailingComment(node, 0) ||
-            HasBlankLineBeforeItem(node, 0) ||
-            node.blankLineBeforeClose ||
-            node.items.front().node == nullptr
-        ) {
-            return false;
-        }
-        const FormatBreakNode* open = node.children[0];
-        if (open == nullptr || open->kind != FormatBreakNodeKind::Token) {
-            return false;
-        }
-        const PrintToken& token = FormatBreakTokenValue(open->token);
-        return !SyntaxNodeKindHasClass(token.parentKind, SyntaxNodeClass::SemanticDelimitedParent) &&
-            !SyntaxNodeKindHasClass(token.grandParentKind, SyntaxNodeClass::SemanticDelimitedParent);
-    }
-
-    static const FormatBreakNode* SingleChildSequenceNode(const FormatBreakNode& node) {
-        if (node.kind != FormatBreakNodeKind::Sequence || node.children.size() != 1) {
-            return nullptr;
-        }
-        return node.children.front();
-    }
-
-    static const FormatBreakNode* TransparentStackChild(const FormatBreakNode& node) {
-        if (!IsTransparentSingleItemDelimiter(node)) {
-            return nullptr;
-        }
-        const FormatBreakNode* item = node.items.front().node;
-        while (item != nullptr) {
-            if (IsTransparentSingleItemDelimiter(*item)) {
-                return item;
-            }
-            item = SingleChildSequenceNode(*item);
-        }
-        return nullptr;
-    }
-
-    static std::optional<DelimiterStackEmitView> CollectDelimiterStack(const FormatBreakNode& node) {
-        if (!IsTransparentSingleItemDelimiter(node) || TransparentStackChild(node) == nullptr) {
-            return std::nullopt;
-        }
-        DelimiterStackEmitView stack;
-        const FormatBreakNode* current = &node;
-        while (current != nullptr) {
-            stack.delimiters.push_back(current);
-            const FormatBreakNode* child = TransparentStackChild(*current);
-            if (child == nullptr) {
-                stack.leaf = current->items.front().node;
-                break;
-            }
-            current = child;
-        }
-        return stack.leaf != nullptr && stack.delimiters.size() > 1 ? std::optional(stack) : std::nullopt;
-    }
-
     void EmitDelimiterStackNode(const FormatBreakNode& node, const FormatBreakSolution& solution, int baseIndent) {
-        const std::optional<DelimiterStackEmitView> stack = CollectDelimiterStack(node);
+        const std::optional<FormatDelimiterStack> stack =
+            CollectFormatDelimiterStack(node, FormatDelimiterStackPolicy::Emission);
         if (!stack) {
             return;
         }
