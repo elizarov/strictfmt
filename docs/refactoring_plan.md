@@ -22,6 +22,23 @@ contracts. Complete each numbered step, format project sources, run the full
 8. Break-depth and cost normalization: extract structural prefix adjustments and
    final subtree discounts into `format_break_cost`.
 
+## Continued Architecture Review
+
+Continue with the same format/test/review/commit cycle. The next candidates are:
+
+9. Replace repeated print-token initializers and recursive argument lists with a
+   private token factory and inherited syntax context.
+10. Extract physical output buffering and comment alignment from the printer.
+11. Extract continuation state across mandatory block boundaries.
+12. Isolate solver choice-history storage and materialization.
+13. Isolate candidate continuation-state comparison and frontier maintenance.
+
+Reassess the remaining builder, solver, and metadata modules after these steps.
+Completion requires cohesive ownership, explicit lifetime/state contracts, and no
+remaining substantial extraction that improves clarity without introducing broad
+back-coupling. Keep performance-driven representation changes separate unless
+measurements justify them; retain exact layout decisions throughout.
+
 ## Progress
 
 - Baseline validation: all 78 tests passed.
@@ -33,6 +50,7 @@ contracts. Complete each numbered step, format project sources, run the full
 - Step 6: complete; all 78 tests and 21 baseline comparisons passed.
 - Step 7: complete; all 78 tests and 21 baseline comparisons passed.
 - Step 8: complete; all 78 tests and 21 baseline comparisons passed.
+- Step 9: complete; all 78 tests and 21 baseline comparisons passed.
 
 ## Validation
 

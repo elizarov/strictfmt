@@ -35,24 +35,6 @@ enum PrintTokenAncestryFlag : std::uint8_t {
     InTemplateList = 1u << 5,
 };
 
-void ApplyPrintTokenAncestryTraits(
-    PrintToken& token,
-    std::uint8_t flags,
-    const SyntaxNode* declarationScopeItem,
-    bool inTemplateDeclarationBlock,
-    bool inTemplateDeclarationHeader
-) {
-    token.inMacroStatementSequence = (flags & InMacroStatementSequence) != 0;
-    token.inLeadingStreamOperatorChain = (flags & InLeadingStreamOperatorChain) != 0;
-    token.inConditionalStreamOperatorChain = (flags & InConditionalStreamOperatorChain) != 0;
-    token.inConditionalFunctionHeader = (flags & InConditionalFunctionHeader) != 0;
-    token.inBareMacroItem = (flags & InBareMacroItem) != 0;
-    token.inTemplateList = (flags & InTemplateList) != 0;
-    token.inTemplateDeclarationBlock = inTemplateDeclarationBlock;
-    token.inTemplateDeclarationHeader = inTemplateDeclarationHeader;
-    token.declarationScopeItem = declarationScopeItem;
-}
-
 bool IsStandalonePreprocessorBranchToken(const SyntaxNode& node, SyntaxNodeKind parentKind) {
     return parentKind == SyntaxNodeKind::PreprocElse && node.kind == SyntaxNodeKind::PreprocessorDirectiveElse;
 }
@@ -188,178 +170,123 @@ std::string_view PreprocEndifLine(const SyntaxNode& node) {
     return node.text.empty() ? SyntaxNodeKindTokenText(node.kind) : TrimWhitespaceView(FirstSourceLine(node.text));
 }
 
-void AppendPreprocessorPrintToken(
-    const SyntaxNode& node,
-    std::string_view text,
-    SyntaxNodeKind parentKind,
-    SyntaxNodeKind grandParentKind,
-    bool inTemplateDeclaration,
-    bool inRequiresClause,
-    bool inCompilerCallModifier,
-    bool inCompactSingleStatementBody,
-    bool inMacroValue,
-    bool structuredPreprocessor,
-    const SyntaxNode* macroDefinition,
-    std::uint8_t ancestryFlags,
-    const SyntaxNode* declarationScopeItem,
-    bool inTemplateDeclarationBlock,
-    bool inTemplateDeclarationHeader,
-    std::vector<PrintToken>& tokens
-) {
-    tokens.push_back({
-        .kind = PrintTokenKind::Preprocessor,
-        .syntaxKind = node.kind,
-        .text = text,
-        .parentKind = parentKind,
-        .grandParentKind = grandParentKind,
-        .inTemplateDeclaration = inTemplateDeclaration,
-        .inRequiresClause = inRequiresClause,
-        .inCompilerCallModifier = inCompilerCallModifier,
-        .inCompactSingleStatementBody = inCompactSingleStatementBody,
-        .structuredPreprocessor = structuredPreprocessor,
-        .inMacroValue = inMacroValue,
-        .node = &node,
-        .macroDefinition = macroDefinition,
-    });
-    ApplyPrintTokenAncestryTraits(
-        tokens.back(), ancestryFlags, declarationScopeItem, inTemplateDeclarationBlock, inTemplateDeclarationHeader
-    );
+// Inherited syntax context is copied per recursion branch. Parent kinds describe
+// the emitted node; semantic flags include that node before token construction.
+struct TokenContext {
+    SyntaxNodeKind parentKind = SyntaxNodeKind::Unknown;
+    SyntaxNodeKind grandParentKind = SyntaxNodeKind::Unknown;
+    bool inTemplateDeclaration = false;
+    bool inRequiresClause = false;
+    bool inCompilerCallModifier = false;
+    bool inCompactSingleStatementBody = false;
+    const SyntaxNode* macroDefinition = nullptr;
+    bool inMacroValue = false;
+    std::uint8_t ancestryFlags = 0;
+    const SyntaxNode* declarationScopeItem = nullptr;
+    bool inTemplateDeclarationBlock = false;
+    bool inTemplateDeclarationHeader = false;
+
+    void Enter(const SyntaxNode& node) {
+        const SyntaxNodeKind kind = node.kind;
+        inTemplateDeclaration |= kind == SyntaxNodeKind::TemplateDeclaration;
+        inRequiresClause |= kind == SyntaxNodeKind::RequiresClause;
+        inCompilerCallModifier |= kind == SyntaxNodeKind::MsCallModifier || kind == SyntaxNodeKind::MsDeclspecModifier;
+        inCompactSingleStatementBody =
+            inCompactSingleStatementBody || CallableBodyAllowsCompactSingleStatementForm(node, parentKind);
+        if (macroDefinition == nullptr && SyntaxNodeKindHasClass(kind, SyntaxNodeClass::MacroDefinition)) {
+            macroDefinition = &node;
+        }
+        inMacroValue |= kind == SyntaxNodeKind::MacroReplacementList;
+        ancestryFlags |= kind == SyntaxNodeKind::MacroStatementSequence ? InMacroStatementSequence : 0;
+        ancestryFlags |= (node.classes & static_cast<std::uint64_t>(SyntaxNodeClass::LeadingStreamOperatorChain)) != 0 ?
+            InLeadingStreamOperatorChain : 0;
+        ancestryFlags |=
+            (node.classes & static_cast<std::uint64_t>(SyntaxNodeClass::ConditionalStreamOperatorChain)) != 0 ?
+                InConditionalStreamOperatorChain : 0;
+        ancestryFlags |= (node.classes & static_cast<std::uint64_t>(SyntaxNodeClass::ConditionalFunctionHeader)) != 0 ?
+            InConditionalFunctionHeader : 0;
+        ancestryFlags |= kind == SyntaxNodeKind::BareMacroItem ? InBareMacroItem : 0;
+        ancestryFlags |=
+            (kind == SyntaxNodeKind::TemplateArgumentList || kind == SyntaxNodeKind::TemplateParameterList) ?
+                InTemplateList : 0;
+        if (
+            node.parent != nullptr &&
+            (node.parent->classes & static_cast<std::uint64_t>(SyntaxNodeClass::DeclarationScope)) != 0
+        ) {
+            declarationScopeItem = &node;
+        }
+        if (kind == SyntaxNodeKind::TemplateDeclaration) {
+            inTemplateDeclarationBlock = false;
+            inTemplateDeclarationHeader = false;
+        } else {
+            inTemplateDeclarationBlock |= SyntaxNodeKindHasClass(kind, SyntaxNodeClass::CompoundBlock);
+            inTemplateDeclarationHeader |= kind == SyntaxNodeKind::KeywordTemplate ||
+                kind == SyntaxNodeKind::TemplateParameterList ||
+                kind == SyntaxNodeKind::RequiresClause;
+        }
+    }
+
+    TokenContext ForChildren(SyntaxNodeKind kind) const {
+        TokenContext child = *this;
+        child.grandParentKind = parentKind;
+        child.parentKind = kind;
+        return child;
+    }
+};
+
+PrintToken
+    MakePrintToken(const SyntaxNode& node, PrintTokenKind kind, const TokenContext& context, std::string_view text = {})
+{
+    PrintToken token{
+        .kind = kind, .inMacroValue = context.inMacroValue, .node = &node, .macroDefinition = context.macroDefinition
+    };
+    token.inMacroStatementSequence = (context.ancestryFlags & InMacroStatementSequence) != 0;
+    token.inLeadingStreamOperatorChain = (context.ancestryFlags & InLeadingStreamOperatorChain) != 0;
+    token.inConditionalStreamOperatorChain = (context.ancestryFlags & InConditionalStreamOperatorChain) != 0;
+    token.inConditionalFunctionHeader = (context.ancestryFlags & InConditionalFunctionHeader) != 0;
+    token.inBareMacroItem = (context.ancestryFlags & InBareMacroItem) != 0;
+    token.inTemplateList = (context.ancestryFlags & InTemplateList) != 0;
+    token.inTemplateDeclarationBlock = context.inTemplateDeclarationBlock;
+    token.inTemplateDeclarationHeader = context.inTemplateDeclarationHeader;
+    token.declarationScopeItem = context.declarationScopeItem;
+    // Blank lines inherit scope/macro facts, but carry no lexical syntax context.
+    if (kind != PrintTokenKind::BlankLine) {
+        token.syntaxKind = node.kind;
+        token.text = text;
+        token.parentKind = context.parentKind;
+        token.grandParentKind = context.grandParentKind;
+        token.inTemplateDeclaration = context.inTemplateDeclaration;
+        token.inRequiresClause = context.inRequiresClause;
+        token.inCompilerCallModifier = context.inCompilerCallModifier;
+        token.inCompactSingleStatementBody = context.inCompactSingleStatementBody;
+    }
+    return token;
 }
 
-void AppendTokens(
-    const SyntaxNode& node,
-    SyntaxNodeKind parentKind,
-    SyntaxNodeKind grandParentKind,
-    bool inTemplateDeclaration,
-    bool inRequiresClause,
-    bool inCompilerCallModifier,
-    bool inCompactSingleStatementBody,
-    const SyntaxNode* macroDefinition,
-    bool inMacroValue,
-    std::uint8_t ancestryFlags,
-    const SyntaxNode* declarationScopeItem,
-    bool inTemplateDeclarationBlock,
-    bool inTemplateDeclarationHeader,
-    std::vector<PrintToken>& tokens
-) {
+void AppendTokens(const SyntaxNode& node, TokenContext context, std::vector<PrintToken>& tokens) {
+    context.Enter(node);
     const SyntaxNodeKind nodeKind = node.kind;
-    const bool childInTemplateDeclaration = inTemplateDeclaration || nodeKind == SyntaxNodeKind::TemplateDeclaration;
-    const bool childInRequiresClause = inRequiresClause || nodeKind == SyntaxNodeKind::RequiresClause;
-    const bool childInCompilerCallModifier = inCompilerCallModifier ||
-        nodeKind == SyntaxNodeKind::MsCallModifier ||
-        nodeKind == SyntaxNodeKind::MsDeclspecModifier;
-    const bool childInCompactSingleStatementBody =
-        inCompactSingleStatementBody || CallableBodyAllowsCompactSingleStatementForm(node, parentKind);
-    const SyntaxNode* childMacroDefinition = macroDefinition != nullptr ? macroDefinition :
-        (SyntaxNodeKindHasClass(nodeKind, SyntaxNodeClass::MacroDefinition) ? &node : nullptr);
-    const bool childInMacroValue = inMacroValue || nodeKind == SyntaxNodeKind::MacroReplacementList;
-    std::uint8_t childAncestryFlags = ancestryFlags;
-    childAncestryFlags |= nodeKind == SyntaxNodeKind::MacroStatementSequence ? InMacroStatementSequence : 0;
-    childAncestryFlags |=
-        (node.classes & static_cast<std::uint64_t>(SyntaxNodeClass::LeadingStreamOperatorChain)) != 0 ?
-            InLeadingStreamOperatorChain : 0;
-    childAncestryFlags |=
-        (node.classes & static_cast<std::uint64_t>(SyntaxNodeClass::ConditionalStreamOperatorChain)) != 0 ?
-            InConditionalStreamOperatorChain : 0;
-    childAncestryFlags |= (node.classes & static_cast<std::uint64_t>(SyntaxNodeClass::ConditionalFunctionHeader)) != 0 ?
-        InConditionalFunctionHeader : 0;
-    childAncestryFlags |= nodeKind == SyntaxNodeKind::BareMacroItem ? InBareMacroItem : 0;
-    childAncestryFlags |=
-        (nodeKind == SyntaxNodeKind::TemplateArgumentList || nodeKind == SyntaxNodeKind::TemplateParameterList) ?
-            InTemplateList : 0;
-    const SyntaxNode* childDeclarationScopeItem = node.parent != nullptr &&
-        (node.parent->classes & static_cast<std::uint64_t>(SyntaxNodeClass::DeclarationScope)) != 0 ? &node :
-        declarationScopeItem;
-    bool childInTemplateDeclarationBlock = inTemplateDeclarationBlock;
-    bool childInTemplateDeclarationHeader = inTemplateDeclarationHeader;
-    if (nodeKind == SyntaxNodeKind::TemplateDeclaration) {
-        childInTemplateDeclarationBlock = false;
-        childInTemplateDeclarationHeader = false;
-    } else {
-        childInTemplateDeclarationBlock =
-            childInTemplateDeclarationBlock || SyntaxNodeKindHasClass(nodeKind, SyntaxNodeClass::CompoundBlock);
-        childInTemplateDeclarationHeader = childInTemplateDeclarationHeader ||
-            nodeKind == SyntaxNodeKind::KeywordTemplate ||
-            nodeKind == SyntaxNodeKind::TemplateParameterList ||
-            nodeKind == SyntaxNodeKind::RequiresClause;
-    }
-    const auto applyAncestryTraits = [&]() {
-        ApplyPrintTokenAncestryTraits(
-            tokens.back(),
-            childAncestryFlags,
-            childDeclarationScopeItem,
-            childInTemplateDeclarationBlock,
-            childInTemplateDeclarationHeader
-        );
-    };
-
     if (nodeKind == SyntaxNodeKind::BlankLine) {
-        tokens.push_back({
-            .kind = PrintTokenKind::BlankLine,
-            .inMacroValue = childInMacroValue,
-            .node = &node,
-            .macroDefinition = childMacroDefinition,
-        });
-        applyAncestryTraits();
+        tokens.push_back(MakePrintToken(node, PrintTokenKind::BlankLine, context));
         return;
     }
     if (nodeKind == SyntaxNodeKind::Comment || nodeKind == SyntaxNodeKind::TrailingComment) {
-        tokens.push_back({
-            .kind =
-                nodeKind == SyntaxNodeKind::TrailingComment ? PrintTokenKind::TrailingComment : PrintTokenKind::Comment,
-            .syntaxKind = nodeKind,
-            .text = node.text,
-            .parentKind = parentKind,
-            .grandParentKind = grandParentKind,
-            .inTemplateDeclaration = childInTemplateDeclaration,
-            .inRequiresClause = childInRequiresClause,
-            .inCompilerCallModifier = childInCompilerCallModifier,
-            .inCompactSingleStatementBody = childInCompactSingleStatementBody,
-            .inMacroValue = childInMacroValue,
-            .node = &node,
-            .macroDefinition = childMacroDefinition,
-        });
-        applyAncestryTraits();
+        const PrintTokenKind kind =
+            nodeKind == SyntaxNodeKind::TrailingComment ? PrintTokenKind::TrailingComment : PrintTokenKind::Comment;
+        tokens.push_back(MakePrintToken(node, kind, context, node.text));
         return;
     }
-    if (IsStandalonePreprocessorBranchToken(node, parentKind)) {
-        tokens.push_back({
-            .kind = PrintTokenKind::Preprocessor,
-            .syntaxKind = nodeKind,
-            .text = node.text,
-            .parentKind = parentKind,
-            .grandParentKind = grandParentKind,
-            .inTemplateDeclaration = childInTemplateDeclaration,
-            .inRequiresClause = childInRequiresClause,
-            .inCompilerCallModifier = childInCompilerCallModifier,
-            .inCompactSingleStatementBody = childInCompactSingleStatementBody,
-            .inMacroValue = childInMacroValue,
-            .node = &node,
-            .macroDefinition = childMacroDefinition,
-        });
-        applyAncestryTraits();
+    if (IsStandalonePreprocessorBranchToken(node, context.parentKind)) {
+        tokens.push_back(MakePrintToken(node, PrintTokenKind::Preprocessor, context, node.text));
         return;
     }
     if (IsStructuredConditionalPreprocessorNode(node)) {
-        AppendPreprocessorPrintToken(
-            node,
-            ContinuedPreprocessorHeader(node.text),
-            parentKind,
-            grandParentKind,
-            childInTemplateDeclaration,
-            childInRequiresClause,
-            childInCompilerCallModifier,
-            childInCompactSingleStatementBody,
-            childInMacroValue,
-            true,
-            childMacroDefinition,
-            childAncestryFlags,
-            childDeclarationScopeItem,
-            childInTemplateDeclarationBlock,
-            childInTemplateDeclarationHeader,
-            tokens
-        );
-
+        const auto appendDirective = [&](const SyntaxNode& directive, std::string_view text) {
+            PrintToken token = MakePrintToken(directive, PrintTokenKind::Preprocessor, context, text);
+            token.structuredPreprocessor = true;
+            tokens.push_back(token);
+        };
+        appendDirective(node, ContinuedPreprocessorHeader(node.text));
         bool inPreprocIfHeader = true;
         for (size_t index = 0; index < node.children.size(); ++index) {
             const SyntaxNode* child = node.children[index];
@@ -367,24 +294,7 @@ void AppendTokens(
                 continue;
             }
             if (IsPreprocEndifToken(*child)) {
-                AppendPreprocessorPrintToken(
-                    *child,
-                    PreprocEndifLine(*child),
-                    parentKind,
-                    grandParentKind,
-                    childInTemplateDeclaration,
-                    childInRequiresClause,
-                    childInCompilerCallModifier,
-                    childInCompactSingleStatementBody,
-                    childInMacroValue,
-                    true,
-                    childMacroDefinition,
-                    childAncestryFlags,
-                    childDeclarationScopeItem,
-                    childInTemplateDeclarationBlock,
-                    childInTemplateDeclarationHeader,
-                    tokens
-                );
+                appendDirective(*child, PreprocEndifLine(*child));
                 continue;
             }
             if (IsCommentAlreadyInPreprocessorHeader(node, *child)) {
@@ -402,135 +312,31 @@ void AppendTokens(
             ) {
                 continue;
             }
-            AppendTokens(
-                *child,
-                nodeKind,
-                parentKind,
-                childInTemplateDeclaration,
-                childInRequiresClause,
-                childInCompilerCallModifier,
-                childInCompactSingleStatementBody,
-                childMacroDefinition,
-                childInMacroValue,
-                childAncestryFlags,
-                childDeclarationScopeItem,
-                childInTemplateDeclarationBlock,
-                childInTemplateDeclarationHeader,
-                tokens
-            );
+            AppendTokens(*child, context.ForChildren(nodeKind), tokens);
         }
         return;
     }
     if (SyntaxNodeKindHasClass(nodeKind, SyntaxNodeClass::Known)) {
-        tokens.push_back({
-            .kind = PrintTokenKind::Known,
-            .syntaxKind = nodeKind,
-            .text = node.text.empty() ? SyntaxNodeKindTokenText(nodeKind) : node.text,
-            .parentKind = parentKind,
-            .grandParentKind = grandParentKind,
-            .inTemplateDeclaration = childInTemplateDeclaration,
-            .inRequiresClause = childInRequiresClause,
-            .inCompilerCallModifier = childInCompilerCallModifier,
-            .inCompactSingleStatementBody = childInCompactSingleStatementBody,
-            .inMacroValue = childInMacroValue,
-            .node = &node,
-            .macroDefinition = childMacroDefinition,
-        });
-        applyAncestryTraits();
+        tokens.push_back(MakePrintToken(
+            node, PrintTokenKind::Known, context, node.text.empty() ? SyntaxNodeKindTokenText(nodeKind) : node.text
+        ));
         return;
     }
     if (nodeKind == SyntaxNodeKind::IncludeRun) {
-        tokens.push_back({
-            .kind = PrintTokenKind::IncludeRun,
-            .syntaxKind = nodeKind,
-            .parentKind = parentKind,
-            .grandParentKind = grandParentKind,
-            .inTemplateDeclaration = childInTemplateDeclaration,
-            .inRequiresClause = childInRequiresClause,
-            .inCompilerCallModifier = childInCompilerCallModifier,
-            .inCompactSingleStatementBody = childInCompactSingleStatementBody,
-            .inMacroValue = childInMacroValue,
-            .node = &node,
-            .macroDefinition = childMacroDefinition,
-        });
-        applyAncestryTraits();
+        tokens.push_back(MakePrintToken(node, PrintTokenKind::IncludeRun, context));
         return;
     }
     if (IsPreprocessorNode(node)) {
-        tokens.push_back({
-            .kind = PrintTokenKind::Preprocessor,
-            .syntaxKind = nodeKind,
-            .text = node.text,
-            .parentKind = parentKind,
-            .grandParentKind = grandParentKind,
-            .inTemplateDeclaration = childInTemplateDeclaration,
-            .inRequiresClause = childInRequiresClause,
-            .inCompilerCallModifier = childInCompilerCallModifier,
-            .inCompactSingleStatementBody = childInCompactSingleStatementBody,
-            .inMacroValue = childInMacroValue,
-            .node = &node,
-            .macroDefinition = childMacroDefinition,
-        });
-        applyAncestryTraits();
+        tokens.push_back(MakePrintToken(node, PrintTokenKind::Preprocessor, context, node.text));
         return;
     }
     if (nodeKind == SyntaxNodeKind::LexicalToken || node.children.empty()) {
-        tokens.push_back({
-            .kind = PrintTokenKind::Text,
-            .syntaxKind = nodeKind,
-            .text = node.text,
-            .parentKind = parentKind,
-            .grandParentKind = grandParentKind,
-            .inTemplateDeclaration = childInTemplateDeclaration,
-            .inRequiresClause = childInRequiresClause,
-            .inCompilerCallModifier = childInCompilerCallModifier,
-            .inCompactSingleStatementBody = childInCompactSingleStatementBody,
-            .inMacroValue = childInMacroValue,
-            .node = &node,
-            .macroDefinition = childMacroDefinition,
-        });
-        applyAncestryTraits();
+        tokens.push_back(MakePrintToken(node, PrintTokenKind::Text, context, node.text));
         return;
     }
-    if (nodeKind == SyntaxNodeKind::MacroReplacementList) {
+    if (nodeKind == SyntaxNodeKind::MacroReplacementList || SyntaxNodeKindHasClass(nodeKind, SyntaxNodeClass::Tree)) {
         for (const SyntaxNode* child : node.children) {
-            AppendTokens(
-                *child,
-                nodeKind,
-                parentKind,
-                childInTemplateDeclaration,
-                childInRequiresClause,
-                childInCompilerCallModifier,
-                childInCompactSingleStatementBody,
-                childMacroDefinition,
-                true,
-                childAncestryFlags,
-                childDeclarationScopeItem,
-                childInTemplateDeclarationBlock,
-                childInTemplateDeclarationHeader,
-                tokens
-            );
-        }
-        return;
-    }
-    if (SyntaxNodeKindHasClass(nodeKind, SyntaxNodeClass::Tree)) {
-        for (const SyntaxNode* child : node.children) {
-            AppendTokens(
-                *child,
-                nodeKind,
-                parentKind,
-                childInTemplateDeclaration,
-                childInRequiresClause,
-                childInCompilerCallModifier,
-                childInCompactSingleStatementBody,
-                childMacroDefinition,
-                childInMacroValue,
-                childAncestryFlags,
-                childDeclarationScopeItem,
-                childInTemplateDeclarationBlock,
-                childInTemplateDeclarationHeader,
-                tokens
-            );
+            AppendTokens(*child, context.ForChildren(nodeKind), tokens);
         }
     }
 }
@@ -621,22 +427,7 @@ std::vector<PrintToken> BuildPrintTokens(const FormatModel& model, int tabWidth)
     std::vector<PrintToken> tokens;
     const size_t sourceSize = model.sourceText != nullptr ? model.sourceText->size() : 0;
     tokens.reserve(std::max<size_t>(256, sourceSize / 4));
-    AppendTokens(
-        *model.root,
-        SyntaxNodeKind::Unknown,
-        SyntaxNodeKind::Unknown,
-        false,
-        false,
-        false,
-        false,
-        nullptr,
-        false,
-        0,
-        nullptr,
-        false,
-        false,
-        tokens
-    );
+    AppendTokens(*model.root, {}, tokens);
     if (model.sourceText != nullptr) {
         MarkCommentContinuations(tokens, *model.sourceText, std::max(1, tabWidth));
     }
