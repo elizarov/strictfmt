@@ -126,6 +126,7 @@ add_library(strictfmt_core STATIC
     src/format/impl/format_value_profile.cpp
     src/format/impl/format_compact_layout.cpp
     src/format/impl/format_config.cpp
+    src/format/impl/format_declaration_layout.cpp
     src/format/impl/format_include_sort.cpp
     src/format/impl/format_model.cpp
     src/format/impl/format_model_builder.cpp

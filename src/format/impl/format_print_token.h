@@ -55,3 +55,12 @@ struct PrintToken {
 inline bool PrintTokenSyntaxHasClass(const PrintToken& token, SyntaxNodeClass syntaxNodeClass) {
     return (token.syntaxClasses & static_cast<std::uint64_t>(syntaxNodeClass)) != 0;
 }
+
+inline bool PrintTokenSyntaxPathContains(const PrintToken& token, const SyntaxNode* node) {
+    for (const SyntaxNode* cursor = token.node; cursor != nullptr; cursor = cursor->parent) {
+        if (cursor == node) {
+            return true;
+        }
+    }
+    return false;
+}
