@@ -64,7 +64,7 @@ void Check(bool a, bool b, bool c) {
 - Remove trailing whitespace from every line.
 - Preserve the source [line-ending style](glossary.md#line-ending-style). For mixed line endings, use the current platform default.
 - Use spaces for indentation and never emit tabs. `IndentWidth` in [config.md](config.md) selects the number of spaces per indentation level.
-- Preserve comments in source order. A trailing comment stays trailing only when it was trailing in source. A standalone comment stays standalone.
+- Preserve comments in source order. A trailing comment stays trailing only when it was trailing in source. A standalone comment stays standalone. Treat a trailing block comment before a parenthesis, bracket, or angle list closer, a callable body, or a requires clause as inline.
 - Preserve source blank-line separators after declarations, statements, or list items at the same structural level, including before a closing block delimiter, collapsing each run to one line.
 - Do not emit empty lines at the beginning or end of a file or at the beginning of a block.
 - Apply the structured and raw replacement whitespace rules specified in [macro.md](macro.md).

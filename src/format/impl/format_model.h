@@ -27,7 +27,10 @@ struct SyntaxNode {
 
     // Keep nodes maximally generic and space-efficient; avoid fields that only apply to one node kind.
     SyntaxNodeKind kind = SyntaxNodeKind::Unknown;
+    // Grammar field roles survive flattened wrappers.
     bool isDeclarator = false;
+    bool isCondition = false;
+    bool isName = false;
     std::uint64_t classes = 0;
     std::string_view text;
     const SyntaxNode* parent = nullptr;
@@ -63,6 +66,9 @@ inline bool SyntaxNodeHasClass(const SyntaxNode& node, SyntaxNodeClass syntaxNod
     return (node.classes & static_cast<std::uint64_t>(syntaxNodeClass)) != 0 ||
         SyntaxNodeKindHasClass(node.kind, syntaxNodeClass);
 }
+
+// Header membership uses grammar roles, including conditions projected through flattened wrappers.
+bool IsConditionalPreprocessorHeaderChild(const SyntaxNode& node, size_t index);
 
 // Construction operations share the model arena and maintain parent/depth metadata.
 SyntaxNode* MakeSyntaxNode(FormatModel& model, SyntaxNodeKind kind = SyntaxNodeKind::Unknown);

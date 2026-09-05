@@ -340,6 +340,9 @@ constexpr auto kSyntaxKindMappings = std::to_array<SyntaxKindMapping>({
         "preproc_selected_else_if_clause",
         kAtomicPreprocessorClasses | kSupportedPreprocessorPlacementClasses
     ),
+    Tree(SyntaxNodeKind::PreprocIf, "preproc_ended_consequence_statement", kAtomicPreprocessorClasses),
+    Tree(SyntaxNodeKind::PreprocIf, "preproc_guarded_namespace_definition", kAtomicPreprocessorClasses),
+    Tree(SyntaxNodeKind::PreprocIf, "preproc_unbalanced_else_block", kAtomicPreprocessorClasses),
     Tree(SyntaxNodeKind::PreprocIf, "preproc_selected_braced_if_else_statement", kAtomicPreprocessorClasses),
     Tree(
         SyntaxNodeKind::PreprocIf,

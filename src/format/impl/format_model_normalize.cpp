@@ -3,6 +3,7 @@
 #include <algorithm>
 #include <optional>
 #include <vector>
+#include <utility>
 
 namespace {
 
@@ -90,7 +91,6 @@ void InsertCommaAfter(FormatModel& model, SyntaxNode& node, size_t index) {
 
 void AddTerminalConditionalListCommas(FormatModel& model, SyntaxNode& node) {
     SyntaxChildList& children = node.children;
-    const size_t headerChildren = node.kind == SyntaxNodeKind::PreprocElse ? 1 : 2;
     for (size_t index = 0; index < children.size(); ++index) {
         SyntaxNode* child = children[index];
         if (child == nullptr) {
@@ -103,7 +103,7 @@ void AddTerminalConditionalListCommas(FormatModel& model, SyntaxNode& node) {
             const std::optional<size_t> previous = PreviousNonTriviaChildIndex(children, index);
             if (
                 previous &&
-                *previous >= headerChildren &&
+                !IsConditionalPreprocessorHeaderChild(node, *previous) &&
                 children[*previous]->kind != SyntaxNodeKind::Comma &&
                 !SyntaxNodeKindHasClass(children[*previous]->kind, SyntaxNodeClass::ConditionalPreprocessorTree)
             ) {
@@ -122,7 +122,7 @@ void AddTerminalConditionalListCommas(FormatModel& model, SyntaxNode& node) {
         const std::optional<size_t> previous = PreviousNonTriviaChildIndex(children, children.size());
         if (
             previous &&
-            *previous >= headerChildren &&
+            !IsConditionalPreprocessorHeaderChild(node, *previous) &&
             children[*previous]->kind != SyntaxNodeKind::Comma &&
             !SyntaxNodeKindHasClass(children[*previous]->kind, SyntaxNodeClass::ConditionalPreprocessorTree)
         ) {
@@ -461,6 +461,31 @@ void NormalizeLeadingStreamComments(SyntaxNode& node) {
     }
 }
 
+// Tree-sitter extras between the complete definition header and its value belong to the replacement list.
+void NormalizeMacroReplacementComments(SyntaxNode& node) {
+    if (node.kind != SyntaxNodeKind::MacroDefinition) {
+        return;
+    }
+    for (size_t index = 0; index < node.children.size(); ++index) {
+        SyntaxNode* replacement = node.children[index];
+        if (replacement->kind != SyntaxNodeKind::MacroReplacementList) {
+            continue;
+        }
+        size_t begin = index;
+        while (begin > 0 && SyntaxNodeHasClass(*node.children[begin - 1], SyntaxNodeClass::Trivia)) {
+            --begin;
+        }
+        auto first = node.children.begin() + static_cast<std::ptrdiff_t>(begin);
+        auto last = node.children.begin() + static_cast<std::ptrdiff_t>(index);
+        replacement->children.insert(replacement->children.begin(), first, last);
+        for (auto child = first; child != last; ++child) {
+            ReparentSyntaxNode(**child, replacement);
+        }
+        node.children.erase(first, last);
+        return;
+    }
+}
+
 void NormalizeAttachedTrailingBlockComment(SyntaxNode& node) {
     for (size_t index = 0; index < node.children.size(); ++index) {
         SyntaxNode* comment = node.children[index];
@@ -471,7 +496,13 @@ void NormalizeAttachedTrailingBlockComment(SyntaxNode& node) {
         }
         const std::optional<size_t> nextIndex = NextNonTriviaChildIndex(node.children, index + 1);
         if (nextIndex && node.children[*nextIndex] != nullptr && (
-            SyntaxNodeKindHasClass(node.children[*nextIndex]->kind, SyntaxNodeClass::CompoundBlock) ||
+            SyntaxNodeKindHasClass(node.children[*nextIndex]->kind, SyntaxNodeClass::CompoundBlock) || (
+                SyntaxNodeHasClass(node, SyntaxNodeClass::PreprocessorSplitList) && (
+                    node.children[*nextIndex]->kind == SyntaxNodeKind::RightParen ||
+                    node.children[*nextIndex]->kind == SyntaxNodeKind::RightBracket ||
+                    node.children[*nextIndex]->kind == SyntaxNodeKind::Greater
+                )
+            ) ||
             node.children[*nextIndex]->kind == SyntaxNodeKind::RequiresClause
         )) {
             comment->kind = SyntaxNodeKind::LexicalToken;
@@ -670,6 +701,19 @@ bool ContainsConditionalPreprocessor(const SyntaxNode& node) {
 }  // namespace
 
 void NormalizeSyntaxNode(FormatModel& model, SyntaxNode& node) {
+    if (
+        SyntaxNodeHasClass(node, SyntaxNodeClass::ConditionalPreprocessorTree) &&
+        node.children.size() == 1 &&
+        node.children.front()->kind == node.kind &&
+        node.children.front()->text == node.text
+    ) {
+        SyntaxNode* content = node.children.front();
+        node.classes |= content->classes;
+        node.children = std::move(content->children);
+        for (SyntaxNode* child : node.children) {
+            ReparentSyntaxNode(*child, &node);
+        }
+    }
     if (SyntaxNodeHasClass(node, SyntaxNodeClass::PreprocessorSplitList) && ContainsConditionalPreprocessor(node)) {
         // Only preprocessor-split lists query this immutable descendant predicate. Materializing it on the owning
         // node is equivalent to the printer's former recursive memoization and avoids its hash table.
@@ -708,4 +752,5 @@ void NormalizeSyntaxNode(FormatModel& model, SyntaxNode& node) {
     NormalizeColonPrefixedListComments(node);
     NormalizeLeadingStreamComments(node);
     NormalizeAttachedTrailingBlockComment(node);
+    NormalizeMacroReplacementComments(node);
 }

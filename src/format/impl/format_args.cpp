@@ -95,6 +95,8 @@ std::optional<FormatOptions> ParseFormatArgs(int argc, char** argv, std::string&
             options.verbose = true;
         } else if (arg == "--stdin") {
             options.readStdin = true;
+        } else if (arg == "--validate") {
+            options.validate = true;
         } else if (arg == "--dump-syntax-tree" || arg == "--dump-break-tree") {
             if (options.dumpKind != FormatDumpKind::None) {
                 error = "only one dump mode can be specified";
@@ -169,6 +171,10 @@ std::optional<FormatOptions> ParseFormatArgs(int argc, char** argv, std::string&
             error = std::string(optionName) + " is incompatible with --concurrency";
             return std::nullopt;
         }
+        if (options.validate) {
+            error = std::string(optionName) + " is incompatible with --validate";
+            return std::nullopt;
+        }
     }
     if (options.readStdin && (options.fileListProvided || options.recursiveInputProvided || !options.files.empty())) {
         error = "--stdin cannot be combined with file inputs";
@@ -214,6 +220,7 @@ void PrintFormatUsage(FILE* out) {
     std::fprintf(out, "                          By default, searches upward from each input for .cpp-format.\n");
     std::fprintf(out, "\n");
     std::fprintf(out, "Other options:\n");
+    std::fprintf(out, "  --validate              Reparse formatted output and check idempotence; fail on errors.\n");
     std::fprintf(out, "  --concurrency <n>       Limit worker threads. Defaults to hardware concurrency.\n");
     std::fprintf(out, "  -v, --verbose           Verbose progress output.\n");
     std::fprintf(out, "  --version               Print the strictfmt version.\n");

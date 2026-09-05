@@ -168,7 +168,10 @@ bool TrailingCommentReturnsToStructuralIndent(const PrintToken& token) {
         }
     }
     return previous != nullptr && (
-        previous->kind == SyntaxNodeKind::LeftBrace ||
+        previous->kind == SyntaxNodeKind::LeftBrace || (
+            previous->kind == SyntaxNodeKind::TemplateParameterList &&
+            token.node->parent->kind == SyntaxNodeKind::TemplateDeclaration
+        ) ||
         SyntaxSubtreeEndsWith(*previous, SyntaxNodeKind::RightBrace) ||
         (previous->kind == SyntaxNodeKind::Colon && token.node->parent->kind == SyntaxNodeKind::CaseStatement)
     );
@@ -781,7 +784,13 @@ private:
             } else {
                 WriteStandaloneTrailingComment(printToken, text);
             }
-            if (TrailingCommentReturnsToStructuralIndent(printToken)) {
+            const PrintToken* nextToken =
+                activeTokens_ != nullptr && printToken.sourceIndex + 1 < activeTokens_->size() ?
+                    &(*activeTokens_)[printToken.sourceIndex + 1] : nullptr;
+            if (
+                TrailingCommentReturnsToStructuralIndent(printToken) ||
+                (printToken.macroDefinition != nullptr && !ShouldContinueMacroLine(printToken, nextToken))
+            ) {
                 NewLine(false);
             } else {
                 NewLineWithIndent(continuationIndent);
@@ -1436,10 +1445,9 @@ private:
                 if (parenDepth_ > 0) {
                     --parenDepth_;
                 }
-                if (
-                    ClosesStatementPositionMacroCallItem(token) &&
-                    !(rawNext != nullptr && rawNext->kind == PrintTokenKind::TrailingComment)
-                ) {
+                if (ClosesStatementPositionMacroCallItem(token) && !(rawNext != nullptr && (
+                    rawNext->kind == PrintTokenKind::TrailingComment || rawNext->syntaxKind == SyntaxNodeKind::Semicolon
+                ))) {
                     FlushPendingTokens();
                     NewLine(ShouldContinueMacroLine(token, next));
                     return;
@@ -1501,6 +1509,7 @@ private:
                 if (
                     token.parentKind == SyntaxNodeKind::TemplateParameterList &&
                     token.grandParentKind == SyntaxNodeKind::TemplateDeclaration &&
+                    !(rawNext != nullptr && rawNext->kind == PrintTokenKind::TrailingComment) &&
                     !(
                         next != nullptr &&
                         next->kind == PrintTokenKind::Known &&

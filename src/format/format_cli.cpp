@@ -183,7 +183,7 @@ void PrintFormatSummary(
     size_t totalCount,
     int changedCount,
     int ignoredCount,
-    int parseErrorCount,
+    int formatErrorCount,
     int lineCount,
     std::chrono::steady_clock::time_point start
 ) {
@@ -202,8 +202,8 @@ void PrintFormatSummary(
     if (ignoredCount > 0) {
         std::fprintf(output, " Skipped %d ignored file%s.", ignoredCount, ignoredCount == 1 ? "" : "s");
     }
-    if (parseErrorCount > 0) {
-        std::fprintf(output, " %d file%s parsed with errors.", parseErrorCount, parseErrorCount == 1 ? "" : "s");
+    if (formatErrorCount > 0) {
+        std::fprintf(output, " %d file%s failed formatting.", formatErrorCount, formatErrorCount == 1 ? "" : "s");
     }
     std::fprintf(output, "\n");
 }
@@ -266,7 +266,7 @@ int RunFormat(int argc, char** argv) {
             return
                 DumpFormatBreakTreeText(stdinText, *config, "<stdin>", stdout, stderr, "strictfmt --dump-break-tree");
         }
-        SourceFormatResult result = FormatSourceText(stdinText, *config, "<stdin>");
+        SourceFormatResult result = FormatSourceText(stdinText, *config, "<stdin>", options.validate);
         if (!result.ok) {
             PrintSourceError(stderr, "<stdin>", result.error);
             return 1;
@@ -297,7 +297,7 @@ int RunFormat(int argc, char** argv) {
     }
 
     bool failed = false;
-    int parseErrorCount = 0;
+    int formatErrorCount = 0;
     int changedCount = 0;
     int ignoredCount = 0;
     int processedCount = 0;
@@ -358,7 +358,7 @@ int RunFormat(int argc, char** argv) {
         } else {
             result.hasPending = true;
             result.lineCount = CountSourceLines(*text);
-            result.pending.result = FormatSourceText(*text, *item.config, item.file);
+            result.pending.result = FormatSourceText(*text, *item.config, item.file, options.validate);
             if (options.mode == FormatMode::Diff && result.pending.result.ok && result.pending.result.changed) {
                 std::string formatted = std::move(result.pending.result.formatted);
                 result.pending.diff = BuildUnifiedFormatDiff(*text, formatted, item.diffPath);
@@ -393,7 +393,7 @@ int RunFormat(int argc, char** argv) {
         SourceFormatResult& result = completedFormat.pending.result;
         if (!result.ok) {
             PrintSourceError(stderr, file, result.error);
-            ++parseErrorCount;
+            ++formatErrorCount;
             failed = true;
             continue;
         }
@@ -423,13 +423,13 @@ int RunFormat(int argc, char** argv) {
         }
     }
     if (failed) {
-        if (options.mode == FormatMode::InPlace) {
+        if (options.mode == FormatMode::InPlace || formatErrorCount > 0) {
             std::fprintf(summary, "Formatting failed");
         } else {
             std::fprintf(summary, "Formatting is required for %d file%s", changedCount, changedCount == 1 ? "" : "s");
         }
-        if (parseErrorCount > 0) {
-            std::fprintf(summary, " (%d file%s parsed with errors)", parseErrorCount, parseErrorCount == 1 ? "" : "s");
+        if (formatErrorCount > 0) {
+            std::fprintf(summary, " (%d file%s failed formatting)", formatErrorCount, formatErrorCount == 1 ? "" : "s");
         }
         if (ignoredCount > 0) {
             std::fprintf(summary, ". Skipped %d ignored file%s", ignoredCount, ignoredCount == 1 ? "" : "s");
@@ -452,7 +452,7 @@ int RunFormat(int argc, char** argv) {
         work.size(),
         IsCheckMode(options) ? changedCount : 0,
         ignoredCount,
-        parseErrorCount,
+        formatErrorCount,
         lineCount,
         start
     );
