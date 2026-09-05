@@ -542,7 +542,12 @@ bool tree_sitter_cpp_external_scanner_scan(void *payload, TSLexer *lexer, const 
     if (valid_symbols[LINE_BREAK_WHITESPACE] &&
         (lexer->lookahead == ' ' || lexer->lookahead == '\t' || lexer->lookahead == '\f' ||
          lexer->lookahead == '\r' || lexer->lookahead == '\n' || lexer->lookahead == '\\')) {
-        const bool at_line_start = lexer->get_column(lexer) == 0;
+        // Only these categories distinguish leading from non-leading horizontal whitespace.
+        const bool at_line_start =
+            (lexer->lookahead == ' ' || lexer->lookahead == '\t' || lexer->lookahead == '\f') &&
+            !valid_symbols[RAW_MACRO_DEFINITION_IDENTIFIER] &&
+            (valid_symbols[CALL_SYNTAX_MACRO_IDENTIFIER] || valid_symbols[SEMICOLONLESS_CALL_MACRO_IDENTIFIER]) &&
+            lexer->get_column(lexer) == 0;
         const bool horizontal = scan_horizontal_whitespace(lexer);
         if (horizontal) {
             lexer->mark_end(lexer);
