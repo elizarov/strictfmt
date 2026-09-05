@@ -18,7 +18,7 @@ The overflow-size profile contains completed physical lines. The current unfinis
 
 A packed list's separately evaluated body inherits the opener's charged flag, but starts without the prefix's profile; the profiles merge afterward. Attached-open solving starts a fresh child result before merging it into the operator prefix. Both paths therefore obey the same ownership rule as ordinary recursive solving.
 
-The builder retains initial depth in `rawDepth` and materializes the depth adjustments specified in [format.md] in `structuralDepth`. `breakCost` starts at the same depth and every structural-depth shift updates both values. After building the complete model, normalization applies the specified subtree discounts from outer subtrees inward. Costs are fixed before solving, so memoization needs no layout-history state, and the emission choices and indentation rules are unchanged.
+The builder retains initial depth in `rawDepth`; `FormatBreakCostNormalizer` materializes the depth adjustments specified in [format.md] in `structuralDepth`. `breakCost` starts at the same depth and every structural-depth shift updates both values. After building the complete model, the normalizer applies the specified subtree discounts from outer subtrees inward. Costs are fixed before solving, so memoization needs no layout-history state, and the emission choices and indentation rules are unchanged.
 
 ## Search Shape
 

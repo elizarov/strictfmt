@@ -14,6 +14,7 @@ Print-token construction materializes canonical known-token text and immutable s
 - `src/format/format_cli.cpp` owns the end-user formatter command orchestration: input collection, configuration lookup, ignore filtering, parallel file formatting, output routing, summaries, and exit codes.
 - `src/format/impl/format_args.h|cpp` own command-line option parsing and usage text.
 - `src/format/impl/format_diff.h|cpp` own greedy line synchronization and unified-diff emission for `--diff`.
+- `src/format/impl/format_break_cost.h|cpp` own structural prefix-depth adjustments and final break-cost subtree discounts, including the no-discount traversal shortcut.
 - `src/format/impl/format_break_emitter.h|cpp` own recursive solved-layout emission through a physical-output adapter and report deferred list/chain/block indentation to the printer.
 - `src/format/impl/format_break_model.h|cpp` own the break model data structures and shared break model predicates.
 - `src/format/impl/format_break_model_builder.h|cpp` own conversion from print tokens to break models.
