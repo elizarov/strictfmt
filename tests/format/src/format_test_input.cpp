@@ -3102,3 +3102,46 @@ struct ExplicitOperatorCallable { template<typename T> T operator()(T value); };
 int ExplicitOperatorTemplateCall(ExplicitOperatorCallable& callable) {
 return callable.operator()<int>(1);
 }
+
+struct EmptyMemberBodies {
+virtual void Run() {};
+void Stop() {};
+void AlreadyCanonical() {}
+void Qualified() const & noexcept override {};
+int* PointerResult() {};
+int& ReferenceResult() {};
+ns::Result QualifiedResult() {};
+auto TrailingResult() -> ns::Result {};
+void operator()() {};
+void (Parenthesized)() {};
+int (*Factory())() {};
+template<class T> T Convert(T value) {};
+EmptyMemberBodies() {};
+~EmptyMemberBodies() {};
+operator bool() const {};
+void Commented() { /* empty */ };
+void NullOnly() { ; };
+void NonEmpty() { Work(); };
+void Defaulted() = default;
+void Deleted() = delete;
+virtual void Abstract() = 0;
+int value{};
+ns::Result object{};
+int values[2]{};
+void (*callback)(){};
+void (EmptyMemberBodies::*member)(){};
+int& reference{value};
+};
+void EmptyFreeFunction() {};
+int (*EmptyFactory())() {};
+void LocalEmptyBodies() { struct Local { void Run() {}; int value{}; }; }
+
+struct RecursiveEmptyBodies {
+int (*(*RecursiveFactory())())() {};
+int (&ArrayReference())[3] {};
+void ((NestedName))() {};
+int* const* QualifiedPointer() {};
+ns::T (*qualified_callback)(){};
+ns::T (*callbacks[2])(){};
+ns::T (RecursiveEmptyBodies::*member_callback)(){};
+};

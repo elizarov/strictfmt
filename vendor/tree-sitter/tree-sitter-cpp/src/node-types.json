@@ -4854,15 +4854,15 @@
         "required": false,
         "types": [
           {
-            "type": "_declarator",
-            "named": true
-          },
-          {
             "type": "_field_declarator",
             "named": true
           },
           {
             "type": "operator_cast",
+            "named": true
+          },
+          {
+            "type": "qualified_identifier",
             "named": true
           }
         ]
@@ -10107,7 +10107,35 @@
         "required": true,
         "types": [
           {
-            "type": "_declarator",
+            "type": "array_declarator",
+            "named": true
+          },
+          {
+            "type": "attributed_declarator",
+            "named": true
+          },
+          {
+            "type": "function_declarator",
+            "named": true
+          },
+          {
+            "type": "handle_declarator",
+            "named": true
+          },
+          {
+            "type": "member_pointer_declarator",
+            "named": true
+          },
+          {
+            "type": "parenthesized_declarator",
+            "named": true
+          },
+          {
+            "type": "pointer_declarator",
+            "named": true
+          },
+          {
+            "type": "reference_declarator",
             "named": true
           }
         ]
@@ -11117,7 +11145,35 @@
         "required": true,
         "types": [
           {
-            "type": "_declarator",
+            "type": "array_declarator",
+            "named": true
+          },
+          {
+            "type": "attributed_declarator",
+            "named": true
+          },
+          {
+            "type": "function_declarator",
+            "named": true
+          },
+          {
+            "type": "handle_declarator",
+            "named": true
+          },
+          {
+            "type": "member_pointer_declarator",
+            "named": true
+          },
+          {
+            "type": "parenthesized_declarator",
+            "named": true
+          },
+          {
+            "type": "pointer_declarator",
+            "named": true
+          },
+          {
+            "type": "reference_declarator",
             "named": true
           }
         ]
@@ -11623,7 +11679,35 @@
         "required": true,
         "types": [
           {
-            "type": "_declarator",
+            "type": "array_declarator",
+            "named": true
+          },
+          {
+            "type": "attributed_declarator",
+            "named": true
+          },
+          {
+            "type": "function_declarator",
+            "named": true
+          },
+          {
+            "type": "handle_declarator",
+            "named": true
+          },
+          {
+            "type": "member_pointer_declarator",
+            "named": true
+          },
+          {
+            "type": "parenthesized_declarator",
+            "named": true
+          },
+          {
+            "type": "pointer_declarator",
+            "named": true
+          },
+          {
+            "type": "reference_declarator",
             "named": true
           }
         ]
@@ -14602,10 +14686,6 @@
             "named": true
           },
           {
-            "type": "function_declarator",
-            "named": true
-          },
-          {
             "type": "identifier",
             "named": true
           },
@@ -14614,15 +14694,7 @@
             "named": true
           },
           {
-            "type": "pointer_declarator",
-            "named": true
-          },
-          {
             "type": "qualified_identifier",
-            "named": true
-          },
-          {
-            "type": "reference_declarator",
             "named": true
           },
           {

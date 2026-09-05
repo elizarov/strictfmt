@@ -112,6 +112,14 @@ module.exports = grammar(C, {
   ],
 
   conflicts: $ => [
+    [$.function_definition_qualified_name, $.qualified_identifier],
+    [$._field_declarator, $._type_declarator],
+    [$._field_declarator, $._type_declarator, $._function_definition_name],
+    [$._type_declarator, $._function_definition_name],
+    [$._declarator, $._type_declarator, $._function_definition_name],
+    [$._field_declarator, $._function_definition_name],
+    [$._declarator, $.reference_argument_declarator, $._function_definition_name],
+    [$._declarator, $._function_definition_name],
     [$.binary_expression, $.conditional_concatenated_string],
     [$.expression, $.conditional_concatenated_string],
     [$.concatenated_string, $.conditional_concatenated_string],
@@ -1117,10 +1125,10 @@ module.exports = grammar(C, {
       alias($.qualified_type_identifier, $.qualified_identifier),
     )),
 
-    function_definition: $ => prec(1, choice(
+    function_definition: $ => prec.dynamic(1, prec(1, choice(
       functionDefinitionWithHeader($, functionDefinitionHeader($)),
       functionDefinitionWithHeader($, conditionalFunctionDefinitionHeader($)),
-    )),
+    ))),
 
     _conditional_function_return_type_specifiers: $ => prec.right(seq(
       repeat($._declaration_modifiers),
@@ -1260,23 +1268,7 @@ module.exports = grammar(C, {
       field('body', choice($.compound_statement, $.try_statement, $.delete_method_clause)),
     )),
 
-    _qualified_type_function_declarator: $ => choice(
-      $.function_declarator,
-      alias($.qualified_type_pointer_function_declarator, $.pointer_declarator),
-      alias($.qualified_type_reference_function_declarator, $.reference_declarator),
-    ),
-
-    qualified_type_pointer_function_declarator: $ => prec.dynamic(1, prec.right(seq(
-      optional($.ms_based_modifier),
-      '*',
-      repeat(choice($.ms_pointer_modifier, $.type_qualifier, $.ms_call_modifier)),
-      field('declarator', $._qualified_type_function_declarator),
-    ))),
-
-    qualified_type_reference_function_declarator: $ => prec.dynamic(1, prec.right(seq(
-      choice('&', '&&', '%'),
-      field('declarator', $._qualified_type_function_declarator),
-    ))),
+    _qualified_type_function_declarator: $ => $._function_definition_declarator,
 
     declaration: $ => choice(
       seq(
@@ -2039,38 +2031,23 @@ module.exports = grammar(C, {
       $.bare_macro_identifier,
     )),
 
-    reference_declarator: $ => prec.dynamic(1, prec.right(seq(choice('&', '&&', '%'), $._declarator))),
-    reference_field_declarator: $ => prec.dynamic(1, prec.right(seq(choice('&', '&&', '%'), $._field_declarator))),
-    reference_type_declarator: $ => prec.dynamic(1, prec.right(seq(choice('&', '&&', '%'), $._type_declarator))),
+    reference_declarator: $ => referenceDeclarator($, $._declarator),
+    reference_field_declarator: $ => referenceDeclarator($, $._field_declarator),
+    reference_type_declarator: $ => referenceDeclarator($, $._type_declarator),
     abstract_reference_declarator: $ => prec.right(seq(choice('&', '&&', '%'), optional($._abstract_declarator))),
 
-    pointer_declarator: $ => prec.dynamic(1, prec.right(seq(
-      optional($.ms_based_modifier),
-      '*',
-      repeat(choice($.ms_pointer_modifier, $.type_qualifier, $.ms_call_modifier)),
-      field('declarator', $._declarator),
-    ))),
-    pointer_field_declarator: $ => prec.dynamic(1, prec.right(seq(
-      optional($.ms_based_modifier),
-      '*',
-      repeat(choice($.ms_pointer_modifier, $.type_qualifier, $.ms_call_modifier)),
-      field('declarator', $._field_declarator),
-    ))),
-    pointer_type_declarator: $ => prec.dynamic(1, prec.right(seq(
-      optional($.ms_based_modifier),
-      '*',
-      repeat(choice($.ms_pointer_modifier, $.type_qualifier, $.ms_call_modifier)),
-      field('declarator', $._type_declarator),
-    ))),
+    pointer_declarator: $ => pointerDeclarator($, $._declarator),
+    pointer_field_declarator: $ => pointerDeclarator($, $._field_declarator),
+    pointer_type_declarator: $ => pointerDeclarator($, $._type_declarator),
     abstract_pointer_declarator: $ => prec.dynamic(1, prec.right(seq(
       '*',
       repeat(choice($.ms_pointer_modifier, $.type_qualifier, $.ms_call_modifier)),
       field('declarator', optional($._abstract_declarator)),
     ))),
 
-    handle_declarator: $ => prec.dynamic(1, prec.right(seq('^', $._declarator))),
-    handle_field_declarator: $ => prec.dynamic(1, prec.right(seq('^', $._field_declarator))),
-    handle_type_declarator: $ => prec.dynamic(1, prec.right(seq('^', $._type_declarator))),
+    handle_declarator: $ => handleDeclarator($, $._declarator),
+    handle_field_declarator: $ => handleDeclarator($, $._field_declarator),
+    handle_type_declarator: $ => handleDeclarator($, $._type_declarator),
     abstract_handle_declarator: $ => prec.right(seq('^', optional($._abstract_declarator))),
 
     abstract_member_pointer_declarator: $ => prec.dynamic(1, prec.right(seq(
@@ -2086,21 +2063,9 @@ module.exports = grammar(C, {
       ')',
     )),
 
-    member_pointer_declarator: $ => prec.dynamic(1, prec.right(seq(
-      field('scope', $._scope_resolution),
-      '*',
-      field('declarator', $._declarator),
-    ))),
-    member_pointer_field_declarator: $ => prec.dynamic(1, prec.right(seq(
-      field('scope', $._scope_resolution),
-      '*',
-      field('declarator', $._field_declarator),
-    ))),
-    member_pointer_type_declarator: $ => prec.dynamic(1, prec.right(seq(
-      field('scope', $._scope_resolution),
-      '*',
-      field('declarator', $._type_declarator),
-    ))),
+    member_pointer_declarator: $ => memberPointerDeclarator($, $._declarator),
+    member_pointer_field_declarator: $ => memberPointerDeclarator($, $._field_declarator),
+    member_pointer_type_declarator: $ => memberPointerDeclarator($, $._type_declarator),
 
     structured_binding_declarator: $ => prec.dynamic(PREC.STRUCTURED_BINDING, seq(
       '[', commaSep1(choice($.identifier, $.structured_binding_pack_identifier)), ']',
@@ -2153,6 +2118,60 @@ module.exports = grammar(C, {
       repeat1($.virtual_specifier),
       $.requires_clause,
     )),
+
+    parenthesized_declarator: $ => parenthesizedDeclarator($, $._declarator),
+    parenthesized_field_declarator: $ => parenthesizedDeclarator($, $._field_declarator),
+    parenthesized_type_declarator: $ => parenthesizedDeclarator($, $._type_declarator),
+
+    attributed_declarator: $ => attributedDeclarator($, $._declarator),
+    attributed_field_declarator: $ => attributedDeclarator($, $._field_declarator),
+    attributed_type_declarator: $ => attributedDeclarator($, $._type_declarator),
+
+    array_declarator: $ => arrayDeclarator($, $._declarator),
+    array_field_declarator: $ => arrayDeclarator($, $._field_declarator),
+    array_type_declarator: $ => arrayDeclarator($, $._type_declarator),
+
+    // A definition declares a function, even when its return type adds outer pointer, array, or function layers.
+    // Parentheses and attributes preserve the entity; a pointer directly around its name instead declares an object.
+    _function_definition_name: $ => choice(
+      $.identifier,
+      alias($.function_definition_qualified_name, $.qualified_identifier),
+      $.template_function,
+      $.operator_name,
+      $.destructor_name,
+      alias($.function_definition_parenthesized_name, $.parenthesized_declarator),
+      alias($.function_definition_attributed_name, $.attributed_declarator),
+    ),
+
+    function_definition_qualified_name: $ => qualifiedIdentifier(
+      $, alias($.function_definition_qualified_name, $.qualified_identifier),
+    ),
+
+    function_definition_parenthesized_name: $ => parenthesizedDeclarator($, $._function_definition_name),
+    function_definition_attributed_name: $ => attributedDeclarator($, $._function_definition_name),
+
+    _function_definition_declarator: $ => choice(
+      alias($.function_definition_function_declarator, $.function_declarator),
+      alias($.function_definition_pointer_declarator, $.pointer_declarator),
+      alias($.function_definition_reference_declarator, $.reference_declarator),
+      alias($.function_definition_handle_declarator, $.handle_declarator),
+      alias($.function_definition_member_pointer_declarator, $.member_pointer_declarator),
+      alias($.function_definition_parenthesized_declarator, $.parenthesized_declarator),
+      alias($.function_definition_attributed_declarator, $.attributed_declarator),
+      alias($.function_definition_array_declarator, $.array_declarator),
+    ),
+
+    function_definition_function_declarator: $ => prec.dynamic(1, seq(
+      field('declarator', choice($._function_definition_name, $._function_definition_declarator)),
+      $._function_declarator_seq,
+    )),
+    function_definition_pointer_declarator: $ => pointerDeclarator($, $._function_definition_declarator),
+    function_definition_reference_declarator: $ => referenceDeclarator($, $._function_definition_declarator),
+    function_definition_handle_declarator: $ => handleDeclarator($, $._function_definition_declarator),
+    function_definition_member_pointer_declarator: $ => memberPointerDeclarator($, $._function_definition_declarator),
+    function_definition_parenthesized_declarator: $ => parenthesizedDeclarator($, $._function_definition_declarator),
+    function_definition_attributed_declarator: $ => attributedDeclarator($, $._function_definition_declarator),
+    function_definition_array_declarator: $ => arrayDeclarator($, $._function_definition_declarator),
 
     function_declarator: $ => prec.dynamic(1, seq(
       field('declarator', $._declarator),
@@ -4019,18 +4038,7 @@ module.exports = grammar(C, {
       )),
     ),
 
-    qualified_identifier: $ => seq(
-      $._scope_resolution,
-      field('name', choice(
-        alias($.dependent_identifier, $.dependent_name),
-        $.qualified_identifier,
-        $.template_function,
-        seq(optional('template'), $.identifier),
-        $.operator_name,
-        $.destructor_name,
-        $.pointer_type_declarator,
-      )),
-    ),
+    qualified_identifier: $ => qualifiedIdentifier($, $.qualified_identifier, $.pointer_type_declarator),
 
     qualified_type_identifier: $ => seq(
       $._scope_resolution,
@@ -4307,12 +4315,70 @@ function commaSep1(rule) {
   return seq(rule, repeat(seq(',', rule)));
 }
 
+function qualifiedIdentifier($, nested, ...extraNames) {
+  return seq(
+    $._scope_resolution,
+    field('name', choice(
+      alias($.dependent_identifier, $.dependent_name),
+      nested,
+      $.template_function,
+      seq(optional('template'), $.identifier),
+      $.operator_name,
+      $.destructor_name,
+      ...extraNames,
+    )),
+  );
+}
+
+function pointerDeclarator($, declarator) {
+  return prec.dynamic(1, prec.right(seq(
+    optional($.ms_based_modifier),
+    '*',
+    repeat(choice($.ms_pointer_modifier, $.type_qualifier, $.ms_call_modifier)),
+    field('declarator', declarator),
+  )));
+}
+
+function referenceDeclarator($, declarator) {
+  return prec.dynamic(1, prec.right(seq(choice('&', '&&', '%'), declarator)));
+}
+
+function handleDeclarator($, declarator) {
+  return prec.dynamic(1, prec.right(seq('^', declarator)));
+}
+
+function memberPointerDeclarator($, declarator) {
+  return prec.dynamic(1, prec.right(seq(
+    field('scope', $._scope_resolution),
+    '*',
+    field('declarator', declarator),
+  )));
+}
+
+function parenthesizedDeclarator($, declarator) {
+  return prec.dynamic(PREC.PAREN_DECLARATOR, seq('(', optional($.ms_call_modifier), declarator, ')'));
+}
+
+function attributedDeclarator($, declarator) {
+  return prec.right(seq(declarator, repeat1($.attribute_declaration)));
+}
+
+function arrayDeclarator($, declarator) {
+  return prec(1, seq(
+    field('declarator', declarator),
+    '[',
+    repeat(choice($.type_qualifier, 'static')),
+    field('size', optional(choice($.expression, '*'))),
+    ']',
+  ));
+}
+
 function functionDefinitionHeader($) {
   return [
     optional($.ms_call_modifier),
     $._declaration_specifiers,
     optional($.ms_call_modifier),
-    field('declarator', $._declarator),
+    field('declarator', $._function_definition_declarator),
   ];
 }
 
@@ -4321,7 +4387,7 @@ function conditionalFunctionDefinitionHeader($) {
     optional($.ms_call_modifier),
     $._conditional_function_return_type_specifiers,
     optional($.ms_call_modifier),
-    field('declarator', $._declarator),
+    field('declarator', $._function_definition_declarator),
   ];
 }
 
@@ -4337,15 +4403,17 @@ function functionDefinitionPrefixWithHeader(header) {
 }
 
 function inlineMethodDefinitionWithSpecifiers($, specifiers) {
-  return seq(
-    specifiers,
-    optional($.ms_call_modifier),
-    field('declarator', $._field_declarator),
-    choice(
+  const prefix = [specifiers, optional($.ms_call_modifier)];
+  return choice(
+    prec.dynamic(1, seq(
+      ...prefix,
+      field('declarator', $._function_definition_declarator),
       field('body', choice($.compound_statement, $.try_statement)),
-      $.default_method_clause,
-      $.delete_method_clause,
-      $.pure_virtual_clause,
+    )),
+    seq(
+      ...prefix,
+      field('declarator', $._field_declarator),
+      choice($.default_method_clause, $.delete_method_clause, $.pure_virtual_clause),
     ),
   );
 }
