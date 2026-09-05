@@ -80,5 +80,22 @@ int main(int argc, char** argv) {
     ) {
         return 1;
     }
+    for (int first = 0; first < 128; ++first) {
+        for (int second = 0; second < 128; ++second) {
+            const char pair[] = {static_cast<char>(first), static_cast<char>(second)};
+            if (!Check(std::string_view(pair, 2), first == '\r' && second == '\n' ? 1 : 2, __LINE__)) {
+                return 1;
+            }
+        }
+    }
+    const std::string ascii(256, 'a');
+    if (
+        !Check(ascii, 256, __LINE__) ||
+        !Check(ascii + "\xcc\x81", 256, __LINE__) ||
+        !Check("\xd8\x80" + ascii, 256, __LINE__) ||
+        !Check(ascii + "\r\n", 257, __LINE__)
+    ) {
+        return 1;
+    }
     std::cout << "Passed " << cases << " Unicode grapheme cases and malformed UTF-8 checks.\n";
 }
