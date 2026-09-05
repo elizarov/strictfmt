@@ -3071,3 +3071,34 @@ auto fragments = first // first
 
 void CompactBodiesStartingWithGlobalScope() {::RunGlobal();}
 auto compactGlobalLambda = [] {::RunGlobal();};
+
+struct ExplicitOperatorIterator {
+int& operator*();
+int* operator->() { return &(this->operator*()); }
+};
+
+template<typename T> void ExplicitOperatorMemberCalls(T& object, T* pointer) {
+object.operator*();
+pointer->operator*();
+object.operator+(object);
+pointer->operator+=(object);
+object.operator()(1);
+pointer->operator[](2);
+object.operator->()->operator*();
+pointer->operator->()->operator->()->operator*();
+(pointer->operator++()).operator*();
+object.operator<<(1);
+pointer->operator>>=(2);
+object.operator<=>(object);
+object.operator not();
+pointer->operator and_eq(object);
+object.T::operator*();
+pointer->T::operator*();
+object.template operator()<T>();
+pointer->template operator()<T>();
+}
+
+struct ExplicitOperatorCallable { template<typename T> T operator()(T value); };
+int ExplicitOperatorTemplateCall(ExplicitOperatorCallable& callable) {
+return callable.operator()<int>(1);
+}
