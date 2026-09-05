@@ -56,6 +56,8 @@ measurements justify them; retain exact layout decisions throughout.
   Unicode checks, and 21 baseline comparisons passed.
 - Step 11a: chain continuation complete; the full test wrapper and 21 baseline
   comparisons passed.
+- Step 11b: list continuation complete; the full test wrapper (including focused
+  list-ownership checks) and 21 baseline comparisons passed.
 
 ## Validation
 
