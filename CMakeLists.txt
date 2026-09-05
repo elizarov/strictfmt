@@ -49,6 +49,21 @@ find_package(Python3 COMPONENTS Interpreter)
 enable_testing()
 
 option(STRICTFMT_BUILD_STANDALONE "Build the standalone strictfmt executable." ON)
+set(strictfmt_ipo_default OFF)
+if(PROJECT_IS_TOP_LEVEL AND STRICTFMT_BUILD_STANDALONE)
+    set(strictfmt_ipo_default ON)
+endif()
+option(STRICTFMT_ENABLE_IPO "Enable supported interprocedural optimization for Release formatter targets."
+    ${strictfmt_ipo_default}
+)
+set(strictfmt_ipo_supported OFF)
+if(STRICTFMT_ENABLE_IPO)
+    include(CheckIPOSupported)
+    check_ipo_supported(RESULT strictfmt_ipo_supported OUTPUT strictfmt_ipo_error LANGUAGES CXX)
+    if(NOT strictfmt_ipo_supported)
+        message(STATUS "strictfmt: interprocedural optimization unavailable; using normal compilation")
+    endif()
+endif()
 set(STRICTFMT_FORMAT_TEST_EXE "" CACHE STRING
     "Executable used by strictfmt format tests. Defaults to the standalone strictfmt target."
 )
@@ -67,6 +82,9 @@ target_include_directories(strictfmt_tree_sitter_runtime PUBLIC
 )
 
 function(strictfmt_apply_common_options target)
+    if(strictfmt_ipo_supported)
+        set_property(TARGET ${target} PROPERTY INTERPROCEDURAL_OPTIMIZATION_RELEASE TRUE)
+    endif()
     target_compile_definitions(${target} PUBLIC
         NOMINMAX
         WIN32_LEAN_AND_MEAN

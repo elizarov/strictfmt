@@ -67,6 +67,13 @@ Windows and Linux builds can coexist in the same checkout because their generate
 
 ## Incremental Builds
 
+Release builds enable interprocedural optimization for formatter-owned C++ targets
+when supported by the compiler and linker. Tree-sitter runtime and grammar targets
+use normal compilation. Set `STRICTFMT_ENABLE_IPO=OFF` in the CMake cache to disable
+it. The option defaults off when strictfmt is added to another CMake project or
+`STRICTFMT_BUILD_STANDALONE=OFF`, so embedding hosts opt in explicitly. Unsupported
+toolchains fall back to normal compilation.
+
 The build wrappers reconfigure CMake and build incrementally. Unchanged objects
 and libraries are reused; `Built target` lines alone do not indicate recompilation.
 
