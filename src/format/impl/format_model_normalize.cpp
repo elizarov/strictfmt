@@ -585,11 +585,10 @@ void NormalizeAttachedTrailingBlockComment(SyntaxNode& node) {
         }
         const std::optional<size_t> nextIndex = NextNonTriviaChildIndex(node.children, index + 1);
         if (nextIndex && node.children[*nextIndex] != nullptr && (
-            (
+            node.children[*nextIndex]->kind == SyntaxNodeKind::RightParen ||
+            node.children[*nextIndex]->kind == SyntaxNodeKind::RightBracket || (
                 SyntaxNodeHasClass(node, SyntaxNodeClass::PreprocessorSplitList) && (
                     node.children[*nextIndex]->kind == SyntaxNodeKind::RightBrace ||
-                    node.children[*nextIndex]->kind == SyntaxNodeKind::RightParen ||
-                    node.children[*nextIndex]->kind == SyntaxNodeKind::RightBracket ||
                     node.children[*nextIndex]->kind == SyntaxNodeKind::Greater
                 )
             ) ||

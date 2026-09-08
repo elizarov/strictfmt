@@ -6129,3 +6129,54 @@ struct Fields {
 };
 
 }
+
+namespace nested_terminal_comments {
+
+struct Context {
+    Context Depots() const;
+    int size() const;
+};
+namespace helpers {
+
+bool IsRetailPresented(int revision);
+
+}
+
+bool Check(int revision, const Context& stores_context) {
+    if (
+        !helpers::IsRetailPresented(revision) &&
+            stores_context.Depots().size() <= 1 /* Check if solo Depot without extra */
+    ) {
+        return true;
+    }
+    for (int i = 0; i < revision; ++i /* advance */) {
+        break;
+    }
+    while (revision > 0 /* continue */) {
+        --revision;
+    }
+    auto captured = [revision /* saved */] { return revision; };
+    int array[2 /* size */]{};
+    auto grouped = (revision + array[0] /* result */);
+    int(*pointer /* declarator */)[2] = &array;
+    (void)captured;
+    (void)grouped;
+    (void)pointer;
+    if (revision > 0 /* inline at closer */) {
+        return true;
+    }
+    if (
+        revision > 0  // trailing line comment
+    ) {
+        return true;
+    }
+    if (
+        revision > 0
+        /* standalone block comment */
+    ) {
+        return true;
+    }
+    return false; /* preserve block trailing comment */
+}
+
+}
