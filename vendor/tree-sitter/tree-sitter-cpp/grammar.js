@@ -235,6 +235,7 @@ module.exports = grammar(C, {
     [$.expression, $.identifier_parameter_pack_expansion],
     [$.expression, $._lambda_capture_identifier],
     [$.expression, $.lambda_capture_initializer],
+    [$.expression, $.assignment_expression, $.lambda_capture_initializer],
     [$.expression, $._lambda_capture],
     [$.expression, $.structured_binding_declarator, $._lambda_capture_identifier],
     [$.structured_binding_declarator, $._lambda_capture_identifier],
@@ -3672,7 +3673,7 @@ module.exports = grammar(C, {
       ),
     ),
 
-    lambda_capture_initializer: $ => seq(
+    lambda_capture_initializer: $ => prec(PREC.LAMBDA, seq(
       optional('&'),
       optional('...'),
       field('left', $.identifier),
@@ -3680,7 +3681,7 @@ module.exports = grammar(C, {
         seq('=', field('right', choice($.expression, $.initializer_list))),
         field('right', choice($.argument_list, $.initializer_list)),
       ),
-    ),
+    )),
 
     _lambda_capture: $ => choice(
       seq(optional('*'), $.this),

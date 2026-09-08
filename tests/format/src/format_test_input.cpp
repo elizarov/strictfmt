@@ -3426,3 +3426,18 @@ return false;
 }
 static_assert(Evaluate());
 }
+
+namespace NestedLambdaReferenceCapture {
+template<class F> struct Wrapper { F call; };
+template<class F> Wrapper(F)->Wrapper<F>;
+constexpr bool Check() {
+int value=2;
+auto first=Wrapper{[&alias=value]() { return ++alias; }};
+auto second=Wrapper{[&alias=(value)] { return ++alias; }};
+auto third=Wrapper{[copy=1,&alias=value] { return alias+copy; }};
+return first.call()==3 && second.call()==4 && third.call()==5 && value==4;
+}
+static_assert(Check());
+constexpr int offset=1;
+int designated[4]={[offset+1]=7};
+}
