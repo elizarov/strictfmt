@@ -766,22 +766,12 @@ module.exports = grammar(C, {
       field('function', $.semicolonless_call_macro_identifier),
       field('arguments', $.macro_argument_list),
       optional($._line_break_whitespace),
-      repeat(seq(
-        field('function', $.semicolonless_call_macro_identifier),
-        field('arguments', $.macro_argument_list),
-        optional($._line_break_whitespace),
-      )),
     ))),
 
     block_macro_call_statement_item: $ => prec.dynamic(10, prec.right(PREC.CALL + 8, seq(
       field('function', $.semicolonless_call_macro_identifier),
       field('arguments', $.macro_argument_list),
       ';',
-      repeat(seq(
-        field('function', $.semicolonless_call_macro_identifier),
-        field('arguments', $.macro_argument_list),
-        ';',
-      )),
     ))),
 
     top_level_call_statement: $ => prec.right(PREC.CALL + 4, seq(

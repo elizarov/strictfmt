@@ -547,3 +547,23 @@ EXPECT_NO_THROW /* before statement */ (int value = Make());
 FORMAT_USERVER_TYPE /* before type */ (int) value;
 Use(FORMAT_USERVER_TOKENS /* before tokens */ (x +));
 }
+
+#define FORMAT_USERVER_COMPLETE_STATEMENT(value) ++value;
+constexpr int MixedMacroTerminators() {
+int count=0;
+FORMAT_USERVER_COMPLETE_STATEMENT(count);
+FORMAT_USERVER_COMPLETE_STATEMENT(count)
+FORMAT_USERVER_COMPLETE_STATEMENT(count);
+FORMAT_USERVER_COMPLETE_STATEMENT(count)
+
+FORMAT_USERVER_COMPLETE_STATEMENT(count);
+if(false) FORMAT_USERVER_COMPLETE_STATEMENT(count);
+FORMAT_USERVER_COMPLETE_STATEMENT(count);
+if(true)
+FORMAT_USERVER_COMPLETE_STATEMENT(count)
+else
+FORMAT_USERVER_COMPLETE_STATEMENT(count)
+return count;
+}
+static_assert(MixedMacroTerminators()==7);
+#undef FORMAT_USERVER_COMPLETE_STATEMENT

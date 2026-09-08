@@ -14143,42 +14143,6 @@
                   "type": "BLANK"
                 }
               ]
-            },
-            {
-              "type": "REPEAT",
-              "content": {
-                "type": "SEQ",
-                "members": [
-                  {
-                    "type": "FIELD",
-                    "name": "function",
-                    "content": {
-                      "type": "SYMBOL",
-                      "name": "semicolonless_call_macro_identifier"
-                    }
-                  },
-                  {
-                    "type": "FIELD",
-                    "name": "arguments",
-                    "content": {
-                      "type": "SYMBOL",
-                      "name": "macro_argument_list"
-                    }
-                  },
-                  {
-                    "type": "CHOICE",
-                    "members": [
-                      {
-                        "type": "SYMBOL",
-                        "name": "_line_break_whitespace"
-                      },
-                      {
-                        "type": "BLANK"
-                      }
-                    ]
-                  }
-                ]
-              }
             }
           ]
         }
@@ -14212,34 +14176,6 @@
             {
               "type": "STRING",
               "value": ";"
-            },
-            {
-              "type": "REPEAT",
-              "content": {
-                "type": "SEQ",
-                "members": [
-                  {
-                    "type": "FIELD",
-                    "name": "function",
-                    "content": {
-                      "type": "SYMBOL",
-                      "name": "semicolonless_call_macro_identifier"
-                    }
-                  },
-                  {
-                    "type": "FIELD",
-                    "name": "arguments",
-                    "content": {
-                      "type": "SYMBOL",
-                      "name": "macro_argument_list"
-                    }
-                  },
-                  {
-                    "type": "STRING",
-                    "value": ";"
-                  }
-                ]
-              }
             }
           ]
         }
