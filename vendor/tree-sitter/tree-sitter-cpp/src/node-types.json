@@ -7230,6 +7230,10 @@
           "named": true
         },
         {
+          "type": "namespace_definition",
+          "named": true
+        },
+        {
           "type": "template_declaration",
           "named": true
         },

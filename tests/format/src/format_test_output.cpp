@@ -5100,3 +5100,47 @@ template <class... T>
 auto LambdaPackInitCaptures(T&&... args) {
     return [... values(std::forward<T>(args)), &... references(args)] { return Use(values..., references...); };
 }
+
+#define FORMAT_NAMESPACE_TRAITS(Type) \
+    namespace format_macro { \
+ \
+    namespace detail { \
+ \
+    template <> \
+    struct Traits<Type> { \
+        using type = Type; \
+    }; \
+ \
+    } \
+ \
+    }
+#define FORMAT_NESTED_NAMESPACE_TRAITS(Type) \
+    namespace format_macro::nested { \
+ \
+    inline namespace version { \
+ \
+    template <> \
+    struct Traits<Type> { \
+        static_assert(Check<Type>()); \
+    }; \
+ \
+    } \
+ \
+    }
+#define FORMAT_MIXED_NAMESPACE_DECLARATIONS(Type) \
+    namespace format_macro { \
+ \
+    Type Get(); \
+ \
+    } \
+    void After();
+#define FORMAT_ANONYMOUS_NAMESPACE(Type) \
+    namespace { \
+ \
+    namespace detail { \
+ \
+    Type value; \
+ \
+    } \
+ \
+    }

@@ -558,7 +558,7 @@ private:
     }
 
     void NewLine(bool macroContinuation = false) { output_.NewLine(macroContinuation); }
-    void BlankLine() { output_.BlankLine(); }
+    void BlankLine(bool macroContinuation = false) { output_.BlankLine(macroContinuation); }
     void ReopenLastOutputLine() { output_.ReopenLastLine(); }
     void Write(std::string_view text) override { output_.Write(text, indentLevel_); }
     void Space() override { output_.Space(); }
@@ -574,7 +574,7 @@ private:
     }
 
     void BlankLineWithIndent(int indentLevel) {
-        BlankLine();
+        BlankLine(emittingMacroDefinition_);
         output_.SetPendingIndent(std::max(0, indentLevel));
     }
 
@@ -1198,13 +1198,13 @@ private:
         }
         if (pendingNamespaceSeparator_ && !token.commentContinuation && token.kind != PrintTokenKind::TrailingComment) {
             FlushPendingTokens();
-            BlankLine();
+            BlankLine(token.inMacroValue);
             pendingNamespaceSeparator_ = false;
         }
         listContinuation_->BeforeToken(token);
         if (declarationLayout_->NeedsBlankLineBefore(currentTokenIndex_)) {
             FlushPendingTokens();
-            BlankLine();
+            BlankLine(token.inMacroValue);
         }
         PrepareBareMacroItemBoundary(rawPrevious, token);
         PrepareMacroBoundary(rawPrevious, token);
@@ -1218,7 +1218,7 @@ private:
                 const bool continuesSplitList = listContinuation_->ContinuesList(token);
                 const std::optional<int> pendingIndent =
                     continuesSplitList ? output_.State().pendingIndentLevel : std::nullopt;
-                BlankLine();
+                BlankLine(token.inMacroValue);
                 output_.SetPendingIndent(pendingIndent);
             }
             return;
@@ -1787,7 +1787,7 @@ private:
             if (output_.State().lineHasText) {
                 NewLine(token.inMacroValue);
             }
-            BlankLine();
+            BlankLine(token.inMacroValue);
             BufferToken(token);
             FlushPendingTokens();
             if (rawNext != nullptr && rawNext->kind == PrintTokenKind::TrailingComment) {

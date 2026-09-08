@@ -40,7 +40,7 @@ public:
     void ForceColumnZero();
 
     void NewLine(bool macroContinuation = false);
-    void BlankLine();
+    void BlankLine(bool macroContinuation = false);
     void ReopenLastLine(bool discardBlankLines = false);
     void Write(std::string_view text, int structuralIndent);
     void WriteAtIndent(std::string_view text, int indent);

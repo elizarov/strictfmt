@@ -75,7 +75,7 @@ struct FormatOutput::Impl {
         state_.pendingIndentLevel.reset();
     }
 
-    void BlankLine() {
+    void BlankLine(bool macroContinuation) {
         if (!HasOutputContent() && !state_.lineHasText) {
             state_.atLineStart = true;
             currentColumn_ = 0;
@@ -84,14 +84,18 @@ struct FormatOutput::Impl {
             state_.pendingIndentLevel.reset();
             return;
         }
-        NewLine(false);
-        if (output_.size() < 2 || output_[output_.size() - 2] != '\n') {
+        NewLine(macroContinuation);
+        if (macroContinuation) {
+            if (!output_.ends_with("\n \\\n")) {
+                output_.append(" \\\n");
+            }
+        } else if (output_.size() < 2 || output_[output_.size() - 2] != '\n') {
             output_.push_back('\n');
         }
         state_.atLineStart = true;
         state_.lineHasText = false;
         currentColumn_ = 0;
-        state_.macroContinuation = false;
+        state_.macroContinuation = macroContinuation;
         forceColumnZeroLine_ = false;
         state_.pendingIndentLevel.reset();
     }
@@ -369,7 +373,7 @@ int FormatOutput::CurrentLineIndentLevel() const { return impl_->CurrentLineInde
 void FormatOutput::SetPendingIndent(std::optional<int> indent) { impl_->state_.pendingIndentLevel = indent; }
 void FormatOutput::ForceColumnZero() { impl_->ForceColumnZero(); }
 void FormatOutput::NewLine(bool macroContinuation) { impl_->NewLine(macroContinuation); }
-void FormatOutput::BlankLine() { impl_->BlankLine(); }
+void FormatOutput::BlankLine(bool macroContinuation) { impl_->BlankLine(macroContinuation); }
 void FormatOutput::ReopenLastLine(bool discardBlankLines) {
     if (discardBlankLines) {
         impl_->TrimTrailingBlankLines();

@@ -48,6 +48,17 @@ void TestOutput() {
         Check(output.Finish() == "#define X \\\n  x\n", "explicit indentation overrides pending and macro indentation");
     }
     {
+        FormatOutput output(2, 80);
+        output.Write("#define X", 0);
+        output.BlankLine(true);
+        output.BlankLine(true);
+        Check(output.State().macroContinuation && output.CurrentColumn(0) == 2, "blank macro lines preserve continuation indentation");
+        output.Write("x", 0);
+        output.BlankLine();
+        output.Write("next", 0);
+        Check(output.Finish() == "#define X \\\n \\\n  x\n\nnext\n", "blank macro lines keep one continuation suffix without extending the final line");
+    }
+    {
         SyntaxNode group;
         FormatOutput output(2, 20);
         output.Write("a;", 0);

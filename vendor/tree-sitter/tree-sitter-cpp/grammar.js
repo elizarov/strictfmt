@@ -599,6 +599,7 @@ module.exports = grammar(C, {
     _macro_replacement_declaration_item: $ => choice(
       alias($.macro_template_declaration, $.template_declaration),
       alias($.macro_enum_declaration, $.declaration),
+      $.namespace_definition,
       $.function_definition,
       $.declaration,
     ),

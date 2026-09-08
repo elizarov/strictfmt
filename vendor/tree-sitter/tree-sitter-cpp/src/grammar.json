@@ -13281,6 +13281,10 @@
         },
         {
           "type": "SYMBOL",
+          "name": "namespace_definition"
+        },
+        {
+          "type": "SYMBOL",
           "name": "function_definition"
         },
         {
