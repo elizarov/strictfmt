@@ -98,7 +98,7 @@ bool IsDeclaratorPackEllipsisToken(const PrintToken& token) {
             continue;
         }
         const SyntaxNode* identifier = NextNonTriviaChild(pack, index + 1);
-        return identifier != nullptr && identifier->kind == SyntaxNodeKind::Identifier;
+        return identifier == nullptr || identifier->kind == SyntaxNodeKind::Identifier;
     }
     return false;
 }

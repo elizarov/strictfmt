@@ -3761,3 +3761,24 @@ ValueAlias value;
 Member member = &Owner::member;
 Number number = 1;
 }
+
+namespace VariadicDeclarators {
+struct Owner {int first;long second;};
+template<class... Fields> constexpr auto Sum(Owner& owner, Fields Owner::*... fields) {return (0+...+(owner.*fields));}
+template<class... Fields> void Members(Fields Owner::* const... fields);
+template<class... Fields> void UnnamedMembers(Fields Owner::*...);
+template<class... Types> constexpr auto Pointers(Types*... pointers) {return (0+...+*pointers);}
+template<class... Types> void PointerReferences(Types* const&... pointers);
+template<class... Types> void UnnamedPointers(Types*..., Types const&...);
+template<class... Types> void References(Types&... refs);
+template<class... Types> void Forwarding(Types&&... refs);
+template<class... Types> void Arrays(Types (&... arrays)[3]);
+template<class... Types> void ArrayPointers(Types (*... arrays)[3]);
+template<class... Types> void Functions(Types (*... functions)(int));
+template<class... Types> void FunctionReferences(Types (&... functions)(int));
+template<class... Types> void MemberFunctions(Types (Owner::*... functions)(int) const);
+template<auto Owner::*... Fields> struct Selected {};
+template<class T, auto T::value_type::*... Fields> struct DependentSelected {};
+constexpr int Check() {Owner owner{1,2}; return Sum(owner,&Owner::first,&Owner::second)+Pointers(&owner.first,&owner.second);}
+static_assert(Check()==6);
+}

@@ -1070,6 +1070,10 @@
           {
             "type": "template_function",
             "named": true
+          },
+          {
+            "type": "variadic_declarator",
+            "named": true
           }
         ]
       },
@@ -1295,6 +1299,10 @@
         },
         {
           "type": "template_function",
+          "named": true
+        },
+        {
+          "type": "variadic_declarator",
           "named": true
         }
       ]
@@ -4814,6 +4822,10 @@
           {
             "type": "template_function",
             "named": true
+          },
+          {
+            "type": "variadic_declarator",
+            "named": true
           }
         ]
       },
@@ -5664,6 +5676,10 @@
         },
         {
           "type": "_type_declarator",
+          "named": true
+        },
+        {
+          "type": "variadic_declarator",
           "named": true
         }
       ]
@@ -7751,6 +7767,10 @@
           {
             "type": "_type_declarator",
             "named": true
+          },
+          {
+            "type": "variadic_declarator",
+            "named": true
           }
         ]
       },
@@ -8798,6 +8818,10 @@
         {
           "type": "ms_call_modifier",
           "named": true
+        },
+        {
+          "type": "variadic_declarator",
+          "named": true
         }
       ]
     }
@@ -8885,6 +8909,10 @@
           },
           {
             "type": "_type_declarator",
+            "named": true
+          },
+          {
+            "type": "variadic_declarator",
             "named": true
           }
         ]
@@ -18008,6 +18036,34 @@
         "multiple": false,
         "required": true,
         "types": [
+          {
+            "type": "array_declarator",
+            "named": true
+          },
+          {
+            "type": "attributed_declarator",
+            "named": true
+          },
+          {
+            "type": "function_declarator",
+            "named": true
+          },
+          {
+            "type": "handle_declarator",
+            "named": true
+          },
+          {
+            "type": "member_pointer_declarator",
+            "named": true
+          },
+          {
+            "type": "parenthesized_declarator",
+            "named": true
+          },
+          {
+            "type": "pointer_declarator",
+            "named": true
+          },
           {
             "type": "reference_declarator",
             "named": true

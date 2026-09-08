@@ -272,6 +272,7 @@ module.exports = grammar(C, {
     [$.parameter_declaration, $.optional_parameter_declaration],
     [$.parameter_declaration],
     [$.variadic_declarator],
+    [$._parameter_list_item, $.variadic_declarator],
     [$.variadic_type_parameter_declaration],
     [$.attributed_declarator, $.parameter_declaration],
     [$._class_name, $.type_parameter_declaration, $._scope_resolution],
@@ -1554,10 +1555,7 @@ module.exports = grammar(C, {
 
     variadic_parameter_declaration: $ => seq(
       $._declaration_specifiers,
-      field('declarator', choice(
-        $.variadic_declarator,
-        alias($.variadic_reference_declarator, $.reference_declarator),
-      )),
+      field('declarator', $._variadic_declarator),
     ),
 
     variadic_declarator: $ => seq(
@@ -1565,9 +1563,32 @@ module.exports = grammar(C, {
       optional($.identifier),
     ),
 
-    variadic_reference_declarator: $ => seq(
-      choice('&&', '&'),
+    _variadic_declarator: $ => choice(
+      $._variadic_non_pointer_declarator,
+      alias($.variadic_pointer_declarator, $.pointer_declarator),
+      alias($.variadic_reference_declarator, $.reference_declarator),
+      alias($.variadic_handle_declarator, $.handle_declarator),
+      alias($.variadic_member_pointer_declarator, $.member_pointer_declarator),
+    ),
+
+    _variadic_non_pointer_declarator: $ => choice(
       $.variadic_declarator,
+      alias($.variadic_parenthesized_declarator, $.parenthesized_declarator),
+      alias($.variadic_attributed_declarator, $.attributed_declarator),
+      alias($.variadic_array_declarator, $.array_declarator),
+      alias($.variadic_function_declarator, $.function_declarator),
+    ),
+
+    variadic_pointer_declarator: $ => pointerDeclarator($, $._variadic_declarator),
+    variadic_reference_declarator: $ => referenceDeclarator($, $._variadic_declarator),
+    variadic_handle_declarator: $ => handleDeclarator($, $._variadic_declarator),
+    variadic_member_pointer_declarator: $ => memberPointerDeclarator($, $._variadic_declarator),
+    variadic_parenthesized_declarator: $ => parenthesizedDeclarator($, $._variadic_declarator),
+    variadic_attributed_declarator: $ => attributedDeclarator($, $._variadic_non_pointer_declarator),
+    variadic_array_declarator: $ => arrayDeclarator($, $._variadic_non_pointer_declarator),
+    variadic_function_declarator: $ => seq(
+      field('declarator', $._variadic_non_pointer_declarator),
+      $._function_declarator_seq,
     ),
 
     init_declarator: ($, original) => choice(
