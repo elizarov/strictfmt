@@ -8677,6 +8677,14 @@
         {
           "type": "SYMBOL",
           "name": "user_defined_literal"
+        },
+        {
+          "type": "SYMBOL",
+          "name": "suffixed_string_literal"
+        },
+        {
+          "type": "SYMBOL",
+          "name": "concatenated_string"
         }
       ]
     },

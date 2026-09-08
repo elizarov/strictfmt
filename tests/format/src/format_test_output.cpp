@@ -5253,3 +5253,32 @@ void EmptyCompoundStatements(bool condition) {
         {}
     }
 }
+
+namespace LiteralAssignmentReceivers {
+
+struct Argument {
+    int value;
+
+    constexpr Argument operator=(int n) const { return {n}; }
+    constexpr Argument operator+=(int n) const { return {value + n}; }
+};
+
+constexpr Argument operator "" _arg(const char*, decltype(sizeof(0))) { return {}; }
+constexpr Argument operator "" _arg(const wchar_t*, decltype(sizeof(0))) { return {}; }
+constexpr Argument operator "" _arg(const char16_t*, decltype(sizeof(0))) { return {}; }
+constexpr Argument operator "" _arg(const char32_t*, decltype(sizeof(0))) { return {}; }
+constexpr Argument operator "" _arg(unsigned long long value) { return {static_cast<int>(value)}; }
+constexpr Argument operator "" _arg(char value) { return {value}; }
+constexpr int Get(Argument arg) { return arg.value; }
+static_assert(Get("field"_arg = 3) == 3);
+static_assert(Get(u8"field"_arg += 4) == 4);
+static_assert(Get(L"field"_arg = 5) == 5);
+static_assert(Get(u"field"_arg = 6) == 6);
+static_assert(Get(U"field"_arg = 7) == 7);
+static_assert(Get(R"(field)"_arg = 8) == 8);
+static_assert(Get("firstsecond"_arg = 9) == 9);
+static_assert(Get("firstsecond"_arg = 10) == 10);
+static_assert(Get(1_arg += 2) == 3);
+static_assert(Get('x'_arg = 11) == 11);
+
+}

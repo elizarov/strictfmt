@@ -4075,6 +4075,8 @@ module.exports = grammar(C, {
       alias('import', $.identifier),
       alias('module', $.identifier),
       $.user_defined_literal,
+      $.suffixed_string_literal,
+      $.concatenated_string,
     ),
 
     assignment_expression: $ => prec.right(PREC.ASSIGNMENT, seq(

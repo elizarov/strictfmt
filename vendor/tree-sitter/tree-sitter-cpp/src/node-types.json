@@ -8972,6 +8972,10 @@
             "named": true
           },
           {
+            "type": "concatenated_string",
+            "named": true
+          },
+          {
             "type": "cpp_cast_expression",
             "named": true
           },
@@ -8997,6 +9001,10 @@
           },
           {
             "type": "subscript_expression",
+            "named": true
+          },
+          {
+            "type": "suffixed_string_literal",
             "named": true
           },
           {
