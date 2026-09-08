@@ -100,6 +100,27 @@ MacroCategories:
 GTEST_INTERNAL_DEPRECATE_AND_INLINE("Use NewApi() instead") int OldApi();
 ```
 
+### StatementPrefixMacros
+
+`StatementPrefixMacros` names modifiers that precede a complete statement. A prefix may have macro arguments, and several prefixes may nest. The prefix and its following statement form one control-flow body, including when braces are added to an enclosing control statement.
+
+<!-- .cpp-format
+MacroCategories:
+  StatementPrefixMacros:
+    - DISCARD_RESULT
+    - FOR_EACH_VALUE
+-->
+```cpp
+void Exercise(bool enabled) {
+    if (enabled) {
+        DISCARD_RESULT Run();
+    }
+    FOR_EACH_VALUE(values, value) {
+        Consume(value);
+    }
+}
+```
+
 ### BareIdentifierMacros
 
 `BareIdentifierMacros` names macro identifiers used as bare tokens in supported non-call positions. A configured token remains valid as an expression atom when the same project also passes it as a normal call argument or binary-expression operand.

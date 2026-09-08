@@ -23,9 +23,10 @@ constexpr std::array kMacroCategoryMembers = {
     &FormatterConfig::typeSpecifierMacros,
     &FormatterConfig::preprocessorArgumentMacros,
     &FormatterConfig::semicolonlessCallMacros,
+    &FormatterConfig::statementPrefixMacros,
 };
 
-static_assert(kMacroCategoryMembers.size() <= 8);
+static_assert(kMacroCategoryMembers.size() <= 16);
 
 struct ParseConfigScope;
 
@@ -38,7 +39,7 @@ struct TSParserDeleter {
 struct ParseConfigScope {
     explicit ParseConfigScope(const FormatterConfig& value) : config(value), previous(g_parseConfig) {
         for (size_t category = 0; category < kMacroCategoryMembers.size(); ++category) {
-            const auto bit = static_cast<std::uint8_t>(1u << category);
+            const auto bit = static_cast<std::uint16_t>(1u << category);
             for (const std::string& entry : config.*kMacroCategoryMembers[category]) {
                 if (entry == "*") {
                     for (auto& initial : categoriesByInitial) {
@@ -56,7 +57,7 @@ struct ParseConfigScope {
 
     const FormatterConfig& config;
     const ParseConfigScope* previous;
-    std::array<std::uint8_t, 256> categoriesByInitial{};
+    std::array<std::uint16_t, 256> categoriesByInitial{};
 };
 
 bool MacroEntryMatches(std::string_view entry, std::string_view name) {

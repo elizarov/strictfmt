@@ -11,7 +11,7 @@ This document specifies the source layout produced by `strictfmt`. Wrapping exam
 - Put spaces around trailing-return arrows, e.g. `[]() -> int`.
 - Put one space before trailing function qualifiers, e.g. `Run() const`.
 - Put one space between `template` and `<`, e.g. `template <typename T>`.
-- Keep declaration modifiers compact and separate them from the modified type with one space, e.g. `alignas(8) int`.
+- Keep declaration and statement modifiers compact and separate them from the modified syntax with one space, e.g. `alignas(8) int`.
 - Separate a declaration type from its declarator with one space, e.g. `int value`.
 - Put no space between a string or character literal prefix and the literal, e.g. `L"text"`.
 - Put no space between a literal and its user-defined literal suffix, e.g. `100ms`.

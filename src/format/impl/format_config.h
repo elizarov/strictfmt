@@ -22,6 +22,7 @@ struct FormatterConfig {
     std::vector<std::string> rawMacroDefinitions;
     std::vector<std::string> bareIdentifierMacros;
     std::vector<std::string> declarationPrefixMacros;
+    std::vector<std::string> statementPrefixMacros;
     std::vector<std::string> callSyntaxMacros;
     std::vector<std::string> semicolonlessCallMacros;
     std::vector<std::string> statementArgumentMacros;

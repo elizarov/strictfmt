@@ -59,6 +59,7 @@ const PREPROC_ALL_BRANCH_FORMS = PREPROC_IFDEF | PREPROC_ELSE | PREPROC_ELIF;
 function cppStatements($, base = C.grammar.rules._non_case_statement) {
   return choice(
     base,
+    $.macro_prefixed_statement,
     $.co_return_statement,
     $.co_yield_statement,
     $.for_each_statement,
@@ -114,6 +115,7 @@ module.exports = grammar(C, {
     $.type_specifier_macro_identifier,
     $.preprocessor_argument_macro_identifier,
     $.semicolonless_call_macro_identifier,
+    $.statement_prefix_macro_identifier,
     $._preproc_directive_end,
     $._line_break_whitespace,
   ],
@@ -2554,6 +2556,16 @@ module.exports = grammar(C, {
       $.preproc_ifdef,
       cppStatements($),
     ),
+
+    macro_prefixed_statement: $ => prec.right(seq(
+      $.statement_prefix_macro,
+      field('body', $.statement),
+    )),
+
+    statement_prefix_macro: $ => prec.right(PREC.CALL + 6, seq(
+      $.statement_prefix_macro_identifier,
+      optional($.macro_argument_list),
+    )),
 
     bare_macro_statement: $ => prec(1, $.bare_macro_identifier),
 

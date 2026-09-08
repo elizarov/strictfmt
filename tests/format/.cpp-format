@@ -19,7 +19,10 @@ MainIncludeChar: Quote
 IncludeIsMainRegex: '(Test)?$'
 
 MacroCategories:
+  StatementPrefixMacros:
+    - FORMAT_STATEMENT_PREFIX_*
   RawMacroDefinitions:
+    - FORMAT_STATEMENT_PREFIX_*
     - FORMAT_FIXTURE_STATEMENT_ARGUMENT
     - FORMAT_FIXTURE_STRINGIZE
     - FORMAT_FIXTURE_TOKEN_PASTE

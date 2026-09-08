@@ -517,6 +517,8 @@ constexpr auto kSyntaxKindMappings = std::to_array<SyntaxKindMapping>({
     Tree(SyntaxNodeKind::AttributeDeclaration, "attribute_declaration"),
     Tree(SyntaxNodeKind::Attribute, "attribute"),
     Tree(SyntaxNodeKind::AttributedStatement, "attributed_statement"),
+    Tree(SyntaxNodeKind::MacroPrefixedStatement, "macro_prefixed_statement"),
+    Tree(SyntaxNodeKind::StatementPrefixMacro, "statement_prefix_macro"),
     Tree(SyntaxNodeKind::Tree, "preproc_declaration_modifier", Bit(SyntaxNodeClass::DeclarationModifierPreprocessor)),
     Tree(SyntaxNodeKind::MsCallModifier, "ms_call_modifier"),
     Tree(SyntaxNodeKind::MsDeclspecModifier, "ms_declspec_modifier"),
@@ -1237,6 +1239,10 @@ std::string_view SyntaxNodeKindName(SyntaxNodeKind kind) {
             return "Attribute";
         case SyntaxNodeKind::AttributedStatement:
             return "AttributedStatement";
+        case SyntaxNodeKind::MacroPrefixedStatement:
+            return "MacroPrefixedStatement";
+        case SyntaxNodeKind::StatementPrefixMacro:
+            return "StatementPrefixMacro";
         case SyntaxNodeKind::MacroCallItem:
             return "MacroCallItem";
         case SyntaxNodeKind::BareMacroItem:

@@ -490,6 +490,10 @@
         "named": true
       },
       {
+        "type": "macro_prefixed_statement",
+        "named": true
+      },
+      {
         "type": "preproc_case_label_fragment",
         "named": true
       },
@@ -1949,6 +1953,10 @@
         },
         {
           "type": "labeled_statement",
+          "named": true
+        },
+        {
+          "type": "macro_prefixed_statement",
           "named": true
         },
         {
@@ -7054,6 +7062,32 @@
     }
   },
   {
+    "type": "macro_prefixed_statement",
+    "named": true,
+    "fields": {
+      "body": {
+        "multiple": false,
+        "required": true,
+        "types": [
+          {
+            "type": "statement",
+            "named": true
+          }
+        ]
+      }
+    },
+    "children": {
+      "multiple": false,
+      "required": true,
+      "types": [
+        {
+          "type": "statement_prefix_macro",
+          "named": true
+        }
+      ]
+    }
+  },
+  {
     "type": "macro_preprocessing_token_call",
     "named": true,
     "fields": {
@@ -7235,6 +7269,10 @@
         },
         {
           "type": "macro_function_header_fragment",
+          "named": true
+        },
+        {
+          "type": "macro_prefixed_statement",
           "named": true
         },
         {
@@ -15412,6 +15450,25 @@
     }
   },
   {
+    "type": "statement_prefix_macro",
+    "named": true,
+    "fields": {},
+    "children": {
+      "multiple": true,
+      "required": true,
+      "types": [
+        {
+          "type": "macro_argument_list",
+          "named": true
+        },
+        {
+          "type": "statement_prefix_macro_identifier",
+          "named": true
+        }
+      ]
+    }
+  },
+  {
     "type": "static_assert_declaration",
     "named": true,
     "fields": {
@@ -19012,6 +19069,10 @@
   },
   {
     "type": "statement_identifier",
+    "named": true
+  },
+  {
+    "type": "statement_prefix_macro_identifier",
     "named": true
   },
   {

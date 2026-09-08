@@ -50,6 +50,8 @@ MacroCategories:
     - CALLBACK
   DeclarationPrefixMacros:
     - API_EXPORT
+  StatementPrefixMacros:
+    - DISCARD_RESULT
   CallSyntaxMacros:
     - TEST
   SemicolonlessCallMacros:

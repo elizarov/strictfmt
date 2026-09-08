@@ -21,6 +21,23 @@ bool IsDeclaratorBindingToken(const PrintToken& token) {
     ));
 }
 
+bool EndsStatementPrefix(const PrintToken& previous, const PrintToken& current) {
+    if (
+        previous.parentKind != SyntaxNodeKind::StatementPrefixMacro && previous.syntaxKind != SyntaxNodeKind::RightParen
+    ) {
+        return false;
+    }
+    for (const SyntaxNode* node = previous.node; node != nullptr; node = node->parent) {
+        if (node->kind == SyntaxNodeKind::StatementPrefixMacro) {
+            return node->parent != nullptr &&
+                node->parent->kind == SyntaxNodeKind::MacroPrefixedStatement &&
+                PrintTokenSyntaxPathContains(current, node->parent) &&
+                !PrintTokenSyntaxPathContains(current, node);
+        }
+    }
+    return false;
+}
+
 bool IsUnaryContext(const PrintToken& token) { return token.parentKind == SyntaxNodeKind::UnaryExpression; }
 
 bool IsBinaryContext(const PrintToken& token) {
@@ -449,6 +466,9 @@ bool FormatTokenNeedsSpace(const PrintToken* previous, const PrintToken& current
         (IsPreprocessorLikeToken(current) && current.macroDefinition == nullptr)
     ) {
         return false;
+    }
+    if (current.syntaxKind != SyntaxNodeKind::Semicolon && EndsStatementPrefix(*previous, current)) {
+        return true;
     }
     if (current.inMacroValue && !previous->inMacroValue && FormatTokensShareMacroDefinition(previous, &current)) {
         return true;

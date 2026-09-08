@@ -3782,3 +3782,27 @@ template<class T, auto T::value_type::*... Fields> struct DependentSelected {};
 constexpr int Check() {Owner owner{1,2}; return Sum(owner,&Owner::first,&Owner::second)+Pointers(&owner.first,&owner.second);}
 static_assert(Check()==6);
 }
+
+namespace StatementPrefix {
+#define FORMAT_STATEMENT_PREFIX_THROW throw
+#define FORMAT_STATEMENT_PREFIX_DISCARD (void)
+#define FORMAT_STATEMENT_PREFIX_FOR(count) for (int index = 0; index < count; ++index)
+#define FORMAT_STATEMENT_PREFIX_TRACE() if (true)
+constexpr int Step() {return 1;}
+constexpr int Exercise(bool enabled) {
+int count = 0;
+if (enabled) FORMAT_STATEMENT_PREFIX_DISCARD Step(); else ++count;
+if (enabled) FORMAT_STATEMENT_PREFIX_THROW 1;
+FORMAT_STATEMENT_PREFIX_FOR(3) ++count;
+FORMAT_STATEMENT_PREFIX_FOR(2) {count += 2;}
+FORMAT_STATEMENT_PREFIX_TRACE() FORMAT_STATEMENT_PREFIX_DISCARD Step();
+FORMAT_STATEMENT_PREFIX_FOR(2) if (enabled) ++count;
+while (enabled) FORMAT_STATEMENT_PREFIX_DISCARD Step();
+FORMAT_STATEMENT_PREFIX_DISCARD (Step());
+return count;
+}
+static_assert(Exercise(false)==8);
+struct Error {Error& operator<<(int);};
+void Raise(bool enabled) {if(enabled) FORMAT_STATEMENT_PREFIX_THROW Error{} << 1 << 2;}
+void DiscardLambda() {FORMAT_STATEMENT_PREFIX_DISCARD [] {return 1;}();}
+}

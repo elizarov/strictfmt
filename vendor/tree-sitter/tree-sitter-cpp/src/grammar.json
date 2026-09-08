@@ -7404,6 +7404,10 @@
             },
             {
               "type": "SYMBOL",
+              "name": "macro_prefixed_statement"
+            },
+            {
+              "type": "SYMBOL",
               "name": "co_return_statement"
             },
             {
@@ -7501,6 +7505,10 @@
                   "name": "goto_statement"
                 }
               ]
+            },
+            {
+              "type": "SYMBOL",
+              "name": "macro_prefixed_statement"
             },
             {
               "type": "SYMBOL",
@@ -13483,6 +13491,10 @@
                             "name": "seh_leave_statement"
                           }
                         ]
+                      },
+                      {
+                        "type": "SYMBOL",
+                        "name": "macro_prefixed_statement"
                       },
                       {
                         "type": "SYMBOL",
@@ -26737,6 +26749,52 @@
         }
       ]
     },
+    "macro_prefixed_statement": {
+      "type": "PREC_RIGHT",
+      "value": 0,
+      "content": {
+        "type": "SEQ",
+        "members": [
+          {
+            "type": "SYMBOL",
+            "name": "statement_prefix_macro"
+          },
+          {
+            "type": "FIELD",
+            "name": "body",
+            "content": {
+              "type": "SYMBOL",
+              "name": "statement"
+            }
+          }
+        ]
+      }
+    },
+    "statement_prefix_macro": {
+      "type": "PREC_RIGHT",
+      "value": 21,
+      "content": {
+        "type": "SEQ",
+        "members": [
+          {
+            "type": "SYMBOL",
+            "name": "statement_prefix_macro_identifier"
+          },
+          {
+            "type": "CHOICE",
+            "members": [
+              {
+                "type": "SYMBOL",
+                "name": "macro_argument_list"
+              },
+              {
+                "type": "BLANK"
+              }
+            ]
+          }
+        ]
+      }
+    },
     "bare_macro_statement": {
       "type": "PREC",
       "value": 1,
@@ -36998,6 +37056,10 @@
     {
       "type": "SYMBOL",
       "name": "semicolonless_call_macro_identifier"
+    },
+    {
+      "type": "SYMBOL",
+      "name": "statement_prefix_macro_identifier"
     },
     {
       "type": "SYMBOL",
