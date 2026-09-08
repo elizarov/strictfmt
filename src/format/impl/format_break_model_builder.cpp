@@ -271,6 +271,13 @@ public:
         if (!model_.root) {
             model_.root = MakeNode(FormatBreakNodeKind::Sequence, 0);
         }
+        for (FormatBreakNode& node : *model_.nodes) {
+            if (node.kind == FormatBreakNodeKind::Chain && node.chainKind == FormatBreakChainKind::AfterOperator) {
+                for (size_t index = 1; index < node.operands.size(); ++index) {
+                    node.forceSplit = node.forceSplit || StartsWithStandaloneComment(node.operands[index]);
+                }
+            }
+        }
         if (context_.requiredChainBreakOperators != nullptr && !context_.requiredChainBreakOperators->empty()) {
             // With no required operator, every predicate in the recursive pass is false and the model is unchanged.
             ApplyRequiredChainBreaks(*model_.root);
@@ -286,6 +293,18 @@ private:
     std::uint32_t selectionMark_ = 0;
     int nextId_ = 1;
     FormatBreakCostNormalizer costNormalizer_;
+
+    static bool StartsWithStandaloneComment(const FormatBreakNode* node) {
+        if (node == nullptr) {
+            return false;
+        }
+        if (node->kind == FormatBreakNodeKind::Token) {
+            return !node->token.contextOnly && FormatBreakTokenKind(node->token) == PrintTokenKind::Comment;
+        }
+        return node->kind == FormatBreakNodeKind::Sequence &&
+            !node->children.empty() &&
+            StartsWithStandaloneComment(node->children.front());
+    }
 
     static size_t AncestorCount(const SyntaxNode* node) { return node == nullptr ? 0 : node->depth + 1; }
 
@@ -1383,7 +1402,6 @@ private:
                 valueIndex == std::nullopt &&
                 index > 0 &&
                 ContainsSelected(*child) &&
-                child->kind != SyntaxNodeKind::Comment &&
                 child->kind != SyntaxNodeKind::TrailingComment
             ) {
                 valueIndex = index;

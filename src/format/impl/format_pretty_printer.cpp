@@ -220,24 +220,18 @@ const SyntaxNode* BraceListTerminalCommaOpen(const PrintToken& token) {
     return nullptr;
 }
 
-bool IsFormatterOwnedChain(const SyntaxNode& node) {
+bool IsFormatterOwnedValue(const SyntaxNode& node) {
     if (
-        node.kind != SyntaxNodeKind::FieldExpression &&
-        node.kind != SyntaxNodeKind::BinaryExpression &&
-        node.kind != SyntaxNodeKind::ConditionalExpression
+        node.kind == SyntaxNodeKind::ConditionalExpression ||
+        SyntaxNodeHasClass(node, SyntaxNodeClass::KeywordOwnedValue)
     ) {
-        return false;
+        return true;
     }
-    return std::any_of(node.children.begin(), node.children.end(), [&node](const SyntaxNode* child) {
+    return std::any_of(node.children.begin(), node.children.end(), [](const SyntaxNode* child) {
         return child != nullptr && (
-            SyntaxNodeKindHasClass(child->kind, SyntaxNodeClass::ChainOperator) || (
-                node.kind == SyntaxNodeKind::FieldExpression &&
-                (child->kind == SyntaxNodeKind::Dot || child->kind == SyntaxNodeKind::Arrow)
-            ) ||
-            (
-                node.kind == SyntaxNodeKind::ConditionalExpression &&
-                (child->kind == SyntaxNodeKind::Question || child->kind == SyntaxNodeKind::Colon)
-            )
+            SyntaxNodeHasClass(*child, SyntaxNodeClass::BinaryOperator) ||
+            SyntaxNodeHasClass(*child, SyntaxNodeClass::AssignmentOperator) ||
+            SyntaxNodeHasClass(*child, SyntaxNodeClass::MemberOperator)
         );
     });
 }
@@ -247,7 +241,7 @@ bool KeepsStructuralCommentInBreakModel(const PrintToken& token) {
         return false;
     }
     return HasSeparatedListAncestor(token.node) ||
-        (token.node != nullptr && token.node->parent != nullptr && IsFormatterOwnedChain(*token.node->parent));
+        (token.node != nullptr && token.node->parent != nullptr && IsFormatterOwnedValue(*token.node->parent));
 }
 
 class Printer final : private FormatBreakOutput {

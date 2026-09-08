@@ -4991,3 +4991,55 @@ void StatementBeforeBlock() {
         }
     }
 }
+
+void CommentsInsideValues() {
+    request.destination =
+        // coordinates
+        MakePoint(lat, lon);
+    auto value =
+        // initializer
+        Build();
+    count +=
+        // increment
+        step;
+    bool equal = value ==
+        // comparison
+        expected;
+    auto quotient = total /
+        /* divisor */
+        count;
+    outer = inner =
+        // nested assignment
+        Build();
+    Use(
+        value =
+            // argument assignment
+            Build()
+    );
+    auto nested = (
+        left ==
+            // nested comparison
+            right
+    );
+    value =
+        // callable value
+        [] {
+            First();
+            Second();
+        };
+    return
+        // return value
+        value;
+}
+
+struct CommentedMemberInitializer {
+    int value =
+        // default value
+        Build();
+};
+
+void CommentAfterValue() {
+    value = Build();
+    // next statement
+    Use(value);
+}
