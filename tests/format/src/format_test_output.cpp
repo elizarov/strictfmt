@@ -5354,3 +5354,27 @@ constexpr int offset = 1;
 int designated[4] = {[offset + 1] = 7};
 
 }
+
+namespace DeclarationCommentContinuations {
+
+const int value = 1;  // first comment
+                      // second comment
+                      // third comment
+
+void AfterValue();
+
+struct Item {
+    int member;
+};  // trailing type comment
+    // continued type comment
+
+int after_type;
+
+class Container {
+    int member;  // trailing field comment
+                 // continued field comment
+
+    void Method();
+};
+
+}

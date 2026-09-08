@@ -335,9 +335,10 @@ struct FormatDeclarationLayout::Impl {
         }
         // A declaration terminator may be a declaration-scope sibling when the parser flattens a bare
         // class, struct, or enum declaration. It completes the preceding group item; it is not a prefix
-        // of the next declaration.
+        // of the next declaration. Trailing comments and their continuation lines also belong to that item.
         if (
             token.kind == PrintTokenKind::TrailingComment ||
+            token.commentContinuation ||
             (token.node != nullptr && token.node->kind == SyntaxNodeKind::Semicolon)
         ) {
             return blankLine;
