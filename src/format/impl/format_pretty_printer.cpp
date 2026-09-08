@@ -1119,7 +1119,6 @@ private:
         ShouldPreserveSourceBlankLine(const PrintToken& token, const PrintToken* previous, const PrintToken* next) const
     {
         if (
-            HasBufferedLineText() ||
             token.node == nullptr ||
             token.node->parent == nullptr ||
             previous == nullptr ||
@@ -1130,6 +1129,11 @@ private:
             return false;
         }
         const SyntaxNode* level = token.node->parent;
+        const bool beforeSplitListClose = listContinuation_->ContinuesList(token) &&
+            next->node == DirectMatchingClosingDelimiterChild(*level, DirectOpeningDelimiterChild(*level));
+        if (HasBufferedLineText() && !beforeSplitListClose) {
+            return false;
+        }
         const SyntaxNode* previousItem = DirectChildAtLevel(previous->node, level);
         const SyntaxNode* nextItem = DirectChildAtLevel(next->node, level);
         if (previousItem == nullptr || nextItem == nullptr || previousItem == nextItem) {
@@ -1141,7 +1145,7 @@ private:
         )) {
             return false;
         }
-        if (next->kind != PrintTokenKind::Known) {
+        if (beforeSplitListClose || next->kind != PrintTokenKind::Known) {
             return true;
         }
         if (next->syntaxKind == SyntaxNodeKind::RightBrace) {
@@ -1184,6 +1188,7 @@ private:
             const PrintToken* sourceNext =
                 rawNext != nullptr && rawNext->kind != PrintTokenKind::BlankLine ? rawNext : next;
             if (ShouldPreserveSourceBlankLine(token, sourcePrevious, sourceNext)) {
+                FlushPendingTokens();
                 const bool continuesSplitList = listContinuation_->ContinuesList(token);
                 const std::optional<int> pendingIndent =
                     continuesSplitList ? output_.State().pendingIndentLevel : std::nullopt;

@@ -6220,3 +6220,70 @@ int Alternatives(bool condition, int first, int second) {
 }
 
 }
+
+namespace LambdaListBlankLine {
+
+template <typename T>
+struct Optional {
+    Optional(T);
+};
+
+template <typename Callback>
+auto Async(const char*, Callback callback) { return callback(); }
+template <typename Callback>
+auto Visit(Callback callback) { return callback(); }
+
+struct InsuranceProductSpecificIdentity {};
+
+auto Work(int maybe_product_specific, int specifics_storage_client, int idempotency_token) {
+    return Async(
+        "store product specific if needed",
+        [&maybe_product_specific, &specifics_storage_client, idempotency_token]() ->
+            Optional<InsuranceProductSpecificIdentity>
+        {
+            if (!maybe_product_specific) {
+                return InsuranceProductSpecificIdentity{};
+            }
+            return Visit([&specifics_storage_client, &idempotency_token] {
+                return InsuranceProductSpecificIdentity{};
+            });
+        }
+
+    );
+}
+template <typename... Callbacks>
+void Consume(Callbacks...) {}
+void Guards() {
+    Consume(
+        [] {
+            return Visit([] { return 0; });
+        }
+
+    );
+    Consume(
+        [] {
+            return Visit([] { return 0; });
+        },
+
+        [] {
+            return Visit([] { return 1; });
+        }
+
+    );
+    Consume(
+        [] {
+            return Visit([] { return 0; });
+        }
+        // retain the standalone comment
+
+    );
+    int(*callbacks[])() = {
+        +[] {
+            return Visit([] { return 0; });
+        },
+
+    };
+    (void)callbacks;
+}
+
+}
