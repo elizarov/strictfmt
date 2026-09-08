@@ -3917,3 +3917,39 @@ bool Check(int revision, const Context& stores_context) {
     return false; /* preserve block trailing comment */
 }
 }
+
+namespace DiscardedExpressionBlankLines {
+struct Position { Position(int,int); };
+template <typename T> struct Optional { Optional(T); };
+Optional<Position> fallback{Position(0,0)};
+Optional<Position> Choose(bool contractor_has_position, int latitude_with_a_long_name, int longitude_with_a_long_name) {
+    const auto application_position_opt{
+        contractor_has_position ? Optional<Position>{Position(latitude_with_a_long_name,longitude_with_a_long_name)}
+
+        : fallback
+    };
+    return application_position_opt;
+}
+int Alternatives(bool condition, int first, int second) {
+    int value = condition ? first
+
+        : second;
+    value += condition ?
+
+        first : second;
+    value += condition ? first :
+
+        second;
+    value += condition
+
+        ? first : second;
+    value += condition ? first // keep branch comment
+        : second;
+    value += condition ? first : // keep alternative comment
+        second;
+    value += condition ? first
+        /* keep standalone comment */
+        : second;
+    return value;
+}
+}

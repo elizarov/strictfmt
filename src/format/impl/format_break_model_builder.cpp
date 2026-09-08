@@ -2934,7 +2934,12 @@ private:
         auto chain = MakeNode(FormatBreakNodeKind::Chain, depth);
         chain->chainKind = FormatBreakChainKind::Ternary;
         for (size_t index = operatorIndices->first + 1; index < node.children.size(); ++index) {
-            if (!IsSelectedChainTrivia(node.children[index])) {
+            const SyntaxNode* child = node.children[index];
+            if (child == nullptr) {
+                continue;
+            }
+            const std::optional<FormatBreakToken> comment = TokenForNode(*child);
+            if (!comment || !IsCommentToken(FormatBreakTokenKind(*comment))) {
                 continue;
             }
             if (index < operatorIndices->second) {
