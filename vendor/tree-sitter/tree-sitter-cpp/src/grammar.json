@@ -7304,6 +7304,10 @@
         },
         {
           "type": "SYMBOL",
+          "name": "block_macro_call_statement_item"
+        },
+        {
+          "type": "SYMBOL",
           "name": "top_level_call_statement"
         },
         {
@@ -13742,20 +13746,34 @@
       "type": "SEQ",
       "members": [
         {
-          "type": "FIELD",
-          "name": "function",
-          "content": {
-            "type": "SYMBOL",
-            "name": "identifier"
-          }
-        },
-        {
-          "type": "FIELD",
-          "name": "arguments",
-          "content": {
-            "type": "SYMBOL",
-            "name": "macro_argument_list"
-          }
+          "type": "CHOICE",
+          "members": [
+            {
+              "type": "SEQ",
+              "members": [
+                {
+                  "type": "FIELD",
+                  "name": "function",
+                  "content": {
+                    "type": "SYMBOL",
+                    "name": "identifier"
+                  }
+                },
+                {
+                  "type": "FIELD",
+                  "name": "arguments",
+                  "content": {
+                    "type": "SYMBOL",
+                    "name": "macro_argument_list"
+                  }
+                }
+              ]
+            },
+            {
+              "type": "SYMBOL",
+              "name": "macro_call_expression"
+            }
+          ]
         },
         {
           "type": "CHOICE",
@@ -36597,6 +36615,14 @@
     [
       "macro_call_replacement_item",
       "call_expression"
+    ],
+    [
+      "expression",
+      "macro_call_replacement_item"
+    ],
+    [
+      "concatenated_string",
+      "macro_call_replacement_item"
     ],
     [
       "type_specifier",

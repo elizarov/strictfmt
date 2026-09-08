@@ -304,6 +304,8 @@ module.exports = grammar(C, {
     [$.macro_call_item, $.macro_prefixed_declaration],
     [$.macro_call_item, $.macro_prefixed_function_definition],
     [$.macro_call_replacement_item, $.call_expression],
+    [$.expression, $.macro_call_replacement_item],
+    [$.concatenated_string, $.macro_call_replacement_item],
     [$.type_specifier, $.expression, $.macro_call_replacement_item],
     [$._declarator, $._field_declarator, $._type_declarator],
     [$._declarator, $._field_declarator],
@@ -699,8 +701,13 @@ module.exports = grammar(C, {
     ),
 
     macro_call_replacement_item: $ => seq(
-      field('function', $.identifier),
-      field('arguments', $.macro_argument_list),
+      choice(
+        seq(
+          field('function', $.identifier),
+          field('arguments', $.macro_argument_list),
+        ),
+        $.macro_call_expression,
+      ),
       optional(';'),
     ),
 
@@ -2546,6 +2553,7 @@ module.exports = grammar(C, {
       $.bare_macro_statement,
       alias($.macro_statement_argument_expression_statement, $.expression_statement),
       $.block_macro_call_line_item,
+      $.block_macro_call_statement_item,
       $.top_level_call_statement,
       $.preproc_case_label_fragment,
       $.preproc_selected_else_if_statement,

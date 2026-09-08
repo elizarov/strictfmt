@@ -3806,3 +3806,23 @@ struct Error {Error& operator<<(int);};
 void Raise(bool enabled) {if(enabled) FORMAT_STATEMENT_PREFIX_THROW Error{} << 1 << 2;}
 void DiscardLambda() {FORMAT_STATEMENT_PREFIX_DISCARD [] {return 1;}();}
 }
+
+namespace InlineSemicolonless {
+#define FORMAT_SEMILESS_INC(value) ++value;
+#define FORMAT_SEMILESS_RETURN(value) return value;
+#define FORMAT_SEMILESS_DECLARE(name) constexpr int name=2;
+#define FORMAT_SEMILESS_RELAY(value) FORMAT_SEMILESS_INC(value) FORMAT_SEMILESS_INC(value)
+#define FORMAT_SEMILESS_TEXT() "part"
+#define FORMAT_SEMILESS_CONCAT() FORMAT_SEMILESS_TEXT() FORMAT_SEMILESS_TEXT() "end"
+constexpr const char* text = FORMAT_SEMILESS_CONCAT();
+static_assert(text[8]=='e');
+FORMAT_SEMILESS_DECLARE(first) FORMAT_SEMILESS_DECLARE(second)
+constexpr int Exercise(bool enabled) {int value=0; if(enabled) FORMAT_SEMILESS_INC(value) else FORMAT_SEMILESS_INC(value)
+while(value<3) FORMAT_SEMILESS_INC(value)
+switch(value){case 3: FORMAT_SEMILESS_INC(value) break;default: FORMAT_SEMILESS_RETURN(-1)}
+FORMAT_SEMILESS_RELAY(value) FORMAT_SEMILESS_RETURN(value)}
+static_assert(Exercise(true)==6);
+static_assert(Exercise(false)==6);
+constexpr int BareName() {const int FORMAT_SEMILESS_INC=3; return FORMAT_SEMILESS_INC;}
+static_assert(BareName()==3);
+}

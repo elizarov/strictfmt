@@ -291,7 +291,7 @@ class MockValue {
 
 ### SemicolonlessCallMacros
 
-`SemicolonlessCallMacros` names function-like macro invocations that occupy a complete physical line at namespace or block scope without a trailing semicolon. This narrow category is separate from `CallSyntaxMacros` because ordinary declaration-like call macros must not greedily consume later source lines as one run of semicolonless calls.
+`SemicolonlessCallMacros` names function-like macro invocations that form complete declaration or statement items without requiring a trailing semicolon. Each invocation remains one item, including when adjacent to another item or a control-body delimiter. Configured calls retain their category inside structured macro replacements.
 
 <!-- .cpp-format
 MacroCategories:

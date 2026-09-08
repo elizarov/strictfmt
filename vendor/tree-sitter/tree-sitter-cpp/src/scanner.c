@@ -297,11 +297,7 @@ static bool classify_macro_identifier_token(
     return false;
 }
 
-static bool has_valid_macro_identifier(
-    TSLexer *lexer,
-    const bool *valid_symbols,
-    bool allow_semicolonless_call
-) {
+static bool has_valid_macro_identifier(TSLexer *lexer, const bool *valid_symbols) {
     char name[MAX_MACRO_NAME_LENGTH];
     unsigned length = 0;
     if (!scan_identifier(lexer, name, &length)) {
@@ -322,7 +318,7 @@ static bool has_valid_macro_identifier(
         valid_symbols[DECLARATION_PREFIX_MACRO_IDENTIFIER],
         valid_symbols[BARE_MACRO_IDENTIFIER],
         valid_symbols[PREPROCESSOR_ARGUMENT_MACRO_IDENTIFIER],
-        allow_semicolonless_call && valid_symbols[SEMICOLONLESS_CALL_MACRO_IDENTIFIER],
+        valid_symbols[SEMICOLONLESS_CALL_MACRO_IDENTIFIER],
         valid_symbols[STATEMENT_PREFIX_MACRO_IDENTIFIER]
     );
 }
@@ -522,7 +518,7 @@ bool tree_sitter_cpp_external_scanner_scan(void *payload, TSLexer *lexer, const 
         }
         if (horizontal && valid_symbols[LINE_BREAK_WHITESPACE] &&
             !valid_symbols[RAW_MACRO_DEFINITION_IDENTIFIER] &&
-            (has_valid_macro_identifier(lexer, valid_symbols, false) ||
+            (has_valid_macro_identifier(lexer, valid_symbols) ||
              (valid_symbols[MACRO_TOKEN_PASTE_NUMBER_PREFIX] && has_token_paste_number_prefix(lexer)))) {
             lexer->result_symbol = LINE_BREAK_WHITESPACE;
             return true;
@@ -533,12 +529,6 @@ bool tree_sitter_cpp_external_scanner_scan(void *payload, TSLexer *lexer, const 
     if (valid_symbols[LINE_BREAK_WHITESPACE] &&
         (lexer->lookahead == ' ' || lexer->lookahead == '\t' || lexer->lookahead == '\f' ||
          lexer->lookahead == '\r' || lexer->lookahead == '\n' || lexer->lookahead == '\\')) {
-        // Semicolonless calls need a horizontal boundary only at the start of a line.
-        const bool at_line_start =
-            (lexer->lookahead == ' ' || lexer->lookahead == '\t' || lexer->lookahead == '\f') &&
-            !valid_symbols[RAW_MACRO_DEFINITION_IDENTIFIER] &&
-            valid_symbols[SEMICOLONLESS_CALL_MACRO_IDENTIFIER] &&
-            lexer->get_column(lexer) == 0;
         const bool horizontal = scan_horizontal_whitespace(lexer);
         if (horizontal) {
             lexer->mark_end(lexer);
@@ -557,7 +547,7 @@ bool tree_sitter_cpp_external_scanner_scan(void *payload, TSLexer *lexer, const 
         }
 
         if (horizontal && !valid_symbols[RAW_MACRO_DEFINITION_IDENTIFIER] &&
-            (has_valid_macro_identifier(lexer, valid_symbols, at_line_start) ||
+            (has_valid_macro_identifier(lexer, valid_symbols) ||
              (valid_symbols[MACRO_TOKEN_PASTE_NUMBER_PREFIX] && has_token_paste_number_prefix(lexer)))) {
             lexer->result_symbol = LINE_BREAK_WHITESPACE;
             return true;

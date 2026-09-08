@@ -430,6 +430,10 @@
         "named": true
       },
       {
+        "type": "block_macro_call_statement_item",
+        "named": true
+      },
+      {
         "type": "break_statement",
         "named": true
       },
@@ -1896,6 +1900,10 @@
           "named": true
         },
         {
+          "type": "block_macro_call_statement_item",
+          "named": true
+        },
+        {
           "type": "break_statement",
           "named": true
         },
@@ -2393,10 +2401,6 @@
       "types": [
         {
           "type": "alias_declaration",
-          "named": true
-        },
-        {
-          "type": "block_macro_call_statement_item",
           "named": true
         },
         {
@@ -6350,7 +6354,7 @@
     "fields": {
       "arguments": {
         "multiple": false,
-        "required": true,
+        "required": false,
         "types": [
           {
             "type": "macro_argument_list",
@@ -6360,7 +6364,7 @@
       },
       "function": {
         "multiple": false,
-        "required": true,
+        "required": false,
         "types": [
           {
             "type": "identifier",
@@ -6368,6 +6372,16 @@
           }
         ]
       }
+    },
+    "children": {
+      "multiple": false,
+      "required": false,
+      "types": [
+        {
+          "type": "macro_call_expression",
+          "named": true
+        }
+      ]
     }
   },
   {
@@ -9670,10 +9684,6 @@
           "named": true
         },
         {
-          "type": "block_macro_call_statement_item",
-          "named": true
-        },
-        {
           "type": "class_bare_macro_item",
           "named": true
         },
@@ -9894,10 +9904,6 @@
           "named": true
         },
         {
-          "type": "block_macro_call_statement_item",
-          "named": true
-        },
-        {
           "type": "declaration",
           "named": true
         },
@@ -10013,10 +10019,6 @@
         },
         {
           "type": "attributed_friend_declaration",
-          "named": true
-        },
-        {
-          "type": "block_macro_call_statement_item",
           "named": true
         },
         {
@@ -10870,10 +10872,6 @@
           "named": true
         },
         {
-          "type": "block_macro_call_statement_item",
-          "named": true
-        },
-        {
           "type": "class_bare_macro_item",
           "named": true
         },
@@ -11543,10 +11541,6 @@
         },
         {
           "type": "attributed_friend_declaration",
-          "named": true
-        },
-        {
-          "type": "block_macro_call_statement_item",
           "named": true
         },
         {
@@ -12276,10 +12270,6 @@
       "types": [
         {
           "type": "alias_declaration",
-          "named": true
-        },
-        {
-          "type": "block_macro_call_statement_item",
           "named": true
         },
         {
@@ -14258,10 +14248,6 @@
       "types": [
         {
           "type": "alias_declaration",
-          "named": true
-        },
-        {
-          "type": "block_macro_call_statement_item",
           "named": true
         },
         {
