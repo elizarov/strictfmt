@@ -3826,3 +3826,21 @@ static_assert(Exercise(false)==6);
 constexpr int BareName() {const int FORMAT_SEMILESS_INC=3; return FORMAT_SEMILESS_INC;}
 static_assert(BareName()==3);
 }
+
+namespace AnonymousEnumBases {
+namespace Types {using Byte = unsigned char;}
+enum : bool {Bad = false, Good = true};
+enum : unsigned long {Limit = 255};
+enum : Types::Byte {First = 1, Second = 2};
+struct Result {enum : bool {No, Yes};};
+enum class Forward : short;
+enum class Forward : short {Value = 1};
+#define FORMAT_ANON_ENUM(name) enum : bool {name = true};
+FORMAT_ANON_ENUM(Generated);
+#define FORMAT_ANON_ATTR_ENUM(name) enum [[maybe_unused]] : unsigned {name = 3};
+FORMAT_ANON_ATTR_ENUM(Annotated);
+static_assert(Good);
+static_assert(Result::Yes);
+static_assert(Generated);
+static_assert(Limit == 255 && Second == 2 && Annotated == 3);
+}

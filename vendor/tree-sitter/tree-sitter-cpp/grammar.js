@@ -85,6 +85,23 @@ function templateDeclarationItem($, qualifiedFunction = $.qualified_type_functio
   );
 }
 
+function enumSpecifier($, body) {
+  return prec.right(seq(
+    'enum',
+    optional(choice('class', 'struct')),
+    repeat($.attribute_declaration),
+    choice(
+      seq(
+        field('name', $._class_name),
+        optional($._enum_base_clause),
+        optional(field('body', body)),
+      ),
+      seq(optional($._enum_base_clause), field('body', body)),
+    ),
+    optional($.attribute_specifier),
+  ));
+}
+
 function constructorOrDestructorBody($) {
   return choice(
     seq(
@@ -895,19 +912,7 @@ module.exports = grammar(C, {
       ';',
     ),
 
-    macro_enum_specifier: $ => prec.right(seq(
-      'enum',
-      optional(choice('class', 'struct')),
-      choice(
-        seq(
-          field('name', $._class_name),
-          optional($._enum_base_clause),
-          optional(field('body', alias($.macro_enumerator_list, $.enumerator_list))),
-        ),
-        field('body', alias($.macro_enumerator_list, $.enumerator_list)),
-      ),
-      optional($.attribute_specifier),
-    )),
+    macro_enum_specifier: $ => enumSpecifier($, alias($.macro_enumerator_list, $.enumerator_list)),
 
     macro_enumerator_list: $ => seq(
       '{',
@@ -1353,20 +1358,7 @@ module.exports = grammar(C, {
       )),
     ),
 
-    enum_specifier: $ => prec.right(seq(
-      'enum',
-      optional(choice('class', 'struct')),
-      repeat($.attribute_declaration),
-      choice(
-        seq(
-          field('name', $._class_name),
-          optional($._enum_base_clause),
-          optional(field('body', $.enumerator_list)),
-        ),
-        field('body', $.enumerator_list),
-      ),
-      optional($.attribute_specifier),
-    )),
+    enum_specifier: $ => enumSpecifier($, $.enumerator_list),
 
     enumerator_list: $ => seq(
       '{',

@@ -6343,12 +6343,29 @@
                 ]
               },
               {
-                "type": "FIELD",
-                "name": "body",
-                "content": {
-                  "type": "SYMBOL",
-                  "name": "enumerator_list"
-                }
+                "type": "SEQ",
+                "members": [
+                  {
+                    "type": "CHOICE",
+                    "members": [
+                      {
+                        "type": "SYMBOL",
+                        "name": "_enum_base_clause"
+                      },
+                      {
+                        "type": "BLANK"
+                      }
+                    ]
+                  },
+                  {
+                    "type": "FIELD",
+                    "name": "body",
+                    "content": {
+                      "type": "SYMBOL",
+                      "name": "enumerator_list"
+                    }
+                  }
+                ]
               }
             ]
           },
@@ -14799,6 +14816,13 @@
             ]
           },
           {
+            "type": "REPEAT",
+            "content": {
+              "type": "SYMBOL",
+              "name": "attribute_declaration"
+            }
+          },
+          {
             "type": "CHOICE",
             "members": [
               {
@@ -14848,17 +14872,34 @@
                 ]
               },
               {
-                "type": "FIELD",
-                "name": "body",
-                "content": {
-                  "type": "ALIAS",
-                  "content": {
-                    "type": "SYMBOL",
-                    "name": "macro_enumerator_list"
+                "type": "SEQ",
+                "members": [
+                  {
+                    "type": "CHOICE",
+                    "members": [
+                      {
+                        "type": "SYMBOL",
+                        "name": "_enum_base_clause"
+                      },
+                      {
+                        "type": "BLANK"
+                      }
+                    ]
                   },
-                  "named": true,
-                  "value": "enumerator_list"
-                }
+                  {
+                    "type": "FIELD",
+                    "name": "body",
+                    "content": {
+                      "type": "ALIAS",
+                      "content": {
+                        "type": "SYMBOL",
+                        "name": "macro_enumerator_list"
+                      },
+                      "named": true,
+                      "value": "enumerator_list"
+                    }
+                  }
+                ]
               }
             ]
           },
