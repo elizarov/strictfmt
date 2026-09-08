@@ -3990,3 +3990,33 @@ void Guards() {
     (void)callbacks;
 }
 }
+
+namespace MacroCommaSequences {
+#define FORMAT_COMMA_STRINGS "one", "two", "three"
+#define FORMAT_COMMA_VALUES(value) 1, (value), 3, ((value) + 1)
+#define FORMAT_COMMA_TRAILING(value) (value), ((value) + 1),
+#define FORMAT_COMMA_EXPRESSIONS(flag, value) (flag) ? (value) : 1, (value) + 2
+#define FORMAT_COMMA_SINGLE(value) (value),
+#define FORMAT_COMMA_PARENTHESIZED(value) ((value), ((value) + 1))
+const char* words[]{FORMAT_COMMA_STRINGS};
+constexpr int values[]{FORMAT_COMMA_VALUES(4)};
+constexpr int trailing[]{FORMAT_COMMA_TRAILING(5)};
+constexpr int expressions[]{FORMAT_COMMA_EXPRESSIONS(false, 4)};
+static_assert(values[1] == 4 && values[3] == 5);
+static_assert(trailing[0] == 5 && trailing[1] == 6);
+static_assert(expressions[0] == 1 && expressions[1] == 6);
+#undef FORMAT_COMMA_STRINGS
+#undef FORMAT_COMMA_VALUES
+#undef FORMAT_COMMA_TRAILING
+#undef FORMAT_COMMA_EXPRESSIONS
+#undef FORMAT_COMMA_SINGLE
+#undef FORMAT_COMMA_PARENTHESIZED
+}
+
+namespace MacroCommaSequences {
+namespace data { struct Text {}; template <typename T> struct Box {}; }
+template <typename...> struct Types {};
+#define FORMAT_COMMA_QUALIFIED data::Text, data::Box<int>, data::Box<data::Box<bool>>
+using QualifiedTypes = Types<FORMAT_COMMA_QUALIFIED>;
+#undef FORMAT_COMMA_QUALIFIED
+}

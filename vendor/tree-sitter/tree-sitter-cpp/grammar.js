@@ -713,7 +713,7 @@ module.exports = grammar(C, {
     )),
 
     macro_expression_item: $ => seq(
-      $.expression,
+      commaSep1($.expression),
       optional(','),
     ),
 
