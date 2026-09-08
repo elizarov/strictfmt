@@ -3542,7 +3542,7 @@ public:
     void Run();
 };
 
-class CommentedClassBrace /* public for compatibility */ {
+class CommentedClassBrace { /* public for compatibility */
 public:
     void Raise();
 };
@@ -4908,3 +4908,86 @@ struct RecursiveEmptyBodies {
     ns::T (*callbacks[2])(){};
     ns::T (RecursiveEmptyBodies::*member_callback)(){};
 };
+
+void HeaderCommentBlocks() {  // function body
+    try {  // may throw
+        Work();
+    } catch (...) {  // recover
+        Recover();
+    }
+    if (ready) {  // condition
+        Run();
+    } else {  // fallback
+        Wait();
+    }
+    for (auto item : items) {  // iteration
+        Use(item);
+    }
+    while (ready) {  // repeat
+        Poll();
+    }
+    do {  // at least once
+        Poll();
+    } while (ready);
+    switch (mode) {  // dispatch
+        case 1:
+            Run();
+            break;
+    }
+    auto callback = [] {  // lambda body
+        return value;
+    };
+    Use(
+        [] {  // nested lambda
+            Run();
+        }
+    );
+}
+
+namespace header_comments {  // namespace body
+                             // namespace continuation
+
+struct Holder {  // type body
+    void Empty() {  // empty body
+    }
+};
+
+enum class Mode {  // enum body
+    First,
+    Second,
+};
+
+}
+
+void HeaderCommentSequence() {  // header explanation
+                                // continued explanation
+    // standalone explanation
+    Work();
+}
+
+void StandaloneHeaderComment()
+// keep standalone
+{ Work(); }
+
+extern "C" {  // linkage body
+
+void Linked();
+
+}
+
+void BlockHeaderComment() { /* explanation */
+    Work();
+}
+
+void StatementBeforeBlock() {
+    Work();  // belongs to Work
+    {
+        Next();
+    }
+    switch (mode) {
+        case 1: {  // scoped case
+            Run();
+            break;
+        }
+    }
+}

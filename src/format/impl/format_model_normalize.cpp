@@ -430,6 +430,57 @@ void NormalizeColonPrefixedListComments(SyntaxNode& node) {
     }
 }
 
+bool EndsWithStatementSeparator(const SyntaxNode& node) {
+    const SyntaxNode* last = &node;
+    while (!last->children.empty()) {
+        const auto index = PreviousStructuralChildIndex(last->children, last->children.size());
+        if (!index || last->children[*index] == nullptr) {
+            return false;
+        }
+        last = last->children[*index];
+    }
+    return last->kind == SyntaxNodeKind::Semicolon;
+}
+
+void NormalizeBlockHeaderComments(SyntaxNode& node) {
+    // A comment between sibling statements belongs to the preceding statement, not to the following block.
+    if (SyntaxNodeHasClass(node, SyntaxNodeClass::SourceItemScope)) {
+        return;
+    }
+    for (size_t index = 1; index < node.children.size(); ++index) {
+        SyntaxNode* body = node.children[index];
+        if (
+            body == nullptr ||
+            !SyntaxNodeHasClass(*body, SyntaxNodeClass::CompoundBlock) ||
+            body->children.empty() ||
+            body->children.front()->kind != SyntaxNodeKind::LeftBrace
+        ) {
+            continue;
+        }
+        size_t begin = index;
+        while (begin > 0 && SyntaxNodeHasClass(*node.children[begin - 1], SyntaxNodeClass::Trivia)) {
+            --begin;
+        }
+        if (
+            begin == 0 ||
+            begin == index ||
+            node.children[begin]->kind != SyntaxNodeKind::TrailingComment ||
+            EndsWithStatementSeparator(*node.children[begin - 1]) ||
+            SyntaxNodeHasClass(*node.children[begin - 1], SyntaxNodeClass::CompoundBlock)
+        ) {
+            continue;
+        }
+        const auto first = node.children.begin() + static_cast<std::ptrdiff_t>(begin);
+        const auto last = node.children.begin() + static_cast<std::ptrdiff_t>(index);
+        body->children.insert(body->children.begin() + 1, first, last);
+        for (auto comment = first; comment != last; ++comment) {
+            ReparentSyntaxNode(**comment, body);
+        }
+        node.children.erase(first, last);
+        index = begin;
+    }
+}
+
 void NormalizeLeadingStreamComments(SyntaxNode& node) {
     for (size_t index = 0; index < node.children.size(); ++index) {
         SyntaxNode* chain = node.children[index];
@@ -496,7 +547,7 @@ void NormalizeAttachedTrailingBlockComment(SyntaxNode& node) {
         }
         const std::optional<size_t> nextIndex = NextNonTriviaChildIndex(node.children, index + 1);
         if (nextIndex && node.children[*nextIndex] != nullptr && (
-            SyntaxNodeKindHasClass(node.children[*nextIndex]->kind, SyntaxNodeClass::CompoundBlock) || (
+            (
                 SyntaxNodeHasClass(node, SyntaxNodeClass::PreprocessorSplitList) && (
                     node.children[*nextIndex]->kind == SyntaxNodeKind::RightParen ||
                     node.children[*nextIndex]->kind == SyntaxNodeKind::RightBracket ||
@@ -751,6 +802,7 @@ void NormalizeSyntaxNode(FormatModel& model, SyntaxNode& node) {
     NormalizeTrailingCommas(model, node);
     NormalizeControlBodies(model, node);
     NormalizeColonPrefixedListComments(node);
+    NormalizeBlockHeaderComments(node);
     NormalizeLeadingStreamComments(node);
     NormalizeAttachedTrailingBlockComment(node);
     NormalizeMacroReplacementComments(node);

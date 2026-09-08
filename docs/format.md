@@ -64,7 +64,7 @@ void Check(bool a, bool b, bool c) {
 - Remove trailing whitespace from every line.
 - Preserve the source [line-ending style](glossary.md#line-ending-style). For mixed line endings, use the current platform default.
 - Use spaces for indentation and never emit tabs. `IndentWidth` in [config.md](config.md) selects the number of spaces per indentation level.
-- Preserve comments in source order. A trailing comment stays trailing only when it was trailing in source. A standalone comment stays standalone. Treat a trailing block comment before a parenthesis, bracket, or angle list closer, a callable body, or a requires clause as inline.
+- Preserve comments in source order. A trailing comment stays trailing only when it was trailing in source. A standalone comment stays standalone. Treat a trailing block comment before a parenthesis, bracket, or angle list closer or a requires clause as inline.
 - Preserve source blank-line separators after declarations, statements, or list items at the same structural level, including before a closing block delimiter, collapsing each run to one line.
 - Do not emit empty lines at the beginning or end of a file or at the beginning of a block.
 - Apply the structured and raw replacement whitespace rules specified in [macro.md](macro.md).
@@ -74,7 +74,7 @@ void Check(bool a, bool b, bool c) {
 Mandatory line breaks are structural boundaries. The break is always taken before optional wrapping is considered.
 
 - Break between complete statements and declarations, except inside a single-line function or lambda body.
-- Put block-opening braces at the end of the introducing line, then break.
+- Put block-opening braces at the end of the introducing line, then break. Move intervening trailing header comments after the opening brace, preserving comment order.
 - For a non-empty block, if a multiline header ends at body indentation, put `{` on its own line at the block owner's indentation.
 - Keep an empty code block as `{}` without a body break.
 - Apply the closing-brace attachment rules under [Declaration And Control Headers](#declaration-and-control-headers).
@@ -764,6 +764,7 @@ Only spaces and line breaks change, except for:
 - [Include sorting](#include-sorting).
 - [Comma normalization](#comma-normalization).
 - [Operator/comment reordering](#comments-at-operator-boundaries).
+- [Opening-brace/header-comment reordering](#mandatory-line-breaks).
 - [Control-brace normalization](#control-flow).
 - [Removal of optional null declarations and statements](#optional-null-declarations-and-statements).
 - [String-literal joining](#string-literal-joining).

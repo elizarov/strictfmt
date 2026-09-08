@@ -311,6 +311,7 @@ private:
     std::vector<PrintToken> pendingTokens_;
     std::unique_ptr<FormatDeclarationLayout> declarationLayout_;
     bool pendingSourceBlankLine_ = false;
+    bool pendingNamespaceSeparator_ = false;
     int indentLevel_ = 0;
     bool emittingMacroDefinition_ = false;
     bool firstIncludeRun_ = true;
@@ -1197,6 +1198,11 @@ private:
         if (prebufferedTokenSourceIndices_.erase(token.sourceIndex) != 0) {
             return;
         }
+        if (pendingNamespaceSeparator_ && !token.commentContinuation && token.kind != PrintTokenKind::TrailingComment) {
+            FlushPendingTokens();
+            BlankLine();
+            pendingNamespaceSeparator_ = false;
+        }
         listContinuation_->BeforeToken(token);
         if (declarationLayout_->NeedsBlankLineBefore(currentTokenIndex_)) {
             FlushPendingTokens();
@@ -1274,14 +1280,6 @@ private:
         if (token.kind == PrintTokenKind::TrailingComment && output_.State().lineHasText) {
             WriteTrailingComment(token, token.text, FormatTokenNeedsSpace(previous, token));
             NewLine(ShouldContinueMacroLine(token, next));
-            if (
-                previous != nullptr &&
-                previous->kind == PrintTokenKind::Known &&
-                previous->syntaxKind == SyntaxNodeKind::LeftBrace &&
-                RoleForBrace(*previous) == BraceRole::NamespaceLike
-            ) {
-                BlankLine();
-            }
             return;
         }
         if (output_.State().lineHasText) {
@@ -1713,10 +1711,8 @@ private:
         } else if (role == BraceRole::NamespaceLike || role == BraceRole::CaseBlock) {
             if (!followedByTrailingComment) {
                 NewLine(ShouldContinueMacroLine(token, rawNext));
-                if (role == BraceRole::NamespaceLike) {
-                    BlankLine();
-                }
             }
+            pendingNamespaceSeparator_ = role == BraceRole::NamespaceLike;
         }
     }
 
