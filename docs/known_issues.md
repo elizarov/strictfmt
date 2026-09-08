@@ -12,6 +12,8 @@ Planned work: Support branch-owned leading separator commas whenever a condition
 
 Current behavior: `// clang-format off` and `// clang-format on` comments remain in the source but do not affect formatting.
 
+Include sorting: An `off` region does not protect include order. Control comments trailing `#include` directives move with the sorted headers and can be reordered, even placing `on` before `off` and changing the region the annotations appear to delimit. Standalone control comments still bound sortable runs like other comments.
+
 Planned work: Decide whether to honor these comments. If strictfmt does not honor them, remove them from formatted source so they do not misleadingly imply that formatting is disabled.
 
 ## Comma normalization remains an open issue (TRAILING_COMMA_NORMALIZATION)
