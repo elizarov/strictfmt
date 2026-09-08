@@ -89,6 +89,23 @@ void InsertCommaAfter(FormatModel& model, SyntaxNode& node, size_t index) {
     node.children.insert(node.children.begin() + static_cast<std::ptrdiff_t>(index + 1), comma);
 }
 
+bool EnsureTerminalComma(FormatModel& model, SyntaxNode& node, size_t index) {
+    SyntaxChildList& children = node.children;
+    const std::optional<size_t> structural = PreviousStructuralChildIndex(children, index + 1);
+    if (structural && children[*structural]->kind == SyntaxNodeKind::Comma) {
+        if (*structural < index) {
+            std::rotate(
+                children.begin() + static_cast<std::ptrdiff_t>(*structural),
+                children.begin() + static_cast<std::ptrdiff_t>(*structural + 1),
+                children.begin() + static_cast<std::ptrdiff_t>(index + 1)
+            );
+        }
+        return false;
+    }
+    InsertCommaAfter(model, node, index);
+    return true;
+}
+
 void AddTerminalConditionalListCommas(FormatModel& model, SyntaxNode& node) {
     SyntaxChildList& children = node.children;
     for (size_t index = 0; index < children.size(); ++index) {
@@ -107,8 +124,7 @@ void AddTerminalConditionalListCommas(FormatModel& model, SyntaxNode& node) {
                 children[*previous]->kind != SyntaxNodeKind::Comma &&
                 !SyntaxNodeKindHasClass(children[*previous]->kind, SyntaxNodeClass::ConditionalPreprocessorTree)
             ) {
-                InsertCommaAfter(model, node, *previous);
-                ++index;
+                index += EnsureTerminalComma(model, node, *previous);
             }
         }
         if (SyntaxNodeKindHasClass(child->kind, SyntaxNodeClass::ConditionalPreprocessorTree)) {
@@ -126,7 +142,7 @@ void AddTerminalConditionalListCommas(FormatModel& model, SyntaxNode& node) {
             children[*previous]->kind != SyntaxNodeKind::Comma &&
             !SyntaxNodeKindHasClass(children[*previous]->kind, SyntaxNodeClass::ConditionalPreprocessorTree)
         ) {
-            InsertCommaAfter(model, node, *previous);
+            EnsureTerminalComma(model, node, *previous);
         }
     }
 }
@@ -166,8 +182,7 @@ void NormalizeTrailingCommas(FormatModel& model, SyntaxNode& node) {
                 children[*previous]->kind != SyntaxNodeKind::Comma &&
                 children[*previous]->kind != SyntaxNodeKind::LeftBrace
             ) {
-                InsertCommaAfter(model, node, *previous);
-                ++index;
+                index += EnsureTerminalComma(model, node, *previous);
             }
             continue;
         }
@@ -572,6 +587,7 @@ void NormalizeAttachedTrailingBlockComment(SyntaxNode& node) {
         if (nextIndex && node.children[*nextIndex] != nullptr && (
             (
                 SyntaxNodeHasClass(node, SyntaxNodeClass::PreprocessorSplitList) && (
+                    node.children[*nextIndex]->kind == SyntaxNodeKind::RightBrace ||
                     node.children[*nextIndex]->kind == SyntaxNodeKind::RightParen ||
                     node.children[*nextIndex]->kind == SyntaxNodeKind::RightBracket ||
                     node.children[*nextIndex]->kind == SyntaxNodeKind::Greater
@@ -822,12 +838,12 @@ void NormalizeSyntaxNode(FormatModel& model, SyntaxNode& node) {
     }
     ClassifyKeywordOwnedValue(node);
     ClassifyDeclarationGroup(node);
-    NormalizeTrailingCommas(model, node);
     NormalizeControlBodies(model, node);
     NormalizeEmptyCompoundBlock(node);
     NormalizeColonPrefixedListComments(node);
     NormalizeBlockHeaderComments(node);
     NormalizeLeadingStreamComments(node);
     NormalizeAttachedTrailingBlockComment(node);
+    NormalizeTrailingCommas(model, node);
     NormalizeMacroReplacementComments(node);
 }

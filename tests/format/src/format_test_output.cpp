@@ -5765,3 +5765,46 @@ static_assert(GetAlpha() == 7);
 static_assert(kAlpha == 9);
 
 }
+
+namespace TerminalInitializerComments {
+
+struct Triple {
+    int first;
+    int second;
+    int third;
+};
+
+Triple valuesWithAnIntentionallyExtendedNameToMakeTheWholeInitializerExceedTheColumnLimit{
+    1 /* first */, 2 /* second */, 3 /* third */
+};
+
+Triple designated{.first = 1 /* first */, .second = 2 /* second */, .third = 3 /* third */};
+int array[]{1 /* first */, 2 /* last */};
+Triple expanded{1, 2, 3 /* last */};
+Triple commaBeforeComment{1, 2, 3 /* last */};
+Triple commaAfterComment{1, 2, 3 /* last */};
+Triple multipleComments{1, 2, 3 /* last */ /* extra */};
+Triple multipleCommentsAfterComma{1, 2, 3 /* last */ /* extra */};
+
+Triple lineComment{
+    1,
+    2,
+    3,  // trailing
+};
+
+Triple standaloneComment{
+    1,
+    2,
+    3,
+    /* standalone */
+};
+
+int conditional[] = {
+#if 1
+    1 /* first */,
+#else
+    2 /* second */,
+#endif
+};
+
+}
