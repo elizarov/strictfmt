@@ -163,22 +163,22 @@ static bool has_following_argument_list(TSLexer *lexer) {
     for (;;) {
         while (lexer->lookahead == ' ' || lexer->lookahead == '\t' || lexer->lookahead == '\f' ||
                lexer->lookahead == '\v' || lexer->lookahead == '\r' || lexer->lookahead == '\n') {
-            advance_skip(lexer);
+            advance(lexer);
         }
         if (lexer->lookahead == '(') {
             return true;
         }
         if (lexer->lookahead == '\\') {
-            advance_skip(lexer);
+            advance(lexer);
             if (lexer->lookahead == '\r') {
-                advance_skip(lexer);
+                advance(lexer);
                 if (lexer->lookahead == '\n') {
-                    advance_skip(lexer);
+                    advance(lexer);
                 }
                 continue;
             }
             if (lexer->lookahead == '\n') {
-                advance_skip(lexer);
+                advance(lexer);
                 continue;
             }
             return false;
@@ -186,85 +186,31 @@ static bool has_following_argument_list(TSLexer *lexer) {
         if (lexer->lookahead != '/') {
             return false;
         }
-        advance_skip(lexer);
+        advance(lexer);
         if (lexer->lookahead == '/') {
             while (!lexer->eof(lexer) && lexer->lookahead != '\r' && lexer->lookahead != '\n') {
-                advance_skip(lexer);
+                advance(lexer);
             }
             continue;
         }
         if (lexer->lookahead != '*') {
             return false;
         }
-        advance_skip(lexer);
+        advance(lexer);
         bool closed = false;
         for (bool star = false; !lexer->eof(lexer);) {
             if (star && lexer->lookahead == '/') {
-                advance_skip(lexer);
+                advance(lexer);
                 closed = true;
                 break;
             }
             star = lexer->lookahead == '*';
-            advance_skip(lexer);
+            advance(lexer);
         }
         if (!closed) {
             return false;
         }
     }
-}
-
-static bool has_valid_macro_identifier(
-    TSLexer *lexer,
-    const bool *valid_symbols,
-    bool include_non_statement_categories
-) {
-    char name[MAX_MACRO_NAME_LENGTH];
-    unsigned length = 0;
-    if (!scan_identifier(lexer, name, &length)) {
-        return false;
-    }
-
-    if (valid_symbols[MACRO_TOKEN_PASTE_IDENTIFIER_PREFIX] && has_following_token_paste(lexer)) {
-        return true;
-    }
-
-    if (valid_symbols[TYPE_SPECIFIER_MACRO_IDENTIFIER] &&
-        strictfmt_tree_sitter_cpp_macro_category_matches(MACRO_CATEGORY_TYPE_SPECIFIER, name, length)) {
-        return true;
-    }
-
-    if (valid_symbols[PREPROCESSOR_ARGUMENT_MACRO_IDENTIFIER] &&
-        strictfmt_tree_sitter_cpp_macro_category_matches(MACRO_CATEGORY_PREPROCESSOR_ARGUMENT, name, length)) {
-        return true;
-    }
-
-    if (valid_symbols[BARE_MACRO_IDENTIFIER] &&
-        strictfmt_tree_sitter_cpp_macro_category_matches(MACRO_CATEGORY_BARE_IDENTIFIER, name, length)) {
-        return true;
-    }
-
-    if (valid_symbols[DECLARATION_PREFIX_MACRO_IDENTIFIER] &&
-        strictfmt_tree_sitter_cpp_macro_category_matches(MACRO_CATEGORY_DECLARATION_PREFIX, name, length)) {
-        return true;
-    }
-
-    if (valid_symbols[CALL_SYNTAX_MACRO_IDENTIFIER] &&
-        strictfmt_tree_sitter_cpp_macro_category_matches(MACRO_CATEGORY_CALL_SYNTAX, name, length) &&
-        has_following_argument_list(lexer)) {
-        return true;
-    }
-
-    if (include_non_statement_categories &&
-        ((valid_symbols[CALL_SYNTAX_MACRO_IDENTIFIER] &&
-          strictfmt_tree_sitter_cpp_macro_category_matches(MACRO_CATEGORY_CALL_SYNTAX, name, length)) ||
-         (valid_symbols[SEMICOLONLESS_CALL_MACRO_IDENTIFIER] &&
-          strictfmt_tree_sitter_cpp_macro_category_matches(MACRO_CATEGORY_SEMICOLONLESS_CALL, name, length)))) {
-        return true;
-    }
-
-    return valid_symbols[STATEMENT_ARGUMENT_MACRO_IDENTIFIER] &&
-           strictfmt_tree_sitter_cpp_macro_category_matches(MACRO_CATEGORY_STATEMENT_ARGUMENT, name, length) &&
-           has_following_argument_list(lexer);
 }
 
 static bool classify_macro_identifier_token(
@@ -305,27 +251,31 @@ static bool classify_macro_identifier_token(
         return true;
     }
 
-    if (preprocessor_argument_match) {
+    const bool has_arguments =
+        (preprocessor_argument_match || semicolonless_call_match || call_match ||
+         statement_argument_match || type_specifier_match) && has_following_argument_list(lexer);
+
+    if (preprocessor_argument_match && has_arguments) {
         lexer->result_symbol = PREPROCESSOR_ARGUMENT_MACRO_IDENTIFIER;
         return true;
     }
 
-    if (semicolonless_call_match) {
+    if (semicolonless_call_match && has_arguments) {
         lexer->result_symbol = SEMICOLONLESS_CALL_MACRO_IDENTIFIER;
         return true;
     }
 
-    if (call_match) {
+    if (call_match && has_arguments) {
         lexer->result_symbol = CALL_SYNTAX_MACRO_IDENTIFIER;
         return true;
     }
 
-    if (statement_argument_match) {
+    if (statement_argument_match && has_arguments) {
         lexer->result_symbol = STATEMENT_ARGUMENT_MACRO_IDENTIFIER;
         return true;
     }
 
-    if (type_specifier_match) {
+    if (type_specifier_match && has_arguments) {
         lexer->result_symbol = TYPE_SPECIFIER_MACRO_IDENTIFIER;
         return true;
     }
@@ -336,6 +286,35 @@ static bool classify_macro_identifier_token(
     }
 
     return false;
+}
+
+static bool has_valid_macro_identifier(
+    TSLexer *lexer,
+    const bool *valid_symbols,
+    bool allow_semicolonless_call
+) {
+    char name[MAX_MACRO_NAME_LENGTH];
+    unsigned length = 0;
+    if (!scan_identifier(lexer, name, &length)) {
+        return false;
+    }
+
+    if (valid_symbols[MACRO_TOKEN_PASTE_IDENTIFIER_PREFIX] && has_following_token_paste(lexer)) {
+        return true;
+    }
+
+    return classify_macro_identifier_token(
+        lexer,
+        name,
+        length,
+        valid_symbols[CALL_SYNTAX_MACRO_IDENTIFIER],
+        valid_symbols[STATEMENT_ARGUMENT_MACRO_IDENTIFIER],
+        valid_symbols[TYPE_SPECIFIER_MACRO_IDENTIFIER],
+        valid_symbols[DECLARATION_PREFIX_MACRO_IDENTIFIER],
+        valid_symbols[BARE_MACRO_IDENTIFIER],
+        valid_symbols[PREPROCESSOR_ARGUMENT_MACRO_IDENTIFIER],
+        allow_semicolonless_call && valid_symbols[SEMICOLONLESS_CALL_MACRO_IDENTIFIER]
+    );
 }
 
 static void skip_spaces_tabs(TSLexer *lexer) {
@@ -542,11 +521,11 @@ bool tree_sitter_cpp_external_scanner_scan(void *payload, TSLexer *lexer, const 
     if (valid_symbols[LINE_BREAK_WHITESPACE] &&
         (lexer->lookahead == ' ' || lexer->lookahead == '\t' || lexer->lookahead == '\f' ||
          lexer->lookahead == '\r' || lexer->lookahead == '\n' || lexer->lookahead == '\\')) {
-        // Only these categories distinguish leading from non-leading horizontal whitespace.
+        // Semicolonless calls need a horizontal boundary only at the start of a line.
         const bool at_line_start =
             (lexer->lookahead == ' ' || lexer->lookahead == '\t' || lexer->lookahead == '\f') &&
             !valid_symbols[RAW_MACRO_DEFINITION_IDENTIFIER] &&
-            (valid_symbols[CALL_SYNTAX_MACRO_IDENTIFIER] || valid_symbols[SEMICOLONLESS_CALL_MACRO_IDENTIFIER]) &&
+            valid_symbols[SEMICOLONLESS_CALL_MACRO_IDENTIFIER] &&
             lexer->get_column(lexer) == 0;
         const bool horizontal = scan_horizontal_whitespace(lexer);
         if (horizontal) {

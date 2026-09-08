@@ -525,3 +525,25 @@ std::is_same_v<T,B>,B,std::conditional_t<std::is_convertible_v<T,std::string_vie
 
 FORMAT_USERVER_NAMESPACE_BEGIN
 void FormatUserverBareMacroItem();
+
+UTEST_MT(TEST_COMMAND, BareCallMacroName, 1) {Run();}
+UTEST_MT(UTEST_MT, BareSameMacroName, 1) {Run();}
+UTEST_MT(EXPECT_THROW, BareStatementMacroName, 1) {Run();}
+UTEST_MT(GTEST_DISABLE_DEPRECATED_PUSH_, BareSemicolonlessMacroName, 1) {Run();}
+UTEST_MT(FORMAT_USERVER_TYPE, BareTypeMacroName, 1) {Run();}
+UTEST_MT(FORMAT_USERVER_TOKENS, BareTokenMacroName, 1) {Run();}
+#define FORMAT_CALL_MACRO_ALIAS TEST_COMMAND
+void MacroNamesAsValues() {
+Use(TEST_COMMAND, EXPECT_THROW, GTEST_DISABLE_DEPRECATED_PUSH_, FORMAT_USERVER_TYPE, FORMAT_USERVER_TOKENS);
+auto callback=TEST_COMMAND;
+TEST_COMMAND /* before call */ (Run());
+TEST_COMMAND
+(Run());
+TEST_COMMAND \
+(Run());
+TEST_COMMAND // before arguments
+(Run());
+EXPECT_NO_THROW /* before statement */ (int value = Make());
+FORMAT_USERVER_TYPE /* before type */ (int) value;
+Use(FORMAT_USERVER_TOKENS /* before tokens */ (x +));
+}

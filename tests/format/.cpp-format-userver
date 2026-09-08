@@ -69,6 +69,10 @@ MacroCategories:
     - GTEST_REPEATER_METHOD_
     - GTEST_REVERSE_REPEATER_METHOD_
     - RET_NAME
+  TypeSpecifierMacros:
+    - FORMAT_USERVER_TYPE
+  PreprocessorArgumentMacros:
+    - FORMAT_USERVER_TOKENS
   StatementArgumentMacros:
     - UEXPECT_THROW
     - UEXPECT_NO_THROW
