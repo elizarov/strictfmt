@@ -3530,3 +3530,37 @@ Base(1) {}
 };
 
 }
+
+namespace MacroStatementSequences {
+#define FORMAT_MACRO_NESTED_DECLARATORS int (((*Factory())))(int); int (((&Array())))[3];
+FORMAT_MACRO_NESTED_DECLARATORS;
+#define FORMAT_MACRO_IF(value) if(value) { result+=value; }
+#define FORMAT_MACRO_FOR(values) for(auto value:values) { result+=value; }
+#define FORMAT_MACRO_BLOCK(value) { int local=value; result+=local; }
+#define FORMAT_MACRO_MIXED(value) int local=value; if(local) { result+=local; } ++result;
+#define FORMAT_MACRO_WHILE(value) while(value>0) { result+=value; --value; }
+#define FORMAT_MACRO_SWITCH(value) switch(value) { case 1: ++result; break; default: result+=2; }
+#define FORMAT_MACRO_DO(value) do { result+=value; } while(false)
+#define FORMAT_MACRO_UNBRACED_DO(value) do result+=value; while(false)
+#define FORMAT_MACRO_COMPLETE_DO(value) do { result+=value; } while(false);
+#define FORMAT_MACRO_FINAL_DO(value) ++result; do { result+=value; } while(false)
+#define FORMAT_MACRO_TRY(value) try { throw value; } catch(int amount) { result+=amount; }
+constexpr int Count() {
+int result=0;
+int values[]={1,2};
+FORMAT_MACRO_IF(1);
+FORMAT_MACRO_FOR(values);
+FORMAT_MACRO_BLOCK(2);
+{FORMAT_MACRO_MIXED(3);}
+int value=2;
+FORMAT_MACRO_WHILE(value);
+FORMAT_MACRO_SWITCH(1);
+FORMAT_MACRO_DO(1);
+FORMAT_MACRO_UNBRACED_DO(1);
+FORMAT_MACRO_COMPLETE_DO(1);
+FORMAT_MACRO_FINAL_DO(2);
+return result;
+}
+static_assert(Count()==20);
+int Catch() {int result=0;FORMAT_MACRO_TRY(3);return result;}
+}

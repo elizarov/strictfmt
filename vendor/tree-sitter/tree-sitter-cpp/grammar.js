@@ -56,7 +56,18 @@ const PREPROC_ELSE = 1 << 1;
 const PREPROC_ELIF = 1 << 2;
 const PREPROC_ALL_BRANCH_FORMS = PREPROC_IFDEF | PREPROC_ELSE | PREPROC_ELIF;
 
-function templateDeclarationItem($, qualifiedFunction = $.qualified_type_function_definition) {
+function cppStatements($, base = C.grammar.rules._non_case_statement) {
+  return choice(
+    base,
+    $.co_return_statement,
+    $.co_yield_statement,
+    $.for_each_statement,
+    $.for_range_loop,
+    $.try_statement,
+  );
+}
+
+function templateDeclarationItem($, qualifiedFunction = $.qualified_type_function_definition, declaration = $.declaration) {
   return choice(
     $._empty_declaration,
     $.alias_declaration,
@@ -65,7 +76,7 @@ function templateDeclarationItem($, qualifiedFunction = $.qualified_type_functio
     alias($.operator_cast_declaration, $.declaration),
     alias($.operator_cast_definition, $.function_definition),
     $.preproc_value_declaration,
-    $.declaration,
+    declaration,
     $.template_declaration,
     $.function_definition,
     $.concept_definition,
@@ -355,6 +366,7 @@ module.exports = grammar(C, {
     [$.function_prefix_macro, $.calling_convention_macro, $.macro_qualified_identifier],
     [$._declaration_modifiers, $.attributed_friend_declaration],
     [$._declaration_modifiers, $.attributed_statement, $.standalone_attribute_preproc_if],
+    [$._declaration_modifiers, $.attributed_statement, $.macro_attribute_replacement_list],
     [
       $._preproc_opening_condition,
       $.preproc_ifdef_in_top_level,
@@ -590,9 +602,8 @@ module.exports = grammar(C, {
 
     macro_replacement_list: $ => seq(
       choice(
-        $._macro_replacement_declaration_sequence,
+        $._macro_replacement_item_sequence,
         $._macro_replacement_fragment_sequence,
-        $._macro_replacement_statement_item,
       ),
       $._preproc_directive_end,
     ),
@@ -607,15 +618,17 @@ module.exports = grammar(C, {
       alias($.macro_enum_declaration, $.declaration),
       $.namespace_definition,
       alias($.macro_qualified_type_function_definition, $.function_definition),
-      alias($.macro_qualified_declaration, $.declaration),
+      alias($.macro_declaration, $.declaration),
       $.function_definition,
-      $.declaration,
     ),
 
-    _macro_replacement_declaration_sequence: $ => prec.right(seq(
-      $._macro_replacement_declaration_item,
-      optional($._macro_replacement_declaration_sequence),
-    )),
+    _macro_replacement_item_sequence: $ => choice(
+      prec.right(seq(
+        choice(prec.dynamic(1, $._macro_replacement_declaration_item), $.case_statement, cppStatements($)),
+        optional($._macro_replacement_item_sequence),
+      )),
+      alias($.macro_do_statement, $.do_statement),
+    ),
 
     _macro_replacement_call_unit: $ => seq(
       $.macro_call_replacement_item,
@@ -640,7 +653,6 @@ module.exports = grammar(C, {
       $.macro_declaration_fragment,
       $.macro_arrow_chain,
       $.initializer_list,
-      $.expression_statement,
       $.ms_call_modifier,
     ),
 
@@ -653,14 +665,9 @@ module.exports = grammar(C, {
       ),
     ))),
 
-    _macro_replacement_statement_item: $ => choice(
-      alias($.macro_do_statement, $.do_statement),
-      $.try_statement,
-    ),
-
     macro_do_statement: $ => prec(1, seq(
       'do',
-      field('body', $.compound_statement),
+      field('body', $.statement),
       'while',
       field('condition', $.parenthesized_expression),
     )),
@@ -1011,8 +1018,9 @@ module.exports = grammar(C, {
       field('parameters', $.template_parameter_list),
       optional($.requires_clause),
       choice(
-        templateDeclarationItem($, $.macro_qualified_type_function_definition),
-        alias($.macro_qualified_declaration, $.declaration),
+        templateDeclarationItem(
+          $, $.macro_qualified_type_function_definition, alias($.macro_declaration, $.declaration),
+        ),
         $.class_specifier,
         $.struct_specifier,
         alias($.constructor_or_destructor_definition, $.function_definition),
@@ -1243,7 +1251,15 @@ module.exports = grammar(C, {
       repeat($.post_type_macro_annotation),
     )),
 
-    macro_qualified_declaration: $ => declarationWithSpecifiers($, $._macro_qualified_declaration_specifiers),
+    macro_declaration: $ => declarationWithSpecifiers(
+      $,
+      choice($._macro_qualified_declaration_specifiers, $._declaration_specifiers),
+      $._macro_declaration_declarator_list,
+    ),
+
+    _macro_declaration_declarator_list: $ => declarationDeclaratorList(
+      $, choice($._declarator, $._function_definition_declarator),
+    ),
 
     macro_qualified_type_function_definition: $ => prec(PREC.CALL + 4, seq(
       $._macro_qualified_declaration_specifiers,
@@ -1273,18 +1289,7 @@ module.exports = grammar(C, {
       $._function_declarator_seq,
     )),
 
-    _declaration_declarator_list: $ => commaSep1(field('declarator', choice(
-      seq(
-        // C uses _declaration_declarator here for some nice macro parsing in function declarators,
-        // but this causes a world of pain for C++ so we'll just stick to the normal _declarator here.
-        repeat($.post_type_macro_annotation),
-        optional($.ms_call_modifier),
-        $._declarator,
-        optional($.gnu_asm_expression),
-      ),
-      $.init_declarator,
-      prec.dynamic(1, seq(repeat1($.post_type_macro_annotation), $.init_declarator)),
-    ))),
+    _declaration_declarator_list: $ => declarationDeclaratorList($, $._declarator),
 
     virtual_specifier: _ => choice(
       'final', // the only legal value here for classes
@@ -2142,7 +2147,7 @@ module.exports = grammar(C, {
     function_definition_reference_declarator: $ => referenceDeclarator($, $._function_definition_declarator),
     function_definition_handle_declarator: $ => handleDeclarator($, $._function_definition_declarator),
     function_definition_member_pointer_declarator: $ => memberPointerDeclarator($, $._function_definition_declarator),
-    function_definition_parenthesized_declarator: $ => parenthesizedDeclarator($, $._function_definition_declarator),
+    function_definition_parenthesized_declarator: $ => parenthesizedDeclarator($, $._function_definition_declarator, 0),
     function_definition_attributed_declarator: $ => attributedDeclarator($, $._function_definition_declarator),
     function_definition_array_declarator: $ => arrayDeclarator($, $._function_definition_declarator),
 
@@ -2496,12 +2501,7 @@ module.exports = grammar(C, {
 
     _top_level_statement: ($, original) => choice(
       $.top_level_call_statement,
-      original,
-      $.co_return_statement,
-      $.co_yield_statement,
-      $.for_each_statement,
-      $.for_range_loop,
-      $.try_statement,
+      cppStatements($, original),
     ),
 
     _top_level_expression_statement: ($, original) => choice(
@@ -2514,7 +2514,7 @@ module.exports = grammar(C, {
       $.preproc_assignment_statement,
     ),
 
-    _non_case_statement: ($, original) => choice(
+    _non_case_statement: $ => choice(
       $.disabled_code_placeholder_statement,
       $.bare_macro_statement,
       alias($.macro_statement_argument_expression_statement, $.expression_statement),
@@ -2527,12 +2527,7 @@ module.exports = grammar(C, {
       $.preproc_selected_if_statement,
       $.preproc_if,
       $.preproc_ifdef,
-      original,
-      $.co_return_statement,
-      $.co_yield_statement,
-      $.for_each_statement,
-      $.for_range_loop,
-      $.try_statement,
+      cppStatements($),
     ),
 
     bare_macro_statement: $ => prec(1, $.bare_macro_identifier),
@@ -4325,8 +4320,8 @@ function memberPointerDeclarator($, declarator) {
   )));
 }
 
-function parenthesizedDeclarator($, declarator) {
-  return prec.dynamic(PREC.PAREN_DECLARATOR, seq('(', optional($.ms_call_modifier), declarator, ')'));
+function parenthesizedDeclarator($, declarator, preference = PREC.PAREN_DECLARATOR) {
+  return prec.dynamic(preference, seq('(', optional($.ms_call_modifier), declarator, ')'));
 }
 
 function attributedDeclarator($, declarator) {
@@ -4343,10 +4338,23 @@ function arrayDeclarator($, declarator) {
   ));
 }
 
-function declarationWithSpecifiers($, specifiers) {
+function declarationDeclaratorList($, declarator) {
+  return commaSep1(field('declarator', choice(
+    seq(
+      repeat($.post_type_macro_annotation),
+      optional($.ms_call_modifier),
+      declarator,
+      optional($.gnu_asm_expression),
+    ),
+    $.init_declarator,
+    prec.dynamic(1, seq(repeat1($.post_type_macro_annotation), $.init_declarator)),
+  )));
+}
+
+function declarationWithSpecifiers($, specifiers, declarators = $._declaration_declarator_list) {
   return seq(
     specifiers,
-    $._declaration_declarator_list,
+    declarators,
     optional($.declaration_suffix_preproc_ifdef),
     ';',
   );
