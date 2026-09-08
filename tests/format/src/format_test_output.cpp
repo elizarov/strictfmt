@@ -6095,3 +6095,37 @@ FORMAT_ENUM_ATTR(Generated);
 static_assert(CurrentGenerated == 1);
 
 }
+
+namespace DeclarationComments {
+
+using Value = int;
+
+inline const Value  // type
+    first = 1,      // first
+    second = 2,     // second
+    third = 3;
+
+void Values() {
+    const auto first = 1,  // one
+        second = 2;
+}
+void Several() {
+    const int firstValueWithAnIntentionallyLongName = 1,
+        secondValueWithAnIntentionallyLongName = 2,
+        thirdValueWithAnIntentionallyLongName = 3,  // final item on this source line
+        fourth = 4;
+    int inlineFirst = 1, /* inline */ inlineSecond = 2;
+    int standaloneFirst = 1,
+    // standalone
+    standaloneSecond = 2;
+    int emptyFirst = 1,  //
+        emptySecond = 2;
+}
+
+struct Fields {
+    int first = 1,
+        // field
+        second = 2;
+};
+
+}

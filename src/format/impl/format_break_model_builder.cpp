@@ -2063,10 +2063,23 @@ private:
     }
 
     FormatBreakNode* BuildCommaSeparatedSequence(const ConstSyntaxChildList& children, int depth) {
+        size_t valueEnd = children.size();
+        while (valueEnd > 0) {
+            const SyntaxNode* child = children[valueEnd - 1];
+            if (
+                child != nullptr &&
+                ContainsSelected(*child) &&
+                !SyntaxNodeHasClass(*child, SyntaxNodeClass::Trivia) &&
+                child->kind != SyntaxNodeKind::Semicolon
+            ) {
+                break;
+            }
+            --valueEnd;
+        }
         std::vector<FormatBreakNode*> operands;
         std::vector<FormatBreakToken> operators;
         size_t operandBegin = 0;
-        for (size_t index = 0; index < children.size(); ++index) {
+        for (size_t index = 0; index + 1 < valueEnd; ++index) {
             const SyntaxNode* child = children[index];
             if (child == nullptr || child->kind != SyntaxNodeKind::Comma) {
                 continue;
