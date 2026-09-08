@@ -6910,8 +6910,24 @@
           "type": "FIELD",
           "name": "name",
           "content": {
+            "type": "CHOICE",
+            "members": [
+              {
+                "type": "SYMBOL",
+                "name": "identifier"
+              },
+              {
+                "type": "SYMBOL",
+                "name": "macro_token_paste_expression"
+              }
+            ]
+          }
+        },
+        {
+          "type": "REPEAT",
+          "content": {
             "type": "SYMBOL",
-            "name": "identifier"
+            "name": "attribute_declaration"
           }
         },
         {

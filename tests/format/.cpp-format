@@ -29,6 +29,7 @@ MacroCategories:
   BareIdentifierMacros:
     - WINAPI
   CallSyntaxMacros:
+    - FORMAT_ENUM_ATTR
     - FORMAT_ANON_*
     - FORMAT_TYPE_*
     - FORMAT_PASTED_DECL_*

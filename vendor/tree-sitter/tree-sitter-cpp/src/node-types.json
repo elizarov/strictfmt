@@ -3826,6 +3826,10 @@
           {
             "type": "identifier",
             "named": true
+          },
+          {
+            "type": "macro_token_paste_expression",
+            "named": true
           }
         ]
       },
@@ -3839,6 +3843,16 @@
           }
         ]
       }
+    },
+    "children": {
+      "multiple": true,
+      "required": false,
+      "types": [
+        {
+          "type": "attribute_declaration",
+          "named": true
+        }
+      ]
     }
   },
   {

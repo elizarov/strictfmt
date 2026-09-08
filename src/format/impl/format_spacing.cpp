@@ -268,6 +268,17 @@ bool IsAttributeOpenToken(const PrintToken& token) {
 
 bool IsFunctionSuffixMacro(const PrintToken& token) { return token.syntaxKind == SyntaxNodeKind::FunctionSuffixMacro; }
 
+bool IsClosingDelimiterOrSeparator(const PrintToken& token) {
+    return token.kind == PrintTokenKind::Known && (
+        token.syntaxKind == SyntaxNodeKind::RightParen ||
+        token.syntaxKind == SyntaxNodeKind::RightBracket ||
+        token.syntaxKind == SyntaxNodeKind::RightBrace ||
+        token.syntaxKind == SyntaxNodeKind::Comma ||
+        token.syntaxKind == SyntaxNodeKind::Semicolon ||
+        (token.syntaxKind == SyntaxNodeKind::Greater && IsTemplateAnglePrintToken(token))
+    );
+}
+
 bool IsBlockCommentToken(const PrintToken& token) {
     return (token.kind == PrintTokenKind::Text || IsCommentToken(token.kind)) && token.text.starts_with("/*");
 }
@@ -452,14 +463,7 @@ bool FormatTokenNeedsSpace(const PrintToken* previous, const PrintToken& current
         );
     }
     if (IsBlockCommentToken(*previous)) {
-        return !IsAttributeCloseToken(current) && !(current.kind == PrintTokenKind::Known && (
-            current.syntaxKind == SyntaxNodeKind::RightParen ||
-            current.syntaxKind == SyntaxNodeKind::RightBracket ||
-            current.syntaxKind == SyntaxNodeKind::RightBrace ||
-            current.syntaxKind == SyntaxNodeKind::Comma ||
-            current.syntaxKind == SyntaxNodeKind::Semicolon ||
-            (current.syntaxKind == SyntaxNodeKind::Greater && IsTemplateAnglePrintToken(current))
-        ));
+        return !IsAttributeCloseToken(current) && !IsClosingDelimiterOrSeparator(current);
     }
     if (
         (IsPreprocessorLikeToken(*previous) && previous->macroDefinition == nullptr) ||
@@ -499,7 +503,7 @@ bool FormatTokenNeedsSpace(const PrintToken* previous, const PrintToken& current
         return true;
     }
     if (IsAttributeCloseToken(*previous)) {
-        return current.kind != PrintTokenKind::Known || current.syntaxKind != SyntaxNodeKind::Semicolon;
+        return !IsClosingDelimiterOrSeparator(current);
     }
     if (IsAttributeOpenToken(current)) {
         if (IsWordLike(*previous)) {

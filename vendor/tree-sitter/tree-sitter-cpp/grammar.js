@@ -1360,6 +1360,12 @@ module.exports = grammar(C, {
 
     enum_specifier: $ => enumSpecifier($, $.enumerator_list),
 
+    enumerator: $ => seq(
+      field('name', identifierWithPaste($)),
+      repeat($.attribute_declaration),
+      optional(seq('=', field('value', $.expression))),
+    ),
+
     enumerator_list: $ => seq(
       '{',
       repeat(choice(

@@ -6063,3 +6063,35 @@ static_assert(Generated);
 static_assert(Limit == 255 && Second == 2 && Annotated == 3);
 
 }
+
+namespace EnumDeclarations {
+
+enum class Flag : bool {
+    Off [[deprecated]] = false,
+    On = true,
+};
+
+enum Status : unsigned long {
+    Old [[deprecated("use Current")]] = 0,
+    Current = 1,
+};
+
+enum class Character : char {
+    A [[maybe_unused]] = 'a',
+    B = 'b',
+};
+
+static_assert(static_cast<bool>(Flag::On));
+static_assert(Current == 1);
+enum Attributes {
+    Repeated [[maybe_unused]] [[deprecated("use Current")]] = 2,
+};
+#define FORMAT_ENUM_ATTR(Name) \
+    enum Name { \
+        Old##Name [[deprecated]], \
+        Current##Name [[maybe_unused]] = 1, \
+    };
+FORMAT_ENUM_ATTR(Generated);
+static_assert(CurrentGenerated == 1);
+
+}
