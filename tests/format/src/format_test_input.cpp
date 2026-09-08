@@ -3456,3 +3456,26 @@ int member; // trailing field comment
 void Method();
 };
 }
+
+namespace QualifiedMacroFunctions {
+namespace detail { struct Value { int number=1; }; }
+#define FORMAT_QUALIFIED_PROTOTYPES(type) detail::Value First(const type& value); ::QualifiedMacroFunctions::detail::Value& operator<<(::QualifiedMacroFunctions::detail::Value& value,const type& arg);
+#define FORMAT_QUALIFIED_SINGLE detail::Value First() { return {}; }
+#define FORMAT_QUALIFIED_SEQUENCE detail::Value Second() { return {}; } int Third() { return 3; } detail::Value Fourth() { return {}; }
+#define FORMAT_QUALIFIED_CONSTEXPR constexpr detail::Value Fifth() { return {}; } constexpr int Sixth() { return 6; } constexpr detail::Value Seventh() { return {}; }
+#define FORMAT_QUALIFIED_MODIFIERS [[nodiscard]] inline const detail::Value& Ref(const detail::Value& value) { return value; }
+#define FORMAT_QUALIFIED_TEMPLATE template<class T> detail::Value Convert(T value) { return {static_cast<int>(value)}; }
+#define FORMAT_QUALIFIED_CONSTANT constexpr detail::Value constant{};
+#define FORMAT_QUALIFIED_VARIABLE_NAME(name) name
+#define FORMAT_QUALIFIED_HEADER static detail::Value FORMAT_QUALIFIED_VARIABLE_NAME(variable)
+#define FORMAT_QUALIFIED_RECURSIVE detail::Value (*Factory())() { return First; }
+FORMAT_QUALIFIED_SINGLE;
+FORMAT_QUALIFIED_SEQUENCE;
+FORMAT_QUALIFIED_CONSTEXPR;
+FORMAT_QUALIFIED_MODIFIERS;
+FORMAT_QUALIFIED_TEMPLATE;
+FORMAT_QUALIFIED_RECURSIVE;
+FORMAT_QUALIFIED_CONSTANT;
+FORMAT_QUALIFIED_HEADER;
+static_assert(Fifth().number==1 && Sixth()==6 && Seventh().number==1);
+}

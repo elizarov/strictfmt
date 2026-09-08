@@ -56,11 +56,11 @@ const PREPROC_ELSE = 1 << 1;
 const PREPROC_ELIF = 1 << 2;
 const PREPROC_ALL_BRANCH_FORMS = PREPROC_IFDEF | PREPROC_ELSE | PREPROC_ELIF;
 
-function templateDeclarationItem($) {
+function templateDeclarationItem($, qualifiedFunction = $.qualified_type_function_definition) {
   return choice(
     $._empty_declaration,
     $.alias_declaration,
-    alias($.qualified_type_function_definition, $.function_definition),
+    alias(qualifiedFunction, $.function_definition),
     alias($.constructor_or_destructor_declaration, $.declaration),
     alias($.operator_cast_declaration, $.declaration),
     alias($.operator_cast_definition, $.function_definition),
@@ -364,6 +364,7 @@ module.exports = grammar(C, {
     [$._declaration_modifiers, $.macro_prefixed_function_definition, $.macro_prefixed_declaration],
     [$._declaration_specifiers, $._conditional_function_return_type_specifiers, $._constructor_specifiers],
     [$._declarator, $.reference_argument_declarator],
+    [$._declarator, $.macro_function_header_fragment],
     [$.if_statement, $.preproc_selected_else_if_statement],
     [$.statement, $.preproc_ended_consequence_statement],
     [$.preproc_argument_fragment, $.preproc_ifdef_in_expression_list],
@@ -605,22 +606,16 @@ module.exports = grammar(C, {
       alias($.macro_template_declaration, $.template_declaration),
       alias($.macro_enum_declaration, $.declaration),
       $.namespace_definition,
+      alias($.macro_qualified_type_function_definition, $.function_definition),
+      alias($.macro_qualified_declaration, $.declaration),
       $.function_definition,
       $.declaration,
     ),
 
-    _macro_replacement_declaration_sequence: $ => choice(
-      prec.dynamic(10, prec.right(seq(
-        alias($.macro_qualified_type_function_definition, $.function_definition),
-        alias($.macro_identifier_type_function_definition, $.function_definition),
-        repeat(alias($.macro_identifier_type_function_definition, $.function_definition)),
-        optional($._macro_replacement_declaration_sequence),
-      ))),
-      prec.right(seq(
-        $._macro_replacement_declaration_item,
-        optional($._macro_replacement_declaration_sequence),
-      )),
-    ),
+    _macro_replacement_declaration_sequence: $ => prec.right(seq(
+      $._macro_replacement_declaration_item,
+      optional($._macro_replacement_declaration_sequence),
+    )),
 
     _macro_replacement_call_unit: $ => seq(
       $.macro_call_replacement_item,
@@ -1016,19 +1011,11 @@ module.exports = grammar(C, {
       field('parameters', $.template_parameter_list),
       optional($.requires_clause),
       choice(
-        $._empty_declaration,
-        $.alias_declaration,
-        $.declaration,
-        $.template_declaration,
-        $.function_definition,
-        $.concept_definition,
-        $.friend_declaration,
+        templateDeclarationItem($, $.macro_qualified_type_function_definition),
+        alias($.macro_qualified_declaration, $.declaration),
         $.class_specifier,
         $.struct_specifier,
-        alias($.constructor_or_destructor_declaration, $.declaration),
         alias($.constructor_or_destructor_definition, $.function_definition),
-        alias($.operator_cast_declaration, $.declaration),
-        alias($.operator_cast_definition, $.function_definition),
       ),
     ),
 
@@ -1249,18 +1236,17 @@ module.exports = grammar(C, {
       field('body', choice($.compound_statement, $.try_statement, $.delete_method_clause)),
     )),
 
-    macro_qualified_type_function_definition: $ => prec(PREC.CALL + 4, seq(
-      choice('constexpr', 'consteval'),
+    _macro_qualified_declaration_specifiers: $ => prec.right(1, seq(
+      repeat($._declaration_modifiers),
       field('type', $._qualified_declaration_type),
+      repeat($._declaration_modifiers),
       repeat($.post_type_macro_annotation),
-      field('declarator', $._qualified_type_function_declarator),
-      field('body', choice($.compound_statement, $.try_statement, $.delete_method_clause)),
     )),
 
-    macro_identifier_type_function_definition: $ => prec(PREC.CALL + 3, seq(
-      choice('constexpr', 'consteval'),
-      field('type', $._type_identifier),
-      repeat($.post_type_macro_annotation),
+    macro_qualified_declaration: $ => declarationWithSpecifiers($, $._macro_qualified_declaration_specifiers),
+
+    macro_qualified_type_function_definition: $ => prec(PREC.CALL + 4, seq(
+      $._macro_qualified_declaration_specifiers,
       field('declarator', $._qualified_type_function_declarator),
       field('body', choice($.compound_statement, $.try_statement, $.delete_method_clause)),
     )),
@@ -3334,10 +3320,10 @@ module.exports = grammar(C, {
       field('default_value', choice($.expression, $.initializer_list)),
     ))),
 
-    macro_function_header_fragment: $ => prec(PREC.CALL + 2, seq(
-      $._declaration_specifiers,
+    macro_function_header_fragment: $ => seq(
+      choice($._macro_qualified_declaration_specifiers, $._declaration_specifiers),
       field('declarator', $.function_declarator),
-    )),
+    ),
 
     macro_declaration_without_semicolon: $ => prec.dynamic(20, prec(PREC.CALL + 10, seq(
       choice(
