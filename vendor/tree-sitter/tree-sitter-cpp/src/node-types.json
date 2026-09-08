@@ -5854,6 +5854,10 @@
         "required": true,
         "types": [
           {
+            "type": "argument_list",
+            "named": true
+          },
+          {
             "type": "expression",
             "named": true
           },

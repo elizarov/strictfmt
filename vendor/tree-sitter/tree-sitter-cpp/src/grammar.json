@@ -31508,8 +31508,17 @@
                   "type": "FIELD",
                   "name": "right",
                   "content": {
-                    "type": "SYMBOL",
-                    "name": "expression"
+                    "type": "CHOICE",
+                    "members": [
+                      {
+                        "type": "SYMBOL",
+                        "name": "expression"
+                      },
+                      {
+                        "type": "SYMBOL",
+                        "name": "initializer_list"
+                      }
+                    ]
                   }
                 }
               ]
@@ -31518,8 +31527,17 @@
               "type": "FIELD",
               "name": "right",
               "content": {
-                "type": "SYMBOL",
-                "name": "initializer_list"
+                "type": "CHOICE",
+                "members": [
+                  {
+                    "type": "SYMBOL",
+                    "name": "argument_list"
+                  },
+                  {
+                    "type": "SYMBOL",
+                    "name": "initializer_list"
+                  }
+                ]
               }
             }
           ]
@@ -35545,6 +35563,10 @@
     [
       "expression",
       "_lambda_capture_identifier"
+    ],
+    [
+      "expression",
+      "lambda_capture_initializer"
     ],
     [
       "expression",

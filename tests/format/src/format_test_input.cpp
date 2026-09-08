@@ -3301,3 +3301,15 @@ Work(); // second record
 Finish();
 },
 };
+
+void LambdaInitCaptures() {
+Use([value(Make())](auto& target) mutable {Store(target,value);});
+Use([values = {1,2,3}] {return values;});
+Use([&,value{Make()},&reference(Get())] {return value+reference;});
+Use([callback([nested(Make())] {return nested;})] {return callback();});
+}
+
+template<class... T>
+auto LambdaPackInitCaptures(T&&... args) {
+return [...values(std::forward<T>(args)),&...references(args)] {return Use(values...,references...);};
+}

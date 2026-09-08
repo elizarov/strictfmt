@@ -232,6 +232,7 @@ module.exports = grammar(C, {
     [$._declarator, $._type_declarator],
     [$.expression, $.identifier_parameter_pack_expansion],
     [$.expression, $._lambda_capture_identifier],
+    [$.expression, $.lambda_capture_initializer],
     [$.expression, $._lambda_capture],
     [$.expression, $.structured_binding_declarator, $._lambda_capture_identifier],
     [$.structured_binding_declarator, $._lambda_capture_identifier],
@@ -3698,8 +3699,8 @@ module.exports = grammar(C, {
       optional('...'),
       field('left', $.identifier),
       choice(
-        seq('=', field('right', $.expression)),
-        field('right', $.initializer_list),
+        seq('=', field('right', choice($.expression, $.initializer_list))),
+        field('right', choice($.argument_list, $.initializer_list)),
       ),
     ),
 
