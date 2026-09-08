@@ -27149,6 +27149,14 @@
       "type": "CHOICE",
       "members": [
         {
+          "type": "SYMBOL",
+          "name": "alias_declaration"
+        },
+        {
+          "type": "SYMBOL",
+          "name": "type_definition"
+        },
+        {
           "type": "ALIAS",
           "content": {
             "type": "SYMBOL",
@@ -27164,41 +27172,31 @@
       ]
     },
     "condition_init_declaration": {
-      "type": "CHOICE",
+      "type": "SEQ",
       "members": [
         {
-          "type": "SEQ",
+          "type": "SYMBOL",
+          "name": "_declaration_specifiers"
+        },
+        {
+          "type": "SYMBOL",
+          "name": "_declaration_declarator_list"
+        },
+        {
+          "type": "CHOICE",
           "members": [
             {
               "type": "SYMBOL",
-              "name": "condition_declaration"
+              "name": "declaration_suffix_preproc_ifdef"
             },
             {
-              "type": "STRING",
-              "value": ";"
+              "type": "BLANK"
             }
           ]
         },
         {
-          "type": "SEQ",
-          "members": [
-            {
-              "type": "SYMBOL",
-              "name": "_declaration_specifiers"
-            },
-            {
-              "type": "FIELD",
-              "name": "declarator",
-              "content": {
-                "type": "SYMBOL",
-                "name": "_declarator"
-              }
-            },
-            {
-              "type": "STRING",
-              "value": ";"
-            }
-          ]
+          "type": "STRING",
+          "value": ";"
         }
       ]
     },

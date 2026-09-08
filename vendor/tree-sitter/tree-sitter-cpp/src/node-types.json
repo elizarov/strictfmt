@@ -2515,80 +2515,6 @@
     }
   },
   {
-    "type": "condition_declaration",
-    "named": true,
-    "fields": {
-      "declarator": {
-        "multiple": false,
-        "required": true,
-        "types": [
-          {
-            "type": "_declarator",
-            "named": true
-          }
-        ]
-      },
-      "type": {
-        "multiple": false,
-        "required": true,
-        "types": [
-          {
-            "type": "type_specifier",
-            "named": true
-          }
-        ]
-      },
-      "value": {
-        "multiple": false,
-        "required": true,
-        "types": [
-          {
-            "type": "expression",
-            "named": true
-          },
-          {
-            "type": "initializer_list",
-            "named": true
-          }
-        ]
-      }
-    },
-    "children": {
-      "multiple": true,
-      "required": false,
-      "types": [
-        {
-          "type": "attribute_declaration",
-          "named": true
-        },
-        {
-          "type": "attribute_specifier",
-          "named": true
-        },
-        {
-          "type": "function_prefix_macro",
-          "named": true
-        },
-        {
-          "type": "ms_declspec_modifier",
-          "named": true
-        },
-        {
-          "type": "post_type_macro_annotation",
-          "named": true
-        },
-        {
-          "type": "storage_class_specifier",
-          "named": true
-        },
-        {
-          "type": "type_qualifier",
-          "named": true
-        }
-      ]
-    }
-  },
-  {
     "type": "conditional_expression",
     "named": true,
     "fields": {
@@ -3174,10 +3100,6 @@
         },
         {
           "type": "attribute_specifier",
-          "named": true
-        },
-        {
-          "type": "condition_declaration",
           "named": true
         },
         {

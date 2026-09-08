@@ -1267,18 +1267,8 @@ module.exports = grammar(C, {
     _qualified_type_function_declarator: $ => $._function_definition_declarator,
 
     declaration: $ => choice(
-      seq(
-        field('type', $._qualified_declaration_type),
-        $._declaration_declarator_list,
-        optional($.declaration_suffix_preproc_ifdef),
-        ';',
-      ),
-      seq(
-        $._declaration_specifiers,
-        $._declaration_declarator_list,
-        optional($.declaration_suffix_preproc_ifdef),
-        ';',
-      ),
+      declarationWithSpecifiers($, field('type', $._qualified_declaration_type)),
+      declarationWithSpecifiers($, $._declaration_specifiers),
     ),
 
     _qualified_declaration_type: $ => prec(1, choice(
@@ -2763,26 +2753,11 @@ module.exports = grammar(C, {
       field('body', $.statement),
     ),
 
-    init_statement: $ => choice(
-      $.alias_declaration,
-      $.type_definition,
-      $.declaration,
-      $.expression_statement,
-    ),
+    init_statement: $ => initStatement($, $.declaration),
 
-    _condition_init_statement: $ => choice(
-      alias($.condition_init_declaration, $.declaration),
-      $.expression_statement,
-    ),
+    _condition_init_statement: $ => initStatement($, alias($.condition_init_declaration, $.declaration)),
 
-    condition_init_declaration: $ => choice(
-      seq($.condition_declaration, ';'),
-      seq(
-        $._declaration_specifiers,
-        field('declarator', $._declarator),
-        ';',
-      ),
-    ),
+    condition_init_declaration: $ => declarationWithSpecifiers($, $._declaration_specifiers),
 
     condition_clause: $ => choice(
       prec.dynamic(2, seq(
@@ -4379,6 +4354,19 @@ function arrayDeclarator($, declarator) {
     field('size', optional(choice($.expression, '*'))),
     ']',
   ));
+}
+
+function declarationWithSpecifiers($, specifiers) {
+  return seq(
+    specifiers,
+    $._declaration_declarator_list,
+    optional($.declaration_suffix_preproc_ifdef),
+    ';',
+  );
+}
+
+function initStatement($, declaration) {
+  return choice($.alias_declaration, $.type_definition, declaration, $.expression_statement);
 }
 
 function functionDefinitionHeader($) {

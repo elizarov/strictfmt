@@ -5282,3 +5282,52 @@ static_assert(Get(1_arg += 2) == 3);
 static_assert(Get('x'_arg = 11) == 11);
 
 }
+
+namespace ConditionInitStatements {
+
+constexpr int InitializedConditions() {
+    int total = 0;
+    if (int left = 1, right = 2; left < right) {
+        total += left + right;
+    }
+    if (int first(4), second{5}; first < second) {
+        total += first + second;
+    }
+    if (int& left = total, & right = total; &left == &right) {
+        ++total;
+    }
+    switch (int selector = 1, increment = 2; selector) {
+        case 1:
+            total += increment;
+            break;
+    }
+    if (typedef int Number; Number{0} == 0) {
+        ++total;
+    }
+    if (using Number = int; Number{1} == 1) {
+        ++total;
+    }
+    return total;
+}
+static_assert(InitializedConditions() == 17);
+
+}
+
+namespace QualifiedConditionExpressions {
+
+struct Flags {
+    static constexpr int first = 1, second = 2;
+};
+
+constexpr bool Evaluate() {
+    if constexpr (Flags::first & Flags::second) {
+        return false;
+    }
+    if constexpr (Flags::first && Flags::second) {
+        return true;
+    }
+    return false;
+}
+static_assert(Evaluate());
+
+}
