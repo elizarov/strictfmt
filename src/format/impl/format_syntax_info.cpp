@@ -456,7 +456,11 @@ constexpr auto kSyntaxKindMappings = std::to_array<SyntaxKindMapping>({
         "member_pointer_declarator",
         Bit(SyntaxNodeClass::DeclaratorReferenceParent) | Bit(SyntaxNodeClass::QualifiedName)
     ),
-    Tree(SyntaxNodeKind::Tree, "abstract_member_pointer_declarator", Bit(SyntaxNodeClass::QualifiedName)),
+    Tree(
+        SyntaxNodeKind::AbstractMemberPointerDeclarator,
+        "abstract_member_pointer_declarator",
+        Bit(SyntaxNodeClass::DeclaratorReferenceParent) | Bit(SyntaxNodeClass::QualifiedName)
+    ),
     Tree(SyntaxNodeKind::FunctionDeclarator, "function_declarator"),
     Tree(SyntaxNodeKind::AbstractFunctionDeclarator, "abstract_function_declarator"),
     Tree(
@@ -1171,6 +1175,8 @@ std::string_view SyntaxNodeKindName(SyntaxNodeKind kind) {
             return "AbstractHandleDeclarator";
         case SyntaxNodeKind::MemberPointerDeclarator:
             return "MemberPointerDeclarator";
+        case SyntaxNodeKind::AbstractMemberPointerDeclarator:
+            return "AbstractMemberPointerDeclarator";
         case SyntaxNodeKind::FunctionDeclarator:
             return "FunctionDeclarator";
         case SyntaxNodeKind::AbstractFunctionDeclarator:

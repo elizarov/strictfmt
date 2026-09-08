@@ -79,6 +79,7 @@ enum class SyntaxNodeKind : std::uint16_t {
     HandleDeclarator,
     AbstractHandleDeclarator,
     MemberPointerDeclarator,
+    AbstractMemberPointerDeclarator,
     FunctionDeclarator,
     AbstractFunctionDeclarator,
     ParenthesizedDeclarator,

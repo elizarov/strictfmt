@@ -1084,11 +1084,11 @@ void UseSingleQualifiedCall() {
 }
 
 int MemberPointerClassWithAnIntentionallyLongNameForSingleQualificationCoverage::
-    *memberPointerWithAnIntentionallyExtendedName;
+    * memberPointerWithAnIntentionallyExtendedName;
 int FirstMemberPointerNamespaceWithLongName::SecondMemberPointerClassWithLongName::
-    *memberPointerWithAnIntentionallyExtendedName;
+    * memberPointerWithAnIntentionallyExtendedName;
 int ::FirstMemberPointerNamespaceWithLongName::SecondMemberPointerClassWithLongName::
-    *memberPointerWithAnIntentionallyExtendedName;
+    * memberPointerWithAnIntentionallyExtendedName;
 
 using LongScopedMemberPointerAlias = int MemberPointerNamespaceWithAnIntentionallyLongNameForQualification::
     MemberPointerClassWithAnIntentionallyLongNameForQualification::*;
@@ -1102,11 +1102,11 @@ int (
         *memberFunctionPointerWithAnExtendedName
 )(int, int);
 int MemberTemplate<FirstTemplateArgumentWithLongName, SecondTemplateArgumentWithLongName>::
-    *memberPointerWithAnIntentionallyExtendedName;
+    * memberPointerWithAnIntentionallyExtendedName;
 
 using CompactMemberPointer = int Object::*;
 
-int Object::*compactMember;
+int Object::* compactMember;
 
 struct QualifiedTypeDeclaratorBreaks {
     const ::loans::storages::CheckoutRemindersStorageComponent&
@@ -5174,7 +5174,7 @@ struct Record {
     int Read() const { return value; }
 };
 
-int Read(Record& object, Record* pointer, int Record::*member) {
+int Read(Record& object, Record* pointer, int Record::* member) {
     object.*(member) = 1;
     pointer->*&Record::value = object.*member;
     auto address = &Record::Read;
@@ -5189,7 +5189,7 @@ struct Constant {};
 constexpr Record kRecord{3};
 Constant<kRecord.*&Record::value> constant;
 
-int Precedence(Record& object, Record* pointer, int Record::*member) {
+int Precedence(Record& object, Record* pointer, int Record::* member) {
     return 2 * object.*member + (*pointer).*member + (Record&)object.*member + pointer->*member;
 }
 
@@ -5628,5 +5628,77 @@ static_assert(CONVERT_VALUE(record, value, Int) == 3);
 static_assert(CHAIN_VALUE(record, val, ue) == 3);
 static_assert(COMPUTE_VALUE(value) == 21);
 void Assign(Record& target) { ASSIGN_VALUE(target, val, 2); }
+
+}
+
+namespace DirectInitializers {
+
+namespace Scope {
+
+struct Owner {
+    int value;
+
+    int Method() const { return value; }
+};
+
+}
+using Member = int Scope::Owner::*;
+using ConstantMember = int Scope::Owner::* const;
+
+void AcceptMember(int Scope::Owner::* const);
+
+using GlobalMember = int ::DirectInitializers::Scope::Owner::*;
+using MemberFunction = int (Scope::Owner::*)() const;
+
+int Compute(int value) { return value; }
+int (*Factory(int))(int) { return &Compute; }
+void Initialize() {
+    int value = 1;
+    int array[2] = {1, 2};
+    int Scope::Owner::* member_pointer(&Scope::Owner::value);
+    int Scope::Owner::* const constant_member(&Scope::Owner::value);
+    int Scope::Owner::* volatile volatile_member(&Scope::Owner::value);
+    int (Scope::Owner::*member_function_pointer)() const(&Scope::Owner::Method);
+    int* pointer(&value);
+    int* const constant(&value);
+    int** pointer_to_pointer(&pointer);
+    int* const* pointer_to_constant(&pointer);
+    const int& reference((value));
+    int& indirect_reference((*pointer));
+    int(&array_reference)[2](array);
+    int(*array_pointer)[2](&array);
+    int (*function_pointer)(int)(&Compute);
+    int (* (*nested_function_pointer)(int))(int)(&Factory);
+    if (int* test(&value); test) {
+        *test = 2;
+    }
+    for (int* current(array); current != array + 2; ++current) {
+        *current = 3;
+    }
+}
+
+}
+
+namespace ConstructorGuard {
+
+namespace Types {
+
+struct View {};
+
+template <class...>
+struct List {};
+
+template <class, class>
+struct Pair {};
+
+}
+class Sort {
+    enum Direction {
+        Up,
+        Down,
+    };
+
+    Sort(Types::List<Types::Pair<Types::View, Direction>>);
+};
 
 }

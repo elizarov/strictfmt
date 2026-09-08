@@ -125,13 +125,20 @@ module.exports = grammar(C, {
   ],
 
   conflicts: $ => [
-    [$.function_definition_qualified_name, $.qualified_identifier],
+    [$._member_pointer_scope, $._scope_resolution],
+    [$.qualified_declarator_identifier, $.qualified_type_identifier],
+    [$.qualified_declarator_identifier, $.qualified_identifier, $.qualified_type_identifier],
+    [$._declarator, $._function_declarator_base],
+    [$._non_pointer_declarator, $._function_definition_name],
+    [$.type_specifier, $._non_pointer_declarator],
+    [$._non_pointer_declarator, $.macro_function_header_fragment],
+    [$._non_pointer_declarator, $.type_specifier, $.class_macro_call],
+    [$.qualified_declarator_identifier, $.qualified_identifier],
     [$._field_declarator, $._type_declarator],
     [$._field_declarator, $._type_declarator, $._function_definition_name],
     [$._type_declarator, $._function_definition_name],
     [$._declarator, $._type_declarator, $._function_definition_name],
     [$._field_declarator, $._function_definition_name],
-    [$._declarator, $.reference_argument_declarator, $._function_definition_name],
     [$._declarator, $._function_definition_name],
     [$.binary_expression, $.conditional_concatenated_string],
     [$.expression, $.conditional_concatenated_string],
@@ -376,7 +383,6 @@ module.exports = grammar(C, {
     ],
     [$._declaration_modifiers, $.macro_prefixed_function_definition, $.macro_prefixed_declaration],
     [$._declaration_specifiers, $._conditional_function_return_type_specifiers, $._constructor_specifiers],
-    [$._declarator, $.reference_argument_declarator],
     [$._declarator, $.macro_function_header_fragment],
     [$.if_statement, $.preproc_selected_else_if_statement],
     [$.statement, $.preproc_ended_consequence_statement],
@@ -1568,7 +1574,6 @@ module.exports = grammar(C, {
     ),
 
     init_declarator: ($, original) => choice(
-      $.reference_argument_init_declarator,
       prec.dynamic(10, seq(
         field('declarator', $._declarator),
         '=',
@@ -1608,22 +1613,6 @@ module.exports = grammar(C, {
     ),
 
     macro_initializer: $ => $.bare_macro_identifier,
-
-    reference_argument_init_declarator: $ => prec(1, seq(
-      field('declarator', alias($.reference_argument_declarator, $.reference_declarator)),
-      field('value', $.argument_list),
-    )),
-
-    reference_argument_declarator: $ => seq(
-      choice('&', '&&', '%'),
-      field('declarator', choice(
-        $.identifier,
-        $.qualified_identifier,
-        $.template_function,
-        $.operator_name,
-        $.destructor_name,
-      )),
-    ),
 
     preproc_value_declaration: $ => prec(1, seq(
       $._declaration_specifiers,
@@ -1969,12 +1958,22 @@ module.exports = grammar(C, {
       ':',
     )),
 
-    _declarator: ($, original) => choice(
-      original,
+    _declarator: $ => choice(
+      $._non_pointer_declarator,
+      $.pointer_declarator,
       $.reference_declarator,
       $.handle_declarator,
       $.member_pointer_declarator,
-      $.qualified_identifier,
+    ),
+
+    // Postfix declarators bind to names or parenthesized declarators, not directly to pointer prefixes.
+    _non_pointer_declarator: $ => choice(
+      $.attributed_declarator,
+      $.function_declarator,
+      $.array_declarator,
+      $.parenthesized_declarator,
+      $.identifier,
+      alias($.qualified_declarator_identifier, $.qualified_identifier),
       $.template_function,
       $.operator_name,
       $.destructor_name,
@@ -2019,7 +2018,7 @@ module.exports = grammar(C, {
     pointer_type_declarator: $ => pointerDeclarator($, $._type_declarator),
     abstract_pointer_declarator: $ => prec.dynamic(1, prec.right(seq(
       '*',
-      repeat(choice($.ms_pointer_modifier, $.type_qualifier, $.ms_call_modifier)),
+      pointerQualifiers($),
       field('declarator', optional($._abstract_declarator)),
     ))),
 
@@ -2029,8 +2028,9 @@ module.exports = grammar(C, {
     abstract_handle_declarator: $ => prec.right(seq('^', optional($._abstract_declarator))),
 
     abstract_member_pointer_declarator: $ => prec.dynamic(1, prec.right(seq(
-      field('scope', $._scope_resolution),
+      field('scope', $._member_pointer_scope),
       '*',
+      pointerQualifiers($),
       field('declarator', optional($._abstract_declarator)),
     ))),
 
@@ -2039,6 +2039,11 @@ module.exports = grammar(C, {
       optional($.ms_call_modifier),
       $._abstract_declarator,
       ')',
+    )),
+
+    _member_pointer_scope: $ => prec(1, seq(
+      optional('::'),
+      repeat1(prec(1, seq($._scope_name, '::'))),
     )),
 
     member_pointer_declarator: $ => memberPointerDeclarator($, $._declarator),
@@ -2101,11 +2106,11 @@ module.exports = grammar(C, {
     parenthesized_field_declarator: $ => parenthesizedDeclarator($, $._field_declarator),
     parenthesized_type_declarator: $ => parenthesizedDeclarator($, $._type_declarator),
 
-    attributed_declarator: $ => attributedDeclarator($, $._declarator),
+    attributed_declarator: $ => attributedDeclarator($, $._non_pointer_declarator),
     attributed_field_declarator: $ => attributedDeclarator($, $._field_declarator),
     attributed_type_declarator: $ => attributedDeclarator($, $._type_declarator),
 
-    array_declarator: $ => arrayDeclarator($, $._declarator),
+    array_declarator: $ => arrayDeclarator($, $._non_pointer_declarator),
     array_field_declarator: $ => arrayDeclarator($, $._field_declarator),
     array_type_declarator: $ => arrayDeclarator($, $._type_declarator),
 
@@ -2113,7 +2118,7 @@ module.exports = grammar(C, {
     // Parentheses and attributes preserve the entity; a pointer directly around its name instead declares an object.
     _function_definition_name: $ => choice(
       $.identifier,
-      alias($.function_definition_qualified_name, $.qualified_identifier),
+      alias($.qualified_declarator_identifier, $.qualified_identifier),
       $.template_function,
       $.operator_name,
       $.destructor_name,
@@ -2121,8 +2126,8 @@ module.exports = grammar(C, {
       alias($.function_definition_attributed_name, $.attributed_declarator),
     ),
 
-    function_definition_qualified_name: $ => qualifiedIdentifier(
-      $, alias($.function_definition_qualified_name, $.qualified_identifier),
+    qualified_declarator_identifier: $ => qualifiedIdentifier(
+      $, alias($.qualified_declarator_identifier, $.qualified_identifier),
     ),
 
     function_definition_parenthesized_name: $ => parenthesizedDeclarator($, $._function_definition_name),
@@ -2151,10 +2156,12 @@ module.exports = grammar(C, {
     function_definition_attributed_declarator: $ => attributedDeclarator($, $._function_definition_declarator),
     function_definition_array_declarator: $ => arrayDeclarator($, $._function_definition_declarator),
 
-    function_declarator: $ => prec.dynamic(1, seq(
-      field('declarator', $._declarator),
+    _function_declarator_base: $ => prec.dynamic(1, $._non_pointer_declarator),
+
+    function_declarator: $ => seq(
+      field('declarator', $._function_declarator_base),
       $._function_declarator_seq,
-    )),
+    ),
 
     qualified_function_declarator: $ => prec.dynamic(2, prec(3, seq(
       field('declarator', $.qualified_identifier),
@@ -4290,11 +4297,15 @@ function qualifiedIdentifier($, nested, ...extraNames) {
   );
 }
 
+function pointerQualifiers($) {
+  return repeat(choice($.ms_pointer_modifier, $.type_qualifier, $.ms_call_modifier));
+}
+
 function pointerDeclarator($, declarator) {
   return prec.dynamic(1, prec.right(seq(
     optional($.ms_based_modifier),
     '*',
-    repeat(choice($.ms_pointer_modifier, $.type_qualifier, $.ms_call_modifier)),
+    pointerQualifiers($),
     field('declarator', declarator),
   )));
 }
@@ -4309,8 +4320,9 @@ function handleDeclarator($, declarator) {
 
 function memberPointerDeclarator($, declarator) {
   return prec.dynamic(1, prec.right(seq(
-    field('scope', $._scope_resolution),
+    field('scope', $._member_pointer_scope),
     '*',
+    pointerQualifiers($),
     field('declarator', declarator),
   )));
 }
