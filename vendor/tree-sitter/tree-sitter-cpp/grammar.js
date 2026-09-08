@@ -270,6 +270,8 @@ module.exports = grammar(C, {
     [$.type_specifier, $.concatenated_string],
     [$.expression, $.concatenated_string],
     [$._declaration_specifiers, $.macro_replacement_list],
+    [$.sized_type_specifier, $._macro_declaration_fragment_type],
+    [$.type_specifier, $._macro_declaration_fragment_type],
     [$._string, $.concatenated_string],
     [$.type_specifier, $.macro_template_declaration],
     [$.macro_call_item, $.expression_statement],
@@ -700,7 +702,7 @@ module.exports = grammar(C, {
       )),
     ),
 
-    _macro_declaration_fragment_type: $ => prec(1, seq(
+    _macro_declaration_fragment_type: $ => seq(
       repeat($._declaration_modifiers),
       field('type', choice(
         alias(choice('signed', 'unsigned', 'long', 'short'), $.primitive_type),
@@ -708,7 +710,7 @@ module.exports = grammar(C, {
         $.placeholder_type_specifier,
       )),
       repeat($._declaration_modifiers),
-    )),
+    ),
 
     macro_call_declarator_fragment: $ => seq(
       field('name', choice($.identifier, $.macro_token_paste_expression)),
@@ -3354,13 +3356,7 @@ module.exports = grammar(C, {
 
     macro_function_header_fragment: $ => prec(PREC.CALL + 2, seq(
       $._declaration_specifiers,
-      field('declarator', choice(
-        prec(1, seq(
-          field('declarator', $.identifier),
-          $._function_declarator_seq,
-        )),
-        $.function_declarator,
-      )),
+      field('declarator', $.function_declarator),
     )),
 
     macro_declaration_without_semicolon: $ => prec.dynamic(20, prec(PREC.CALL + 10, seq(

@@ -6652,73 +6652,11 @@
     "named": true,
     "fields": {
       "declarator": {
-        "multiple": true,
+        "multiple": false,
         "required": true,
         "types": [
           {
-            "type": "attribute_declaration",
-            "named": true
-          },
-          {
-            "type": "attribute_specifier",
-            "named": true
-          },
-          {
             "type": "function_declarator",
-            "named": true
-          },
-          {
-            "type": "function_suffix_macro",
-            "named": true
-          },
-          {
-            "type": "gnu_asm_expression",
-            "named": true
-          },
-          {
-            "type": "identifier",
-            "named": true
-          },
-          {
-            "type": "noexcept",
-            "named": true
-          },
-          {
-            "type": "parameter_list",
-            "named": true
-          },
-          {
-            "type": "ref_qualifier",
-            "named": true
-          },
-          {
-            "type": "requires_clause",
-            "named": true
-          },
-          {
-            "type": "throw_specifier",
-            "named": true
-          },
-          {
-            "type": "trailing_return_type",
-            "named": true
-          },
-          {
-            "type": "type_qualifier",
-            "named": true
-          },
-          {
-            "type": "virtual_specifier",
-            "named": true
-          }
-        ]
-      },
-      "parameters": {
-        "multiple": false,
-        "required": false,
-        "types": [
-          {
-            "type": "parameter_list",
             "named": true
           }
         ]

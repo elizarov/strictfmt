@@ -3318,3 +3318,10 @@ return [...values(std::forward<T>(args)),&...references(args)] {return Use(value
 #define FORMAT_NESTED_NAMESPACE_TRAITS(Type) namespace format_macro::nested { inline namespace version { template<> struct Traits<Type> {static_assert(Check<Type>());}; } }
 #define FORMAT_MIXED_NAMESPACE_DECLARATIONS(Type) namespace format_macro {Type Get();} void After();
 #define FORMAT_ANONYMOUS_NAMESPACE(Type) namespace {namespace detail {Type value;}}
+
+#define FORMAT_PRIMITIVE_DECLARATION int value;
+#define FORMAT_PRIMITIVE_DECL_SEQUENCE int first; unsigned long second; T named;
+#define FORMAT_PRIMITIVE_FUNCTIONS void F(); int G(int value);
+#define FORMAT_RECURSIVE_PRIMITIVE_FUNCTIONS int (*Factory())(); int (&Array())[3];
+#define FORMAT_PRIMITIVE_INITIALIZER static const int value = Make();
+#define FORMAT_DECLARATION_NAMESPACE_SEQUENCE void Before(); namespace format_macro {int value;} void After();
