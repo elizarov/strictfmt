@@ -697,7 +697,6 @@ module.exports = grammar(C, {
     )),
 
     macro_declaration_fragment: $ => choice(
-      $.macro_qualified_token_paste_function_fragment,
       prec(PREC.CALL + 2, seq(
         $._macro_declaration_fragment_type,
         field('declarator', $.macro_call_declarator_fragment),
@@ -725,20 +724,6 @@ module.exports = grammar(C, {
 
     macro_call_declarator_fragment: $ => seq(
       field('name', choice($.identifier, $.macro_token_paste_expression)),
-      field('arguments', $.macro_argument_list),
-    ),
-
-    macro_qualified_token_paste_function_fragment: $ => seq(
-      repeat($._declaration_modifiers),
-      field('type', $._qualified_declaration_type),
-      repeat($._declaration_modifiers),
-      repeat($.post_type_macro_annotation),
-      field('declarator', $.macro_token_paste_call_declarator_fragment),
-      field('body', $.compound_statement),
-    ),
-
-    macro_token_paste_call_declarator_fragment: $ => seq(
-      field('name', $.macro_token_paste_expression),
       field('arguments', $.macro_argument_list),
     ),
 
@@ -1972,7 +1957,7 @@ module.exports = grammar(C, {
       $.function_declarator,
       $.array_declarator,
       $.parenthesized_declarator,
-      $.identifier,
+      identifierWithPaste($),
       alias($.qualified_declarator_identifier, $.qualified_identifier),
       $.template_function,
       $.operator_name,
@@ -2117,7 +2102,7 @@ module.exports = grammar(C, {
     // A definition declares a function, even when its return type adds outer pointer, array, or function layers.
     // Parentheses and attributes preserve the entity; a pointer directly around its name instead declares an object.
     _function_definition_name: $ => choice(
-      $.identifier,
+      identifierWithPaste($),
       alias($.qualified_declarator_identifier, $.qualified_identifier),
       $.template_function,
       $.operator_name,
@@ -2216,7 +2201,7 @@ module.exports = grammar(C, {
     )),
 
     template_function: $ => prec.dynamic(3, seq(
-      field('name', $.identifier),
+      field('name', identifierWithPaste($)),
       field('arguments', $.template_argument_list),
     )),
 
@@ -3521,7 +3506,8 @@ module.exports = grammar(C, {
       field('argument', $.expression),
     )),
 
-    _field_identifier: ($, original) => choice(original, $.macro_token_paste_expression),
+    _field_identifier: ($, original) => identifierWithPaste($, original),
+    _type_identifier: ($, original) => identifierWithPaste($, original),
 
     field_expression: $ => seq(
       prec(PREC.FIELD, seq(
@@ -4220,7 +4206,7 @@ module.exports = grammar(C, {
       seq($.raw_string_literal, $.literal_suffix),
     ),
 
-    _namespace_identifier: $ => alias($.identifier, $.namespace_identifier),
+    _namespace_identifier: $ => identifierWithPaste($, alias($.identifier, $.namespace_identifier)),
   },
 });
 
@@ -4282,6 +4268,10 @@ function commaSep1(rule) {
   return seq(rule, repeat(seq(',', rule)));
 }
 
+function identifierWithPaste($, identifier = $.identifier) {
+  return choice(identifier, $.macro_token_paste_expression);
+}
+
 function qualifiedIdentifier($, nested, ...extraNames) {
   return seq(
     $._scope_resolution,
@@ -4289,7 +4279,7 @@ function qualifiedIdentifier($, nested, ...extraNames) {
       alias($.dependent_identifier, $.dependent_name),
       nested,
       $.template_function,
-      seq(optional('template'), $.identifier),
+      seq(optional('template'), identifierWithPaste($)),
       $.operator_name,
       $.destructor_name,
       ...extraNames,

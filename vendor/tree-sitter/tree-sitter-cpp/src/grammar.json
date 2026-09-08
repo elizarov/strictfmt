@@ -13022,13 +13022,22 @@
       "value": "(\\p{XID_Start}|\\$|_|\\\\u[0-9A-Fa-f]{4}|\\\\U[0-9A-Fa-f]{8})(\\p{XID_Continue}|\\$|\\\\u[0-9A-Fa-f]{4}|\\\\U[0-9A-Fa-f]{8})*"
     },
     "_type_identifier": {
-      "type": "ALIAS",
-      "content": {
-        "type": "SYMBOL",
-        "name": "identifier"
-      },
-      "named": true,
-      "value": "type_identifier"
+      "type": "CHOICE",
+      "members": [
+        {
+          "type": "ALIAS",
+          "content": {
+            "type": "SYMBOL",
+            "name": "identifier"
+          },
+          "named": true,
+          "value": "type_identifier"
+        },
+        {
+          "type": "SYMBOL",
+          "name": "macro_token_paste_expression"
+        }
+      ]
     },
     "_field_identifier": {
       "type": "CHOICE",
@@ -13731,10 +13740,6 @@
       "type": "CHOICE",
       "members": [
         {
-          "type": "SYMBOL",
-          "name": "macro_qualified_token_paste_function_fragment"
-        },
-        {
           "type": "PREC",
           "value": 17,
           "content": {
@@ -13904,77 +13909,6 @@
                 "name": "macro_token_paste_expression"
               }
             ]
-          }
-        },
-        {
-          "type": "FIELD",
-          "name": "arguments",
-          "content": {
-            "type": "SYMBOL",
-            "name": "macro_argument_list"
-          }
-        }
-      ]
-    },
-    "macro_qualified_token_paste_function_fragment": {
-      "type": "SEQ",
-      "members": [
-        {
-          "type": "REPEAT",
-          "content": {
-            "type": "SYMBOL",
-            "name": "_declaration_modifiers"
-          }
-        },
-        {
-          "type": "FIELD",
-          "name": "type",
-          "content": {
-            "type": "SYMBOL",
-            "name": "_qualified_declaration_type"
-          }
-        },
-        {
-          "type": "REPEAT",
-          "content": {
-            "type": "SYMBOL",
-            "name": "_declaration_modifiers"
-          }
-        },
-        {
-          "type": "REPEAT",
-          "content": {
-            "type": "SYMBOL",
-            "name": "post_type_macro_annotation"
-          }
-        },
-        {
-          "type": "FIELD",
-          "name": "declarator",
-          "content": {
-            "type": "SYMBOL",
-            "name": "macro_token_paste_call_declarator_fragment"
-          }
-        },
-        {
-          "type": "FIELD",
-          "name": "body",
-          "content": {
-            "type": "SYMBOL",
-            "name": "compound_statement"
-          }
-        }
-      ]
-    },
-    "macro_token_paste_call_declarator_fragment": {
-      "type": "SEQ",
-      "members": [
-        {
-          "type": "FIELD",
-          "name": "name",
-          "content": {
-            "type": "SYMBOL",
-            "name": "macro_token_paste_expression"
           }
         },
         {
@@ -22547,8 +22481,17 @@
           "name": "parenthesized_declarator"
         },
         {
-          "type": "SYMBOL",
-          "name": "identifier"
+          "type": "CHOICE",
+          "members": [
+            {
+              "type": "SYMBOL",
+              "name": "identifier"
+            },
+            {
+              "type": "SYMBOL",
+              "name": "macro_token_paste_expression"
+            }
+          ]
         },
         {
           "type": "ALIAS",
@@ -23475,8 +23418,17 @@
       "type": "CHOICE",
       "members": [
         {
-          "type": "SYMBOL",
-          "name": "identifier"
+          "type": "CHOICE",
+          "members": [
+            {
+              "type": "SYMBOL",
+              "name": "identifier"
+            },
+            {
+              "type": "SYMBOL",
+              "name": "macro_token_paste_expression"
+            }
+          ]
         },
         {
           "type": "ALIAS",
@@ -23570,8 +23522,17 @@
                     ]
                   },
                   {
-                    "type": "SYMBOL",
-                    "name": "identifier"
+                    "type": "CHOICE",
+                    "members": [
+                      {
+                        "type": "SYMBOL",
+                        "name": "identifier"
+                      },
+                      {
+                        "type": "SYMBOL",
+                        "name": "macro_token_paste_expression"
+                      }
+                    ]
                   }
                 ]
               },
@@ -24273,8 +24234,17 @@
             "type": "FIELD",
             "name": "name",
             "content": {
-              "type": "SYMBOL",
-              "name": "identifier"
+              "type": "CHOICE",
+              "members": [
+                {
+                  "type": "SYMBOL",
+                  "name": "identifier"
+                },
+                {
+                  "type": "SYMBOL",
+                  "name": "macro_token_paste_expression"
+                }
+              ]
             }
           },
           {
@@ -34521,8 +34491,17 @@
                     ]
                   },
                   {
-                    "type": "SYMBOL",
-                    "name": "identifier"
+                    "type": "CHOICE",
+                    "members": [
+                      {
+                        "type": "SYMBOL",
+                        "name": "identifier"
+                      },
+                      {
+                        "type": "SYMBOL",
+                        "name": "macro_token_paste_expression"
+                      }
+                    ]
                   }
                 ]
               },
@@ -35404,13 +35383,22 @@
       ]
     },
     "_namespace_identifier": {
-      "type": "ALIAS",
-      "content": {
-        "type": "SYMBOL",
-        "name": "identifier"
-      },
-      "named": true,
-      "value": "namespace_identifier"
+      "type": "CHOICE",
+      "members": [
+        {
+          "type": "ALIAS",
+          "content": {
+            "type": "SYMBOL",
+            "name": "identifier"
+          },
+          "named": true,
+          "value": "namespace_identifier"
+        },
+        {
+          "type": "SYMBOL",
+          "name": "macro_token_paste_expression"
+        }
+      ]
     }
   },
   "extras": [

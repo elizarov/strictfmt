@@ -62,6 +62,10 @@
         "named": true
       },
       {
+        "type": "macro_token_paste_expression",
+        "named": true
+      },
+      {
         "type": "member_pointer_declarator",
         "named": true
       },
@@ -167,6 +171,10 @@
       },
       {
         "type": "handle_declarator",
+        "named": true
+      },
+      {
+        "type": "macro_token_paste_expression",
         "named": true
       },
       {
@@ -560,6 +568,10 @@
         "named": true
       },
       {
+        "type": "macro_token_paste_expression",
+        "named": true
+      },
+      {
         "type": "placeholder_type_specifier",
         "named": true
       },
@@ -763,6 +775,10 @@
             "named": true
           },
           {
+            "type": "macro_token_paste_expression",
+            "named": true
+          },
+          {
             "type": "namespace_identifier",
             "named": true
           },
@@ -878,6 +894,10 @@
         "multiple": false,
         "required": true,
         "types": [
+          {
+            "type": "macro_token_paste_expression",
+            "named": true
+          },
           {
             "type": "type_identifier",
             "named": true
@@ -1351,6 +1371,10 @@
         },
         {
           "type": "decltype",
+          "named": true
+        },
+        {
+          "type": "macro_token_paste_expression",
           "named": true
         },
         {
@@ -2119,6 +2143,10 @@
         "required": false,
         "types": [
           {
+            "type": "macro_token_paste_expression",
+            "named": true
+          },
+          {
             "type": "qualified_identifier",
             "named": true
           },
@@ -2272,6 +2300,10 @@
           },
           {
             "type": "functional_cast_type_specifier",
+            "named": true
+          },
+          {
+            "type": "macro_token_paste_expression",
             "named": true
           },
           {
@@ -3694,6 +3726,10 @@
         "required": false,
         "types": [
           {
+            "type": "macro_token_paste_expression",
+            "named": true
+          },
+          {
             "type": "primitive_type",
             "named": true
           },
@@ -3725,6 +3761,10 @@
         "multiple": false,
         "required": false,
         "types": [
+          {
+            "type": "macro_token_paste_expression",
+            "named": true
+          },
           {
             "type": "qualified_identifier",
             "named": true
@@ -4721,6 +4761,10 @@
           "named": true
         },
         {
+          "type": "macro_token_paste_expression",
+          "named": true
+        },
+        {
           "type": "qualified_identifier",
           "named": true
         },
@@ -4974,6 +5018,10 @@
         "required": false,
         "types": [
           {
+            "type": "macro_token_paste_expression",
+            "named": true
+          },
+          {
             "type": "qualified_identifier",
             "named": true
           },
@@ -4996,6 +5044,10 @@
         "required": true,
         "types": [
           {
+            "type": "macro_token_paste_expression",
+            "named": true
+          },
+          {
             "type": "type_identifier",
             "named": true
           }
@@ -5015,6 +5067,10 @@
         "multiple": false,
         "required": true,
         "types": [
+          {
+            "type": "macro_token_paste_expression",
+            "named": true
+          },
           {
             "type": "primitive_type",
             "named": true
@@ -5197,6 +5253,10 @@
         "multiple": false,
         "required": true,
         "types": [
+          {
+            "type": "macro_token_paste_expression",
+            "named": true
+          },
           {
             "type": "type_identifier",
             "named": true
@@ -6427,7 +6487,7 @@
       },
       "declarator": {
         "multiple": false,
-        "required": false,
+        "required": true,
         "types": [
           {
             "type": "=",
@@ -6465,7 +6525,7 @@
       },
       "type": {
         "multiple": false,
-        "required": false,
+        "required": true,
         "types": [
           {
             "type": "placeholder_type_specifier",
@@ -6492,10 +6552,6 @@
         },
         {
           "type": "function_prefix_macro",
-          "named": true
-        },
-        {
-          "type": "macro_qualified_token_paste_function_fragment",
           "named": true
         },
         {
@@ -6553,6 +6609,10 @@
         },
         {
           "type": "abstract_reference_declarator",
+          "named": true
+        },
+        {
+          "type": "macro_token_paste_expression",
           "named": true
         },
         {
@@ -7042,76 +7102,6 @@
     }
   },
   {
-    "type": "macro_qualified_token_paste_function_fragment",
-    "named": true,
-    "fields": {
-      "body": {
-        "multiple": false,
-        "required": true,
-        "types": [
-          {
-            "type": "compound_statement",
-            "named": true
-          }
-        ]
-      },
-      "declarator": {
-        "multiple": false,
-        "required": true,
-        "types": [
-          {
-            "type": "macro_token_paste_call_declarator_fragment",
-            "named": true
-          }
-        ]
-      },
-      "type": {
-        "multiple": false,
-        "required": true,
-        "types": [
-          {
-            "type": "qualified_identifier",
-            "named": true
-          }
-        ]
-      }
-    },
-    "children": {
-      "multiple": true,
-      "required": false,
-      "types": [
-        {
-          "type": "attribute_declaration",
-          "named": true
-        },
-        {
-          "type": "attribute_specifier",
-          "named": true
-        },
-        {
-          "type": "function_prefix_macro",
-          "named": true
-        },
-        {
-          "type": "ms_declspec_modifier",
-          "named": true
-        },
-        {
-          "type": "post_type_macro_annotation",
-          "named": true
-        },
-        {
-          "type": "storage_class_specifier",
-          "named": true
-        },
-        {
-          "type": "type_qualifier",
-          "named": true
-        }
-      ]
-    }
-  },
-  {
     "type": "macro_replacement_list",
     "named": true,
     "fields": {},
@@ -7505,32 +7495,6 @@
     }
   },
   {
-    "type": "macro_token_paste_call_declarator_fragment",
-    "named": true,
-    "fields": {
-      "arguments": {
-        "multiple": false,
-        "required": true,
-        "types": [
-          {
-            "type": "macro_argument_list",
-            "named": true
-          }
-        ]
-      },
-      "name": {
-        "multiple": false,
-        "required": true,
-        "types": [
-          {
-            "type": "macro_token_paste_expression",
-            "named": true
-          }
-        ]
-      }
-    }
-  },
-  {
     "type": "macro_token_paste_expression",
     "named": true,
     "fields": {
@@ -7583,6 +7547,10 @@
         "required": true,
         "types": [
           {
+            "type": "macro_token_paste_expression",
+            "named": true
+          },
+          {
             "type": "qualified_identifier",
             "named": true
           },
@@ -7615,6 +7583,10 @@
         "required": true,
         "types": [
           {
+            "type": "macro_token_paste_expression",
+            "named": true
+          },
+          {
             "type": "qualified_identifier",
             "named": true
           },
@@ -7639,6 +7611,10 @@
         "required": true,
         "types": [
           {
+            "type": "macro_token_paste_expression",
+            "named": true
+          },
+          {
             "type": "qualified_identifier",
             "named": true
           },
@@ -7660,6 +7636,10 @@
         "multiple": false,
         "required": true,
         "types": [
+          {
+            "type": "macro_token_paste_expression",
+            "named": true
+          },
           {
             "type": "type_identifier",
             "named": true
@@ -7740,6 +7720,10 @@
           },
           {
             "type": "dependent_name",
+            "named": true
+          },
+          {
+            "type": "macro_token_paste_expression",
             "named": true
           },
           {
@@ -7938,6 +7922,10 @@
         "required": true,
         "types": [
           {
+            "type": "macro_token_paste_expression",
+            "named": true
+          },
+          {
             "type": "namespace_identifier",
             "named": true
           }
@@ -7948,6 +7936,10 @@
       "multiple": false,
       "required": true,
       "types": [
+        {
+          "type": "macro_token_paste_expression",
+          "named": true
+        },
         {
           "type": "namespace_identifier",
           "named": true
@@ -8145,6 +8137,10 @@
         "required": false,
         "types": [
           {
+            "type": "macro_token_paste_expression",
+            "named": true
+          },
+          {
             "type": "namespace_identifier",
             "named": true
           },
@@ -8174,6 +8170,10 @@
       "multiple": true,
       "required": false,
       "types": [
+        {
+          "type": "macro_token_paste_expression",
+          "named": true
+        },
         {
           "type": "namespace_identifier",
           "named": true
@@ -8592,6 +8592,10 @@
         "multiple": false,
         "required": false,
         "types": [
+          {
+            "type": "macro_token_paste_expression",
+            "named": true
+          },
           {
             "type": "type_identifier",
             "named": true
@@ -13785,6 +13789,10 @@
       "required": true,
       "types": [
         {
+          "type": "macro_token_paste_expression",
+          "named": true
+        },
+        {
           "type": "type_identifier",
           "named": true
         }
@@ -14617,6 +14625,10 @@
             "named": true
           },
           {
+            "type": "macro_token_paste_expression",
+            "named": true
+          },
+          {
             "type": "namespace_identifier",
             "named": true
           },
@@ -14638,6 +14650,10 @@
         "types": [
           {
             "type": "dependent_name",
+            "named": true
+          },
+          {
+            "type": "macro_token_paste_expression",
             "named": true
           },
           {
@@ -14668,6 +14684,10 @@
           },
           {
             "type": "dependent_name",
+            "named": true
+          },
+          {
+            "type": "macro_token_paste_expression",
             "named": true
           },
           {
@@ -14769,6 +14789,10 @@
             "named": true
           },
           {
+            "type": "macro_token_paste_expression",
+            "named": true
+          },
+          {
             "type": "namespace_identifier",
             "named": true
           },
@@ -14810,6 +14834,10 @@
           },
           {
             "type": "dependent_name",
+            "named": true
+          },
+          {
+            "type": "macro_token_paste_expression",
             "named": true
           },
           {
@@ -15063,6 +15091,10 @@
         "multiple": false,
         "required": false,
         "types": [
+          {
+            "type": "macro_token_paste_expression",
+            "named": true
+          },
           {
             "type": "primitive_type",
             "named": true
@@ -15409,6 +15441,10 @@
         "multiple": false,
         "required": false,
         "types": [
+          {
+            "type": "macro_token_paste_expression",
+            "named": true
+          },
           {
             "type": "qualified_identifier",
             "named": true
@@ -16896,6 +16932,10 @@
             "named": true
           },
           {
+            "type": "macro_token_paste_expression",
+            "named": true
+          },
+          {
             "type": "parenthesized_expression",
             "named": true
           },
@@ -17112,6 +17152,10 @@
         "multiple": false,
         "required": true,
         "types": [
+          {
+            "type": "macro_token_paste_expression",
+            "named": true
+          },
           {
             "type": "type_identifier",
             "named": true
@@ -17589,6 +17633,10 @@
       "required": false,
       "types": [
         {
+          "type": "macro_token_paste_expression",
+          "named": true
+        },
+        {
           "type": "type_identifier",
           "named": true
         }
@@ -17618,6 +17666,10 @@
       "multiple": false,
       "required": true,
       "types": [
+        {
+          "type": "macro_token_paste_expression",
+          "named": true
+        },
         {
           "type": "qualified_identifier",
           "named": true
@@ -17755,6 +17807,10 @@
         "multiple": false,
         "required": false,
         "types": [
+          {
+            "type": "macro_token_paste_expression",
+            "named": true
+          },
           {
             "type": "qualified_identifier",
             "named": true
@@ -17968,6 +18024,10 @@
       "multiple": false,
       "required": false,
       "types": [
+        {
+          "type": "macro_token_paste_expression",
+          "named": true
+        },
         {
           "type": "type_identifier",
           "named": true

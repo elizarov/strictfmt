@@ -26,6 +26,7 @@ MacroCategories:
   BareIdentifierMacros:
     - WINAPI
   CallSyntaxMacros:
+    - FORMAT_PASTED_DECL_*
     - ENUM_STRING_DECLARE
     - FORMAT_FIXTURE_STATEMENT_ARGUMENT
     - FORMAT_FIXTURE_DECLARE_OPTION

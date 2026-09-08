@@ -3684,3 +3684,22 @@ enum RequiredEnumTerminator { Item }; // enum
 namespace NullItemFifth {
 int value;
 }
+
+namespace PastedDeclarationNames {
+struct ResultAlpha { int value; };
+namespace GroupAlpha { struct Result { int value; }; }
+#define FORMAT_PASTED_DECL_FUNCTION(Suffix) constexpr int Get##Suffix() { return 7; }
+#define FORMAT_PASTED_DECL_VARIABLE(Suffix) constexpr int k##Suffix = 9;
+#define FORMAT_PASTED_DECL_RESULT(Suffix) Result##Suffix Build##Suffix() { return {}; }
+#define FORMAT_PASTED_DECL_QUALIFIED(Suffix) Group##Suffix::Result Qualified##Suffix() { return {}; }
+#define FORMAT_PASTED_DECL_TEMPLATE(Suffix) template<class T> T Convert##Suffix(T value) { return value; }
+#define FORMAT_PASTED_DECL_POINTER(Suffix) int (*Pointer##Suffix())(int) { return &Convert##Suffix<int>; }
+FORMAT_PASTED_DECL_FUNCTION(Alpha);
+FORMAT_PASTED_DECL_VARIABLE(Alpha);
+FORMAT_PASTED_DECL_RESULT(Alpha);
+FORMAT_PASTED_DECL_QUALIFIED(Alpha);
+FORMAT_PASTED_DECL_TEMPLATE(Alpha);
+FORMAT_PASTED_DECL_POINTER(Alpha);
+static_assert(GetAlpha() == 7);
+static_assert(kAlpha == 9);
+}
