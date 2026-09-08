@@ -829,6 +829,10 @@
           "named": true
         },
         {
+          "type": "function_prefix_macro",
+          "named": true
+        },
+        {
           "type": "ms_call_modifier",
           "named": true
         }
@@ -5051,28 +5055,12 @@
     "type": "function_pointer_alias_declaration",
     "named": true,
     "fields": {
-      "class": {
+      "declarator": {
         "multiple": false,
         "required": false,
         "types": [
           {
-            "type": "macro_token_paste_expression",
-            "named": true
-          },
-          {
-            "type": "qualified_identifier",
-            "named": true
-          },
-          {
-            "type": "qualified_type_identifier",
-            "named": true
-          },
-          {
-            "type": "template_type",
-            "named": true
-          },
-          {
-            "type": "type_identifier",
+            "type": "_abstract_declarator",
             "named": true
           }
         ]
@@ -5093,7 +5081,7 @@
       },
       "parameters": {
         "multiple": false,
-        "required": true,
+        "required": false,
         "types": [
           {
             "type": "parameter_list",
@@ -5154,10 +5142,6 @@
         },
         {
           "type": "gnu_asm_expression",
-          "named": true
-        },
-        {
-          "type": "ms_call_modifier",
           "named": true
         },
         {
@@ -8879,6 +8863,10 @@
         },
         {
           "type": "_type_declarator",
+          "named": true
+        },
+        {
+          "type": "function_prefix_macro",
           "named": true
         },
         {
@@ -18405,10 +18393,6 @@
   },
   {
     "type": "::",
-    "named": false
-  },
-  {
-    "type": "::*",
     "named": false
   },
   {

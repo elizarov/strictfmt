@@ -171,6 +171,7 @@ module.exports = grammar(C, {
     [$.type_specifier, $._declarator, $._type_declarator],
     [$.type_specifier, $.expression],
     [$.type_specifier, $.function_pointer_alias_declaration],
+    [$.type_specifier, $._class_name, $.function_pointer_alias_declaration, $._scope_name],
     [$.type_specifier, $.function_pointer_alias_declaration, $.function_type_alias_declaration],
     [$.type_specifier, $.function_pointer_alias_declaration, $.member_pointer_alias_declaration],
     [$.type_specifier, $.member_pointer_alias_declaration],
@@ -1511,7 +1512,8 @@ module.exports = grammar(C, {
       field('return_type', $._class_name),
       '(',
       field('class', choice($.qualified_type_identifier, $.qualified_identifier, $._class_name)),
-      '::*',
+      '::',
+      '*',
       ')',
       field('parameters', $.parameter_list),
     )),
@@ -2061,7 +2063,7 @@ module.exports = grammar(C, {
 
     abstract_parenthesized_declarator: $ => prec(1, seq(
       '(',
-      optional($.ms_call_modifier),
+      optional(choice($.ms_call_modifier, $.function_prefix_macro)),
       $._abstract_declarator,
       ')',
     )),
@@ -2431,16 +2433,7 @@ module.exports = grammar(C, {
           $.template_type,
           $._class_name,
         )),
-        '(',
-        choice(
-          seq(
-            field('class', choice($.qualified_type_identifier, $.qualified_identifier, $._class_name)),
-            '::*',
-          ),
-          seq(optional($.ms_call_modifier), '*'),
-        ),
-        ')',
-        $._function_declarator_seq,
+        field('declarator', $._abstract_declarator),
         ';',
       )),
       prec.dynamic(10, seq(
@@ -2472,7 +2465,8 @@ module.exports = grammar(C, {
       repeat($.type_qualifier),
       '(',
       field('class', choice($.qualified_type_identifier, $.qualified_identifier, $._class_name)),
-      '::*',
+      '::',
+      '*',
       ')',
       ';',
     )),
@@ -4369,7 +4363,7 @@ function memberPointerDeclarator($, declarator) {
 }
 
 function parenthesizedDeclarator($, declarator, preference = PREC.PAREN_DECLARATOR) {
-  return prec.dynamic(preference, seq('(', optional($.ms_call_modifier), declarator, ')'));
+  return prec.dynamic(preference, seq('(', optional(choice($.ms_call_modifier, $.function_prefix_macro)), declarator, ')'));
 }
 
 function attributedDeclarator($, declarator) {

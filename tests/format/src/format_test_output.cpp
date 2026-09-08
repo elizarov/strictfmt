@@ -1555,7 +1555,7 @@ using ConfigMetricAvailabilityResolver = bool (*)(std::string_view metricRef);
 using RuntimeConfigDynamicItemVisitor = void (*)(void* context, std::string_view key, const void* item);
 using RuntimeConfigEnsureDynamicItem = void* (*)(AppConfig& config, std::string_view key);
 using RuntimeConfigFindDynamicItem = const void* (*)(const AppConfig& config, std::string_view key);
-using MemberPointerAlias = ns::Value(ns::Owner::*);
+using MemberPointerAlias = ns::Value (ns::Owner::*);
 using QualifiedFunctionTypeAlias = ns::Result(ns::Argument);
 using TemplateFunctionTypeAlias = box::Result<int>(deep::ns::Argument);
 using RuntimeConfigForEachDynamicItem =
@@ -6328,5 +6328,44 @@ struct Types {};
 #define FORMAT_COMMA_QUALIFIED data::Text, data::Box<int>, data::Box<data::Box<bool>>
 using QualifiedTypes = Types<FORMAT_COMMA_QUALIFIED>;
 #undef FORMAT_COMMA_QUALIFIED
+
+}
+
+namespace FunctionReferenceAliases {
+
+struct Result {};
+
+template <typename T>
+struct Box {};
+
+using Primitive = int (&)(int);
+using Named = Result (&)(int);
+using Qualified = FunctionReferenceAliases::Result (&)(int);
+using Templated = Box<Result> (&)(int);
+using Rvalue = Result (&&)(int);
+using ConstPointer = Result (*const)(int);
+using Nested = Result (* (&)(int))(double);
+using ArrayReference = Result (&)[2];
+using Pointer = Result (*)(int);
+
+struct Owner {};
+
+using Member = Result (Owner::*)(int) const;
+using QualifiedPointer = FunctionReferenceAliases::Result (*const)(int) noexcept;
+using QualifiedNested = FunctionReferenceAliases::Result (* (&)(int))(double);
+using QualifiedMember = Box<Result> (Owner::*)(int) const;
+using QualifiedMemberReference = Box<Result> (Owner::*&)(int) const;
+using QualifiedArrayReference = Box<Result> (&)[2];
+using QualifiedRvalueArray = Box<Result> (&&)[2];
+using QualifiedDataMember = Box<Result> (Owner::*);
+#define FORMAT_DECLARATOR_MODIFIER
+#define FORMAT_DECLARATOR_ATTRIBUTE(...)
+using AnnotatedAlias = Box<Result> (FORMAT_DECLARATOR_MODIFIER*)(int);
+using AnnotatedReference = Box<Result> (FORMAT_DECLARATOR_ATTRIBUTE(unused)&)(int);
+
+Box<Result> (FORMAT_DECLARATOR_MODIFIER*annotated_pointer)(int);
+Box<Result> (FORMAT_DECLARATOR_ATTRIBUTE(unused)*another_pointer)(int);
+#undef FORMAT_DECLARATOR_MODIFIER
+#undef FORMAT_DECLARATOR_ATTRIBUTE
 
 }

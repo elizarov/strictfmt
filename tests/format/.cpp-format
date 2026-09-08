@@ -19,6 +19,9 @@ MainIncludeChar: Quote
 IncludeIsMainRegex: '(Test)?$'
 
 MacroCategories:
+  DeclarationPrefixMacros:
+    - FORMAT_DECLARATOR_MODIFIER
+    - FORMAT_DECLARATOR_ATTRIBUTE
   StatementPrefixMacros:
     - FORMAT_STATEMENT_PREFIX_*
   RawMacroDefinitions:
@@ -27,6 +30,7 @@ MacroCategories:
     - FORMAT_FIXTURE_STRINGIZE
     - FORMAT_FIXTURE_TOKEN_PASTE
   BareIdentifierMacros:
+    - FORMAT_DECLARATOR_MODIFIER
     - WINAPI
   CallSyntaxMacros:
     - FORMAT_ENUM_ATTR

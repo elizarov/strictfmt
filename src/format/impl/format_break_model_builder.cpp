@@ -963,7 +963,7 @@ private:
                 operatorIndex = index;
                 continue;
             }
-            if (operatorIndex && child->kind == SyntaxNodeKind::LeftParen) {
+            if (operatorIndex && (child->kind == SyntaxNodeKind::LeftParen || child->isDeclarator)) {
                 declaratorIndex = index;
                 break;
             }
