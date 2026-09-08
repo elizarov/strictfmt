@@ -3729,3 +3729,35 @@ int conditional[] = {
 #endif
 };
 }
+
+namespace MacroTypeDeclarations {
+#define FORMAT_TYPE_DECLARATIONS(Name) \
+struct Name##Tag {}; \
+class Name##Forward; \
+union Name##Union {int value; double other;}; \
+using Name = Name##Tag; \
+typedef Name Name##Alias; \
+using Name##Callback = int (*)(int); \
+using Name##Function = int(int); \
+static_assert(sizeof(Name) > 0);
+FORMAT_TYPE_DECLARATIONS(Value);
+struct Owner {int member;};
+#define FORMAT_TYPE_MEMBER_ALIAS(Name) using Name = int Owner::*;
+FORMAT_TYPE_MEMBER_ALIAS(Member);
+#define FORMAT_TYPE_NAMESPACE(Name) namespace Name {using Number = int;} namespace Name##Alias = Name; using Name::Number;
+FORMAT_TYPE_NAMESPACE(Numbers);
+#define FORMAT_TYPE_TEMPLATE(Name) template<class T> struct Name {T value;}; template<class T> using Name##Alias = Name<T>;
+FORMAT_TYPE_TEMPLATE(Holder);
+#define FORMAT_TYPE_CONCEPT(Name) template<class T> concept Name = sizeof(T) > 0;
+FORMAT_TYPE_CONCEPT(Nonempty);
+static_assert(Nonempty<HolderAlias<int>>);
+#define FORMAT_TYPE_EXTERN(Name) extern "C" {int Name(int);}
+FORMAT_TYPE_EXTERN(External);
+#define FORMAT_TYPE_INSTANTIATION(Name) template struct Name<int>;
+FORMAT_TYPE_INSTANTIATION(Holder);
+#define FORMAT_TYPE_CLASS(Name) class Name##Derived final : public Owner {public: Name##Derived(int value) { member=value; }};
+FORMAT_TYPE_CLASS(Example);
+ValueAlias value;
+Member member = &Owner::member;
+Number number = 1;
+}

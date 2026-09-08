@@ -13299,6 +13299,54 @@
       "type": "CHOICE",
       "members": [
         {
+          "type": "SYMBOL",
+          "name": "_empty_declaration"
+        },
+        {
+          "type": "SYMBOL",
+          "name": "type_definition"
+        },
+        {
+          "type": "SYMBOL",
+          "name": "alias_declaration"
+        },
+        {
+          "type": "SYMBOL",
+          "name": "member_pointer_alias_declaration"
+        },
+        {
+          "type": "SYMBOL",
+          "name": "function_pointer_alias_declaration"
+        },
+        {
+          "type": "SYMBOL",
+          "name": "function_type_alias_declaration"
+        },
+        {
+          "type": "SYMBOL",
+          "name": "namespace_alias_definition"
+        },
+        {
+          "type": "SYMBOL",
+          "name": "using_declaration"
+        },
+        {
+          "type": "SYMBOL",
+          "name": "static_assert_declaration"
+        },
+        {
+          "type": "SYMBOL",
+          "name": "template_instantiation"
+        },
+        {
+          "type": "SYMBOL",
+          "name": "concept_definition"
+        },
+        {
+          "type": "SYMBOL",
+          "name": "linkage_specification"
+        },
+        {
           "type": "ALIAS",
           "content": {
             "type": "SYMBOL",

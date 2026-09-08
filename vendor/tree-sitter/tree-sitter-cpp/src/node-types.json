@@ -7107,8 +7107,12 @@
     "fields": {},
     "children": {
       "multiple": true,
-      "required": true,
+      "required": false,
       "types": [
+        {
+          "type": "alias_declaration",
+          "named": true
+        },
         {
           "type": "attributed_statement",
           "named": true
@@ -7131,6 +7135,10 @@
         },
         {
           "type": "compound_statement",
+          "named": true
+        },
+        {
+          "type": "concept_definition",
           "named": true
         },
         {
@@ -7166,6 +7174,14 @@
           "named": true
         },
         {
+          "type": "function_pointer_alias_declaration",
+          "named": true
+        },
+        {
+          "type": "function_type_alias_declaration",
+          "named": true
+        },
+        {
           "type": "goto_statement",
           "named": true
         },
@@ -7179,6 +7195,10 @@
         },
         {
           "type": "labeled_statement",
+          "named": true
+        },
+        {
+          "type": "linkage_specification",
           "named": true
         },
         {
@@ -7206,7 +7226,15 @@
           "named": true
         },
         {
+          "type": "member_pointer_alias_declaration",
+          "named": true
+        },
+        {
           "type": "ms_call_modifier",
+          "named": true
+        },
+        {
+          "type": "namespace_alias_definition",
           "named": true
         },
         {
@@ -7226,6 +7254,10 @@
           "named": true
         },
         {
+          "type": "static_assert_declaration",
+          "named": true
+        },
+        {
           "type": "switch_statement",
           "named": true
         },
@@ -7234,7 +7266,23 @@
           "named": true
         },
         {
+          "type": "template_instantiation",
+          "named": true
+        },
+        {
           "type": "try_statement",
+          "named": true
+        },
+        {
+          "type": "type_definition",
+          "named": true
+        },
+        {
+          "type": "type_specifier",
+          "named": true
+        },
+        {
+          "type": "using_declaration",
           "named": true
         },
         {
