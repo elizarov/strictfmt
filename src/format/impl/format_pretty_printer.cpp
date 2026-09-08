@@ -188,6 +188,10 @@ bool HasSeparatedListAncestor(const SyntaxNode* node) {
         ) {
             return true;
         }
+        // A block owns its statement separators; an outer list must not capture its comments.
+        if (SyntaxNodeHasClass(*cursor, SyntaxNodeClass::CompoundBlock)) {
+            return false;
+        }
     }
     return false;
 }

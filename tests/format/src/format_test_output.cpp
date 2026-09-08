@@ -5043,3 +5043,48 @@ void CommentAfterValue() {
     // next statement
     Use(value);
 }
+
+auto preservedDirectLambda = [] {
+    Work();  // direct body
+
+    Finish();
+};
+
+auto preservedArgumentLambda = Wrap([] {
+    result.reason = "";  // no reason
+
+    return result;
+});
+
+void NestedBodyCommentSeparators() {
+    Use([] {
+        if (ready) {
+            Work();  // nested block
+
+            Finish();
+        }
+        Use([] {
+            Work(); /* nested callable */
+
+            Finish();
+        });
+        Work();
+        // standalone body comment
+
+        Finish();  // before closing brace
+
+    });
+}
+
+auto callbackRecords = Callbacks{
+    [] {
+        Work();  // first record
+
+        Finish();
+    },
+    [] {
+        Work();  // second record
+
+        Finish();
+    },
+};
