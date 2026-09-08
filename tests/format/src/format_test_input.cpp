@@ -3325,3 +3325,25 @@ return [...values(std::forward<T>(args)),&...references(args)] {return Use(value
 #define FORMAT_RECURSIVE_PRIMITIVE_FUNCTIONS int (*Factory())(); int (&Array())[3];
 #define FORMAT_PRIMITIVE_INITIALIZER static const int value = Make();
 #define FORMAT_DECLARATION_NAMESPACE_SEQUENCE void Before(); namespace format_macro {int value;} void After();
+
+namespace MemberPointerExpressions {
+struct Record { int value; int Read() const { return value; } };
+int Read(Record& object, Record* pointer, int Record::*member) {
+object.*(member)=1;
+pointer->*&Record::value=object.*member;
+auto address=&Record::Read;
+auto first=(object.*address)();
+auto second=(pointer->*(address))();
+return object.*member+pointer->*(member)+first+second;
+}
+template<int Value> struct Constant {};
+constexpr Record kRecord{3};
+Constant<kRecord.*&Record::value> constant;
+int Precedence(Record& object, Record* pointer, int Record::*member) {
+return 2*object.*member+(*pointer).*member+(Record&)object.*member+pointer->*member;
+}
+struct Link { Record* next; };
+int Chain(Link* link) { return link->*&Link::next->*&Record::value; }
+template<class... Members>
+int Sum(const Record& object, Members... members) { return (0+...+(object.*members)); }
+}

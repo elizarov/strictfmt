@@ -12,6 +12,8 @@
 const C = require('tree-sitter-c/grammar');
 
 const PREC = Object.assign(C.PREC, {
+  POINTER_TO_MEMBER: C.PREC.MULTIPLY + 1,
+  CAST: C.PREC.CAST + 1,
   LAMBDA: 18,
   NEW: C.PREC.CALL + 1,
   STRUCTURED_BINDING: -1,
@@ -2284,6 +2286,8 @@ module.exports = grammar(C, {
 
     _template_argument_binary_expression: $ => {
       const table = [
+        ['.*', PREC.POINTER_TO_MEMBER],
+        ['->*', PREC.POINTER_TO_MEMBER],
         ['+', PREC.ADD],
         ['-', PREC.ADD],
         ['*', PREC.MULTIPLY],
@@ -3414,6 +3418,8 @@ module.exports = grammar(C, {
       ')',
     )),
 
+    cast_expression: ($, original) => prec(PREC.CAST, original.content),
+
     cpp_cast_expression: $ => prec(PREC.CALL, seq(
       field('function', choice(
         'static_cast',
@@ -3561,7 +3567,7 @@ module.exports = grammar(C, {
     field_expression: $ => seq(
       prec(PREC.FIELD, seq(
         field('argument', $.expression),
-        field('operator', choice('.', '.*', '->', '->*')),
+        field('operator', choice('.', '->')),
       )),
       field('field', choice(
         $.splice_specifier,
@@ -3805,6 +3811,8 @@ module.exports = grammar(C, {
 
     binary_expression: $ => {
       const table = [
+        ['.*', PREC.POINTER_TO_MEMBER],
+        ['->*', PREC.POINTER_TO_MEMBER],
         ['+', PREC.ADD],
         ['-', PREC.ADD],
         ['*', PREC.MULTIPLY],
