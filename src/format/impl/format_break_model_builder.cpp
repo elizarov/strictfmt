@@ -469,6 +469,7 @@ private:
     }
 
     void AppendListItem(FormatBreakNode& list, FormatBreakNode* item, bool blankLineBefore) {
+        list.forceSplit = list.forceSplit || blankLineBefore;
         list.items.push_back(FormatBreakListItem{.node = item, .blankLineBefore = blankLineBefore});
     }
 
@@ -3031,11 +3032,11 @@ private:
                 continue;
             }
             if (SyntaxNodeKindHasClass(child->kind, SyntaxNodeClass::ListForceSplitMarker)) {
-                list->forceSplit = true;
                 if (child->kind == SyntaxNodeKind::BlankLine) {
                     pendingBlankLine = true;
                     continue;
                 }
+                list->forceSplit = true;
                 const std::optional<FormatBreakToken> comment = TokenForNode(*child);
                 if (!comment) {
                     continue;
@@ -3223,11 +3224,11 @@ private:
                 continue;
             }
             if (SyntaxNodeKindHasClass(child->kind, SyntaxNodeClass::ListForceSplitMarker)) {
-                delimited->forceSplit = true;
                 if (child->kind == SyntaxNodeKind::BlankLine) {
                     pendingBlankLine = true;
                     continue;
                 }
+                delimited->forceSplit = true;
                 const std::optional<FormatBreakToken> comment = TokenForNode(*child);
                 if (!comment) {
                     continue;
@@ -3296,6 +3297,7 @@ private:
         }
         AppendDelimitedItem(*delimited, itemChildren, *open, depth, blankLineBeforeCurrentItem);
         delimited->blankLineBeforeClose = pendingBlankLine && !delimited->items.empty();
+        delimited->forceSplit = delimited->forceSplit || delimited->blankLineBeforeClose;
         if (
             itemChildren.empty() &&
             IsForHeaderDelimiter(*open) &&

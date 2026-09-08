@@ -5421,3 +5421,57 @@ FORMAT_QUALIFIED_HEADER;
 static_assert(Fifth().number == 1 && Sixth() == 6 && Seventh().number == 1);
 
 }
+
+namespace LeadingListBlankLines {
+
+void Use(int, int);
+void BlankCalls() {
+    Use(1, 2);
+    Use(
+        1,
+        2
+
+    );
+}
+
+struct Empty {};
+
+struct Value {
+    Empty empty;
+    int count;
+};
+
+Value valuesWithAnIntentionallyLongNameToForceWrappingTheNestedInitializer[] =
+    {{Empty{}, 1}, {Empty{}, 2}, {Empty{}, 3}, {Empty{}, 4}};
+
+template <int N>
+struct Number {};
+
+Number<1> number;
+
+void Parameter(int);
+void Parenthesized(int* values) {
+    int value = (values[0]);
+    Use(value, 0);
+    Use(
+
+        // Keep the leading comment.
+        1,
+        2
+    );
+    Use(
+        1,
+
+        2
+    );
+}
+
+struct Base {
+    explicit Base(int) {}
+};
+
+struct Derived : Base {
+    Derived() : Base(1) {}
+};
+
+}
