@@ -5202,3 +5202,54 @@ template <class... Members>
 int Sum(const Record& object, Members... members) { return (0 + ... + (object.*members)); }
 
 }
+
+namespace BracedInitializerPackExpansion {
+
+struct Pair {
+    int first;
+    int second;
+};
+
+template <int Size>
+struct Array {
+    Pair values[Size];
+};
+
+template <int... Values>
+constexpr Array<sizeof...(Values)> Make() { return {{{Values, Values + 1}...}}; }
+
+constexpr auto pairs = Make<1, 2>();
+
+static_assert(pairs.values[1].second == 3);
+constexpr int Add(Pair first, Pair second) { return first.first + second.second; }
+template <int... Values>
+constexpr int ExpandArguments() { return Add({Values, Values + 1}...); }
+
+static_assert(ExpandArguments<1, 2>() == 4);
+template <int... Values>
+struct Holder {
+    Array<sizeof...(Values)> array;
+
+    Holder() : array{{{Values, Values + 1}...}} {}
+};
+
+template <int... Values>
+constexpr auto Conditional() {
+    return Array<sizeof...(Values)>{
+        {
+#if USE_SECOND_VALUE
+            {Values, Values + 1}...,
+#else
+            {Values, Values}...,
+#endif
+        },
+    };
+}
+
+}
+
+void EmptyCompoundStatements(bool condition) {
+    if (condition) {
+        {}
+    }
+}

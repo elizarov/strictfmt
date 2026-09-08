@@ -953,7 +953,7 @@ module.exports = grammar(C, {
     }, -1, PREPROC_IFDEF, false),
 
     ...preprocIf('_in_initializer_list', $ => {
-      const item = choice($.initializer_pair, $.expression, $.initializer_list);
+      const item = choice($.initializer_pair, $.expression, $._braced_initializer_clause);
       return prec.right(1, seq(repeat(seq(item, ',')), item, optional(',')));
     }, 0, PREPROC_IFDEF | PREPROC_ELSE, false),
 
@@ -3046,7 +3046,7 @@ module.exports = grammar(C, {
       $.primitive_type,
       $.sized_type_specifier,
       $.type_descriptor,
-      $.initializer_list,
+      $._braced_initializer_clause,
       $.compound_statement,
       $.virtual_specifier,
       $.type_qualifier,
@@ -3201,7 +3201,7 @@ module.exports = grammar(C, {
         $.macro_token_paste_call_expression,
         $.initializer_pair,
         $.expression,
-        $.initializer_list,
+        $._braced_initializer_clause,
       );
       return seq(
         '{',
@@ -3213,6 +3213,16 @@ module.exports = grammar(C, {
         '}',
       );
     },
+
+    _braced_initializer_clause: $ => choice(
+      $.initializer_list,
+      alias($.initializer_list_pack_expansion, $.parameter_pack_expansion),
+    ),
+
+    initializer_list_pack_expansion: $ => seq(
+      field('pattern', $.initializer_list),
+      '...',
+    ),
 
     initializer_pair: ($, original) => choice(
       original,
@@ -3227,7 +3237,7 @@ module.exports = grammar(C, {
         $.macro_token_paste_call_expression,
         $.initializer_pair,
         $.expression,
-        $.initializer_list,
+        $._braced_initializer_clause,
       );
       const preprocItem = preprocListItem($, '_in_initializer_list', PREPROC_IFDEF | PREPROC_ELSE);
       return prec(-1, seq(
@@ -3920,7 +3930,7 @@ module.exports = grammar(C, {
       $.tagged_type_argument,
       $.primitive_braced_argument,
       $.expression,
-      $.initializer_list,
+      $._braced_initializer_clause,
       $.compound_statement,
     ),
 
@@ -3944,7 +3954,7 @@ module.exports = grammar(C, {
     _braced_argument_list_item: $ => prec(PREC.CALL + 2, choice(
       $.primitive_braced_argument,
       $.compound_literal_expression,
-      $.initializer_list,
+      $._braced_initializer_clause,
     )),
 
     primitive_braced_argument: $ => seq(

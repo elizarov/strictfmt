@@ -11560,7 +11560,7 @@
                         },
                         {
                           "type": "SYMBOL",
-                          "name": "initializer_list"
+                          "name": "_braced_initializer_clause"
                         }
                       ]
                     },
@@ -11590,7 +11590,7 @@
                               },
                               {
                                 "type": "SYMBOL",
-                                "name": "initializer_list"
+                                "name": "_braced_initializer_clause"
                               }
                             ]
                           }
@@ -16045,7 +16045,7 @@
                           },
                           {
                             "type": "SYMBOL",
-                            "name": "initializer_list"
+                            "name": "_braced_initializer_clause"
                           }
                         ]
                       },
@@ -16069,7 +16069,7 @@
                     },
                     {
                       "type": "SYMBOL",
-                      "name": "initializer_list"
+                      "name": "_braced_initializer_clause"
                     }
                   ]
                 },
@@ -16207,7 +16207,7 @@
                           },
                           {
                             "type": "SYMBOL",
-                            "name": "initializer_list"
+                            "name": "_braced_initializer_clause"
                           }
                         ]
                       },
@@ -16231,7 +16231,7 @@
                     },
                     {
                       "type": "SYMBOL",
-                      "name": "initializer_list"
+                      "name": "_braced_initializer_clause"
                     }
                   ]
                 },
@@ -16340,7 +16340,7 @@
                           },
                           {
                             "type": "SYMBOL",
-                            "name": "initializer_list"
+                            "name": "_braced_initializer_clause"
                           }
                         ]
                       },
@@ -16364,7 +16364,7 @@
                     },
                     {
                       "type": "SYMBOL",
-                      "name": "initializer_list"
+                      "name": "_braced_initializer_clause"
                     }
                   ]
                 },
@@ -28676,7 +28676,7 @@
         },
         {
           "type": "SYMBOL",
-          "name": "initializer_list"
+          "name": "_braced_initializer_clause"
         },
         {
           "type": "SYMBOL",
@@ -29175,6 +29175,41 @@
         }
       ]
     },
+    "_braced_initializer_clause": {
+      "type": "CHOICE",
+      "members": [
+        {
+          "type": "SYMBOL",
+          "name": "initializer_list"
+        },
+        {
+          "type": "ALIAS",
+          "content": {
+            "type": "SYMBOL",
+            "name": "initializer_list_pack_expansion"
+          },
+          "named": true,
+          "value": "parameter_pack_expansion"
+        }
+      ]
+    },
+    "initializer_list_pack_expansion": {
+      "type": "SEQ",
+      "members": [
+        {
+          "type": "FIELD",
+          "name": "pattern",
+          "content": {
+            "type": "SYMBOL",
+            "name": "initializer_list"
+          }
+        },
+        {
+          "type": "STRING",
+          "value": "..."
+        }
+      ]
+    },
     "_initializer_list_with_preproc": {
       "type": "PREC",
       "value": -1,
@@ -29203,7 +29238,7 @@
                     },
                     {
                       "type": "SYMBOL",
-                      "name": "initializer_list"
+                      "name": "_braced_initializer_clause"
                     }
                   ]
                 },
@@ -29285,7 +29320,7 @@
                         },
                         {
                           "type": "SYMBOL",
-                          "name": "initializer_list"
+                          "name": "_braced_initializer_clause"
                         }
                       ]
                     },
@@ -29315,7 +29350,7 @@
                         },
                         {
                           "type": "SYMBOL",
-                          "name": "initializer_list"
+                          "name": "_braced_initializer_clause"
                         }
                       ]
                     },
@@ -29379,7 +29414,7 @@
                   },
                   {
                     "type": "SYMBOL",
-                    "name": "initializer_list"
+                    "name": "_braced_initializer_clause"
                   }
                 ]
               },
@@ -33222,7 +33257,7 @@
         },
         {
           "type": "SYMBOL",
-          "name": "initializer_list"
+          "name": "_braced_initializer_clause"
         },
         {
           "type": "SYMBOL",
@@ -33496,7 +33531,7 @@
           },
           {
             "type": "SYMBOL",
-            "name": "initializer_list"
+            "name": "_braced_initializer_clause"
           }
         ]
       }
