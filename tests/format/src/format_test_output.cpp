@@ -5563,3 +5563,38 @@ int Catch() {
 }
 
 }
+
+namespace EmptyCallableBodyLayout {
+
+template <class F>
+void Invoke(F) {}
+
+struct Base {
+    explicit Base(int) {}
+};
+
+struct Derived : Base {
+    Derived(int firstParameterWithLongName, int secondParameterWithLongName, int thirdParameterWithLongName) :
+        Base(firstParameterWithLongName + secondParameterWithLongName + thirdParameterWithLongName) {}
+};
+
+void Call() {
+    Invoke([](int firstParameterWithLongName, int secondParameterWithLongName, int thirdParameterWithLongName) {});
+}
+
+void BlankOnly(int firstParameterWithLongName, int secondParameterWithLongName, int thirdParameterWithLongName) {}
+void PreserveComment(int firstParameterWithLongName, int secondParameterWithLongName, int thirdParameterWithLongName) {
+    // Keep this comment.
+}
+void PreserveControl(bool condition) {
+    if (condition) {}
+}
+
+struct BlankClass {};
+
+struct NullClass {};
+
+namespace BlankNamespace {}
+void PreserveStatement() { return; }
+
+}

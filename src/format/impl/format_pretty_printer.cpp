@@ -368,10 +368,8 @@ private:
             return false;
         }
         const PrintToken* next = index + 1 < activeTokens_->size() ? &(*activeTokens_)[index + 1] : nullptr;
-        return !(
-            next != nullptr && next->kind == PrintTokenKind::Known && next->syntaxKind == SyntaxNodeKind::RightBrace
-        ) &&
-            !BecomesEmptyAfterNullItemRemoval(token);
+        return
+            !(next != nullptr && next->kind == PrintTokenKind::Known && next->syntaxKind == SyntaxNodeKind::RightBrace);
     }
 
     static bool ContinuesBlockExpression(const PrintToken& token, const PrintToken& next) {
@@ -1117,35 +1115,6 @@ private:
         return !requiredDeclaredTypeTerminator;
     }
 
-    static bool BecomesEmptyAfterNullItemRemoval(const PrintToken& token) {
-        if (token.node == nullptr || token.node->parent == nullptr) {
-            return false;
-        }
-        bool hasNullItem = false;
-        for (const SyntaxNode* child : token.node->parent->children) {
-            if (child == nullptr) {
-                continue;
-            }
-            if (
-                child->kind == SyntaxNodeKind::LeftBrace ||
-                child->kind == SyntaxNodeKind::RightBrace ||
-                child->kind == SyntaxNodeKind::BlankLine
-            ) {
-                continue;
-            }
-            const SyntaxNode* item = child;
-            while (item->children.size() == 1 && item->children.front() != nullptr) {
-                item = item->children.front();
-            }
-            if (item->kind == SyntaxNodeKind::Semicolon) {
-                hasNullItem = true;
-                continue;
-            }
-            return false;
-        }
-        return hasNullItem;
-    }
-
     bool
         ShouldPreserveSourceBlankLine(const PrintToken& token, const PrintToken* previous, const PrintToken* next) const
     {
@@ -1644,8 +1613,7 @@ private:
             rawNext != nullptr &&
             rawNext->kind == PrintTokenKind::Known &&
             rawNext->syntaxKind == SyntaxNodeKind::RightBrace
-        ) ||
-            BecomesEmptyAfterNullItemRemoval(token);
+        );
         const bool isCaseBlock = previous != nullptr &&
             previous->kind == PrintTokenKind::Known &&
             previous->syntaxKind == SyntaxNodeKind::Colon &&

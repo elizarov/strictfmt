@@ -287,6 +287,29 @@ std::optional<size_t> FindOnlyIfInBraceBlock(const SyntaxNode& node) {
     return ifIndex;
 }
 
+void NormalizeEmptyCompoundBlock(SyntaxNode& node) {
+    if (!SyntaxNodeHasClass(node, SyntaxNodeClass::CompoundBlock)) {
+        return;
+    }
+    for (const SyntaxNode* child : node.children) {
+        if (
+            child != nullptr &&
+            child->kind != SyntaxNodeKind::LeftBrace &&
+            child->kind != SyntaxNodeKind::RightBrace &&
+            child->kind != SyntaxNodeKind::BlankLine &&
+            !IsEmptyStatementNode(*child)
+        ) {
+            return;
+        }
+    }
+    node.children.erase(
+        std::remove_if(node.children.begin(), node.children.end(), [](const SyntaxNode* child) {
+            return child != nullptr && (child->kind == SyntaxNodeKind::BlankLine || IsEmptyStatementNode(*child));
+        }),
+        node.children.end()
+    );
+}
+
 void NormalizeElseClauseBody(FormatModel& model, SyntaxNode& node) {
     for (size_t index = 0; index < node.children.size(); ++index) {
         if (node.children[index] == nullptr || node.children[index]->kind != SyntaxNodeKind::KeywordElse) {
@@ -801,6 +824,7 @@ void NormalizeSyntaxNode(FormatModel& model, SyntaxNode& node) {
     ClassifyDeclarationGroup(node);
     NormalizeTrailingCommas(model, node);
     NormalizeControlBodies(model, node);
+    NormalizeEmptyCompoundBlock(node);
     NormalizeColonPrefixedListComments(node);
     NormalizeBlockHeaderComments(node);
     NormalizeLeadingStreamComments(node);
