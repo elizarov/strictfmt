@@ -3661,3 +3661,26 @@ class Sort {
     Sort(Types::List<Types::Pair<Types::View, Direction>>);
 };
 }
+
+namespace NullItemFirst {
+int value;
+}; // namespace NullItemFirst
+namespace NullItemSecond {
+int value;
+}
+void NullItemFunction() {
+return;
+}; // function
+namespace NullItemThird {
+int value;
+}
+struct RequiredClassTerminator {
+int value;
+}; // class
+namespace NullItemFourth {
+int value;
+}
+enum RequiredEnumTerminator { Item }; // enum
+namespace NullItemFifth {
+int value;
+}

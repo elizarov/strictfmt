@@ -155,7 +155,7 @@ bool TrailingCommentReturnsToStructuralIndent(const PrintToken& token) {
     if (token.node == nullptr || token.node->parent == nullptr) {
         return false;
     }
-    if (SyntaxNodeKindHasClass(token.node->parent->kind, SyntaxNodeClass::CompoundBlock)) {
+    if (SyntaxNodeHasClass(*token.node->parent, SyntaxNodeClass::SourceItemScope)) {
         return true;
     }
     const SyntaxNode* previous = nullptr;
