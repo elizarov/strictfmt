@@ -120,6 +120,10 @@
         "named": true
       },
       {
+        "type": "macro_token_paste_expression",
+        "named": true
+      },
+      {
         "type": "member_pointer_declarator",
         "named": true
       },
@@ -285,6 +289,10 @@
       },
       {
         "type": "macro_qualified_identifier",
+        "named": true
+      },
+      {
+        "type": "macro_token_paste_expression",
         "named": true
       },
       {
@@ -1726,10 +1734,6 @@
         },
         {
           "type": "macro_statement_sequence_argument",
-          "named": true
-        },
-        {
-          "type": "macro_token_paste_expression",
           "named": true
         },
         {
@@ -3532,6 +3536,10 @@
           "named": true
         },
         {
+          "type": "macro_token_paste_expression",
+          "named": true
+        },
+        {
           "type": "template_function",
           "named": true
         },
@@ -4045,6 +4053,10 @@
         {
           "type": "field_identifier",
           "named": true
+        },
+        {
+          "type": "macro_token_paste_expression",
+          "named": true
         }
       ]
     }
@@ -4077,6 +4089,10 @@
           },
           {
             "type": "field_identifier",
+            "named": true
+          },
+          {
+            "type": "macro_token_paste_expression",
             "named": true
           },
           {
@@ -4139,6 +4155,10 @@
         },
         {
           "type": "initializer_list",
+          "named": true
+        },
+        {
+          "type": "macro_token_paste_expression",
           "named": true
         },
         {
@@ -5671,10 +5691,6 @@
           "named": true
         },
         {
-          "type": "macro_token_paste_call_expression",
-          "named": true
-        },
-        {
           "type": "preproc_if",
           "named": true
         },
@@ -5699,6 +5715,10 @@
           },
           {
             "type": "field_identifier",
+            "named": true
+          },
+          {
+            "type": "macro_token_paste_expression",
             "named": true
           },
           {
@@ -5994,10 +6014,6 @@
           "named": true
         },
         {
-          "type": "macro_token_paste_expression",
-          "named": true
-        },
-        {
           "type": "noexcept",
           "named": true
         },
@@ -6044,6 +6060,10 @@
         "types": [
           {
             "type": "field_identifier",
+            "named": true
+          },
+          {
+            "type": "macro_token_paste_expression",
             "named": true
           }
         ]
@@ -7134,10 +7154,6 @@
           "named": true
         },
         {
-          "type": "macro_token_paste_expression",
-          "named": true
-        },
-        {
           "type": "ms_call_modifier",
           "named": true
         },
@@ -7441,32 +7457,6 @@
         ]
       },
       "name": {
-        "multiple": false,
-        "required": true,
-        "types": [
-          {
-            "type": "macro_token_paste_expression",
-            "named": true
-          }
-        ]
-      }
-    }
-  },
-  {
-    "type": "macro_token_paste_call_expression",
-    "named": true,
-    "fields": {
-      "arguments": {
-        "multiple": false,
-        "required": true,
-        "types": [
-          {
-            "type": "argument_list",
-            "named": true
-          }
-        ]
-      },
-      "function": {
         "multiple": false,
         "required": true,
         "types": [
@@ -8315,6 +8305,10 @@
         "types": [
           {
             "type": "field_identifier",
+            "named": true
+          },
+          {
+            "type": "macro_token_paste_expression",
             "named": true
           }
         ]
@@ -12959,6 +12953,10 @@
             "named": true
           },
           {
+            "type": "macro_token_paste_expression",
+            "named": true
+          },
+          {
             "type": "new_expression",
             "named": true
           },
@@ -13353,6 +13351,10 @@
             "named": true
           },
           {
+            "type": "macro_token_paste_expression",
+            "named": true
+          },
+          {
             "type": "new_expression",
             "named": true
           },
@@ -13573,6 +13575,10 @@
         },
         {
           "type": "macro_qualified_identifier",
+          "named": true
+        },
+        {
+          "type": "macro_token_paste_expression",
           "named": true
         },
         {
@@ -13799,6 +13805,10 @@
           },
           {
             "type": "macro_qualified_identifier",
+            "named": true
+          },
+          {
+            "type": "macro_token_paste_expression",
             "named": true
           },
           {
@@ -14466,6 +14476,10 @@
           },
           {
             "type": "identifier",
+            "named": true
+          },
+          {
+            "type": "macro_token_paste_expression",
             "named": true
           },
           {
@@ -15553,6 +15567,10 @@
             "named": true
           },
           {
+            "type": "macro_token_paste_expression",
+            "named": true
+          },
+          {
             "type": "new_expression",
             "named": true
           },
@@ -16017,6 +16035,10 @@
             "named": true
           },
           {
+            "type": "macro_token_paste_expression",
+            "named": true
+          },
+          {
             "type": "new_expression",
             "named": true
           },
@@ -16401,6 +16423,10 @@
             "named": true
           },
           {
+            "type": "macro_token_paste_expression",
+            "named": true
+          },
+          {
             "type": "new_expression",
             "named": true
           },
@@ -16625,6 +16651,10 @@
         },
         {
           "type": "macro_template_argument_fragment",
+          "named": true
+        },
+        {
+          "type": "macro_token_paste_expression",
           "named": true
         },
         {
@@ -16942,6 +16972,10 @@
         "types": [
           {
             "type": "field_identifier",
+            "named": true
+          },
+          {
+            "type": "macro_token_paste_expression",
             "named": true
           },
           {

@@ -3594,3 +3594,27 @@ namespace BlankNamespace {
 void PreserveStatement() {return;}
 
 }
+
+namespace PastedNames {
+struct Record {
+    int value;
+    constexpr bool Hasvalue() const { return value != 0; }
+    constexpr int get_value() const { return value; }
+    template<class T> constexpr T as_value() const { return T(value); }
+};
+constexpr int k_value = 7;
+#define SELECT_VALUE(record, field) ((record).Has##field() ? (record).field : k_##field)
+#define READ_VALUE(record, field) ((record)->get_##field())
+#define ASSIGN_VALUE(record, field, result) (record).field##ue = result
+#define CONVERT_VALUE(record, field, Type) ((record).template as_##field<Type>())
+#define CHAIN_VALUE(record, part, rest) ((record).get_##part##rest())
+#define COMPUTE_VALUE(field) (k_##field + 2 * k_##field)
+using Int = int;
+constexpr Record record{3};
+static_assert(SELECT_VALUE(record, value) == 3);
+static_assert(READ_VALUE(&record, value) == 3);
+static_assert(CONVERT_VALUE(record, value, Int) == 3);
+static_assert(CHAIN_VALUE(record, val, ue) == 3);
+static_assert(COMPUTE_VALUE(value) == 21);
+void Assign(Record& target) { ASSIGN_VALUE(target, val, 2); }
+}

@@ -8248,6 +8248,10 @@
       "type": "CHOICE",
       "members": [
         {
+          "type": "SYMBOL",
+          "name": "macro_token_paste_expression"
+        },
+        {
           "type": "ALIAS",
           "content": {
             "type": "SYMBOL",
@@ -11566,10 +11570,6 @@
                       "members": [
                         {
                           "type": "SYMBOL",
-                          "name": "macro_token_paste_call_expression"
-                        },
-                        {
-                          "type": "SYMBOL",
                           "name": "initializer_pair"
                         },
                         {
@@ -11594,10 +11594,6 @@
                           {
                             "type": "CHOICE",
                             "members": [
-                              {
-                                "type": "SYMBOL",
-                                "name": "macro_token_paste_call_expression"
-                              },
                               {
                                 "type": "SYMBOL",
                                 "name": "initializer_pair"
@@ -13084,13 +13080,22 @@
       "value": "type_identifier"
     },
     "_field_identifier": {
-      "type": "ALIAS",
-      "content": {
-        "type": "SYMBOL",
-        "name": "identifier"
-      },
-      "named": true,
-      "value": "field_identifier"
+      "type": "CHOICE",
+      "members": [
+        {
+          "type": "ALIAS",
+          "content": {
+            "type": "SYMBOL",
+            "name": "identifier"
+          },
+          "named": true,
+          "value": "field_identifier"
+        },
+        {
+          "type": "SYMBOL",
+          "name": "macro_token_paste_expression"
+        }
+      ]
     },
     "_statement_identifier": {
       "type": "ALIAS",
@@ -13577,10 +13582,6 @@
         {
           "type": "SYMBOL",
           "name": "_macro_replacement_call_sequence"
-        },
-        {
-          "type": "SYMBOL",
-          "name": "macro_token_paste_expression"
         },
         {
           "type": "SYMBOL",
@@ -28815,10 +28816,6 @@
       "members": [
         {
           "type": "SYMBOL",
-          "name": "macro_token_paste_expression"
-        },
-        {
-          "type": "SYMBOL",
           "name": "macro_preprocessing_token_sequence_argument"
         },
         {
@@ -28959,31 +28956,6 @@
                   }
                 }
               ]
-            }
-          }
-        ]
-      }
-    },
-    "macro_token_paste_call_expression": {
-      "type": "PREC",
-      "value": 20,
-      "content": {
-        "type": "SEQ",
-        "members": [
-          {
-            "type": "FIELD",
-            "name": "function",
-            "content": {
-              "type": "SYMBOL",
-              "name": "macro_token_paste_expression"
-            }
-          },
-          {
-            "type": "FIELD",
-            "name": "arguments",
-            "content": {
-              "type": "SYMBOL",
-              "name": "argument_list"
             }
           }
         ]
@@ -29413,10 +29385,6 @@
                   "members": [
                     {
                       "type": "SYMBOL",
-                      "name": "macro_token_paste_call_expression"
-                    },
-                    {
-                      "type": "SYMBOL",
                       "name": "initializer_pair"
                     },
                     {
@@ -29495,10 +29463,6 @@
                       "members": [
                         {
                           "type": "SYMBOL",
-                          "name": "macro_token_paste_call_expression"
-                        },
-                        {
-                          "type": "SYMBOL",
                           "name": "initializer_pair"
                         },
                         {
@@ -29523,10 +29487,6 @@
                     {
                       "type": "CHOICE",
                       "members": [
-                        {
-                          "type": "SYMBOL",
-                          "name": "macro_token_paste_call_expression"
-                        },
                         {
                           "type": "SYMBOL",
                           "name": "initializer_pair"
@@ -29587,10 +29547,6 @@
               {
                 "type": "CHOICE",
                 "members": [
-                  {
-                    "type": "SYMBOL",
-                    "name": "macro_token_paste_call_expression"
-                  },
                   {
                     "type": "SYMBOL",
                     "name": "initializer_pair"
@@ -36347,6 +36303,10 @@
     ],
     [
       "template_type",
+      "template_method",
+      "dependent_field_identifier"
+    ],
+    [
       "template_method",
       "dependent_field_identifier"
     ],

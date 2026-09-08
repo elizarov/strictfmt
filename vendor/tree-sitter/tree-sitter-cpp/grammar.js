@@ -356,6 +356,7 @@ module.exports = grammar(C, {
     [$.qualified_field_identifier, $.template_method, $.template_type],
     [$.qualified_field_identifier, $.template_method],
     [$.template_type, $.template_method, $.dependent_field_identifier],
+    [$.template_method, $.dependent_field_identifier],
     [$._function_declaration_declarator, $._function_attributes_start],
     [$.top_level_item_macro, $.function_prefix_macro],
     [$.top_level_item_macro, $.function_prefix_macro, $.calling_convention_macro],
@@ -643,7 +644,6 @@ module.exports = grammar(C, {
     _macro_replacement_fragment_sequence: $ => choice(
       $._macro_replacement_function_header_sequence,
       $._macro_replacement_call_sequence,
-      $.macro_token_paste_expression,
       $.macro_string_replacement_item,
       $.macro_expression_item,
       seq(
@@ -2982,7 +2982,6 @@ module.exports = grammar(C, {
     ))),
 
     _macro_argument_list_item: $ => choice(
-      $.macro_token_paste_expression,
       $.macro_preprocessing_token_sequence_argument,
       $.macro_preprocessing_token_call,
       $.function_pointer_type_descriptor,
@@ -3012,11 +3011,6 @@ module.exports = grammar(C, {
         field('operator', '##'),
         field('right', choice($.identifier, $.preprocessing_number)),
       )),
-    )),
-
-    macro_token_paste_call_expression: $ => prec(PREC.CALL + 5, seq(
-      field('function', $.macro_token_paste_expression),
-      field('arguments', $.argument_list),
     )),
 
     macro_preprocessing_token_sequence_argument: $ => {
@@ -3111,6 +3105,7 @@ module.exports = grammar(C, {
     // Expressions
 
     _expression_not_binary: ($, original) => choice(
+      $.macro_token_paste_expression,
       alias($.conditional_concatenated_string, $.concatenated_string),
       alias($.delete_array_expression, $.delete_expression),
       alias($.bare_macro_identifier, $.identifier),
@@ -3145,7 +3140,6 @@ module.exports = grammar(C, {
 
     initializer_list: $ => {
       const item = choice(
-        $.macro_token_paste_call_expression,
         $.initializer_pair,
         $.expression,
         $._braced_initializer_clause,
@@ -3181,7 +3175,6 @@ module.exports = grammar(C, {
 
     _initializer_list_with_preproc: $ => {
       const item = choice(
-        $.macro_token_paste_call_expression,
         $.initializer_pair,
         $.expression,
         $._braced_initializer_clause,
@@ -3520,6 +3513,8 @@ module.exports = grammar(C, {
       'delete',
       field('argument', $.expression),
     )),
+
+    _field_identifier: ($, original) => choice(original, $.macro_token_paste_expression),
 
     field_expression: $ => seq(
       prec(PREC.FIELD, seq(
