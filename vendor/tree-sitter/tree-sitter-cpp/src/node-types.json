@@ -296,6 +296,10 @@
         "named": true
       },
       {
+        "type": "macro_expansion",
+        "named": true
+      },
+      {
         "type": "macro_qualified_identifier",
         "named": true
       },
@@ -1715,6 +1719,10 @@
           "named": true
         },
         {
+          "type": "macro_expansion",
+          "named": true
+        },
+        {
           "type": "macro_qualified_identifier",
           "named": true
         },
@@ -2930,6 +2938,10 @@
           },
           {
             "type": "macro_call_expression",
+            "named": true
+          },
+          {
+            "type": "macro_expansion",
             "named": true
           },
           {
@@ -7154,6 +7166,50 @@
     "type": "macro_empty_statement_argument",
     "named": true,
     "fields": {}
+  },
+  {
+    "type": "macro_expansion",
+    "named": true,
+    "fields": {
+      "arguments": {
+        "multiple": false,
+        "required": false,
+        "types": [
+          {
+            "type": "macro_argument_list",
+            "named": true
+          },
+          {
+            "type": "preprocessing_token_argument_list",
+            "named": true
+          }
+        ]
+      },
+      "function": {
+        "multiple": false,
+        "required": false,
+        "types": [
+          {
+            "type": "semicolonless_call_macro_identifier",
+            "named": true
+          },
+          {
+            "type": "semicolonless_preprocessor_call_macro_identifier",
+            "named": true
+          }
+        ]
+      }
+    },
+    "children": {
+      "multiple": false,
+      "required": false,
+      "types": [
+        {
+          "type": "bare_macro_identifier",
+          "named": true
+        }
+      ]
+    }
   },
   {
     "type": "macro_expression_item",
@@ -13653,6 +13709,10 @@
             "named": true
           },
           {
+            "type": "macro_expansion",
+            "named": true
+          },
+          {
             "type": "macro_qualified_identifier",
             "named": true
           },
@@ -14055,6 +14115,10 @@
             "named": true
           },
           {
+            "type": "macro_expansion",
+            "named": true
+          },
+          {
             "type": "macro_qualified_identifier",
             "named": true
           },
@@ -14283,6 +14347,10 @@
         },
         {
           "type": "macro_call_expression",
+          "named": true
+        },
+        {
+          "type": "macro_expansion",
           "named": true
         },
         {
@@ -14521,6 +14589,10 @@
           },
           {
             "type": "macro_call_expression",
+            "named": true
+          },
+          {
+            "type": "macro_expansion",
             "named": true
           },
           {
@@ -16255,6 +16327,10 @@
             "named": true
           },
           {
+            "type": "macro_expansion",
+            "named": true
+          },
+          {
             "type": "macro_qualified_identifier",
             "named": true
           },
@@ -16727,6 +16803,10 @@
             "named": true
           },
           {
+            "type": "macro_expansion",
+            "named": true
+          },
+          {
             "type": "macro_qualified_identifier",
             "named": true
           },
@@ -17119,6 +17199,10 @@
             "named": true
           },
           {
+            "type": "macro_expansion",
+            "named": true
+          },
+          {
             "type": "macro_qualified_identifier",
             "named": true
           },
@@ -17347,6 +17431,10 @@
         },
         {
           "type": "macro_call_expression",
+          "named": true
+        },
+        {
+          "type": "macro_expansion",
           "named": true
         },
         {

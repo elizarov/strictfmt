@@ -123,7 +123,7 @@ void Exercise(bool enabled) {
 
 ### BareIdentifierMacros
 
-`BareIdentifierMacros` names macro identifiers used as bare tokens in supported non-call positions. A configured token remains valid as an expression atom when the same project also passes it as a normal call argument or binary-expression operand.
+`BareIdentifierMacros` names macro identifiers used as bare tokens in supported non-call positions. A bare token may supply a fragment of an enum or braced initializer list. A configured token remains valid as an expression atom when the same project also passes it as a normal call argument or binary-expression operand.
 
 **Calling-convention modifier:** the macro appears in a declarator where a platform calling-convention token is expected.
 
@@ -293,7 +293,7 @@ class MockValue {
 
 ### SemicolonlessCallMacros
 
-`SemicolonlessCallMacros` names function-like macro invocations that form complete declaration or statement items without requiring a trailing semicolon. Each invocation remains one item, including when adjacent to another item or a control-body delimiter. Configured calls retain their category inside structured macro replacements.
+`SemicolonlessCallMacros` names function-like macro invocations that form complete declaration or statement items without requiring a trailing semicolon, or supply fragments of enum and braced initializer lists. Each invocation remains one item, including when adjacent to another item or a control-body delimiter. Configured calls retain their category inside structured macro replacements.
 
 <!-- .cpp-format
 MacroCategories:

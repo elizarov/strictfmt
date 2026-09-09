@@ -73,7 +73,7 @@ function cppNonBinaryExpressions($, base) {
     $.macro_token_paste_expression,
     alias($.conditional_concatenated_string, $.concatenated_string),
     alias($.delete_array_expression, $.delete_expression),
-    alias($.bare_macro_identifier, $.identifier),
+    $.macro_expansion,
     $.macro_qualified_identifier,
     base,
     $.reflect_expression,
@@ -230,6 +230,12 @@ module.exports = grammar(C, {
   ],
 
   conflicts: $ => [
+    [$.expression],
+    [$.enumerator_list, $.expression],
+    [$.expression, $._initializer_list_with_preproc],
+    [$.macro_expansion, $._callable_template_callee],
+    [$.macro_call_expression, $.macro_expansion],
+    [$.macro_expansion, $.macro_qualified_identifier],
     [$.operator_cast_field_identifier, $._scope_name],
     [$.expression, $.template_function, $._conditional_alternative],
     [$.expression, $.template_function],
@@ -971,6 +977,11 @@ module.exports = grammar(C, {
       prec.right(PREC.CALL + 2, semicolonlessMacroCall($)),
     ),
 
+    macro_expansion: $ => prec.dynamic(1, choice(
+      $.bare_macro_identifier,
+      prec(PREC.CALL, semicolonlessMacroCall($)),
+    )),
+
     macro_call_identifier: $ => choice(
       $.call_syntax_macro_identifier,
       $.semicolonless_call_macro_identifier,
@@ -1087,7 +1098,7 @@ module.exports = grammar(C, {
     ...preprocIf('_in_field_declaration_list', $ => $._field_declaration_list_item, 2),
     ...preprocIf(
       '_in_enumerator_list',
-      $ => seq($.enumerator, ','),
+      $ => choice(seq($.enumerator, ','), seq($.macro_expansion, optional(','))),
       0,
       PREPROC_IFDEF | PREPROC_ELSE,
       false,
@@ -1506,6 +1517,7 @@ module.exports = grammar(C, {
       '{',
       repeat(choice(
         seq(choice($.enumerator, $.macro_call_item), ','),
+        seq($.macro_expansion, optional(',')),
         alias($.preproc_if_in_enumerator_list, $.preproc_if),
         alias($.preproc_ifdef_in_enumerator_list, $.preproc_ifdef),
         seq($.preproc_call, ','),
@@ -3346,10 +3358,12 @@ module.exports = grammar(C, {
     _initializer_list_with_preproc: $ => {
       const item = initializerClause($);
       const preprocItem = choice(
+        // Prefer a complete C++ expression over an expansion followed by another expression.
+        seq(prec.dynamic(-1, $.macro_expansion), optional(',')),
         $.preproc_include,
         preprocListItem($, '_in_initializer_list', PREPROC_IFDEF | PREPROC_ELSE),
       );
-      return prec(-1, seq(
+      return prec.right(-1, seq(
         repeat(seq(item, ',')),
         preprocItem,
         repeat(choice(

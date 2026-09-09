@@ -662,7 +662,7 @@ private:
             if (token.inMacroValue || token.macroDefinition != nullptr) {
                 return false;
             }
-            if (token.inMacroStatementSequence) {
+            if (token.inMacroStatementSequence || token.inMacroListExpansion) {
                 return false;
             }
             if (token.inLeadingStreamOperatorChain || token.inConditionalStreamOperatorChain) {
@@ -1028,15 +1028,40 @@ private:
         }
     }
 
-    void PrepareBareMacroItemBoundary(const PrintToken* previous, const PrintToken& current) {
-        if (previous == nullptr || current.kind == PrintTokenKind::TrailingComment || !previous->inBareMacroItem) {
+    static const SyntaxNode* StructuralMacroExpansionOwner(const PrintToken& token) {
+        if (!token.inMacroListExpansion) {
+            return nullptr;
+        }
+        for (const SyntaxNode* node = token.node; node != nullptr; node = node->parent) {
+            const SyntaxNode* list = MacroExpansionList(*node);
+            if (list != nullptr) {
+                return list->kind == SyntaxNodeKind::EnumeratorList ||
+                    SyntaxNodeHasClass(*list, SyntaxNodeClass::ContainsListPreprocessor) ? node : nullptr;
+            }
+        }
+        return nullptr;
+    }
+
+    void PrepareMacroItemBoundary(const PrintToken* previous, const PrintToken& current) {
+        if (
+            previous == nullptr ||
+            current.kind == PrintTokenKind::TrailingComment ||
+            current.syntaxKind == SyntaxNodeKind::Comma
+        ) {
+            return;
+        }
+        const SyntaxNode* previousListItem = StructuralMacroExpansionOwner(*previous);
+        if (
+            !previous->inBareMacroItem &&
+            (previousListItem == nullptr || previousListItem == StructuralMacroExpansionOwner(current))
+        ) {
             return;
         }
         if (HasBufferedLineText()) {
             FlushPendingTokens();
         }
         if (output_.State().lineHasText) {
-            NewLine(ShouldContinueMacroLine(*previous, &current));
+            NewLineWithIndent(CurrentLineIndentLevel(), ShouldContinueMacroLine(*previous, &current));
         }
     }
 
@@ -1194,7 +1219,7 @@ private:
             FlushPendingTokens();
             BlankLine(token.inMacroValue);
         }
-        PrepareBareMacroItemBoundary(rawPrevious, token);
+        PrepareMacroItemBoundary(rawPrevious, token);
         PrepareMacroBoundary(rawPrevious, token);
         if (token.kind == PrintTokenKind::BlankLine) {
             pendingSourceBlankLine_ = pendingSourceBlankLine_ || !pendingTokens_.empty();

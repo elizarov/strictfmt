@@ -6,6 +6,19 @@ inline bool IsNonTokenPreprocessorDirective(const SyntaxNode& node) {
     return node.kind == SyntaxNodeKind::MacroDefinition || node.kind == SyntaxNodeKind::PreprocCall;
 }
 
+inline const SyntaxNode* MacroExpansionList(const SyntaxNode& node) {
+    if (node.kind != SyntaxNodeKind::MacroExpansion) {
+        return nullptr;
+    }
+    const SyntaxNode* parent = node.parent;
+    while (parent != nullptr && SyntaxNodeHasClass(*parent, SyntaxNodeClass::ConditionalPreprocessorTree)) {
+        parent = parent->parent;
+    }
+    return parent != nullptr &&
+        (parent->kind == SyntaxNodeKind::InitializerList || parent->kind == SyntaxNodeKind::EnumeratorList) ? parent :
+        nullptr;
+}
+
 // Direct-child lexical queries shared by structural printing and continuation
 // planning. These preserve the parser's nesting and do not search descendants.
 inline const SyntaxNode* DirectTokenChild(const SyntaxNode& node, SyntaxNodeKind known) {

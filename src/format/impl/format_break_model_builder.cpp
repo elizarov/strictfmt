@@ -514,6 +514,8 @@ private:
         }
         AppendListItem(delimited, item, blankLineBefore);
         delimited.items.back().bracedInitializerRecord = IsBracedInitializerRecord(itemChildren);
+        delimited.items.back().preserveSeparator =
+            itemChildren.size() == 1 && itemChildren.front()->kind == SyntaxNodeKind::MacroExpansion;
         itemChildren.clear();
     }
 
@@ -559,6 +561,9 @@ private:
                 continue;
             }
             FormatBreakListItem& item = list.items[index - 1];
+            if (item.preserveSeparator) {
+                return;
+            }
             list.splitTrailingCommaItem = index - 1;
             if (FormatBreakTokenSyntaxKind(item.separator) == SyntaxNodeKind::Comma) {
                 item.separator = {};
@@ -3293,6 +3298,14 @@ private:
                 pendingBlankLine = false;
             }
             itemChildren.push_back(child);
+            if (
+                child->kind == SyntaxNodeKind::MacroExpansion &&
+                FormatBreakTokenValue(*open).parentKind == SyntaxNodeKind::InitializerList
+            ) {
+                AppendDelimitedItem(*delimited, itemChildren, *open, depth, blankLineBeforeCurrentItem);
+                blankLineBeforeCurrentItem = false;
+                delimited->forceSplit = true;
+            }
             if (
                 child->kind == SyntaxNodeKind::MacroStatementSequence &&
                 std::any_of(child->children.begin(), child->children.end(), [](const SyntaxNode* statementChild) {

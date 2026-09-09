@@ -103,7 +103,10 @@ bool EnsureTerminalComma(FormatModel& model, SyntaxNode& node, size_t index) {
     if (!structural || SyntaxNodeHasClass(*children[*structural], SyntaxNodeClass::OpeningDelimiter)) {
         return false;
     }
-    if (SyntaxNodeHasClass(*children[*structural], SyntaxNodeClass::IncludeDirective)) {
+    if (
+        children[*structural]->kind == SyntaxNodeKind::MacroExpansion ||
+        SyntaxNodeHasClass(*children[*structural], SyntaxNodeClass::IncludeDirective)
+    ) {
         return false;
     }
     if (structural && children[*structural]->kind == SyntaxNodeKind::Comma) {

@@ -715,7 +715,7 @@ Without groups, retain source order and blank-separated blocks. Blank lines befo
 
 ## Comma Normalization
 
-For every non-empty comma-separated list inside `{ ... }`, omit the trailing comma in compact and packed layouts and add it in one-item-per-line layout. Remove trailing commas from lists with other delimiters, except for [macro argument separators](macro.md#macro-arguments). Place the terminal comma before trailing definitions or token-free directives. Do not insert a comma after an include-supplied fragment; its separators belong to the included source.
+For every non-empty comma-separated list inside `{ ... }`, omit the trailing comma in compact and packed layouts and add it in one-item-per-line layout. Remove trailing commas from lists with other delimiters, except for [macro argument separators](macro.md#macro-arguments). Place the terminal comma before trailing definitions or token-free directives. Do not insert a comma after an include-supplied fragment; its separators belong to the included source. Preserve the caller-written separators of configured bare or semicolonless macro expansions that form whole list fragments, and place each expansion on its own line.
 
 <!-- .cpp-format
 ColumnLimit: 30

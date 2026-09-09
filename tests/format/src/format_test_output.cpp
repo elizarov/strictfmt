@@ -7405,3 +7405,107 @@ void Check() { FORMAT_LAMBDA_CALLBACK(1); }
 static_assert(sizeof(Record) > 0 && sizeof(Choice) > 0 && static_cast<unsigned>(Enum::Second) == 1);
 
 }
+
+namespace GeneratedListFragments {
+
+#define FORMAT_SEMILESS_GENERATE(X) \
+    X(First, 2) \
+    X(Second, 3)
+#define FORMAT_SEMILESS_EMPTY(X)
+#define FORMAT_SEMILESS_SINGLE(X) X(Third, 4)
+#define FORMAT_LIST_ENUM(name, value) name = value,
+enum class Generated {
+    Zero = 0,
+    FORMAT_SEMILESS_EMPTY(FORMAT_LIST_ENUM)
+    FORMAT_SEMILESS_GENERATE(FORMAT_LIST_ENUM)
+    FORMAT_SEMILESS_SINGLE(FORMAT_LIST_ENUM)
+    Last = 5,
+};
+
+#undef FORMAT_LIST_ENUM
+constexpr int kValues[] = {
+    0,
+#define FORMAT_LIST_ENTRY(name, value) value,
+    FORMAT_SEMILESS_EMPTY(FORMAT_LIST_ENTRY)
+    FORMAT_SEMILESS_GENERATE(FORMAT_LIST_ENTRY)
+    FORMAT_SEMILESS_SINGLE(FORMAT_LIST_ENTRY)
+#undef FORMAT_LIST_ENTRY
+    5,
+};
+
+#define FORMAT_PARAMETER_SUFFIX_LIST 6, 7,
+#define FORMAT_PARAMETER_SUFFIX_EMPTY
+constexpr int kBare[] = {
+    0,
+    FORMAT_PARAMETER_SUFFIX_LIST
+    FORMAT_PARAMETER_SUFFIX_EMPTY
+    8,
+};
+constexpr int kBareFinal[] = {
+    FORMAT_PARAMETER_SUFFIX_LIST
+};
+#define FORMAT_PARAMETER_SUFFIX_VALUE 9
+constexpr int kExplicitComma[] = {
+    FORMAT_PARAMETER_SUFFIX_VALUE,
+};
+constexpr int kExpression[] = {FORMAT_PARAMETER_SUFFIX_VALUE + 1};
+#define FORMAT_SEMILESS_VALUE() 10
+constexpr int kCallComma[] = {
+    FORMAT_SEMILESS_VALUE(),
+};
+constexpr int kCallExpression[] = {FORMAT_SEMILESS_VALUE() + 1};
+constexpr int kConditional[] = {
+#if defined(FORMAT_GENERATOR_ALTERNATIVE)
+    FORMAT_PARAMETER_SUFFIX_LIST
+#else
+    FORMAT_PARAMETER_SUFFIX_LIST
+#endif
+    8,
+};
+
+#define FORMAT_PARAMETER_SUFFIX_ENUM One, Two,
+enum class BareEnum {
+    FORMAT_PARAMETER_SUFFIX_ENUM
+    Last,
+};
+
+enum class ConditionalEnum {
+#if defined(FORMAT_GENERATOR_ALTERNATIVE)
+    FORMAT_PARAMETER_SUFFIX_ENUM
+#else
+    FORMAT_PARAMETER_SUFFIX_ENUM
+#endif
+    Last,
+};
+
+constexpr int kNested[][3] = {
+    {
+        FORMAT_PARAMETER_SUFFIX_LIST
+        8,
+    }, {
+        FORMAT_PARAMETER_SUFFIX_LIST
+        9,
+    },
+};
+constexpr int kNegative[] = {FORMAT_PARAMETER_SUFFIX_LIST - 1};
+#define FORMAT_SEMILESS_TEXT() "x"
+constexpr const char* kText[] = {FORMAT_SEMILESS_TEXT()"y"};
+#define FORMAT_TYPE_GENERATED(name) \
+    enum class name { \
+        FORMAT_PARAMETER_SUFFIX_ENUM \
+        Last, \
+    }
+FORMAT_TYPE_GENERATED(MacroEnum);
+static_assert(kNested[1][2] == 9 && sizeof(kNegative) / sizeof(int) == 3 && kNegative[2] == -1);
+static_assert(kText[0][0] == 'x' && kText[0][1] == 'y' && static_cast<int>(MacroEnum::Last) == 2);
+static_assert(static_cast<int>(Generated::Last) == 5 && static_cast<int>(Generated::Second) == 3);
+static_assert(sizeof(kValues) / sizeof(int) == 5 && kValues[1] == 2 && kValues[4] == 5);
+static_assert(sizeof(kBare) / sizeof(int) == 4 && kBare[3] == 8);
+static_assert(sizeof(kBareFinal) / sizeof(int) == 2 && kBareFinal[1] == 7);
+static_assert(sizeof(kExpression) / sizeof(int) == 1 && sizeof(kCallExpression) / sizeof(int) == 1);
+static_assert(kExplicitComma[0] == 9 && kExpression[0] == 10 && kCallComma[0] == 10 && kCallExpression[0] == 11);
+static_assert(
+    kConditional[2] == 8 && static_cast<int>(BareEnum::Last) == 2 && static_cast<int>(ConditionalEnum::Last) == 2
+);
+
+}
