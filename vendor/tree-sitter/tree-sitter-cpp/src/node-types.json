@@ -6682,6 +6682,14 @@
         {
           "type": "expression",
           "named": true
+        },
+        {
+          "type": "initializer_list",
+          "named": true
+        },
+        {
+          "type": "initializer_pair",
+          "named": true
         }
       ]
     }

@@ -68,6 +68,10 @@ function cppStatements($, base = C.grammar.rules._non_case_statement) {
   );
 }
 
+function initializerClause($) {
+  return choice($.initializer_pair, $.expression, $._braced_initializer_clause);
+}
+
 function templateDeclarationItem($, qualifiedFunction = $.qualified_type_function_definition, declaration = $.declaration) {
   return choice(
     $._empty_declaration,
@@ -693,7 +697,6 @@ module.exports = grammar(C, {
       ),
       $.macro_declaration_fragment,
       $.macro_arrow_chain,
-      $.initializer_list,
       $.ms_call_modifier,
     ),
 
@@ -714,7 +717,7 @@ module.exports = grammar(C, {
     )),
 
     macro_expression_item: $ => seq(
-      commaSep1($.expression),
+      commaSep1(initializerClause($)),
       optional(','),
     ),
 
@@ -3176,11 +3179,7 @@ module.exports = grammar(C, {
     ),
 
     initializer_list: $ => {
-      const item = choice(
-        $.initializer_pair,
-        $.expression,
-        $._braced_initializer_clause,
-      );
+      const item = initializerClause($);
       return seq(
         '{',
         choice(
@@ -3211,11 +3210,7 @@ module.exports = grammar(C, {
     ),
 
     _initializer_list_with_preproc: $ => {
-      const item = choice(
-        $.initializer_pair,
-        $.expression,
-        $._braced_initializer_clause,
-      );
+      const item = initializerClause($);
       const preprocItem = preprocListItem($, '_in_initializer_list', PREPROC_IFDEF | PREPROC_ELSE);
       return prec(-1, seq(
         repeat(seq(item, ',')),

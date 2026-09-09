@@ -4051,3 +4051,27 @@ Box<Result> (FORMAT_DECLARATOR_ATTRIBUTE(unused) *another_pointer)(int);
 #undef FORMAT_DECLARATOR_MODIFIER
 #undef FORMAT_DECLARATOR_ATTRIBUTE
 }
+
+namespace MacroInitializerClauses {
+struct Pair { int first; int second; };
+struct Record { Pair pair; };
+#define FORMAT_INITIALIZER_FIELD(name, value) .name = (value)
+#define FORMAT_INITIALIZER_FIELDS(first_value, second_value) .first = (first_value), .second = (second_value)
+#define FORMAT_INITIALIZER_BRACED(name, ...) .name{__VA_ARGS__}
+#define FORMAT_INITIALIZER_RECORDS(value) {(value), (value) + 1}, {(value) + 2, (value) + 3},
+#define FORMAT_INITIALIZER_NESTED(value) .pair = {FORMAT_INITIALIZER_FIELDS(value, (value) + 1)},
+#define FORMAT_INITIALIZER_PASTE(name, value) .name##st = (value),
+constexpr Pair fields{FORMAT_INITIALIZER_FIELD(first, 1), FORMAT_INITIALIZER_FIELD(second, 2)};
+constexpr Record braced{FORMAT_INITIALIZER_BRACED(pair, 3, 4)};
+constexpr Pair records[]{FORMAT_INITIALIZER_RECORDS(5)};
+constexpr Record nested{FORMAT_INITIALIZER_NESTED(9)};
+constexpr Pair pasted{FORMAT_INITIALIZER_PASTE(fir, 11) .second = 12};
+static_assert(fields.second == 2 && braced.pair.first == 3 && records[1].second == 8);
+static_assert(nested.pair.second == 10 && pasted.first == 11);
+#undef FORMAT_INITIALIZER_FIELD
+#undef FORMAT_INITIALIZER_FIELDS
+#undef FORMAT_INITIALIZER_BRACED
+#undef FORMAT_INITIALIZER_RECORDS
+#undef FORMAT_INITIALIZER_NESTED
+#undef FORMAT_INITIALIZER_PASTE
+}

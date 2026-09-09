@@ -13715,10 +13715,6 @@
         },
         {
           "type": "SYMBOL",
-          "name": "initializer_list"
-        },
-        {
-          "type": "SYMBOL",
           "name": "ms_call_modifier"
         }
       ]
@@ -13797,8 +13793,21 @@
           "type": "SEQ",
           "members": [
             {
-              "type": "SYMBOL",
-              "name": "expression"
+              "type": "CHOICE",
+              "members": [
+                {
+                  "type": "SYMBOL",
+                  "name": "initializer_pair"
+                },
+                {
+                  "type": "SYMBOL",
+                  "name": "expression"
+                },
+                {
+                  "type": "SYMBOL",
+                  "name": "_braced_initializer_clause"
+                }
+              ]
             },
             {
               "type": "REPEAT",
@@ -13810,8 +13819,21 @@
                     "value": ","
                   },
                   {
-                    "type": "SYMBOL",
-                    "name": "expression"
+                    "type": "CHOICE",
+                    "members": [
+                      {
+                        "type": "SYMBOL",
+                        "name": "initializer_pair"
+                      },
+                      {
+                        "type": "SYMBOL",
+                        "name": "expression"
+                      },
+                      {
+                        "type": "SYMBOL",
+                        "name": "_braced_initializer_clause"
+                      }
+                    ]
                   }
                 ]
               }
