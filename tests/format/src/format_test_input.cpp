@@ -5030,3 +5030,45 @@ void UseTrace() { FORMAT_TYPE_TRACE(42); }
 #undef FORMAT_TYPE_SPECIALIZED_HEADER
 #undef FORMAT_TYPE_TEMPLATE_HEADER
 }
+
+namespace GuardedNamespaceOpeners {
+#if 1
+namespace {int Anonymous(){return 1;}
+#endif
+}
+#define FORMAT_GUARDED_NAMESPACE_ENABLED 1
+#ifdef FORMAT_GUARDED_NAMESPACE_ENABLED
+using Number=int;
+namespace Named {namespace Inner {Number Twice(Number value){return value*2;}}
+#endif
+}
+#ifndef FORMAT_GUARDED_NAMESPACE_SEEN
+#define FORMAT_GUARDED_NAMESPACE_SEEN
+struct Prefix {int value;};
+namespace HeaderGuard {namespace Nested {int Read(Prefix value){return value.value;}}
+#endif // FORMAT_GUARDED_NAMESPACE_SEEN
+} // HeaderGuard
+#if FORMAT_GUARDED_NAMESPACE_ENABLED
+inline namespace Version {template<class T>T Identity(T value){return value;}
+#endif
+}
+#ifdef FORMAT_GUARDED_NAMESPACE_ENABLED
+namespace [[deprecated]] Attributed {int value=1;
+#endif
+}
+#ifndef FORMAT_GUARDED_NAMESPACE_OTHER
+namespace Outer::Inner {int Sum(int left,int right){return left+right;}
+#endif
+}
+#if 1
+namespace NestedGuard {
+#ifdef FORMAT_GUARDED_NAMESPACE_ENABLED
+namespace Deep {struct Value{int data;};
+#endif
+}
+int Twice(int value){return value*2;}
+#endif
+}
+#undef FORMAT_GUARDED_NAMESPACE_SEEN
+#undef FORMAT_GUARDED_NAMESPACE_ENABLED
+}

@@ -232,6 +232,7 @@ module.exports = grammar(C, {
   ],
 
   conflicts: $ => [
+    [$._preproc_opening_condition, $.preproc_ifdef_in_top_level, $.preproc_ifdef_in_function_return_type, $.preproc_ifdef_in_function_definition_prefix, $.preproc_guarded_namespace_definition],
     [$.qualified_type_function_definition, $._macro_qualified_declaration_specifiers, $._declaration_declarator_list],
     [$.declaration, $.qualified_type_function_definition, $._macro_qualified_declaration_specifiers],
     [$.class_macro_call_item, $.macro_function_definition],
@@ -2552,7 +2553,7 @@ module.exports = grammar(C, {
       }));
     },
 
-    namespace_definition: $ => prec(1, seq(
+    _namespace_definition_header: $ => seq(
       optional('inline'),
       'namespace',
       optional($.attribute_declaration),
@@ -2561,19 +2562,31 @@ module.exports = grammar(C, {
           $._namespace_identifier,
           $.nested_namespace_specifier,
         ))),
+    ),
+
+    namespace_definition: $ => prec(1, seq(
+      $._namespace_definition_header,
       field('body', $.namespace_declaration_list),
     )),
 
-    preproc_guarded_namespace_definition: $ => prec.dynamic(1, prec(1, seq(
-      preprocessor('if'),
-      field('condition', $._preproc_expression),
+    preproc_guarded_namespace_definition: $ => prec.dynamic(1, seq(
+      preprocOpeningCondition($),
       $._preproc_directive_end,
-      'namespace',
+      repeat($._top_level_item),
+      alias($._preproc_guarded_namespace, $.namespace_definition),
+    )),
+
+    _preproc_guarded_namespace: $ => seq(
+      $._namespace_definition_header,
+      field('body', alias($._preproc_guarded_namespace_body, $.namespace_declaration_list)),
+    ),
+
+    _preproc_guarded_namespace_body: $ => seq(
       '{',
       repeat($._top_level_item),
       preprocessor('endif'),
       '}',
-    ))),
+    ),
 
     namespace_declaration_list: $ => seq(
       '{',

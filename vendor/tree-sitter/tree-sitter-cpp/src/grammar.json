@@ -27092,6 +27092,64 @@
         }
       ]
     },
+    "_namespace_definition_header": {
+      "type": "SEQ",
+      "members": [
+        {
+          "type": "CHOICE",
+          "members": [
+            {
+              "type": "STRING",
+              "value": "inline"
+            },
+            {
+              "type": "BLANK"
+            }
+          ]
+        },
+        {
+          "type": "STRING",
+          "value": "namespace"
+        },
+        {
+          "type": "CHOICE",
+          "members": [
+            {
+              "type": "SYMBOL",
+              "name": "attribute_declaration"
+            },
+            {
+              "type": "BLANK"
+            }
+          ]
+        },
+        {
+          "type": "FIELD",
+          "name": "name",
+          "content": {
+            "type": "CHOICE",
+            "members": [
+              {
+                "type": "CHOICE",
+                "members": [
+                  {
+                    "type": "SYMBOL",
+                    "name": "_namespace_identifier"
+                  },
+                  {
+                    "type": "SYMBOL",
+                    "name": "nested_namespace_specifier"
+                  }
+                ]
+              },
+              {
+                "type": "BLANK"
+              }
+            ]
+          }
+        }
+      ]
+    },
     "namespace_definition": {
       "type": "PREC",
       "value": 1,
@@ -27099,57 +27157,8 @@
         "type": "SEQ",
         "members": [
           {
-            "type": "CHOICE",
-            "members": [
-              {
-                "type": "STRING",
-                "value": "inline"
-              },
-              {
-                "type": "BLANK"
-              }
-            ]
-          },
-          {
-            "type": "STRING",
-            "value": "namespace"
-          },
-          {
-            "type": "CHOICE",
-            "members": [
-              {
-                "type": "SYMBOL",
-                "name": "attribute_declaration"
-              },
-              {
-                "type": "BLANK"
-              }
-            ]
-          },
-          {
-            "type": "FIELD",
-            "name": "name",
-            "content": {
-              "type": "CHOICE",
-              "members": [
-                {
-                  "type": "CHOICE",
-                  "members": [
-                    {
-                      "type": "SYMBOL",
-                      "name": "_namespace_identifier"
-                    },
-                    {
-                      "type": "SYMBOL",
-                      "name": "nested_namespace_specifier"
-                    }
-                  ]
-                },
-                {
-                  "type": "BLANK"
-                }
-              ]
-            }
+            "type": "SYMBOL",
+            "name": "_namespace_definition_header"
           },
           {
             "type": "FIELD",
@@ -27166,77 +27175,172 @@
       "type": "PREC_DYNAMIC",
       "value": 1,
       "content": {
-        "type": "PREC",
-        "value": 1,
-        "content": {
-          "type": "SEQ",
-          "members": [
-            {
-              "type": "ALIAS",
-              "content": {
-                "type": "TOKEN",
-                "content": {
-                  "type": "PREC",
-                  "value": 1,
-                  "content": {
-                    "type": "PATTERN",
-                    "value": "#[ \\t]*if[ \\t]+"
+        "type": "SEQ",
+        "members": [
+          {
+            "type": "CHOICE",
+            "members": [
+              {
+                "type": "SEQ",
+                "members": [
+                  {
+                    "type": "ALIAS",
+                    "content": {
+                      "type": "TOKEN",
+                      "content": {
+                        "type": "PREC",
+                        "value": 1,
+                        "content": {
+                          "type": "PATTERN",
+                          "value": "#[ \\t]*if[ \\t]+"
+                        }
+                      }
+                    },
+                    "named": false,
+                    "value": "#if"
+                  },
+                  {
+                    "type": "FIELD",
+                    "name": "condition",
+                    "content": {
+                      "type": "SYMBOL",
+                      "name": "_preproc_expression"
+                    }
                   }
-                }
+                ]
               },
-              "named": false,
-              "value": "#if"
-            },
-            {
-              "type": "FIELD",
-              "name": "condition",
-              "content": {
-                "type": "SYMBOL",
-                "name": "_preproc_expression"
+              {
+                "type": "SEQ",
+                "members": [
+                  {
+                    "type": "CHOICE",
+                    "members": [
+                      {
+                        "type": "ALIAS",
+                        "content": {
+                          "type": "TOKEN",
+                          "content": {
+                            "type": "PREC",
+                            "value": 1,
+                            "content": {
+                              "type": "PATTERN",
+                              "value": "#[ \\t]*ifdef[ \\t]+"
+                            }
+                          }
+                        },
+                        "named": false,
+                        "value": "#ifdef"
+                      },
+                      {
+                        "type": "ALIAS",
+                        "content": {
+                          "type": "TOKEN",
+                          "content": {
+                            "type": "PREC",
+                            "value": 1,
+                            "content": {
+                              "type": "PATTERN",
+                              "value": "#[ \\t]*ifndef[ \\t]+"
+                            }
+                          }
+                        },
+                        "named": false,
+                        "value": "#ifndef"
+                      }
+                    ]
+                  },
+                  {
+                    "type": "FIELD",
+                    "name": "name",
+                    "content": {
+                      "type": "SYMBOL",
+                      "name": "identifier"
+                    }
+                  }
+                ]
               }
-            },
-            {
+            ]
+          },
+          {
+            "type": "SYMBOL",
+            "name": "_preproc_directive_end"
+          },
+          {
+            "type": "REPEAT",
+            "content": {
               "type": "SYMBOL",
-              "name": "_preproc_directive_end"
-            },
-            {
-              "type": "STRING",
-              "value": "namespace"
-            },
-            {
-              "type": "STRING",
-              "value": "{"
-            },
-            {
-              "type": "REPEAT",
-              "content": {
-                "type": "SYMBOL",
-                "name": "_top_level_item"
-              }
-            },
-            {
-              "type": "ALIAS",
-              "content": {
-                "type": "TOKEN",
-                "content": {
-                  "type": "PREC",
-                  "value": 1,
-                  "content": {
-                    "type": "PATTERN",
-                    "value": "#[ \\t]*endif"
-                  }
-                }
-              },
-              "named": false,
-              "value": "#endif"
-            },
-            {
-              "type": "STRING",
-              "value": "}"
+              "name": "_top_level_item"
             }
-          ]
-        }
+          },
+          {
+            "type": "ALIAS",
+            "content": {
+              "type": "SYMBOL",
+              "name": "_preproc_guarded_namespace"
+            },
+            "named": true,
+            "value": "namespace_definition"
+          }
+        ]
       }
+    },
+    "_preproc_guarded_namespace": {
+      "type": "SEQ",
+      "members": [
+        {
+          "type": "SYMBOL",
+          "name": "_namespace_definition_header"
+        },
+        {
+          "type": "FIELD",
+          "name": "body",
+          "content": {
+            "type": "ALIAS",
+            "content": {
+              "type": "SYMBOL",
+              "name": "_preproc_guarded_namespace_body"
+            },
+            "named": true,
+            "value": "namespace_declaration_list"
+          }
+        }
+      ]
+    },
+    "_preproc_guarded_namespace_body": {
+      "type": "SEQ",
+      "members": [
+        {
+          "type": "STRING",
+          "value": "{"
+        },
+        {
+          "type": "REPEAT",
+          "content": {
+            "type": "SYMBOL",
+            "name": "_top_level_item"
+          }
+        },
+        {
+          "type": "ALIAS",
+          "content": {
+            "type": "TOKEN",
+            "content": {
+              "type": "PREC",
+              "value": 1,
+              "content": {
+                "type": "PATTERN",
+                "value": "#[ \\t]*endif"
+              }
+            }
+          },
+          "named": false,
+          "value": "#endif"
+        },
+        {
+          "type": "STRING",
+          "value": "}"
+        }
+      ]
     },
     "namespace_declaration_list": {
       "type": "SEQ",
@@ -38037,6 +38141,13 @@
     }
   ],
   "conflicts": [
+    [
+      "_preproc_opening_condition",
+      "preproc_ifdef_in_top_level",
+      "preproc_ifdef_in_function_return_type",
+      "preproc_ifdef_in_function_definition_prefix",
+      "preproc_guarded_namespace_definition"
+    ],
     [
       "qualified_type_function_definition",
       "_macro_qualified_declaration_specifiers",

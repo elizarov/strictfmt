@@ -2164,7 +2164,7 @@ class FormatCommandTests(unittest.TestCase):
             (
                 "partially guarded namespace",
                 "#if FEATURE\nnamespace {\nint x;\n#endif\n}\n",
-                "#if FEATURE\nnamespace {\nint x;\n#endif\n}\n",
+                "#if FEATURE\nnamespace {\n\nint x;\n#endif\n\n}\n",
             ),
             (
                 "conditional ends before consequence",
