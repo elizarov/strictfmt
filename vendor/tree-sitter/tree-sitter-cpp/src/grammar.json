@@ -22298,29 +22298,32 @@
               "type": "SEQ",
               "members": [
                 {
-                  "type": "CHOICE",
-                  "members": [
-                    {
-                      "type": "SYMBOL",
-                      "name": "macro_method_call_qualifier"
-                    },
-                    {
-                      "type": "SYMBOL",
-                      "name": "type_qualifier"
-                    },
-                    {
-                      "type": "SYMBOL",
-                      "name": "virtual_specifier"
-                    },
-                    {
-                      "type": "SYMBOL",
-                      "name": "noexcept"
-                    },
-                    {
-                      "type": "SYMBOL",
-                      "name": "identifier"
-                    }
-                  ]
+                  "type": "REPEAT1",
+                  "content": {
+                    "type": "CHOICE",
+                    "members": [
+                      {
+                        "type": "SYMBOL",
+                        "name": "macro_method_call_qualifier"
+                      },
+                      {
+                        "type": "SYMBOL",
+                        "name": "type_qualifier"
+                      },
+                      {
+                        "type": "SYMBOL",
+                        "name": "virtual_specifier"
+                      },
+                      {
+                        "type": "SYMBOL",
+                        "name": "noexcept"
+                      },
+                      {
+                        "type": "SYMBOL",
+                        "name": "identifier"
+                      }
+                    ]
+                  }
                 },
                 {
                   "type": "REPEAT",
@@ -22332,29 +22335,32 @@
                         "value": ","
                       },
                       {
-                        "type": "CHOICE",
-                        "members": [
-                          {
-                            "type": "SYMBOL",
-                            "name": "macro_method_call_qualifier"
-                          },
-                          {
-                            "type": "SYMBOL",
-                            "name": "type_qualifier"
-                          },
-                          {
-                            "type": "SYMBOL",
-                            "name": "virtual_specifier"
-                          },
-                          {
-                            "type": "SYMBOL",
-                            "name": "noexcept"
-                          },
-                          {
-                            "type": "SYMBOL",
-                            "name": "identifier"
-                          }
-                        ]
+                        "type": "REPEAT1",
+                        "content": {
+                          "type": "CHOICE",
+                          "members": [
+                            {
+                              "type": "SYMBOL",
+                              "name": "macro_method_call_qualifier"
+                            },
+                            {
+                              "type": "SYMBOL",
+                              "name": "type_qualifier"
+                            },
+                            {
+                              "type": "SYMBOL",
+                              "name": "virtual_specifier"
+                            },
+                            {
+                              "type": "SYMBOL",
+                              "name": "noexcept"
+                            },
+                            {
+                              "type": "SYMBOL",
+                              "name": "identifier"
+                            }
+                          ]
+                        }
                       }
                     ]
                   }

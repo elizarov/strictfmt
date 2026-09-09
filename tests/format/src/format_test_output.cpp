@@ -6784,3 +6784,17 @@ struct Values {
 #undef FORMAT_PARAMETER_SUFFIX
 
 }
+
+namespace MacroQualifierSequences {
+
+#define FORMAT_TYPE_METHOD(Return, Name, Parameters, Qualifiers)
+struct Values {
+    FORMAT_TYPE_METHOD(int, Single, (), (const));
+    FORMAT_TYPE_METHOD(int, Adjacent, (), (const override));
+    FORMAT_TYPE_METHOD(int, Mixed, (int), (const volatile, noexcept(true) override final));
+    FORMAT_TYPE_METHOD(int, Calls, (), (Calltype(__stdcall) const, ref(&), override));
+    FORMAT_TYPE_METHOD(int, Empty, (), ());
+};
+#undef FORMAT_TYPE_METHOD
+
+}

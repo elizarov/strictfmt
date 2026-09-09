@@ -1905,13 +1905,13 @@ module.exports = grammar(C, {
 
     macro_method_qualifier_list: $ => seq(
       '(',
-      commaSep(choice(
+      commaSep(repeat1(choice(
         $.macro_method_call_qualifier,
         $.type_qualifier,
         $.virtual_specifier,
         $.noexcept,
         $.identifier,
-      )),
+      ))),
       ')',
     ),
 
