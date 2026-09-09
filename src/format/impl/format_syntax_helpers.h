@@ -2,6 +2,10 @@
 
 #include "format/impl/format_model.h"
 
+inline bool IsNonTokenPreprocessorDirective(const SyntaxNode& node) {
+    return node.kind == SyntaxNodeKind::MacroDefinition || node.kind == SyntaxNodeKind::PreprocCall;
+}
+
 // Direct-child lexical queries shared by structural printing and continuation
 // planning. These preserve the parser's nesting and do not search descendants.
 inline const SyntaxNode* DirectTokenChild(const SyntaxNode& node, SyntaxNodeKind known) {

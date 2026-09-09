@@ -277,6 +277,7 @@ constexpr auto kSyntaxKindMappings = std::to_array<SyntaxKindMapping>({
     ),
     Tree(SyntaxNodeKind::InitStatement, "init_statement"),
     Tree(SyntaxNodeKind::PreprocCall, "preproc_call", kAtomicPreprocessorClasses),
+    Tree(SyntaxNodeKind::PreprocCall, "preproc_nonconditional", kAtomicPreprocessorClasses),
     Tree(SyntaxNodeKind::MacroDefinition, "preproc_def", Bit(SyntaxNodeClass::MacroDefinition)),
     Tree(SyntaxNodeKind::MacroDefinition, "preproc_function_def", Bit(SyntaxNodeClass::MacroDefinition)),
     Tree(

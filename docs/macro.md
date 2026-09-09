@@ -12,7 +12,7 @@ Macro argument lists permit empty and comment-only arguments in any position. `C
 
 ## Macro Replacements
 
-Structured macro definitions are the default. Their replacement parses as a structured token stream and parse tree, and the formatter owns its complete layout. Macro replacement lists that form declaration fragments are recursively formatted before continuation backslashes are added.
+Structured macro definitions are the default. Their replacement parses as a structured token stream and parse tree, and the formatter owns its complete layout. Macro replacement lists that form type specifiers or declaration fragments are recursively formatted before continuation backslashes are added.
 
 Token pasting, nested macro calls whose arguments are preprocessing-token sequences, and balanced parenthesized preprocessing tokens remain explicit recursive grammar nodes. They may use token-level rather than C++ expression-level structure because macro expansion determines their eventual C++ role, but they must not be collapsed into an opaque formatter leaf.
 

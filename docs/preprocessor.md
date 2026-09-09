@@ -4,6 +4,8 @@ This document describes handling of preprocessor directives, conditional compila
 
 The custom scanner owns the lexical distinction between directive-ending line breaks and ordinary line-break whitespace; see [scanner.md](scanner.md).
 
+Macro definitions, `#undef`, `#pragma`, `#line`, `#error`, `#warning`, `#using`, and null directives may occur between C++ tokens. They remain structured directive nodes and do not replace required C++ punctuation. Definitions retain the replacement rules in [macro.md](macro.md).
+
 ## Supported Conditional Compilation and Local Includes
 
 This is the closed list of placements that are explicitly supported.

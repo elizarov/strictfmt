@@ -12,6 +12,13 @@
 
 namespace {
 
+struct ProblemNode {
+    bool missing = false;
+    TSNode node = {};
+};
+
+std::string ParseProblemMessage(const ProblemNode& problem);
+
 std::string_view NodeText(TSNode node, std::string_view source) {
     const uint32_t start = ts_node_start_byte(node);
     const uint32_t end = ts_node_end_byte(node);
@@ -138,6 +145,44 @@ void AppendTsChildren(
     FormatModel& model, TSNode tsNode, std::string_view source, SyntaxNode& parent, uint32_t childCount
 );
 
+bool ContainsOnlyLineSplices(std::string_view text) {
+    while (!text.empty()) {
+        if (text.starts_with("\\\r\n")) {
+            text.remove_prefix(3);
+        } else if (text.starts_with("\\\n")) {
+            text.remove_prefix(2);
+        } else {
+            return false;
+        }
+    }
+    return true;
+}
+
+void ValidateLiteralSuffix(FormatModel& model, TSNode literal, std::string_view source) {
+    uint32_t previousEnd = ts_node_start_byte(literal);
+    const uint32_t count = ts_node_child_count(literal);
+    for (uint32_t index = 0; index < count; ++index) {
+        const TSNode child = ts_node_child(literal, index);
+        if (ts_node_is_extra(child)) {
+            continue;
+        }
+        const uint32_t start = ts_node_start_byte(child);
+        if (
+            std::string_view(ts_node_type(child)) == "literal_suffix" &&
+            start >= previousEnd &&
+            start <= source.size() &&
+            !ContainsOnlyLineSplices(source.substr(previousEnd, start - previousEnd))
+        ) {
+            model.parse.ok = false;
+            if (!model.parse.error.empty()) {
+                model.parse.error.push_back('\n');
+            }
+            model.parse.error += ParseProblemMessage({.missing = false, .node = child});
+        }
+        previousEnd = ts_node_end_byte(child);
+    }
+}
+
 SyntaxNode*
     BuildNode(FormatModel& model, TSNode tsNode, std::string_view source, const SyntaxNode* parent, TsNodeSyntax syntax)
 {
@@ -145,6 +190,10 @@ SyntaxNode*
     node->parent = parent;
     node->depth = parent == nullptr ? 0 : parent->depth + 1;
     node->classes = syntax.classes;
+
+    if (syntax.kind == SyntaxNodeKind::UserDefinedLiteral) {
+        ValidateLiteralSuffix(model, tsNode, source);
+    }
 
     if (ts_node_is_missing(tsNode)) {
         node->kind = SyntaxNodeKind::Missing;
@@ -327,11 +376,6 @@ void AppendTsChildren(
     }
     ts_tree_cursor_delete(&cursor);
 }
-
-struct ProblemNode {
-    bool missing = false;
-    TSNode node = {};
-};
 
 void CollectProblemNodes(TSNode node, std::vector<ProblemNode>& problems) {
     if (ts_node_is_missing(node)) {
@@ -520,14 +564,12 @@ FormatModel BuildFormatModel(TSNode root, std::unique_ptr<std::string> sourceTex
     model.nodes.reserve(source.size() * 2 + 64);
 
     const bool hasParseProblems = ts_node_has_error(root) || ts_node_is_missing(root);
+    model.parse.ok = !hasParseProblems;
     if (hasParseProblems) {
         model.parse = ParseFailure(root);
     }
 
     model.root = BuildNode(model, root, source, nullptr, GetTsNodeSyntax(root));
     GroupOpeningIncludeRuns(model, *model.root);
-    if (!hasParseProblems) {
-        model.parse.ok = true;
-    }
     return model;
 }

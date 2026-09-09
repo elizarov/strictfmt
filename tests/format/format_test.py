@@ -67,6 +67,8 @@ UNSUPPORTED_OUTPUT_FIXTURE = Path("src") / "format_unsupported_output.cpp"
 UNSUPPORTED_WARNINGS_FIXTURE = Path("src") / "format_unsupported_output.txt"
 ERROR_INPUT_FIXTURE = Path("src") / "format_error_input.cpp"
 ERROR_OUTPUT_FIXTURE = Path("src") / "format_error_output.txt"
+DIRECTIVE_TOKEN_ERROR_INPUT_FIXTURE = Path("src") / "format_directive_token_error_input.cpp"
+DIRECTIVE_TOKEN_ERROR_OUTPUT_FIXTURE = Path("src") / "format_directive_token_error_output.txt"
 USERVER_FORMAT_CONFIG = TEST_ROOT / ".cpp-format-userver"
 DEFAULT_FORMAT_CONFIG = TEST_ROOT / ".cpp-format"
 OPTIMIZATION_FORMAT_CONFIG = TEST_ROOT / ".cpp-format-optimization"
@@ -555,17 +557,21 @@ class FormatCommandTests(unittest.TestCase):
         )
 
     def test_error_stdin_reports_expected_parse_errors(self) -> None:
-        result = native_format(
-            "--stdin",
-            "--style",
-            str(USERVER_FORMAT_CONFIG),
-            cwd=TEST_ROOT,
-            input_text=read_fixture(ERROR_INPUT_FIXTURE),
-        )
-
-        self.assertEqual(1, result.returncode, msg=f"stdout:\n{result.stdout}\n\nstderr:\n{result.stderr}")
-        self.assertEqual("", result.stdout)
-        self.assertEqual(read_fixture(ERROR_OUTPUT_FIXTURE), result.stderr)
+        for source, expected in (
+            (ERROR_INPUT_FIXTURE, ERROR_OUTPUT_FIXTURE),
+            (DIRECTIVE_TOKEN_ERROR_INPUT_FIXTURE, DIRECTIVE_TOKEN_ERROR_OUTPUT_FIXTURE),
+        ):
+            with self.subTest(source=source.name):
+                result = native_format(
+                    "--stdin",
+                    "--style",
+                    str(USERVER_FORMAT_CONFIG),
+                    cwd=TEST_ROOT,
+                    input_text=read_fixture(source),
+                )
+                self.assertEqual(1, result.returncode, msg=f"stdout:\n{result.stdout}\n\nstderr:\n{result.stderr}")
+                self.assertEqual("", result.stdout)
+                self.assertEqual(read_fixture(expected), result.stderr)
 
     def test_missing_include_categories_preserves_opening_include_blocks(self) -> None:
         build_dir = TEST_TEMP_ROOT

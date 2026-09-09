@@ -25,6 +25,8 @@ enum TokenType {
     SEMICOLONLESS_PREPROCESSOR_CALL_MACRO_IDENTIFIER,
     PREPROC_DIRECTIVE_END,
     LINE_BREAK_WHITESPACE,
+    MACRO_DEFINITION_START,
+    NONCONDITIONAL_DIRECTIVE_START,
 };
 
 enum MacroCategory {
@@ -44,6 +46,7 @@ enum MacroCategory {
 #define MAX_MACRO_NAME_LENGTH 256
 
 typedef struct {
+    bool in_directive;
     uint8_t delimiter_length;
     wchar_t delimiter[MAX_DELIMITER_LENGTH];
 } Scanner;
@@ -494,6 +497,40 @@ void *tree_sitter_cpp_external_scanner_create() {
     return scanner;
 }
 
+static bool scan_preprocessor_start(Scanner *scanner, TSLexer *lexer, const bool *valid_symbols) {
+    advance(lexer);
+    scan_horizontal_whitespace(lexer);
+    char keyword[16];
+    unsigned length = 0;
+    while (is_identifier_continue(lexer->lookahead)) {
+        if (length + 1 >= sizeof(keyword)) {
+            return false;
+        }
+        keyword[length++] = (char)lexer->lookahead;
+        advance(lexer);
+    }
+    keyword[length] = '\0';
+    if (valid_symbols[MACRO_DEFINITION_START] && strcmp(keyword, "define") == 0 &&
+        (lexer->lookahead == ' ' || lexer->lookahead == '\t')) {
+        scan_horizontal_whitespace(lexer);
+        lexer->mark_end(lexer);
+        scanner->in_directive = true;
+        lexer->result_symbol = MACRO_DEFINITION_START;
+        return true;
+    }
+    if (valid_symbols[NONCONDITIONAL_DIRECTIVE_START] &&
+        (strcmp(keyword, "undef") == 0 || strcmp(keyword, "pragma") == 0 ||
+         strcmp(keyword, "line") == 0 || strcmp(keyword, "error") == 0 ||
+         strcmp(keyword, "warning") == 0 || strcmp(keyword, "using") == 0 ||
+         (length == 0 && (lexer->lookahead == '\n' || lexer->lookahead == '\r' || lexer->eof(lexer))))) {
+        lexer->mark_end(lexer);
+        scanner->in_directive = true;
+        lexer->result_symbol = NONCONDITIONAL_DIRECTIVE_START;
+        return true;
+    }
+    return false;
+}
+
 bool tree_sitter_cpp_external_scanner_scan(void *payload, TSLexer *lexer, const bool *valid_symbols) {
     Scanner *scanner = (Scanner *)payload;
 
@@ -507,6 +544,11 @@ bool tree_sitter_cpp_external_scanner_scan(void *payload, TSLexer *lexer, const 
     if (!raw_string_ambiguous && valid_symbols[RAW_STRING_CONTENT]) {
         lexer->result_symbol = RAW_STRING_CONTENT;
         return scan_raw_string_content(scanner, lexer);
+    }
+
+    if ((valid_symbols[MACRO_DEFINITION_START] || valid_symbols[NONCONDITIONAL_DIRECTIVE_START]) &&
+        !scanner->in_directive && lexer->lookahead == '#') {
+        return scan_preprocessor_start(scanner, lexer, valid_symbols);
     }
 
     if (valid_symbols[RAW_MACRO_REPLACEMENT]) {
@@ -524,6 +566,7 @@ bool tree_sitter_cpp_external_scanner_scan(void *payload, TSLexer *lexer, const 
             lexer->mark_end(lexer);
         }
         if (scan_newline(lexer) || lexer->eof(lexer)) {
+            scanner->in_directive = false;
             lexer->result_symbol = PREPROC_DIRECTIVE_END;
             return true;
         }
@@ -541,12 +584,16 @@ bool tree_sitter_cpp_external_scanner_scan(void *payload, TSLexer *lexer, const 
                 return false;
             }
             lexer->mark_end(lexer);
+            scanner->in_directive = false;
             lexer->result_symbol = PREPROC_DIRECTIVE_END;
             return true;
         }
         if (horizontal && valid_symbols[LINE_BREAK_WHITESPACE] &&
             !valid_symbols[RAW_MACRO_DEFINITION_IDENTIFIER] &&
-            (has_valid_macro_identifier(lexer, valid_symbols) ||
+            ((!scanner->in_directive &&
+              (valid_symbols[MACRO_DEFINITION_START] || valid_symbols[NONCONDITIONAL_DIRECTIVE_START]) &&
+              lexer->lookahead == '#') ||
+             has_valid_macro_identifier(lexer, valid_symbols) ||
              (valid_symbols[MACRO_TOKEN_PASTE_NUMBER_PREFIX] && has_token_paste_number_prefix(lexer)))) {
             lexer->result_symbol = LINE_BREAK_WHITESPACE;
             return true;
@@ -563,6 +610,9 @@ bool tree_sitter_cpp_external_scanner_scan(void *payload, TSLexer *lexer, const 
         }
 
         bool line_break = scan_newline(lexer);
+        if (line_break && scanner->in_directive) {
+            return false;
+        }
         if (!line_break && lexer->lookahead == '\\') {
             advance(lexer);
             line_break = scan_newline(lexer);
@@ -575,7 +625,10 @@ bool tree_sitter_cpp_external_scanner_scan(void *payload, TSLexer *lexer, const 
         }
 
         if (horizontal && !valid_symbols[RAW_MACRO_DEFINITION_IDENTIFIER] &&
-            (has_valid_macro_identifier(lexer, valid_symbols) ||
+            ((!scanner->in_directive &&
+              (valid_symbols[MACRO_DEFINITION_START] || valid_symbols[NONCONDITIONAL_DIRECTIVE_START]) &&
+              lexer->lookahead == '#') ||
+             has_valid_macro_identifier(lexer, valid_symbols) ||
              (valid_symbols[MACRO_TOKEN_PASTE_NUMBER_PREFIX] && has_token_paste_number_prefix(lexer)))) {
             lexer->result_symbol = LINE_BREAK_WHITESPACE;
             return true;
@@ -639,22 +692,23 @@ bool tree_sitter_cpp_external_scanner_scan(void *payload, TSLexer *lexer, const 
 }
 
 unsigned tree_sitter_cpp_external_scanner_serialize(void *payload, char *buffer) {
-    static_assert(MAX_DELIMITER_LENGTH * sizeof(wchar_t) < TREE_SITTER_SERIALIZATION_BUFFER_SIZE,
-                  "Serialized delimiter is too long!");
-
     Scanner *scanner = (Scanner *)payload;
-    size_t size = scanner->delimiter_length * sizeof(wchar_t);
-    memcpy(buffer, scanner->delimiter, size);
-    return (unsigned)size;
+    unsigned delimiter_bytes = scanner->delimiter_length * sizeof(wchar_t);
+    buffer[0] = scanner->in_directive;
+    memcpy(buffer + 1, scanner->delimiter, delimiter_bytes);
+    return 1 + delimiter_bytes;
 }
 
 void tree_sitter_cpp_external_scanner_deserialize(void *payload, const char *buffer, unsigned length) {
-    assert(length % sizeof(wchar_t) == 0 && "Can't decode serialized delimiter!");
-
     Scanner *scanner = (Scanner *)payload;
-    scanner->delimiter_length = length / sizeof(wchar_t);
+    reset(scanner);
+    scanner->in_directive = length > 0 && buffer[0];
     if (length > 0) {
-        memcpy(&scanner->delimiter[0], buffer, length);
+        --length;
+        assert(length % sizeof(wchar_t) == 0 && length <= sizeof(scanner->delimiter) &&
+               "Can't decode serialized delimiter!");
+        scanner->delimiter_length = length / sizeof(wchar_t);
+        memcpy(scanner->delimiter, buffer + 1, length);
     }
 }
 

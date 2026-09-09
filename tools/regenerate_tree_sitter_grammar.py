@@ -38,12 +38,15 @@ LEXICAL_GRAMMAR_TERMINALS = frozenset({
     "preprocessing_number",
     "primitive_type",
     "pure_virtual_zero",
+    "string_literal",
     "suffixed_string_literal",
     "system_lib_string",
     "true",
 })
 LEXICAL_EXTERNAL_TOKENS = frozenset({
     "_line_break_whitespace",
+    "macro_definition_start",
+    "nonconditional_directive_start",
     "_preproc_directive_end",
     "bare_macro_identifier",
     "call_syntax_macro_identifier",

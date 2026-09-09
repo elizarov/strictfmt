@@ -104,20 +104,23 @@ struct FormatListContinuation::Impl {
     }
 
     static bool StartsPreprocessorSplitList(const PrintToken& token) {
-        if (token.kind != PrintTokenKind::Preprocessor) {
+        if (token.node == nullptr || (
+            token.kind != PrintTokenKind::Preprocessor &&
+            token.syntaxKind != SyntaxNodeKind::PreprocessorDirectiveDefine
+        )) {
             return false;
         }
         if (PrintTokenSyntaxHasClass(token, SyntaxNodeClass::ConditionalPreprocessorOpen)) {
             return true;
         }
-        if (!PrintTokenSyntaxHasClass(token, SyntaxNodeClass::IncludeDirective) || token.node == nullptr) {
-            return false;
-        }
         for (const SyntaxNode* parent = token.node->parent; parent != nullptr; parent = parent->parent) {
             if (SyntaxNodeHasClass(*parent, SyntaxNodeClass::PreprocessorSplitList)) {
                 return true;
             }
-            if (!SyntaxNodeHasClass(*parent, SyntaxNodeClass::ConditionalPreprocessorTree)) {
+            if (
+                !SyntaxNodeHasClass(*parent, SyntaxNodeClass::ConditionalPreprocessorTree) &&
+                parent != token.macroDefinition
+            ) {
                 return false;
             }
         }

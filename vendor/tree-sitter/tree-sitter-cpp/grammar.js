@@ -215,12 +215,18 @@ module.exports = grammar(C, {
     $.semicolonless_preprocessor_call_macro_identifier,
     $._preproc_directive_end,
     $._line_break_whitespace,
+    $.macro_definition_start,
+    $.nonconditional_directive_start,
   ],
 
   extras: $ => [
     /[ \t\f\v]|\\\r?\n[ \t]*/,
     $._line_break_whitespace,
     $.comment,
+    // Definitions and token-free directives may occur between C++ tokens.
+    $.preproc_def,
+    $.preproc_function_def,
+    $.preproc_nonconditional,
   ],
 
   conflicts: $ => [
@@ -565,8 +571,6 @@ module.exports = grammar(C, {
       $.type_definition,
       $._empty_declaration,
       $.preproc_include,
-      $.preproc_def,
-      $.preproc_function_def,
       $.preproc_call,
       $.preproc_using,
       $.conditional_extern_c_open,
@@ -601,8 +605,6 @@ module.exports = grammar(C, {
     _block_item: $ => choice(
       $.preproc_unbalanced_else_block,
       prec(2, $.preproc_call),
-      prec(2, $.preproc_def),
-      prec(2, $.preproc_function_def),
       $.preproc_value_declaration,
       $.block_macro_call_line_item,
       $.block_macro_call_statement_item,
@@ -707,13 +709,13 @@ module.exports = grammar(C, {
 
     preproc_def: $ => choice(
       prec(2, seq(
-        preprocessor('define'),
+        alias($.macro_definition_start, '#define'),
         field('name', alias($.raw_macro_definition_identifier, $.identifier)),
         field('value', optional($.raw_macro_replacement)),
         $._preproc_directive_end,
       )),
       prec(1, seq(
-        preprocessor('define'),
+        alias($.macro_definition_start, '#define'),
         field('name', choice($.identifier, $.call_syntax_macro_identifier, $.bare_macro_identifier)),
         choice(
           field('value', $.macro_attribute_replacement_list),
@@ -725,14 +727,14 @@ module.exports = grammar(C, {
 
     preproc_function_def: $ => choice(
       prec(2, seq(
-        preprocessor('define'),
+        alias($.macro_definition_start, '#define'),
         field('name', alias($.raw_macro_definition_identifier, $.identifier)),
         field('parameters', $.preproc_params),
         field('value', optional($.raw_macro_replacement)),
         $._preproc_directive_end,
       )),
       prec(1, seq(
-        preprocessor('define'),
+        alias($.macro_definition_start, '#define'),
         field('name', choice($.identifier, $.call_syntax_macro_identifier, $.bare_macro_identifier)),
         field('parameters', $.preproc_params),
         choice(
@@ -751,6 +753,12 @@ module.exports = grammar(C, {
         $.identifier,
         alias($.preproc_call_expression, $.call_expression),
       )),
+      $._preproc_directive_end,
+    ),
+
+    preproc_nonconditional: $ => seq(
+      field('directive', alias($.nonconditional_directive_start, $.preproc_directive)),
+      field('argument', optional($.preproc_arg)),
       $._preproc_directive_end,
     ),
 
@@ -828,6 +836,7 @@ module.exports = grammar(C, {
         optional($.macro_expression_item),
       ),
       $.macro_declaration_fragment,
+      prec.dynamic(-1, $.type_specifier),
       $.macro_arrow_chain,
       $.ms_call_modifier,
     ),
@@ -1859,7 +1868,7 @@ module.exports = grammar(C, {
       $.macro_method_declaration,
       alias($.qualified_macro_initialized_field_declaration, $.field_declaration),
       $.static_assert_declaration,
-      prec(-10, original),
+      prec(-10, choice(...original.members.filter(member => !['preproc_def', 'preproc_function_def'].includes(member.name)))),
       $.attributed_friend_declaration,
       $.template_declaration,
       alias($.operator_cast_definition, $.function_definition),
@@ -4307,6 +4316,12 @@ module.exports = grammar(C, {
       preprocessor('endif'),
       $._preproc_directive_end,
     ),
+
+    string_literal: _ => token(seq(
+      choice('L"', 'u"', 'U"', 'u8"', '"'),
+      repeat(choice(/[^\\"\n]+/, C.grammar.rules.escape_sequence)),
+      '"',
+    )),
 
     suffixed_string_literal: _ => token(prec(
       2,

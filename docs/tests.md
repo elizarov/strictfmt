@@ -134,3 +134,6 @@ and exist only to exercise one command or configuration edge.
 - `tests/format/src/format_error_input.cpp` ->
   `tests/format/src/format_error_output.txt`: golden diagnostics for recovered
   parse errors.
+- `tests/format/src/format_directive_token_error_input.cpp` ->
+  `tests/format/src/format_directive_token_error_output.txt`: directives cannot
+  join a literal to a nonadjacent user-defined suffix.

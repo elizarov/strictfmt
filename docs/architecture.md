@@ -48,7 +48,7 @@ Print-token construction materializes canonical known-token text and immutable s
 - `src/format/impl/format_include_sort.h|cpp` own include run normalization, grouping, main-include detection, and sorting.
 - `src/format/impl/format_model.h|cpp` own format model storage/construction, parent/depth maintenance, and shared node-dependent compact-body facts.
 - `src/format/impl/format_syntax_info.h|cpp` own node kinds, `SyntaxNodeClass`, canonical spellings, parser-symbol mappings, and immutable syntax metadata; category checks must use `SyntaxNodeClass` helpers, not duplicated `SyntaxNodeKind` lists, with exact kind comparisons reserved for one concrete syntax rule.
-- `src/format/impl/format_model_builder.h|cpp` own conversion from tree-sitter nodes to the format model, source trivia, declarator-field preservation, and opening include-run grouping.
+- `src/format/impl/format_model_builder.h|cpp` own conversion from tree-sitter nodes to the format model, source trivia, declarator-field preservation, and opening include-run grouping. Source-range validation also enforces adjacency for split literal tokens, allowing line splices.
 - `src/format/impl/format_model_normalize.h|cpp` own bottom-up syntax normalization and materialized semantic facts on formatter-owned nodes.
 - `src/format/impl/format_preprocessor_validation.h|cpp` own preprocessor placement validation.
 - `src/format/impl/format_model_dump.h|cpp` own syntax-tree and break-tree dump command orchestration.

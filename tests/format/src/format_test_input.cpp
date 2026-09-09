@@ -4544,3 +4544,119 @@ template<class Target, class Source> Target Convert(Source& source) { return sou
 template<class Traits, class Source> auto Dependent(Source& source) { return source.operator typename Traits::Type(); }
 template<class Traits, class Source> auto DependentTemplate(Source& source) { return source.operator typename Traits::template Type<int>(); }
 }
+
+namespace TransparentDirectives {
+enum class Value {
+#define FORMAT_LIST_VALUE 1
+One=FORMAT_LIST_VALUE,
+#undef FORMAT_LIST_VALUE
+#define FORMAT_LIST_VALUE 2
+Two=FORMAT_LIST_VALUE
+#undef FORMAT_LIST_VALUE
+};
+constexpr int kValues[] = {
+#define FORMAT_LIST_VALUE 1
+FORMAT_LIST_VALUE,
+#undef FORMAT_LIST_VALUE
+#define FORMAT_LIST_VALUE 2
+FORMAT_LIST_VALUE
+#undef FORMAT_LIST_VALUE
+};
+constexpr int kSeparatorGap[] = {
+1
+#define FORMAT_LIST_VALUE 2
+,
+FORMAT_LIST_VALUE
+#undef FORMAT_LIST_VALUE
+,
+};
+constexpr int kConditional[] = {
+#if defined(FORMAT_LIST_ALTERNATIVE)
+#define FORMAT_LIST_VALUE 3
+FORMAT_LIST_VALUE,
+#undef FORMAT_LIST_VALUE
+#else
+#define FORMAT_LIST_VALUE 4
+FORMAT_LIST_VALUE,
+#undef FORMAT_LIST_VALUE
+#endif
+5
+};
+static_assert(static_cast<int>(Value::Two)==2);
+static_assert(kValues[0]==1 && kValues[1]==2);
+static_assert(kSeparatorGap[0]==1 && kSeparatorGap[1]==2);
+#if defined(FORMAT_LIST_ALTERNATIVE)
+static_assert(kConditional[0]==3);
+#else
+static_assert(kConditional[0]==4);
+#endif
+constexpr int kExpression = 1
+#define FORMAT_LIST_OPERAND 2
++ FORMAT_LIST_OPERAND
+#undef FORMAT_LIST_OPERAND
+;
+using Integer=int;
+constexpr int Sum(int first,
+#define FORMAT_LIST_PARAMETER Integer
+FORMAT_LIST_PARAMETER second
+#undef FORMAT_LIST_PARAMETER
+) { return first+second; }
+constexpr int kCall = Sum(
+#define FORMAT_LIST_ARGUMENT 3
+FORMAT_LIST_ARGUMENT,
+#undef FORMAT_LIST_ARGUMENT
+4
+);
+constexpr int kNested[][2] = {
+{
+#define FORMAT_LIST_ARGUMENT 1
+FORMAT_LIST_ARGUMENT, 2
+#undef FORMAT_LIST_ARGUMENT
+},
+{3,4}
+};
+#if 0
+#error #define THIS_IS_DIAGNOSTIC_TEXT 1
+#warning #undef THIS_IS_DIAGNOSTIC_TEXT
+#endif
+constexpr const char* kDefinitionText="#define UNEXPANDED 1\n";
+constexpr const char* kControlText="#undef UNEXPANDED\n";
+constexpr const char* kRawText=R"tag(
+#define UNEXPANDED 2
+#undef UNEXPANDED
+)tag";
+#define FORMAT_LIST_RAW_TEXT R"tag(
+#define UNEXPANDED 3
+#undef UNEXPANDED
+)tag"
+static_assert(sizeof(FORMAT_LIST_RAW_TEXT)>1);
+#undef FORMAT_LIST_RAW_TEXT
+static_assert(kExpression==3 && kCall==7 && kNested[0][0]==1);
+constexpr unsigned long long operator""_quantity(unsigned long long value) { return value; }
+constexpr int operator""_code(char value) { return value; }
+constexpr decltype(sizeof(0)) operator""_length(const char*, decltype(sizeof(0)) size) { return size; }
+static_assert(1_quantity==1 && 'a'_code=='a' && R"(raw)"_length==3);
+static_assert(1\
+_quantity==1);
+}
+
+namespace DirectiveBoundaries {
+#define FORMAT_TYPE_RECORD(name) struct name { using Value=int; Value value; }
+#define FORMAT_TYPE_CHOICE(name) union name { int number; char letter; }
+#define FORMAT_TYPE_ENUM(name) enum class name : unsigned { First, Second }
+FORMAT_TYPE_RECORD(Record);
+FORMAT_TYPE_CHOICE(Choice);
+FORMAT_TYPE_ENUM(Enum);
+#define FORMAT_PRIMITIVE_TYPE unsigned long
+using Size=FORMAT_PRIMITIVE_TYPE;
+#undef FORMAT_PRIMITIVE_TYPE
+#define FORMAT_TYPE_TAG struct NamedType { int value; }
+FORMAT_TYPE_TAG;
+#define FORMAT_SEMILESS_NAMESPACE_COMMENT() namespace Outer { namespace Inner { int value=1; } /* Inner */ \
+} /* Outer */
+FORMAT_SEMILESS_NAMESPACE_COMMENT()
+template<class Callback> void Invoke(const char*,int value,Callback callback) { callback(value); }
+#define FORMAT_LAMBDA_CALLBACK(value) do { Invoke("a callback argument that makes the invocation exceed the configured line width",value,[](int argument) { if (argument) { ++argument; } }); } while(false)
+void Check() { FORMAT_LAMBDA_CALLBACK(1); }
+static_assert(sizeof(Record)>0 && sizeof(Choice)>0 && static_cast<unsigned>(Enum::Second)==1);
+}

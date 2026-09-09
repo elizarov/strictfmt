@@ -1,4 +1,5 @@
 #include "format/impl/format_model_normalize.h"
+#include "format/impl/format_syntax_helpers.h"
 
 #include <algorithm>
 #include <optional>
@@ -91,8 +92,18 @@ void InsertCommaAfter(FormatModel& model, SyntaxNode& node, size_t index) {
 
 bool EnsureTerminalComma(FormatModel& model, SyntaxNode& node, size_t index) {
     SyntaxChildList& children = node.children;
-    const std::optional<size_t> structural = PreviousStructuralChildIndex(children, index + 1);
-    if (structural && SyntaxNodeHasClass(*children[*structural], SyntaxNodeClass::IncludeDirective)) {
+    std::optional<size_t> structural = PreviousStructuralChildIndex(children, index + 1);
+    while (structural && IsNonTokenPreprocessorDirective(*children[*structural])) {
+        if (*structural == 0) {
+            return false;
+        }
+        index = *structural - 1;
+        structural = PreviousStructuralChildIndex(children, index + 1);
+    }
+    if (!structural || SyntaxNodeHasClass(*children[*structural], SyntaxNodeClass::OpeningDelimiter)) {
+        return false;
+    }
+    if (SyntaxNodeHasClass(*children[*structural], SyntaxNodeClass::IncludeDirective)) {
         return false;
     }
     if (structural && children[*structural]->kind == SyntaxNodeKind::Comma) {
@@ -783,6 +794,7 @@ void ClassifyDeclarationGroup(SyntaxNode& node) {
 
 bool ContainsListPreprocessor(const SyntaxNode& node) {
     if (
+        IsNonTokenPreprocessorDirective(node) ||
         SyntaxNodeHasClass(node, SyntaxNodeClass::ConditionalPreprocessorTree) ||
         SyntaxNodeHasClass(node, SyntaxNodeClass::IncludeDirective)
     ) {

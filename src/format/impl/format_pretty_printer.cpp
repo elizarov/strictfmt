@@ -566,8 +566,8 @@ private:
         output_.WriteAtIndent(text, indentLevel_ + offset);
     }
 
-    void NewLineWithIndent(int indentLevel) {
-        NewLine(emittingMacroDefinition_);
+    void NewLineWithIndent(int indentLevel, std::optional<bool> macroContinuation = std::nullopt) {
+        NewLine(macroContinuation.value_or(emittingMacroDefinition_));
         output_.SetPendingIndent(std::max(0, indentLevel));
     }
 
@@ -790,7 +790,7 @@ private:
                 TrailingCommentReturnsToStructuralIndent(printToken) ||
                 (printToken.macroDefinition != nullptr && !ShouldContinueMacroLine(printToken, nextToken))
             ) {
-                NewLine(false);
+                NewLine(ShouldContinueMacroLine(printToken, nextToken));
             } else {
                 NewLineWithIndent(continuationIndent);
             }
@@ -927,13 +927,13 @@ private:
             if (HasBufferedLineText()) {
                 FlushPendingTokens();
             }
-            NewLineWithIndent(*boundary->indent);
+            NewLineWithIndent(*boundary->indent, token.inMacroValue);
             BufferToken(token);
         } else {
             BufferToken(token);
             if (boundary->indent) {
                 FlushPendingTokens();
-                NewLineWithIndent(*boundary->indent);
+                NewLineWithIndent(*boundary->indent, ShouldContinueMacroLine(token, RawTokenAfterCurrent(1)));
             }
         }
         return true;
@@ -984,6 +984,18 @@ private:
     }
 
     void PrepareMacroBoundary(const PrintToken* previous, const PrintToken& current) {
+        if (
+            current.syntaxKind == SyntaxNodeKind::PreprocessorDirectiveDefine &&
+            !listContinuation_->PreprocessorIndent(current)
+        ) {
+            const FormatBreakModelContext* plan = listContinuation_->PlanPreprocessor(
+                currentTokenIndex_, pendingTokens_, output_.State().pendingIndentLevel.value_or(indentLevel_ + 1)
+            );
+            if (plan != nullptr) {
+                FlushPendingTokens(*plan);
+                output_.SetPendingIndent(listContinuation_->AcceptPreprocessor());
+            }
+        }
         if (current.macroDefinition != nullptr && !current.inMacroValue && output_.State().atLineStart) {
             output_.ForceColumnZero();
         }
@@ -995,6 +1007,9 @@ private:
             if (HasBufferedLineText()) {
                 FlushPendingTokens();
                 NewLine(false);
+            }
+            if (const std::optional<int> itemIndent = listContinuation_->PreprocessorIndent(current)) {
+                output_.SetPendingIndent(*itemIndent);
             }
             if (current.macroDefinition != nullptr && !current.inMacroValue) {
                 output_.ForceColumnZero();
@@ -1332,55 +1347,42 @@ private:
             output_.SetPendingIndent(declarationIndent);
             return;
         }
-        if (token.structuredPreprocessor || isInclude || listConditional) {
-            std::optional<int> listItemIndent = listContinuation_->PreprocessorIndent(token);
-            const FormatBreakModelContext* splitListPlan =
-                listItemIndent ? nullptr : listContinuation_->PlanPreprocessor(
-                    currentTokenIndex_, pendingTokens_, output_.State().pendingIndentLevel.value_or(indentLevel_ + 1)
-                );
-            if (splitListPlan != nullptr) {
-                FlushPendingTokens(*splitListPlan);
-                listItemIndent = listContinuation_->AcceptPreprocessor();
-            } else if ((listItemIndent || token.structuredPreprocessor) && HasBufferedLineText()) {
-                FlushPendingTokens();
-            }
-            if (!listItemIndent && listConditional) {
-                listItemIndent = output_.State().pendingIndentLevel.value_or(indentLevel_ + 1);
-            }
-            if (output_.State().lineHasText) {
-                NewLine();
-            }
-            const std::string outputLine = listConditional && !token.structuredPreprocessor && listItemIndent ?
-                FormatPreprocessorText(token.text, {
-                    .payloadIndent = *listItemIndent,
-                    .indentWidth = indentWidth_,
-                    .terminalComma = !listContinuation_->IsFinalPreprocessorItem(currentTokenIndex_) ?
-                        FormatPreprocessorComma::Preserve :
-                        (trailingListComma ? FormatPreprocessorComma::Add : FormatPreprocessorComma::Remove),
-                }) : line;
-            output_.WriteVerbatim(outputLine);
-            NewLine();
-            if (closesConditionalFunctionHeader) {
-                conditionalFunctionIndents_.push_back(indentLevel_);
-                ++indentLevel_;
-            }
-            if (listItemIndent) {
-                output_.SetPendingIndent(*listItemIndent);
-            } else if (includeInitializerContinuationIndent) {
-                output_.SetPendingIndent(*includeInitializerContinuationIndent);
-            }
-            return;
+        std::optional<int> listItemIndent = listContinuation_->PreprocessorIndent(token);
+        const FormatBreakModelContext* splitListPlan = listItemIndent ? nullptr : listContinuation_->PlanPreprocessor(
+            currentTokenIndex_, pendingTokens_, output_.State().pendingIndentLevel.value_or(indentLevel_ + 1)
+        );
+        if (splitListPlan != nullptr) {
+            FlushPendingTokens(*splitListPlan);
+            listItemIndent = listContinuation_->AcceptPreprocessor();
+        } else if ((listItemIndent || token.structuredPreprocessor) && HasBufferedLineText()) {
+            FlushPendingTokens();
+        }
+        if (!listItemIndent && listConditional) {
+            listItemIndent = output_.State().pendingIndentLevel.value_or(indentLevel_ + 1);
         }
         if (output_.State().lineHasText) {
             NewLine();
         }
-        output_.WriteVerbatim(line);
+        const std::string outputLine =
+            listConditional && !token.structuredPreprocessor && listItemIndent ? FormatPreprocessorText(token.text, {
+                .payloadIndent = *listItemIndent,
+                .indentWidth = indentWidth_,
+                .terminalComma = !listContinuation_->IsFinalPreprocessorItem(currentTokenIndex_) ?
+                    FormatPreprocessorComma::Preserve :
+                    (trailingListComma ? FormatPreprocessorComma::Add : FormatPreprocessorComma::Remove),
+            }) : line;
+        output_.WriteVerbatim(outputLine);
         NewLine();
         if (closesConditionalFunctionHeader) {
             conditionalFunctionIndents_.push_back(indentLevel_);
             ++indentLevel_;
-            return;
         }
+        if (listItemIndent) {
+            output_.SetPendingIndent(*listItemIndent);
+        } else if (includeInitializerContinuationIndent) {
+            output_.SetPendingIndent(*includeInitializerContinuationIndent);
+        }
+        return;
     }
 
     void PrintKnown(
