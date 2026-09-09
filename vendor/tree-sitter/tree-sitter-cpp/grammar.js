@@ -207,6 +207,10 @@ module.exports = grammar(C, {
   ],
 
   conflicts: $ => [
+    [$.comma_expression, $.preproc_ifdef_in_initializer_list, $._initializer_list_with_preproc],
+    [$.comma_expression, $.preproc_if_in_initializer_list, $._initializer_list_with_preproc],
+    [$._block_item, $.preproc_ifdef_in_initializer_list],
+    [$._block_item, $.preproc_if_in_initializer_list],
     [$._assignment_left_expression, $._conditional_alternative],
     [$.type_specifier, $.expression, $._assignment_left_expression],
     [$.elaborated_type_specifier, $._class_declaration],
@@ -1066,7 +1070,10 @@ module.exports = grammar(C, {
 
     ...preprocIf('_in_initializer_list', $ => {
       const item = choice($.initializer_pair, $.expression, $._braced_initializer_clause);
-      return prec.right(1, seq(repeat(seq(item, ',')), item, optional(',')));
+      return choice(
+        $._initializer_list_with_preproc,
+        prec.right(1, seq(repeat(seq(item, ',')), item, optional(','))),
+      );
     }, 0, PREPROC_IFDEF | PREPROC_ELSE, false),
 
     ...preprocIf(
@@ -3303,7 +3310,10 @@ module.exports = grammar(C, {
 
     _initializer_list_with_preproc: $ => {
       const item = initializerClause($);
-      const preprocItem = preprocListItem($, '_in_initializer_list', PREPROC_IFDEF | PREPROC_ELSE);
+      const preprocItem = choice(
+        $.preproc_include,
+        preprocListItem($, '_in_initializer_list', PREPROC_IFDEF | PREPROC_ELSE),
+      );
       return prec(-1, seq(
         repeat(seq(item, ',')),
         preprocItem,

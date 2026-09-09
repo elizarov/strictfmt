@@ -350,7 +350,7 @@ enum class SyntaxNodeClass : std::uint64_t {
     QualifiedName = 1ull << 59,
     DeclarationGroupForwardType = 1ull << 60,
     NamedList = 1ull << 61,
-    ContainsConditionalPreprocessor = 1ull << 62,
+    ContainsListPreprocessor = 1ull << 62,
 };
 
 enum class SyntaxWrapperRole : std::uint8_t {

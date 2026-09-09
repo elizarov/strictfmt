@@ -23,6 +23,7 @@ This is the closed list of placements that are explicitly supported.
 - **Guarded `extern "C"` group delimiters**: conditional-opener blocks may guard an `extern "C" {` opener or its matching closing brace as file-scope grouping items.
 - **Concatenated string fragments**: conditionals may select complete adjacent string-literal fragments inside a concatenated string literal, including an initializer that begins with a conditional, multiple conditional groups in one concatenation, `#elif` alternatives, and fragments interleaved with identifier-like or function-like string macros.
 - **Include-supplied variable initializers**: a local `#include` directive may supply the complete token sequence after a variable declaration's `=`. The declaration's terminating semicolon follows the directive.
+- **Include-supplied initializer-list fragments**: local `#include` directives may contribute entries and their separators inside braced initializer lists, including conditional branches and fragments interleaved with ordinary entries.
 - **Local includes**: local `#include` directives may stand where the parser accepts them as complete items.
 
 All other places are not supported and may result in parsing errors or produce misformatted output if the parser manages to recover without errors.

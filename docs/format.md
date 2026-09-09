@@ -702,7 +702,7 @@ A **final-lambda discount** equals the body's current cost and applies to the bo
 
 ## Include Sorting
 
-With configured include groups, sort each include run lexicographically and case-sensitively within groups, order groups by priority, and separate them with one empty line. Preserve the include set, spelling, and comments; comments bound sortable runs.
+With configured include groups, sort each include run lexicographically and case-sensitively within groups, order groups by priority, and separate them with one empty line. Preserve the include set, spelling, and comments; comments bound sortable runs. Includes that supply list fragments retain their source order.
 
 Without groups, retain source order and blank-separated blocks. Blank lines before include blocks remain source-authored.
 
@@ -715,7 +715,7 @@ Without groups, retain source order and blank-separated blocks. Blank lines befo
 
 ## Comma Normalization
 
-For every non-empty comma-separated list inside `{ ... }`, omit the trailing comma in compact and packed layouts and add it in one-item-per-line layout. Remove trailing commas from lists with other delimiters, except for [macro argument separators](macro.md#macro-arguments).
+For every non-empty comma-separated list inside `{ ... }`, omit the trailing comma in compact and packed layouts and add it in one-item-per-line layout. Remove trailing commas from lists with other delimiters, except for [macro argument separators](macro.md#macro-arguments). Do not insert a comma after an include-supplied fragment; its separators belong to the included source.
 
 <!-- .cpp-format
 ColumnLimit: 30

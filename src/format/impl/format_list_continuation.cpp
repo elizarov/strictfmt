@@ -104,8 +104,24 @@ struct FormatListContinuation::Impl {
     }
 
     static bool StartsPreprocessorSplitList(const PrintToken& token) {
-        return token.kind == PrintTokenKind::Preprocessor &&
-            PrintTokenSyntaxHasClass(token, SyntaxNodeClass::ConditionalPreprocessorOpen);
+        if (token.kind != PrintTokenKind::Preprocessor) {
+            return false;
+        }
+        if (PrintTokenSyntaxHasClass(token, SyntaxNodeClass::ConditionalPreprocessorOpen)) {
+            return true;
+        }
+        if (!PrintTokenSyntaxHasClass(token, SyntaxNodeClass::IncludeDirective) || token.node == nullptr) {
+            return false;
+        }
+        for (const SyntaxNode* parent = token.node->parent; parent != nullptr; parent = parent->parent) {
+            if (SyntaxNodeHasClass(*parent, SyntaxNodeClass::PreprocessorSplitList)) {
+                return true;
+            }
+            if (!SyntaxNodeHasClass(*parent, SyntaxNodeClass::ConditionalPreprocessorTree)) {
+                return false;
+            }
+        }
+        return false;
     }
 
     static const SyntaxNode* NearestPreprocessorSplitListAncestor(const PrintToken& token) {
@@ -444,8 +460,9 @@ struct FormatListContinuation::Impl {
     }
     std::optional<bool> ConditionalDirectiveComma(size_t index) const {
         const PrintToken& token = tokens_[index];
-        const SyntaxNode* list =
-            StartsPreprocessorSplitList(token) ? NearestPreprocessorSplitListAncestor(token) : nullptr;
+        const SyntaxNode* list = token.kind == PrintTokenKind::Preprocessor &&
+            PrintTokenSyntaxHasClass(token, SyntaxNodeClass::ConditionalPreprocessorOpen) ?
+            NearestPreprocessorSplitListAncestor(token) : nullptr;
         if (list == nullptr) {
             return std::nullopt;
         }

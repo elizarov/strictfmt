@@ -6313,6 +6313,10 @@
         {
           "type": "preproc_ifdef",
           "named": true
+        },
+        {
+          "type": "preproc_include",
+          "named": true
         }
       ]
     }

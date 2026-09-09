@@ -92,6 +92,9 @@ void InsertCommaAfter(FormatModel& model, SyntaxNode& node, size_t index) {
 bool EnsureTerminalComma(FormatModel& model, SyntaxNode& node, size_t index) {
     SyntaxChildList& children = node.children;
     const std::optional<size_t> structural = PreviousStructuralChildIndex(children, index + 1);
+    if (structural && SyntaxNodeHasClass(*children[*structural], SyntaxNodeClass::IncludeDirective)) {
+        return false;
+    }
     if (structural && children[*structural]->kind == SyntaxNodeKind::Comma) {
         if (*structural < index) {
             std::rotate(
@@ -778,12 +781,15 @@ void ClassifyDeclarationGroup(SyntaxNode& node) {
     node.classes |= group;
 }
 
-bool ContainsConditionalPreprocessor(const SyntaxNode& node) {
-    if (SyntaxNodeHasClass(node, SyntaxNodeClass::ConditionalPreprocessorTree)) {
+bool ContainsListPreprocessor(const SyntaxNode& node) {
+    if (
+        SyntaxNodeHasClass(node, SyntaxNodeClass::ConditionalPreprocessorTree) ||
+        SyntaxNodeHasClass(node, SyntaxNodeClass::IncludeDirective)
+    ) {
         return true;
     }
     return std::any_of(node.children.begin(), node.children.end(), [](const SyntaxNode* child) {
-        return child != nullptr && ContainsConditionalPreprocessor(*child);
+        return child != nullptr && ContainsListPreprocessor(*child);
     });
 }
 
@@ -803,10 +809,10 @@ void NormalizeSyntaxNode(FormatModel& model, SyntaxNode& node) {
             ReparentSyntaxNode(*child, &node);
         }
     }
-    if (SyntaxNodeHasClass(node, SyntaxNodeClass::PreprocessorSplitList) && ContainsConditionalPreprocessor(node)) {
+    if (SyntaxNodeHasClass(node, SyntaxNodeClass::PreprocessorSplitList) && ContainsListPreprocessor(node)) {
         // Only preprocessor-split lists query this immutable descendant predicate. Materializing it on the owning
         // node is equivalent to the printer's former recursive memoization and avoids its hash table.
-        node.classes |= static_cast<std::uint64_t>(SyntaxNodeClass::ContainsConditionalPreprocessor);
+        node.classes |= static_cast<std::uint64_t>(SyntaxNodeClass::ContainsListPreprocessor);
     }
     if (
         SyntaxNodeHasClass(node, SyntaxNodeClass::ConditionalPreprocessorTree) &&

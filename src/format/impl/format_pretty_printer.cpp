@@ -506,12 +506,12 @@ private:
         return macroCallParent != nullptr && IsStatementItemContainer(macroCallParent->kind);
     }
 
-    const SyntaxNode* ImmediateConditionalPreprocessorListParent(const PrintToken& token) {
+    const SyntaxNode* ImmediatePreprocessorListParent(const PrintToken& token) {
         const SyntaxNode* parent = token.node == nullptr ? nullptr : token.node->parent;
         if (
             parent == nullptr ||
             !SyntaxNodeKindHasClass(parent->kind, SyntaxNodeClass::PreprocessorSplitList) ||
-            (parent->classes & static_cast<std::uint64_t>(SyntaxNodeClass::ContainsConditionalPreprocessor)) == 0
+            (parent->classes & static_cast<std::uint64_t>(SyntaxNodeClass::ContainsListPreprocessor)) == 0
         ) {
             return nullptr;
         }
@@ -939,11 +939,11 @@ private:
         return true;
     }
 
-    bool TryPrintConditionalPreprocessorListOpen(const PrintToken& token) {
+    bool TryPrintPreprocessorListOpen(const PrintToken& token) {
         if (
             token.kind != PrintTokenKind::Known ||
             !PrintTokenSyntaxHasClass(token, SyntaxNodeClass::OpeningDelimiter) ||
-            ImmediateConditionalPreprocessorListParent(token) == nullptr
+            ImmediatePreprocessorListParent(token) == nullptr
         ) {
             return false;
         }
@@ -953,11 +953,11 @@ private:
         return true;
     }
 
-    bool TryPrintConditionalPreprocessorListComma(const PrintToken& token) {
+    bool TryPrintPreprocessorListComma(const PrintToken& token) {
         if (
             token.kind != PrintTokenKind::Known ||
             token.syntaxKind != SyntaxNodeKind::Comma ||
-            ImmediateConditionalPreprocessorListParent(token) == nullptr
+            ImmediatePreprocessorListParent(token) == nullptr
         ) {
             return false;
         }
@@ -967,11 +967,11 @@ private:
         return true;
     }
 
-    bool TryPrintConditionalPreprocessorListClose(const PrintToken& token) {
+    bool TryPrintPreprocessorListClose(const PrintToken& token) {
         if (
             token.kind != PrintTokenKind::Known ||
             MatchingListCloseToken(token.syntaxKind) != SyntaxNodeKind::Unknown ||
-            ImmediateConditionalPreprocessorListParent(token) == nullptr
+            ImmediatePreprocessorListParent(token) == nullptr
         ) {
             return false;
         }
@@ -1388,7 +1388,7 @@ private:
     ) {
         switch (token.syntaxKind) {
             case SyntaxNodeKind::LeftParen:
-                if (TryPrintConditionalPreprocessorListOpen(token)) {
+                if (TryPrintPreprocessorListOpen(token)) {
                     ++parenDepth_;
                     return;
                 }
@@ -1402,7 +1402,7 @@ private:
                     }
                     return;
                 }
-                if (TryPrintConditionalPreprocessorListClose(token)) {
+                if (TryPrintPreprocessorListClose(token)) {
                     if (parenDepth_ > 0) {
                         --parenDepth_;
                     }
@@ -1434,7 +1434,7 @@ private:
                 }
                 return;
             case SyntaxNodeKind::LeftBracket:
-                if (TryPrintConditionalPreprocessorListOpen(token)) {
+                if (TryPrintPreprocessorListOpen(token)) {
                     ++bracketDepth_;
                     return;
                 }
@@ -1448,7 +1448,7 @@ private:
                     }
                     return;
                 }
-                if (TryPrintConditionalPreprocessorListClose(token)) {
+                if (TryPrintPreprocessorListClose(token)) {
                     if (bracketDepth_ > 0) {
                         --bracketDepth_;
                     }
@@ -1466,7 +1466,7 @@ private:
                 }
                 return;
             case SyntaxNodeKind::Less:
-                if (TryPrintConditionalPreprocessorListOpen(token)) {
+                if (TryPrintPreprocessorListOpen(token)) {
                     return;
                 }
                 BufferToken(token);
@@ -1475,7 +1475,7 @@ private:
                 if (TryPrintListBoundary(token, FormatListContinuationKind::Preprocessor)) {
                     return;
                 }
-                if (TryPrintConditionalPreprocessorListClose(token)) {
+                if (TryPrintPreprocessorListClose(token)) {
                     return;
                 }
                 BufferToken(token);
@@ -1494,7 +1494,7 @@ private:
                 }
                 return;
             case SyntaxNodeKind::LeftBrace:
-                if (TryPrintConditionalPreprocessorListOpen(token)) {
+                if (TryPrintPreprocessorListOpen(token)) {
                     return;
                 }
                 PrintLeftBrace(token, previous, rawNext);
@@ -1503,7 +1503,7 @@ private:
                 if (TryPrintListBoundary(token, FormatListContinuationKind::Preprocessor)) {
                     return;
                 }
-                if (TryPrintConditionalPreprocessorListClose(token)) {
+                if (TryPrintPreprocessorListClose(token)) {
                     return;
                 }
                 if (TryPrintListBoundary(token, FormatListContinuationKind::Block)) {
@@ -1534,7 +1534,7 @@ private:
                 }
                 return;
             case SyntaxNodeKind::Comma:
-                if (TryPrintConditionalPreprocessorListComma(token)) {
+                if (TryPrintPreprocessorListComma(token)) {
                     return;
                 }
                 if (TryPrintListBoundary(token, FormatListContinuationKind::Preprocessor)) {

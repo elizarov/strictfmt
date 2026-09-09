@@ -442,6 +442,12 @@ void GroupOpeningIncludeRuns(FormatModel& model, SyntaxNode& root) {
         return;
     }
 
+    for (const SyntaxNode* parent = root.parent; parent != nullptr; parent = parent->parent) {
+        if (SyntaxNodeHasClass(*parent, SyntaxNodeClass::AllowedListPreprocessorContainer)) {
+            return;
+        }
+    }
+
     SyntaxChildList groupedChildren(root.children.get_allocator());
     groupedChildren.reserve(root.children.size());
     bool sawInclude = false;

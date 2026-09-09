@@ -4395,3 +4395,64 @@ static_assert(!(Never<std::remove_const_t<std::remove_reference_t<Args>>>::value
 "Nested template names remain types throughout a fold expression, including the qualified member access.");
 }
 }
+
+namespace IncludedInitializers {
+constexpr int assignment[] = {
+#include "format_initializer_values.inc"
+};
+constexpr int direct[]{
+#include "format_initializer_value.inc"
+};
+constexpr int mixed[]{1,
+#include "format_initializer_values.inc"
+3};
+constexpr int multiple[]{
+#include "format_initializer_values.inc"
+#include "format_initializer_value.inc"
+};
+constexpr int nested[][2]{{
+#include "format_initializer_values.inc"
+3},{
+#include "format_initializer_value.inc"
+}};
+constexpr int conditional[]{
+#if defined(FORMAT_INCLUDE_ALTERNATIVE)
+1,
+#include "format_initializer_values.inc"
+#else
+#include "format_initializer_value.inc"
+#endif
+};
+constexpr int guarded[]{0,
+#ifdef FORMAT_INCLUDE_ALTERNATIVE
+#include "format_initializer_values.inc"
+#endif
+4};
+constexpr int conditionalMultiple[]{
+#if defined(FORMAT_INCLUDE_ALTERNATIVE)
+#include "format_initializer_values.inc"
+#include "format_initializer_value.inc"
+#else
+4, 5,
+#endif
+};
+constexpr int nestedConditional[]{
+#if defined(FORMAT_INCLUDE_ALTERNATIVE)
+#ifdef FORMAT_NESTED_INCLUDE
+#include "format_initializer_values.inc"
+#endif
+#include "format_initializer_value.inc"
+#else
+4,
+#endif
+};
+constexpr int commented[]{
+#include "format_initializer_values.inc"
+// The included fragment owns its final comma.
+};
+static_assert(sizeof(assignment) == sizeof(int));
+static_assert(sizeof(direct) == sizeof(int));
+static_assert(sizeof(multiple) == 2 * sizeof(int));
+static_assert(multiple[0] == 2 && multiple[1] == 3);
+static_assert(mixed[0] == 1 && mixed[1] == 2 && mixed[2] == 3);
+}
