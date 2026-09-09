@@ -4105,3 +4105,24 @@ struct Bits {
 constexpr Bits bits{};
 static_assert(bits.greedy == 0 && bits.bounded == 2);
 }
+
+namespace EmptyAttributes {
+[[]] int value = 1;
+struct [[]] Record {
+ [[]] unsigned field : 2 = 1;
+};
+[[]] int Read([[]] int input) {
+ [[]];
+ [[]] int result = input;
+ return []([[]] auto value) { return value + 1; }(result);
+}
+using Value [[]] = int;
+[[ ]] [[maybe_unused]] Value another = Read(1);
+}
+namespace EmptyAttributeEntries {
+[[,maybe_unused,,]] int value = 1;
+[[,]] int another = 2;
+[[maybe_unused,]] int third = 3;
+struct [[,maybe_unused,]] Record {};
+int Read([[,maybe_unused,,]] int input) { return input; }
+}

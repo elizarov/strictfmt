@@ -3185,6 +3185,8 @@ module.exports = grammar(C, {
       ')',
     ),
 
+    attribute_declaration: $ => seq('[[', commaSep1(optional($.attribute)), ']]'),
+
     // Expressions
 
     conditional_expression: $ => prec.right(PREC.ASSIGNMENT, seq(
