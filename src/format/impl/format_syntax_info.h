@@ -41,6 +41,7 @@ enum class SyntaxNodeKind : std::uint16_t {
     ClassSpecifier,
     StructSpecifier,
     UnionSpecifier,
+    ElaboratedTypeSpecifier,
     BaseClassClause,
     AccessSpecifier,
     IfStatement,

@@ -137,6 +137,16 @@ function templateDeclarationItem($, qualifiedFunction = $.qualified_type_functio
   );
 }
 
+function typeDescriptor($, type) {
+  return prec.right(seq(
+    repeat($.type_qualifier),
+    field('type', type),
+    repeat($.type_qualifier),
+    repeat($.post_type_macro_annotation),
+    field('declarator', optional($._abstract_declarator)),
+  ));
+}
+
 function enumSpecifier($, body) {
   return prec.right(seq(
     'enum',
@@ -197,6 +207,10 @@ module.exports = grammar(C, {
   ],
 
   conflicts: $ => [
+    [$._assignment_left_expression, $._conditional_alternative],
+    [$.type_specifier, $.expression, $._assignment_left_expression],
+    [$.elaborated_type_specifier, $._class_declaration],
+    [$.enum_specifier, $.elaborated_type_specifier],
     [$._type_constraint, $._class_name],
     [$.type_specifier, $._type_constraint, $._template_argument_expression],
     [$.type_specifier, $._type_constraint, $._class_name, $.function_pointer_alias_declaration],
@@ -492,8 +506,8 @@ module.exports = grammar(C, {
     [$._top_level_item, $._function_definition_prefix_branch],
   ],
 
-  // Share field-name reductions to avoid duplicating contextual identifier alternatives.
-  inline: ($, original) => original.filter(rule => rule.name !== '_field_identifier').concat([
+  // Share field-name and assignment-left reductions instead of duplicating their alternatives.
+  inline: ($, original) => original.filter(rule => !['_field_identifier', '_assignment_left_expression'].includes(rule.name)).concat([
     $._namespace_identifier,
   ]),
 
@@ -639,6 +653,13 @@ module.exports = grammar(C, {
         $._type_identifier,
       )),
     ),
+
+    // Prefer a complete elaborated name before a trailing return type's function body.
+    elaborated_type_specifier: $ => prec.right(1, seq(
+      choice('class', 'struct', 'union', 'enum'),
+      repeat(choice($.attribute_specifier, $.attribute_declaration)),
+      field('name', $._class_name),
+    )),
 
     type_qualifier: ($, original) => choice(
       original,
@@ -1164,17 +1185,10 @@ module.exports = grammar(C, {
       repeat1(seq('::', $.identifier)),
     ),
 
-    type_descriptor: $ => prec.right(seq(
-      repeat($.type_qualifier),
-      field('type', $.type_specifier),
-      repeat($.type_qualifier),
-      repeat($.post_type_macro_annotation),
-      field('declarator', optional($._abstract_declarator)),
-    )),
+    type_descriptor: $ => typeDescriptor($, $.type_specifier),
 
-    // When used in a trailing return type, these specifiers can now occur immediately before
-    // a compound statement. This introduces a shift/reduce conflict that needs to be resolved
-    // with an associativity.
+    elaborated_type_descriptor: $ => typeDescriptor($, $.elaborated_type_specifier),
+
     _class_declaration: $ => seq(
       repeat(choice($.attribute_specifier, $.alignas_qualifier, $.attribute_declaration, $.function_prefix_macro)),
       optional($.ms_declspec_modifier),
@@ -2291,7 +2305,10 @@ module.exports = grammar(C, {
       $._function_declarator_seq,
     ),
 
-    trailing_return_type: $ => seq('->', $.type_descriptor),
+    trailing_return_type: $ => seq('->', choice(
+      $.type_descriptor,
+      alias($.elaborated_type_descriptor, $.type_descriptor),
+    )),
 
     noexcept: $ => prec.right(seq(
       'noexcept',
@@ -4125,7 +4142,7 @@ module.exports = grammar(C, {
       )),
     ),
 
-    _assignment_left_expression: ($, original) => choice(
+    _assignment_left_expression: ($, original) => prec(PREC.ASSIGNMENT, choice(
       original,
       $.update_expression,
       $.template_function,
@@ -4137,7 +4154,7 @@ module.exports = grammar(C, {
       $.user_defined_literal,
       $.suffixed_string_literal,
       $.concatenated_string,
-    ),
+    )),
 
     assignment_expression: $ => prec.right(PREC.ASSIGNMENT, seq(
       field('left', $._assignment_left_expression),

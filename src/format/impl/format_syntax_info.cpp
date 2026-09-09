@@ -237,6 +237,11 @@ constexpr auto kSyntaxKindMappings = std::to_array<SyntaxKindMapping>({
         "union_specifier",
         Bit(SyntaxNodeClass::MacroDeclarationFragment) | Bit(SyntaxNodeClass::DeclaredTypeSpecifier)
     ),
+    Tree(
+        SyntaxNodeKind::ElaboratedTypeSpecifier,
+        "elaborated_type_specifier",
+        Bit(SyntaxNodeClass::DeclaredTypeSpecifier)
+    ),
     Tree(SyntaxNodeKind::BaseClassClause, "base_class_clause", Bit(SyntaxNodeClass::PrefixList)),
     Tree(SyntaxNodeKind::AccessSpecifier, "access_specifier"),
     Tree(SyntaxNodeKind::AccessSpecifier, "access_specifier_label"),
@@ -1102,6 +1107,8 @@ std::string_view SyntaxNodeKindName(SyntaxNodeKind kind) {
             return "StructSpecifier";
         case SyntaxNodeKind::UnionSpecifier:
             return "UnionSpecifier";
+        case SyntaxNodeKind::ElaboratedTypeSpecifier:
+            return "ElaboratedTypeSpecifier";
         case SyntaxNodeKind::BaseClassClause:
             return "BaseClassClause";
         case SyntaxNodeKind::AccessSpecifier:

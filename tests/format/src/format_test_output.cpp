@@ -6862,3 +6862,135 @@ auto ReadValue(constraints::Any auto value) -> constraints::Any auto { return va
 auto identity = [](constraints::Any auto value) -> constraints::Any auto { return value; };
 
 }
+
+namespace ElaboratedReturnTypes {
+
+class Value {};
+
+struct Record {};
+
+union Number {
+    int value;
+};
+
+enum Choice {
+    First,
+};
+
+auto ClassLambda() {
+    return []() -> class Value { return {}; };
+}
+auto StructLambda() {
+    return []() -> struct Record { return {}; };
+}
+auto UnionLambda() {
+    return []() -> union Number { return {1}; };
+}
+auto EnumLambda() {
+    return []() -> enum Choice { return First; };
+}
+namespace detail {
+
+class Value {};
+
+}
+auto Qualified() {
+    return [](auto) -> class detail::Value { return {}; };
+}
+template <class T>
+auto Dependent() -> class T::Value { return {}; }
+template <class T>
+auto DependentLambda() {
+    return []() -> class T::Value { return {}; };
+}
+auto Function() -> struct Record { return {}; }
+auto Reference(Record& value) -> struct Record& { return value; }
+auto Pointer() -> class Value* { return nullptr; }
+auto FunctionPointer() -> struct Record (*)(int) { return nullptr; }
+
+using InlineRecord = struct {
+    int value;
+};
+using InlineChoice = enum {
+    FirstInline,
+};
+
+struct Owner {
+    auto Method() -> class Value { return {}; }
+};
+#define FORMAT_SEMILESS_RECORD_FUNCTION(Name) auto Name() -> struct Record { return {}; }
+FORMAT_SEMILESS_RECORD_FUNCTION(Generated)
+#undef FORMAT_SEMILESS_RECORD_FUNCTION
+
+}
+
+#include <vector>
+#include <tuple>
+#include <type_traits>
+#include <utility>
+namespace SharedTemplateNames {
+
+template <class... T>
+struct Group {};
+namespace memory {
+
+template <class T>
+struct Pointer {};
+
+}
+namespace future {
+
+template <class T>
+struct Shared {};
+
+}
+namespace values {
+
+template <class T>
+struct Optional {};
+
+}
+namespace tasks {
+
+template <class T>
+T Make(int) { return {}; }
+
+}
+
+auto NestedCall() { return tasks::Make<future::Shared<values::Optional<memory::Pointer<int>>>>(0); }
+
+struct Key {};
+
+struct Data {};
+
+struct Construct {
+    Construct(Key&& first, Group<Data, Key>&& second, Group<Key, future::Shared<values::Optional<Data>>>&& third) :
+        first_{first}, second_{second}, third_{third} {}
+
+    Key first_;
+    Group<Data, Key> second_;
+    Group<Key, future::Shared<values::Optional<Data>>> third_;
+};
+
+void Iterate() {
+    for (const auto& [index, name, pairs] : std::vector<std::tuple<int, int, std::vector<std::pair<int, int>>>>{
+        {1, 2, {{3, 4}}},
+    }) {
+        (void)index;
+        (void)name;
+        (void)pairs;
+    }
+}
+
+template <class T>
+struct Never : std::false_type {};
+
+template <class... Args>
+constexpr void CheckFold() {
+    static_assert(
+        !(Never<std::remove_const_t<std::remove_reference_t<Args>>>::value || ...),
+        "Nested template names remain types throughout a fold expression, including the qualified member access."
+    );
+}
+
+}

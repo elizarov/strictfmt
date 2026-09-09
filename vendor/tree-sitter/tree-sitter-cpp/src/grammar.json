@@ -8717,88 +8717,92 @@
       }
     },
     "_assignment_left_expression": {
-      "type": "CHOICE",
-      "members": [
-        {
-          "type": "CHOICE",
-          "members": [
-            {
-              "type": "SYMBOL",
-              "name": "identifier"
-            },
-            {
-              "type": "SYMBOL",
-              "name": "call_expression"
-            },
-            {
-              "type": "SYMBOL",
-              "name": "field_expression"
-            },
-            {
-              "type": "SYMBOL",
-              "name": "pointer_expression"
-            },
-            {
-              "type": "SYMBOL",
-              "name": "subscript_expression"
-            },
-            {
-              "type": "SYMBOL",
-              "name": "parenthesized_expression"
-            }
-          ]
-        },
-        {
-          "type": "SYMBOL",
-          "name": "update_expression"
-        },
-        {
-          "type": "SYMBOL",
-          "name": "template_function"
-        },
-        {
-          "type": "SYMBOL",
-          "name": "qualified_identifier"
-        },
-        {
-          "type": "SYMBOL",
-          "name": "compound_literal_expression"
-        },
-        {
-          "type": "SYMBOL",
-          "name": "cpp_cast_expression"
-        },
-        {
-          "type": "ALIAS",
-          "content": {
-            "type": "STRING",
-            "value": "ref"
+      "type": "PREC",
+      "value": -2,
+      "content": {
+        "type": "CHOICE",
+        "members": [
+          {
+            "type": "CHOICE",
+            "members": [
+              {
+                "type": "SYMBOL",
+                "name": "identifier"
+              },
+              {
+                "type": "SYMBOL",
+                "name": "call_expression"
+              },
+              {
+                "type": "SYMBOL",
+                "name": "field_expression"
+              },
+              {
+                "type": "SYMBOL",
+                "name": "pointer_expression"
+              },
+              {
+                "type": "SYMBOL",
+                "name": "subscript_expression"
+              },
+              {
+                "type": "SYMBOL",
+                "name": "parenthesized_expression"
+              }
+            ]
           },
-          "named": true,
-          "value": "identifier"
-        },
-        {
-          "type": "ALIAS",
-          "content": {
+          {
             "type": "SYMBOL",
-            "name": "_contextual_identifier"
+            "name": "update_expression"
           },
-          "named": true,
-          "value": "identifier"
-        },
-        {
-          "type": "SYMBOL",
-          "name": "user_defined_literal"
-        },
-        {
-          "type": "SYMBOL",
-          "name": "suffixed_string_literal"
-        },
-        {
-          "type": "SYMBOL",
-          "name": "concatenated_string"
-        }
-      ]
+          {
+            "type": "SYMBOL",
+            "name": "template_function"
+          },
+          {
+            "type": "SYMBOL",
+            "name": "qualified_identifier"
+          },
+          {
+            "type": "SYMBOL",
+            "name": "compound_literal_expression"
+          },
+          {
+            "type": "SYMBOL",
+            "name": "cpp_cast_expression"
+          },
+          {
+            "type": "ALIAS",
+            "content": {
+              "type": "STRING",
+              "value": "ref"
+            },
+            "named": true,
+            "value": "identifier"
+          },
+          {
+            "type": "ALIAS",
+            "content": {
+              "type": "SYMBOL",
+              "name": "_contextual_identifier"
+            },
+            "named": true,
+            "value": "identifier"
+          },
+          {
+            "type": "SYMBOL",
+            "name": "user_defined_literal"
+          },
+          {
+            "type": "SYMBOL",
+            "name": "suffixed_string_literal"
+          },
+          {
+            "type": "SYMBOL",
+            "name": "concatenated_string"
+          }
+        ]
+      }
     },
     "assignment_expression": {
       "type": "PREC_RIGHT",
@@ -13476,6 +13480,60 @@
         }
       ]
     },
+    "elaborated_type_specifier": {
+      "type": "PREC_RIGHT",
+      "value": 1,
+      "content": {
+        "type": "SEQ",
+        "members": [
+          {
+            "type": "CHOICE",
+            "members": [
+              {
+                "type": "STRING",
+                "value": "class"
+              },
+              {
+                "type": "STRING",
+                "value": "struct"
+              },
+              {
+                "type": "STRING",
+                "value": "union"
+              },
+              {
+                "type": "STRING",
+                "value": "enum"
+              }
+            ]
+          },
+          {
+            "type": "REPEAT",
+            "content": {
+              "type": "CHOICE",
+              "members": [
+                {
+                  "type": "SYMBOL",
+                  "name": "attribute_specifier"
+                },
+                {
+                  "type": "SYMBOL",
+                  "name": "attribute_declaration"
+                }
+              ]
+            }
+          },
+          {
+            "type": "FIELD",
+            "name": "name",
+            "content": {
+              "type": "SYMBOL",
+              "name": "_class_name"
+            }
+          }
+        ]
+      }
+    },
     "macro_replacement_list": {
       "type": "SEQ",
       "members": [
@@ -18055,6 +18113,60 @@
           }
         }
       ]
+    },
+    "elaborated_type_descriptor": {
+      "type": "PREC_RIGHT",
+      "value": 0,
+      "content": {
+        "type": "SEQ",
+        "members": [
+          {
+            "type": "REPEAT",
+            "content": {
+              "type": "SYMBOL",
+              "name": "type_qualifier"
+            }
+          },
+          {
+            "type": "FIELD",
+            "name": "type",
+            "content": {
+              "type": "SYMBOL",
+              "name": "elaborated_type_specifier"
+            }
+          },
+          {
+            "type": "REPEAT",
+            "content": {
+              "type": "SYMBOL",
+              "name": "type_qualifier"
+            }
+          },
+          {
+            "type": "REPEAT",
+            "content": {
+              "type": "SYMBOL",
+              "name": "post_type_macro_annotation"
+            }
+          },
+          {
+            "type": "FIELD",
+            "name": "declarator",
+            "content": {
+              "type": "CHOICE",
+              "members": [
+                {
+                  "type": "SYMBOL",
+                  "name": "_abstract_declarator"
+                },
+                {
+                  "type": "BLANK"
+                }
+              ]
+            }
+          }
+        ]
+      }
     },
     "_class_declaration": {
       "type": "SEQ",
@@ -25084,8 +25196,22 @@
           "value": "->"
         },
         {
-          "type": "SYMBOL",
-          "name": "type_descriptor"
+          "type": "CHOICE",
+          "members": [
+            {
+              "type": "SYMBOL",
+              "name": "type_descriptor"
+            },
+            {
+              "type": "ALIAS",
+              "content": {
+                "type": "SYMBOL",
+                "name": "elaborated_type_descriptor"
+              },
+              "named": true,
+              "value": "type_descriptor"
+            }
+          ]
         }
       ]
     },
@@ -36855,6 +36981,23 @@
   ],
   "conflicts": [
     [
+      "_assignment_left_expression",
+      "_conditional_alternative"
+    ],
+    [
+      "type_specifier",
+      "expression",
+      "_assignment_left_expression"
+    ],
+    [
+      "elaborated_type_specifier",
+      "_class_declaration"
+    ],
+    [
+      "enum_specifier",
+      "elaborated_type_specifier"
+    ],
+    [
       "_type_constraint",
       "_class_name"
     ],
@@ -38161,7 +38304,6 @@
     "_type_identifier",
     "_statement_identifier",
     "_non_case_statement",
-    "_assignment_left_expression",
     "_expression_not_binary",
     "_namespace_identifier"
   ],
