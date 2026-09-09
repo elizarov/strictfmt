@@ -33,6 +33,7 @@ MacroCategories:
     - FORMAT_FIXTURE_STRINGIZE
     - FORMAT_FIXTURE_TOKEN_PASTE
   BareIdentifierMacros:
+    - FORMAT_PARAMETER_SUFFIX*
     - FORMAT_DECLARATOR_MODIFIER
     - WINAPI
   CallSyntaxMacros:

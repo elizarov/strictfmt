@@ -4430,7 +4430,7 @@ function parenthesizedDeclarator($, declarator, preference = PREC.PAREN_DECLARAT
 }
 
 function attributedDeclarator($, declarator) {
-  return prec.right(seq(declarator, repeat1($.attribute_declaration)));
+  return prec.right(seq(declarator, repeat1(choice($.attribute_declaration, $.function_suffix_macro))));
 }
 
 function arrayDeclarator($, declarator) {

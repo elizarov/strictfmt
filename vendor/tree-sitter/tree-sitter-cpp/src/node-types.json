@@ -1298,6 +1298,10 @@
           "named": true
         },
         {
+          "type": "function_suffix_macro",
+          "named": true
+        },
+        {
           "type": "identifier",
           "named": true
         },

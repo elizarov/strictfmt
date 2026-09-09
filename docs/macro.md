@@ -177,7 +177,7 @@ enum netrc_t {
 };
 ```
 
-Function suffix macro: the macro appears after a function declarator where an attribute-like suffix is expected.
+Declarator suffix macro: the macro appears after a declarator where an attribute-like suffix is expected, including parameter, field and function declarators.
 
 <!-- .cpp-format
 MacroCategories:
@@ -188,6 +188,8 @@ MacroCategories:
 ```cpp
 class DataView {
     Data& operator*() & FORMAT_USERVER_LIFETIME_BOUND;
+
+    Data& Borrow(Data& value FORMAT_USERVER_LIFETIME_BOUND);
 
     void Verify() GTEST_LOCK_EXCLUDED_(mutex);
 };

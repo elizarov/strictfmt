@@ -6759,3 +6759,28 @@ struct module {
 };
 
 }
+
+namespace ParameterSuffixMacros {
+
+#define FORMAT_PARAMETER_SUFFIX [[maybe_unused]]
+#define FORMAT_PARAMETER_SUFFIX_CALL(...) [[maybe_unused]]
+int Read(int value FORMAT_PARAMETER_SUFFIX) { return value; }
+int Called(int value FORMAT_PARAMETER_SUFFIX_CALL(value)) { return value; }
+template <class T>
+void Default(T value FORMAT_PARAMETER_SUFFIX_CALL(T) = {}) { (void)value; }
+int& Identity(int& value FORMAT_PARAMETER_SUFFIX) { return value; }
+void Pointer(int* pointer FORMAT_PARAMETER_SUFFIX, int array FORMAT_PARAMETER_SUFFIX[2]) {}
+void Capture() {
+    auto identity = [](auto value FORMAT_PARAMETER_SUFFIX) { return value; };
+    (void)identity(1);
+}
+
+struct Values {
+    int member FORMAT_PARAMETER_SUFFIX = 1;
+
+    int Method(int value FORMAT_PARAMETER_SUFFIX) const { return value; }
+};
+#undef FORMAT_PARAMETER_SUFFIX_CALL
+#undef FORMAT_PARAMETER_SUFFIX
+
+}
