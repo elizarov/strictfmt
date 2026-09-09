@@ -48,6 +48,8 @@ SOURCE_SUFFIXES = {
 }
 INPUT_FIXTURE = Path("src") / "format_test_input.cpp"
 OUTPUT_FIXTURE = Path("src") / "format_test_output.cpp"
+PREPROCESSOR_EOF_INPUT_FIXTURE = Path("src") / "format_preprocessor_eof_input.cpp"
+PREPROCESSOR_EOF_OUTPUT_FIXTURE = Path("src") / "format_preprocessor_eof_output.cpp"
 MAIN_INCLUDE_INPUT_FIXTURE = Path("src") / "format_main_include_input.cpp"
 MAIN_INCLUDE_OUTPUT_FIXTURE = Path("src") / "format_main_include_output.cpp"
 OPTIMIZATION_INPUT_FIXTURE = Path("src") / "format_optimization_input.cpp"
@@ -72,6 +74,7 @@ CHAIN_FORMAT_CONFIG = TEST_ROOT / ".cpp-format-chain"
 NON_ASCII_FORMAT_CONFIG = TEST_ROOT / ".cpp-format-non-ascii"
 FORMATTED_GOLDEN_OUTPUTS = (
     ("default", OUTPUT_FIXTURE, None),
+    ("preprocessor-eof", PREPROCESSOR_EOF_OUTPUT_FIXTURE, None),
     ("optimization", OPTIMIZATION_OUTPUT_FIXTURE, OPTIMIZATION_FORMAT_CONFIG),
     ("chain", CHAIN_OUTPUT_FIXTURE, CHAIN_FORMAT_CONFIG),
     ("non-ascii", NON_ASCII_OUTPUT_FIXTURE, NON_ASCII_FORMAT_CONFIG),
@@ -387,6 +390,32 @@ class FormatCommandTests(unittest.TestCase):
         self.assertEqual(read_fixture(OUTPUT_FIXTURE), result.stdout)
         self.assert_no_unsupported_placement_warnings(result)
         self.assertRegex(result.stderr, r"Formatted stdin in (?:\d+ms|\d+\.\d{3}s)\.\s*$")
+
+    def test_preprocessor_eof_formats_to_expected_output(self) -> None:
+        result = native_format("--stdin", cwd=TEST_ROOT, input_text=read_fixture(PREPROCESSOR_EOF_INPUT_FIXTURE))
+
+        self.assertEqual(0, result.returncode, msg=f"stdout:\n{result.stdout}\n\nstderr:\n{result.stderr}")
+        self.assertEqual(read_fixture(PREPROCESSOR_EOF_OUTPUT_FIXTURE), result.stdout)
+
+    def test_preprocessor_directives_at_end_of_input(self) -> None:
+        directives = (
+            "#", "# /* empty */", "# // empty", "#pragma once", "#include <cstddef>",
+            "#define VALUE 1", "#define EMPTY", "#define EMPTY_FUNCTION()",
+        )
+        for directive in directives:
+            for ending in ("", "   ", " \\\n", " \\\r\n", " \\\n \\\n   "):
+                with self.subTest(directive=directive, ending=ending):
+                    source = directive + ending
+                    result = native_format("--stdin", input_text=source)
+                    expected = native_format("--stdin", input_text=source + "\n")
+                    self.assertEqual(0, result.returncode, msg=result.stderr)
+                    self.assertEqual(0, expected.returncode, msg=expected.stderr)
+                    self.assertEqual(expected.stdout, result.stdout)
+        for source in ("#if 1", '#define VALUE "unterminated'):
+            with self.subTest(incomplete=source):
+                result = native_format("--stdin", input_text=source)
+                self.assertNotEqual(0, result.returncode)
+                self.assertIn("parse failed", result.stderr)
 
     def test_golden_input_parses_without_errors(self) -> None:
         with copied_fixtures(INPUT_FIXTURE) as fixtures:

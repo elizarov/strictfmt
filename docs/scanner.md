@@ -70,7 +70,7 @@ the whole pasted name opaque to the formatter.
 
 `_preproc_directive_end` and `_line_break_whitespace` split scanner-visible whitespace into two roles:
 
-- `_preproc_directive_end` is returned when the parser is currently ending a preprocessor directive.
+- `_preproc_directive_end` is returned when the parser is currently ending a preprocessor directive, at a physical newline or at end of input. End of input also terminates a directive after its final line splice.
 - `_line_break_whitespace` is returned as hidden whitespace everywhere else.
 
 When a configured macro identifier follows horizontal whitespace in a parser state that accepts `_line_break_whitespace`, that token supplies a lexical boundary so the generated lexer cannot consume the identifier before the runtime scanner classifies it. This applies both at line starts and between other tokens, including inside structured macro replacements. The boundary also keeps skipped spaces outside the external identifier's source range. Leading indentation needs explicit handling at the start of a preprocessor branch because the directive-ending token owns the preceding newline.

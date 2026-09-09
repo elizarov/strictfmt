@@ -518,12 +518,29 @@ bool tree_sitter_cpp_external_scanner_scan(void *payload, TSLexer *lexer, const 
 
     if (valid_symbols[PREPROC_DIRECTIVE_END] &&
         (lexer->lookahead == ' ' || lexer->lookahead == '\t' || lexer->lookahead == '\f' ||
-         lexer->lookahead == '\r' || lexer->lookahead == '\n')) {
+         lexer->lookahead == '\r' || lexer->lookahead == '\n' || lexer->eof(lexer))) {
         const bool horizontal = scan_horizontal_whitespace(lexer);
         if (horizontal) {
             lexer->mark_end(lexer);
         }
-        if (scan_newline(lexer)) {
+        if (scan_newline(lexer) || lexer->eof(lexer)) {
+            lexer->result_symbol = PREPROC_DIRECTIVE_END;
+            return true;
+        }
+        // Built-in extras can skip trailing splices without calling us again at the directive end.
+        // Only consume these splices here when no directive content follows them.
+        if (lexer->lookahead == '\\') {
+            do {
+                advance(lexer);
+                if (!scan_newline(lexer)) {
+                    return false;
+                }
+                scan_horizontal_whitespace(lexer);
+            } while (lexer->lookahead == '\\');
+            if (!lexer->eof(lexer) && !scan_newline(lexer)) {
+                return false;
+            }
+            lexer->mark_end(lexer);
             lexer->result_symbol = PREPROC_DIRECTIVE_END;
             return true;
         }

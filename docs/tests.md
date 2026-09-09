@@ -105,6 +105,7 @@ and exist only to exercise one command or configuration edge.
 - `tests/format/src/format_test_input.cpp` ->
   `tests/format/src/format_test_output.cpp`: broad default-configuration
   formatting coverage for ordinary C++ layout core as documented in [format.md].
+- `tests/format/src/format_preprocessor_eof_input.cpp` -> `tests/format/src/format_preprocessor_eof_output.cpp`: a structured macro whose final line splice reaches end of input; this boundary has its own fixture so later additions cannot move it away from EOF.
 - `tests/format/src/format_main_include_input.cpp` ->
   `tests/format/src/format_main_include_output.cpp`: main-header sorting with
   source filenames supplied by the test harness. Filename, suffix, and header
