@@ -88,6 +88,7 @@ function cppNonBinaryExpressions($, base) {
     $.requires_clause,
     alias($._contextual_identifier, $.identifier),
     $.suffixed_string_literal,
+    $.operator_name,
     $.template_function,
     $.qualified_identifier,
     $.typeid_expression,
@@ -223,6 +224,10 @@ module.exports = grammar(C, {
   ],
 
   conflicts: $ => [
+    [$.expression, $.template_function, $._conditional_alternative],
+    [$.expression, $.template_function],
+    [$._template_method_name, $.template_function],
+    [$.template_function, $.qualified_identifier],
     [$.macro_source_item_sequence_argument, $.macro_single_statement_argument],
     [$.macro_source_item_sequence_argument, $.macro_complete_statement_item],
     [$.macro_source_item_sequence_argument, $.macro_single_statement_argument, $._argument_list_item],
@@ -2371,7 +2376,7 @@ module.exports = grammar(C, {
     ),
 
     template_function: $ => prec.dynamic(3, seq(
-      field('name', identifierWithPaste($)),
+      field('name', choice(identifierWithPaste($), $.operator_name)),
       field('arguments', $.template_argument_list),
     )),
 

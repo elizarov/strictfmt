@@ -320,6 +320,10 @@
         "named": true
       },
       {
+        "type": "operator_name",
+        "named": true
+      },
+      {
         "type": "parameter_pack_expansion",
         "named": true
       },
@@ -1735,6 +1739,10 @@
           "named": true
         },
         {
+          "type": "operator_name",
+          "named": true
+        },
+        {
           "type": "parenthesized_expression",
           "named": true
         },
@@ -2954,6 +2962,10 @@
           },
           {
             "type": "offsetof_expression",
+            "named": true
+          },
+          {
+            "type": "operator_name",
             "named": true
           },
           {
@@ -13707,6 +13719,10 @@
             "named": true
           },
           {
+            "type": "operator_name",
+            "named": true
+          },
+          {
             "type": "or",
             "named": false
           },
@@ -14105,6 +14121,10 @@
             "named": true
           },
           {
+            "type": "operator_name",
+            "named": true
+          },
+          {
             "type": "or",
             "named": false
           },
@@ -14325,6 +14345,10 @@
         },
         {
           "type": "offsetof_expression",
+          "named": true
+        },
+        {
+          "type": "operator_name",
           "named": true
         },
         {
@@ -14559,6 +14583,10 @@
           },
           {
             "type": "offsetof_expression",
+            "named": true
+          },
+          {
+            "type": "operator_name",
             "named": true
           },
           {
@@ -16316,6 +16344,10 @@
             "named": true
           },
           {
+            "type": "operator_name",
+            "named": true
+          },
+          {
             "type": "parameter_pack_expansion",
             "named": true
           },
@@ -16788,6 +16820,10 @@
             "named": true
           },
           {
+            "type": "operator_name",
+            "named": true
+          },
+          {
             "type": "or",
             "named": false
           },
@@ -17176,6 +17212,10 @@
             "named": true
           },
           {
+            "type": "operator_name",
+            "named": true
+          },
+          {
             "type": "or",
             "named": false
           },
@@ -17403,6 +17443,10 @@
           "named": true
         },
         {
+          "type": "operator_name",
+          "named": true
+        },
+        {
           "type": "parameter_pack_expansion",
           "named": true
         },
@@ -17599,6 +17643,10 @@
           },
           {
             "type": "macro_token_paste_expression",
+            "named": true
+          },
+          {
+            "type": "operator_name",
             "named": true
           },
           {

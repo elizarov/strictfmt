@@ -8559,6 +8559,10 @@
         },
         {
           "type": "SYMBOL",
+          "name": "operator_name"
+        },
+        {
+          "type": "SYMBOL",
           "name": "template_function"
         },
         {
@@ -25422,23 +25426,32 @@
                   "type": "CHOICE",
                   "members": [
                     {
-                      "type": "SYMBOL",
-                      "name": "identifier"
+                      "type": "CHOICE",
+                      "members": [
+                        {
+                          "type": "SYMBOL",
+                          "name": "identifier"
+                        },
+                        {
+                          "type": "ALIAS",
+                          "content": {
+                            "type": "SYMBOL",
+                            "name": "_contextual_identifier"
+                          },
+                          "named": true,
+                          "value": "identifier"
+                        }
+                      ]
                     },
                     {
-                      "type": "ALIAS",
-                      "content": {
-                        "type": "SYMBOL",
-                        "name": "_contextual_identifier"
-                      },
-                      "named": true,
-                      "value": "identifier"
+                      "type": "SYMBOL",
+                      "name": "macro_token_paste_expression"
                     }
                   ]
                 },
                 {
                   "type": "SYMBOL",
-                  "name": "macro_token_paste_expression"
+                  "name": "operator_name"
                 }
               ]
             }
@@ -30776,6 +30789,10 @@
         {
           "type": "SYMBOL",
           "name": "suffixed_string_literal"
+        },
+        {
+          "type": "SYMBOL",
+          "name": "operator_name"
         },
         {
           "type": "SYMBOL",
@@ -37145,6 +37162,23 @@
     }
   ],
   "conflicts": [
+    [
+      "expression",
+      "template_function",
+      "_conditional_alternative"
+    ],
+    [
+      "expression",
+      "template_function"
+    ],
+    [
+      "_template_method_name",
+      "template_function"
+    ],
+    [
+      "template_function",
+      "qualified_identifier"
+    ],
     [
       "macro_source_item_sequence_argument",
       "macro_single_statement_argument"

@@ -24,7 +24,7 @@ This document specifies the source layout produced by `strictfmt`. Wrapping exam
 - Keep the reflection operator and splice delimiters tight, e.g. `value.[:member:]`.
 - Put one space between a structured-binding pack ellipsis and its identifier, e.g. `[first, ... rest]`.
 - Bind type declarator symbols to the type, e.g. `int* value`.
-- Treat `operator` plus a following symbolic operator as one function name, e.g. `operator==(`.
+- Treat `operator` plus a following symbolic operator as one function name, e.g. `operator==(`. Separate a terminal `<` or `<<` from a following template-argument opener, e.g. `operator< <T>`.
 - Put one space after `operator` for conversion, allocation, and deallocation operators, e.g. `operator bool(`.
 - Treat destructor `~` plus the following type name as one function name, e.g. `~Widget(`.
 - Put no space between a C-style cast and the expression it prefixes, e.g. `(void)value`.

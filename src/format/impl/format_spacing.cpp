@@ -575,6 +575,9 @@ bool FormatTokenNeedsSpace(const PrintToken* previous, const PrintToken& current
     if (SyntaxNodeKindHasClass(prev, SyntaxNodeClass::PreprocessorDirective)) {
         return true;
     }
+    if (cur == SyntaxNodeKind::Less && IsTemplateAnglePrintToken(current) && IsOperatorSpellingContext(*previous)) {
+        return prev == SyntaxNodeKind::Less || prev == SyntaxNodeKind::LessLess;
+    }
     if (IsTemplateArgumentExpressionOperator(*previous) || IsTemplateArgumentExpressionOperator(current)) {
         return true;
     }

@@ -7149,3 +7149,49 @@ void Check() {
 #undef FORMAT_TYPE_ALIAS
 
 }
+
+namespace OperatorTemplateInstantiations {
+
+struct Transform {
+    template <class T>
+    T operator()(T value) const { return value; }
+    template <class T>
+    T operator+(T value) const { return value; }
+    template <class T>
+    bool operator==(T value) const { return value == T{}; }
+    template <class T>
+    bool operator<(T value) const { return value < T{}; }
+    template <class T>
+    T operator<<(T value) const { return value; }
+    template <class T>
+    Transform& operator=(T) { return *this; }
+    int operator[](int value) const { return value; }
+    int Again(int value) const { return operator()(value); }
+    int Explicit(int value) const { return operator()<int>(value); }
+    int Either(bool flag, int value) const { return flag ? value : operator()<int>(value); }
+    int Indexed(int value) const { return operator[](value); }
+    bool Equal(int value) const { return operator==(value); }
+    template <class T>
+    auto Relay(T value) const -> decltype(operator()(value)) { return operator()(value); }
+};
+
+template int Transform::operator()<int>(int) const;
+template int Transform::operator+<int>(int) const;
+template bool Transform::operator==<int>(int) const;
+template bool Transform::operator< <int>(int) const;
+template int Transform::operator<< <int>(int) const;
+template Transform& Transform::operator=<int>(int);
+template <>
+long Transform::operator+<long>(long value) const { return value; }
+auto Invoke() { return Transform{}.operator()<int>(1); }
+auto Compare() { return Transform{}.operator< <int>(1); }
+auto Address() { return &Transform::operator()<int>; }
+
+struct Record {
+    int value;
+
+    friend bool operator==(Record a, Record b) { return a.value == b.value; }
+    friend bool operator!=(Record a, Record b) { return !operator==(a, b); }
+};
+
+}
