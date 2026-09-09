@@ -1828,6 +1828,10 @@
           {
             "type": "macro_argument_list",
             "named": true
+          },
+          {
+            "type": "preprocessing_token_argument_list",
+            "named": true
           }
         ]
       },
@@ -1837,6 +1841,10 @@
         "types": [
           {
             "type": "semicolonless_call_macro_identifier",
+            "named": true
+          },
+          {
+            "type": "semicolonless_preprocessor_call_macro_identifier",
             "named": true
           }
         ]
@@ -1854,6 +1862,10 @@
           {
             "type": "macro_argument_list",
             "named": true
+          },
+          {
+            "type": "preprocessing_token_argument_list",
+            "named": true
           }
         ]
       },
@@ -1863,6 +1875,10 @@
         "types": [
           {
             "type": "semicolonless_call_macro_identifier",
+            "named": true
+          },
+          {
+            "type": "semicolonless_preprocessor_call_macro_identifier",
             "named": true
           }
         ]
@@ -6693,6 +6709,10 @@
           {
             "type": "macro_argument_list",
             "named": true
+          },
+          {
+            "type": "preprocessing_token_argument_list",
+            "named": true
           }
         ]
       },
@@ -6706,6 +6726,10 @@
           },
           {
             "type": "semicolonless_call_macro_identifier",
+            "named": true
+          },
+          {
+            "type": "semicolonless_preprocessor_call_macro_identifier",
             "named": true
           }
         ]
@@ -6727,6 +6751,10 @@
           {
             "type": "macro_argument_list",
             "named": true
+          },
+          {
+            "type": "preprocessing_token_argument_list",
+            "named": true
           }
         ]
       },
@@ -6740,6 +6768,10 @@
           },
           {
             "type": "semicolonless_call_macro_identifier",
+            "named": true
+          },
+          {
+            "type": "semicolonless_preprocessor_call_macro_identifier",
             "named": true
           }
         ]
@@ -17810,6 +17842,10 @@
           {
             "type": "macro_argument_list",
             "named": true
+          },
+          {
+            "type": "preprocessing_token_argument_list",
+            "named": true
           }
         ]
       },
@@ -17819,6 +17855,10 @@
         "types": [
           {
             "type": "semicolonless_call_macro_identifier",
+            "named": true
+          },
+          {
+            "type": "semicolonless_preprocessor_call_macro_identifier",
             "named": true
           }
         ]
@@ -19441,6 +19481,10 @@
   },
   {
     "type": "semicolonless_call_macro_identifier",
+    "named": true
+  },
+  {
+    "type": "semicolonless_preprocessor_call_macro_identifier",
     "named": true
   },
   {

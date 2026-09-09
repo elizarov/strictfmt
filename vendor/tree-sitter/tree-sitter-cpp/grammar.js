@@ -104,6 +104,19 @@ function cppNonBinaryExpressions($, base) {
   );
 }
 
+function semicolonlessMacroCall($) {
+  return choice(
+    seq(
+      field('function', $.semicolonless_call_macro_identifier),
+      field('arguments', $.macro_argument_list),
+    ),
+    seq(
+      field('function', $.semicolonless_preprocessor_call_macro_identifier),
+      field('arguments', $.preprocessing_token_argument_list),
+    ),
+  );
+}
+
 function initializerClause($) {
   return choice($.initializer_pair, $.expression, $._braced_initializer_clause);
 }
@@ -173,6 +186,7 @@ module.exports = grammar(C, {
     $.preprocessor_argument_macro_identifier,
     $.semicolonless_call_macro_identifier,
     $.statement_prefix_macro_identifier,
+    $.semicolonless_preprocessor_call_macro_identifier,
     $._preproc_directive_end,
     $._line_break_whitespace,
   ],
@@ -840,14 +854,12 @@ module.exports = grammar(C, {
     ),
 
     block_macro_call_line_item: $ => prec.dynamic(10, prec.right(PREC.CALL + 8, seq(
-      field('function', $.semicolonless_call_macro_identifier),
-      field('arguments', $.macro_argument_list),
+      semicolonlessMacroCall($),
       optional($._line_break_whitespace),
     ))),
 
     block_macro_call_statement_item: $ => prec.dynamic(10, prec.right(PREC.CALL + 8, seq(
-      field('function', $.semicolonless_call_macro_identifier),
-      field('arguments', $.macro_argument_list),
+      semicolonlessMacroCall($),
       ';',
     ))),
 
@@ -860,8 +872,7 @@ module.exports = grammar(C, {
     )),
 
     top_level_macro_call_line_item: $ => prec.dynamic(10, prec(PREC.CALL + 8, seq(
-      field('function', $.semicolonless_call_macro_identifier),
-      field('arguments', $.macro_argument_list),
+      semicolonlessMacroCall($),
       optional($._line_break_whitespace),
     ))),
 
@@ -870,15 +881,13 @@ module.exports = grammar(C, {
         field('function', $.call_syntax_macro_identifier),
         field('arguments', $.call_syntax_macro_argument_list),
       )),
-      prec.right(PREC.CALL + 2, seq(
-        field('function', $.semicolonless_call_macro_identifier),
-        field('arguments', $.macro_argument_list),
-      )),
+      prec.right(PREC.CALL + 2, semicolonlessMacroCall($)),
     ),
 
     macro_call_identifier: $ => choice(
       $.call_syntax_macro_identifier,
       $.semicolonless_call_macro_identifier,
+      $.semicolonless_preprocessor_call_macro_identifier,
     ),
 
     macro_decorator_call_item: $ => prec(PREC.CALL + 8, seq(
@@ -3414,10 +3423,7 @@ module.exports = grammar(C, {
         field('function', $.call_syntax_macro_identifier),
         field('arguments', $.call_syntax_macro_argument_list),
       )),
-      prec(PREC.CALL, seq(
-        field('function', $.semicolonless_call_macro_identifier),
-        field('arguments', $.macro_argument_list),
-      )),
+      prec(PREC.CALL, semicolonlessMacroCall($)),
     ),
 
     macro_qualified_identifier: $ => seq(

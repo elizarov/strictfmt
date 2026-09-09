@@ -14285,20 +14285,51 @@
           "type": "SEQ",
           "members": [
             {
-              "type": "FIELD",
-              "name": "function",
-              "content": {
-                "type": "SYMBOL",
-                "name": "semicolonless_call_macro_identifier"
-              }
-            },
-            {
-              "type": "FIELD",
-              "name": "arguments",
-              "content": {
-                "type": "SYMBOL",
-                "name": "macro_argument_list"
-              }
+              "type": "CHOICE",
+              "members": [
+                {
+                  "type": "SEQ",
+                  "members": [
+                    {
+                      "type": "FIELD",
+                      "name": "function",
+                      "content": {
+                        "type": "SYMBOL",
+                        "name": "semicolonless_call_macro_identifier"
+                      }
+                    },
+                    {
+                      "type": "FIELD",
+                      "name": "arguments",
+                      "content": {
+                        "type": "SYMBOL",
+                        "name": "macro_argument_list"
+                      }
+                    }
+                  ]
+                },
+                {
+                  "type": "SEQ",
+                  "members": [
+                    {
+                      "type": "FIELD",
+                      "name": "function",
+                      "content": {
+                        "type": "SYMBOL",
+                        "name": "semicolonless_preprocessor_call_macro_identifier"
+                      }
+                    },
+                    {
+                      "type": "FIELD",
+                      "name": "arguments",
+                      "content": {
+                        "type": "SYMBOL",
+                        "name": "preprocessing_token_argument_list"
+                      }
+                    }
+                  ]
+                }
+              ]
             },
             {
               "type": "CHOICE",
@@ -14326,20 +14357,51 @@
           "type": "SEQ",
           "members": [
             {
-              "type": "FIELD",
-              "name": "function",
-              "content": {
-                "type": "SYMBOL",
-                "name": "semicolonless_call_macro_identifier"
-              }
-            },
-            {
-              "type": "FIELD",
-              "name": "arguments",
-              "content": {
-                "type": "SYMBOL",
-                "name": "macro_argument_list"
-              }
+              "type": "CHOICE",
+              "members": [
+                {
+                  "type": "SEQ",
+                  "members": [
+                    {
+                      "type": "FIELD",
+                      "name": "function",
+                      "content": {
+                        "type": "SYMBOL",
+                        "name": "semicolonless_call_macro_identifier"
+                      }
+                    },
+                    {
+                      "type": "FIELD",
+                      "name": "arguments",
+                      "content": {
+                        "type": "SYMBOL",
+                        "name": "macro_argument_list"
+                      }
+                    }
+                  ]
+                },
+                {
+                  "type": "SEQ",
+                  "members": [
+                    {
+                      "type": "FIELD",
+                      "name": "function",
+                      "content": {
+                        "type": "SYMBOL",
+                        "name": "semicolonless_preprocessor_call_macro_identifier"
+                      }
+                    },
+                    {
+                      "type": "FIELD",
+                      "name": "arguments",
+                      "content": {
+                        "type": "SYMBOL",
+                        "name": "preprocessing_token_argument_list"
+                      }
+                    }
+                  ]
+                }
+              ]
             },
             {
               "type": "STRING",
@@ -14424,20 +14486,51 @@
           "type": "SEQ",
           "members": [
             {
-              "type": "FIELD",
-              "name": "function",
-              "content": {
-                "type": "SYMBOL",
-                "name": "semicolonless_call_macro_identifier"
-              }
-            },
-            {
-              "type": "FIELD",
-              "name": "arguments",
-              "content": {
-                "type": "SYMBOL",
-                "name": "macro_argument_list"
-              }
+              "type": "CHOICE",
+              "members": [
+                {
+                  "type": "SEQ",
+                  "members": [
+                    {
+                      "type": "FIELD",
+                      "name": "function",
+                      "content": {
+                        "type": "SYMBOL",
+                        "name": "semicolonless_call_macro_identifier"
+                      }
+                    },
+                    {
+                      "type": "FIELD",
+                      "name": "arguments",
+                      "content": {
+                        "type": "SYMBOL",
+                        "name": "macro_argument_list"
+                      }
+                    }
+                  ]
+                },
+                {
+                  "type": "SEQ",
+                  "members": [
+                    {
+                      "type": "FIELD",
+                      "name": "function",
+                      "content": {
+                        "type": "SYMBOL",
+                        "name": "semicolonless_preprocessor_call_macro_identifier"
+                      }
+                    },
+                    {
+                      "type": "FIELD",
+                      "name": "arguments",
+                      "content": {
+                        "type": "SYMBOL",
+                        "name": "preprocessing_token_argument_list"
+                      }
+                    }
+                  ]
+                }
+              ]
             },
             {
               "type": "CHOICE",
@@ -14487,23 +14580,49 @@
           "type": "PREC_RIGHT",
           "value": 17,
           "content": {
-            "type": "SEQ",
+            "type": "CHOICE",
             "members": [
               {
-                "type": "FIELD",
-                "name": "function",
-                "content": {
-                  "type": "SYMBOL",
-                  "name": "semicolonless_call_macro_identifier"
-                }
+                "type": "SEQ",
+                "members": [
+                  {
+                    "type": "FIELD",
+                    "name": "function",
+                    "content": {
+                      "type": "SYMBOL",
+                      "name": "semicolonless_call_macro_identifier"
+                    }
+                  },
+                  {
+                    "type": "FIELD",
+                    "name": "arguments",
+                    "content": {
+                      "type": "SYMBOL",
+                      "name": "macro_argument_list"
+                    }
+                  }
+                ]
               },
               {
-                "type": "FIELD",
-                "name": "arguments",
-                "content": {
-                  "type": "SYMBOL",
-                  "name": "macro_argument_list"
-                }
+                "type": "SEQ",
+                "members": [
+                  {
+                    "type": "FIELD",
+                    "name": "function",
+                    "content": {
+                      "type": "SYMBOL",
+                      "name": "semicolonless_preprocessor_call_macro_identifier"
+                    }
+                  },
+                  {
+                    "type": "FIELD",
+                    "name": "arguments",
+                    "content": {
+                      "type": "SYMBOL",
+                      "name": "preprocessing_token_argument_list"
+                    }
+                  }
+                ]
               }
             ]
           }
@@ -14520,6 +14639,10 @@
         {
           "type": "SYMBOL",
           "name": "semicolonless_call_macro_identifier"
+        },
+        {
+          "type": "SYMBOL",
+          "name": "semicolonless_preprocessor_call_macro_identifier"
         }
       ]
     },
@@ -31322,23 +31445,49 @@
           "type": "PREC",
           "value": 15,
           "content": {
-            "type": "SEQ",
+            "type": "CHOICE",
             "members": [
               {
-                "type": "FIELD",
-                "name": "function",
-                "content": {
-                  "type": "SYMBOL",
-                  "name": "semicolonless_call_macro_identifier"
-                }
+                "type": "SEQ",
+                "members": [
+                  {
+                    "type": "FIELD",
+                    "name": "function",
+                    "content": {
+                      "type": "SYMBOL",
+                      "name": "semicolonless_call_macro_identifier"
+                    }
+                  },
+                  {
+                    "type": "FIELD",
+                    "name": "arguments",
+                    "content": {
+                      "type": "SYMBOL",
+                      "name": "macro_argument_list"
+                    }
+                  }
+                ]
               },
               {
-                "type": "FIELD",
-                "name": "arguments",
-                "content": {
-                  "type": "SYMBOL",
-                  "name": "macro_argument_list"
-                }
+                "type": "SEQ",
+                "members": [
+                  {
+                    "type": "FIELD",
+                    "name": "function",
+                    "content": {
+                      "type": "SYMBOL",
+                      "name": "semicolonless_preprocessor_call_macro_identifier"
+                    }
+                  },
+                  {
+                    "type": "FIELD",
+                    "name": "arguments",
+                    "content": {
+                      "type": "SYMBOL",
+                      "name": "preprocessing_token_argument_list"
+                    }
+                  }
+                ]
               }
             ]
           }
@@ -37566,6 +37715,10 @@
     {
       "type": "SYMBOL",
       "name": "statement_prefix_macro_identifier"
+    },
+    {
+      "type": "SYMBOL",
+      "name": "semicolonless_preprocessor_call_macro_identifier"
     },
     {
       "type": "SYMBOL",

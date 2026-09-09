@@ -6527,3 +6527,40 @@ FORMAT_ATTRIBUTE_MS_NOINLINE int External(int value) { return value; }
 #undef FORMAT_ATTRIBUTE_MS_NOINLINE
 
 }
+
+namespace SemicolonlessPreprocessorMacros {
+
+void Consume(int);
+
+#define FORMAT_TOKEN_ITEM(name, ...) static constexpr int name = 1;
+#define FORMAT_TOKEN_STATEMENT(...) Consume(1);
+#define FORMAT_TOKEN_WRAPPER(name, ...) FORMAT_TOKEN_ITEM(name, __VA_ARGS__)
+FORMAT_TOKEN_ITEM(global, +, (one, two)(three, four))
+FORMAT_TOKEN_ITEM(adjacent, *, )
+FORMAT_TOKEN_WRAPPER(wrapped, =, <> malformed_cpp)
+struct Values {
+    FORMAT_TOKEN_ITEM(member, +, (left, right)) FORMAT_TOKEN_WRAPPER(other, /,[])
+};
+
+void Run(bool condition) {
+    FORMAT_TOKEN_ITEM(local, +, (one, two))
+    FORMAT_TOKEN_STATEMENT(+, )
+    if (condition) {
+        FORMAT_TOKEN_STATEMENT(+, (x, y))
+    } else {
+        FORMAT_TOKEN_STATEMENT(*, (z))
+    }
+    while (condition) {
+        FORMAT_TOKEN_STATEMENT(++, <>);
+    }
+    for (; condition;) {
+        FORMAT_TOKEN_STATEMENT(/,[])
+    }
+    FORMAT_TOKEN_STATEMENT(, +);
+    Consume(local);
+}
+#undef FORMAT_TOKEN_ITEM
+#undef FORMAT_TOKEN_STATEMENT
+#undef FORMAT_TOKEN_WRAPPER
+
+}

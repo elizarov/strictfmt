@@ -44,6 +44,7 @@ The scanner owns these identifier tokens:
 - `statement_prefix_macro_identifier`
 - `call_syntax_macro_identifier`
 - `semicolonless_call_macro_identifier`
+- `semicolonless_preprocessor_call_macro_identifier`
 - `statement_argument_macro_identifier`
 - `type_specifier_macro_identifier`
 - `preprocessor_argument_macro_identifier`
@@ -52,7 +53,7 @@ The scanner reads a normal C/C++ identifier and then asks the formatter configur
 
 `raw_macro_replacement` captures the rest of a configured raw macro definition once the grammar has accepted the raw macro name and parameters. This is scanner-owned so the raw macro path can preserve a continuation backslash that appears immediately after the macro name or parameter list, before ordinary structured-macro continuation whitespace can consume it.
 
-The scanner classifies identifiers by configured macro category. [macro.md](macro.md) specifies the categories and their supported grammar uses. For `PreprocessorArgumentMacros`, the scanner owns only the configured identifier token; the grammar recursively balances the invocation's parentheses and separates its preprocessing-token arguments.
+The scanner classifies identifiers by configured macro category. [macro.md](macro.md) specifies the categories and their supported grammar uses. The combined semicolonless/preprocessor identifier records both matching runtime categories. For `PreprocessorArgumentMacros`, the scanner owns only the configured identifier token; the grammar recursively balances the invocation's parentheses and separates its preprocessing-token arguments.
 
 ### Token-Paste Prefixes
 

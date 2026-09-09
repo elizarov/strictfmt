@@ -19,6 +19,8 @@ MainIncludeChar: Quote
 IncludeIsMainRegex: '(Test)?$'
 
 MacroCategories:
+  PreprocessorArgumentMacros:
+    - FORMAT_TOKEN_*
   DeclarationPrefixMacros:
     - FORMAT_ATTRIBUTE_*
     - FORMAT_DECLARATOR_MODIFIER
@@ -42,6 +44,7 @@ MacroCategories:
     - FORMAT_FIXTURE_STATEMENT_ARGUMENT
     - FORMAT_FIXTURE_DECLARE_OPTION
   SemicolonlessCallMacros:
+    - FORMAT_TOKEN_*
     - FORMAT_SEMILESS_*
     - FORMAT_FIXTURE_CREATE_METRIC
     - FORMAT_FIXTURE_REGISTER_TYPE
