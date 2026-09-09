@@ -4181,3 +4181,61 @@ void Run(bool condition) {
 #undef FORMAT_TOKEN_STATEMENT
 #undef FORMAT_TOKEN_WRAPPER
 }
+
+namespace ContextualModule {
+namespace library { struct Value {}; }
+namespace module = library;
+module::Value Make() {
+ module::Value result;
+ result = module::Value{};
+ return result;
+}
+template<class> struct Box {};
+using Wrapped = Box<module::Value>;
+namespace import { struct Value {}; }
+using Imported = Box<import::Value>;
+}
+
+namespace ContextualKeywordNames {
+struct module { int import; };
+module Make() { module result{1}; return result; }
+int import(module value) { return value.import; }
+namespace final { struct override {}; }
+template<class> struct Box {};
+using Wrapped = Box<final::override>;
+}
+namespace ContextualTemplateAndCaptureNames {
+template<class module, class import = int> struct Values { module first; import second; };
+int Capture(int module, int import, int final, int override) {
+ auto sum = [module, &import, final, override] { return module + import + final + override; };
+ return sum();
+}
+using Selected = Values<int>;
+}
+namespace ContextualBindings {
+int Read() {
+ int values[]{1, 2};
+ auto [module, import] = values;
+ auto sum = [module = module, import = import, final = 3, override = 4] { return module + import + final + override; };
+ return sum();
+}
+template<class... T> int CapturePack(T... module) {
+ auto sum = [module...] { return (0 + ... + module); };
+ return sum();
+}
+}
+
+namespace ContextualRoles {
+enum class Items { module, import };
+template<class module> concept import = true;
+struct Record { int module; int import; };
+int Run() { int module = 1; goto import; import: module += 1; goto finish; module: return 0; finish: return module; }
+}
+
+namespace ContextualNestedMethod {
+namespace types { struct Text {}; template<class> struct List {}; template<class> struct Optional {}; struct Storage {}; }
+struct Config { const Config& operator[](const char*) const; template<class T> T As() const; };
+template<class T, class U> int Make(U);
+struct Owner { Owner(const Config&, const Config&); int storage; };
+Owner::Owner(const Config& config, const Config&) : storage(Make<types::Storage>(config["key"].As<types::Optional<types::List<types::Text>>>())) {}
+}

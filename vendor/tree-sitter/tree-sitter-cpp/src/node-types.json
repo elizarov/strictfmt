@@ -4670,6 +4670,11 @@
     }
   },
   {
+    "type": "field_identifier",
+    "named": true,
+    "fields": {}
+  },
+  {
     "type": "field_initializer",
     "named": true,
     "fields": {},
@@ -6102,6 +6107,11 @@
         }
       ]
     }
+  },
+  {
+    "type": "identifier",
+    "named": true,
+    "fields": {}
   },
   {
     "type": "if_statement",
@@ -8719,6 +8729,11 @@
         }
       ]
     }
+  },
+  {
+    "type": "namespace_identifier",
+    "named": true,
+    "fields": {}
   },
   {
     "type": "nested_namespace_specifier",
@@ -15878,6 +15893,11 @@
     }
   },
   {
+    "type": "statement_identifier",
+    "named": true,
+    "fields": {}
+  },
+  {
     "type": "statement_prefix_macro",
     "named": true,
     "fields": {},
@@ -18194,6 +18214,11 @@
     }
   },
   {
+    "type": "type_identifier",
+    "named": true,
+    "fields": {}
+  },
+  {
     "type": "type_parameter_declaration",
     "named": true,
     "fields": {},
@@ -19276,10 +19301,6 @@
     "named": true
   },
   {
-    "type": "field_identifier",
-    "named": true
-  },
-  {
     "type": "final",
     "named": false
   },
@@ -19302,10 +19323,6 @@
   {
     "type": "goto",
     "named": false
-  },
-  {
-    "type": "identifier",
-    "named": true
   },
   {
     "type": "if",
@@ -19354,10 +19371,6 @@
   {
     "type": "namespace",
     "named": false
-  },
-  {
-    "type": "namespace_identifier",
-    "named": true
   },
   {
     "type": "new",
@@ -19504,10 +19517,6 @@
     "named": true
   },
   {
-    "type": "statement_identifier",
-    "named": true
-  },
-  {
     "type": "statement_prefix_macro_identifier",
     "named": true
   },
@@ -19566,10 +19575,6 @@
   {
     "type": "try",
     "named": false
-  },
-  {
-    "type": "type_identifier",
-    "named": true
   },
   {
     "type": "type_specifier_macro_identifier",

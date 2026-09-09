@@ -1,13 +1,15 @@
 from __future__ import annotations
 
+import io
 import os
 import re
+import runpy
 import shutil
 import subprocess
 import sys
 import tempfile
 import unittest
-from contextlib import contextmanager
+from contextlib import contextmanager, redirect_stderr
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -1024,6 +1026,25 @@ class FormatCommandTests(unittest.TestCase):
 
         self.assertNotIn('"\\r\\n"', pretty_printer)
 
+    def test_generated_parser_rejects_upstream_index_overflow(self) -> None:
+        validate = runpy.run_path(str(GRAMMAR_REGENERATOR))["validate_generated_parser_indexes"]
+
+        def parser_source(state_count: int, action_index: int) -> str:
+            return (
+                f"#define STATE_COUNT {state_count}\n"
+                "static const TSParseActionEntry ts_parse_actions[] = {\n"
+                f"  [{action_index}] = {{.entry = {{.count = 1, .reusable = true}}}},\n"
+                "};\n"
+            )
+
+        validate(parser_source(65_536, 65_535))
+        for state_count, action_index in ((65_537, 0), (1, 65_536)):
+            with self.subTest(state_count=state_count, action_index=action_index):
+                diagnostic = io.StringIO()
+                with redirect_stderr(diagnostic), self.assertRaises(SystemExit):
+                    validate(parser_source(state_count, action_index))
+                self.assertIn("16-bit", diagnostic.getvalue())
+
     def test_grammar_has_only_reviewed_lexical_terminals(self) -> None:
         result = subprocess.run(
             [sys.executable, str(GRAMMAR_REGENERATOR), "--validate-structure-only"],
@@ -1095,6 +1116,14 @@ class FormatCommandTests(unittest.TestCase):
         greedy, bounded = dump.stdout.split('text: "bounded"')
         self.assertEqual(1, greedy.count("- kind: AssignmentExpression\n"))
         self.assertNotIn("AssignmentExpression", bounded)
+
+    def test_contextual_names_keep_module_directives_structured(self) -> None:
+        source = "module;\nexport module example;\nimport other.module;\nexport import :detail;\n"
+        dump = native_format("--stdin", "--dump-syntax-tree", input_text=source)
+
+        self.assertEqual(0, dump.returncode, msg=f"stdout:\n{dump.stdout}\n\nstderr:\n{dump.stderr}")
+        self.assertEqual(4, dump.stdout.count("- kind: Declaration\n"))
+        self.assertEqual(4, dump.stdout.count("- kind: LexicalToken\n"))
 
     def test_dump_reads_stdin_source(self) -> None:
         result = native_format("--stdin", "--dump-syntax-tree", input_text="int value(){return 2;}\n")

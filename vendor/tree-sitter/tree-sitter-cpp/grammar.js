@@ -86,8 +86,7 @@ function cppNonBinaryExpressions($, base) {
     $.co_await_expression,
     $.requires_expression,
     $.requires_clause,
-    alias('import', $.identifier),
-    alias('module', $.identifier),
+    alias($._contextual_identifier, $.identifier),
     $.suffixed_string_literal,
     $.template_function,
     $.qualified_identifier,
@@ -198,6 +197,15 @@ module.exports = grammar(C, {
   ],
 
   conflicts: $ => [
+    [$._template_method_name, $.dependent_field_identifier],
+    [$.qualified_field_identifier, $._template_method_name],
+    [$.field_expression, $._template_method_name],
+    [$._field_identifier, $.template_type, $.template_function],
+    [$._field_identifier, $._function_definition_name],
+    [$._field_identifier, $.template_type],
+    [$.labeled_statement, $._field_identifier],
+    [$.module_import_declaration, $._contextual_identifier],
+    [$.module_declaration, $._contextual_identifier],
     [$.expression, $._conditional_alternative, $.conditional_concatenated_string],
     [$.expression, $.template_type, $.template_function, $._conditional_alternative],
     [$.expression, $._conditional_alternative, $._callable_template_callee],
@@ -478,7 +486,8 @@ module.exports = grammar(C, {
     [$._top_level_item, $._function_definition_prefix_branch],
   ],
 
-  inline: ($, original) => original.concat([
+  // Share field-name reductions to avoid duplicating contextual identifier alternatives.
+  inline: ($, original) => original.filter(rule => rule.name !== '_field_identifier').concat([
     $._namespace_identifier,
   ]),
 
@@ -2133,12 +2142,12 @@ module.exports = grammar(C, {
     member_pointer_type_declarator: $ => memberPointerDeclarator($, $._type_declarator),
 
     structured_binding_declarator: $ => prec.dynamic(PREC.STRUCTURED_BINDING, seq(
-      '[', commaSep1(choice($.identifier, $.structured_binding_pack_identifier)), ']',
+      '[', commaSep1(choice(contextualIdentifier($), $.structured_binding_pack_identifier)), ']',
     )),
 
     structured_binding_pack_identifier: $ => seq(
       '...',
-      $.identifier,
+      contextualIdentifier($),
     ),
 
     ref_qualifier: _ => choice('&', '&&'),
@@ -2292,10 +2301,13 @@ module.exports = grammar(C, {
       field('arguments', $.template_argument_list),
     )),
 
-    template_method: $ => prec.dynamic(3, seq(
-      field('name', choice($._field_identifier, $.operator_name)),
+    // Prefer a method name before nested template arguments accumulate competing parses.
+    _template_method_name: $ => prec.dynamic(3, choice($._field_identifier, $.operator_name)),
+
+    template_method: $ => seq(
+      field('name', $._template_method_name),
       field('arguments', $.template_argument_list),
-    )),
+    ),
 
     template_function: $ => prec.dynamic(3, seq(
       field('name', identifierWithPaste($)),
@@ -2422,7 +2434,7 @@ module.exports = grammar(C, {
       ';',
     ),
 
-    module_declaration: $ => seq(
+    module_declaration: $ => prec.dynamic(1, seq(
       optional('export'),
       'module',
       optional(choice(
@@ -2431,9 +2443,9 @@ module.exports = grammar(C, {
         seq($.module_name, $.module_partition),
       )),
       ';',
-    ),
+    )),
 
-    module_import_declaration: $ => seq(
+    module_import_declaration: $ => prec.dynamic(1, seq(
       optional('export'),
       'import',
       choice(
@@ -2444,7 +2456,7 @@ module.exports = grammar(C, {
         $.system_lib_string,
       ),
       ';',
-    ),
+    )),
 
     module_name: $ => seq($.identifier, repeat(seq('.', $.identifier))),
 
@@ -3589,8 +3601,12 @@ module.exports = grammar(C, {
       field('argument', $.expression),
     )),
 
-    _field_identifier: ($, original) => identifierWithPaste($, original),
-    _type_identifier: ($, original) => identifierWithPaste($, original),
+    // Module keywords remain identifiers outside module directives.
+    _contextual_identifier: _ => choice('module', 'import'),
+
+    _statement_identifier: ($, original) => contextualIdentifier($, original, $.statement_identifier),
+    _field_identifier: ($, original) => identifierWithPaste($, original, $.field_identifier),
+    _type_identifier: ($, original) => identifierWithPaste($, original, $.type_identifier),
 
     field_expression: $ => seq(
       prec(PREC.FIELD, seq(
@@ -3719,7 +3735,7 @@ module.exports = grammar(C, {
     _lambda_capture_identifier: $ => seq(
       optional('&'),
       choice(
-        $.identifier,
+        contextualIdentifier($),
         $.qualified_identifier,
         alias($.identifier_parameter_pack_expansion, $.parameter_pack_expansion),
       ),
@@ -3728,7 +3744,7 @@ module.exports = grammar(C, {
     lambda_capture_initializer: $ => prec(PREC.LAMBDA, seq(
       optional('&'),
       optional('...'),
-      field('left', $.identifier),
+      field('left', contextualIdentifier($)),
       choice(
         seq('=', field('right', choice($.expression, $.initializer_list))),
         field('right', choice($.argument_list, $.initializer_list)),
@@ -3804,7 +3820,7 @@ module.exports = grammar(C, {
     ),
 
     identifier_parameter_pack_expansion: $ => seq(
-      field('pattern', $.identifier),
+      field('pattern', contextualIdentifier($)),
       '...',
     ),
 
@@ -4100,8 +4116,7 @@ module.exports = grammar(C, {
       $.compound_literal_expression,
       $.cpp_cast_expression,
       alias('ref', $.identifier),
-      alias('import', $.identifier),
-      alias('module', $.identifier),
+      alias($._contextual_identifier, $.identifier),
       $.user_defined_literal,
       $.suffixed_string_literal,
       $.concatenated_string,
@@ -4289,7 +4304,7 @@ module.exports = grammar(C, {
       seq($.raw_string_literal, $.literal_suffix),
     ),
 
-    _namespace_identifier: $ => identifierWithPaste($, alias($.identifier, $.namespace_identifier)),
+    _namespace_identifier: $ => identifierWithPaste($, alias($.identifier, $.namespace_identifier), $.namespace_identifier),
   },
 });
 
@@ -4351,8 +4366,12 @@ function commaSep1(rule) {
   return seq(rule, repeat(seq(',', rule)));
 }
 
-function identifierWithPaste($, identifier = $.identifier) {
-  return choice(identifier, $.macro_token_paste_expression);
+function contextualIdentifier($, identifier = $.identifier, kind = $.identifier) {
+  return choice(identifier, alias($._contextual_identifier, kind));
+}
+
+function identifierWithPaste($, identifier = $.identifier, kind = $.identifier) {
+  return choice(contextualIdentifier($, identifier, kind), $.macro_token_paste_expression);
 }
 
 function qualifiedIdentifier($, nested, ...extraNames) {

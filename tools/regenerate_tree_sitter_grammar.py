@@ -298,6 +298,28 @@ def validate_structural_grammar(grammar_json_path: Path) -> None:
         fail("raw_macro_replacement must remain the sole opaque external token")
 
 
+def validate_generated_parser_indexes(generated: str) -> None:
+    state_count = re.search(r"^#define STATE_COUNT (\d+)$", generated, re.MULTILINE)
+    actions = re.search(
+        r"static const TSParseActionEntry ts_parse_actions\[\] = \{(?P<body>.*?)^\};",
+        generated,
+        re.MULTILINE | re.DOTALL,
+    )
+    if state_count is None or actions is None:
+        fail("Cannot validate generated parser: state count or parse-action table was not found")
+    action_indexes = [int(index) for index in re.findall(r"^\s*\[(\d+)\]\s*=", actions["body"], re.MULTILINE)]
+    if not action_indexes:
+        fail("Cannot validate generated parser: parse-action indexes were not found")
+    state_id = int(state_count[1]) - 1
+    action_index = max(action_indexes)
+    if state_id > 65_535 or action_index > 65_535:
+        fail(
+            f"Generated parser exceeds upstream 16-bit table limits: "
+            f"maximum state id {state_id:,}, maximum parse-action index {action_index:,}; "
+            "both must be at most 65,535. Reduce the grammar."
+        )
+
+
 def compact_generated_parser(cpp_grammar_dir: Path) -> None:
     parser_path = cpp_grammar_dir / "src" / "parser.c"
     parser_header_path = cpp_grammar_dir / "src" / "tree_sitter" / "parser.h"
@@ -307,6 +329,7 @@ def compact_generated_parser(cpp_grammar_dir: Path) -> None:
             fail(f"Cannot compact parser table: {macro} is not an identity macro in {parser_header_path}")
 
     generated = parser_path.read_text(encoding="utf-8")
+    validate_generated_parser_indexes(generated)
     symbol_enum = SYMBOL_ENUM_RE.search(generated)
     if symbol_enum is None:
         fail(f"Cannot compact parser table: symbol enum was not found in {parser_path}")
@@ -352,7 +375,7 @@ def main() -> int:
     parser.add_argument(
         "--validate-structure-only",
         action="store_true",
-        help="Validate the checked-in grammar JSON without regenerating parser outputs.",
+        help="Validate the checked-in grammar structure and parser limits without regenerating outputs.",
     )
     args = parser.parse_args()
 
@@ -368,7 +391,8 @@ def main() -> int:
     grammar_json_path = cpp_grammar_dir / "src" / "grammar.json"
     if args.validate_structure_only:
         validate_structural_grammar(grammar_json_path)
-        print(f"Validated structured grammar terminals in {grammar_json_path}")
+        validate_generated_parser_indexes((cpp_grammar_dir / "src" / "parser.c").read_text(encoding="utf-8"))
+        print(f"Validated grammar structure and parser table limits in {grammar_json_path}")
         return 0
 
     tree_sitter_cli = ensure_tree_sitter_cli(repo_root, args.tree_sitter_cli)
