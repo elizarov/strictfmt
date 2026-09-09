@@ -8051,6 +8051,10 @@
           "named": true
         },
         {
+          "type": "declaration",
+          "named": true
+        },
+        {
           "type": "for_statement",
           "named": true
         },

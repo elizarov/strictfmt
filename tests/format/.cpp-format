@@ -19,6 +19,8 @@ MainIncludeChar: Quote
 IncludeIsMainRegex: '(Test)?$'
 
 MacroCategories:
+  StatementArgumentMacros:
+    - FORMAT_STATEMENT_DECLARATIONS
   PreprocessorArgumentMacros:
     - FORMAT_TOKEN_*
   DeclarationPrefixMacros:

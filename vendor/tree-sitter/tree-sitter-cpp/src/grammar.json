@@ -31345,8 +31345,13 @@
           "name": "macro_single_statement_argument"
         },
         {
-          "type": "SYMBOL",
-          "name": "macro_statement_sequence_argument"
+          "type": "ALIAS",
+          "content": {
+            "type": "SYMBOL",
+            "name": "macro_source_item_sequence_argument"
+          },
+          "named": true,
+          "value": "macro_statement_sequence_argument"
         }
       ]
     },
@@ -31361,6 +31366,112 @@
             "content": {
               "type": "CHOICE",
               "members": [
+                {
+                  "type": "SEQ",
+                  "members": [
+                    {
+                      "type": "SYMBOL",
+                      "name": "macro_complete_statement_item"
+                    },
+                    {
+                      "type": "STRING",
+                      "value": ";"
+                    }
+                  ]
+                },
+                {
+                  "type": "SYMBOL",
+                  "name": "compound_statement"
+                },
+                {
+                  "type": "SYMBOL",
+                  "name": "if_statement"
+                },
+                {
+                  "type": "SYMBOL",
+                  "name": "for_statement"
+                },
+                {
+                  "type": "SYMBOL",
+                  "name": "while_statement"
+                },
+                {
+                  "type": "SYMBOL",
+                  "name": "switch_statement"
+                },
+                {
+                  "type": "SYMBOL",
+                  "name": "try_statement"
+                }
+              ]
+            }
+          },
+          {
+            "type": "CHOICE",
+            "members": [
+              {
+                "type": "SYMBOL",
+                "name": "macro_call_statement_item"
+              },
+              {
+                "type": "BLANK"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    "macro_source_item_sequence_argument": {
+      "type": "PREC_RIGHT",
+      "value": 0,
+      "content": {
+        "type": "SEQ",
+        "members": [
+          {
+            "type": "REPEAT1",
+            "content": {
+              "type": "CHOICE",
+              "members": [
+                {
+                  "type": "SYMBOL",
+                  "name": "declaration"
+                },
+                {
+                  "type": "SEQ",
+                  "members": [
+                    {
+                      "type": "ALIAS",
+                      "content": {
+                        "type": "SYMBOL",
+                        "name": "macro_initialized_declaration_fragment"
+                      },
+                      "named": true,
+                      "value": "declaration"
+                    },
+                    {
+                      "type": "STRING",
+                      "value": ";"
+                    }
+                  ]
+                },
+                {
+                  "type": "SEQ",
+                  "members": [
+                    {
+                      "type": "ALIAS",
+                      "content": {
+                        "type": "SYMBOL",
+                        "name": "macro_declaration_without_semicolon"
+                      },
+                      "named": true,
+                      "value": "declaration"
+                    },
+                    {
+                      "type": "STRING",
+                      "value": ";"
+                    }
+                  ]
+                },
                 {
                   "type": "SEQ",
                   "members": [
@@ -37034,6 +37145,23 @@
     }
   ],
   "conflicts": [
+    [
+      "macro_source_item_sequence_argument",
+      "macro_single_statement_argument"
+    ],
+    [
+      "macro_source_item_sequence_argument",
+      "macro_complete_statement_item"
+    ],
+    [
+      "macro_source_item_sequence_argument",
+      "macro_single_statement_argument",
+      "_argument_list_item"
+    ],
+    [
+      "structured_statement_macro_argument",
+      "macro_source_item_sequence_argument"
+    ],
     [
       "comma_expression",
       "preproc_ifdef_in_initializer_list",

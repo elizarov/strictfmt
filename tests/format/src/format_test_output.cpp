@@ -7072,3 +7072,80 @@ static_assert(multiple[0] == 2 && multiple[1] == 3);
 static_assert(mixed[0] == 1 && mixed[1] == 2 && mixed[2] == 3);
 
 }
+
+namespace TerminatedMacroDeclarations {
+
+#define FORMAT_STATEMENT_DECLARATIONS(Statement, Tag) \
+    do { \
+        Statement; \
+    } while (false)
+#define FORMAT_TYPE_SIZE(Type) sizeof(Type)
+#define FORMAT_TYPE_WORDS(...) ((void)0)
+#define FORMAT_TYPE_ALIAS(Name, ...) using Name = __VA_ARGS__;
+struct Value {
+    int value;
+};
+namespace detail {
+
+struct Result {};
+
+}
+
+template <class T, class U>
+struct Pair {};
+
+Value MakeValue() { return {1}; }
+void Check() {
+    FORMAT_STATEMENT_DECLARATIONS(
+        const auto value = MakeValue();,
+        int
+    );
+    FORMAT_STATEMENT_DECLARATIONS(
+        [[maybe_unused]] const auto value = MakeValue();,
+        int
+    );
+    FORMAT_STATEMENT_DECLARATIONS(
+        int first = 1;
+        [[maybe_unused]] int second = first + 1;,
+        int
+    );
+    FORMAT_STATEMENT_DECLARATIONS(
+        [[maybe_unused]] Value value{1};,
+        int
+    );
+    FORMAT_STATEMENT_DECLARATIONS(
+        Value value = MakeValue();
+        [[maybe_unused]] auto& reference = value;,
+        int
+    );
+    FORMAT_STATEMENT_DECLARATIONS(
+        [[maybe_unused]] auto [value] = MakeValue();,
+        int
+    );
+    FORMAT_STATEMENT_DECLARATIONS(
+        int value;
+        value = 1;,
+        int
+    );
+    FORMAT_STATEMENT_DECLARATIONS(
+        Value value;
+        value.value = 2;,
+        int
+    );
+    FORMAT_STATEMENT_DECLARATIONS(
+        Value value{1};,
+        int
+    );
+    FORMAT_TYPE_WORDS(alpha beta gamma);
+    FORMAT_TYPE_ALIAS(ReferenceResult, Value(const int&));
+    FORMAT_TYPE_ALIAS(QualifiedResult, detail::Result(int, bool));
+    FORMAT_TYPE_ALIAS(TemplateResult, Pair<int, Value>(int));
+    static_assert(FORMAT_TYPE_SIZE(int Value::*) > 0);
+    static_assert(FORMAT_TYPE_SIZE(int (Value::*)() const) > 0);
+}
+#undef FORMAT_STATEMENT_DECLARATIONS
+#undef FORMAT_TYPE_SIZE
+#undef FORMAT_TYPE_WORDS
+#undef FORMAT_TYPE_ALIAS
+
+}

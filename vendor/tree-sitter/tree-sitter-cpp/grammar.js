@@ -137,6 +137,22 @@ function templateDeclarationItem($, qualifiedFunction = $.qualified_type_functio
   );
 }
 
+function macroStatementSequence($, declarations = []) {
+  return prec.right(seq(
+    repeat1(choice(
+      ...declarations,
+      seq($.macro_complete_statement_item, ';'),
+      $.compound_statement,
+      $.if_statement,
+      $.for_statement,
+      $.while_statement,
+      $.switch_statement,
+      $.try_statement,
+    )),
+    optional($.macro_call_statement_item),
+  ));
+}
+
 function typeDescriptor($, type) {
   return prec.right(seq(
     repeat($.type_qualifier),
@@ -207,6 +223,10 @@ module.exports = grammar(C, {
   ],
 
   conflicts: $ => [
+    [$.macro_source_item_sequence_argument, $.macro_single_statement_argument],
+    [$.macro_source_item_sequence_argument, $.macro_complete_statement_item],
+    [$.macro_source_item_sequence_argument, $.macro_single_statement_argument, $._argument_list_item],
+    [$.structured_statement_macro_argument, $.macro_source_item_sequence_argument],
     [$.comma_expression, $.preproc_ifdef_in_initializer_list, $._initializer_list_with_preproc],
     [$.comma_expression, $.preproc_if_in_initializer_list, $._initializer_list_with_preproc],
     [$._block_item, $.preproc_ifdef_in_initializer_list],
@@ -3375,21 +3395,16 @@ module.exports = grammar(C, {
 
     macro_call_statement_argument: $ => choice(
       $.macro_single_statement_argument,
-      $.macro_statement_sequence_argument,
+      alias($.macro_source_item_sequence_argument, $.macro_statement_sequence_argument),
     ),
 
-    macro_statement_sequence_argument: $ => prec.right(seq(
-      repeat1(choice(
-        seq($.macro_complete_statement_item, ';'),
-        $.compound_statement,
-        $.if_statement,
-        $.for_statement,
-        $.while_statement,
-        $.switch_statement,
-        $.try_statement,
-      )),
-      optional($.macro_call_statement_item),
-    )),
+    macro_statement_sequence_argument: $ => macroStatementSequence($),
+
+    macro_source_item_sequence_argument: $ => macroStatementSequence($, [
+      $.declaration,
+      seq(alias($.macro_initialized_declaration_fragment, $.declaration), ';'),
+      seq(alias($.macro_declaration_without_semicolon, $.declaration), ';'),
+    ]),
 
     macro_complete_statement_item: $ => choice(
       $.macro_empty_statement_argument,
