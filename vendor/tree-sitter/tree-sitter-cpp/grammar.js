@@ -1891,17 +1891,16 @@ module.exports = grammar(C, {
       commaSep(choice(
         $.parameter_declaration,
         alias($.macro_parenthesized_parameter_declaration, $.parameter_declaration),
-        $.macro_parenthesized_type_descriptor,
       )),
       ')',
     ),
 
-    macro_parenthesized_type_descriptor: $ => seq('(', $.type_descriptor, ')'),
-
-    macro_parenthesized_parameter_declaration: $ => seq(
-      field('type', $.macro_parenthesized_type_descriptor),
-      field('declarator', $._declarator),
-    ),
+    macro_parenthesized_parameter_declaration: $ => prec.right(seq(
+      '(',
+      choice($.parameter_declaration, $.macro_parenthesized_parameter_declaration),
+      ')',
+      optional(field('declarator', $._declarator)),
+    )),
 
     macro_method_qualifier_list: $ => seq(
       '(',

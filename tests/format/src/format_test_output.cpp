@@ -6798,3 +6798,21 @@ struct Values {
 #undef FORMAT_TYPE_METHOD
 
 }
+
+namespace ParenthesizedMacroParameters {
+
+#define FORMAT_TYPE_METHOD(Return, Name, Parameters, Qualifiers)
+template <class, class>
+struct Pair {};
+
+struct Values {
+    FORMAT_TYPE_METHOD(int, Named, ((const Pair<int, int>& value)), (const));
+    FORMAT_TYPE_METHOD(int, Nested, ((((const Pair<int, int>& value)))), ());
+    FORMAT_TYPE_METHOD(int, TypeOnly, ((Pair<int, int>) value), ());
+    FORMAT_TYPE_METHOD(int, NestedType, (((Pair<int, int>)) value), ());
+    FORMAT_TYPE_METHOD(int, Abstract, (((Pair<int, int>))), ());
+    FORMAT_TYPE_METHOD(int, Mixed, (int, (int* value), ((int (&array)[2])), (int (*callback)(int))), ());
+};
+#undef FORMAT_TYPE_METHOD
+
+}

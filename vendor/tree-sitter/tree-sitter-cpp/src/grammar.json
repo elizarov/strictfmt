@@ -22192,10 +22192,6 @@
                       },
                       "named": true,
                       "value": "parameter_declaration"
-                    },
-                    {
-                      "type": "SYMBOL",
-                      "name": "macro_parenthesized_type_descriptor"
                     }
                   ]
                 },
@@ -22223,10 +22219,6 @@
                             },
                             "named": true,
                             "value": "parameter_declaration"
-                          },
-                          {
-                            "type": "SYMBOL",
-                            "name": "macro_parenthesized_type_descriptor"
                           }
                         ]
                       }
@@ -22246,43 +22238,51 @@
         }
       ]
     },
-    "macro_parenthesized_type_descriptor": {
-      "type": "SEQ",
-      "members": [
-        {
-          "type": "STRING",
-          "value": "("
-        },
-        {
-          "type": "SYMBOL",
-          "name": "type_descriptor"
-        },
-        {
-          "type": "STRING",
-          "value": ")"
-        }
-      ]
-    },
     "macro_parenthesized_parameter_declaration": {
-      "type": "SEQ",
-      "members": [
-        {
-          "type": "FIELD",
-          "name": "type",
-          "content": {
-            "type": "SYMBOL",
-            "name": "macro_parenthesized_type_descriptor"
+      "type": "PREC_RIGHT",
+      "value": 0,
+      "content": {
+        "type": "SEQ",
+        "members": [
+          {
+            "type": "STRING",
+            "value": "("
+          },
+          {
+            "type": "CHOICE",
+            "members": [
+              {
+                "type": "SYMBOL",
+                "name": "parameter_declaration"
+              },
+              {
+                "type": "SYMBOL",
+                "name": "macro_parenthesized_parameter_declaration"
+              }
+            ]
+          },
+          {
+            "type": "STRING",
+            "value": ")"
+          },
+          {
+            "type": "CHOICE",
+            "members": [
+              {
+                "type": "FIELD",
+                "name": "declarator",
+                "content": {
+                  "type": "SYMBOL",
+                  "name": "_declarator"
+                }
+              },
+              {
+                "type": "BLANK"
+              }
+            ]
           }
-        },
-        {
-          "type": "FIELD",
-          "name": "declarator",
-          "content": {
-            "type": "SYMBOL",
-            "name": "_declarator"
-          }
-        }
-      ]
+        ]
+      }
     },
     "macro_method_qualifier_list": {
       "type": "SEQ",
