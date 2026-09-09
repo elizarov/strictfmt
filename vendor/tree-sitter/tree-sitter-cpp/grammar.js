@@ -683,7 +683,7 @@ module.exports = grammar(C, {
     ),
 
     macro_attribute_replacement_list: $ => seq(
-      repeat1($.attribute_declaration),
+      repeat1(choice($.attribute_declaration, $.attribute_specifier, $.ms_declspec_modifier)),
       $._preproc_directive_end,
     ),
 

@@ -20,6 +20,7 @@ IncludeIsMainRegex: '(Test)?$'
 
 MacroCategories:
   DeclarationPrefixMacros:
+    - FORMAT_ATTRIBUTE_*
     - FORMAT_DECLARATOR_MODIFIER
     - FORMAT_DECLARATOR_ATTRIBUTE
   StatementPrefixMacros:

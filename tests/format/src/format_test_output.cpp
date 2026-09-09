@@ -6505,3 +6505,25 @@ struct Pair {
 static_assert(Fields<Pair>);
 
 }
+
+namespace MacroAttributeSpecifiers {
+
+#define FORMAT_ATTRIBUTE_GNU_INLINE __attribute__((always_inline, pure))
+#define FORMAT_ATTRIBUTE_GNU_COLD __attribute__((noinline)) __attribute__((cold))
+#define FORMAT_ATTRIBUTE_GNU_ALTERNATE __attribute((unused))
+#define FORMAT_ATTRIBUTE_MIXED [[maybe_unused]] __attribute__((unused))
+#define FORMAT_ATTRIBUTE_MS_NOINLINE __declspec(noinline)
+FORMAT_ATTRIBUTE_GNU_INLINE inline int Read(int value) { return value; }
+FORMAT_ATTRIBUTE_GNU_COLD int Slow(int value) { return Read(value); }
+
+FORMAT_ATTRIBUTE_GNU_ALTERNATE int unused = 1;
+FORMAT_ATTRIBUTE_MIXED int another = 2;
+
+FORMAT_ATTRIBUTE_MS_NOINLINE int External(int value) { return value; }
+#undef FORMAT_ATTRIBUTE_GNU_INLINE
+#undef FORMAT_ATTRIBUTE_GNU_COLD
+#undef FORMAT_ATTRIBUTE_GNU_ALTERNATE
+#undef FORMAT_ATTRIBUTE_MIXED
+#undef FORMAT_ATTRIBUTE_MS_NOINLINE
+
+}

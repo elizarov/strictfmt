@@ -6636,6 +6636,14 @@
         {
           "type": "attribute_declaration",
           "named": true
+        },
+        {
+          "type": "attribute_specifier",
+          "named": true
+        },
+        {
+          "type": "ms_declspec_modifier",
+          "named": true
         }
       ]
     }
