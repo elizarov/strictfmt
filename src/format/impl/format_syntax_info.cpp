@@ -315,6 +315,7 @@ constexpr auto kSyntaxKindMappings = std::to_array<SyntaxKindMapping>({
     Tree(SyntaxNodeKind::Tree, "top_level_call_statement"),
     Tree(SyntaxNodeKind::BareMacroItem, "top_level_item_macro"),
     Tree(SyntaxNodeKind::BareMacroItem, "bare_macro_statement"),
+    Tree(SyntaxNodeKind::BareMacroItem, "class_bare_macro_item"),
     Tree(SyntaxNodeKind::MacroCallItem, "block_macro_call_line_item"),
     Tree(SyntaxNodeKind::MacroCallItem, "block_macro_call_statement_item"),
     Tree(SyntaxNodeKind::MacroCallItem, "top_level_macro_call_line_item"),

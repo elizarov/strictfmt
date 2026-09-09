@@ -7850,3 +7850,84 @@ constexpr int Shift(int value) {
 static_assert(Shift(16) == 4);
 
 }
+
+namespace BareClassGenerators {
+
+#define FORMAT_BARE_FIELD int first = 1;
+#define FORMAT_BARE_EXTRA int second = 2;
+#define FORMAT_BARE_EMPTY
+#define FORMAT_BARE_COMBINED \
+    FORMAT_BARE_FIELD \
+    FORMAT_BARE_EXTRA
+struct Plain {
+    FORMAT_BARE_FIELD
+    int last = 3;
+};
+
+struct Combined {
+    FORMAT_BARE_COMBINED
+    FORMAT_BARE_EMPTY
+    int last = 3;
+};
+
+class Access {
+    FORMAT_BARE_EMPTY
+public:
+    FORMAT_BARE_FIELD;
+    FORMAT_BARE_EXTRA
+    FORMAT_BARE_EMPTY
+    int last = 3;
+};
+
+struct Nested {
+    struct Inner {
+        FORMAT_BARE_COMBINED
+    };
+    FORMAT_BARE_FIELD
+};
+
+template <class T>
+struct Generic {
+    FORMAT_BARE_COMBINED
+    using Value = T;
+};
+
+#define FORMAT_BARE_UNION_FIELD int number;
+union Storage {
+    FORMAT_BARE_UNION_FIELD
+    char character;
+};
+#define FORMAT_SEMILESS_DECLARE_GENERATED(Type) \
+    struct Type { \
+        FORMAT_BARE_COMBINED \
+        int last = 3; \
+    };
+
+FORMAT_SEMILESS_DECLARE_GENERATED(Generated)
+struct Conditional {
+#if defined(FORMAT_CLASS_ALTERNATIVE)
+    FORMAT_BARE_FIELD
+#else
+    FORMAT_BARE_FIELD
+#endif
+    FORMAT_BARE_EXTRA
+};
+static_assert(Plain{}.first == 1 && Plain{}.last == 3);
+static_assert(Combined{}.first == 1 && Combined{}.second == 2 && Combined{}.last == 3);
+static_assert(Access{}.first == 1 && Access{}.second == 2);
+static_assert(Nested::Inner{}.second == 2 && Generic<int>{}.first == 1);
+static_assert(Generated{}.last == 3 && Conditional{}.second == 2);
+static_assert(sizeof(Storage) >= sizeof(int));
+#define FORMAT_BARE_INCREMENT(Value) ((Value) + 1)
+#define FORMAT_TYPE_FORWARD_BARE(Value) FORMAT_BARE_INCREMENT(Value)
+static_assert(FORMAT_TYPE_FORWARD_BARE(2) == 3);
+#undef FORMAT_TYPE_FORWARD_BARE
+#undef FORMAT_BARE_INCREMENT
+#undef FORMAT_BARE_FIELD
+#undef FORMAT_BARE_EXTRA
+#undef FORMAT_BARE_EMPTY
+#undef FORMAT_BARE_COMBINED
+#undef FORMAT_BARE_UNION_FIELD
+#undef FORMAT_SEMILESS_DECLARE_GENERATED
+
+}

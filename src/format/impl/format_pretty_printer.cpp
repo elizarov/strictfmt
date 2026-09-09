@@ -1028,11 +1028,14 @@ private:
         }
     }
 
-    static const SyntaxNode* StructuralMacroExpansionOwner(const PrintToken& token) {
-        if (!token.inMacroListExpansion) {
+    static const SyntaxNode* StructuralMacroItemOwner(const PrintToken& token) {
+        if (!token.inBareMacroItem && !token.inMacroListExpansion) {
             return nullptr;
         }
         for (const SyntaxNode* node = token.node; node != nullptr; node = node->parent) {
+            if (node->kind == SyntaxNodeKind::BareMacroItem) {
+                return node;
+            }
             const SyntaxNode* list = MacroExpansionList(*node);
             if (list != nullptr) {
                 return list->kind == SyntaxNodeKind::EnumeratorList ||
@@ -1046,15 +1049,13 @@ private:
         if (
             previous == nullptr ||
             current.kind == PrintTokenKind::TrailingComment ||
-            current.syntaxKind == SyntaxNodeKind::Comma
+            current.syntaxKind == SyntaxNodeKind::Comma ||
+            previous->macroDefinition != current.macroDefinition
         ) {
             return;
         }
-        const SyntaxNode* previousListItem = StructuralMacroExpansionOwner(*previous);
-        if (
-            !previous->inBareMacroItem &&
-            (previousListItem == nullptr || previousListItem == StructuralMacroExpansionOwner(current))
-        ) {
+        const SyntaxNode* previousItem = StructuralMacroItemOwner(*previous);
+        if (previousItem == nullptr || previousItem == StructuralMacroItemOwner(current)) {
             return;
         }
         if (HasBufferedLineText()) {

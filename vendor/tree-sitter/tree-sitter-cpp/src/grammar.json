@@ -13690,6 +13690,10 @@
       "members": [
         {
           "type": "SYMBOL",
+          "name": "class_bare_macro_item"
+        },
+        {
+          "type": "SYMBOL",
           "name": "_empty_declaration"
         },
         {
@@ -14481,17 +14485,29 @@
       }
     },
     "class_bare_macro_item": {
-      "type": "SEQ",
-      "members": [
-        {
-          "type": "SYMBOL",
-          "name": "bare_macro_identifier"
-        },
-        {
-          "type": "STRING",
-          "value": ";"
-        }
-      ]
+      "type": "PREC_RIGHT",
+      "value": 0,
+      "content": {
+        "type": "SEQ",
+        "members": [
+          {
+            "type": "SYMBOL",
+            "name": "bare_macro_identifier"
+          },
+          {
+            "type": "CHOICE",
+            "members": [
+              {
+                "type": "STRING",
+                "value": ";"
+              },
+              {
+                "type": "BLANK"
+              }
+            ]
+          }
+        ]
+      }
     },
     "class_macro_call_item": {
       "type": "PREC_RIGHT",
@@ -38017,6 +38033,10 @@
     }
   ],
   "conflicts": [
+    [
+      "class_bare_macro_item",
+      "macro_expansion"
+    ],
     [
       "_field_identifier",
       "dependent_type_identifier"

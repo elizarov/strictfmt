@@ -538,6 +538,15 @@ static bool scan_preprocessor_start(Scanner *scanner, TSLexer *lexer, const bool
     return false;
 }
 
+static bool has_runtime_token_boundary(Scanner *scanner, TSLexer *lexer, const bool *valid_symbols) {
+    return (!scanner->in_directive &&
+            (valid_symbols[MACRO_DEFINITION_START] || valid_symbols[NONCONDITIONAL_DIRECTIVE_START]) &&
+            lexer->lookahead == '#') ||
+           has_angle_token(lexer, valid_symbols) ||
+           has_valid_macro_identifier(lexer, valid_symbols) ||
+           (valid_symbols[MACRO_TOKEN_PASTE_NUMBER_PREFIX] && has_token_paste_number_prefix(lexer));
+}
+
 bool tree_sitter_cpp_external_scanner_scan(void *payload, TSLexer *lexer, const bool *valid_symbols) {
     Scanner *scanner = (Scanner *)payload;
 
@@ -591,7 +600,7 @@ bool tree_sitter_cpp_external_scanner_scan(void *payload, TSLexer *lexer, const 
             return true;
         }
         // Built-in extras can skip trailing splices without calling us again at the directive end.
-        // Only consume these splices here when no directive content follows them.
+        // Continuing content needs a whitespace boundary only before runtime-classified tokens.
         if (lexer->lookahead == '\\') {
             do {
                 advance(lexer);
@@ -601,6 +610,12 @@ bool tree_sitter_cpp_external_scanner_scan(void *payload, TSLexer *lexer, const 
                 scan_horizontal_whitespace(lexer);
             } while (lexer->lookahead == '\\');
             if (!lexer->eof(lexer) && !scan_newline(lexer)) {
+                lexer->mark_end(lexer);
+                if (valid_symbols[LINE_BREAK_WHITESPACE] && !valid_symbols[RAW_MACRO_DEFINITION_IDENTIFIER] &&
+                    has_runtime_token_boundary(scanner, lexer, valid_symbols)) {
+                    lexer->result_symbol = LINE_BREAK_WHITESPACE;
+                    return true;
+                }
                 return false;
             }
             lexer->mark_end(lexer);
@@ -610,12 +625,7 @@ bool tree_sitter_cpp_external_scanner_scan(void *payload, TSLexer *lexer, const 
         }
         if (horizontal && valid_symbols[LINE_BREAK_WHITESPACE] &&
             !valid_symbols[RAW_MACRO_DEFINITION_IDENTIFIER] &&
-            ((!scanner->in_directive &&
-              (valid_symbols[MACRO_DEFINITION_START] || valid_symbols[NONCONDITIONAL_DIRECTIVE_START]) &&
-              lexer->lookahead == '#') ||
-             has_angle_token(lexer, valid_symbols) ||
-             has_valid_macro_identifier(lexer, valid_symbols) ||
-             (valid_symbols[MACRO_TOKEN_PASTE_NUMBER_PREFIX] && has_token_paste_number_prefix(lexer)))) {
+            has_runtime_token_boundary(scanner, lexer, valid_symbols)) {
             lexer->result_symbol = LINE_BREAK_WHITESPACE;
             return true;
         }
@@ -646,12 +656,7 @@ bool tree_sitter_cpp_external_scanner_scan(void *payload, TSLexer *lexer, const 
         }
 
         if (horizontal && !valid_symbols[RAW_MACRO_DEFINITION_IDENTIFIER] &&
-            ((!scanner->in_directive &&
-              (valid_symbols[MACRO_DEFINITION_START] || valid_symbols[NONCONDITIONAL_DIRECTIVE_START]) &&
-              lexer->lookahead == '#') ||
-             has_angle_token(lexer, valid_symbols) ||
-             has_valid_macro_identifier(lexer, valid_symbols) ||
-             (valid_symbols[MACRO_TOKEN_PASTE_NUMBER_PREFIX] && has_token_paste_number_prefix(lexer)))) {
+            has_runtime_token_boundary(scanner, lexer, valid_symbols)) {
             lexer->result_symbol = LINE_BREAK_WHITESPACE;
             return true;
         }

@@ -150,7 +150,7 @@ static const unsigned char ALIGN(16) lookup_table[];
 auto value = static_cast<Functor USERVER_MOVE_ONLY_FUNCTION_INVOKE_QUALS>(*slot);
 ```
 
-**Complete declaration-level item:** the macro stands as a full top-level declaration item, such as namespace wrappers.
+**Complete declaration-level item:** the macro stands as a full declaration item at namespace or class scope, such as namespace wrappers or generated members. A class-scope item may include a caller-written semicolon.
 
 <!-- .cpp-format
 MacroCategories:

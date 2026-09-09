@@ -7751,6 +7751,10 @@
           "named": true
         },
         {
+          "type": "class_bare_macro_item",
+          "named": true
+        },
+        {
           "type": "co_return_statement",
           "named": true
         },

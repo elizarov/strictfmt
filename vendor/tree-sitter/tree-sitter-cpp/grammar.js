@@ -232,6 +232,7 @@ module.exports = grammar(C, {
   ],
 
   conflicts: $ => [
+    [$.class_bare_macro_item, $.macro_expansion],
     [$._field_identifier, $.dependent_type_identifier],
     [$.template_type, $.dependent_type_identifier],
     [$.template_argument_value_identifier, $.dependent_type_identifier, $.qualified_identifier],
@@ -820,6 +821,7 @@ module.exports = grammar(C, {
     ),
 
     _macro_replacement_declaration_item: $ => choice(
+      $.class_bare_macro_item,
       $._empty_declaration,
       $.type_definition,
       $.alias_declaration,
@@ -955,7 +957,7 @@ module.exports = grammar(C, {
 
     top_level_decorator_macro: $ => prec(PREC.CALL + 8, $.macro_decorator_call_item),
 
-    class_bare_macro_item: $ => seq($.bare_macro_identifier, ';'),
+    class_bare_macro_item: $ => prec.right(seq($.bare_macro_identifier, optional(';'))),
 
     class_macro_call_item: $ => prec.right(PREC.CALL + 8, seq(
       $.class_macro_call,
