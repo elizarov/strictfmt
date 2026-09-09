@@ -197,6 +197,12 @@ module.exports = grammar(C, {
   ],
 
   conflicts: $ => [
+    [$._type_constraint, $._class_name],
+    [$.type_specifier, $._type_constraint, $._template_argument_expression],
+    [$.type_specifier, $._type_constraint, $._class_name, $.function_pointer_alias_declaration],
+    [$.type_specifier, $._type_constraint, $._class_name],
+    [$.type_specifier, $._type_constraint, $._qualified_declaration_type],
+    [$.type_specifier, $._type_constraint],
     [$._template_method_name, $.dependent_field_identifier],
     [$.qualified_field_identifier, $._template_method_name],
     [$.field_expression, $._template_method_name],
@@ -586,8 +592,14 @@ module.exports = grammar(C, {
     // Types
 
     placeholder_type_specifier: $ => prec(1, seq(
-      field('constraint', optional($.type_specifier)),
+      field('constraint', optional($._type_constraint)),
       choice($.auto, alias($.decltype_auto, $.decltype)),
+    )),
+
+    _type_constraint: $ => prec.right(choice(
+      $._type_identifier,
+      $.template_type,
+      prec(1, alias($.qualified_type_identifier, $.qualified_identifier)),
     )),
 
     auto: _ => 'auto',

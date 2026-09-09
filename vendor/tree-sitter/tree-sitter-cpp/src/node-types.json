@@ -9402,7 +9402,19 @@
         "required": false,
         "types": [
           {
-            "type": "type_specifier",
+            "type": "macro_token_paste_expression",
+            "named": true
+          },
+          {
+            "type": "qualified_identifier",
+            "named": true
+          },
+          {
+            "type": "template_type",
+            "named": true
+          },
+          {
+            "type": "type_identifier",
             "named": true
           }
         ]

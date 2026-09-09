@@ -6816,3 +6816,49 @@ struct Values {
 #undef FORMAT_TYPE_METHOD
 
 }
+
+namespace DecltypeMemberPointers {
+
+struct Data {
+    bool flag;
+};
+
+struct Context {
+    Data data;
+};
+
+using Flag = bool;
+
+template <class T>
+bool Read(const T& object, bool decltype(T::data)::* member) { return object.data.*member; }
+template <class T>
+bool Named(const T& object, Flag decltype(T::data)::* member) { return object.data.*member; }
+
+using Member = bool decltype(Context::data)::*;
+typedef bool decltype(Context::data)::* TypedefMember;
+
+struct Holder {
+    bool decltype(Context::data)::* member;
+    Flag decltype(Context::data)::* named;
+};
+
+Flag decltype(Context::data)::* member = &Data::flag;
+static_assert(sizeof(Member) > 0);
+namespace constraints {
+
+template <class>
+concept Any = true;
+
+template <class, class>
+concept Matches = true;
+
+}
+constraints::Any auto number = 1;
+constraints::Any decltype(auto) other = number;
+constraints::Matches<int> auto third = 2;
+
+auto ReadValue(constraints::Any auto value) -> constraints::Any auto { return value; }
+
+auto identity = [](constraints::Any auto value) -> constraints::Any auto { return value; };
+
+}

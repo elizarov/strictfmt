@@ -13362,7 +13362,7 @@
               "members": [
                 {
                   "type": "SYMBOL",
-                  "name": "type_specifier"
+                  "name": "_type_constraint"
                 },
                 {
                   "type": "BLANK"
@@ -13387,6 +13387,36 @@
                 "value": "decltype"
               }
             ]
+          }
+        ]
+      }
+    },
+    "_type_constraint": {
+      "type": "PREC_RIGHT",
+      "value": 0,
+      "content": {
+        "type": "CHOICE",
+        "members": [
+          {
+            "type": "SYMBOL",
+            "name": "_type_identifier"
+          },
+          {
+            "type": "SYMBOL",
+            "name": "template_type"
+          },
+          {
+            "type": "PREC",
+            "value": 1,
+            "content": {
+              "type": "ALIAS",
+              "content": {
+                "type": "SYMBOL",
+                "name": "qualified_type_identifier"
+              },
+              "named": true,
+              "value": "qualified_identifier"
+            }
           }
         ]
       }
@@ -36824,6 +36854,35 @@
     }
   ],
   "conflicts": [
+    [
+      "_type_constraint",
+      "_class_name"
+    ],
+    [
+      "type_specifier",
+      "_type_constraint",
+      "_template_argument_expression"
+    ],
+    [
+      "type_specifier",
+      "_type_constraint",
+      "_class_name",
+      "function_pointer_alias_declaration"
+    ],
+    [
+      "type_specifier",
+      "_type_constraint",
+      "_class_name"
+    ],
+    [
+      "type_specifier",
+      "_type_constraint",
+      "_qualified_declaration_type"
+    ],
+    [
+      "type_specifier",
+      "_type_constraint"
+    ],
     [
       "_template_method_name",
       "dependent_field_identifier"
