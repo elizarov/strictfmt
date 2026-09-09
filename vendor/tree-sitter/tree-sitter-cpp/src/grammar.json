@@ -6687,6 +6687,10 @@
       "members": [
         {
           "type": "SYMBOL",
+          "name": "macro_function_definition"
+        },
+        {
+          "type": "SYMBOL",
           "name": "disabled_code_placeholder_field"
         },
         {
@@ -13638,17 +13642,8 @@
       "type": "SEQ",
       "members": [
         {
-          "type": "CHOICE",
-          "members": [
-            {
-              "type": "SYMBOL",
-              "name": "_macro_replacement_item_sequence"
-            },
-            {
-              "type": "SYMBOL",
-              "name": "_macro_replacement_fragment_sequence"
-            }
-          ]
+          "type": "SYMBOL",
+          "name": "_macro_replacement_item_sequence"
         },
         {
           "type": "SYMBOL",
@@ -13929,6 +13924,10 @@
           },
           "named": true,
           "value": "do_statement"
+        },
+        {
+          "type": "SYMBOL",
+          "name": "_macro_replacement_fragment_sequence"
         }
       ]
     },
@@ -13983,10 +13982,6 @@
       "members": [
         {
           "type": "SYMBOL",
-          "name": "_macro_replacement_function_header_sequence"
-        },
-        {
-          "type": "SYMBOL",
           "name": "_macro_replacement_call_sequence"
         },
         {
@@ -13998,25 +13993,8 @@
           "name": "macro_expression_item"
         },
         {
-          "type": "SEQ",
-          "members": [
-            {
-              "type": "SYMBOL",
-              "name": "macro_function_header_fragment"
-            },
-            {
-              "type": "CHOICE",
-              "members": [
-                {
-                  "type": "SYMBOL",
-                  "name": "macro_expression_item"
-                },
-                {
-                  "type": "BLANK"
-                }
-              ]
-            }
-          ]
+          "type": "SYMBOL",
+          "name": "macro_declaration_header_fragment"
         },
         {
           "type": "SYMBOL",
@@ -14039,40 +14017,6 @@
           "name": "ms_call_modifier"
         }
       ]
-    },
-    "_macro_replacement_function_header_sequence": {
-      "type": "PREC_DYNAMIC",
-      "value": 30,
-      "content": {
-        "type": "PREC_RIGHT",
-        "value": 0,
-        "content": {
-          "type": "SEQ",
-          "members": [
-            {
-              "type": "SYMBOL",
-              "name": "macro_function_header_fragment"
-            },
-            {
-              "type": "STRING",
-              "value": ";"
-            },
-            {
-              "type": "CHOICE",
-              "members": [
-                {
-                  "type": "SYMBOL",
-                  "name": "macro_declaration_fragment"
-                },
-                {
-                  "type": "SYMBOL",
-                  "name": "_macro_replacement_function_header_sequence"
-                }
-              ]
-            }
-          ]
-        }
-      }
     },
     "macro_do_statement": {
       "type": "PREC",
@@ -32571,29 +32515,89 @@
         }
       }
     },
-    "macro_function_header_fragment": {
+    "macro_declaration_header_fragment": {
+      "type": "CHOICE",
+      "members": [
+        {
+          "type": "PREC_RIGHT",
+          "value": 0,
+          "content": {
+            "type": "SEQ",
+            "members": [
+              {
+                "type": "CHOICE",
+                "members": [
+                  {
+                    "type": "SYMBOL",
+                    "name": "_macro_qualified_declaration_specifiers"
+                  },
+                  {
+                    "type": "SYMBOL",
+                    "name": "_declaration_specifiers"
+                  }
+                ]
+              },
+              {
+                "type": "FIELD",
+                "name": "declarator",
+                "content": {
+                  "type": "CHOICE",
+                  "members": [
+                    {
+                      "type": "SYMBOL",
+                      "name": "_declarator"
+                    },
+                    {
+                      "type": "SYMBOL",
+                      "name": "init_declarator"
+                    }
+                  ]
+                }
+              }
+            ]
+          }
+        },
+        {
+          "type": "ALIAS",
+          "content": {
+            "type": "SYMBOL",
+            "name": "macro_template_declaration_header_fragment"
+          },
+          "named": true,
+          "value": "template_declaration"
+        }
+      ]
+    },
+    "macro_template_declaration_header_fragment": {
       "type": "SEQ",
       "members": [
+        {
+          "type": "STRING",
+          "value": "template"
+        },
+        {
+          "type": "FIELD",
+          "name": "parameters",
+          "content": {
+            "type": "SYMBOL",
+            "name": "template_parameter_list"
+          }
+        },
         {
           "type": "CHOICE",
           "members": [
             {
               "type": "SYMBOL",
-              "name": "_macro_qualified_declaration_specifiers"
+              "name": "requires_clause"
             },
             {
-              "type": "SYMBOL",
-              "name": "_declaration_specifiers"
+              "type": "BLANK"
             }
           ]
         },
         {
-          "type": "FIELD",
-          "name": "declarator",
-          "content": {
-            "type": "SYMBOL",
-            "name": "function_declarator"
-          }
+          "type": "SYMBOL",
+          "name": "macro_declaration_header_fragment"
         }
       ]
     },
@@ -38034,6 +38038,20 @@
   ],
   "conflicts": [
     [
+      "qualified_type_function_definition",
+      "_macro_qualified_declaration_specifiers",
+      "_declaration_declarator_list"
+    ],
+    [
+      "declaration",
+      "qualified_type_function_definition",
+      "_macro_qualified_declaration_specifiers"
+    ],
+    [
+      "class_macro_call_item",
+      "macro_function_definition"
+    ],
+    [
       "class_bare_macro_item",
       "macro_expansion"
     ],
@@ -38352,7 +38370,7 @@
     ],
     [
       "_non_pointer_declarator",
-      "macro_function_header_fragment"
+      "macro_declaration_header_fragment"
     ],
     [
       "_non_pointer_declarator",
@@ -39391,7 +39409,7 @@
     ],
     [
       "_declarator",
-      "macro_function_header_fragment"
+      "macro_declaration_header_fragment"
     ],
     [
       "if_statement",

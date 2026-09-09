@@ -232,6 +232,9 @@ module.exports = grammar(C, {
   ],
 
   conflicts: $ => [
+    [$.qualified_type_function_definition, $._macro_qualified_declaration_specifiers, $._declaration_declarator_list],
+    [$.declaration, $.qualified_type_function_definition, $._macro_qualified_declaration_specifiers],
+    [$.class_macro_call_item, $.macro_function_definition],
     [$.class_bare_macro_item, $.macro_expansion],
     [$._field_identifier, $.dependent_type_identifier],
     [$.template_type, $.dependent_type_identifier],
@@ -304,7 +307,7 @@ module.exports = grammar(C, {
     [$._declarator, $._function_declarator_base],
     [$._non_pointer_declarator, $._function_definition_name],
     [$.type_specifier, $._non_pointer_declarator],
-    [$._non_pointer_declarator, $.macro_function_header_fragment],
+    [$._non_pointer_declarator, $.macro_declaration_header_fragment],
     [$._non_pointer_declarator, $.type_specifier, $.class_macro_call],
     [$.qualified_declarator_identifier, $.qualified_identifier],
     [$._field_declarator, $._type_declarator],
@@ -560,7 +563,7 @@ module.exports = grammar(C, {
     ],
     [$._declaration_modifiers, $.macro_prefixed_function_definition, $.macro_prefixed_declaration],
     [$._declaration_specifiers, $._conditional_function_return_type_specifiers, $._constructor_specifiers],
-    [$._declarator, $.macro_function_header_fragment],
+    [$._declarator, $.macro_declaration_header_fragment],
     [$.if_statement, $.preproc_selected_else_if_statement],
     [$.statement, $.preproc_ended_consequence_statement],
     [$.preproc_argument_fragment, $.preproc_ifdef_in_expression_list],
@@ -808,10 +811,7 @@ module.exports = grammar(C, {
     ),
 
     macro_replacement_list: $ => seq(
-      choice(
-        $._macro_replacement_item_sequence,
-        $._macro_replacement_fragment_sequence,
-      ),
+      $._macro_replacement_item_sequence,
       $._preproc_directive_end,
     ),
 
@@ -848,6 +848,7 @@ module.exports = grammar(C, {
         optional($._macro_replacement_item_sequence),
       )),
       alias($.macro_do_statement, $.do_statement),
+      $._macro_replacement_fragment_sequence,
     ),
 
     _macro_replacement_call_unit: $ => seq(
@@ -861,28 +862,15 @@ module.exports = grammar(C, {
     )),
 
     _macro_replacement_fragment_sequence: $ => choice(
-      $._macro_replacement_function_header_sequence,
       $._macro_replacement_call_sequence,
       $.macro_string_replacement_item,
       $.macro_expression_item,
-      seq(
-        $.macro_function_header_fragment,
-        optional($.macro_expression_item),
-      ),
+      $.macro_declaration_header_fragment,
       $.macro_declaration_fragment,
       prec.dynamic(-1, $.type_specifier),
       $.macro_arrow_chain,
       $.ms_call_modifier,
     ),
-
-    _macro_replacement_function_header_sequence: $ => prec.dynamic(30, prec.right(seq(
-      $.macro_function_header_fragment,
-      ';',
-      choice(
-        $.macro_declaration_fragment,
-        $._macro_replacement_function_header_sequence,
-      ),
-    ))),
 
     macro_do_statement: $ => prec(1, seq(
       'do',
@@ -1909,6 +1897,7 @@ module.exports = grammar(C, {
     field_initializer_prefix_macro: $ => $.macro_call_item,
 
     _field_declaration_list_item: ($, original) => choice(
+      $.macro_function_definition,
       $.disabled_code_placeholder_field,
       $.access_specifier_label,
       alias($.qualified_type_function_definition, $.function_definition),
@@ -3569,9 +3558,19 @@ module.exports = grammar(C, {
       field('default_value', choice($.expression, $.initializer_list)),
     ))),
 
-    macro_function_header_fragment: $ => seq(
-      choice($._macro_qualified_declaration_specifiers, $._declaration_specifiers),
-      field('declarator', $.function_declarator),
+    macro_declaration_header_fragment: $ => choice(
+      prec.right(seq(
+        choice($._macro_qualified_declaration_specifiers, $._declaration_specifiers),
+        field('declarator', choice($._declarator, $.init_declarator)),
+      )),
+      alias($.macro_template_declaration_header_fragment, $.template_declaration),
+    ),
+
+    macro_template_declaration_header_fragment: $ => seq(
+      'template',
+      field('parameters', $.template_parameter_list),
+      optional($.requires_clause),
+      $.macro_declaration_header_fragment,
     ),
 
     macro_declaration_without_semicolon: $ => prec.dynamic(20, prec(PREC.CALL + 10, seq(

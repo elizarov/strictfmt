@@ -4578,6 +4578,10 @@
           "named": true
         },
         {
+          "type": "macro_function_definition",
+          "named": true
+        },
+        {
           "type": "macro_method_declaration",
           "named": true
         },
@@ -7106,6 +7110,74 @@
     }
   },
   {
+    "type": "macro_declaration_header_fragment",
+    "named": true,
+    "fields": {
+      "declarator": {
+        "multiple": false,
+        "required": false,
+        "types": [
+          {
+            "type": "_declarator",
+            "named": true
+          },
+          {
+            "type": "init_declarator",
+            "named": true
+          }
+        ]
+      },
+      "type": {
+        "multiple": false,
+        "required": false,
+        "types": [
+          {
+            "type": "type_specifier",
+            "named": true
+          }
+        ]
+      }
+    },
+    "children": {
+      "multiple": true,
+      "required": false,
+      "types": [
+        {
+          "type": "attribute_declaration",
+          "named": true
+        },
+        {
+          "type": "attribute_specifier",
+          "named": true
+        },
+        {
+          "type": "function_prefix_macro",
+          "named": true
+        },
+        {
+          "type": "ms_declspec_modifier",
+          "named": true
+        },
+        {
+          "type": "post_type_macro_annotation",
+          "named": true
+        },
+        {
+          "type": "storage_class_specifier",
+          "named": true
+        },
+        {
+          "type": "template_declaration",
+          "named": true
+        },
+        {
+          "type": "type_qualifier",
+          "named": true
+        }
+      ]
+    }
+  },
+  {
     "type": "macro_decorator_call_item",
     "named": true,
     "fields": {
@@ -7297,66 +7369,6 @@
           }
         ]
       }
-    }
-  },
-  {
-    "type": "macro_function_header_fragment",
-    "named": true,
-    "fields": {
-      "declarator": {
-        "multiple": false,
-        "required": true,
-        "types": [
-          {
-            "type": "function_declarator",
-            "named": true
-          }
-        ]
-      },
-      "type": {
-        "multiple": false,
-        "required": true,
-        "types": [
-          {
-            "type": "type_specifier",
-            "named": true
-          }
-        ]
-      }
-    },
-    "children": {
-      "multiple": true,
-      "required": false,
-      "types": [
-        {
-          "type": "attribute_declaration",
-          "named": true
-        },
-        {
-          "type": "attribute_specifier",
-          "named": true
-        },
-        {
-          "type": "function_prefix_macro",
-          "named": true
-        },
-        {
-          "type": "ms_declspec_modifier",
-          "named": true
-        },
-        {
-          "type": "post_type_macro_annotation",
-          "named": true
-        },
-        {
-          "type": "storage_class_specifier",
-          "named": true
-        },
-        {
-          "type": "type_qualifier",
-          "named": true
-        }
-      ]
     }
   },
   {
@@ -7843,11 +7855,11 @@
           "named": true
         },
         {
-          "type": "macro_expression_item",
+          "type": "macro_declaration_header_fragment",
           "named": true
         },
         {
-          "type": "macro_function_header_fragment",
+          "type": "macro_expression_item",
           "named": true
         },
         {
@@ -16228,6 +16240,10 @@
         },
         {
           "type": "function_definition",
+          "named": true
+        },
+        {
+          "type": "macro_declaration_header_fragment",
           "named": true
         },
         {

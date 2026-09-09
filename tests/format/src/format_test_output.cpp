@@ -7931,3 +7931,105 @@ static_assert(FORMAT_TYPE_FORWARD_BARE(2) == 3);
 #undef FORMAT_SEMILESS_DECLARE_GENERATED
 
 }
+
+namespace TemplateHeaderMacros {
+
+#define FORMAT_TYPE_TEMPLATE_HEADER(Name) \
+    template <class T> \
+    T Name(T value)
+FORMAT_TYPE_TEMPLATE_HEADER(Identity) { return value; }
+
+struct Methods {
+    FORMAT_TYPE_TEMPLATE_HEADER(Convert) { return value; }
+};
+
+#define FORMAT_TYPE_SPECIALIZED_HEADER(Name) \
+    template <> \
+    int Name<int>(int value)
+FORMAT_TYPE_SPECIALIZED_HEADER(Identity) { return value + 1; }
+
+template <class T>
+struct Values {
+    template <class U>
+    U Convert(U value);
+};
+
+#define FORMAT_TYPE_NESTED_HEADER() \
+    template <class T> \
+    template <class U> \
+    U Values<T>::Convert(U value)
+FORMAT_TYPE_NESTED_HEADER() { return value; }
+#define FORMAT_TYPE_CONSTRAINED_HEADER(Name) \
+    template <class T> requires(sizeof(T) > 0) \
+    T Name(T value)
+FORMAT_TYPE_CONSTRAINED_HEADER(Constrained) { return value; }
+#define FORMAT_TYPE_CONSTRAINED_SUFFIX(Name) \
+    template <class T> \
+    T Name(T value) requires(sizeof(T) > 0)
+FORMAT_TYPE_CONSTRAINED_SUFFIX(Other) { return value; }
+#define FORMAT_TYPE_REFERENCE_HEADER(Name) \
+    template <class T> \
+    T& Name(T& value)
+FORMAT_TYPE_REFERENCE_HEADER(Reference) { return value; }
+#define FORMAT_TYPE_FACTORY_HEADER(Name) \
+    template <class T> \
+    T (*Name())(T)
+FORMAT_TYPE_FACTORY_HEADER(Factory) { return &Identity<T>; }
+#define FORMAT_TYPE_TRAILING_HEADER(Name) \
+    template <class T> \
+    auto Name(T* value) -> T*
+FORMAT_TYPE_TRAILING_HEADER(Pointer) { return value; }
+#define FORMAT_TYPE_ARRAY_HEADER(Name) \
+    template <class T, unsigned N> \
+    T (&Name(T (&value)[N]))[N]
+FORMAT_TYPE_ARRAY_HEADER(Array) { return value; }
+
+#define FORMAT_TYPE_VOID_HEADER(Name) \
+    template <class T> \
+    void Name(const T&)
+template <class Owner>
+struct EmptyMethods {
+    FORMAT_TYPE_VOID_HEADER(Visit) {}
+};
+
+#define FORMAT_TYPE_SEQUENCE_HEADER(Name) \
+    struct Tag {}; \
+    using Alias = Tag; \
+    void Declared(); \
+    template <class T> \
+    T Name(T value)
+FORMAT_TYPE_SEQUENCE_HEADER(WithPrefix) { return value; }
+#define FORMAT_TYPE_VARIABLE(Name) \
+    template <class T> \
+    constexpr T Name = 42
+FORMAT_TYPE_VARIABLE(Answer);
+static_assert(Answer<int> == 42);
+namespace Details {
+
+struct Trace {
+    Trace(const char*, int, int) {}
+};
+
+}
+#define FORMAT_JOIN_INNER(Left, Right) Left##Right
+#define FORMAT_JOIN(Left, Right) FORMAT_JOIN_INNER(Left, Right)
+#define FORMAT_TYPE_TRACE(Message) \
+    const ::TemplateHeaderMacros::Details::Trace FORMAT_JOIN(trace_, __LINE__)(__FILE__, __LINE__, (Message))
+void UseTrace() { FORMAT_TYPE_TRACE(42); }
+#undef FORMAT_TYPE_TRACE
+#undef FORMAT_JOIN
+#undef FORMAT_JOIN_INNER
+#undef FORMAT_TYPE_VARIABLE
+#undef FORMAT_TYPE_SEQUENCE_HEADER
+#undef FORMAT_TYPE_VOID_HEADER
+#undef FORMAT_TYPE_ARRAY_HEADER
+#undef FORMAT_TYPE_TRAILING_HEADER
+#undef FORMAT_TYPE_FACTORY_HEADER
+#undef FORMAT_TYPE_REFERENCE_HEADER
+#undef FORMAT_TYPE_CONSTRAINED_SUFFIX
+#undef FORMAT_TYPE_CONSTRAINED_HEADER
+#undef FORMAT_TYPE_NESTED_HEADER
+#undef FORMAT_TYPE_SPECIALIZED_HEADER
+#undef FORMAT_TYPE_TEMPLATE_HEADER
+
+}
