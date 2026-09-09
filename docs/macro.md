@@ -52,6 +52,8 @@ The macros that belong to different categories are configured in formatter confi
 
 Runtime macro category lookup is implemented by the custom scanner; see [scanner.md](scanner.md).
 
+`BareIdentifierMacros` and `SemicolonlessCallMacros` may also continue an expression by supplying operators and operands after its visible prefix. Several such expansions can follow one another; calls retain their configured argument syntax. Existing complete-item and list-fragment roles take precedence when both interpretations fit.
+
 ### RawMacroDefinitions
 
 `RawMacroDefinitions` accepts both object-like and function-like `#define` identifiers.

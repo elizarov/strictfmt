@@ -74,6 +74,7 @@ function cppNonBinaryExpressions($, base) {
     alias($.conditional_concatenated_string, $.concatenated_string),
     alias($.delete_array_expression, $.delete_expression),
     $.macro_expansion,
+    $.macro_expression_continuation,
     $.macro_qualified_identifier,
     base,
     $.reflect_expression,
@@ -102,6 +103,14 @@ function cppNonBinaryExpressions($, base) {
     $.user_defined_literal,
     $.fold_expression,
   );
+}
+
+function macroExpressionContinuation($, expression) {
+  // Preserve existing item and list-fragment roles when a sequence can use either.
+  return prec.dynamic(-3, prec.left(PREC.ASSIGNMENT, seq(
+    field('argument', expression),
+    $.macro_expansion,
+  )));
 }
 
 function semicolonlessMacroCall($) {
@@ -232,6 +241,13 @@ module.exports = grammar(C, {
   ],
 
   conflicts: $ => [
+    [$.expression, $._macro_initializer_list_fragment],
+    [$.macro_expression_continuation],
+    [$.macro_expression_continuation, $._initializer_list_with_preproc],
+    [$.expression, $.concatenated_string, $._conditional_alternative],
+    [$.type_specifier, $.expression, $.concatenated_string, $._template_argument_value_expression],
+    [$.expression, $.concatenated_string, $._template_argument_value_expression],
+    [$.expression, $.concatenated_string, $.macro_call_replacement_item],
     [$._preproc_opening_condition, $.preproc_ifdef_in_top_level, $.preproc_ifdef_in_function_return_type, $.preproc_ifdef_in_function_definition_prefix, $.preproc_guarded_namespace_definition],
     [$.qualified_type_function_definition, $._macro_qualified_declaration_specifiers, $._declaration_declarator_list],
     [$.declaration, $.qualified_type_function_definition, $._macro_qualified_declaration_specifiers],
@@ -998,6 +1014,8 @@ module.exports = grammar(C, {
       $.bare_macro_identifier,
       prec(PREC.CALL, semicolonlessMacroCall($)),
     )),
+
+    macro_expression_continuation: $ => macroExpressionContinuation($, $.expression),
 
     macro_call_identifier: $ => choice(
       $.call_syntax_macro_identifier,
@@ -2490,11 +2508,14 @@ module.exports = grammar(C, {
     _template_argument_value_expression: $ => choice(
       alias($._template_argument_binary_expression, $.binary_expression),
       ...cppNonBinaryExpressions($, C.grammar.rules._expression_not_binary).members.filter(
-        member => member.name !== 'template_function' && member.name !== 'qualified_identifier',
+        member => !['template_function', 'qualified_identifier', 'macro_expression_continuation'].includes(member.name),
       ),
+      alias($._template_argument_macro_expression_continuation, $.macro_expression_continuation),
       alias($.template_argument_value_identifier, $.qualified_identifier),
       alias($._template_argument_operator_function, $.template_function),
     ),
+
+    _template_argument_macro_expression_continuation: $ => macroExpressionContinuation($, $._template_argument_expression),
 
     _template_argument_operator_function: $ => prec(1, seq(
       field('name', $.operator_name),
@@ -3444,7 +3465,7 @@ module.exports = grammar(C, {
       const item = initializerClause($);
       const preprocItem = choice(
         // Prefer a complete C++ expression over an expansion followed by another expression.
-        seq(prec.dynamic(-1, $.macro_expansion), optional(',')),
+        seq($._macro_initializer_list_fragment, optional(',')),
         $.preproc_include,
         preprocListItem($, '_in_initializer_list', PREPROC_IFDEF | PREPROC_ELSE),
       );
@@ -3459,6 +3480,8 @@ module.exports = grammar(C, {
         optional(item),
       ));
     },
+
+    _macro_initializer_list_fragment: $ => prec.dynamic(-1, $.macro_expansion),
 
     macro_statement_argument_list: $ => seq(
       '(',

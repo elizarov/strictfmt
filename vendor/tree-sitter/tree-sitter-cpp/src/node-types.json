@@ -300,6 +300,10 @@
         "named": true
       },
       {
+        "type": "macro_expression_continuation",
+        "named": true
+      },
+      {
         "type": "macro_qualified_identifier",
         "named": true
       },
@@ -1723,6 +1727,10 @@
           "named": true
         },
         {
+          "type": "macro_expression_continuation",
+          "named": true
+        },
+        {
           "type": "macro_qualified_identifier",
           "named": true
         },
@@ -2942,6 +2950,10 @@
           },
           {
             "type": "macro_expansion",
+            "named": true
+          },
+          {
+            "type": "macro_expression_continuation",
             "named": true
           },
           {
@@ -7282,6 +7294,32 @@
       "types": [
         {
           "type": "bare_macro_identifier",
+          "named": true
+        }
+      ]
+    }
+  },
+  {
+    "type": "macro_expression_continuation",
+    "named": true,
+    "fields": {
+      "argument": {
+        "multiple": false,
+        "required": true,
+        "types": [
+          {
+            "type": "expression",
+            "named": true
+          }
+        ]
+      }
+    },
+    "children": {
+      "multiple": false,
+      "required": true,
+      "types": [
+        {
+          "type": "macro_expansion",
           "named": true
         }
       ]
@@ -13690,6 +13728,10 @@
           "named": true
         },
         {
+          "type": "macro_expression_continuation",
+          "named": true
+        },
+        {
           "type": "macro_qualified_identifier",
           "named": true
         },
@@ -13929,6 +13971,10 @@
           },
           {
             "type": "macro_expansion",
+            "named": true
+          },
+          {
+            "type": "macro_expression_continuation",
             "named": true
           },
           {
@@ -15667,6 +15713,10 @@
             "named": true
           },
           {
+            "type": "macro_expression_continuation",
+            "named": true
+          },
+          {
             "type": "macro_qualified_identifier",
             "named": true
           },
@@ -16076,6 +16126,10 @@
         },
         {
           "type": "macro_expansion",
+          "named": true
+        },
+        {
+          "type": "macro_expression_continuation",
           "named": true
         },
         {

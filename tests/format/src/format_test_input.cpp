@@ -5072,3 +5072,51 @@ int Twice(int value){return value*2;}
 #undef FORMAT_GUARDED_NAMESPACE_SEEN
 #undef FORMAT_GUARDED_NAMESPACE_ENABLED
 }
+
+namespace MacroExpressionTails {
+#define FORMAT_FIXTURE_LOGICAL_TAIL(Left,Right) && ((Left)==(Right))
+#define FORMAT_FIXTURE_ARITHMETIC_TAIL(Value) + (Value)
+#define FORMAT_SEMILESS_COMPARE(Left,Right) FORMAT_FIXTURE_LOGICAL_TAIL(Left,Right)
+#define FORMAT_SEMILESS_ADD(Value) FORMAT_FIXTURE_ARITHMETIC_TAIL(Value)
+#define FORMAT_BARE_TRUE_TAIL FORMAT_SEMILESS_COMPARE(1,1)
+#define FORMAT_TOKEN_COMPARE(Callback,Field) Callback(a.Field,b.Field)
+struct Value{int first;int second;};
+#define FORMAT_SEMILESS_EQUAL(Type) inline bool operator==(const Type& a,const Type& b)noexcept{return true FORMAT_TOKEN_COMPARE(FORMAT_SEMILESS_COMPARE,first) FORMAT_TOKEN_COMPARE(FORMAT_SEMILESS_COMPARE,second);}
+FORMAT_SEMILESS_EQUAL(Value)
+constexpr bool Same(int left,int right){return true FORMAT_SEMILESS_COMPARE(left,right) FORMAT_BARE_TRUE_TAIL;}
+constexpr int Add(int value){return value FORMAT_SEMILESS_ADD(2) FORMAT_SEMILESS_ADD(3);}
+constexpr int Parenthesized(int value){return (value FORMAT_SEMILESS_ADD(2))*3;}
+constexpr bool Conditional(bool condition,int left,int right){return condition ? true FORMAT_SEMILESS_COMPARE(left,right) : false;}
+constexpr int Arguments(int value){return Add(value FORMAT_SEMILESS_ADD(1));}
+constexpr bool Initializer=true FORMAT_BARE_TRUE_TAIL;
+constexpr int Values[]={1 FORMAT_SEMILESS_ADD(2),3 FORMAT_SEMILESS_ADD(4)};
+static_assert(Same(2,2));static_assert(!Same(2,3));
+static_assert(Add(1)==6);static_assert(Parenthesized(1)==9);static_assert(Arguments(1)==7);
+static_assert(Conditional(true,2,2));static_assert(!Conditional(false,2,2));
+static_assert(Initializer);static_assert(Values[0]==3&&Values[1]==7);
+void Statements(int& value){if(true FORMAT_BARE_TRUE_TAIL)value=value FORMAT_SEMILESS_ADD(1);while(value FORMAT_SEMILESS_ADD(1)<3)++value;}
+template<int Value>struct Constant {static constexpr int value=Value;};
+using TemplateValue=Constant<1 FORMAT_SEMILESS_ADD(2)>;
+using ParenthesizedTemplateValue=Constant<(3>2) FORMAT_SEMILESS_ADD(2)>;
+using NestedTemplateValue=Constant<Constant<1 FORMAT_SEMILESS_ADD(2)>::value FORMAT_SEMILESS_ADD(4)>;
+static_assert(TemplateValue::value==3&&ParenthesizedTemplateValue::value==3&&NestedTemplateValue::value==7);
+#define FORMAT_BARE_LIST_VALUES 3,4,
+#define FORMAT_BARE_LIST_EMPTY
+#define FORMAT_SEMILESS_LIST_VALUES() 5,6,
+#define FORMAT_SEMILESS_LIST_EMPTY()
+constexpr int BareList[]={FORMAT_BARE_LIST_VALUES FORMAT_BARE_LIST_EMPTY};
+constexpr int CallList[]={1,FORMAT_SEMILESS_LIST_VALUES() FORMAT_SEMILESS_LIST_EMPTY()};
+static_assert(sizeof(BareList)/sizeof(int)==2&&BareList[1]==4);
+static_assert(sizeof(CallList)/sizeof(int)==3&&CallList[2]==6);
+#undef FORMAT_SEMILESS_LIST_EMPTY
+#undef FORMAT_SEMILESS_LIST_VALUES
+#undef FORMAT_BARE_LIST_EMPTY
+#undef FORMAT_BARE_LIST_VALUES
+#undef FORMAT_SEMILESS_EQUAL
+#undef FORMAT_TOKEN_COMPARE
+#undef FORMAT_BARE_TRUE_TAIL
+#undef FORMAT_SEMILESS_ADD
+#undef FORMAT_SEMILESS_COMPARE
+#undef FORMAT_FIXTURE_ARITHMETIC_TAIL
+#undef FORMAT_FIXTURE_LOGICAL_TAIL
+}
