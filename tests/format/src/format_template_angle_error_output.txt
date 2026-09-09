@@ -1,0 +1,1 @@
+<stdin>: parse failed at 3:19 near ERROR

@@ -4727,3 +4727,207 @@ static_assert(sizeof(kExpression)/sizeof(int)==1 && sizeof(kCallExpression)/size
 static_assert(kExplicitComma[0]==9 && kExpression[0]==10 && kCallComma[0]==10 && kCallExpression[0]==11);
 static_assert(kConditional[2]==8 && static_cast<int>(BareEnum::Last)==2 && static_cast<int>(ConditionalEnum::Last)==2);
 }
+
+namespace TemplateArgumentOpenAngles {
+template<bool Condition,class T> struct Select { using type=T; };
+template<int N> struct Value { static constexpr int value=N; };
+template<unsigned I,class... Types>
+using BeforeEnd=typename Select<I < sizeof...(Types), int>::type;
+template<unsigned I,class... Types>
+constexpr typename Select<I < sizeof...(Types), int>::type Read() { return I; }
+template<unsigned I,class... Types>
+constexpr typename Select<(I + 1) < sizeof...(Types) && I != 0, int>::type Next() { return I+1; }
+struct Rank { int value; };
+constexpr int operator<=>(Rank left,Rank right) { return left.value-right.value; }
+using ThreeWay=Value<Rank{4} <=> Rank{1}>;
+using Ordered=Value<Rank{4} <=> Rank{1} == 3>;
+static_assert(ThreeWay::value==3 && Ordered::value==1);
+using Less=Value<1 < 2>;
+using Shift=Value<1 << 3>;
+using Chain=Value<(1 << 2) < 5>;
+using Nested=Select<(1 < 2), Select<2 < 3, Value<1 << 4>>>;
+template<bool Condition> constexpr bool Compare() { return Condition; }
+template<int N> constexpr int Bits() { return N; }
+using Tight=Value<1<2>;
+using TightShift=Value<1<<3>;
+static_assert(Compare<1<2>() && Bits<1<<3>()==8 && Tight::value==1 && TightShift::value==8);
+static_assert(Less::value==1 && Shift::value==8 && Chain::value==1);
+static_assert(sizeof(BeforeEnd<0,int>)==sizeof(int));
+static_assert(Read<0,int>()==0 && Next<1,int,char,long>()==2);
+static_assert(Nested::type::type::value==16);
+}
+
+#include <tuple>
+#include <optional>
+#include <type_traits>
+#include <utility>
+namespace TemplateArgumentNameRegressions {
+template<class T, unsigned... Indices>
+auto Make(std::integer_sequence<unsigned,Indices...>) { return std::tuple<std::optional<std::tuple_element_t<Indices,T>>...>(); }
+using Options=decltype(Make<std::tuple<int,char>>(std::integer_sequence<unsigned,0,1>{}));
+static_assert(std::tuple_size_v<Options> == 2);
+template<class Signature> struct Action {};
+template<class Initial,class Base> struct Combined {
+template<class T> using InitialArg=typename std::conditional<std::is_scalar<T>::value,T,const T&>::type;
+template<class R,class... Args, typename std::enable_if<
+std::conjunction<std::is_convertible<Initial,Action<void(InitialArg<Args>...)>>,std::is_convertible<Base,Action<R(Args...)>>>::value,int>::type = 0>
+operator Action<R(Args...)>() && { return {}; }
+};
+struct First {};
+struct Second {};
+template<class T> struct Primitive {};
+template<auto Settings,class... Types> struct Variant {};
+struct Data { static constexpr int kSettings=1; };
+struct Node { template<class T> T As() { return {}; } };
+auto Parse(Node node) { return node.template As<std::optional<Variant<&::TemplateArgumentNameRegressions::Data::kSettings,Primitive<First>,Primitive<Second>>>>(); }
+}
+
+#include <type_traits>
+namespace TemplateArgumentRecursiveConversions {
+template<class Signature> struct Action {};
+template<class Signature> struct OnceAction {};
+template<class... Types> using conjunction=std::conjunction<Types...>;
+template<class Type> using negation=std::negation<Type>;
+template <typename InitialAction, typename Base>
+class Combined
+ {
+ private:
+  template <typename T>
+  using InitialActionArgType =
+      T;
+ public:
+
+  template <
+      typename R, typename... Args,
+      typename std::enable_if<
+          conjunction<
+              negation<std::is_convertible<
+                  InitialAction,
+                  OnceAction<void(InitialActionArgType<Args>...)>>>,
+              std::is_convertible<InitialAction,
+                                  Action<void(InitialActionArgType<Args>...)>>,
+              std::is_convertible<Base, OnceAction<R(Args...)>>>::value,
+          int>::type = 0>
+  operator OnceAction<R(Args...)>() && { return {}; }
+
+};
+
+}
+
+namespace TemplateArgumentValueNames {
+struct Item { int value; };
+constexpr int operator+(Item item) { return item.value; }
+template<class T> constexpr int operator-(Item item) { return item.value; }
+template<auto Function> constexpr int Invoke() { return Function(Item{4}); }
+static_assert(Invoke<TemplateArgumentValueNames::operator+>()==4);
+static_assert(Invoke<TemplateArgumentValueNames::operator-<int>>()==4);
+static_assert(Invoke<operator-<int>>()==4);
+static_assert(Invoke<TemplateArgumentValueNames::template operator-<int>>()==4);
+template<int N> struct Value { static constexpr int value=N; };
+namespace limits { constexpr int low=1; template<class T> constexpr int high=4; }
+using Qualified=Value<limits::low < 2>;
+using Variable=Value<(limits::high<int>) < 5>;
+using ValueSum=Value<limits::high<int> + 1>;
+using Shift=Value<limits::low << 3>;
+static_assert(Qualified::value==1 && Variable::value==1 && ValueSum::value==5 && Shift::value==8);
+}
+
+#include <optional>
+#include <string>
+#include <tuple>
+#include <vector>
+namespace TemplateArgumentWideLists {
+struct First {};
+struct Second {};
+struct Third {};
+template<class T> struct Task {};
+template<class T> struct Result {};
+void Collect(
+int& count,
+std::optional<Task<Result<First>>>& first,
+std::optional<Task<Result<Second>>>& second,
+std::optional<Task<Result<Third>>>& third,
+std::optional<Task<Result<First>>>& fourth,
+std::optional<Task<Result<std::vector<First>>>>& list
+) {}
+auto Debts() {
+std::vector<Task<std::tuple<
+std::optional<First>,
+std::optional<Second>,
+std::optional<Third>
+>>> values;
+return values;
+}
+auto Results() {
+std::vector<Task<std::tuple<
+std::vector<First>, std::string, std::optional<std::string>, std::optional<std::string>
+>>> values{};
+return values;
+}
+struct Rows { template<class T> T AsContainer(int) { return {}; } };
+struct Connection { Rows Execute(int) { return {}; } };
+auto Fetch(Connection connection) {
+auto rows=connection.Execute(0).AsContainer<std::vector<std::tuple<
+First,
+std::optional<Second>,
+std::optional<Third>,
+std::optional<Third>
+>>>(0);
+return rows;
+}
+template<class... T> struct Dependency {};
+template<class... T> struct Wrapper {};
+template<template<class...> class Template,class Bound> struct Bind { template<class... Args> using First=Template<Bound,Args...>; };
+template<template<class...> class... Gates> struct Fusion {};
+using Gate=Fusion<
+Bind<Dependency,Wrapper<First>>::template First,
+Dependency>;
+static_assert(sizeof(Gate)>0);
+namespace kit {
+namespace framework {
+template<class... T> using Dependencies=Dependency<T...>;
+template<class... T> using Wrapped=Wrapper<T...>;
+template<template<class...> class... T> using Fused=Fusion<T...>;
+}
+template<template<class...> class T,class U> using Bound=Bind<T,U>;
+}
+namespace gates=kit::framework;
+using ScopedGate=gates::Fused<
+kit::Bound<gates::Dependencies,kit::framework::Wrapped<First>>::template First,
+gates::Dependencies>;
+static_assert(sizeof(ScopedGate)>0);
+}
+
+#include <type_traits>
+namespace TemplateArgumentConversionPair {
+template<class Signature> struct OnceAction {};
+template<class... Types> using conjunction=std::conjunction<Types...>;
+template<class InitialAction,class Base> struct Combined {
+  template <typename T>
+  using InitialActionArgType =
+      typename std::conditional<std::is_scalar<T>::value, T, const T&>::type;
+  template <
+      typename R, typename... Args,
+      typename std::enable_if<
+          conjunction<std::is_convertible<
+                          InitialAction,
+                          OnceAction<void(InitialActionArgType<Args>...)>>,
+                      std::is_convertible<Base, OnceAction<R(Args...)>>>::value,
+          int>::type = 0>
+  operator OnceAction<R(Args...)>() && { return {}; }
+};
+}
+
+namespace TemplateArgumentAngleBoundaries {
+template<class T> constexpr int Value=16;
+static_assert(Value<int>>1);
+static_assert(Value<int> >>1 ==8);
+static_assert(Value<int> >=16);
+static_assert(Value<int> >>1 >2);
+template<class T> struct Box { static constexpr int value=16; };
+static_assert(Box<Box<int>>::value >>1 ==8);
+template<int N> struct Number { static constexpr int value=N; };
+static_assert(Number<(Value<int> >>1)>::value ==8);
+constexpr int Shift(int value) { value >>=1; return value >>1; }
+static_assert(Shift(16)==4);
+}

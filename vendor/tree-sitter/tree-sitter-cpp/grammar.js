@@ -217,6 +217,8 @@ module.exports = grammar(C, {
     $._line_break_whitespace,
     $.macro_definition_start,
     $.nonconditional_directive_start,
+    $._template_argument_close,
+    $._split_right_angle,
   ],
 
   extras: $ => [
@@ -230,6 +232,30 @@ module.exports = grammar(C, {
   ],
 
   conflicts: $ => [
+    [$._field_identifier, $.dependent_type_identifier],
+    [$.template_type, $.dependent_type_identifier],
+    [$.template_argument_value_identifier, $.dependent_type_identifier, $.qualified_identifier],
+    [$.template_argument_value_identifier, $.dependent_type_identifier],
+    [$.qualified_declarator_identifier, $.dependent_type_identifier],
+    [$.dependent_type_identifier, $.qualified_identifier],
+    [$.qualified_declarator_identifier, $.dependent_type_identifier, $.qualified_identifier],
+    [$._dependent_template_keyword, $.dependent_field_identifier, $.dependent_type_identifier],
+    [$._template_argument_list_item, $._template_argument_expression],
+    [$.concatenated_string, $._template_argument_value_expression],
+    [$.type_specifier, $._type_constraint, $._template_argument_value_expression],
+    [$.type_specifier, $.concatenated_string, $._template_argument_value_expression],
+    [$.type_specifier, $.sized_type_specifier, $._template_argument_value_expression],
+    [$.class_specifier, $._template_argument_value_expression],
+    [$.expression, $.template_function, $._template_argument_value_expression],
+    [$.expression, $._template_argument_value_expression, $._callable_template_callee],
+    [$.expression, $.template_type, $.template_function, $._template_argument_value_expression],
+    [$.type_specifier, $.expression, $._template_argument_value_expression],
+    [$.type_specifier, $._template_argument_value_expression],
+    [$.expression, $._template_argument_value_expression],
+    [$.template_argument_value_identifier, $.qualified_type_identifier],
+    [$.template_argument_value_identifier, $.qualified_identifier, $.qualified_type_identifier],
+    [$.template_argument_value_identifier, $.qualified_identifier],
+    [$.template_type, $.template_function, $.template_argument_value_identifier, $.qualified_identifier],
     [$.expression],
     [$.enumerator_list, $.expression],
     [$.expression, $._initializer_list_with_preproc],
@@ -1604,13 +1630,27 @@ module.exports = grammar(C, {
 
     template_parameter_list: $ => seq(
       '<',
-      commaSepWithLeadingPreproc(
-        $,
+      optional($._template_parameter_prefix),
+      optional(seq(
         $._template_parameter_list_item,
-        '_in_template_parameter_list',
-        PREPROC_IFDEF,
+        optional($._template_parameter_conditional_tail),
+      )),
+      alias($._template_argument_close, '>'),
+    ),
+
+    _template_parameter_prefix: $ => seq(
+      optional($._template_parameter_prefix),
+      choice(
+        seq($._template_parameter_list_item, ','),
+        preprocListItem($, '_in_template_parameter_list', PREPROC_IFDEF),
       ),
-      alias(token(prec(1, '>')), '>'),
+    ),
+
+    _template_parameter_conditional_tail: $ => choice(
+      preprocListItem($, '_in_template_parameter_list', PREPROC_IFDEF),
+      seq($._template_parameter_conditional_tail, ',', $._template_parameter_list_item),
+      seq($._template_parameter_conditional_tail,
+        preprocListItem($, '_in_template_parameter_list', PREPROC_IFDEF)),
     ),
 
     type_parameter_declaration: $ => choice(
@@ -1694,12 +1734,14 @@ module.exports = grammar(C, {
       ')',
     ),
 
-    parameter_declaration: ($, original) => choice(
-      original,
-      seq(
-        $._declaration_specifiers,
-        field('declarator', $._abstract_declarator),
-      ),
+    // Keep named parameters competitive with expression-shaped macro arguments.
+    parameter_declaration: $ => seq(
+      $._declaration_specifiers,
+      optional(field('declarator', choice(
+        prec.dynamic(2, $._declarator),
+        $._abstract_declarator,
+      ))),
+      repeat($.attribute_specifier),
     ),
 
     optional_parameter_declaration: $ => seq(
@@ -2384,12 +2426,12 @@ module.exports = grammar(C, {
       ),
     ),
 
-    template_type: $ => prec.dynamic(3, seq(
+    template_type: $ => seq(
       field('name', $._type_identifier),
       field('arguments', $.template_argument_list),
-    )),
+    ),
 
-    // Prefer a method name before nested template arguments accumulate competing parses.
+    // Preserve method names while field/comparison alternatives are still open.
     _template_method_name: $ => prec.dynamic(3, choice($._field_identifier, $.operator_name)),
 
     template_method: $ => seq(
@@ -2397,25 +2439,30 @@ module.exports = grammar(C, {
       field('arguments', $.template_argument_list),
     ),
 
-    template_function: $ => prec.dynamic(3, seq(
+    template_function: $ => seq(
       field('name', choice(identifierWithPaste($), $.operator_name)),
       field('arguments', $.template_argument_list),
-    )),
+    ),
+
+    // Prefer the template path before its nested arguments introduce comparisons.
+    _template_argument_open: _ => prec.dynamic(3, '<'),
 
     template_argument_list: $ => seq(
-      '<',
-      repeat(choice(
-        seq($._template_argument_list_item, ','),
-        $._template_argument_list_fragment,
-      )),
+      $._template_argument_open,
+      optional($._template_argument_prefix),
       optional($._template_argument_list_item),
-      alias(token(prec(1, '>')), '>'),
+      alias($._template_argument_close, '>'),
+    ),
+
+    _template_argument_prefix: $ => choice(
+      seq(optional($._template_argument_prefix), $._template_argument_list_item, ','),
+      seq(optional($._template_argument_prefix), $._template_argument_list_fragment),
     ),
 
     _template_argument_list_item: $ => choice(
       prec.dynamic(3, $.type_descriptor),
       prec.dynamic(2, alias($.type_parameter_pack_expansion, $.parameter_pack_expansion)),
-      $._template_argument_expression,
+      $._template_argument_value_expression,
     ),
 
     preproc_template_argument_fragment: $ => $.preproc_template_argument_group,
@@ -2441,11 +2488,38 @@ module.exports = grammar(C, {
     macro_template_argument_fragment: $ => prec(1, $.bare_macro_identifier),
 
     _template_argument_expression: $ => choice(
-      $._expression_not_binary,
-      $._template_argument_binary_expression,
+      $._template_argument_value_expression,
+      $.template_function,
+      $.qualified_identifier,
+    ),
+
+    // Bare ordinary template-ids use the type-like argument role. Operator names
+    // remain values, and calls/parenthesized operands retain recursive expressions.
+    _template_argument_value_expression: $ => choice(
+      alias($._template_argument_binary_expression, $.binary_expression),
+      ...cppNonBinaryExpressions($, C.grammar.rules._expression_not_binary).members.filter(
+        member => member.name !== 'template_function' && member.name !== 'qualified_identifier',
+      ),
+      alias($.template_argument_value_identifier, $.qualified_identifier),
+      alias($._template_argument_operator_function, $.template_function),
+    ),
+
+    _template_argument_operator_function: $ => prec(1, seq(
+      field('name', $.operator_name),
+      field('arguments', $.template_argument_list),
+    )),
+
+    template_argument_value_identifier: $ => seq(
+      $._scope_resolution,
+      field('name', seq(optional('template'), choice(
+        identifierWithPaste($),
+        $.operator_name,
+        alias($._template_argument_operator_function, $.template_function),
+      ))),
     ),
 
     _template_argument_binary_expression: $ => {
+      // Unparenthesized > and >> close the list; opening-angle operators do not.
       const table = [
         ['.*', PREC.POINTER_TO_MEMBER],
         ['->*', PREC.POINTER_TO_MEMBER],
@@ -2459,6 +2533,9 @@ module.exports = grammar(C, {
         ['|', PREC.INCLUSIVE_OR],
         ['^', PREC.EXCLUSIVE_OR],
         ['&', PREC.BITWISE_AND],
+        ['<', PREC.RELATIONAL],
+        ['<<', PREC.SHIFT],
+        ['<=>', PREC.THREE_WAY],
         ['<=', PREC.RELATIONAL],
         ['>=', PREC.RELATIONAL],
         ['==', PREC.EQUAL],
@@ -2473,11 +2550,13 @@ module.exports = grammar(C, {
 
       return choice(...table.map(([operator, precedence]) => {
         const operatorToken = operator === '>=' ? alias(token(prec(2, '>=')), '>=') : operator;
+        const operand = operator === '<' || operator === '<<' ?
+          $._template_argument_value_expression : $._template_argument_expression;
         return prec.left(precedence, seq(
-          field('left', $._template_argument_expression),
+          field('left', operand),
           // @ts-ignore
           field('operator', operatorToken),
-          field('right', $._template_argument_expression),
+          field('right', operand),
         ));
       }));
     },
@@ -3059,7 +3138,7 @@ module.exports = grammar(C, {
 
     preprocessing_number: _ => /\.?\d(?:[A-Za-z0-9_.]|[eEpP][+-])*/,
 
-    preprocessing_punctuator: _ => choice(
+    preprocessing_punctuator: $ => choice(
       '%:%:',
       '>>=',
       '<<=',
@@ -3115,6 +3194,7 @@ module.exports = grammar(C, {
       '=',
       '<',
       '>',
+      alias($._split_right_angle, '>'),
     ),
 
     preprocessing_parenthesized_tokens: $ => seq(
@@ -3218,7 +3298,7 @@ module.exports = grammar(C, {
       field('arguments', $.preprocessing_token_argument_list),
     )),
 
-    macro_argument_punctuator: _ => choice(
+    macro_argument_punctuator: $ => choice(
       '...',
       '##',
       '::',
@@ -3264,6 +3344,7 @@ module.exports = grammar(C, {
       '=',
       '<',
       '>',
+      alias($._split_right_angle, '>'),
     ),
 
     macro_empty_statement_argument: _ => prec(2, ';'),
@@ -3554,7 +3635,7 @@ module.exports = grammar(C, {
       )),
       '<',
       field('type', $.type_descriptor),
-      '>',
+      alias($._template_argument_close, '>'),
       field('argument', $.argument_list),
     )),
 
@@ -3612,10 +3693,10 @@ module.exports = grammar(C, {
       ),
     ),
 
-    _callable_template_function: $ => prec.dynamic(3, seq(
+    _callable_template_function: $ => seq(
       field('name', $._callable_template_callee),
       field('arguments', $.template_argument_list),
-    )),
+    ),
 
     // A complete callable-template shape owns its angle list. This recursive
     // callable subset composes through parentheses, calls, and subscripts while
@@ -3845,9 +3926,12 @@ module.exports = grammar(C, {
       $.lambda_capture_initializer,
     ),
 
-    _fold_operator: _ => choice(...FOLD_OPERATORS),
-    _binary_fold_operator: _ => choice(
-      ...FOLD_OPERATORS.map((operator) => seq(field('operator', operator), '...', operator)),
+    _fold_operator: $ => choice(...FOLD_OPERATORS.map(operator => operator === '>' ? choice('>', alias($._split_right_angle, '>')) : operator)),
+    _binary_fold_operator: $ => choice(
+      ...FOLD_OPERATORS.map((operator) => {
+        const token = operator === '>' ? choice('>', alias($._split_right_angle, '>')) : operator;
+        return seq(field('operator', token), '...', token);
+      }),
     ),
 
     _unary_left_fold: $ => seq(
@@ -4004,7 +4088,7 @@ module.exports = grammar(C, {
           const rule = prec.left(precedence, seq(
             field('left', $.expression),
             // @ts-ignore
-            field('operator', operator),
+            field('operator', operator === '>' ? choice('>', alias($._split_right_angle, '>')) : operator),
             field('right', $.expression),
           ));
           // Prefer real binary expressions over template-id recovery for
@@ -4138,14 +4222,15 @@ module.exports = grammar(C, {
     ),
 
     dependent_identifier: $ => seq('template', $.template_function),
+    _dependent_template_keyword: _ => prec.dynamic(10, 'template'),
+
     dependent_field_identifier: $ => choice(
-      // Nested template arguments accumulate type-vs-expression ambiguity, so
-      // prefer an explicit template-id and keep the bare name as a fallback
-      // for calls whose member-template arguments are deduced.
-      prec.dynamic(10, seq('template', $.template_method)),
+      // Prefer explicit template arguments at the keyword, before parsing them.
+      // Keep the bare name for calls whose member-template arguments are deduced.
+      seq($._dependent_template_keyword, $.template_method),
       prec.dynamic(-10, seq('template', $._field_identifier)),
     ),
-    dependent_type_identifier: $ => seq('template', $.template_type),
+    dependent_type_identifier: $ => seq('template', choice($.template_type, $._type_identifier)),
 
     _scope_resolution: $ => prec(1, seq(
       field('scope', optional(seq(
@@ -4243,7 +4328,7 @@ module.exports = grammar(C, {
         'co_await',
         '+', '-', '*', '/', '%',
         '^', '&', '|', '~',
-        '!', '=', '<', '>',
+        '!', '=', '<', '>', alias($._split_right_angle, '>'),
         '+=', '-=', '*=', '/=', '%=', '^=', '&=', '|=',
         '<<', '>>', '>>=', '<<=',
         '==', '!=', '<=', '>=',

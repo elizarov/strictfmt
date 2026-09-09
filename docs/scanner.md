@@ -16,7 +16,7 @@ The scanner uses four inputs:
 
 - The source stream exposed by tree-sitter's `TSLexer`.
 - The parser-state-specific `valid_symbols` array.
-- Small scanner payload state for raw string delimiters.
+- Small scanner payload state for raw string delimiters, directive boundaries, and split right angles.
 - Formatter macro category configuration, exposed through `strictfmt_tree_sitter_cpp_macro_category_matches`.
 
 `src/format/impl/format_model_parse.cpp` owns the callback bridge from parser to formatter configuration. `ParseFormatModel` installs a thread-local `FormatterConfig` for the parse, and the scanner calls back into that config when it needs to know whether an identifier belongs to `RawMacroDefinitions`, `BareIdentifierMacros`, `DeclarationPrefixMacros`, `StatementPrefixMacros`, `CallSyntaxMacros`, `SemicolonlessCallMacros`, `StatementArgumentMacros`, `TypeSpecifierMacros`, or `PreprocessorArgumentMacros`.
@@ -66,6 +66,10 @@ as `Get##name##Location` from an ordinary macro-generated declarator such as
 user-defined literal such as `10ms` from becoming an incomplete paste candidate. Neither token makes
 the whole pasted name opaque to the formatter.
 
+### Split Right Angles
+
+`_template_argument_close` consumes one closing angle. When it splits a `>>` token, the scanner records the remaining `>` and returns it as either another template closer or `_split_right_angle`. That second character cannot recombine with following punctuation into a new compound operator. The grammar retains both angle characters and chooses their syntax roles. Ordinary shifts, `>=`, and `>>=` retain their lexical token boundaries.
+
 ### Whitespace And Preprocessor Directive Newlines
 
 `macro_definition_start` and `nonconditional_directive_start` recognize definition and token-free directive keywords outside an active definition or control directive. The scanner serializes that lexical state. The first bare newline must end the directive; incomplete content cannot consume it as ordinary whitespace or absorb another directive. Raw strings and line splices retain their lexical behavior inside replacements.
@@ -75,7 +79,7 @@ the whole pasted name opaque to the formatter.
 - `_preproc_directive_end` is returned when the parser is currently ending a preprocessor directive, at a physical newline or at end of input. End of input also terminates a directive after its final line splice.
 - `_line_break_whitespace` is returned as hidden whitespace outside an active definition or control directive, and for line splices within one.
 
-When a directive-start token or configured macro identifier follows horizontal whitespace in a parser state that accepts `_line_break_whitespace`, that token supplies a lexical boundary so the generated lexer cannot consume the identifier before the runtime scanner classifies it. This applies both at line starts and between other tokens, including inside structured macro replacements. The boundary also keeps skipped spaces outside the external identifier's source range. Leading indentation needs explicit handling at the start of a preprocessor branch because the directive-ending token owns the preceding newline.
+When a directive-start token, configured macro identifier, or template closer follows horizontal whitespace in a parser state that accepts `_line_break_whitespace`, that token supplies a lexical boundary so the generated lexer cannot consume it before the runtime scanner classifies it. This applies both at line starts and between other tokens, including inside structured macro replacements. The boundary also keeps skipped spaces outside the external identifier's source range. Leading indentation needs explicit handling at the start of a preprocessor branch because the directive-ending token owns the preceding newline.
 
 Categories restricted to function-like invocations require a following argument list for both this boundary and their identifier token, so uninvoked names remain ordinary identifiers. Lookahead permits whitespace, comments, and line splices without extending the identifier's source span. Preprocessor definition-name and raw replacement states are excluded; every other horizontal gap remains owned by the generated lexer.
 
@@ -89,7 +93,7 @@ The tree-sitter generated lexer is excellent for static token rules, but these s
 
 - Macro categories depend on the active `.cpp-format` configuration, so identifier classification requires a runtime callback.
 - A token-paste prefix requires lookahead past an identifier or preprocessing number while keeping the following `##` as a separate grammar token.
-- Raw string parsing needs scanner payload state shared between delimiter and content tokens.
+- Raw strings and split right angles need scanner payload state shared across their lexical tokens.
 - Preprocessor line breaks must be hidden whitespace in normal code but visible directive-ending tokens in specific parser states.
 
 Encoding those cases as generated grammar tokens would either lose runtime configurability, duplicate scanner-like state in grammar productions, or force layout artifacts such as macro continuation gaps into the syntax tree. `strictfmt` avoids that. The scanner owns lexical facts; the pretty printer owns structured macro whitespace and continuation placement.

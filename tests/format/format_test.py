@@ -69,6 +69,8 @@ ERROR_INPUT_FIXTURE = Path("src") / "format_error_input.cpp"
 ERROR_OUTPUT_FIXTURE = Path("src") / "format_error_output.txt"
 DIRECTIVE_TOKEN_ERROR_INPUT_FIXTURE = Path("src") / "format_directive_token_error_input.cpp"
 DIRECTIVE_TOKEN_ERROR_OUTPUT_FIXTURE = Path("src") / "format_directive_token_error_output.txt"
+TEMPLATE_ANGLE_ERROR_INPUT_FIXTURE = Path("src") / "format_template_angle_error_input.cpp"
+TEMPLATE_ANGLE_ERROR_OUTPUT_FIXTURE = Path("src") / "format_template_angle_error_output.txt"
 USERVER_FORMAT_CONFIG = TEST_ROOT / ".cpp-format-userver"
 DEFAULT_FORMAT_CONFIG = TEST_ROOT / ".cpp-format"
 OPTIMIZATION_FORMAT_CONFIG = TEST_ROOT / ".cpp-format-optimization"
@@ -560,6 +562,7 @@ class FormatCommandTests(unittest.TestCase):
         for source, expected in (
             (ERROR_INPUT_FIXTURE, ERROR_OUTPUT_FIXTURE),
             (DIRECTIVE_TOKEN_ERROR_INPUT_FIXTURE, DIRECTIVE_TOKEN_ERROR_OUTPUT_FIXTURE),
+            (TEMPLATE_ANGLE_ERROR_INPUT_FIXTURE, TEMPLATE_ANGLE_ERROR_OUTPUT_FIXTURE),
         ):
             with self.subTest(source=source.name):
                 result = native_format(

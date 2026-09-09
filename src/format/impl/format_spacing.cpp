@@ -331,8 +331,7 @@ bool IsTemplateArgumentExpressionOperator(const PrintToken& token) {
         !IsMemberPointerDeclaratorStar(token) &&
         !IsUnaryContext(token) &&
         !IsOperatorSpellingContext(token) &&
-        token.syntaxKind != SyntaxNodeKind::Less &&
-        token.syntaxKind != SyntaxNodeKind::Greater;
+        !IsTemplateAnglePrintToken(token);
     token.templateArgumentExpressionOperator = result ? 2 : 1;
     return result;
 }

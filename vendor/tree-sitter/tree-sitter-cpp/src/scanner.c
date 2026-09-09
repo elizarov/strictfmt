@@ -27,6 +27,8 @@ enum TokenType {
     LINE_BREAK_WHITESPACE,
     MACRO_DEFINITION_START,
     NONCONDITIONAL_DIRECTIVE_START,
+    TEMPLATE_ARGUMENT_CLOSE,
+    SPLIT_RIGHT_ANGLE,
 };
 
 enum MacroCategory {
@@ -47,6 +49,7 @@ enum MacroCategory {
 
 typedef struct {
     bool in_directive;
+    bool split_right_angle;
     uint8_t delimiter_length;
     wchar_t delimiter[MAX_DELIMITER_LENGTH];
 } Scanner;
@@ -64,6 +67,10 @@ static inline void advance_skip(TSLexer *lexer) { lexer->advance(lexer, true); }
 static inline void reset(Scanner *scanner) {
     scanner->delimiter_length = 0;
     memset(scanner->delimiter, 0, sizeof scanner->delimiter);
+}
+
+static bool has_angle_token(TSLexer *lexer, const bool *valid_symbols) {
+    return valid_symbols[TEMPLATE_ARGUMENT_CLOSE] && lexer->lookahead == '>';
 }
 
 static bool is_identifier_start(int32_t ch) { return ch == '_' || (ch >= 'A' && ch <= 'Z') || (ch >= 'a' && ch <= 'z'); }
@@ -534,6 +541,19 @@ static bool scan_preprocessor_start(Scanner *scanner, TSLexer *lexer, const bool
 bool tree_sitter_cpp_external_scanner_scan(void *payload, TSLexer *lexer, const bool *valid_symbols) {
     Scanner *scanner = (Scanner *)payload;
 
+    if (lexer->lookahead != '>') {
+        scanner->split_right_angle = false;
+    }
+
+    if (scanner->split_right_angle && lexer->lookahead == '>' &&
+        (valid_symbols[TEMPLATE_ARGUMENT_CLOSE] || valid_symbols[SPLIT_RIGHT_ANGLE])) {
+        advance(lexer);
+        lexer->mark_end(lexer);
+        scanner->split_right_angle = false;
+        lexer->result_symbol = valid_symbols[TEMPLATE_ARGUMENT_CLOSE] ? TEMPLATE_ARGUMENT_CLOSE : SPLIT_RIGHT_ANGLE;
+        return true;
+    }
+
     const bool raw_string_ambiguous = valid_symbols[RAW_STRING_DELIMITER] && valid_symbols[RAW_STRING_CONTENT];
 
     if (!raw_string_ambiguous && valid_symbols[RAW_STRING_DELIMITER]) {
@@ -593,6 +613,7 @@ bool tree_sitter_cpp_external_scanner_scan(void *payload, TSLexer *lexer, const 
             ((!scanner->in_directive &&
               (valid_symbols[MACRO_DEFINITION_START] || valid_symbols[NONCONDITIONAL_DIRECTIVE_START]) &&
               lexer->lookahead == '#') ||
+             has_angle_token(lexer, valid_symbols) ||
              has_valid_macro_identifier(lexer, valid_symbols) ||
              (valid_symbols[MACRO_TOKEN_PASTE_NUMBER_PREFIX] && has_token_paste_number_prefix(lexer)))) {
             lexer->result_symbol = LINE_BREAK_WHITESPACE;
@@ -628,6 +649,7 @@ bool tree_sitter_cpp_external_scanner_scan(void *payload, TSLexer *lexer, const 
             ((!scanner->in_directive &&
               (valid_symbols[MACRO_DEFINITION_START] || valid_symbols[NONCONDITIONAL_DIRECTIVE_START]) &&
               lexer->lookahead == '#') ||
+             has_angle_token(lexer, valid_symbols) ||
              has_valid_macro_identifier(lexer, valid_symbols) ||
              (valid_symbols[MACRO_TOKEN_PASTE_NUMBER_PREFIX] && has_token_paste_number_prefix(lexer)))) {
             lexer->result_symbol = LINE_BREAK_WHITESPACE;
@@ -635,6 +657,24 @@ bool tree_sitter_cpp_external_scanner_scan(void *payload, TSLexer *lexer, const 
         }
 
         return false;
+    }
+
+    if (valid_symbols[TEMPLATE_ARGUMENT_CLOSE] && lexer->lookahead == '>') {
+        advance(lexer);
+        lexer->mark_end(lexer);
+        if (lexer->lookahead == '=') {
+            return false;
+        }
+        const bool split_pair = lexer->lookahead == '>';
+        if (split_pair) {
+            advance(lexer);
+            if (lexer->lookahead == '=') {
+                return false;
+            }
+        }
+        scanner->split_right_angle = split_pair;
+        lexer->result_symbol = TEMPLATE_ARGUMENT_CLOSE;
+        return true;
     }
 
     if (valid_symbols[RAW_MACRO_DEFINITION_IDENTIFIER] || valid_symbols[MACRO_TOKEN_PASTE_IDENTIFIER_PREFIX] ||
@@ -694,7 +734,7 @@ bool tree_sitter_cpp_external_scanner_scan(void *payload, TSLexer *lexer, const 
 unsigned tree_sitter_cpp_external_scanner_serialize(void *payload, char *buffer) {
     Scanner *scanner = (Scanner *)payload;
     unsigned delimiter_bytes = scanner->delimiter_length * sizeof(wchar_t);
-    buffer[0] = scanner->in_directive;
+    buffer[0] = scanner->in_directive | (scanner->split_right_angle << 1);
     memcpy(buffer + 1, scanner->delimiter, delimiter_bytes);
     return 1 + delimiter_bytes;
 }
@@ -702,7 +742,8 @@ unsigned tree_sitter_cpp_external_scanner_serialize(void *payload, char *buffer)
 void tree_sitter_cpp_external_scanner_deserialize(void *payload, const char *buffer, unsigned length) {
     Scanner *scanner = (Scanner *)payload;
     reset(scanner);
-    scanner->in_directive = length > 0 && buffer[0];
+    scanner->in_directive = length > 0 && (buffer[0] & 1);
+    scanner->split_right_angle = length > 0 && (buffer[0] & 2);
     if (length > 0) {
         --length;
         assert(length % sizeof(wchar_t) == 0 && length <= sizeof(scanner->delimiter) &&

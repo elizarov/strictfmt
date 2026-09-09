@@ -45,6 +45,8 @@ LEXICAL_GRAMMAR_TERMINALS = frozenset({
 })
 LEXICAL_EXTERNAL_TOKENS = frozenset({
     "_line_break_whitespace",
+    "_template_argument_close",
+    "_split_right_angle",
     "macro_definition_start",
     "nonconditional_directive_start",
     "_preproc_directive_end",
