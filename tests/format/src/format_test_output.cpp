@@ -7195,3 +7195,42 @@ struct Record {
 };
 
 }
+
+namespace NamedConversionCalls {
+
+namespace geometry {
+
+struct Position {};
+
+template <class T>
+struct Box {};
+
+}
+struct Point {
+    geometry::Position position;
+
+    operator geometry::Position() const { return position; }
+    operator geometry::Box<int>() const { return {}; }
+    operator int() const { return 1; }
+    operator unsigned long() const { return 2; }
+};
+
+auto Global(Point& point) { return point.operator ::NamedConversionCalls::geometry::Position(); }
+auto Qualified(Point& point) { return point.operator geometry::Position(); }
+auto Arrow(Point* point) { return point->operator geometry::Position(); }
+auto Template(Point& point) { return point.operator geometry::Box<int>(); }
+
+using Position = geometry::Position;
+
+auto Alias(Point& point) { return point.operator Position(); }
+auto Deduced(Point& point) { return point.operator decltype(point.position)(); }
+auto Primitive(Point& point) { return point.operator int(); }
+auto Sized(Point& point) { return point.operator unsigned long(); }
+template <class Target, class Source>
+Target Convert(Source& source) { return source.operator Target(); }
+template <class Traits, class Source>
+auto Dependent(Source& source) { return source.operator typename Traits::Type(); }
+template <class Traits, class Source>
+auto DependentTemplate(Source& source) { return source.operator typename Traits::template Type<int>(); }
+
+}

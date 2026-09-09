@@ -9097,7 +9097,19 @@
           "named": true
         },
         {
+          "type": "decltype",
+          "named": true
+        },
+        {
+          "type": "dependent_type",
+          "named": true
+        },
+        {
           "type": "function_prefix_macro",
+          "named": true
+        },
+        {
+          "type": "macro_token_paste_expression",
           "named": true
         },
         {
@@ -9113,11 +9125,23 @@
           "named": true
         },
         {
+          "type": "qualified_identifier",
+          "named": true
+        },
+        {
           "type": "sized_type_specifier",
           "named": true
         },
         {
           "type": "storage_class_specifier",
+          "named": true
+        },
+        {
+          "type": "template_type",
+          "named": true
+        },
+        {
+          "type": "type_identifier",
           "named": true
         },
         {

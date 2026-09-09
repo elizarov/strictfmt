@@ -32805,6 +32805,18 @@
               {
                 "type": "SYMBOL",
                 "name": "sized_type_specifier"
+              },
+              {
+                "type": "SYMBOL",
+                "name": "_type_constraint"
+              },
+              {
+                "type": "SYMBOL",
+                "name": "dependent_type"
+              },
+              {
+                "type": "SYMBOL",
+                "name": "decltype"
               }
             ]
           }
@@ -37162,6 +37174,10 @@
     }
   ],
   "conflicts": [
+    [
+      "operator_cast_field_identifier",
+      "_scope_name"
+    ],
     [
       "expression",
       "template_function",

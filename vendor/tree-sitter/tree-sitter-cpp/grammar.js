@@ -224,6 +224,7 @@ module.exports = grammar(C, {
   ],
 
   conflicts: $ => [
+    [$.operator_cast_field_identifier, $._scope_name],
     [$.expression, $.template_function, $._conditional_alternative],
     [$.expression, $.template_function],
     [$._template_method_name, $.template_function],
@@ -3691,7 +3692,7 @@ module.exports = grammar(C, {
 
     operator_cast_field_identifier: $ => prec(1, seq(
       'operator',
-      choice($.primitive_type, $.sized_type_specifier),
+      choice($.primitive_type, $.sized_type_specifier, $._type_constraint, $.dependent_type, $.decltype),
     )),
 
     type_requirement: $ => seq('typename', $._class_name),
