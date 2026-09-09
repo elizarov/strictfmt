@@ -75,7 +75,16 @@ struct FormatOutput::Impl {
         state_.pendingIndentLevel.reset();
     }
 
-    void BlankLine(bool macroContinuation) {
+    bool EndsWithBlankMacroLine() const {
+        if (!output_.ends_with("\\\n")) {
+            return false;
+        }
+        const std::string_view beforeBackslash(output_.data(), output_.size() - 2);
+        const size_t lastText = beforeBackslash.find_last_not_of(' ');
+        return lastText == std::string_view::npos || beforeBackslash[lastText] == '\n';
+    }
+
+    void BlankLine(int structuralIndent, bool macroContinuation) {
         if (!HasOutputContent() && !state_.lineHasText) {
             state_.atLineStart = true;
             currentColumn_ = 0;
@@ -84,10 +93,13 @@ struct FormatOutput::Impl {
             state_.pendingIndentLevel.reset();
             return;
         }
+        const std::optional<int> pendingIndent = state_.pendingIndentLevel;
         NewLine(macroContinuation);
         if (macroContinuation) {
-            if (!output_.ends_with("\n \\\n")) {
-                output_.append(" \\\n");
+            if (!EndsWithBlankMacroLine()) {
+                state_.pendingIndentLevel = pendingIndent;
+                WriteIndentIfNeeded(structuralIndent);
+                output_.append("\\\n");
             }
         } else if (output_.size() < 2 || output_[output_.size() - 2] != '\n') {
             output_.push_back('\n');
@@ -373,7 +385,9 @@ int FormatOutput::CurrentLineIndentLevel() const { return impl_->CurrentLineInde
 void FormatOutput::SetPendingIndent(std::optional<int> indent) { impl_->state_.pendingIndentLevel = indent; }
 void FormatOutput::ForceColumnZero() { impl_->ForceColumnZero(); }
 void FormatOutput::NewLine(bool macroContinuation) { impl_->NewLine(macroContinuation); }
-void FormatOutput::BlankLine(bool macroContinuation) { impl_->BlankLine(macroContinuation); }
+void FormatOutput::BlankLine(int structuralIndent, bool macroContinuation) {
+    impl_->BlankLine(structuralIndent, macroContinuation);
+}
 void FormatOutput::ReopenLastLine(bool discardBlankLines) {
     if (discardBlankLines) {
         impl_->TrimTrailingBlankLines();

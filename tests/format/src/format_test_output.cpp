@@ -5100,46 +5100,46 @@ auto LambdaPackInitCaptures(T&&... args) {
 
 #define FORMAT_NAMESPACE_TRAITS(Type) \
     namespace format_macro { \
- \
+    \
     namespace detail { \
- \
+    \
     template <> \
     struct Traits<Type> { \
         using type = Type; \
     }; \
- \
+    \
     } \
- \
+    \
     }
 #define FORMAT_NESTED_NAMESPACE_TRAITS(Type) \
     namespace format_macro::nested { \
- \
+    \
     inline namespace version { \
- \
+    \
     template <> \
     struct Traits<Type> { \
         static_assert(Check<Type>()); \
     }; \
- \
+    \
     } \
- \
+    \
     }
 #define FORMAT_MIXED_NAMESPACE_DECLARATIONS(Type) \
     namespace format_macro { \
- \
+    \
     Type Get(); \
- \
+    \
     } \
     void After();
 #define FORMAT_ANONYMOUS_NAMESPACE(Type) \
     namespace { \
- \
+    \
     namespace detail { \
- \
+    \
     Type value; \
- \
+    \
     } \
- \
+    \
     }
 
 #define FORMAT_PRIMITIVE_DECLARATION int value;
@@ -5157,9 +5157,9 @@ auto LambdaPackInitCaptures(T&&... args) {
 #define FORMAT_DECLARATION_NAMESPACE_SEQUENCE \
     void Before(); \
     namespace format_macro { \
- \
+    \
     int value; \
- \
+    \
     } \
     void After();
 
@@ -5831,9 +5831,9 @@ struct Owner {
 FORMAT_TYPE_MEMBER_ALIAS(Member);
 #define FORMAT_TYPE_NAMESPACE(Name) \
     namespace Name { \
- \
+    \
     using Number = int; \
- \
+    \
     } \
     namespace Name##Alias = Name; \
     using Name::Number;
@@ -5853,9 +5853,9 @@ FORMAT_TYPE_CONCEPT(Nonempty);
 static_assert(Nonempty<HolderAlias<int>>);
 #define FORMAT_TYPE_EXTERN(Name) \
     extern "C" { \
- \
+    \
     int Name(int); \
- \
+    \
     }
 FORMAT_TYPE_EXTERN(External);
 #define FORMAT_TYPE_INSTANTIATION(Name) template struct Name<int>;
@@ -7351,7 +7351,7 @@ namespace DirectiveBoundaries {
 #define FORMAT_TYPE_RECORD(name) \
     struct name { \
         using Value = int; \
- \
+        \
         Value value; \
     }
 #define FORMAT_TYPE_CHOICE(name) \
@@ -7377,13 +7377,13 @@ using Size = FORMAT_PRIMITIVE_TYPE;
 FORMAT_TYPE_TAG;
 #define FORMAT_SEMILESS_NAMESPACE_COMMENT() \
     namespace Outer { \
- \
+    \
     namespace Inner { \
- \
+    \
     int value = 1; \
- \
+    \
     } /* Inner */ \
- \
+    \
     } /* Outer */
 
 FORMAT_SEMILESS_NAMESPACE_COMMENT()

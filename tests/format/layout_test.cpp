@@ -50,13 +50,29 @@ void TestOutput() {
     {
         FormatOutput output(2, 80);
         output.Write("#define X", 0);
-        output.BlankLine(true);
-        output.BlankLine(true);
+        output.BlankLine(0, true);
+        output.BlankLine(1, true);
         Check(output.State().macroContinuation && output.CurrentColumn(0) == 2, "blank macro lines preserve continuation indentation");
         output.Write("x", 0);
-        output.BlankLine();
+        output.BlankLine(0);
         output.Write("next", 0);
-        Check(output.Finish() == "#define X \\\n \\\n  x\n\nnext\n", "blank macro lines keep one continuation suffix without extending the final line");
+        Check(output.Finish() == "#define X \\\n  \\\n  x\n\nnext\n", "blank macro lines keep one indented continuation even when the structural indent changes");
+    }
+    {
+        FormatOutput output(2, 80);
+        output.Write("#define X", 0);
+        output.NewLine(true);
+        output.Write("struct X {", 0);
+        output.BlankLine(1, true);
+        output.Write("int x;", 1);
+        output.NewLine(true);
+        output.SetPendingIndent(3);
+        output.BlankLine(1, true);
+        output.SetPendingIndent(3);
+        output.Write("int y;", 1);
+        output.NewLine(true);
+        output.Write("};", 0);
+        Check(output.Finish() == "#define X \\\n  struct X { \\\n    \\\n    int x; \\\n      \\\n      int y; \\\n  };\n", "blank macro lines use structural or pending indentation without an extra space");
     }
     {
         SyntaxNode group;
@@ -83,9 +99,9 @@ void TestOutput() {
     }
     {
         FormatOutput output(2, 80);
-        output.BlankLine();
+        output.BlankLine(0);
         output.Write("x", 0);
-        output.BlankLine();
+        output.BlankLine(0);
         output.ReopenLastLine(true);
         output.Space();
         output.Write("y", 0);
