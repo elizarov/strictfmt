@@ -4126,3 +4126,16 @@ namespace EmptyAttributeEntries {
 struct [[,maybe_unused,]] Record {};
 int Read([[,maybe_unused,,]] int input) { return input; }
 }
+
+namespace CompoundRequirementCommas {
+template<class T> concept Integer = requires(T value) { value + 1; };
+template<class T> concept Fields = requires(T value) {
+ { value.first, value.second } -> Integer;
+ { value.first, value.second, 1 } noexcept -> Integer;
+ { (value.first, value.second) };
+ { value.first };
+ value.first, value.second;
+};
+struct Pair { int first; int second; };
+static_assert(Fields<Pair>);
+}

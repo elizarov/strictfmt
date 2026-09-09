@@ -3617,7 +3617,7 @@ module.exports = grammar(C, {
     )),
 
     compound_requirement: $ => seq(
-      '{', $.expression, '}',
+      '{', choice($.expression, $.comma_expression), '}',
       optional('noexcept'),
       optional($.trailing_return_type),
       ';',
