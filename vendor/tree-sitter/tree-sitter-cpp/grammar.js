@@ -691,10 +691,16 @@ module.exports = grammar(C, {
       $._preproc_directive_end,
     ),
 
-    preproc_call: $ => seq(
-      field('directive', $.preproc_directive),
-      field('argument', optional($.preproc_arg)),
-      $._preproc_directive_end,
+    preproc_call: $ => choice(
+      seq(
+        field('directive', $.preproc_directive),
+        field('argument', optional($.preproc_arg)),
+        $._preproc_directive_end,
+      ),
+      seq(
+        field('directive', alias('#', $.preproc_directive)),
+        $._preproc_directive_end,
+      ),
     ),
 
     macro_replacement_list: $ => seq(

@@ -4239,3 +4239,23 @@ template<class T, class U> int Make(U);
 struct Owner { Owner(const Config&, const Config&); int storage; };
 Owner::Owner(const Config& config, const Config&) : storage(Make<types::Storage>(config["key"].As<types::Optional<types::List<types::Text>>>())) {}
 }
+
+#
+# /* empty directive */
+namespace NullDirectives {
+#
+constexpr int value = 1;
+void Run() {
+#
+ int local = value;
+# // empty directive inside a function
+ (void)local;
+}
+#if 1
+#
+static_assert(value == 1);
+#else
+#
+#endif
+}
+#

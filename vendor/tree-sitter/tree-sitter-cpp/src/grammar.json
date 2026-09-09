@@ -810,35 +810,62 @@
       ]
     },
     "preproc_call": {
-      "type": "SEQ",
+      "type": "CHOICE",
       "members": [
         {
-          "type": "FIELD",
-          "name": "directive",
-          "content": {
-            "type": "SYMBOL",
-            "name": "preproc_directive"
-          }
-        },
-        {
-          "type": "FIELD",
-          "name": "argument",
-          "content": {
-            "type": "CHOICE",
-            "members": [
-              {
+          "type": "SEQ",
+          "members": [
+            {
+              "type": "FIELD",
+              "name": "directive",
+              "content": {
                 "type": "SYMBOL",
-                "name": "preproc_arg"
-              },
-              {
-                "type": "BLANK"
+                "name": "preproc_directive"
               }
-            ]
-          }
+            },
+            {
+              "type": "FIELD",
+              "name": "argument",
+              "content": {
+                "type": "CHOICE",
+                "members": [
+                  {
+                    "type": "SYMBOL",
+                    "name": "preproc_arg"
+                  },
+                  {
+                    "type": "BLANK"
+                  }
+                ]
+              }
+            },
+            {
+              "type": "SYMBOL",
+              "name": "_preproc_directive_end"
+            }
+          ]
         },
         {
-          "type": "SYMBOL",
-          "name": "_preproc_directive_end"
+          "type": "SEQ",
+          "members": [
+            {
+              "type": "FIELD",
+              "name": "directive",
+              "content": {
+                "type": "ALIAS",
+                "content": {
+                  "type": "STRING",
+                  "value": "#"
+                },
+                "named": true,
+                "value": "preproc_directive"
+              }
+            },
+            {
+              "type": "SYMBOL",
+              "name": "_preproc_directive_end"
+            }
+          ]
         }
       ]
     },
