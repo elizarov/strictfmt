@@ -4075,3 +4075,33 @@ static_assert(nested.pair.second == 10 && pasted.first == 11);
 #undef FORMAT_INITIALIZER_NESTED
 #undef FORMAT_INITIALIZER_PASTE
 }
+
+namespace BitfieldInitializers {
+constexpr unsigned width = 3;
+struct Bits {
+    bool enabled : 1 = true;
+    unsigned count : 3 {5}, spare : 2 = 1;
+    unsigned : 0;
+    unsigned reserved : 2;
+    unsigned : 2, remaining : 3 {6};
+    bool expression : (1 + 0) = false;
+    unsigned named_width : width = 4;
+    [[maybe_unused]] unsigned attributed : 2 = 2;
+};
+constexpr Bits bits{};
+static_assert(bits.enabled && bits.count == 5 && bits.spare == 1);
+static_assert(bits.remaining == 6 && !bits.expression && bits.named_width == 4);
+namespace data { enum class Mode : unsigned { One = 1, Two = 2 }; }
+struct Modes { data::Mode mode : 2 {data::Mode::Two}; };
+static_assert(Modes{}.mode == data::Mode::Two);
+}
+
+namespace BitfieldWidthGuard {
+inline int alternative = 1;
+struct Bits {
+    unsigned greedy : true ? 3 : alternative = 2;
+    unsigned bounded : (true ? 3 : alternative) = 2;
+};
+constexpr Bits bits{};
+static_assert(bits.greedy == 0 && bits.bounded == 2);
+}

@@ -68,6 +68,42 @@ function cppStatements($, base = C.grammar.rules._non_case_statement) {
   );
 }
 
+function cppNonBinaryExpressions($, base) {
+  return choice(
+    $.macro_token_paste_expression,
+    alias($.conditional_concatenated_string, $.concatenated_string),
+    alias($.delete_array_expression, $.delete_expression),
+    alias($.bare_macro_identifier, $.identifier),
+    $.macro_qualified_identifier,
+    base,
+    $.reflect_expression,
+    $.splice_specifier,
+    $.preprocessing_token_macro_call,
+    $.macro_call_expression,
+    $.qualified_address_expression,
+    $.throw_expression,
+    alias('ref', $.identifier),
+    $.co_await_expression,
+    $.requires_expression,
+    $.requires_clause,
+    alias('import', $.identifier),
+    alias('module', $.identifier),
+    $.suffixed_string_literal,
+    $.template_function,
+    $.qualified_identifier,
+    $.typeid_expression,
+    $.cpp_cast_expression,
+    $.new_expression,
+    $.gcnew_expression,
+    $.delete_expression,
+    $.lambda_expression,
+    $.parameter_pack_expansion,
+    $.this,
+    $.user_defined_literal,
+    $.fold_expression,
+  );
+}
+
 function initializerClause($) {
   return choice($.initializer_pair, $.expression, $._braced_initializer_clause);
 }
@@ -148,6 +184,9 @@ module.exports = grammar(C, {
   ],
 
   conflicts: $ => [
+    [$.expression, $._conditional_alternative, $.conditional_concatenated_string],
+    [$.expression, $.template_type, $.template_function, $._conditional_alternative],
+    [$.expression, $._conditional_alternative, $._callable_template_callee],
     [$._member_pointer_scope, $._scope_resolution],
     [$.qualified_declarator_identifier, $.qualified_type_identifier],
     [$.qualified_declarator_identifier, $.qualified_identifier, $.qualified_type_identifier],
@@ -432,6 +471,7 @@ module.exports = grammar(C, {
   precedences: $ => [
     [$.argument_list, $.type_qualifier],
     [$._expression_not_binary, $._class_name],
+    [$._constant_expression, $._class_name],
   ],
 
   rules: {
@@ -1880,14 +1920,17 @@ module.exports = grammar(C, {
       ),
     ),
 
-    _field_declaration_declarator_list: $ => commaSep1(seq(
-      repeat($.post_type_macro_annotation),
-      field('declarator', $._field_declarator),
-      optional(choice(
-        $.bitfield_clause,
-        field('default_value', $.initializer_list),
-        seq('=', field('default_value', choice($.expression, $.initializer_list))),
-      )),
+    _field_declaration_declarator_list: $ => commaSep1(choice(
+      seq(
+        repeat($.post_type_macro_annotation),
+        field('declarator', $._field_declarator),
+        optional($.bitfield_clause),
+        optional(choice(
+          field('default_value', $.initializer_list),
+          seq('=', field('default_value', choice($.expression, $.initializer_list))),
+        )),
+      ),
+      $.bitfield_clause,
     )),
 
     inline_method_definition: $ => choice(
@@ -3144,39 +3187,31 @@ module.exports = grammar(C, {
 
     // Expressions
 
-    _expression_not_binary: ($, original) => choice(
-      $.macro_token_paste_expression,
-      alias($.conditional_concatenated_string, $.concatenated_string),
-      alias($.delete_array_expression, $.delete_expression),
-      alias($.bare_macro_identifier, $.identifier),
-      $.macro_qualified_identifier,
-      original,
-      $.reflect_expression,
-      $.splice_specifier,
-      $.preprocessing_token_macro_call,
-      $.macro_call_expression,
-      $.qualified_address_expression,
-      $.throw_expression,
-      alias('ref', $.identifier),
-      $.co_await_expression,
-      $.requires_expression,
-      $.requires_clause,
-      alias('import', $.identifier),
-      alias('module', $.identifier),
-      $.suffixed_string_literal,
-      $.template_function,
-      $.qualified_identifier,
-      $.typeid_expression,
-      $.cpp_cast_expression,
-      $.new_expression,
-      $.gcnew_expression,
-      $.delete_expression,
-      $.lambda_expression,
-      $.parameter_pack_expansion,
-      $.this,
-      $.user_defined_literal,
-      $.fold_expression,
+    conditional_expression: $ => prec.right(PREC.ASSIGNMENT, seq(
+      field('condition', $.expression),
+      '?',
+      optional(field('consequence', choice($.expression, $.comma_expression))),
+      ':',
+      field('alternative', $._conditional_alternative),
+    )),
+
+    // The final operand admits assignment before an enclosing initializer boundary.
+    _conditional_alternative: $ => prec.right(PREC.ASSIGNMENT, choice(
+      $._expression_not_binary,
+      $.binary_expression,
+    )),
+
+    _expression_not_binary: ($, original) => cppNonBinaryExpressions($, original),
+
+    // Complete the longest constant-expression before considering a bit-field initializer.
+    _constant_expression: $ => choice(
+      $.binary_expression,
+      ...cppNonBinaryExpressions($, choice(
+        ...C.grammar.rules._expression_not_binary.members.filter(member => member.name !== 'assignment_expression'),
+      )).members.filter(member => member.name !== 'parameter_pack_expansion' && member.name !== 'throw_expression'),
     ),
+
+    bitfield_clause: $ => seq(':', $._constant_expression),
 
     initializer_list: $ => {
       const item = initializerClause($);

@@ -1081,6 +1081,21 @@ class FormatCommandTests(unittest.TestCase):
             formatted.stdout,
         )
 
+    def test_bitfield_width_uses_longest_constant_expression(self) -> None:
+        source = (
+            "inline int alternative = 1;\n"
+            "struct Bits {\n"
+            "unsigned greedy : true ? 3 : alternative = 2;\n"
+            "unsigned bounded : (true ? 3 : alternative) = 2;\n"
+            "};\n"
+        )
+        dump = native_format("--stdin", "--dump-syntax-tree", input_text=source)
+
+        self.assertEqual(0, dump.returncode, msg=f"stdout:\n{dump.stdout}\n\nstderr:\n{dump.stderr}")
+        greedy, bounded = dump.stdout.split('text: "bounded"')
+        self.assertEqual(1, greedy.count("- kind: AssignmentExpression\n"))
+        self.assertNotIn("AssignmentExpression", bounded)
+
     def test_dump_reads_stdin_source(self) -> None:
         result = native_format("--stdin", "--dump-syntax-tree", input_text="int value(){return 2;}\n")
 

@@ -1623,7 +1623,195 @@
       "required": true,
       "types": [
         {
-          "type": "expression",
+          "type": "alignof_expression",
+          "named": true
+        },
+        {
+          "type": "binary_expression",
+          "named": true
+        },
+        {
+          "type": "call_expression",
+          "named": true
+        },
+        {
+          "type": "cast_expression",
+          "named": true
+        },
+        {
+          "type": "char_literal",
+          "named": true
+        },
+        {
+          "type": "co_await_expression",
+          "named": true
+        },
+        {
+          "type": "compound_literal_expression",
+          "named": true
+        },
+        {
+          "type": "concatenated_string",
+          "named": true
+        },
+        {
+          "type": "conditional_expression",
+          "named": true
+        },
+        {
+          "type": "cpp_cast_expression",
+          "named": true
+        },
+        {
+          "type": "delete_expression",
+          "named": true
+        },
+        {
+          "type": "extension_expression",
+          "named": true
+        },
+        {
+          "type": "false",
+          "named": true
+        },
+        {
+          "type": "field_expression",
+          "named": true
+        },
+        {
+          "type": "fold_expression",
+          "named": true
+        },
+        {
+          "type": "gcnew_expression",
+          "named": true
+        },
+        {
+          "type": "generic_expression",
+          "named": true
+        },
+        {
+          "type": "gnu_asm_expression",
+          "named": true
+        },
+        {
+          "type": "identifier",
+          "named": true
+        },
+        {
+          "type": "lambda_expression",
+          "named": true
+        },
+        {
+          "type": "macro_call_expression",
+          "named": true
+        },
+        {
+          "type": "macro_qualified_identifier",
+          "named": true
+        },
+        {
+          "type": "macro_token_paste_expression",
+          "named": true
+        },
+        {
+          "type": "new_expression",
+          "named": true
+        },
+        {
+          "type": "null",
+          "named": true
+        },
+        {
+          "type": "number_literal",
+          "named": true
+        },
+        {
+          "type": "offsetof_expression",
+          "named": true
+        },
+        {
+          "type": "parenthesized_expression",
+          "named": true
+        },
+        {
+          "type": "pointer_expression",
+          "named": true
+        },
+        {
+          "type": "preprocessing_token_macro_call",
+          "named": true
+        },
+        {
+          "type": "qualified_address_expression",
+          "named": true
+        },
+        {
+          "type": "qualified_identifier",
+          "named": true
+        },
+        {
+          "type": "raw_string_literal",
+          "named": true
+        },
+        {
+          "type": "reflect_expression",
+          "named": true
+        },
+        {
+          "type": "requires_clause",
+          "named": true
+        },
+        {
+          "type": "requires_expression",
+          "named": true
+        },
+        {
+          "type": "sizeof_expression",
+          "named": true
+        },
+        {
+          "type": "splice_specifier",
+          "named": true
+        },
+        {
+          "type": "string_literal",
+          "named": true
+        },
+        {
+          "type": "subscript_expression",
+          "named": true
+        },
+        {
+          "type": "suffixed_string_literal",
+          "named": true
+        },
+        {
+          "type": "template_function",
+          "named": true
+        },
+        {
+          "type": "this",
+          "named": true
+        },
+        {
+          "type": "true",
+          "named": true
+        },
+        {
+          "type": "typeid_expression",
+          "named": true
+        },
+        {
+          "type": "unary_expression",
+          "named": true
+        },
+        {
+          "type": "update_expression",
+          "named": true
+        },
+        {
+          "type": "user_defined_literal",
           "named": true
         }
       ]
@@ -2633,7 +2821,127 @@
         "required": true,
         "types": [
           {
-            "type": "expression",
+            "type": "alignof_expression",
+            "named": true
+          },
+          {
+            "type": "assignment_expression",
+            "named": true
+          },
+          {
+            "type": "binary_expression",
+            "named": true
+          },
+          {
+            "type": "call_expression",
+            "named": true
+          },
+          {
+            "type": "cast_expression",
+            "named": true
+          },
+          {
+            "type": "char_literal",
+            "named": true
+          },
+          {
+            "type": "co_await_expression",
+            "named": true
+          },
+          {
+            "type": "compound_literal_expression",
+            "named": true
+          },
+          {
+            "type": "concatenated_string",
+            "named": true
+          },
+          {
+            "type": "conditional_expression",
+            "named": true
+          },
+          {
+            "type": "cpp_cast_expression",
+            "named": true
+          },
+          {
+            "type": "delete_expression",
+            "named": true
+          },
+          {
+            "type": "extension_expression",
+            "named": true
+          },
+          {
+            "type": "false",
+            "named": true
+          },
+          {
+            "type": "field_expression",
+            "named": true
+          },
+          {
+            "type": "fold_expression",
+            "named": true
+          },
+          {
+            "type": "gcnew_expression",
+            "named": true
+          },
+          {
+            "type": "generic_expression",
+            "named": true
+          },
+          {
+            "type": "gnu_asm_expression",
+            "named": true
+          },
+          {
+            "type": "identifier",
+            "named": true
+          },
+          {
+            "type": "lambda_expression",
+            "named": true
+          },
+          {
+            "type": "macro_call_expression",
+            "named": true
+          },
+          {
+            "type": "macro_qualified_identifier",
+            "named": true
+          },
+          {
+            "type": "macro_token_paste_expression",
+            "named": true
+          },
+          {
+            "type": "new_expression",
+            "named": true
+          },
+          {
+            "type": "null",
+            "named": true
+          },
+          {
+            "type": "number_literal",
+            "named": true
+          },
+          {
+            "type": "offsetof_expression",
+            "named": true
+          },
+          {
+            "type": "parameter_pack_expansion",
+            "named": true
+          },
+          {
+            "type": "parenthesized_expression",
+            "named": true
+          },
+          {
+            "type": "pointer_expression",
             "named": true
           },
           {
@@ -2645,7 +2953,87 @@
             "named": true
           },
           {
+            "type": "preprocessing_token_macro_call",
+            "named": true
+          },
+          {
+            "type": "qualified_address_expression",
+            "named": true
+          },
+          {
+            "type": "qualified_identifier",
+            "named": true
+          },
+          {
+            "type": "raw_string_literal",
+            "named": true
+          },
+          {
+            "type": "reflect_expression",
+            "named": true
+          },
+          {
+            "type": "requires_clause",
+            "named": true
+          },
+          {
+            "type": "requires_expression",
+            "named": true
+          },
+          {
+            "type": "sizeof_expression",
+            "named": true
+          },
+          {
+            "type": "splice_specifier",
+            "named": true
+          },
+          {
+            "type": "string_literal",
+            "named": true
+          },
+          {
+            "type": "subscript_expression",
+            "named": true
+          },
+          {
+            "type": "suffixed_string_literal",
+            "named": true
+          },
+          {
             "type": "system_lib_string",
+            "named": true
+          },
+          {
+            "type": "template_function",
+            "named": true
+          },
+          {
+            "type": "this",
+            "named": true
+          },
+          {
+            "type": "throw_expression",
+            "named": true
+          },
+          {
+            "type": "true",
+            "named": true
+          },
+          {
+            "type": "typeid_expression",
+            "named": true
+          },
+          {
+            "type": "unary_expression",
+            "named": true
+          },
+          {
+            "type": "update_expression",
+            "named": true
+          },
+          {
+            "type": "user_defined_literal",
             "named": true
           }
         ]
