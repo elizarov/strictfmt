@@ -577,9 +577,9 @@ void f() {
 
 // macro continuation suffix prevents a pair
 #define JOIN \
-    a + \
+    a +      \
         "" + \
-        b + \
+        b +  \
         c
 
 // comment-transparent structural adjacency still contributes to optimized width

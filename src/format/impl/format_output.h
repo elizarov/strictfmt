@@ -20,9 +20,10 @@ enum class FormatOutputComment {
     Continuation,
 };
 
-// Owns physical text, columns, pending line indentation, macro line suffixes, and
-// deferred comment alignment. The caller supplies structural indentation and
-// chooses breaks; this module never traverses syntax or chooses a layout.
+// Owns physical text, columns, pending line indentation, macro line suffixes,
+// and deferred comment and continuation alignment. The caller supplies
+// structural indentation and chooses breaks; this module never traverses syntax
+// or chooses a layout.
 // Comment groups are borrowed identity keys, valid until Finish. Verbatim text
 // already has its indentation; complete-line text also includes its final newline.
 // Finish trims and aligns the accumulated output and consumes this one-shot buffer.
@@ -40,7 +41,7 @@ public:
     void ForceColumnZero();
 
     void NewLine(bool macroContinuation = false);
-    void BlankLine(int structuralIndent, bool macroContinuation = false);
+    void BlankLine(bool macroContinuation = false);
     void ReopenLastLine(bool discardBlankLines = false);
     void Write(std::string_view text, int structuralIndent);
     void WriteAtIndent(std::string_view text, int indent);

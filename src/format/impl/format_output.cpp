@@ -21,6 +21,11 @@ struct LineCommentPosition {
     bool alignTrailingRun = false;
 };
 
+struct MacroContinuationPosition {
+    size_t offset = 0;
+    size_t group = 0;
+};
+
 }  // namespace
 
 struct FormatOutput::Impl {
@@ -31,6 +36,8 @@ struct FormatOutput::Impl {
     FormatOutputState state_;
     std::string output_;
     std::vector<LineCommentPosition> lineComments_;
+    std::vector<MacroContinuationPosition> macroContinuations_;
+    size_t macroContinuationGroup_ = 0;
     std::optional<size_t> activeCommentContinuationAnchor_;
     int currentColumn_ = 0;
     bool forceColumnZeroLine_ = false;
@@ -59,10 +66,19 @@ struct FormatOutput::Impl {
         }
     }
 
+    void WriteMacroContinuation() {
+        macroContinuations_.push_back({.offset = output_.size(), .group = macroContinuationGroup_});
+        output_.push_back('\\');
+    }
+
     void NewLine(bool macroContinuation = false) {
         FinishLine();
         if (macroContinuation && state_.lineHasText) {
-            output_.append(" \\");
+            output_.push_back(' ');
+            WriteMacroContinuation();
+        }
+        if (!macroContinuation) {
+            ++macroContinuationGroup_;
         }
         if (output_.empty() || output_.back() != '\n') {
             output_.push_back('\n');
@@ -75,16 +91,7 @@ struct FormatOutput::Impl {
         state_.pendingIndentLevel.reset();
     }
 
-    bool EndsWithBlankMacroLine() const {
-        if (!output_.ends_with("\\\n")) {
-            return false;
-        }
-        const std::string_view beforeBackslash(output_.data(), output_.size() - 2);
-        const size_t lastText = beforeBackslash.find_last_not_of(' ');
-        return lastText == std::string_view::npos || beforeBackslash[lastText] == '\n';
-    }
-
-    void BlankLine(int structuralIndent, bool macroContinuation) {
+    void BlankLine(bool macroContinuation) {
         if (!HasOutputContent() && !state_.lineHasText) {
             state_.atLineStart = true;
             currentColumn_ = 0;
@@ -93,13 +100,11 @@ struct FormatOutput::Impl {
             state_.pendingIndentLevel.reset();
             return;
         }
-        const std::optional<int> pendingIndent = state_.pendingIndentLevel;
         NewLine(macroContinuation);
         if (macroContinuation) {
-            if (!EndsWithBlankMacroLine()) {
-                state_.pendingIndentLevel = pendingIndent;
-                WriteIndentIfNeeded(structuralIndent);
-                output_.append("\\\n");
+            if (!output_.ends_with("\n\\\n")) {
+                WriteMacroContinuation();
+                output_.push_back('\n');
             }
         } else if (output_.size() < 2 || output_[output_.size() - 2] != '\n') {
             output_.push_back('\n');
@@ -295,6 +300,16 @@ struct FormatOutput::Impl {
         if (totalPadding == 0) {
             return;
         }
+        size_t commentIndex = 0;
+        size_t precedingPadding = 0;
+        for (MacroContinuationPosition& continuation : macroContinuations_) {
+            while (
+                commentIndex < lineComments_.size() && lineComments_[commentIndex].commentOffset <= continuation.offset
+            ) {
+                precedingPadding += static_cast<size_t>(padding[commentIndex++]);
+            }
+            continuation.offset += precedingPadding;
+        }
         std::string aligned;
         aligned.reserve(output_.size() + totalPadding);
         size_t copied = 0;
@@ -303,6 +318,54 @@ struct FormatOutput::Impl {
             aligned.append(output_, copied, commentOffset - copied);
             aligned.append(static_cast<size_t>(padding[index]), ' ');
             copied = commentOffset;
+        }
+        aligned.append(output_, copied, output_.size() - copied);
+        output_ = std::move(aligned);
+    }
+
+    void AlignMacroContinuations() {
+        if (macroContinuations_.empty()) {
+            return;
+        }
+        std::vector<int> columns;
+        columns.reserve(macroContinuations_.size());
+        for (const MacroContinuationPosition& continuation : macroContinuations_) {
+            const size_t newline = output_.rfind('\n', continuation.offset);
+            const size_t lineStart = newline == std::string::npos ? 0 : newline + 1;
+            columns.push_back(
+                Utf8CharacterCount(std::string_view(output_).substr(lineStart, continuation.offset - lineStart))
+            );
+        }
+        std::vector<int> padding(columns.size());
+        size_t totalPadding = 0;
+        for (size_t begin = 0; begin < macroContinuations_.size();) {
+            size_t end = begin;
+            int alignedColumn = 0;
+            while (
+                end < macroContinuations_.size() && macroContinuations_[end].group == macroContinuations_[begin].group
+            ) {
+                if (columns[end] < columnLimit_) {
+                    alignedColumn = std::max(alignedColumn, columns[end]);
+                }
+                ++end;
+            }
+            for (size_t index = begin; index < end; ++index) {
+                padding[index] = std::max(0, alignedColumn - columns[index]);
+                totalPadding += static_cast<size_t>(padding[index]);
+            }
+            begin = end;
+        }
+        if (totalPadding == 0) {
+            return;
+        }
+        std::string aligned;
+        aligned.reserve(output_.size() + totalPadding);
+        size_t copied = 0;
+        for (size_t index = 0; index < macroContinuations_.size(); ++index) {
+            const size_t offset = macroContinuations_[index].offset;
+            aligned.append(output_, copied, offset - copied);
+            aligned.append(static_cast<size_t>(padding[index]), ' ');
+            copied = offset;
         }
         aligned.append(output_, copied, output_.size() - copied);
         output_ = std::move(aligned);
@@ -353,6 +416,7 @@ struct FormatOutput::Impl {
             output_.push_back('\n');
         }
         AlignLineComments();
+        AlignMacroContinuations();
         return std::move(output_);
     }
     void ForceColumnZero() {
@@ -385,9 +449,7 @@ int FormatOutput::CurrentLineIndentLevel() const { return impl_->CurrentLineInde
 void FormatOutput::SetPendingIndent(std::optional<int> indent) { impl_->state_.pendingIndentLevel = indent; }
 void FormatOutput::ForceColumnZero() { impl_->ForceColumnZero(); }
 void FormatOutput::NewLine(bool macroContinuation) { impl_->NewLine(macroContinuation); }
-void FormatOutput::BlankLine(int structuralIndent, bool macroContinuation) {
-    impl_->BlankLine(structuralIndent, macroContinuation);
-}
+void FormatOutput::BlankLine(bool macroContinuation) { impl_->BlankLine(macroContinuation); }
 void FormatOutput::ReopenLastLine(bool discardBlankLines) {
     if (discardBlankLines) {
         impl_->TrimTrailingBlankLines();

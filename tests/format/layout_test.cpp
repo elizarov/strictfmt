@@ -50,29 +50,92 @@ void TestOutput() {
     {
         FormatOutput output(2, 80);
         output.Write("#define X", 0);
-        output.BlankLine(0, true);
-        output.BlankLine(1, true);
+        output.BlankLine(true);
+        output.BlankLine(true);
         Check(output.State().macroContinuation && output.CurrentColumn(0) == 2, "blank macro lines preserve continuation indentation");
         output.Write("x", 0);
-        output.BlankLine(0);
+        output.BlankLine();
         output.Write("next", 0);
-        Check(output.Finish() == "#define X \\\n  \\\n  x\n\nnext\n", "blank macro lines keep one indented continuation even when the structural indent changes");
+        Check(output.Finish() == "#define X \\\n          \\\n  x\n\nnext\n", "blank macro lines collapse and align without extending the final line");
     }
     {
         FormatOutput output(2, 80);
         output.Write("#define X", 0);
         output.NewLine(true);
         output.Write("struct X {", 0);
-        output.BlankLine(1, true);
+        output.BlankLine(true);
         output.Write("int x;", 1);
         output.NewLine(true);
         output.SetPendingIndent(3);
-        output.BlankLine(1, true);
+        output.BlankLine(true);
         output.SetPendingIndent(3);
         output.Write("int y;", 1);
         output.NewLine(true);
         output.Write("};", 0);
-        Check(output.Finish() == "#define X \\\n  struct X { \\\n    \\\n    int x; \\\n      \\\n      int y; \\\n  };\n", "blank macro lines use structural or pending indentation without an extra space");
+        Check(output.Finish() == "#define X    \\\n  struct X { \\\n             \\\n    int x;   \\\n             \\\n      int y; \\\n  };\n", "macro continuation alignment includes blank lines and preserves content indentation");
+    }
+    {
+        FormatOutput output(2, 12);
+        output.Write("#define X", 0);
+        output.NewLine(true);
+        output.WriteAtIndent("1234567890", 0);
+        output.NewLine(true);
+        output.WriteAtIndent("12345678901", 0);
+        output.NewLine(true);
+        output.WriteAtIndent("123456789012", 0);
+        output.NewLine(true);
+        output.WriteAtIndent("1234567890123", 0);
+        output.NewLine(true);
+        output.WriteAtIndent("x", 0);
+        output.NewLine(true);
+        output.WriteAtIndent("last_line_is_longer", 0);
+        output.NewLine();
+        output.Write("#define Y", 0);
+        output.NewLine(true);
+        output.Write("y", 0);
+        output.NewLine(true);
+        output.Write("end", 0);
+        Check(output.Finish() ==
+            "#define X  \\\n1234567890 \\\n12345678901 \\\n123456789012 \\\n1234567890123 \\\nx          \\\nlast_line_is_longer\n"
+            "#define Y \\\n  y       \\\n  end\n",
+            "alignment includes a suffix at the limit, excludes overflowing and final lines, and resets per macro");
+    }
+    {
+        FormatOutput output(2, 4);
+        output.WriteAtIndent("abcd", 0);
+        output.NewLine(true);
+        output.WriteAtIndent("abcdef", 0);
+        output.NewLine(true);
+        output.WriteAtIndent("end", 0);
+        Check(output.Finish() == "abcd \\\nabcdef \\\nend\n", "macros with no fitting continuation lines keep minimal suffixes");
+    }
+    {
+        FormatOutput output(2, 8);
+        output.WriteAtIndent("\xc3\xa9\xc3\xa9\xc3\xa9\xc3\xa9\xc3\xa9\xc3\xa9", 0);
+        output.NewLine(true);
+        output.WriteAtIndent("x", 0);
+        output.NewLine(true);
+        output.WriteAtIndent("end", 0);
+        Check(output.Finish() == "\xc3\xa9\xc3\xa9\xc3\xa9\xc3\xa9\xc3\xa9\xc3\xa9 \\\nx      \\\nend\n", "continuation alignment measures Unicode columns instead of bytes");
+    }
+    {
+        for (int limit : {19, 24}) {
+            SyntaxNode group;
+            FormatOutput output(2, limit);
+            output.Write("#define X", 0);
+            output.NewLine(true);
+            output.Write("a;", 0);
+            output.WriteComment("// longer", 0, &group, FormatOutputComment::Trailing, true);
+            output.NewLine(true);
+            output.Write("long;", 0);
+            output.WriteComment("// x", 0, &group, FormatOutputComment::Trailing, true);
+            output.NewLine(true);
+            output.Write("end", 0);
+            const std::string_view expected = limit == 24 ?
+                "#define X          \\\n  a;     // longer \\\n  long;  // x      \\\n  end\n" :
+                "#define X     \\\n  a;     // longer \\\n  long;  // x \\\n  end\n";
+            Check(output.Finish() == expected, "backslash alignment and overflow exclusion use final comment padding");
+        }
     }
     {
         SyntaxNode group;
@@ -99,9 +162,9 @@ void TestOutput() {
     }
     {
         FormatOutput output(2, 80);
-        output.BlankLine(0);
+        output.BlankLine();
         output.Write("x", 0);
-        output.BlankLine(0);
+        output.BlankLine();
         output.ReopenLastLine(true);
         output.Space();
         output.Write("y", 0);

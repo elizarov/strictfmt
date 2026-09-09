@@ -556,7 +556,7 @@ private:
     }
 
     void NewLine(bool macroContinuation = false) { output_.NewLine(macroContinuation); }
-    void BlankLine(bool macroContinuation = false) { output_.BlankLine(indentLevel_, macroContinuation); }
+    void BlankLine(bool macroContinuation = false) { output_.BlankLine(macroContinuation); }
     void ReopenLastOutputLine() { output_.ReopenLastLine(); }
     void Write(std::string_view text) override { output_.Write(text, indentLevel_); }
     void Space() override { output_.Space(); }
@@ -572,7 +572,6 @@ private:
     }
 
     void BlankLineWithIndent(int indentLevel) {
-        output_.SetPendingIndent(std::max(0, indentLevel));
         BlankLine(emittingMacroDefinition_);
         output_.SetPendingIndent(std::max(0, indentLevel));
     }
@@ -1234,7 +1233,6 @@ private:
                 const bool continuesSplitList = listContinuation_->ContinuesList(token);
                 const std::optional<int> pendingIndent =
                     continuesSplitList ? output_.State().pendingIndentLevel : std::nullopt;
-                output_.SetPendingIndent(pendingIndent);
                 BlankLine(token.inMacroValue);
                 output_.SetPendingIndent(pendingIndent);
             }

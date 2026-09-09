@@ -3319,6 +3319,10 @@ return [...values(std::forward<T>(args)),&...references(args)] {return Use(value
 #define FORMAT_MIXED_NAMESPACE_DECLARATIONS(Type) namespace format_macro {Type Get();} void After();
 #define FORMAT_ANONYMOUS_NAMESPACE(Type) namespace {namespace detail {Type value;}}
 
+#define FORMAT_ALIGN_LONG_LINE() void LongMacroLine() {Use("This indivisible string literal deliberately exceeds the configured column limit and must not push the other continuation backslashes to the right."); Short();}
+#define FORMAT_ALIGN_RAW_STRING() void RawMacroLine() {Use(R"text(raw string content ending in a backslash \
+this line is still inside the raw string)text"); Short();}
+
 #define FORMAT_PRIMITIVE_DECLARATION int value;
 #define FORMAT_PRIMITIVE_DECL_SEQUENCE int first; unsigned long second; T named;
 #define FORMAT_PRIMITIVE_FUNCTIONS void F(); int G(int value);

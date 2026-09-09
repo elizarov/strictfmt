@@ -30,23 +30,23 @@
 #define FORMAT_FIXTURE_STATEMENT_ARGUMENT(MethodName, ParamType, ParamName, ...) \
     auto& MethodName(ParamType ParamName) { __VA_ARGS__ return *this; }
 #define FORMAT_FIXTURE_STRUCTURED_LAMBDA \
-    []() { \
-        a(); \
-        b(); \
+    []() {                               \
+        a();                             \
+        b();                             \
     }
 #define FORMAT_FIXTURE_DECLARE_OPTION(name, type) void name(type)
 #define FORMAT_FIXTURE_LOAD_OPTIONAL(function, name) \
     function = reinterpret_cast<decltype(function)>(GetProcAddress(module_, name))
 #define FORMAT_FIXTURE_ITEMS(X) \
-    X(Alpha, "alpha") \
-    X(Beta, "beta") \
+    X(Alpha, "alpha")           \
+    X(Beta, "beta")             \
     X(Gamma, "gamma")
 #define FORMAT_FIXTURE_ENUM_ITEMS(X) \
-    X(First, "first") \
+    X(First, "first")                \
     X(Second, "second")
 #define FORMAT_FIXTURE_COMMENT_CONTINUATION(callback) \
-    callback(); \
-    /* cold testing path: */ \
+    callback();                                       \
+    /* cold testing path: */                          \
     callback();
 #define FORMAT_FIXTURE_TOKEN_PASTE(prefix, suffix) \
     prefix ## suffix
@@ -56,17 +56,17 @@
 #define FORMAT_FIXTURE_STRINGIZE(value) \
     #value
 #define FORMAT_FIXTURE_FILEPATH FORMAT_NAMESPACE::logging::impl::CutFilePath(__builtin_FILE())
-#define FORMAT_FIXTURE_REGISTER_TYPE(Type, Index) \
+#define FORMAT_FIXTURE_REGISTER_TYPE(Type, Index)                                          \
     constexpr std::size_t TypeToId(FormatFixtureIdentity<Type>) noexcept { return Index; } \
     constexpr Type IdToType(FormatFixtureSize<Index>) noexcept { return FormatFixtureConstruct<Type>(); }
-#define ENUM_STRING_DECLARE(EnumType, ItemsMacro) \
-    enum class EnumType { \
-        ItemsMacro(ENUM_STRING_DECLARE_ENUMERATOR), \
-    }; \
-    template <> \
-    struct EnumStringTraits<EnumType> { \
+#define ENUM_STRING_DECLARE(EnumType, ItemsMacro)                                                              \
+    enum class EnumType {                                                                                      \
+        ItemsMacro(ENUM_STRING_DECLARE_ENUMERATOR),                                                            \
+    };                                                                                                         \
+    template <>                                                                                                \
+    struct EnumStringTraits<EnumType> {                                                                        \
         static constexpr auto names = std::to_array<std::string_view>({ItemsMacro(ENUM_STRING_DECLARE_NAME)}); \
-        static_assert(enum_string_detail::ValidateCanonicalNames(names)); \
+        static_assert(enum_string_detail::ValidateCanonicalNames(names));                                      \
     }
 
 ENUM_STRING_DECLARE(FormatFixtureEnum, FORMAT_FIXTURE_ENUM_ITEMS);
@@ -4633,12 +4633,12 @@ void CommentedStreamOperators() {
 }
 
 #define COMMENTED_SUM(first, second) \
-    ( \
-        first + /* first term */ \
-        second \
+    (                                \
+        first + /* first term */     \
+        second                       \
     )
 #define COMMENTED_STREAM(out, value) \
-    out /* insertion */ \
+    out /* insertion */              \
         << value
 
 void CommentedOperatorsAcrossBlocks() {
@@ -5099,68 +5099,80 @@ auto LambdaPackInitCaptures(T&&... args) {
 }
 
 #define FORMAT_NAMESPACE_TRAITS(Type) \
-    namespace format_macro { \
-    \
-    namespace detail { \
-    \
-    template <> \
-    struct Traits<Type> { \
-        using type = Type; \
-    }; \
-    \
-    } \
-    \
+    namespace format_macro {          \
+                                      \
+    namespace detail {                \
+                                      \
+    template <>                       \
+    struct Traits<Type> {             \
+        using type = Type;            \
+    };                                \
+                                      \
+    }                                 \
+                                      \
     }
 #define FORMAT_NESTED_NAMESPACE_TRAITS(Type) \
-    namespace format_macro::nested { \
-    \
-    inline namespace version { \
-    \
-    template <> \
-    struct Traits<Type> { \
-        static_assert(Check<Type>()); \
-    }; \
-    \
-    } \
-    \
+    namespace format_macro::nested {         \
+                                             \
+    inline namespace version {               \
+                                             \
+    template <>                              \
+    struct Traits<Type> {                    \
+        static_assert(Check<Type>());        \
+    };                                       \
+                                             \
+    }                                        \
+                                             \
     }
 #define FORMAT_MIXED_NAMESPACE_DECLARATIONS(Type) \
-    namespace format_macro { \
-    \
-    Type Get(); \
-    \
-    } \
+    namespace format_macro {                      \
+                                                  \
+    Type Get();                                   \
+                                                  \
+    }                                             \
     void After();
 #define FORMAT_ANONYMOUS_NAMESPACE(Type) \
-    namespace { \
-    \
-    namespace detail { \
-    \
-    Type value; \
-    \
-    } \
-    \
+    namespace {                          \
+                                         \
+    namespace detail {                   \
+                                         \
+    Type value;                          \
+                                         \
+    }                                    \
+                                         \
+    }
+
+#define FORMAT_ALIGN_LONG_LINE() \
+    void LongMacroLine() {       \
+        Use("This indivisible string literal deliberately exceeds the configured column limit and must not push the other continuation backslashes to the right."); \
+        Short();                 \
+    }
+#define FORMAT_ALIGN_RAW_STRING()                \
+    void RawMacroLine() {                        \
+        Use(R"text(raw string content ending in a backslash \
+this line is still inside the raw string)text"); \
+        Short();                                 \
     }
 
 #define FORMAT_PRIMITIVE_DECLARATION int value;
 #define FORMAT_PRIMITIVE_DECL_SEQUENCE \
-    int first; \
-    unsigned long second; \
+    int first;                         \
+    unsigned long second;              \
     T named;
 #define FORMAT_PRIMITIVE_FUNCTIONS \
-    void F(); \
+    void F();                      \
     int G(int value);
 #define FORMAT_RECURSIVE_PRIMITIVE_FUNCTIONS \
-    int (*Factory())(); \
+    int (*Factory())();                      \
     int (&Array())[3];
 #define FORMAT_PRIMITIVE_INITIALIZER static const int value = Make();
 #define FORMAT_DECLARATION_NAMESPACE_SEQUENCE \
-    void Before(); \
-    namespace format_macro { \
-    \
-    int value; \
-    \
-    } \
+    void Before();                            \
+    namespace format_macro {                  \
+                                              \
+    int value;                                \
+                                              \
+    }                                         \
     void After();
 
 namespace MemberPointerExpressions {
@@ -5385,23 +5397,23 @@ struct Value {
 };
 
 }
-#define FORMAT_QUALIFIED_PROTOTYPES(type) \
-    detail::Value First(const type& value); \
+#define FORMAT_QUALIFIED_PROTOTYPES(type)     \
+    detail::Value First(const type& value);   \
     ::QualifiedMacroFunctions::detail::Value& \
         operator<<(::QualifiedMacroFunctions::detail::Value& value, const type& arg);
 #define FORMAT_QUALIFIED_SINGLE detail::Value First() { return {}; }
-#define FORMAT_QUALIFIED_SEQUENCE \
+#define FORMAT_QUALIFIED_SEQUENCE         \
     detail::Value Second() { return {}; } \
-    int Third() { return 3; } \
+    int Third() { return 3; }             \
     detail::Value Fourth() { return {}; }
-#define FORMAT_QUALIFIED_CONSTEXPR \
+#define FORMAT_QUALIFIED_CONSTEXPR                 \
     constexpr detail::Value Fifth() { return {}; } \
-    constexpr int Sixth() { return 6; } \
+    constexpr int Sixth() { return 6; }            \
     constexpr detail::Value Seventh() { return {}; }
 #define FORMAT_QUALIFIED_MODIFIERS \
     [[nodiscard]] inline const detail::Value& Ref(const detail::Value& value) { return value; }
 #define FORMAT_QUALIFIED_TEMPLATE \
-    template <class T> \
+    template <class T>            \
     detail::Value Convert(T value) { return {static_cast<int>(value)}; }
 #define FORMAT_QUALIFIED_CONSTANT constexpr detail::Value constant{};
 #define FORMAT_QUALIFIED_VARIABLE_NAME(name) name
@@ -5476,63 +5488,63 @@ struct Derived : Base {
 namespace MacroStatementSequences {
 
 #define FORMAT_MACRO_NESTED_DECLARATORS \
-    int (((*Factory())))(int); \
+    int (((*Factory())))(int);          \
     int (((&Array())))[3];
 FORMAT_MACRO_NESTED_DECLARATORS;
 #define FORMAT_MACRO_IF(value) \
-    if (value) { \
-        result += value; \
+    if (value) {               \
+        result += value;       \
     }
 #define FORMAT_MACRO_FOR(values) \
-    for (auto value : values) { \
-        result += value; \
+    for (auto value : values) {  \
+        result += value;         \
     }
 #define FORMAT_MACRO_BLOCK(value) \
-    { \
-        int local = value; \
-        result += local; \
+    {                             \
+        int local = value;        \
+        result += local;          \
     }
 #define FORMAT_MACRO_MIXED(value) \
-    int local = value; \
-    if (local) { \
-        result += local; \
-    } \
+    int local = value;            \
+    if (local) {                  \
+        result += local;          \
+    }                             \
     ++result;
 #define FORMAT_MACRO_WHILE(value) \
-    while (value > 0) { \
-        result += value; \
-        --value; \
+    while (value > 0) {           \
+        result += value;          \
+        --value;                  \
     }
 #define FORMAT_MACRO_SWITCH(value) \
-    switch (value) { \
-        case 1: \
-            ++result; \
-            break; \
-        default: \
-            result += 2; \
+    switch (value) {               \
+        case 1:                    \
+            ++result;              \
+            break;                 \
+        default:                   \
+            result += 2;           \
     }
 #define FORMAT_MACRO_DO(value) \
-    do { \
-        result += value; \
+    do {                       \
+        result += value;       \
     } while (false)
 #define FORMAT_MACRO_UNBRACED_DO(value) \
-    do { \
-        result += value; \
+    do {                                \
+        result += value;                \
     } while (false)
 #define FORMAT_MACRO_COMPLETE_DO(value) \
-    do { \
-        result += value; \
+    do {                                \
+        result += value;                \
     } while (false);
 #define FORMAT_MACRO_FINAL_DO(value) \
-    ++result; \
-    do { \
-        result += value; \
+    ++result;                        \
+    do {                             \
+        result += value;             \
     } while (false)
 #define FORMAT_MACRO_TRY(value) \
-    try { \
-        throw value; \
-    } catch (int amount) { \
-        result += amount; \
+    try {                       \
+        throw value;            \
+    } catch (int amount) {      \
+        result += amount;       \
     }
 constexpr int Count() {
     int result = 0;
@@ -5752,7 +5764,7 @@ struct Result {
 #define FORMAT_PASTED_DECL_RESULT(Suffix) Result##Suffix Build##Suffix() { return {}; }
 #define FORMAT_PASTED_DECL_QUALIFIED(Suffix) Group##Suffix::Result Qualified##Suffix() { return {}; }
 #define FORMAT_PASTED_DECL_TEMPLATE(Suffix) \
-    template <class T> \
+    template <class T>                      \
     T Convert##Suffix(T value) { return value; }
 #define FORMAT_PASTED_DECL_POINTER(Suffix) int (*Pointer##Suffix())(int) { return &Convert##Suffix<int>; }
 FORMAT_PASTED_DECL_FUNCTION(Alpha);
@@ -5811,17 +5823,17 @@ int conditional[] = {
 
 namespace MacroTypeDeclarations {
 
-#define FORMAT_TYPE_DECLARATIONS(Name) \
-    struct Name##Tag {}; \
-    class Name##Forward; \
-    union Name##Union { \
-        int value; \
-        double other; \
-    }; \
-    using Name = Name##Tag; \
-    typedef Name Name##Alias; \
+#define FORMAT_TYPE_DECLARATIONS(Name)   \
+    struct Name##Tag {};                 \
+    class Name##Forward;                 \
+    union Name##Union {                  \
+        int value;                       \
+        double other;                    \
+    };                                   \
+    using Name = Name##Tag;              \
+    typedef Name Name##Alias;            \
     using Name##Callback = int (*)(int); \
-    using Name##Function = int(int); \
+    using Name##Function = int(int);     \
     static_assert(sizeof(Name) > 0);
 FORMAT_TYPE_DECLARATIONS(Value);
 struct Owner {
@@ -5830,39 +5842,39 @@ struct Owner {
 #define FORMAT_TYPE_MEMBER_ALIAS(Name) using Name = int Owner::*;
 FORMAT_TYPE_MEMBER_ALIAS(Member);
 #define FORMAT_TYPE_NAMESPACE(Name) \
-    namespace Name { \
-    \
-    using Number = int; \
-    \
-    } \
-    namespace Name##Alias = Name; \
+    namespace Name {                \
+                                    \
+    using Number = int;             \
+                                    \
+    }                               \
+    namespace Name##Alias = Name;   \
     using Name::Number;
 FORMAT_TYPE_NAMESPACE(Numbers);
 #define FORMAT_TYPE_TEMPLATE(Name) \
-    template <class T> \
-    struct Name { \
-        T value; \
-    }; \
-    template <class T> \
+    template <class T>             \
+    struct Name {                  \
+        T value;                   \
+    };                             \
+    template <class T>             \
     using Name##Alias = Name<T>;
 FORMAT_TYPE_TEMPLATE(Holder);
 #define FORMAT_TYPE_CONCEPT(Name) \
-    template <class T> \
+    template <class T>            \
     concept Name = sizeof(T) > 0;
 FORMAT_TYPE_CONCEPT(Nonempty);
 static_assert(Nonempty<HolderAlias<int>>);
 #define FORMAT_TYPE_EXTERN(Name) \
-    extern "C" { \
-    \
-    int Name(int); \
-    \
+    extern "C" {                 \
+                                 \
+    int Name(int);               \
+                                 \
     }
 FORMAT_TYPE_EXTERN(External);
 #define FORMAT_TYPE_INSTANTIATION(Name) template struct Name<int>;
 FORMAT_TYPE_INSTANTIATION(Holder);
-#define FORMAT_TYPE_CLASS(Name) \
-    class Name##Derived final : public Owner { \
-public: \
+#define FORMAT_TYPE_CLASS(Name)                      \
+    class Name##Derived final : public Owner {       \
+public:                                              \
         Name##Derived(int value) { member = value; } \
     };
 
@@ -5975,7 +5987,7 @@ namespace InlineSemicolonless {
 #define FORMAT_SEMILESS_RETURN(value) return value;
 #define FORMAT_SEMILESS_DECLARE(name) constexpr int name = 2;
 #define FORMAT_SEMILESS_RELAY(value) \
-    FORMAT_SEMILESS_INC(value) \
+    FORMAT_SEMILESS_INC(value)       \
     FORMAT_SEMILESS_INC(value)
 #define FORMAT_SEMILESS_TEXT() "part"
 #define FORMAT_SEMILESS_CONCAT() FORMAT_SEMILESS_TEXT() FORMAT_SEMILESS_TEXT()"end"
@@ -6048,13 +6060,13 @@ enum class Forward : short {
     Value = 1,
 };
 #define FORMAT_ANON_ENUM(name) \
-    enum : bool { \
-        name = true, \
+    enum : bool {              \
+        name = true,           \
     };
 FORMAT_ANON_ENUM(Generated);
-#define FORMAT_ANON_ATTR_ENUM(name) \
+#define FORMAT_ANON_ATTR_ENUM(name)    \
     enum [[maybe_unused]] : unsigned { \
-        name = 3, \
+        name = 3,                      \
     };
 FORMAT_ANON_ATTR_ENUM(Annotated);
 static_assert(Good);
@@ -6086,9 +6098,9 @@ static_assert(Current == 1);
 enum Attributes {
     Repeated [[maybe_unused]] [[deprecated("use Current")]] = 2,
 };
-#define FORMAT_ENUM_ATTR(Name) \
-    enum Name { \
-        Old##Name [[deprecated]], \
+#define FORMAT_ENUM_ATTR(Name)              \
+    enum Name {                             \
+        Old##Name [[deprecated]],           \
         Current##Name [[maybe_unused]] = 1, \
     };
 FORMAT_ENUM_ATTR(Generated);
@@ -7076,8 +7088,8 @@ static_assert(mixed[0] == 1 && mixed[1] == 2 && mixed[2] == 3);
 namespace TerminatedMacroDeclarations {
 
 #define FORMAT_STATEMENT_DECLARATIONS(Statement, Tag) \
-    do { \
-        Statement; \
+    do {                                              \
+        Statement;                                    \
     } while (false)
 #define FORMAT_TYPE_SIZE(Type) sizeof(Type)
 #define FORMAT_TYPE_WORDS(...) ((void)0)
@@ -7349,20 +7361,20 @@ static_assert(1_quantity == 1);
 namespace DirectiveBoundaries {
 
 #define FORMAT_TYPE_RECORD(name) \
-    struct name { \
-        using Value = int; \
-        \
-        Value value; \
+    struct name {                \
+        using Value = int;       \
+                                 \
+        Value value;             \
     }
 #define FORMAT_TYPE_CHOICE(name) \
-    union name { \
-        int number; \
-        char letter; \
+    union name {                 \
+        int number;              \
+        char letter;             \
     }
-#define FORMAT_TYPE_ENUM(name) \
+#define FORMAT_TYPE_ENUM(name)   \
     enum class name : unsigned { \
-        First, \
-        Second, \
+        First,                   \
+        Second,                  \
     }
 FORMAT_TYPE_RECORD(Record);
 FORMAT_TYPE_CHOICE(Choice);
@@ -7371,35 +7383,35 @@ FORMAT_TYPE_ENUM(Enum);
 using Size = FORMAT_PRIMITIVE_TYPE;
 #undef FORMAT_PRIMITIVE_TYPE
 #define FORMAT_TYPE_TAG \
-    struct NamedType { \
-        int value; \
+    struct NamedType {  \
+        int value;      \
     }
 FORMAT_TYPE_TAG;
 #define FORMAT_SEMILESS_NAMESPACE_COMMENT() \
-    namespace Outer { \
-    \
-    namespace Inner { \
-    \
-    int value = 1; \
-    \
-    } /* Inner */ \
-    \
+    namespace Outer {                       \
+                                            \
+    namespace Inner {                       \
+                                            \
+    int value = 1;                          \
+                                            \
+    } /* Inner */                           \
+                                            \
     } /* Outer */
 
 FORMAT_SEMILESS_NAMESPACE_COMMENT()
 template <class Callback>
 void Invoke(const char*, int value, Callback callback) { callback(value); }
-#define FORMAT_LAMBDA_CALLBACK(value) \
-    do { \
-        Invoke( \
+#define FORMAT_LAMBDA_CALLBACK(value)                                                         \
+    do {                                                                                      \
+        Invoke(                                                                               \
             "a callback argument that makes the invocation exceed the configured line width", \
-            value, \
-            [](int argument) { \
-                if (argument) { \
-                    ++argument; \
-                } \
-            } \
-        ); \
+            value,                                                                            \
+            [](int argument) {                                                                \
+                if (argument) {                                                               \
+                    ++argument;                                                               \
+                }                                                                             \
+            }                                                                                 \
+        );                                                                                    \
     } while (false)
 void Check() { FORMAT_LAMBDA_CALLBACK(1); }
 static_assert(sizeof(Record) > 0 && sizeof(Choice) > 0 && static_cast<unsigned>(Enum::Second) == 1);
@@ -7409,7 +7421,7 @@ static_assert(sizeof(Record) > 0 && sizeof(Choice) > 0 && static_cast<unsigned>(
 namespace GeneratedListFragments {
 
 #define FORMAT_SEMILESS_GENERATE(X) \
-    X(First, 2) \
+    X(First, 2)                     \
     X(Second, 3)
 #define FORMAT_SEMILESS_EMPTY(X)
 #define FORMAT_SEMILESS_SINGLE(X) X(Third, 4)
@@ -7490,10 +7502,10 @@ constexpr int kNested[][3] = {
 constexpr int kNegative[] = {FORMAT_PARAMETER_SUFFIX_LIST - 1};
 #define FORMAT_SEMILESS_TEXT() "x"
 constexpr const char* kText[] = {FORMAT_SEMILESS_TEXT()"y"};
-#define FORMAT_TYPE_GENERATED(name) \
-    enum class name { \
+#define FORMAT_TYPE_GENERATED(name)  \
+    enum class name {                \
         FORMAT_PARAMETER_SUFFIX_ENUM \
-        Last, \
+        Last,                        \
     }
 FORMAT_TYPE_GENERATED(MacroEnum);
 static_assert(kNested[1][2] == 9 && sizeof(kNegative) / sizeof(int) == 3 && kNegative[2] == -1);
@@ -7857,7 +7869,7 @@ namespace BareClassGenerators {
 #define FORMAT_BARE_EXTRA int second = 2;
 #define FORMAT_BARE_EMPTY
 #define FORMAT_BARE_COMBINED \
-    FORMAT_BARE_FIELD \
+    FORMAT_BARE_FIELD        \
     FORMAT_BARE_EXTRA
 struct Plain {
     FORMAT_BARE_FIELD
@@ -7898,9 +7910,9 @@ union Storage {
     char character;
 };
 #define FORMAT_SEMILESS_DECLARE_GENERATED(Type) \
-    struct Type { \
-        FORMAT_BARE_COMBINED \
-        int last = 3; \
+    struct Type {                               \
+        FORMAT_BARE_COMBINED                    \
+        int last = 3;                           \
     };
 
 FORMAT_SEMILESS_DECLARE_GENERATED(Generated)
@@ -7935,7 +7947,7 @@ static_assert(FORMAT_TYPE_FORWARD_BARE(2) == 3);
 namespace TemplateHeaderMacros {
 
 #define FORMAT_TYPE_TEMPLATE_HEADER(Name) \
-    template <class T> \
+    template <class T>                    \
     T Name(T value)
 FORMAT_TYPE_TEMPLATE_HEADER(Identity) { return value; }
 
@@ -7944,7 +7956,7 @@ struct Methods {
 };
 
 #define FORMAT_TYPE_SPECIALIZED_HEADER(Name) \
-    template <> \
+    template <>                              \
     int Name<int>(int value)
 FORMAT_TYPE_SPECIALIZED_HEADER(Identity) { return value + 1; }
 
@@ -7955,37 +7967,37 @@ struct Values {
 };
 
 #define FORMAT_TYPE_NESTED_HEADER() \
-    template <class T> \
-    template <class U> \
+    template <class T>              \
+    template <class U>              \
     U Values<T>::Convert(U value)
 FORMAT_TYPE_NESTED_HEADER() { return value; }
-#define FORMAT_TYPE_CONSTRAINED_HEADER(Name) \
+#define FORMAT_TYPE_CONSTRAINED_HEADER(Name)   \
     template <class T> requires(sizeof(T) > 0) \
     T Name(T value)
 FORMAT_TYPE_CONSTRAINED_HEADER(Constrained) { return value; }
 #define FORMAT_TYPE_CONSTRAINED_SUFFIX(Name) \
-    template <class T> \
+    template <class T>                       \
     T Name(T value) requires(sizeof(T) > 0)
 FORMAT_TYPE_CONSTRAINED_SUFFIX(Other) { return value; }
 #define FORMAT_TYPE_REFERENCE_HEADER(Name) \
-    template <class T> \
+    template <class T>                     \
     T& Name(T& value)
 FORMAT_TYPE_REFERENCE_HEADER(Reference) { return value; }
 #define FORMAT_TYPE_FACTORY_HEADER(Name) \
-    template <class T> \
+    template <class T>                   \
     T (*Name())(T)
 FORMAT_TYPE_FACTORY_HEADER(Factory) { return &Identity<T>; }
 #define FORMAT_TYPE_TRAILING_HEADER(Name) \
-    template <class T> \
+    template <class T>                    \
     auto Name(T* value) -> T*
 FORMAT_TYPE_TRAILING_HEADER(Pointer) { return value; }
 #define FORMAT_TYPE_ARRAY_HEADER(Name) \
-    template <class T, unsigned N> \
+    template <class T, unsigned N>     \
     T (&Name(T (&value)[N]))[N]
 FORMAT_TYPE_ARRAY_HEADER(Array) { return value; }
 
 #define FORMAT_TYPE_VOID_HEADER(Name) \
-    template <class T> \
+    template <class T>                \
     void Name(const T&)
 template <class Owner>
 struct EmptyMethods {
@@ -7993,14 +8005,14 @@ struct EmptyMethods {
 };
 
 #define FORMAT_TYPE_SEQUENCE_HEADER(Name) \
-    struct Tag {}; \
-    using Alias = Tag; \
-    void Declared(); \
-    template <class T> \
+    struct Tag {};                        \
+    using Alias = Tag;                    \
+    void Declared();                      \
+    template <class T>                    \
     T Name(T value)
 FORMAT_TYPE_SEQUENCE_HEADER(WithPrefix) { return value; }
 #define FORMAT_TYPE_VARIABLE(Name) \
-    template <class T> \
+    template <class T>             \
     constexpr T Name = 42
 FORMAT_TYPE_VARIABLE(Answer);
 static_assert(Answer<int> == 42);
@@ -8127,11 +8139,11 @@ struct Value {
     int second;
 };
 
-#define FORMAT_SEMILESS_EQUAL(Type) \
-    inline bool operator==(const Type& a, const Type& b) noexcept { \
+#define FORMAT_SEMILESS_EQUAL(Type)                                                            \
+    inline bool operator==(const Type& a, const Type& b) noexcept {                            \
         return true FORMAT_TOKEN_COMPARE(FORMAT_SEMILESS_COMPARE, first) FORMAT_TOKEN_COMPARE( \
-            FORMAT_SEMILESS_COMPARE, second \
-        ); \
+            FORMAT_SEMILESS_COMPARE, second                                                    \
+        );                                                                                     \
     }
 FORMAT_SEMILESS_EQUAL(Value)
 constexpr bool Same(int left, int right) { return true FORMAT_SEMILESS_COMPARE(left, right) FORMAT_BARE_TRUE_TAIL; }

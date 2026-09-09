@@ -1353,8 +1353,8 @@ class FormatCommandTests(unittest.TestCase):
         self.assertEqual(0, result.returncode, msg=f"stdout:\n{result.stdout}\n\nstderr:\n{result.stderr}")
         self.assertEqual(
             "#define DECLARE_ENUM(ItemsMacro) \\\n"
-            "    enum G { \\\n"
-            "        ItemsMacro(EMIT), \\\n"
+            "    enum G {                     \\\n"
+            "        ItemsMacro(EMIT),        \\\n"
             "    };\n",
             result.stdout,
         )
@@ -1537,12 +1537,12 @@ class FormatCommandTests(unittest.TestCase):
         )
         expected = (
             '#define ONE(X) X(Alpha, "alpha")\n'
-            "#define MANY(X) \\\n"
+            "#define MANY(X)       \\\n"
             '    X(Alpha, "alpha") \\\n'
-            '    X(Beta, "beta") \\\n'
+            '    X(Beta, "beta")   \\\n'
             '    X(Gamma, "gamma")\n'
             "#define DIFFERENT(Y) \\\n"
-            "    Produce(Alpha) \\\n"
+            "    Produce(Alpha)   \\\n"
             "    Consume(Beta)\n"
         )
 
@@ -1559,9 +1559,9 @@ class FormatCommandTests(unittest.TestCase):
 
     def test_structured_macro_definition_with_templated_struct_body_reparses(self) -> None:
         expected = (
-            "#define DECLARE_TRAITS(Type) \\\n"
-            "    template <> \\\n"
-            "    struct Traits<Type> { \\\n"
+            "#define DECLARE_TRAITS(Type)                  \\\n"
+            "    template <>                               \\\n"
+            "    struct Traits<Type> {                     \\\n"
             "        static constexpr auto value = Type{}; \\\n"
             "    }\n"
         )
@@ -1599,11 +1599,11 @@ class FormatCommandTests(unittest.TestCase):
             )
             source = "#define VALUE Build(first,second,third)\n#define D(v) void f(v)\n"
             expected = (
-                "#define VALUE \\\n"
-                "    Build( \\\n"
-                "        first, \\\n"
+                "#define VALUE   \\\n"
+                "    Build(      \\\n"
+                "        first,  \\\n"
                 "        second, \\\n"
-                "        third \\\n"
+                "        third   \\\n"
                 "    )\n"
                 "#define D(v) void f(v)\n"
             )
@@ -1643,16 +1643,16 @@ class FormatCommandTests(unittest.TestCase):
                 msg=f"stdout:\n{suffix_constrained.stdout}\n\nstderr:\n{suffix_constrained.stderr}",
             )
             self.assertEqual(
-                "#define VALUE \\\n"
-                "    Build( \\\n"
-                "        first, \\\n"
+                "#define VALUE   \\\n"
+                "    Build(      \\\n"
+                "        first,  \\\n"
                 "        second, \\\n"
-                "        third \\\n"
+                "        third   \\\n"
                 "    )\n"
                 "#define EMPTY( \\\n"
-                "    first, \\\n"
-                "    second, \\\n"
-                "    third \\\n"
+                "    first,     \\\n"
+                "    second,    \\\n"
+                "    third      \\\n"
                 ")\n",
                 suffix_constrained.stdout,
             )
@@ -2132,7 +2132,7 @@ class FormatCommandTests(unittest.TestCase):
             (
                 "leading macro replacement comment",
                 "#define FIELD(data, elem) \\\n    /* annotation */ \\\n    decltype(data::elem) elem;\n",
-                "#define FIELD(data, elem) \\\n    /* annotation */ \\\n    decltype(data::elem) elem;\n",
+                "#define FIELD(data, elem) \\\n    /* annotation */      \\\n    decltype(data::elem) elem;\n",
             ),
             (
                 "terminal macro comment before endif",

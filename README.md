@@ -10,7 +10,7 @@ A strict, rule-based source formatter. No layout heuristics. No bikeshedding.
 
 ## Main Tenets
 
-- Never use vertical alignment.
+- Use vertical alignment only for the [specified exceptions](docs/format.md#vertical-alignment).
 - Keep formatter-owned chains and lists compact or split item-by-item.
 - Use no layout heuristics or weights; use only the break optimizer.
 - Use indentation changes as visual group borders; one indentation size for every indentation change.

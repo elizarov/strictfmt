@@ -22,19 +22,19 @@ A replacement parsed as two or more top-level macro call units is a statement-li
 
 ```cpp
 #define FORMAT_FIXTURE_ITEMS(X) \
-    X(Alpha, "alpha") \
-    X(Beta, "beta") \
+    X(Alpha, "alpha")           \
+    X(Beta, "beta")             \
     X(Gamma, "gamma")
 ```
 
 ```cpp
 #define FORMAT_FIXTURE_COMMENT_CONTINUATION(callback) \
-    callback(); \
-    /* cold testing path: */ \
+    callback();                                       \
+    /* cold testing path: */                          \
     callback();
 ```
 
-Every non-final physical line of a structured macro definition ends in a continuation backslash: one space after nonempty content, or at the current indentation on an otherwise empty line. The final replacement line has no continuation suffix.
+Every non-final physical line of a structured macro definition ends in a continuation backslash. Within each definition, these backslashes align one space after the longest nonempty continuation line that fits within `ColumnLimit`, including the space and backslash. Blank continuation lines use the same column. Lines that exceed the limit with that suffix do not determine the alignment column and keep one space before their backslash. Alignment uses the final content widths after comment alignment. The final replacement line has no continuation suffix and does not determine the alignment column.
 
 For structured macro definitions, the original placement of continuation backslashes is semantically inert. A backslash-newline inside the replacement is treated as whitespace, just like ordinary source whitespace. The replacement ends at the first bare preprocessor directive newline after the macro value, and the pretty printer chooses the formatted line breaks and continuation backslashes.
 
