@@ -4032,7 +4032,7 @@ module.exports = grammar(C, {
       field('operator', choice('|', '||', '&&', '^', '&', '+', '-', '*', '/', '%', '<<', '>>')),
     )),
 
-    destructor_name: $ => prec(1, seq('~', $.identifier)),
+    destructor_name: $ => prec.right(seq('~', choice(contextualIdentifier($), $.template_type))),
 
     compound_literal_expression: ($, original) => choice(
       original,

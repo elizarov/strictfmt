@@ -4259,3 +4259,12 @@ static_assert(value == 1);
 #endif
 }
 #
+
+namespace TemplateDestructors {
+template<class T> struct Item { ~Item<T>(); };
+template<class T> Item<T>::~Item<T>() {}
+template<class T> struct InlineItem { ~InlineItem<T>() = default; };
+void Destroy() { Item<int> item; InlineItem<int> other; }
+void DestroyNested(Item<Item<int>>* value) { value->~Item<Item<int>>(); }
+struct module { ~module() = default; };
+}
