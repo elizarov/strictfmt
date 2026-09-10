@@ -203,14 +203,36 @@ function constructorOrDestructorBody($) {
   );
 }
 
+// Both header reductions share a lexical boundary before their replacement lexers diverge.
+function macroDefinitionBody($, structuredHeader, rawHeader, replacementStart) {
+  return choice(
+    seq(
+      structuredHeader,
+      replacementStart,
+      choice(
+        field('value', $.macro_attribute_replacement_list),
+        field('value', $.macro_replacement_list),
+        $._preproc_directive_end,
+      ),
+    ),
+    seq(
+      rawHeader,
+      replacementStart,
+      field('value', optional($.raw_macro_replacement)),
+      $._preproc_directive_end,
+    ),
+  );
+}
+
 module.exports = grammar(C, {
   name: 'cpp',
 
   externals: $ => [
     $.raw_string_delimiter,
     $.raw_string_content,
-    $.raw_macro_definition_identifier,
-    $.raw_macro_replacement,
+    $._object_macro_replacement_start,
+    $._function_macro_replacement_start,
+    $._raw_macro_token,
     $.macro_token_paste_identifier_prefix,
     $.macro_token_paste_number_prefix,
     $.bare_macro_identifier,
@@ -241,6 +263,8 @@ module.exports = grammar(C, {
   ],
 
   conflicts: $ => [
+    [$._structured_macro_name, $._raw_macro_name],
+    [$._structured_macro_parameters, $._raw_macro_parameters],
     [$.expression, $._macro_initializer_list_fragment],
     [$.macro_expression_continuation],
     [$.macro_expression_continuation, $._initializer_list_with_preproc],
@@ -760,42 +784,42 @@ module.exports = grammar(C, {
       repeat($.post_type_macro_annotation),
     )),
 
-    preproc_def: $ => choice(
-      prec(2, seq(
-        alias($.macro_definition_start, '#define'),
-        field('name', alias($.raw_macro_definition_identifier, $.identifier)),
-        field('value', optional($.raw_macro_replacement)),
-        $._preproc_directive_end,
-      )),
-      prec(1, seq(
-        alias($.macro_definition_start, '#define'),
-        field('name', choice($.identifier, $.call_syntax_macro_identifier, $.bare_macro_identifier)),
-        choice(
-          field('value', $.macro_attribute_replacement_list),
-          field('value', $.macro_replacement_list),
-          $._preproc_directive_end,
-        ),
-      )),
+    raw_macro_replacement: $ => $._raw_macro_token_sequence,
+
+    // Keep one raw path viable during bounded GLR exploration, then rank its complete
+    // replacement below structured syntax. Right recursion defers the compensating
+    // penalties until the directive ends; the final penalty scales with token count.
+    _raw_macro_token_item: $ => prec.dynamic(20, $._raw_macro_token),
+
+    _raw_macro_token_sequence: $ => prec.right(prec.dynamic(-40, seq(
+      $._raw_macro_token_item,
+      optional($._raw_macro_token_sequence),
+    ))),
+
+    _structured_macro_name: $ => prec.dynamic(1, field('name', $.identifier)),
+
+    _raw_macro_name: $ => field('name', $.identifier),
+
+    _structured_macro_parameters: $ => prec.dynamic(1, seq(
+      field('name', $.identifier),
+      field('parameters', $.preproc_params),
+    )),
+
+    _raw_macro_parameters: $ => seq(
+      field('name', $.identifier),
+      field('parameters', $.preproc_params),
     ),
 
-    preproc_function_def: $ => choice(
-      prec(2, seq(
-        alias($.macro_definition_start, '#define'),
-        field('name', alias($.raw_macro_definition_identifier, $.identifier)),
-        field('parameters', $.preproc_params),
-        field('value', optional($.raw_macro_replacement)),
-        $._preproc_directive_end,
-      )),
-      prec(1, seq(
-        alias($.macro_definition_start, '#define'),
-        field('name', choice($.identifier, $.call_syntax_macro_identifier, $.bare_macro_identifier)),
-        field('parameters', $.preproc_params),
-        choice(
-          field('value', $.macro_attribute_replacement_list),
-          field('value', $.macro_replacement_list),
-          $._preproc_directive_end,
-        ),
-      )),
+    preproc_def: $ => seq(alias($.macro_definition_start, '#define'), $._object_macro_definition_body),
+
+    preproc_function_def: $ => seq(alias($.macro_definition_start, '#define'), $._function_macro_definition_body),
+
+    _object_macro_definition_body: $ => macroDefinitionBody(
+      $, $._structured_macro_name, $._raw_macro_name, $._object_macro_replacement_start,
+    ),
+
+    _function_macro_definition_body: $ => macroDefinitionBody(
+      $, $._structured_macro_parameters, $._raw_macro_parameters, $._function_macro_replacement_start,
     ),
 
     preproc_include: $ => seq(

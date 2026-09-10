@@ -1,7 +1,13 @@
 #include <array>
+#include <cstdlib>
+#include <memory>
+#include <tree_sitter/api.h>
+#include <tree_sitter_cpp.h>
 #include <iostream>
 #include <stdexcept>
+#include <string>
 #include <string_view>
+#include <utility>
 
 #include "format/impl/format_model.h"
 #include "format/impl/format_output.h"
@@ -21,6 +27,69 @@ namespace {
 void Check(bool condition, std::string_view message) {
     if (!condition) {
         throw std::runtime_error(std::string(message));
+    }
+}
+
+size_t CountSyntaxNodes(TSNode node, std::string_view type) {
+    size_t count = std::string_view(ts_node_type(node)) == type ? 1 : 0;
+    for (uint32_t index = 0; index < ts_node_child_count(node); ++index) {
+        count += CountSyntaxNodes(ts_node_child(node, index), type);
+    }
+    return count;
+}
+
+void TestIncrementalMacroParsing() {
+    using Parser = std::unique_ptr<TSParser, decltype(&ts_parser_delete)>;
+    using Tree = std::unique_ptr<TSTree, decltype(&ts_tree_delete)>;
+    Parser parser(ts_parser_new(), ts_parser_delete);
+    Parser freshParser(ts_parser_new(), ts_parser_delete);
+    Check(ts_parser_set_language(parser.get(), tree_sitter_cpp()), "incremental parser language");
+    Check(ts_parser_set_language(freshParser.get(), tree_sitter_cpp()), "fresh parser language");
+    auto parse = [](TSParser* parser, const TSTree* oldTree, std::string_view text) {
+        return Tree(ts_parser_parse_string(parser, oldTree, text.data(), static_cast<uint32_t>(text.size())), ts_tree_delete);
+    };
+    auto pointAt = [](std::string_view text, size_t offset) {
+        TSPoint point{};
+        for (size_t index = 0; index < offset; ++index) {
+            if (text[index] == '\n') { ++point.row; point.column = 0; }
+            else { ++point.column; }
+        }
+        return point;
+    };
+    const std::string prefix = "int before;\n#define VALUE ";
+    const std::string suffix = "\nint values[]={1,\n#define MEMBER )\n2};\n#define NEXT(x) ((x)+1)\n";
+    const std::array replacements{
+        std::pair{"namespace outer {", true},
+        std::pair{"namespace outer { int value; }", false},
+        std::pair{")", true},
+        std::pair{"1+2", false},
+        std::pair{"", false},
+        std::pair{"R\"tag(one\ntwo)tag\"", false},
+        std::pair{") R\"tag(one\ntwo)tag\"", true},
+    };
+    std::string source;
+    Tree tree(nullptr, ts_tree_delete);
+    for (const auto& [replacement, raw] : replacements) {
+        const std::string updated = prefix + replacement + suffix;
+        if (tree) {
+            const size_t oldEnd = source.size() - suffix.size();
+            const size_t newEnd = updated.size() - suffix.size();
+            const TSInputEdit edit{
+                static_cast<uint32_t>(prefix.size()), static_cast<uint32_t>(oldEnd), static_cast<uint32_t>(newEnd),
+                pointAt(source, prefix.size()), pointAt(source, oldEnd), pointAt(updated, newEnd),
+            };
+            ts_tree_edit(tree.get(), &edit);
+        }
+        tree = parse(parser.get(), tree.get(), updated);
+        Check(tree && !ts_node_has_error(ts_tree_root_node(tree.get())), "incremental macro parse succeeds");
+        Check(CountSyntaxNodes(ts_tree_root_node(tree.get()), "raw_macro_replacement") == (raw ? 2u : 1u),
+            "incremental edit selects the correct replacement kind and preserves adjacent definitions");
+        Tree fresh = parse(freshParser.get(), nullptr, updated);
+        Check(fresh && !ts_node_has_error(ts_tree_root_node(fresh.get())), "fresh macro parse succeeds");
+        std::unique_ptr<char, decltype(&std::free)> actual(ts_node_string(ts_tree_root_node(tree.get())), std::free);
+        std::unique_ptr<char, decltype(&std::free)> expected(ts_node_string(ts_tree_root_node(fresh.get())), std::free);
+        Check(std::string_view(actual.get()) == expected.get(), "incremental macro tree matches a fresh parse");
+        source = updated;
     }
 }
 
@@ -456,6 +525,7 @@ int main() {
     try {
         TestOutput();
         TestParseMacroConfiguration();
+        TestIncrementalMacroParsing();
         TestChainContinuation();
         TestListContinuation();
         TestChoiceHistory();

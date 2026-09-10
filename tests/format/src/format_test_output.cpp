@@ -48,8 +48,7 @@
     callback();                                       \
     /* cold testing path: */                          \
     callback();
-#define FORMAT_FIXTURE_TOKEN_PASTE(prefix, suffix) \
-    prefix ## suffix
+#define FORMAT_FIXTURE_TOKEN_PASTE(prefix, suffix) prefix##suffix
 #define FORMAT_PASTED_FN(name) inline int Get##name##Value() { return 0; }
 #define FORMAT_PASTED_INIT(name) {(name), Get##name##Value()}
 #define FORMAT_PASTED_NUMBER(suffix) 10##suffix
@@ -6502,7 +6501,8 @@ FORMAT_TOKEN_ITEM(global, +, (one, two)(three, four))
 FORMAT_TOKEN_ITEM(adjacent, *, )
 FORMAT_TOKEN_WRAPPER(wrapped, =, <> malformed_cpp)
 struct Values {
-    FORMAT_TOKEN_ITEM(member, +, (left, right)) FORMAT_TOKEN_WRAPPER(other, /,[])
+    FORMAT_TOKEN_ITEM(member, +, (left, right))
+    FORMAT_TOKEN_WRAPPER(other, /,[])
 };
 
 void Run(bool condition) {
@@ -7983,8 +7983,8 @@ int Twice(int value) { return value * 2; }
 
 namespace MacroExpressionTails {
 
-#define FORMAT_FIXTURE_LOGICAL_TAIL(Left, Right) && ((Left)==(Right))
-#define FORMAT_FIXTURE_ARITHMETIC_TAIL(Value) + (Value)
+#define FORMAT_FIXTURE_LOGICAL_TAIL(Left, Right) &&((Left) == (Right))
+#define FORMAT_FIXTURE_ARITHMETIC_TAIL(Value) +(Value)
 #define FORMAT_SEMILESS_COMPARE(Left, Right) FORMAT_FIXTURE_LOGICAL_TAIL(Left, Right)
 #define FORMAT_SEMILESS_ADD(Value) FORMAT_FIXTURE_ARITHMETIC_TAIL(Value)
 #define FORMAT_BARE_TRUE_TAIL FORMAT_SEMILESS_COMPARE(1, 1)

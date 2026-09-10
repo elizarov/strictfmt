@@ -2,9 +2,7 @@
 
 This document specifies the macro configuration and macro formatting for `strictfmt`.
 
-## Definition-side vs use-side
-
-Definition-side and use-side macro categories are independent. `RawMacroDefinitions` affects only how a `#define` replacement is parsed and printed; every other macro category affects only how macro identifiers are parsed when used elsewhere in source.
+Macro categories configure how identifiers are parsed at use sites, including uses inside other macro replacements.
 
 ## Macro Arguments
 
@@ -12,7 +10,7 @@ Macro argument lists permit empty and comment-only arguments in any position. `C
 
 ## Macro Replacements
 
-Structured macro definitions are the default. Their replacement parses as a structured token stream and parse tree, and the formatter owns its complete layout. Macro replacement lists that form type specifiers or declaration fragments are recursively formatted before continuation backslashes are added.
+Structured macro replacements are parsed and formatted recursively, including type specifiers and declaration fragments. The formatter owns their complete layout and adds continuation backslashes after formatting.
 
 Token pasting, nested macro calls whose arguments are preprocessing-token sequences, and balanced parenthesized preprocessing tokens remain explicit recursive grammar nodes. They may use token-level rather than C++ expression-level structure because macro expansion determines their eventual C++ role, but they must not be collapsed into an opaque formatter leaf.
 
@@ -34,15 +32,35 @@ A replacement parsed as two or more top-level macro call units is a statement-li
     callback();
 ```
 
-Every non-final physical line of a structured macro definition ends in a continuation backslash. Within each definition, these backslashes align one space after the longest nonempty continuation line that fits within `ColumnLimit`, including the space and backslash. Blank continuation lines use the same column. Lines that exceed the limit with that suffix do not determine the alignment column and keep one space before their backslash. Alignment uses the final content widths after comment alignment. The final replacement line has no continuation suffix and does not determine the alignment column.
+Every non-final physical line of a structured macro definition ends in a continuation backslash. Within each macro definition, continuation backslashes align one space after the longest nonempty continuation line that fits within `ColumnLimit`, including the space and backslash. Blank continuation lines use the same column. Lines that exceed the limit with that suffix do not determine the alignment column and keep one space before their backslash. Alignment uses the final content widths after comment alignment. The final replacement line has no continuation suffix and does not determine the alignment column. Splices inside literals or token spellings retain their original spacing.
 
 For structured macro definitions, the original placement of continuation backslashes is semantically inert. A backslash-newline inside the replacement is treated as whitespace, just like ordinary source whitespace. The replacement ends at the first bare preprocessor directive newline after the macro value, and the pretty printer chooses the formatted line breaks and continuation backslashes.
 
 The parser/scanner split that makes this possible is described in [scanner.md](scanner.md).
 
-It is a parse error when a structured macro replacement cannot be parsed structurally. Add that macro identifier to `RawMacroDefinitions` only when the replacement intentionally is not a supported C++ fragment.
+### Raw replacements
 
-Raw macro definitions are the explicit exception. A macro whose identifier matches `RawMacroDefinitions` replacement is one raw string token instead of a structured replacement tree. The raw replacement printer collapses horizontal whitespace for single-line replacements. For multi-line replacements, it preserves the physical continuation-line structure, backslashes, and relative indentation, while rebasing the least-indented replacement line to one indentation level beyond `#define`. It also applies the same line-ending and trailing `//` comment-spacing normalization as other raw preprocessor text. This is the sole opaque-source exception specified by [architecture.md](architecture.md#structural-genericity).
+A raw replacement is a macro body preserved as text when it has no complete structured parse. This is the sole opaque-source exception specified by [architecture.md](architecture.md#structural-genericity).
+
+The grammar tries structured and raw alternatives in the same parse, preferring a complete structured replacement. The raw fallback ends at the directive boundary and does not repair syntax outside the replacement. Unterminated literals and comments remain parse errors.
+
+Single-line raw replacements collapse horizontal whitespace. Multi-line raw replacements preserve continuation lines and relative indentation, rebasing the least-indented replacement line to one indentation level beyond `#define`. Their backslashes follow the alignment rule above.
+
+Replacements containing raw or physically continued literals, or splices within token spellings, retain their original indentation. Literal contents and splices within tokens are preserved verbatim. Other raw text uses the same line-ending and trailing `//` comment-spacing normalization as raw preprocessor text.
+
+Examples of incomplete C++ fragments preserved as raw replacements:
+
+```cpp
+#define UPROTO_ONEOF_HEADER(oneof_type)                                                       \
+    private:                                                                                  \
+        enum { kCounterStart = __COUNTER__ + 1 }; /* An inline constant would violate odr. */ \
+    public:                                                                                   \
+        using Base::Base;
+```
+
+```cpp
+#define USERVER_IMPL_FORCE_INLINE [[gnu::always_inline]] inline
+```
 
 ## Macro Categories
 
@@ -53,32 +71,6 @@ The macros that belong to different categories are configured in formatter confi
 Runtime macro category lookup is implemented by the custom scanner; see [scanner.md](scanner.md).
 
 `BareIdentifierMacros` and `SemicolonlessCallMacros` may also continue an expression by supplying operators and operands after its visible prefix. Several such expansions can follow one another; calls retain their configured argument syntax. Existing complete-item and list-fragment roles take precedence when both interpretations fit.
-
-### RawMacroDefinitions
-
-`RawMacroDefinitions` accepts both object-like and function-like `#define` identifiers.
-
-<!-- .cpp-format
-MacroCategories:
-  RawMacroDefinitions:
-    - UPROTO_ONEOF_HEADER
--->
-```cpp
-#define UPROTO_ONEOF_HEADER(oneof_type)                                                   \
-    private:                                                                                  \
-        enum { kCounterStart = __COUNTER__ + 1 }; /* An inline constant would violate odr. */ \
-    public:                                                                                   \
-        using Base::Base;
-```
-
-<!-- .cpp-format
-MacroCategories:
-  RawMacroDefinitions:
-    - USERVER_IMPL_FORCE_INLINE
--->
-```cpp
-#define USERVER_IMPL_FORCE_INLINE [[gnu::always_inline]] inline
-```
 
 ### DeclarationPrefixMacros
 

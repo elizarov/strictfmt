@@ -22,6 +22,11 @@ Normal builds compile `tree-sitter/lib/src/lib.c`,
 `tree-sitter-cpp/src/parser.c`, and `tree-sitter-cpp/src/scanner.c` directly.
 The custom scanner architecture is documented in [docs/scanner.md](../../docs/scanner.md).
 
+The C++ grammar and scanner also build without formatter dependencies. Macro
+definitions select structured syntax or a raw fallback in one parse. The
+strictfmt build enables its use-site macro-category callback with
+`STRICTFMT_RUNTIME_MACRO_CATEGORIES`; standalone parsers leave it disabled.
+
 Runtime and generated-parser changes must follow the hard
 [upstream tree-sitter runtime constraint](../../docs/architecture.md#upstream-tree-sitter-runtime).
 

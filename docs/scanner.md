@@ -19,7 +19,7 @@ The scanner uses four inputs:
 - Small scanner payload state for raw string delimiters, directive boundaries, and split right angles.
 - Formatter macro category configuration, exposed through `strictfmt_tree_sitter_cpp_macro_category_matches`.
 
-`src/format/impl/format_model_parse.cpp` owns the callback bridge from parser to formatter configuration. `ParseFormatModel` installs a thread-local `FormatterConfig` for the parse, and the scanner calls back into that config when it needs to know whether an identifier belongs to `RawMacroDefinitions`, `BareIdentifierMacros`, `DeclarationPrefixMacros`, `StatementPrefixMacros`, `CallSyntaxMacros`, `SemicolonlessCallMacros`, `StatementArgumentMacros`, `TypeSpecifierMacros`, or `PreprocessorArgumentMacros`.
+`src/format/impl/format_model_parse.cpp` owns the callback bridge from parser to formatter configuration. `ParseFormatModel` installs a thread-local `FormatterConfig` for the parse, and the scanner calls back into that config when it needs to know whether an identifier belongs to `BareIdentifierMacros`, `DeclarationPrefixMacros`, `StatementPrefixMacros`, `CallSyntaxMacros`, `SemicolonlessCallMacros`, `StatementArgumentMacros`, `TypeSpecifierMacros`, or `PreprocessorArgumentMacros`.
 
 The parse scope builds a first-byte category mask to reject impossible macro matches cheaply. Every possible match still uses the exact-name or prefix matcher; the mask has the same configuration lifetime and thread isolation as the callback bridge.
 
@@ -37,8 +37,6 @@ A generated token rule cannot express "remember this delimiter and later stop on
 
 The scanner owns these identifier tokens:
 
-- `raw_macro_definition_identifier`
-- `raw_macro_replacement`
 - `bare_macro_identifier`
 - `declaration_prefix_macro_identifier`
 - `statement_prefix_macro_identifier`
@@ -51,7 +49,13 @@ The scanner owns these identifier tokens:
 
 The scanner reads a normal C/C++ identifier and then asks the formatter configuration whether the identifier belongs to the relevant macro category. This keeps macro categories runtime-configurable while the generated parser stays static.
 
-`raw_macro_replacement` captures the rest of a configured raw macro definition once the grammar has accepted the raw macro name and parameters. This is scanner-owned so the raw macro path can preserve a continuation backslash that appears immediately after the macro name or parameter list, before ordinary structured-macro continuation whitespace can consume it.
+### Macro Replacement Boundaries
+
+`_object_macro_replacement_start` and `_function_macro_replacement_start` mark the lexical boundary after a definition header without consuming replacement text. Both structured and raw header reductions accept the same boundary token, creating parallel parser paths before their replacement lexers diverge. An immediately adjacent `(` belongs to function-like macro parameters, not an object-like replacement. The scanner serializes whether the boundary has already been emitted for the current header.
+
+The grammar resolves both alternatives through a shared definition-body reduction before completing the directive, preventing unresolved choices from accumulating across definitions. It prefers a complete structured replacement through dynamic precedence. `raw_macro_replacement` collects scanner-owned `_raw_macro_token` leaves. Each token temporarily keeps the raw path viable during bounded GLR exploration; right-recursive reductions apply a larger compensating penalty only after the complete replacement is read. The final fallback penalty scales with token count, so long structured replacements remain preferred. This happens in the same tree-sitter parse; no separate parser call or formatter reclassification is involved. The raw scanner reads lexical tokens through the directive boundary, including physical line splices, comments, and raw string literals. Unterminated literals and comments cannot form a raw replacement.
+
+The scanner builds without formatter dependencies by default. The strictfmt build defines `STRICTFMT_RUNTIME_MACRO_CATEGORIES` to enable the use-site category callback; standalone editor parsers use ordinary identifiers.
 
 The scanner classifies identifiers by configured macro category. [macro.md](macro.md) specifies the categories and their supported grammar uses. The combined semicolonless/preprocessor identifier records both matching runtime categories. For `PreprocessorArgumentMacros`, the scanner owns only the configured identifier token; the grammar recursively balances the invocation's parentheses and separates its preprocessing-token arguments.
 
@@ -81,7 +85,7 @@ the whole pasted name opaque to the formatter.
 
 When a directive-start token, configured macro identifier, or template closer follows horizontal whitespace or a directive line splice in a parser state that accepts `_line_break_whitespace`, that token supplies a lexical boundary so the generated lexer cannot consume it before the runtime scanner classifies it. This applies both at line starts and between other tokens, including inside structured macro replacements. The boundary also keeps skipped spaces outside the external identifier's source range. Leading indentation needs explicit handling at the start of a preprocessor branch because the directive-ending token owns the preceding newline.
 
-Categories restricted to function-like invocations require a following argument list for both this boundary and their identifier token, so uninvoked names remain ordinary identifiers. Lookahead permits whitespace, comments, and line splices without extending the identifier's source span. Preprocessor definition-name and raw replacement states are excluded; every other horizontal gap remains owned by the generated lexer.
+Categories restricted to function-like invocations require a following argument list for both this boundary and their identifier token, so uninvoked names remain ordinary identifiers. Lookahead permits whitespace, comments, and line splices without extending the identifier's source span. Raw replacement states are excluded; every other horizontal gap remains owned by the generated lexer.
 
 Backslash-newline remains ordinary grammar `extras` whitespace. That is what makes structured macro continuation placement inert: inside a structured macro replacement, a continuation backslash does not create a syntax node, and the replacement ends only at the first bare preprocessor directive newline.
 

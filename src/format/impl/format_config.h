@@ -19,7 +19,6 @@ struct FormatterConfig {
     int tabWidth = 4;
     std::string mainIncludeRegex = "(Test)?$";
     bool mainIncludeQuote = true;
-    std::vector<std::string> rawMacroDefinitions;
     std::vector<std::string> bareIdentifierMacros;
     std::vector<std::string> declarationPrefixMacros;
     std::vector<std::string> statementPrefixMacros;

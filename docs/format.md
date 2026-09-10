@@ -42,7 +42,7 @@ This document specifies the source layout produced by `strictfmt`. Wrapping exam
 Do not vertically align tokens across lines, with two exceptions:
 
 1. Align a run of trailing `//` comments on consecutive lines in the same syntactic group when the aligned run fits within the line limit. Non-delimiting expression wrappers do not divide an alignment group; a nested delimiter group does.
-2. Align continuation backslashes in structured macro definitions as specified in [Macro Replacements](macro.md#macro-replacements).
+2. Align continuation backslashes in macro definitions as specified in [Macro Replacements](macro.md#macro-replacements).
 
 A standalone `//` comment immediately following a trailing `//` comment, or its continuation, is a continuation when their `//` tokens start in the same original source column. Align it with the anchor's formatted column. This is the only rule for which an original source column affects formatting.
 

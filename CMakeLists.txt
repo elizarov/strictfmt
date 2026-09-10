@@ -122,6 +122,7 @@ add_library(strictfmt_tree_sitter_cpp_grammar STATIC
     vendor/tree-sitter/tree-sitter-cpp/src/parser.c
     vendor/tree-sitter/tree-sitter-cpp/src/scanner.c
 )
+target_compile_definitions(strictfmt_tree_sitter_cpp_grammar PRIVATE STRICTFMT_RUNTIME_MACRO_CATEGORIES)
 target_include_directories(strictfmt_tree_sitter_cpp_grammar
     PRIVATE
         "${CMAKE_CURRENT_SOURCE_DIR}/vendor/tree-sitter/tree-sitter-cpp/src"

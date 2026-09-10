@@ -320,6 +320,8 @@ constexpr auto kSyntaxKindMappings = std::to_array<SyntaxKindMapping>({
     Tree(SyntaxNodeKind::MacroCallItem, "block_macro_call_statement_item"),
     Tree(SyntaxNodeKind::MacroCallItem, "top_level_macro_call_line_item"),
     Tree(SyntaxNodeKind::MacroCallItem, "macro_call_item"),
+    Tree(SyntaxNodeKind::MacroCallItem, "class_macro_call"),
+    Tree(SyntaxNodeKind::MacroCallItem, "class_macro_call_item"),
     Tree(SyntaxNodeKind::MacroExpansion, "macro_expansion"),
     Tree(SyntaxNodeKind::Tree, "macro_expression_continuation", Bit(SyntaxNodeClass::Expression)),
     Tree(SyntaxNodeKind::MacroCallItem, "macro_call_replacement_item"),
@@ -780,8 +782,7 @@ consteval bool HasOnlyLiteralLexicalAtomMappings() {
 }
 
 static_assert(
-    HasOnlyRawMacroOpaqueSourceMapping(),
-    "RawMacroDefinitions replacement text is the only permitted opaque source node"
+    HasOnlyRawMacroOpaqueSourceMapping(), "Unstructured macro replacement text is the only permitted opaque source node"
 );
 static_assert(
     HasOnlyLiteralLexicalAtomMappings(), "Only lexical literals may suppress tree-sitter's internal lexical children"

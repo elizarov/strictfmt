@@ -10198,14 +10198,6 @@
         "required": true,
         "types": [
           {
-            "type": "bare_macro_identifier",
-            "named": true
-          },
-          {
-            "type": "call_syntax_macro_identifier",
-            "named": true
-          },
-          {
             "type": "identifier",
             "named": true
           }
@@ -11122,14 +11114,6 @@
         "multiple": false,
         "required": true,
         "types": [
-          {
-            "type": "bare_macro_identifier",
-            "named": true
-          },
-          {
-            "type": "call_syntax_macro_identifier",
-            "named": true
-          },
           {
             "type": "identifier",
             "named": true
@@ -14781,6 +14765,11 @@
     }
   },
   {
+    "type": "raw_macro_replacement",
+    "named": true,
+    "fields": {}
+  },
+  {
     "type": "raw_string_literal",
     "named": true,
     "fields": {
@@ -18289,10 +18278,6 @@
   },
   {
     "type": "pure_virtual_zero",
-    "named": true
-  },
-  {
-    "type": "raw_macro_replacement",
     "named": true
   },
   {

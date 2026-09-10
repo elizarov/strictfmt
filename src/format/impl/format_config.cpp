@@ -27,7 +27,6 @@ struct MacroCategoryConfig {
 };
 
 constexpr std::array MACRO_CATEGORY_CONFIGS = {
-    MacroCategoryConfig{"RawMacroDefinitions", &FormatterConfig::rawMacroDefinitions},
     MacroCategoryConfig{"BareIdentifierMacros", &FormatterConfig::bareIdentifierMacros},
     MacroCategoryConfig{"DeclarationPrefixMacros", &FormatterConfig::declarationPrefixMacros},
     MacroCategoryConfig{"StatementPrefixMacros", &FormatterConfig::statementPrefixMacros},

@@ -50,6 +50,8 @@ INPUT_FIXTURE = Path("src") / "format_test_input.cpp"
 OUTPUT_FIXTURE = Path("src") / "format_test_output.cpp"
 PREPROCESSOR_EOF_INPUT_FIXTURE = Path("src") / "format_preprocessor_eof_input.cpp"
 PREPROCESSOR_EOF_OUTPUT_FIXTURE = Path("src") / "format_preprocessor_eof_output.cpp"
+MACROS_INPUT_FIXTURE = Path("src") / "format_macros_input.cpp"
+MACROS_OUTPUT_FIXTURE = Path("src") / "format_macros_output.cpp"
 MAIN_INCLUDE_INPUT_FIXTURE = Path("src") / "format_main_include_input.cpp"
 MAIN_INCLUDE_OUTPUT_FIXTURE = Path("src") / "format_main_include_output.cpp"
 OPTIMIZATION_INPUT_FIXTURE = Path("src") / "format_optimization_input.cpp"
@@ -78,6 +80,7 @@ CHAIN_FORMAT_CONFIG = TEST_ROOT / ".cpp-format-chain"
 NON_ASCII_FORMAT_CONFIG = TEST_ROOT / ".cpp-format-non-ascii"
 FORMATTED_GOLDEN_OUTPUTS = (
     ("default", OUTPUT_FIXTURE, None),
+    ("macros", MACROS_OUTPUT_FIXTURE, None),
     ("preprocessor-eof", PREPROCESSOR_EOF_OUTPUT_FIXTURE, None),
     ("optimization", OPTIMIZATION_OUTPUT_FIXTURE, OPTIMIZATION_FORMAT_CONFIG),
     ("chain", CHAIN_OUTPUT_FIXTURE, CHAIN_FORMAT_CONFIG),
@@ -1657,145 +1660,110 @@ class FormatCommandTests(unittest.TestCase):
                 suffix_constrained.stdout,
             )
 
-    def test_raw_macro_definitions_format_raw_replacements(self) -> None:
-        build_dir = TEST_TEMP_ROOT
-        build_dir.mkdir(exist_ok=True)
-        with tempfile.TemporaryDirectory(prefix="format_raw_macros_", dir=build_dir) as temp_dir:
-            root = Path(temp_dir)
-            config = root / ".cpp-format"
-            config.write_text(
-                "---\n"
-                "ColumnLimit: 120\n"
-                "IndentWidth: 4\n"
-                "TabWidth: 4\n"
-                "MacroCategories:\n"
-                "  RawMacroDefinitions:\n"
-                "    - RAW_OBJECT\n"
-                "    - RAW_FUNCTION\n"
-                "    - RAW_BLOCK\n"
-                "    - RAW_ALREADY_INDENTED\n",
-                encoding="utf-8",
-            )
-            source = root / "sample.cpp"
-            source.write_text(
-                "#define RAW_OBJECT value ## suffix\n"
-                "#define RAW_FUNCTION(first,second) first ## second\n"
-                "#define RAW_BLOCK(first,second) \\\n"
-                "first ## second; \\\n"
-                "    second ## first\n"
-                "#define RAW_ALREADY_INDENTED(first,second) \\\n"
-                "        first ## second\n",
-                encoding="utf-8",
-            )
+    def test_macro_corpus_formats_to_expected_output(self) -> None:
+        result = native_format("--stdin", cwd=TEST_ROOT, input_text=read_fixture(MACROS_INPUT_FIXTURE))
+        self.assertEqual(0, result.returncode, msg=result.stderr)
+        self.assertEqual(read_fixture(MACROS_OUTPUT_FIXTURE), result.stdout)
+        self.assert_no_unsupported_placement_warnings(result)
 
-            result = native_format("--stdin", "--style", str(config), input_text=source.read_text(encoding="utf-8"))
-
-            self.assertEqual(0, result.returncode, msg=f"stdout:\n{result.stdout}\n\nstderr:\n{result.stderr}")
-            self.assertEqual(
-                "#define RAW_OBJECT value ## suffix\n"
-                "#define RAW_FUNCTION(first, second) first ## second\n"
-                "#define RAW_BLOCK(first, second) \\\n"
-                "    first ## second; \\\n"
-                "        second ## first\n"
-                "#define RAW_ALREADY_INDENTED(first, second) \\\n"
-                "    first ## second\n",
-                result.stdout,
-            )
-
-            dump = native_format("--dump-syntax-tree", str(source), "--style", str(config))
-
-            self.assertEqual(0, dump.returncode, msg=f"stdout:\n{dump.stdout}\n\nstderr:\n{dump.stderr}")
-            self.assertIn("- kind: MacroDefinition\n", dump.stdout)
-            self.assertIn("- kind: RawMacroReplacement\n", dump.stdout)
-            self.assertNotIn("MacroReplacementList", dump.stdout)
-            self.assertNotIn("PreprocDef", dump.stdout)
-            self.assertNotIn("PreprocFunctionDef", dump.stdout)
-
-    def test_token_paste_macro_is_structured_unless_configured_raw(self) -> None:
-        source = "#define HASH_JOIN(first,second) first ## second\n"
-        structured = native_format("--stdin", input_text=source)
-
-        self.assertEqual(
-            0,
-            structured.returncode,
-            msg=f"stdout:\n{structured.stdout}\n\nstderr:\n{structured.stderr}",
+    def test_macro_replacements_choose_structured_or_raw_in_one_parse(self) -> None:
+        cases = (
+            ("#define VALUE (1+2)\n", False),
+            ("#define JOIN(a,b) a ## b\n", False),
+            ("#define CALL(x)++(x)\n", False),
+            ("#define NS namespace outer { namespace inner { int value; } }\n", False),
+            ("#define TYPE unsigned long\n", False),
+            ("#define METHOD(x) obj.template Method(x)\n", False),
+            ("#define DEEP(x) " + " + ".join(["obj.template Method(x)"] * 100) + "\n", False),
+            ("#define OPEN namespace outer {\n", True),
+            ("#define CLOSE }\n", True),
+            ("#define SUFFIX(x) : member(x),\n", True),
+            ("#define CALL(x)) ++(x)\n", True),
         )
-        self.assertEqual("#define HASH_JOIN(first, second) first##second\n", structured.stdout)
+        for source, raw in cases:
+            with self.subTest(source=source):
+                dump = native_format("--stdin", "--dump-syntax-tree", input_text=source)
+                self.assertEqual(0, dump.returncode, msg=dump.stderr)
+                self.assertEqual(raw, "RawMacroReplacement" in dump.stdout)
+                formatted = native_format("--stdin", input_text=source)
+                self.assertEqual(0, formatted.returncode, msg=formatted.stderr)
 
-        structured_dump = native_format("--stdin", "--dump-syntax-tree", input_text=source)
+    def test_macro_choices_resolve_before_following_definitions(self) -> None:
+        source = "".join(f"#define LOOP_{index}() do {{}} while(false)\n" for index in range(100))
+        dump = native_format("--stdin", "--dump-syntax-tree", input_text=source)
+        self.assertEqual(0, dump.returncode, msg=dump.stderr)
+        self.assertNotIn("RawMacroReplacement", dump.stdout)
 
-        self.assertEqual(
-            0,
-            structured_dump.returncode,
-            msg=f"stdout:\n{structured_dump.stdout}\n\nstderr:\n{structured_dump.stderr}",
-        )
-        self.assertIn("- kind: MacroReplacementList\n", structured_dump.stdout)
-        self.assertNotIn("RawMacroReplacement", structured_dump.stdout)
-
-        build_dir = TEST_TEMP_ROOT
-        build_dir.mkdir(exist_ok=True)
-        with tempfile.TemporaryDirectory(prefix="format_hash_join_macro_", dir=build_dir) as temp_dir:
-            config = Path(temp_dir) / ".cpp-format"
-            config.write_text(
-                "---\n"
-                "ColumnLimit: 120\n"
-                "IndentWidth: 4\n"
-                "TabWidth: 4\n"
-                "MacroCategories:\n"
-                "  RawMacroDefinitions:\n"
-                "    - HASH_JOIN\n",
-                encoding="utf-8",
-            )
-
-            formatted = native_format("--stdin", "--style", str(config), input_text=source)
-
-            self.assertEqual(0, formatted.returncode, msg=f"stdout:\n{formatted.stdout}\n\nstderr:\n{formatted.stderr}")
-            self.assertEqual("#define HASH_JOIN(first, second) first ## second\n", formatted.stdout)
-
-    def test_raw_macro_definition_category_is_definition_side_only(self) -> None:
+    def test_macro_definition_boundaries_preserve_surrounding_layout(self) -> None:
         source = (
-            "#define RAW_ONLY(name) name ## _impl\n"
-            "RAW_ONLY(Generated, Case) {\n"
-            "Run();\n"
-            "}\n"
+            "#define CASE(value) case value: return value;\n"
+            "// after the definition\n"
+            "int after=1;\n"
+            "void Check(int value){switch(value){case 1:\n"
+            "#define INNER_CASE(value) case value: return;\n"
+            "Use();break;case 2:break;}}\n"
+            "#define MEMBERS struct Type {\\\nATTR(x)\\\nint value;\\\n}\n"
+            "#define RAW ) \\\n\n"
+            "int last=2;\n"
         )
-        build_dir = TEST_TEMP_ROOT
-        build_dir.mkdir(exist_ok=True)
-        with tempfile.TemporaryDirectory(prefix="format_raw_macro_use_side_", dir=build_dir) as temp_dir:
-            root = Path(temp_dir)
-            raw_only_config = root / "raw_only.cpp-format"
-            raw_only_config.write_text(
-                "---\n"
-                "ColumnLimit: 120\n"
-                "IndentWidth: 4\n"
-                "TabWidth: 4\n"
-                "MacroCategories:\n"
-                "  RawMacroDefinitions:\n"
-                "    - RAW_ONLY\n",
-                encoding="utf-8",
-            )
-            failed = native_format("--stdin", "--style", str(raw_only_config), input_text=source)
+        result = native_format("--stdin", input_text=source)
+        self.assertEqual(0, result.returncode, msg=result.stderr)
+        self.assertIn("\n// after the definition\nint after = 1;\n", result.stdout)
+        self.assertIn("\n            Use();\n            break;\n        case 2:", result.stdout)
+        self.assertIn("\n#define RAW )\nint last = 2;\n", result.stdout)
+        dump = native_format("--stdin", "--dump-syntax-tree", input_text=result.stdout)
+        self.assertEqual(0, dump.returncode, msg=dump.stderr)
+        self.assertEqual(1, dump.stdout.count("- kind: RawMacroReplacement\n"))
 
-            self.assertEqual(1, failed.returncode, msg=f"stdout:\n{failed.stdout}\n\nstderr:\n{failed.stderr}")
-            self.assertEqual("", failed.stdout)
-            self.assertIn("parse failed", failed.stderr)
+    def test_raw_macro_fallback_preserves_continuations_and_surrounding_syntax(self) -> None:
+        source = (
+            "#define OPEN(name) namespace name {\n"
+            "int values[]={1,\n"
+            "#define MEMBER(name) \\\n"
+            "        : name,          \\\n"
+            "            other,\n"
+            "2};\n"
+            "#define CLOSE }\n"
+            "int after=3;\n"
+        )
+        result = native_format("--stdin", input_text=source)
+        self.assertEqual(0, result.returncode, msg=result.stderr)
+        self.assertIn("#define MEMBER(name) \\\n    : name,          \\\n        other,\n", result.stdout)
+        self.assertIn("int after = 3;\n", result.stdout)
+        invalid = native_format("--stdin", input_text=source + "int broken = ;\n")
+        self.assertNotEqual(0, invalid.returncode)
+        self.assertIn("parse failed", invalid.stderr)
 
-            explicit_use_config = root / "raw_and_call.cpp-format"
-            explicit_use_config.write_text(
-                "---\n"
-                "ColumnLimit: 120\n"
-                "IndentWidth: 4\n"
-                "TabWidth: 4\n"
-                "MacroCategories:\n"
-                "  RawMacroDefinitions:\n"
-                "    - RAW_ONLY\n"
-                "  CallSyntaxMacros:\n"
-                "    - RAW_ONLY\n",
-                encoding="utf-8",
-            )
-            formatted = native_format("--stdin", "--style", str(explicit_use_config), input_text=source)
+    def test_raw_macro_fallback_preserves_literal_contents(self) -> None:
+        cases = (
+            '#define RAW ) R"tag(a "  // literal\n       nested\n end)tag"\n',
+            '#define RAW(x)) u8R"tag(a  " b)tag"\n',
+            '#define RAW ) 0xAB\'CD R"tag(a  " // literal)tag"\n',
+            '#define RAW ) "first\\\nsecond"\n',
+            "#define RAW ) U'\\\nx'\n",
+        )
+        for source in cases:
+            with self.subTest(source=source):
+                result = native_format("--stdin", input_text=source + "int after=1;\n")
+                self.assertEqual(0, result.returncode, msg=result.stderr)
+                self.assertTrue(result.stdout.startswith(source), msg=result.stdout)
+                self.assertTrue(result.stdout.endswith("int after = 1;\n"), msg=result.stdout)
+        for suffix in ('"unterminated', "'unterminated", 'R"tag(unterminated', '/* unterminated'):
+            with self.subTest(suffix=suffix):
+                result = native_format("--stdin", input_text="#define RAW ) " + suffix)
+                self.assertNotEqual(0, result.returncode)
+                self.assertIn("parse failed", result.stderr)
 
-            self.assertEqual(0, formatted.returncode, msg=f"stdout:\n{formatted.stdout}\n\nstderr:\n{formatted.stderr}")
+    def test_raw_macro_fallback_does_not_classify_uses(self) -> None:
+        source = "#define RAW_ONLY(name) namespace name {\nRAW_ONLY(Generated,Case){Run();}\n"
+        failed = native_format("--stdin", input_text=source)
+        self.assertNotEqual(0, failed.returncode)
+        self.assertIn("parse failed", failed.stderr)
+        with tempfile.TemporaryDirectory(prefix="format_macro_use_", dir=TEST_TEMP_ROOT) as temp_dir:
+            config = Path(temp_dir) / ".cpp-format"
+            config.write_text("MacroCategories:\n  CallSyntaxMacros:\n    - RAW_ONLY\n", encoding="utf-8")
+            formatted = native_format("--stdin", "--style", str(config), input_text=source)
+            self.assertEqual(0, formatted.returncode, msg=formatted.stderr)
 
     def test_type_specifier_macro_classifies_after_horizontal_whitespace(self) -> None:
         source = (
@@ -2366,8 +2334,6 @@ class FormatCommandTests(unittest.TestCase):
             (root / ".cpp-format").write_text(
                 "---\n"
                 "MacroCategories:\n"
-                "  RawMacroDefinitions:\n"
-                "    - PARENT_RAW\n"
                 "  BareIdentifierMacros:\n"
                 "    - PARENT_BARE\n"
                 "  DeclarationPrefixMacros:\n"
@@ -2391,8 +2357,6 @@ class FormatCommandTests(unittest.TestCase):
                 "---\n"
                 "Inherit: Parent\n"
                 "MacroCategories:\n"
-                "  RawMacroDefinitions:\n"
-                "    - CHILD_RAW\n"
                 "  BareIdentifierMacros:\n"
                 "    - CHILD_BARE\n"
                 "  DeclarationPrefixMacros:\n"
@@ -2414,8 +2378,6 @@ class FormatCommandTests(unittest.TestCase):
             )
             source = nested / "sample.cpp"
             source.write_text(
-                "#define PARENT_RAW(first,second) first ## second\n"
-                "#define CHILD_RAW(first,second) first ## second\n"
                 "PARENT_BARE\n"
                 "CHILD_BARE\n"
                 "PARENT_PREFIX int ParentDeclaration();\n"
@@ -2441,8 +2403,6 @@ class FormatCommandTests(unittest.TestCase):
             result = native_format(str(source), cwd=nested)
 
             self.assertEqual(0, result.returncode, msg=f"stdout:\n{result.stdout}\n\nstderr:\n{result.stderr}")
-            self.assertIn("#define PARENT_RAW(first, second) first ## second\n", result.stdout)
-            self.assertIn("#define CHILD_RAW(first, second) first ## second\n", result.stdout)
 
     def test_ignore_file_skips_simple_directory_entries(self) -> None:
         build_dir = TEST_TEMP_ROOT

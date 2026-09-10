@@ -59,7 +59,7 @@ Print-token construction materializes canonical known-token text and immutable s
 - `src/format/impl/format_pretty_printer.h|cpp` own mandatory line breaks, segment build/solve/emit orchestration, structural brace/statement indentation, and syntax-based comment placement.
 - `src/format/impl/format_output.h|cpp` own physical text, columns, pending line indentation, macro continuation suffixes, and deferred comment and continuation alignment through a syntax-independent output buffer.
 - `src/format/impl/format_preprocessor_text.h|cpp` own directive text canonicalization, preserved payload indentation, and conditional payload terminal-comma normalization.
-- `src/format/impl/format_raw_macro.h|cpp` own raw macro replacement whitespace normalization and the raw preprocessor line-preservation helpers used by the pretty printer.
+- `src/format/impl/format_raw_macro.h|cpp` own raw macro replacement whitespace normalization, identification of alignable continuation suffixes, and the raw preprocessor line-preservation helpers used by the pretty printer.
 - `src/format/impl/format_string_literals.h|cpp` own safe adjacent-string spelling joins and escaped-newline split requirements.
 - `src/format/impl/format_spacing.h|cpp` own print token text/width accessors, classification, and spacing rules.
 - `src/tools/tools_common.h|cpp` own shared tool helpers for paths, recursive discovery, file lists, source lines, include text, counts, and lightweight string operations.
@@ -99,7 +99,7 @@ Resolving syntactic ambiguity in the grammar is a hard architectural constraint.
 
 Project-specific tokens are used only for intentionally non-C++ macro fragments or scanner-owned lexical features documented in [scanner.md](scanner.md) and are taken from configuration, not hard-coded. Otherwise, structured grammar productions compose with existing C++ declarators, type names, expressions, and statements.
 
-Composite syntax must remain recursive in both the tree-sitter tree and the formatter model. A grammar token or formatter leaf must not hide any composite source span. The replacement text of a macro explicitly configured under `RawMacroDefinitions` is the sole opaque-source exception. The only other leaves are ordinary lexical tokens.
+Composite syntax must remain recursive in both the tree-sitter tree and the formatter model. A grammar token or formatter leaf must not hide any composite source span. A macro replacement with no complete structured parse is the sole opaque-source exception. The only other leaves are ordinary lexical tokens.
 
 The format model preserves grammar declarator, condition, and name field roles through wrapper flattening, so declaration and preprocessor-header boundaries do not depend on spelling or expression shape.
 

@@ -1,6 +1,7 @@
 #pragma once
 
 #include <memory>
+#include <span>
 #include <optional>
 #include <string>
 #include <string_view>
@@ -44,6 +45,8 @@ public:
     void BlankLine(bool macroContinuation = false);
     void ReopenLastLine(bool discardBlankLines = false);
     void Write(std::string_view text, int structuralIndent);
+    // Offsets identify normalized, alignable backslashes relative to text.
+    void WriteMacroText(std::string_view text, std::span<const size_t> continuations, int structuralIndent);
     void WriteAtIndent(std::string_view text, int indent);
     void WriteVerbatim(std::string_view text);
     void AppendCompleteLines(std::string_view text);

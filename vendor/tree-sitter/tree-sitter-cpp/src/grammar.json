@@ -411,258 +411,38 @@
       ]
     },
     "preproc_def": {
-      "type": "CHOICE",
+      "type": "SEQ",
       "members": [
         {
-          "type": "PREC",
-          "value": 2,
+          "type": "ALIAS",
           "content": {
-            "type": "SEQ",
-            "members": [
-              {
-                "type": "ALIAS",
-                "content": {
-                  "type": "SYMBOL",
-                  "name": "macro_definition_start"
-                },
-                "named": false,
-                "value": "#define"
-              },
-              {
-                "type": "FIELD",
-                "name": "name",
-                "content": {
-                  "type": "ALIAS",
-                  "content": {
-                    "type": "SYMBOL",
-                    "name": "raw_macro_definition_identifier"
-                  },
-                  "named": true,
-                  "value": "identifier"
-                }
-              },
-              {
-                "type": "FIELD",
-                "name": "value",
-                "content": {
-                  "type": "CHOICE",
-                  "members": [
-                    {
-                      "type": "SYMBOL",
-                      "name": "raw_macro_replacement"
-                    },
-                    {
-                      "type": "BLANK"
-                    }
-                  ]
-                }
-              },
-              {
-                "type": "SYMBOL",
-                "name": "_preproc_directive_end"
-              }
-            ]
-          }
+            "type": "SYMBOL",
+            "name": "macro_definition_start"
+          },
+          "named": false,
+          "value": "#define"
         },
         {
-          "type": "PREC",
-          "value": 1,
-          "content": {
-            "type": "SEQ",
-            "members": [
-              {
-                "type": "ALIAS",
-                "content": {
-                  "type": "SYMBOL",
-                  "name": "macro_definition_start"
-                },
-                "named": false,
-                "value": "#define"
-              },
-              {
-                "type": "FIELD",
-                "name": "name",
-                "content": {
-                  "type": "CHOICE",
-                  "members": [
-                    {
-                      "type": "SYMBOL",
-                      "name": "identifier"
-                    },
-                    {
-                      "type": "SYMBOL",
-                      "name": "call_syntax_macro_identifier"
-                    },
-                    {
-                      "type": "SYMBOL",
-                      "name": "bare_macro_identifier"
-                    }
-                  ]
-                }
-              },
-              {
-                "type": "CHOICE",
-                "members": [
-                  {
-                    "type": "FIELD",
-                    "name": "value",
-                    "content": {
-                      "type": "SYMBOL",
-                      "name": "macro_attribute_replacement_list"
-                    }
-                  },
-                  {
-                    "type": "FIELD",
-                    "name": "value",
-                    "content": {
-                      "type": "SYMBOL",
-                      "name": "macro_replacement_list"
-                    }
-                  },
-                  {
-                    "type": "SYMBOL",
-                    "name": "_preproc_directive_end"
-                  }
-                ]
-              }
-            ]
-          }
+          "type": "SYMBOL",
+          "name": "_object_macro_definition_body"
         }
       ]
     },
     "preproc_function_def": {
-      "type": "CHOICE",
+      "type": "SEQ",
       "members": [
         {
-          "type": "PREC",
-          "value": 2,
+          "type": "ALIAS",
           "content": {
-            "type": "SEQ",
-            "members": [
-              {
-                "type": "ALIAS",
-                "content": {
-                  "type": "SYMBOL",
-                  "name": "macro_definition_start"
-                },
-                "named": false,
-                "value": "#define"
-              },
-              {
-                "type": "FIELD",
-                "name": "name",
-                "content": {
-                  "type": "ALIAS",
-                  "content": {
-                    "type": "SYMBOL",
-                    "name": "raw_macro_definition_identifier"
-                  },
-                  "named": true,
-                  "value": "identifier"
-                }
-              },
-              {
-                "type": "FIELD",
-                "name": "parameters",
-                "content": {
-                  "type": "SYMBOL",
-                  "name": "preproc_params"
-                }
-              },
-              {
-                "type": "FIELD",
-                "name": "value",
-                "content": {
-                  "type": "CHOICE",
-                  "members": [
-                    {
-                      "type": "SYMBOL",
-                      "name": "raw_macro_replacement"
-                    },
-                    {
-                      "type": "BLANK"
-                    }
-                  ]
-                }
-              },
-              {
-                "type": "SYMBOL",
-                "name": "_preproc_directive_end"
-              }
-            ]
-          }
+            "type": "SYMBOL",
+            "name": "macro_definition_start"
+          },
+          "named": false,
+          "value": "#define"
         },
         {
-          "type": "PREC",
-          "value": 1,
-          "content": {
-            "type": "SEQ",
-            "members": [
-              {
-                "type": "ALIAS",
-                "content": {
-                  "type": "SYMBOL",
-                  "name": "macro_definition_start"
-                },
-                "named": false,
-                "value": "#define"
-              },
-              {
-                "type": "FIELD",
-                "name": "name",
-                "content": {
-                  "type": "CHOICE",
-                  "members": [
-                    {
-                      "type": "SYMBOL",
-                      "name": "identifier"
-                    },
-                    {
-                      "type": "SYMBOL",
-                      "name": "call_syntax_macro_identifier"
-                    },
-                    {
-                      "type": "SYMBOL",
-                      "name": "bare_macro_identifier"
-                    }
-                  ]
-                }
-              },
-              {
-                "type": "FIELD",
-                "name": "parameters",
-                "content": {
-                  "type": "SYMBOL",
-                  "name": "preproc_params"
-                }
-              },
-              {
-                "type": "CHOICE",
-                "members": [
-                  {
-                    "type": "FIELD",
-                    "name": "value",
-                    "content": {
-                      "type": "SYMBOL",
-                      "name": "macro_attribute_replacement_list"
-                    }
-                  },
-                  {
-                    "type": "FIELD",
-                    "name": "value",
-                    "content": {
-                      "type": "SYMBOL",
-                      "name": "macro_replacement_list"
-                    }
-                  },
-                  {
-                    "type": "SYMBOL",
-                    "name": "_preproc_directive_end"
-                  }
-                ]
-              }
-            ]
-          }
+          "type": "SYMBOL",
+          "name": "_function_macro_definition_body"
         }
       ]
     },
@@ -13603,6 +13383,265 @@
           }
         ]
       }
+    },
+    "raw_macro_replacement": {
+      "type": "SYMBOL",
+      "name": "_raw_macro_token_sequence"
+    },
+    "_raw_macro_token_item": {
+      "type": "PREC_DYNAMIC",
+      "value": 20,
+      "content": {
+        "type": "SYMBOL",
+        "name": "_raw_macro_token"
+      }
+    },
+    "_raw_macro_token_sequence": {
+      "type": "PREC_RIGHT",
+      "value": 0,
+      "content": {
+        "type": "PREC_DYNAMIC",
+        "value": -40,
+        "content": {
+          "type": "SEQ",
+          "members": [
+            {
+              "type": "SYMBOL",
+              "name": "_raw_macro_token_item"
+            },
+            {
+              "type": "CHOICE",
+              "members": [
+                {
+                  "type": "SYMBOL",
+                  "name": "_raw_macro_token_sequence"
+                },
+                {
+                  "type": "BLANK"
+                }
+              ]
+            }
+          ]
+        }
+      }
+    },
+    "_structured_macro_name": {
+      "type": "PREC_DYNAMIC",
+      "value": 1,
+      "content": {
+        "type": "FIELD",
+        "name": "name",
+        "content": {
+          "type": "SYMBOL",
+          "name": "identifier"
+        }
+      }
+    },
+    "_raw_macro_name": {
+      "type": "FIELD",
+      "name": "name",
+      "content": {
+        "type": "SYMBOL",
+        "name": "identifier"
+      }
+    },
+    "_structured_macro_parameters": {
+      "type": "PREC_DYNAMIC",
+      "value": 1,
+      "content": {
+        "type": "SEQ",
+        "members": [
+          {
+            "type": "FIELD",
+            "name": "name",
+            "content": {
+              "type": "SYMBOL",
+              "name": "identifier"
+            }
+          },
+          {
+            "type": "FIELD",
+            "name": "parameters",
+            "content": {
+              "type": "SYMBOL",
+              "name": "preproc_params"
+            }
+          }
+        ]
+      }
+    },
+    "_raw_macro_parameters": {
+      "type": "SEQ",
+      "members": [
+        {
+          "type": "FIELD",
+          "name": "name",
+          "content": {
+            "type": "SYMBOL",
+            "name": "identifier"
+          }
+        },
+        {
+          "type": "FIELD",
+          "name": "parameters",
+          "content": {
+            "type": "SYMBOL",
+            "name": "preproc_params"
+          }
+        }
+      ]
+    },
+    "_object_macro_definition_body": {
+      "type": "CHOICE",
+      "members": [
+        {
+          "type": "SEQ",
+          "members": [
+            {
+              "type": "SYMBOL",
+              "name": "_structured_macro_name"
+            },
+            {
+              "type": "SYMBOL",
+              "name": "_object_macro_replacement_start"
+            },
+            {
+              "type": "CHOICE",
+              "members": [
+                {
+                  "type": "FIELD",
+                  "name": "value",
+                  "content": {
+                    "type": "SYMBOL",
+                    "name": "macro_attribute_replacement_list"
+                  }
+                },
+                {
+                  "type": "FIELD",
+                  "name": "value",
+                  "content": {
+                    "type": "SYMBOL",
+                    "name": "macro_replacement_list"
+                  }
+                },
+                {
+                  "type": "SYMBOL",
+                  "name": "_preproc_directive_end"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "SEQ",
+          "members": [
+            {
+              "type": "SYMBOL",
+              "name": "_raw_macro_name"
+            },
+            {
+              "type": "SYMBOL",
+              "name": "_object_macro_replacement_start"
+            },
+            {
+              "type": "FIELD",
+              "name": "value",
+              "content": {
+                "type": "CHOICE",
+                "members": [
+                  {
+                    "type": "SYMBOL",
+                    "name": "raw_macro_replacement"
+                  },
+                  {
+                    "type": "BLANK"
+                  }
+                ]
+              }
+            },
+            {
+              "type": "SYMBOL",
+              "name": "_preproc_directive_end"
+            }
+          ]
+        }
+      ]
+    },
+    "_function_macro_definition_body": {
+      "type": "CHOICE",
+      "members": [
+        {
+          "type": "SEQ",
+          "members": [
+            {
+              "type": "SYMBOL",
+              "name": "_structured_macro_parameters"
+            },
+            {
+              "type": "SYMBOL",
+              "name": "_function_macro_replacement_start"
+            },
+            {
+              "type": "CHOICE",
+              "members": [
+                {
+                  "type": "FIELD",
+                  "name": "value",
+                  "content": {
+                    "type": "SYMBOL",
+                    "name": "macro_attribute_replacement_list"
+                  }
+                },
+                {
+                  "type": "FIELD",
+                  "name": "value",
+                  "content": {
+                    "type": "SYMBOL",
+                    "name": "macro_replacement_list"
+                  }
+                },
+                {
+                  "type": "SYMBOL",
+                  "name": "_preproc_directive_end"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "SEQ",
+          "members": [
+            {
+              "type": "SYMBOL",
+              "name": "_raw_macro_parameters"
+            },
+            {
+              "type": "SYMBOL",
+              "name": "_function_macro_replacement_start"
+            },
+            {
+              "type": "FIELD",
+              "name": "value",
+              "content": {
+                "type": "CHOICE",
+                "members": [
+                  {
+                    "type": "SYMBOL",
+                    "name": "raw_macro_replacement"
+                  },
+                  {
+                    "type": "BLANK"
+                  }
+                ]
+              }
+            },
+            {
+              "type": "SYMBOL",
+              "name": "_preproc_directive_end"
+            }
+          ]
+        }
+      ]
     },
     "preproc_nonconditional": {
       "type": "SEQ",
@@ -38205,6 +38244,14 @@
   ],
   "conflicts": [
     [
+      "_structured_macro_name",
+      "_raw_macro_name"
+    ],
+    [
+      "_structured_macro_parameters",
+      "_raw_macro_parameters"
+    ],
+    [
       "expression",
       "_macro_initializer_list_fragment"
     ],
@@ -39711,11 +39758,15 @@
     },
     {
       "type": "SYMBOL",
-      "name": "raw_macro_definition_identifier"
+      "name": "_object_macro_replacement_start"
     },
     {
       "type": "SYMBOL",
-      "name": "raw_macro_replacement"
+      "name": "_function_macro_replacement_start"
+    },
+    {
+      "type": "SYMBOL",
+      "name": "_raw_macro_token"
     },
     {
       "type": "SYMBOL",

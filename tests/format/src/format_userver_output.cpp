@@ -23,39 +23,38 @@
 #include <array>
 
 #define FORMAT_USERVER_DO_WHILE(flag) \
-    do { \
-        if (flag) break; \
-        UseFlag(flag); \
+    do {                              \
+        if (flag) {                   \
+            break;                    \
+        }                             \
+        UseFlag(flag);                \
     } while (false)
 #define USERVER_IMPL_FORCE_INLINE __attribute__((always_inline)) inline
-#define LOG_FORMAT_USERVER_LIMITED(logger, level, ...) \
+#define LOG_FORMAT_USERVER_LIMITED(logger, level, ...)     \
     if (const RateLimiter limiter{[]() -> RateLimitData& { \
-            static RateLimitData data; \
-            return data; \
-        }()}; \
-        !limiter.ShouldLog()) \
-    { \
-    } else \
+            static RateLimitData data;                     \
+            return data;                                   \
+        }()};                                              \
+        !limiter.ShouldLog())                              \
+    {                                                      \
+    } else                                                 \
         LOG_TO((logger), (level), __VA_ARGS__) << limiter
 #define FORMAT_USERVER_COMPLEX_OPTION(FUNCTION_NAME, OPTION_TYPE) \
-    inline void FUNCTION_NAME(OPTION_TYPE arg) { \
-        UseOption(arg, PP_STRINGIZE(FUNCTION_NAME)); \
-    }
+    inline void FUNCTION_NAME(OPTION_TYPE arg) { UseOption(arg, PP_STRINGIZE(FUNCTION_NAME)); }
 #define FORMAT_USERVER_HASH_JOIN(FUNCTION_NAME) \
-    private: \
-        inline void FUNCTION_NAME##_impl() {} \
-    public: \
+    private:                                    \
+        inline void FUNCTION_NAME##_impl() {}   \
+    public:                                     \
         static constexpr bool is_##FUNCTION_NAME##_available = true
-#define FORMAT_USERVER_EXPECT_TRY(cmd) \
-    try { \
-        cmd; \
-    } catch (const Error& error) { \
+#define FORMAT_USERVER_EXPECT_TRY(cmd)                 \
+    try {                                              \
+        cmd;                                           \
+    } catch (const Error& error) {                     \
         EXPECT_EQ(error.Code(), ErrorCode::kExpected); \
     }
 #define BENCHMARK_THREAD_ARGS ->Arg(2)->Arg(4)
-#define IMPL_UTEST_FORMAT_USERVER(name) \
-    TestLauncher<::testing::Test>::RunTest< \
-        name>();                         \
+#define IMPL_UTEST_FORMAT_USERVER(name)             \
+    TestLauncher<::testing::Test>::RunTest<name>(); \
     struct FormatUserverForceSemicolon
 
 BENCHMARK_CAPTURE(FormatterBenchmark, Mode, kValue) BENCHMARK_THREAD_ARGS;

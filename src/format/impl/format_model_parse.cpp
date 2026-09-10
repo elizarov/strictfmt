@@ -15,7 +15,6 @@ namespace {
 
 // Order matches MacroCategory in the external scanner.
 constexpr std::array kMacroCategoryMembers = {
-    &FormatterConfig::rawMacroDefinitions,
     &FormatterConfig::bareIdentifierMacros,
     &FormatterConfig::callSyntaxMacros,
     &FormatterConfig::statementArgumentMacros,

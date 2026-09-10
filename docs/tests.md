@@ -83,7 +83,7 @@ byte-for-byte idempotence after the first pass.
 - `tests/format/format_test.py` owns the Python test harness and individual test
   cases.
 - `tests/format/layout_test.cpp` owns focused internal layout-contract checks,
-  including physical output state, macro indentation, comment alignment, and
+  including incremental structured/raw macro parsing, physical output state, macro indentation, comment alignment, and
   deferred list and chain ownership across block boundaries, plus immutable choice-history
   precedence and materialization, candidate pruning, inline/heap value storage,
   and delimiter-stack recognition policies.
@@ -111,6 +111,7 @@ and exist only to exercise one command or configuration edge.
 - `tests/format/src/format_test_input.cpp` ->
   `tests/format/src/format_test_output.cpp`: broad default-configuration
   formatting coverage for ordinary C++ layout core as documented in [format.md].
+- `tests/format/src/format_macros_input.cpp` -> `tests/format/src/format_macros_output.cpp`: a deduplicated corpus of service macro definitions and existing golden macro cases for fast structured/raw fallback, formatting, and idempotence checks. Definitions embedded in other fixtures remain there when their placement provides additional syntax coverage.
 - `tests/format/src/format_preprocessor_eof_input.cpp` -> `tests/format/src/format_preprocessor_eof_output.cpp`: a structured macro whose final line splice reaches end of input; this boundary has its own fixture so later additions cannot move it away from EOF.
 - `tests/format/src/format_main_include_input.cpp` ->
   `tests/format/src/format_main_include_output.cpp`: main-header sorting with

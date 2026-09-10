@@ -44,6 +44,11 @@ struct BraceFrame {
     int closeIndent = 0;
 };
 
+struct CaseBodyFrame {
+    int switchDepth = 0;
+    const SyntaxNode* macroDefinition = nullptr;
+};
+
 bool BreakModelHasLayoutChoice(const FormatBreakModel& model) {
     // Token and sequence nodes have exactly one layout. Emitting them with the default compact solution is the same
     // as running the solver, while a dump still runs it so the diagnostic model remains complete. The builder sets
@@ -321,7 +326,7 @@ private:
     int parenDepth_ = 0;
     int bracketDepth_ = 0;
     std::vector<BraceFrame> braceStack_;
-    std::vector<int> activeCaseBodySwitchDepths_;
+    std::vector<CaseBodyFrame> activeCaseBodies_;
     std::vector<int> conditionalFunctionIndents_;
     std::optional<int> pendingIndentRestoreAfterFlush_;
     std::unordered_set<std::uint32_t> prebufferedTokenSourceIndices_;
@@ -503,6 +508,9 @@ private:
             return false;
         }
         const SyntaxNode* macroCallParent = macroCall->parent;
+        while (macroCallParent != nullptr && macroCallParent->kind == SyntaxNodeKind::MacroCallItem) {
+            macroCallParent = macroCallParent->parent;
+        }
         return macroCallParent != nullptr && IsStatementItemContainer(macroCallParent->kind);
     }
 
@@ -627,10 +635,14 @@ private:
         );
     }
 
-    void CloseCaseBodyIndentIfNeeded() {
-        if (!activeCaseBodySwitchDepths_.empty() && activeCaseBodySwitchDepths_.back() == switchDepth_) {
+    void CloseCaseBodyIndentIfNeeded(const SyntaxNode* macroDefinition) {
+        if (
+            !activeCaseBodies_.empty() &&
+            activeCaseBodies_.back().switchDepth == switchDepth_ &&
+            activeCaseBodies_.back().macroDefinition == macroDefinition
+        ) {
             indentLevel_ = std::max(0, indentLevel_ - 1);
-            activeCaseBodySwitchDepths_.pop_back();
+            activeCaseBodies_.pop_back();
         }
     }
 
@@ -1008,6 +1020,10 @@ private:
                 FlushPendingTokens();
                 NewLine(false);
             }
+            if (!activeCaseBodies_.empty() && activeCaseBodies_.back().macroDefinition == previous->macroDefinition) {
+                CloseCaseBodyIndentIfNeeded(previous->macroDefinition);
+                output_.SetPendingIndent(indentLevel_);
+            }
             if (const std::optional<int> itemIndent = listContinuation_->PreprocessorIndent(current)) {
                 output_.SetPendingIndent(*itemIndent);
             }
@@ -1258,7 +1274,7 @@ private:
                 next != nullptr &&
                 IsCaseLabelKeyword(*next)
             ) {
-                CloseCaseBodyIndentIfNeeded();
+                CloseCaseBodyIndentIfNeeded(token.macroDefinition);
             }
             if (CanAttachToPreviousPreprocessorLine(token, rawPrevious)) {
                 ReopenLastOutputLine();
@@ -1282,7 +1298,9 @@ private:
         }
         if (token.syntaxKind == SyntaxNodeKind::RawMacroReplacement) {
             FlushPendingTokens();
-            Write(FormatRawMacroReplacement(token.text, CurrentLineIndentLevel() + 1, indentWidth_, tabWidth_));
+            const RawMacroLayout replacement =
+                FormatRawMacroReplacement(token.text, CurrentLineIndentLevel() + 1, indentWidth_, tabWidth_);
+            output_.WriteMacroText(replacement.text, replacement.continuations, indentLevel_);
             NewLine();
             return;
         }
@@ -1585,7 +1603,7 @@ private:
                 if (token.parentKind == SyntaxNodeKind::CaseStatement) {
                     FlushPendingTokens();
                     ++indentLevel_;
-                    activeCaseBodySwitchDepths_.push_back(switchDepth_);
+                    activeCaseBodies_.push_back({switchDepth_, token.macroDefinition});
                     if (
                         next != nullptr &&
                         next->kind == PrintTokenKind::Known &&
@@ -1611,7 +1629,7 @@ private:
                 return;
             default:
                 if (IsCaseLabelKeyword(token) && output_.State().atLineStart) {
-                    CloseCaseBodyIndentIfNeeded();
+                    CloseCaseBodyIndentIfNeeded(token.macroDefinition);
                 }
                 if (IsAccessLabel(token, next)) {
                     FlushPendingTokens();
@@ -1814,7 +1832,7 @@ private:
             const bool isSwitchBody = token.parentKind == SyntaxNodeKind::CompoundStatement &&
                 token.grandParentKind == SyntaxNodeKind::SwitchStatement;
             if (isSwitchBody) {
-                CloseCaseBodyIndentIfNeeded();
+                CloseCaseBodyIndentIfNeeded(token.macroDefinition);
             }
             indentLevel_ = closeIndent.value_or(restoreIndent.value_or(std::max(0, indentLevel_ - 1)));
             if (restoreIndent && *restoreIndent != indentLevel_) {

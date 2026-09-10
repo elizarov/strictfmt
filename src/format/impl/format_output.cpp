@@ -171,6 +171,14 @@ struct FormatOutput::Impl {
         state_.lineHasText = state_.lineHasText || !text.empty();
     }
 
+    void WriteMacroText(std::string_view text, std::span<const size_t> continuations, int structuralIndent) {
+        WriteIndentIfNeeded(structuralIndent);
+        for (size_t offset : continuations) {
+            macroContinuations_.push_back({.offset = output_.size() + offset, .group = macroContinuationGroup_});
+        }
+        Write(text, structuralIndent);
+    }
+
     size_t RecordLineCommentPosition(
         const SyntaxNode* alignmentGroup,
         std::string_view text,
@@ -457,6 +465,9 @@ void FormatOutput::ReopenLastLine(bool discardBlankLines) {
     impl_->ReopenLastOutputLine();
 }
 void FormatOutput::Write(std::string_view text, int structuralIndent) { impl_->Write(text, structuralIndent); }
+void FormatOutput::WriteMacroText(std::string_view text, std::span<const size_t> continuations, int structuralIndent) {
+    impl_->WriteMacroText(text, continuations, structuralIndent);
+}
 void FormatOutput::WriteAtIndent(std::string_view text, int indent) { impl_->WriteAtIndent(text, indent); }
 void FormatOutput::WriteVerbatim(std::string_view text) { impl_->WriteVerbatim(text); }
 void FormatOutput::AppendCompleteLines(std::string_view text) { impl_->AppendCompleteLines(text); }

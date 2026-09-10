@@ -10,8 +10,9 @@
 enum TokenType {
     RAW_STRING_DELIMITER,
     RAW_STRING_CONTENT,
-    RAW_MACRO_DEFINITION_IDENTIFIER,
-    RAW_MACRO_REPLACEMENT,
+    OBJECT_MACRO_REPLACEMENT_START,
+    FUNCTION_MACRO_REPLACEMENT_START,
+    RAW_MACRO_TOKEN,
     MACRO_TOKEN_PASTE_IDENTIFIER_PREFIX,
     MACRO_TOKEN_PASTE_NUMBER_PREFIX,
     BARE_MACRO_IDENTIFIER,
@@ -32,15 +33,14 @@ enum TokenType {
 };
 
 enum MacroCategory {
-    MACRO_CATEGORY_RAW_DEFINITION = 0,
-    MACRO_CATEGORY_BARE_IDENTIFIER = 1,
-    MACRO_CATEGORY_CALL_SYNTAX = 2,
-    MACRO_CATEGORY_STATEMENT_ARGUMENT = 3,
-    MACRO_CATEGORY_DECLARATION_PREFIX = 4,
-    MACRO_CATEGORY_TYPE_SPECIFIER = 5,
-    MACRO_CATEGORY_PREPROCESSOR_ARGUMENT = 6,
-    MACRO_CATEGORY_SEMICOLONLESS_CALL = 7,
-    MACRO_CATEGORY_STATEMENT_PREFIX = 8,
+    MACRO_CATEGORY_BARE_IDENTIFIER = 0,
+    MACRO_CATEGORY_CALL_SYNTAX = 1,
+    MACRO_CATEGORY_STATEMENT_ARGUMENT = 2,
+    MACRO_CATEGORY_DECLARATION_PREFIX = 3,
+    MACRO_CATEGORY_TYPE_SPECIFIER = 4,
+    MACRO_CATEGORY_PREPROCESSOR_ARGUMENT = 5,
+    MACRO_CATEGORY_SEMICOLONLESS_CALL = 6,
+    MACRO_CATEGORY_STATEMENT_PREFIX = 7,
 };
 
 /// The spec limits raw-string delimiters to 16 chars.
@@ -49,16 +49,23 @@ enum MacroCategory {
 
 typedef struct {
     bool in_directive;
+    bool in_macro_header;
     bool split_right_angle;
     uint8_t delimiter_length;
     wchar_t delimiter[MAX_DELIMITER_LENGTH];
 } Scanner;
 
+#ifdef STRICTFMT_RUNTIME_MACRO_CATEGORIES
 extern bool strictfmt_tree_sitter_cpp_macro_category_matches(
     unsigned category,
     const char *text,
     unsigned length
 );
+#else
+static bool strictfmt_tree_sitter_cpp_macro_category_matches(unsigned category, const char *text, unsigned length) {
+    return false;
+}
+#endif
 
 static inline void advance(TSLexer *lexer) { lexer->advance(lexer, false); }
 
@@ -145,16 +152,6 @@ static bool scan_preprocessing_number(TSLexer *lexer) {
         }
         return true;
     }
-}
-
-static bool scan_macro_identifier(TSLexer *lexer, enum MacroCategory category) {
-    char name[MAX_MACRO_NAME_LENGTH];
-    unsigned length = 0;
-    if (!scan_identifier(lexer, name, &length)) {
-        return false;
-    }
-    lexer->mark_end(lexer);
-    return strictfmt_tree_sitter_cpp_macro_category_matches(category, name, length);
 }
 
 static bool has_following_token_paste(TSLexer *lexer) {
@@ -413,33 +410,131 @@ static bool scan_horizontal_whitespace(TSLexer *lexer) {
     return consumed;
 }
 
-static bool scan_raw_macro_replacement(TSLexer *lexer) {
+static bool scan_quoted_macro_token(TSLexer *lexer, int32_t quote) {
+    advance(lexer);
+    while (!lexer->eof(lexer) && lexer->lookahead != '\r' && lexer->lookahead != '\n') {
+        if (lexer->lookahead == quote) {
+            advance(lexer);
+            return true;
+        }
+        if (lexer->lookahead == '\\') {
+            advance(lexer);
+            if (scan_newline(lexer)) {
+                continue;
+            }
+            if (lexer->eof(lexer)) {
+                return false;
+            }
+        }
+        advance(lexer);
+    }
+    return false;
+}
+
+static bool scan_raw_macro_string(TSLexer *lexer) {
+    int32_t delimiter[MAX_DELIMITER_LENGTH];
+    unsigned length = 0;
+    advance(lexer);
+    while (lexer->lookahead != '(') {
+        if (length == MAX_DELIMITER_LENGTH || lexer->eof(lexer) ||
+            iswspace(lexer->lookahead) || lexer->lookahead == '\\' || lexer->lookahead == ')') {
+            return false;
+        }
+        delimiter[length++] = lexer->lookahead;
+        advance(lexer);
+    }
+    advance(lexer);
+    while (!lexer->eof(lexer)) {
+        if (lexer->lookahead != ')') {
+            advance(lexer);
+            continue;
+        }
+        advance(lexer);
+        unsigned matched = 0;
+        while (matched < length && lexer->lookahead == delimiter[matched]) {
+            ++matched;
+            advance(lexer);
+        }
+        if (matched == length && lexer->lookahead == '"') {
+            advance(lexer);
+            return true;
+        }
+    }
+    return false;
+}
+
+static bool scan_raw_macro_token(TSLexer *lexer) {
     if (lexer->lookahead == '\r' || lexer->lookahead == '\n' || lexer->eof(lexer)) {
         return false;
     }
-    if (lexer->lookahead != ' ' && lexer->lookahead != '\t' && lexer->lookahead != '\f' &&
-        lexer->lookahead != '\\') {
-        return false;
-    }
-
     bool consumed = false;
-    int32_t previous = 0;
     lexer->mark_end(lexer);
-    while (!lexer->eof(lexer)) {
-        if (lexer->lookahead == '\r' || lexer->lookahead == '\n') {
-            if (previous != '\\') {
-                return consumed;
-            }
+    while (!lexer->eof(lexer) && lexer->lookahead != '\r' && lexer->lookahead != '\n') {
+        const int32_t ch = lexer->lookahead;
+        if (ch == '\\') {
+            advance(lexer);
             scan_newline(lexer);
-            lexer->mark_end(lexer);
-            consumed = true;
-            previous = 0;
-            continue;
+        } else if (ch == '"' || ch == '\'') {
+            if (!scan_quoted_macro_token(lexer, ch)) {
+                return false;
+            }
+        } else if (ch >= '0' && ch <= '9') {
+            scan_preprocessing_number(lexer);
+        } else if (is_identifier_start(ch) || ch >= 0x80) {
+            char prefix[4] = {0};
+            unsigned length = 0;
+            do {
+                if (length < sizeof(prefix) - 1) {
+                    prefix[length] = (char)lexer->lookahead;
+                }
+                ++length;
+                advance(lexer);
+            } while (is_identifier_continue(lexer->lookahead) || lexer->lookahead >= 0x80);
+            if (lexer->lookahead == '"' && length < sizeof(prefix) &&
+                (strcmp(prefix, "R") == 0 || strcmp(prefix, "u8R") == 0 ||
+                 strcmp(prefix, "uR") == 0 || strcmp(prefix, "UR") == 0 || strcmp(prefix, "LR") == 0)) {
+                if (!scan_raw_macro_string(lexer)) {
+                    return false;
+                }
+            }
+        } else if (ch == '/') {
+            advance(lexer);
+            if (lexer->lookahead == '*') {
+                advance(lexer);
+                bool closed = false;
+                while (!lexer->eof(lexer)) {
+                    if (lexer->lookahead == '*') {
+                        advance(lexer);
+                        if (lexer->lookahead == '/') {
+                            advance(lexer);
+                            closed = true;
+                            break;
+                        }
+                    } else {
+                        advance(lexer);
+                    }
+                }
+                if (!closed) {
+                    return false;
+                }
+            } else if (lexer->lookahead == '/') {
+                while (!lexer->eof(lexer) && lexer->lookahead != '\r' && lexer->lookahead != '\n') {
+                    if (lexer->lookahead == '\\') {
+                        advance(lexer);
+                        scan_newline(lexer);
+                    } else {
+                        advance(lexer);
+                    }
+                }
+            }
+        } else {
+            advance(lexer);
         }
-        previous = lexer->lookahead;
-        advance(lexer);
         lexer->mark_end(lexer);
         consumed = true;
+        if (ch != ' ' && ch != '\t' && ch != '\f' && ch != '\v' && ch != '\\') {
+            return true;
+        }
     }
     return consumed;
 }
@@ -522,6 +617,7 @@ static bool scan_preprocessor_start(Scanner *scanner, TSLexer *lexer, const bool
         scan_horizontal_whitespace(lexer);
         lexer->mark_end(lexer);
         scanner->in_directive = true;
+        scanner->in_macro_header = true;
         lexer->result_symbol = MACRO_DEFINITION_START;
         return true;
     }
@@ -580,11 +676,24 @@ bool tree_sitter_cpp_external_scanner_scan(void *payload, TSLexer *lexer, const 
         return scan_preprocessor_start(scanner, lexer, valid_symbols);
     }
 
-    if (valid_symbols[RAW_MACRO_REPLACEMENT]) {
-        if (scan_raw_macro_replacement(lexer)) {
-            lexer->result_symbol = RAW_MACRO_REPLACEMENT;
-            return true;
-        }
+    // Object-like definitions cannot have an immediately adjacent parameter list.
+    // The zero-width boundary forks header reductions before raw/structured lexing.
+    if (scanner->in_macro_header && !raw_string_ambiguous &&
+        (valid_symbols[FUNCTION_MACRO_REPLACEMENT_START] ||
+         (valid_symbols[OBJECT_MACRO_REPLACEMENT_START] && lexer->lookahead != '('))) {
+        lexer->mark_end(lexer);
+        scanner->in_macro_header = false;
+        lexer->result_symbol = valid_symbols[FUNCTION_MACRO_REPLACEMENT_START]
+                                   ? FUNCTION_MACRO_REPLACEMENT_START
+                                   : OBJECT_MACRO_REPLACEMENT_START;
+        return true;
+    }
+
+    if (scanner->in_directive && !scanner->in_macro_header && !raw_string_ambiguous &&
+        valid_symbols[RAW_MACRO_TOKEN] && lexer->lookahead != '\r' && lexer->lookahead != '\n' &&
+        !lexer->eof(lexer)) {
+        lexer->result_symbol = RAW_MACRO_TOKEN;
+        return scan_raw_macro_token(lexer);
     }
 
     if (valid_symbols[PREPROC_DIRECTIVE_END] &&
@@ -595,7 +704,9 @@ bool tree_sitter_cpp_external_scanner_scan(void *payload, TSLexer *lexer, const 
             lexer->mark_end(lexer);
         }
         if (scan_newline(lexer) || lexer->eof(lexer)) {
+            lexer->mark_end(lexer);
             scanner->in_directive = false;
+            scanner->in_macro_header = false;
             lexer->result_symbol = PREPROC_DIRECTIVE_END;
             return true;
         }
@@ -611,7 +722,7 @@ bool tree_sitter_cpp_external_scanner_scan(void *payload, TSLexer *lexer, const 
             } while (lexer->lookahead == '\\');
             if (!lexer->eof(lexer) && !scan_newline(lexer)) {
                 lexer->mark_end(lexer);
-                if (valid_symbols[LINE_BREAK_WHITESPACE] && !valid_symbols[RAW_MACRO_DEFINITION_IDENTIFIER] &&
+                if (valid_symbols[LINE_BREAK_WHITESPACE] &&
                     has_runtime_token_boundary(scanner, lexer, valid_symbols)) {
                     lexer->result_symbol = LINE_BREAK_WHITESPACE;
                     return true;
@@ -620,11 +731,11 @@ bool tree_sitter_cpp_external_scanner_scan(void *payload, TSLexer *lexer, const 
             }
             lexer->mark_end(lexer);
             scanner->in_directive = false;
+            scanner->in_macro_header = false;
             lexer->result_symbol = PREPROC_DIRECTIVE_END;
             return true;
         }
         if (horizontal && valid_symbols[LINE_BREAK_WHITESPACE] &&
-            !valid_symbols[RAW_MACRO_DEFINITION_IDENTIFIER] &&
             has_runtime_token_boundary(scanner, lexer, valid_symbols)) {
             lexer->result_symbol = LINE_BREAK_WHITESPACE;
             return true;
@@ -655,7 +766,7 @@ bool tree_sitter_cpp_external_scanner_scan(void *payload, TSLexer *lexer, const 
             return true;
         }
 
-        if (horizontal && !valid_symbols[RAW_MACRO_DEFINITION_IDENTIFIER] &&
+        if (horizontal &&
             has_runtime_token_boundary(scanner, lexer, valid_symbols)) {
             lexer->result_symbol = LINE_BREAK_WHITESPACE;
             return true;
@@ -682,7 +793,7 @@ bool tree_sitter_cpp_external_scanner_scan(void *payload, TSLexer *lexer, const 
         return true;
     }
 
-    if (valid_symbols[RAW_MACRO_DEFINITION_IDENTIFIER] || valid_symbols[MACRO_TOKEN_PASTE_IDENTIFIER_PREFIX] ||
+    if (valid_symbols[MACRO_TOKEN_PASTE_IDENTIFIER_PREFIX] ||
         valid_symbols[MACRO_TOKEN_PASTE_NUMBER_PREFIX] ||
         valid_symbols[BARE_MACRO_IDENTIFIER] ||
         valid_symbols[DECLARATION_PREFIX_MACRO_IDENTIFIER] || valid_symbols[CALL_SYNTAX_MACRO_IDENTIFIER] ||
@@ -691,11 +802,6 @@ bool tree_sitter_cpp_external_scanner_scan(void *payload, TSLexer *lexer, const 
         valid_symbols[SEMICOLONLESS_CALL_MACRO_IDENTIFIER] || valid_symbols[STATEMENT_PREFIX_MACRO_IDENTIFIER] ||
         valid_symbols[SEMICOLONLESS_PREPROCESSOR_CALL_MACRO_IDENTIFIER]) {
         skip_external_whitespace(lexer);
-    }
-
-    if (valid_symbols[RAW_MACRO_DEFINITION_IDENTIFIER] && is_identifier_start(lexer->lookahead)) {
-        lexer->result_symbol = RAW_MACRO_DEFINITION_IDENTIFIER;
-        return scan_macro_identifier(lexer, MACRO_CATEGORY_RAW_DEFINITION);
     }
 
     if (valid_symbols[MACRO_TOKEN_PASTE_NUMBER_PREFIX] &&
@@ -739,7 +845,7 @@ bool tree_sitter_cpp_external_scanner_scan(void *payload, TSLexer *lexer, const 
 unsigned tree_sitter_cpp_external_scanner_serialize(void *payload, char *buffer) {
     Scanner *scanner = (Scanner *)payload;
     unsigned delimiter_bytes = scanner->delimiter_length * sizeof(wchar_t);
-    buffer[0] = scanner->in_directive | (scanner->split_right_angle << 1);
+    buffer[0] = scanner->in_directive | (scanner->split_right_angle << 1) | (scanner->in_macro_header << 2);
     memcpy(buffer + 1, scanner->delimiter, delimiter_bytes);
     return 1 + delimiter_bytes;
 }
@@ -749,6 +855,7 @@ void tree_sitter_cpp_external_scanner_deserialize(void *payload, const char *buf
     reset(scanner);
     scanner->in_directive = length > 0 && (buffer[0] & 1);
     scanner->split_right_angle = length > 0 && (buffer[0] & 2);
+    scanner->in_macro_header = length > 0 && (buffer[0] & 4);
     if (length > 0) {
         --length;
         assert(length % sizeof(wchar_t) == 0 && length <= sizeof(scanner->delimiter) &&

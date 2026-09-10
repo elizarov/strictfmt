@@ -56,7 +56,9 @@ LEXICAL_EXTERNAL_TOKENS = frozenset({
     "macro_token_paste_identifier_prefix",
     "macro_token_paste_number_prefix",
     "preprocessor_argument_macro_identifier",
-    "raw_macro_definition_identifier",
+    "_object_macro_replacement_start",
+    "_function_macro_replacement_start",
+    "_raw_macro_token",
     "raw_string_content",
     "raw_string_delimiter",
     "semicolonless_call_macro_identifier",
@@ -65,7 +67,6 @@ LEXICAL_EXTERNAL_TOKENS = frozenset({
     "statement_argument_macro_identifier",
     "type_specifier_macro_identifier",
 })
-OPAQUE_EXTERNAL_TOKENS = frozenset({"raw_macro_replacement"})
 TERMINAL_RULE_TYPES = frozenset({"IMMEDIATE_TOKEN", "PATTERN", "TOKEN"})
 PREPROCESSOR_DIRECTIVE_ARGUMENTS = frozenset({
     "define",
@@ -293,14 +294,12 @@ def validate_structural_grammar(grammar_json_path: Path) -> None:
         if external.get("type") != "SYMBOL" or not isinstance(external.get("name"), str):
             fail(f"Unreviewed external-token declaration in {grammar_json_path}: {external!r}")
         external_tokens.add(external["name"])
-    unexpected_externals = external_tokens - LEXICAL_EXTERNAL_TOKENS - OPAQUE_EXTERNAL_TOKENS
+    unexpected_externals = external_tokens - LEXICAL_EXTERNAL_TOKENS
     if unexpected_externals:
         fail(
             "Composite syntax must use structured grammar productions; "
             "unreviewed external tokens: " + ", ".join(sorted(unexpected_externals))
         )
-    if external_tokens & OPAQUE_EXTERNAL_TOKENS != OPAQUE_EXTERNAL_TOKENS:
-        fail("raw_macro_replacement must remain the sole opaque external token")
 
 
 def validate_generated_parser_indexes(generated: str) -> None:
