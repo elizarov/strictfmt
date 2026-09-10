@@ -204,8 +204,38 @@ bool HasAssignmentContinuation(const FormatBreakNode& node) {
         });
 }
 
+FormatBreakNode* UnwrapTriviaSequence(FormatBreakNode* node) {
+    if (node == nullptr) {
+        return nullptr;
+    }
+    if (node->kind == FormatBreakNodeKind::Token && IsStructuralTriviaToken(FormatBreakTokenValue(node->token))) {
+        return nullptr;
+    }
+    if (node->kind != FormatBreakNodeKind::Sequence) {
+        return node;
+    }
+    FormatBreakNode* expression = nullptr;
+    for (FormatBreakNode* child : node->children) {
+        FormatBreakNode* content = UnwrapTriviaSequence(child);
+        if (content == nullptr) {
+            continue;
+        }
+        if (expression != nullptr) {
+            return node;
+        }
+        expression = content;
+    }
+    return expression;
+}
+
+bool IsCallLikeParenthesis(const FormatBreakToken& open) {
+    const PrintToken& printToken = FormatBreakTokenValue(open);
+    return
+        printToken.parentKind == SyntaxNodeKind::ArgumentList || printToken.parentKind == SyntaxNodeKind::ParameterList;
+}
+
 bool UsesFlatLogicalContinuation(const FormatBreakToken& open, const FormatBreakNode& item) {
-    if (!IsLogicalChain(item)) {
+    if (!IsLogicalChain(item) || IsCallLikeParenthesis(open)) {
         return false;
     }
     const PrintToken& printToken = FormatBreakTokenValue(open);
@@ -227,8 +257,7 @@ bool UsesFlatNonCallParenthesisContinuation(const FormatBreakToken& open) {
     if (printToken.kind != PrintTokenKind::Known || printToken.syntaxKind != SyntaxNodeKind::LeftParen) {
         return false;
     }
-    return printToken.parentKind != SyntaxNodeKind::ArgumentList &&
-        printToken.parentKind != SyntaxNodeKind::ParameterList &&
+    return !IsCallLikeParenthesis(open) &&
         printToken.parentKind != SyntaxNodeKind::ForStatement &&
         printToken.grandParentKind != SyntaxNodeKind::ForStatement;
 }
@@ -497,20 +526,21 @@ private:
         }
         const bool parameter = FormatBreakTokenValue(open).parentKind == SyntaxNodeKind::ParameterList;
         FormatBreakNode* item = BuildListItem(itemChildren, depth + 1, parameter);
+        FormatBreakNode* chain = UnwrapTriviaSequence(item);
         const bool virtualDelimiter = FormatBreakTokenValue(open).parentKind == SyntaxNodeKind::Unknown;
         if (
             delimited.delimiterKind == FormatBreakDelimiterKind::Paren &&
-            item &&
-            item->kind == FormatBreakNodeKind::Chain &&
-            item->chainKind != FormatBreakChainKind::Ternary &&
-            !HasAssignmentContinuation(*item) && (
+            chain &&
+            chain->kind == FormatBreakNodeKind::Chain &&
+            chain->chainKind != FormatBreakChainKind::Ternary &&
+            !HasAssignmentContinuation(*chain) && (
                 virtualDelimiter || (
-                    IsFlatParenthesizedChain(*item) &&
-                    (UsesFlatLogicalContinuation(open, *item) || UsesFlatNonCallParenthesisContinuation(open))
+                    IsFlatParenthesizedChain(*chain) &&
+                    (UsesFlatLogicalContinuation(open, *chain) || UsesFlatNonCallParenthesisContinuation(open))
                 )
             )
         ) {
-            item->flatSplitIndent = true;
+            chain->flatSplitIndent = true;
         }
         AppendListItem(delimited, item, blankLineBefore);
         delimited.items.back().bracedInitializerRecord = IsBracedInitializerRecord(itemChildren);

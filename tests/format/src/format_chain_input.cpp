@@ -85,3 +85,22 @@ bool f() { return (Check([] { Prepare(); return value; })) || other || third; }
 
 // first requires body
 template <class T> concept C = requires(T x) { x.f(); x.g(); } && Ready<T>;
+
+namespace CommentedChainIndentation {
+void Check(bool firstCondition, bool secondCondition) {
+if (firstCondition && secondCondition /* tail */) { return; }
+while (/* head */ firstCondition || secondCondition /* one */ /* two */) { break; }
+if (firstCondition and secondCondition /* tail */) { return; }
+if (firstCondition || secondCondition // tail
+) { return; }
+if (/* outer */ (/* inner */ firstCondition && secondCondition /* inner tail */) /* outer tail */) { return; }
+for (; firstCondition && secondCondition /* tail */;) { break; }
+auto consume = [](bool value) { return value; };
+consume(firstCondition && secondCondition /* argument */);
+if (consume(firstCondition && secondCondition)) { return; }
+if (consume(firstCondition && secondCondition /* argument */) /* condition */) { return; }
+if (firstCondition = firstCondition && secondCondition /* assignment */) { return; }
+auto sum = (firstCondition + secondCondition /* sum */);
+(void)sum;
+}
+}

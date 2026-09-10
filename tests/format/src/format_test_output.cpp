@@ -6157,7 +6157,7 @@ bool IsRetailPresented(int revision);
 bool Check(int revision, const Context& stores_context) {
     if (
         !helpers::IsRetailPresented(revision) &&
-            stores_context.Depots().size() <= 1 /* Check if solo Depot without extra */
+        stores_context.Depots().size() <= 1 /* Check if solo Depot without extra */
     ) {
         return true;
     }
