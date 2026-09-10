@@ -132,7 +132,6 @@ INSTANTIATE_UTEST_SUITE_P(/* no prefix */, FormatterMacroFixture, testing::Value
 #define FORMAT_EMPTY_TEST(suite, name) void suite()
 FORMAT_EMPTY_TEST(EmptyTestName, /* no name */) {}
 FORMAT_EMPTY_TEST(EmptyTestNameWithoutComment, ) {}
-#undef FORMAT_EMPTY_TEST
 
 FORMAT_API_(, /* empty */) void EmptyPrefix();
 void EmptySuffix() FORMAT_USERVER_LIFETIME_BOUND(,, );
@@ -551,5 +550,3 @@ constexpr int MixedMacroTerminators() {
     }
     return count;
 }
-static_assert(MixedMacroTerminators() == 7);
-#undef FORMAT_USERVER_COMPLETE_STATEMENT

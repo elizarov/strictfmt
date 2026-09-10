@@ -66,7 +66,6 @@
     template <>                                                                                                \
     struct EnumStringTraits<EnumType> {                                                                        \
         static constexpr auto names = std::to_array<std::string_view>({ItemsMacro(ENUM_STRING_DECLARE_NAME)}); \
-        static_assert(enum_string_detail::ValidateCanonicalNames(names));                                      \
     }
 
 ENUM_STRING_DECLARE(FormatFixtureEnum, FORMAT_FIXTURE_ENUM_ITEMS);
@@ -79,8 +78,6 @@ FORMAT_FIXTURE_CREATE_METRIC(
     (second, "Second")  //
     (third, "Third")  //
 )
-#undef FORMAT_FIXTURE_ENUM_ITEMS
-#undef FORMAT_FIXTURE_ENUM_ITEMS_AUX
 #define FORMAT_FIXTURE_TEMP_MACRO(value) (value)
 #undef FORMAT_FIXTURE_TEMP_MACRO
 
@@ -5098,6 +5095,17 @@ auto LambdaPackInitCaptures(T&&... args) {
     return [... values(std::forward<T>(args)), &... references(args)] { return Use(values..., references...); };
 }
 
+namespace StaticAssertSyntax {
+
+static_assert(true);
+static_assert(true, "message");
+static_assert(
+    true,
+    "This diagnostic deliberately makes the static assertion exceed the line limit so its condition and message must be formatted on separate lines."
+);
+
+}
+
 #define FORMAT_NAMESPACE_TRAITS(Type) \
     namespace format_macro {          \
                                       \
@@ -5229,12 +5237,10 @@ constexpr Array<sizeof...(Values)> Make() { return {{{Values, Values + 1}...}}; 
 
 constexpr auto pairs = Make<1, 2>();
 
-static_assert(pairs.values[1].second == 3);
 constexpr int Add(Pair first, Pair second) { return first.first + second.second; }
 template <int... Values>
 constexpr int ExpandArguments() { return Add({Values, Values + 1}...); }
 
-static_assert(ExpandArguments<1, 2>() == 4);
 template <int... Values>
 struct Holder {
     Array<sizeof...(Values)> array;
@@ -5279,16 +5285,18 @@ constexpr Argument operator "" _arg(const char32_t*, decltype(sizeof(0))) { retu
 constexpr Argument operator "" _arg(unsigned long long value) { return {static_cast<int>(value)}; }
 constexpr Argument operator "" _arg(char value) { return {value}; }
 constexpr int Get(Argument arg) { return arg.value; }
-static_assert(Get("field"_arg = 3) == 3);
-static_assert(Get(u8"field"_arg += 4) == 4);
-static_assert(Get(L"field"_arg = 5) == 5);
-static_assert(Get(u"field"_arg = 6) == 6);
-static_assert(Get(U"field"_arg = 7) == 7);
-static_assert(Get(R"(field)"_arg = 8) == 8);
-static_assert(Get("firstsecond"_arg = 9) == 9);
-static_assert(Get("firstsecond"_arg = 10) == 10);
-static_assert(Get(1_arg += 2) == 3);
-static_assert(Get('x'_arg = 11) == 11);
+void AssignLiterals() {
+    Get("field"_arg = 3);
+    Get(u8"field"_arg += 4);
+    Get(L"field"_arg = 5);
+    Get(u"field"_arg = 6);
+    Get(U"field"_arg = 7);
+    Get(R"(field)"_arg = 8);
+    Get("firstsecond"_arg = 9);
+    Get("firstsecond"_arg = 10);
+    Get(1_arg += 2);
+    Get('x'_arg = 11);
+}
 
 }
 
@@ -5318,7 +5326,6 @@ constexpr int InitializedConditions() {
     }
     return total;
 }
-static_assert(InitializedConditions() == 17);
 
 }
 
@@ -5337,7 +5344,6 @@ constexpr bool Evaluate() {
     }
     return false;
 }
-static_assert(Evaluate());
 
 }
 
@@ -5358,7 +5364,6 @@ constexpr bool Check() {
     return first.call() == 3 && second.call() == 4 && third.call() == 5 && value == 4;
 }
 
-static_assert(Check());
 constexpr int offset = 1;
 int designated[4] = {[offset + 1] = 7};
 
@@ -5427,7 +5432,6 @@ FORMAT_QUALIFIED_TEMPLATE;
 FORMAT_QUALIFIED_RECURSIVE;
 FORMAT_QUALIFIED_CONSTANT;
 FORMAT_QUALIFIED_HEADER;
-static_assert(Fifth().number == 1 && Sixth() == 6 && Seventh().number == 1);
 
 }
 
@@ -5564,7 +5568,6 @@ constexpr int Count() {
     FORMAT_MACRO_FINAL_DO(2);
     return result;
 }
-static_assert(Count() == 20);
 int Catch() {
     int result = 0;
     FORMAT_MACRO_TRY(3);
@@ -5631,11 +5634,6 @@ using Int = int;
 
 constexpr Record record{3};
 
-static_assert(SELECT_VALUE(record, value) == 3);
-static_assert(READ_VALUE(&record, value) == 3);
-static_assert(CONVERT_VALUE(record, value, Int) == 3);
-static_assert(CHAIN_VALUE(record, val, ue) == 3);
-static_assert(COMPUTE_VALUE(value) == 21);
 void Assign(Record& target) { ASSIGN_VALUE(target, val, 2); }
 
 }
@@ -5773,8 +5771,6 @@ FORMAT_PASTED_DECL_RESULT(Alpha);
 FORMAT_PASTED_DECL_QUALIFIED(Alpha);
 FORMAT_PASTED_DECL_TEMPLATE(Alpha);
 FORMAT_PASTED_DECL_POINTER(Alpha);
-static_assert(GetAlpha() == 7);
-static_assert(kAlpha == 9);
 
 }
 
@@ -5833,8 +5829,7 @@ namespace MacroTypeDeclarations {
     using Name = Name##Tag;              \
     typedef Name Name##Alias;            \
     using Name##Callback = int (*)(int); \
-    using Name##Function = int(int);     \
-    static_assert(sizeof(Name) > 0);
+    using Name##Function = int(int);
 FORMAT_TYPE_DECLARATIONS(Value);
 struct Owner {
     int member;
@@ -5862,7 +5857,6 @@ FORMAT_TYPE_TEMPLATE(Holder);
     template <class T>            \
     concept Name = sizeof(T) > 0;
 FORMAT_TYPE_CONCEPT(Nonempty);
-static_assert(Nonempty<HolderAlias<int>>);
 #define FORMAT_TYPE_EXTERN(Name) \
     extern "C" {                 \
                                  \
@@ -5929,7 +5923,6 @@ constexpr int Check() {
     Owner owner{1, 2};
     return Sum(owner, &Owner::first, &Owner::second) + Pointers(&owner.first, &owner.second);
 }
-static_assert(Check() == 6);
 
 }
 
@@ -5965,7 +5958,6 @@ constexpr int Exercise(bool enabled) {
     return count;
 }
 
-static_assert(Exercise(false) == 8);
 struct Error {
     Error& operator<<(int);
 };
@@ -5993,7 +5985,6 @@ namespace InlineSemicolonless {
 #define FORMAT_SEMILESS_CONCAT() FORMAT_SEMILESS_TEXT() FORMAT_SEMILESS_TEXT()"end"
 constexpr const char* text = FORMAT_SEMILESS_CONCAT();
 
-static_assert(text[8] == 'e');
 FORMAT_SEMILESS_DECLARE(first)
 FORMAT_SEMILESS_DECLARE(second)
 constexpr int Exercise(bool enabled) {
@@ -6016,13 +6007,10 @@ constexpr int Exercise(bool enabled) {
     FORMAT_SEMILESS_RELAY(value)
     FORMAT_SEMILESS_RETURN(value)
 }
-static_assert(Exercise(true) == 6);
-static_assert(Exercise(false) == 6);
 constexpr int BareName() {
     const int FORMAT_SEMILESS_INC = 3;
     return FORMAT_SEMILESS_INC;
 }
-static_assert(BareName() == 3);
 
 }
 
@@ -6069,10 +6057,6 @@ FORMAT_ANON_ENUM(Generated);
         name = 3,                      \
     };
 FORMAT_ANON_ATTR_ENUM(Annotated);
-static_assert(Good);
-static_assert(Result::Yes);
-static_assert(Generated);
-static_assert(Limit == 255 && Second == 2 && Annotated == 3);
 
 }
 
@@ -6093,8 +6077,6 @@ enum class Character : char {
     B = 'b',
 };
 
-static_assert(static_cast<bool>(Flag::On));
-static_assert(Current == 1);
 enum Attributes {
     Repeated [[maybe_unused]] [[deprecated("use Current")]] = 2,
 };
@@ -6104,7 +6086,6 @@ enum Attributes {
         Current##Name [[maybe_unused]] = 1, \
     };
 FORMAT_ENUM_ATTR(Generated);
-static_assert(CurrentGenerated == 1);
 
 }
 
@@ -6312,15 +6293,6 @@ const char* words[]{FORMAT_COMMA_STRINGS};
 constexpr int values[]{FORMAT_COMMA_VALUES(4)};
 constexpr int trailing[]{FORMAT_COMMA_TRAILING(5)};
 constexpr int expressions[]{FORMAT_COMMA_EXPRESSIONS(false, 4)};
-static_assert(values[1] == 4 && values[3] == 5);
-static_assert(trailing[0] == 5 && trailing[1] == 6);
-static_assert(expressions[0] == 1 && expressions[1] == 6);
-#undef FORMAT_COMMA_STRINGS
-#undef FORMAT_COMMA_VALUES
-#undef FORMAT_COMMA_TRAILING
-#undef FORMAT_COMMA_EXPRESSIONS
-#undef FORMAT_COMMA_SINGLE
-#undef FORMAT_COMMA_PARENTHESIZED
 
 }
 
@@ -6339,7 +6311,6 @@ struct Types {};
 
 #define FORMAT_COMMA_QUALIFIED data::Text, data::Box<int>, data::Box<data::Box<bool>>
 using QualifiedTypes = Types<FORMAT_COMMA_QUALIFIED>;
-#undef FORMAT_COMMA_QUALIFIED
 
 }
 
@@ -6377,8 +6348,6 @@ using AnnotatedReference = Box<Result> (FORMAT_DECLARATOR_ATTRIBUTE(unused)&)(in
 
 Box<Result> (FORMAT_DECLARATOR_MODIFIER*annotated_pointer)(int);
 Box<Result> (FORMAT_DECLARATOR_ATTRIBUTE(unused)*another_pointer)(int);
-#undef FORMAT_DECLARATOR_MODIFIER
-#undef FORMAT_DECLARATOR_ATTRIBUTE
 
 }
 
@@ -6404,14 +6373,6 @@ constexpr Record braced{FORMAT_INITIALIZER_BRACED(pair, 3, 4)};
 constexpr Pair records[]{FORMAT_INITIALIZER_RECORDS(5)};
 constexpr Record nested{FORMAT_INITIALIZER_NESTED(9)};
 constexpr Pair pasted{FORMAT_INITIALIZER_PASTE(fir, 11).second = 12};
-static_assert(fields.second == 2 && braced.pair.first == 3 && records[1].second == 8);
-static_assert(nested.pair.second == 10 && pasted.first == 11);
-#undef FORMAT_INITIALIZER_FIELD
-#undef FORMAT_INITIALIZER_FIELDS
-#undef FORMAT_INITIALIZER_BRACED
-#undef FORMAT_INITIALIZER_RECORDS
-#undef FORMAT_INITIALIZER_NESTED
-#undef FORMAT_INITIALIZER_PASTE
 
 }
 
@@ -6431,8 +6392,6 @@ struct Bits {
 };
 
 constexpr Bits bits{};
-static_assert(bits.enabled && bits.count == 5 && bits.spare == 1);
-static_assert(bits.remaining == 6 && !bits.expression && bits.named_width == 4);
 namespace data {
 
 enum class Mode : unsigned {
@@ -6445,7 +6404,6 @@ enum class Mode : unsigned {
 struct Modes {
     data::Mode mode : 2{data::Mode::Two};
 };
-static_assert(Modes{}.mode == data::Mode::Two);
 
 }
 
@@ -6459,7 +6417,6 @@ struct Bits {
 };
 
 constexpr Bits bits{};
-static_assert(bits.greedy == 0 && bits.bounded == 2);
 
 }
 
@@ -6514,7 +6471,6 @@ struct Pair {
     int first;
     int second;
 };
-static_assert(Fields<Pair>);
 
 }
 
@@ -6532,11 +6488,6 @@ FORMAT_ATTRIBUTE_GNU_ALTERNATE int unused = 1;
 FORMAT_ATTRIBUTE_MIXED int another = 2;
 
 FORMAT_ATTRIBUTE_MS_NOINLINE int External(int value) { return value; }
-#undef FORMAT_ATTRIBUTE_GNU_INLINE
-#undef FORMAT_ATTRIBUTE_GNU_COLD
-#undef FORMAT_ATTRIBUTE_GNU_ALTERNATE
-#undef FORMAT_ATTRIBUTE_MIXED
-#undef FORMAT_ATTRIBUTE_MS_NOINLINE
 
 }
 
@@ -6571,9 +6522,6 @@ void Run(bool condition) {
     FORMAT_TOKEN_STATEMENT(, +);
     Consume(local);
 }
-#undef FORMAT_TOKEN_ITEM
-#undef FORMAT_TOKEN_STATEMENT
-#undef FORMAT_TOKEN_WRAPPER
 
 }
 
@@ -6737,7 +6685,7 @@ void Run() {
 }
 #if 1
 #
-static_assert(value == 1);
+int guarded = value;
 #else
 #
 #endif
@@ -6792,8 +6740,6 @@ struct Values {
 
     int Method(int value FORMAT_PARAMETER_SUFFIX) const { return value; }
 };
-#undef FORMAT_PARAMETER_SUFFIX_CALL
-#undef FORMAT_PARAMETER_SUFFIX
 
 }
 
@@ -6807,7 +6753,6 @@ struct Values {
     FORMAT_TYPE_METHOD(int, Calls, (), (Calltype(__stdcall) const, ref(&), override));
     FORMAT_TYPE_METHOD(int, Empty, (), ());
 };
-#undef FORMAT_TYPE_METHOD
 
 }
 
@@ -6825,7 +6770,6 @@ struct Values {
     FORMAT_TYPE_METHOD(int, Abstract, (((Pair<int, int>))), ());
     FORMAT_TYPE_METHOD(int, Mixed, (int, (int* value), ((int (&array)[2])), (int (*callback)(int))), ());
 };
-#undef FORMAT_TYPE_METHOD
 
 }
 
@@ -6855,7 +6799,6 @@ struct Holder {
 };
 
 Flag decltype(Context::data)::* member = &Data::flag;
-static_assert(sizeof(Member) > 0);
 namespace constraints {
 
 template <class>
@@ -6932,14 +6875,9 @@ struct Owner {
 };
 #define FORMAT_SEMILESS_RECORD_FUNCTION(Name) auto Name() -> struct Record { return {}; }
 FORMAT_SEMILESS_RECORD_FUNCTION(Generated)
-#undef FORMAT_SEMILESS_RECORD_FUNCTION
 
 }
 
-#include <vector>
-#include <tuple>
-#include <type_traits>
-#include <utility>
 namespace SharedTemplateNames {
 
 template <class... T>
@@ -6998,12 +6936,7 @@ template <class T>
 struct Never : std::false_type {};
 
 template <class... Args>
-constexpr void CheckFold() {
-    static_assert(
-        !(Never<std::remove_const_t<std::remove_reference_t<Args>>>::value || ...),
-        "Nested template names remain types throughout a fold expression, including the qualified member access."
-    );
-}
+constexpr bool Fold() { return !(Never<std::remove_const_t<std::remove_reference_t<Args>>>::value || ...); }
 
 }
 
@@ -7077,11 +7010,6 @@ constexpr int commented[]{
 #include "format_initializer_values.inc"
     // The included fragment owns its final comma.
 };
-static_assert(sizeof(assignment) == sizeof(int));
-static_assert(sizeof(direct) == sizeof(int));
-static_assert(sizeof(multiple) == 2 * sizeof(int));
-static_assert(multiple[0] == 2 && multiple[1] == 3);
-static_assert(mixed[0] == 1 && mixed[1] == 2 && mixed[2] == 3);
 
 }
 
@@ -7152,13 +7080,9 @@ void Check() {
     FORMAT_TYPE_ALIAS(ReferenceResult, Value(const int&));
     FORMAT_TYPE_ALIAS(QualifiedResult, detail::Result(int, bool));
     FORMAT_TYPE_ALIAS(TemplateResult, Pair<int, Value>(int));
-    static_assert(FORMAT_TYPE_SIZE(int Value::*) > 0);
-    static_assert(FORMAT_TYPE_SIZE(int (Value::*)() const) > 0);
+    auto memberSize = FORMAT_TYPE_SIZE(int Value::*);
+    auto methodSize = FORMAT_TYPE_SIZE(int (Value::*)() const);
 }
-#undef FORMAT_STATEMENT_DECLARATIONS
-#undef FORMAT_TYPE_SIZE
-#undef FORMAT_TYPE_WORDS
-#undef FORMAT_TYPE_ALIAS
 
 }
 
@@ -7288,14 +7212,6 @@ constexpr int kConditional[] = {
 #endif
     5,
 };
-static_assert(static_cast<int>(Value::Two) == 2);
-static_assert(kValues[0] == 1 && kValues[1] == 2);
-static_assert(kSeparatorGap[0] == 1 && kSeparatorGap[1] == 2);
-#if defined(FORMAT_LIST_ALTERNATIVE)
-static_assert(kConditional[0] == 3);
-#else
-static_assert(kConditional[0] == 4);
-#endif
 constexpr int kExpression = 1
 #define FORMAT_LIST_OPERAND 2
 + FORMAT_LIST_OPERAND
@@ -7347,14 +7263,14 @@ constexpr const char* kRawText = R"tag(
 #define UNEXPANDED 3
 #undef UNEXPANDED
 )tag"
-static_assert(sizeof(FORMAT_LIST_RAW_TEXT) > 1);
-#undef FORMAT_LIST_RAW_TEXT
-static_assert(kExpression == 3 && kCall == 7 && kNested[0][0] == 1);
 constexpr unsigned long long operator "" _quantity(unsigned long long value) { return value; }
 constexpr int operator "" _code(char value) { return value; }
 constexpr decltype(sizeof(0)) operator "" _length(const char*, decltype(sizeof(0)) size) { return size; }
-static_assert(1_quantity == 1 && 'a'_code == 'a' && R"(raw)"_length == 3);
-static_assert(1_quantity == 1);
+
+constexpr auto quantity = 1_quantity;
+constexpr auto code = 'a'_code;
+constexpr auto length = R"(raw)"_length;
+constexpr auto splicedQuantity = 1_quantity;
 
 }
 
@@ -7381,7 +7297,6 @@ FORMAT_TYPE_CHOICE(Choice);
 FORMAT_TYPE_ENUM(Enum);
 #define FORMAT_PRIMITIVE_TYPE unsigned long
 using Size = FORMAT_PRIMITIVE_TYPE;
-#undef FORMAT_PRIMITIVE_TYPE
 #define FORMAT_TYPE_TAG \
     struct NamedType {  \
         int value;      \
@@ -7414,7 +7329,6 @@ void Invoke(const char*, int value, Callback callback) { callback(value); }
         );                                                                                    \
     } while (false)
 void Check() { FORMAT_LAMBDA_CALLBACK(1); }
-static_assert(sizeof(Record) > 0 && sizeof(Choice) > 0 && static_cast<unsigned>(Enum::Second) == 1);
 
 }
 
@@ -7434,7 +7348,6 @@ enum class Generated {
     Last = 5,
 };
 
-#undef FORMAT_LIST_ENUM
 constexpr int kValues[] = {
     0,
 #define FORMAT_LIST_ENTRY(name, value) value,
@@ -7508,17 +7421,6 @@ constexpr const char* kText[] = {FORMAT_SEMILESS_TEXT()"y"};
         Last,                        \
     }
 FORMAT_TYPE_GENERATED(MacroEnum);
-static_assert(kNested[1][2] == 9 && sizeof(kNegative) / sizeof(int) == 3 && kNegative[2] == -1);
-static_assert(kText[0][0] == 'x' && kText[0][1] == 'y' && static_cast<int>(MacroEnum::Last) == 2);
-static_assert(static_cast<int>(Generated::Last) == 5 && static_cast<int>(Generated::Second) == 3);
-static_assert(sizeof(kValues) / sizeof(int) == 5 && kValues[1] == 2 && kValues[4] == 5);
-static_assert(sizeof(kBare) / sizeof(int) == 4 && kBare[3] == 8);
-static_assert(sizeof(kBareFinal) / sizeof(int) == 2 && kBareFinal[1] == 7);
-static_assert(sizeof(kExpression) / sizeof(int) == 1 && sizeof(kCallExpression) / sizeof(int) == 1);
-static_assert(kExplicitComma[0] == 9 && kExpression[0] == 10 && kCallComma[0] == 10 && kCallExpression[0] == 11);
-static_assert(
-    kConditional[2] == 8 && static_cast<int>(BareEnum::Last) == 2 && static_cast<int>(ConditionalEnum::Last) == 2
-);
 
 }
 
@@ -7550,7 +7452,6 @@ constexpr int operator<=>(Rank left, Rank right) { return left.value - right.val
 
 using ThreeWay = Value<Rank{4} <=> Rank{1}>;
 using Ordered = Value<Rank{4} <=> Rank{1} == 3>;
-static_assert(ThreeWay::value == 3 && Ordered::value == 1);
 using Less = Value<1 < 2>;
 using Shift = Value<1 << 3>;
 using Chain = Value<(1 << 2) < 5>;
@@ -7563,18 +7464,12 @@ constexpr int Bits() { return N; }
 
 using Tight = Value<1 < 2>;
 using TightShift = Value<1 << 3>;
-static_assert(Compare<1 < 2>() && Bits<1 << 3>() == 8 && Tight::value == 1 && TightShift::value == 8);
-static_assert(Less::value == 1 && Shift::value == 8 && Chain::value == 1);
-static_assert(sizeof(BeforeEnd<0, int>) == sizeof(int));
-static_assert(Read<0, int>() == 0 && Next<1, int, char, long>() == 2);
-static_assert(Nested::type::type::value == 16);
+
+constexpr auto compared = Compare<1 < 2>();
+constexpr auto shifted = Bits<1 << 3>();
 
 }
 
-#include <tuple>
-#include <optional>
-#include <type_traits>
-#include <utility>
 namespace TemplateArgumentNameRegressions {
 
 template <class T, unsigned... Indices>
@@ -7584,7 +7479,6 @@ auto Make(std::integer_sequence<unsigned, Indices...>) {
 
 using Options = decltype(Make<std::tuple<int, char>>(std::integer_sequence<unsigned, 0, 1>{}));
 
-static_assert(std::tuple_size_v<Options> == 2);
 template <class Signature>
 struct Action {};
 
@@ -7634,7 +7528,6 @@ auto Parse(Node node) {
 
 }
 
-#include <type_traits>
 namespace TemplateArgumentRecursiveConversions {
 
 template <class Signature>
@@ -7684,11 +7577,13 @@ template <class T>
 constexpr int operator-(Item item) { return item.value; }
 template <auto Function>
 constexpr int Invoke() { return Function(Item{4}); }
+void InvokeOperators() {
+    Invoke<TemplateArgumentValueNames::operator+>();
+    Invoke<TemplateArgumentValueNames::operator-<int>>();
+    Invoke<operator-<int>>();
+    Invoke<TemplateArgumentValueNames::template operator-<int>>();
+}
 
-static_assert(Invoke<TemplateArgumentValueNames::operator+>() == 4);
-static_assert(Invoke<TemplateArgumentValueNames::operator-<int>>() == 4);
-static_assert(Invoke<operator-<int>>() == 4);
-static_assert(Invoke<TemplateArgumentValueNames::template operator-<int>>() == 4);
 template <int N>
 struct Value {
     static constexpr int value = N;
@@ -7705,14 +7600,9 @@ using Qualified = Value<limits::low < 2>;
 using Variable = Value<(limits::high<int>) < 5>;
 using ValueSum = Value<limits::high<int> + 1>;
 using Shift = Value<limits::low << 3>;
-static_assert(Qualified::value == 1 && Variable::value == 1 && ValueSum::value == 5 && Shift::value == 8);
 
 }
 
-#include <optional>
-#include <string>
-#include <tuple>
-#include <vector>
 namespace TemplateArgumentWideLists {
 
 struct First {};
@@ -7780,7 +7670,6 @@ template <template <class...> class... Gates>
 struct Fusion {};
 
 using Gate = Fusion<Bind<Dependency, Wrapper<First>>::template First, Dependency>;
-static_assert(sizeof(Gate) > 0);
 namespace kit {
 
 namespace framework {
@@ -7800,11 +7689,9 @@ using Bound = Bind<T, U>;
 namespace gates = kit::framework;
 using ScopedGate =
     gates::Fused<kit::Bound<gates::Dependencies, kit::framework::Wrapped<First>>::template First, gates::Dependencies>;
-static_assert(sizeof(ScopedGate) > 0);
 
 }
 
-#include <type_traits>
 namespace TemplateArgumentConversionPair {
 
 template <class Signature>
@@ -7838,28 +7725,29 @@ namespace TemplateArgumentAngleBoundaries {
 
 template <class T>
 constexpr int Value = 16;
+constexpr auto greater = Value<int> > 1;
+constexpr auto shifted = Value<int> >> 1;
+constexpr auto greaterOrEqual = Value<int> >= 16;
+constexpr auto shiftedGreater = Value<int> >> 1 > 2;
 
-static_assert(Value<int> > 1);
-static_assert(Value<int> >> 1 == 8);
-static_assert(Value<int> >= 16);
-static_assert(Value<int> >> 1 > 2);
 template <class T>
 struct Box {
     static constexpr int value = 16;
 };
 
-static_assert(Box<Box<int>>::value >> 1 == 8);
+constexpr auto nestedShift = Box<Box<int>>::value >> 1;
+
 template <int N>
 struct Number {
     static constexpr int value = N;
 };
 
-static_assert(Number<(Value<int> >> 1)>::value == 8);
+constexpr auto argumentShift = Number<(Value<int> >> 1)>::value;
+
 constexpr int Shift(int value) {
     value >>= 1;
     return value >> 1;
 }
-static_assert(Shift(16) == 4);
 
 }
 
@@ -7924,23 +7812,8 @@ struct Conditional {
 #endif
     FORMAT_BARE_EXTRA
 };
-static_assert(Plain{}.first == 1 && Plain{}.last == 3);
-static_assert(Combined{}.first == 1 && Combined{}.second == 2 && Combined{}.last == 3);
-static_assert(Access{}.first == 1 && Access{}.second == 2);
-static_assert(Nested::Inner{}.second == 2 && Generic<int>{}.first == 1);
-static_assert(Generated{}.last == 3 && Conditional{}.second == 2);
-static_assert(sizeof(Storage) >= sizeof(int));
 #define FORMAT_BARE_INCREMENT(Value) ((Value) + 1)
 #define FORMAT_TYPE_FORWARD_BARE(Value) FORMAT_BARE_INCREMENT(Value)
-static_assert(FORMAT_TYPE_FORWARD_BARE(2) == 3);
-#undef FORMAT_TYPE_FORWARD_BARE
-#undef FORMAT_BARE_INCREMENT
-#undef FORMAT_BARE_FIELD
-#undef FORMAT_BARE_EXTRA
-#undef FORMAT_BARE_EMPTY
-#undef FORMAT_BARE_COMBINED
-#undef FORMAT_BARE_UNION_FIELD
-#undef FORMAT_SEMILESS_DECLARE_GENERATED
 
 }
 
@@ -8015,7 +7888,6 @@ FORMAT_TYPE_SEQUENCE_HEADER(WithPrefix) { return value; }
     template <class T>             \
     constexpr T Name = 42
 FORMAT_TYPE_VARIABLE(Answer);
-static_assert(Answer<int> == 42);
 namespace Details {
 
 struct Trace {
@@ -8028,21 +7900,6 @@ struct Trace {
 #define FORMAT_TYPE_TRACE(Message) \
     const ::TemplateHeaderMacros::Details::Trace FORMAT_JOIN(trace_, __LINE__)(__FILE__, __LINE__, (Message))
 void UseTrace() { FORMAT_TYPE_TRACE(42); }
-#undef FORMAT_TYPE_TRACE
-#undef FORMAT_JOIN
-#undef FORMAT_JOIN_INNER
-#undef FORMAT_TYPE_VARIABLE
-#undef FORMAT_TYPE_SEQUENCE_HEADER
-#undef FORMAT_TYPE_VOID_HEADER
-#undef FORMAT_TYPE_ARRAY_HEADER
-#undef FORMAT_TYPE_TRAILING_HEADER
-#undef FORMAT_TYPE_FACTORY_HEADER
-#undef FORMAT_TYPE_REFERENCE_HEADER
-#undef FORMAT_TYPE_CONSTRAINED_SUFFIX
-#undef FORMAT_TYPE_CONSTRAINED_HEADER
-#undef FORMAT_TYPE_NESTED_HEADER
-#undef FORMAT_TYPE_SPECIALIZED_HEADER
-#undef FORMAT_TYPE_TEMPLATE_HEADER
 
 }
 
@@ -8121,8 +7978,6 @@ int Twice(int value) { return value * 2; }
 #endif
 
 }
-#undef FORMAT_GUARDED_NAMESPACE_SEEN
-#undef FORMAT_GUARDED_NAMESPACE_ENABLED
 
 }
 
@@ -8157,15 +8012,6 @@ constexpr int Arguments(int value) { return Add(value FORMAT_SEMILESS_ADD(1)); }
 constexpr bool Initializer = true FORMAT_BARE_TRUE_TAIL;
 constexpr int Values[] = {1 FORMAT_SEMILESS_ADD(2), 3 FORMAT_SEMILESS_ADD(4)};
 
-static_assert(Same(2, 2));
-static_assert(!Same(2, 3));
-static_assert(Add(1) == 6);
-static_assert(Parenthesized(1) == 9);
-static_assert(Arguments(1) == 7);
-static_assert(Conditional(true, 2, 2));
-static_assert(!Conditional(false, 2, 2));
-static_assert(Initializer);
-static_assert(Values[0] == 3 && Values[1] == 7);
 void Statements(int& value) {
     if (true FORMAT_BARE_TRUE_TAIL) {
         value = value FORMAT_SEMILESS_ADD(1);
@@ -8184,7 +8030,6 @@ using TemplateValue = Constant<1 FORMAT_SEMILESS_ADD(2)>;
 using ParenthesizedTemplateValue = Constant<(3 > 2) FORMAT_SEMILESS_ADD(2)>;
 using NestedTemplateValue = Constant<Constant<1 FORMAT_SEMILESS_ADD(2)>::value FORMAT_SEMILESS_ADD(4)>;
 
-static_assert(TemplateValue::value == 3 && ParenthesizedTemplateValue::value == 3 && NestedTemplateValue::value == 7);
 #define FORMAT_BARE_LIST_VALUES 3, 4,
 #define FORMAT_BARE_LIST_EMPTY
 #define FORMAT_SEMILESS_LIST_VALUES() 5, 6,
@@ -8198,18 +8043,5 @@ constexpr int CallList[] = {
     FORMAT_SEMILESS_LIST_VALUES()
     FORMAT_SEMILESS_LIST_EMPTY()
 };
-static_assert(sizeof(BareList) / sizeof(int) == 2 && BareList[1] == 4);
-static_assert(sizeof(CallList) / sizeof(int) == 3 && CallList[2] == 6);
-#undef FORMAT_SEMILESS_LIST_EMPTY
-#undef FORMAT_SEMILESS_LIST_VALUES
-#undef FORMAT_BARE_LIST_EMPTY
-#undef FORMAT_BARE_LIST_VALUES
-#undef FORMAT_SEMILESS_EQUAL
-#undef FORMAT_TOKEN_COMPARE
-#undef FORMAT_BARE_TRUE_TAIL
-#undef FORMAT_SEMILESS_ADD
-#undef FORMAT_SEMILESS_COMPARE
-#undef FORMAT_FIXTURE_ARITHMETIC_TAIL
-#undef FORMAT_FIXTURE_LOGICAL_TAIL
 
 }

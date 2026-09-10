@@ -23,6 +23,12 @@ golden output fixtures are also reparsed with their owning style and must format
 back to the same text. This idempotence check catches formatter output that
 looks correct once but cannot be accepted as stable input.
 
+Golden fixtures are not compiled. Use `static_assert` only to exercise its
+syntax and layout, not to check types, values, or initialization. Omit library
+includes needed only for compilation and macro cleanup `#undef` directives
+after completed examples; retain directive formatting, sorting, and grouping
+cases and directives embedded in lists or other syntactic constructs.
+
 The project sources under `src/` must already be formatted with the repository
 configuration. The suite enforces this invariant with a recursive dry run of the
 built formatter.
