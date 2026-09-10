@@ -24,7 +24,8 @@ This document specifies the source layout produced by `strictfmt`. Wrapping exam
 - Keep the reflection operator and splice delimiters tight, e.g. `value.[:member:]`.
 - Put one space between a structured-binding pack ellipsis and its identifier, e.g. `[first, ... rest]`.
 - Bind type declarator symbols to the type, e.g. `int* value`.
-- Treat `operator` plus a following symbolic operator as one function name, e.g. `operator==(`. Separate a terminal `<` or `<<` from a following template-argument opener, e.g. `operator< <T>`.
+- Treat `operator` plus a following symbolic operator as one function name, e.g. `operator==(`.
+- Separate a terminal `<` or `<<` from a following template-argument opener, e.g. `operator< <T>`.
 - Put one space after `operator` for conversion, allocation, and deallocation operators, e.g. `operator bool(`.
 - Treat destructor `~` plus the following type name as one function name, e.g. `~Widget(`.
 - Put no space between a C-style cast and the expression it prefixes, e.g. `(void)value`.
@@ -32,7 +33,7 @@ This document specifies the source layout produced by `strictfmt`. Wrapping exam
 - Put no space before access-specifier, label, or `case` colons, e.g. `public:`.
 - Put no spaces around qualification or member-access operators, e.g. `std::string`.
 - Put two spaces before a trailing `//` comment, e.g. `value;  // note`.
-- Separate inline `/* ... */` comments from neighboring tokens by one space, except after opening delimiters for non-trailing comments or before closing delimiters, commas, or semicolons.
+- Use one space around inline `/* ... */` comments, respecting delimiter and separator spacing.
 - Put no space between `#` and any preprocessor directive keyword, e.g. `#include`.
 - Put one space after a preprocessor directive keyword before its operand, e.g. `#pragma once`.
 
