@@ -25,4 +25,29 @@ struct Record {
 };
 
 }
+
 END_NAMESPACE
+
+// Unknown modifiers remain parseable throughout class headers.
+class [[nodiscard]] API_EXPORT Annotated : public Base {
+    class API_EXPORT(tag(Nested(value))) NestedType final : public Base {};
+};
+
+struct API_EXPORT(tag) AnnotatedRecord {
+    int field;
+};
+
+union API_EXPORT AnnotatedValue {
+    int number;
+    char byte;
+};
+
+template <class T>
+class API_EXPORT Template : public Base<T> {};
+
+class API_EXPORT Forward;
+
+class Ordinary* pointer;
+
+class Ordinary function();
+auto RecordFunctionPointer() -> struct Ordinary (*)(int) { return nullptr; }

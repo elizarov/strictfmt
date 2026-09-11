@@ -18300,6 +18300,10 @@
               {
                 "type": "SYMBOL",
                 "name": "function_prefix_macro"
+              },
+              {
+                "type": "SYMBOL",
+                "name": "_unconfigured_class_modifier"
               }
             ]
           }
@@ -18321,6 +18325,39 @@
           "name": "_class_declaration_item"
         }
       ]
+    },
+    "_unconfigured_class_modifier_identifier": {
+      "type": "PREC_DYNAMIC",
+      "value": -10,
+      "content": {
+        "type": "SYMBOL",
+        "name": "identifier"
+      }
+    },
+    "_unconfigured_class_modifier": {
+      "type": "PREC_RIGHT",
+      "value": 0,
+      "content": {
+        "type": "SEQ",
+        "members": [
+          {
+            "type": "SYMBOL",
+            "name": "_unconfigured_class_modifier_identifier"
+          },
+          {
+            "type": "CHOICE",
+            "members": [
+              {
+                "type": "SYMBOL",
+                "name": "argument_list"
+              },
+              {
+                "type": "BLANK"
+              }
+            ]
+          }
+        ]
+      }
     },
     "_class_declaration_item": {
       "type": "PREC_RIGHT",
@@ -38410,6 +38447,10 @@
     }
   ],
   "conflicts": [
+    [
+      "_unconfigured_class_modifier_identifier",
+      "_class_name"
+    ],
     [
       "type_specifier",
       "_unconfigured_macro_item",

@@ -298,6 +298,7 @@ module.exports = grammar(C, {
   ],
 
   conflicts: $ => [
+    [$._unconfigured_class_modifier_identifier, $._class_name],
     [$.type_specifier, $._unconfigured_macro_item, $.preproc_declaration_modifier],
     [$._unconfigured_macro_item, $.preproc_declaration_modifier],
     [$._unconfigured_macro_item, $._non_pointer_declarator],
@@ -1394,10 +1395,24 @@ module.exports = grammar(C, {
     elaborated_type_descriptor: $ => typeDescriptor($, $.elaborated_type_specifier),
 
     _class_declaration: $ => seq(
-      repeat(choice($.attribute_specifier, $.alignas_qualifier, $.attribute_declaration, $.function_prefix_macro)),
+      repeat(choice(
+        $.attribute_specifier,
+        $.alignas_qualifier,
+        $.attribute_declaration,
+        $.function_prefix_macro,
+        $._unconfigured_class_modifier,
+      )),
       optional($.ms_declspec_modifier),
       $._class_declaration_item,
     ),
+
+    _unconfigured_class_modifier_identifier: $ => prec.dynamic(-10, $.identifier),
+
+    _unconfigured_class_modifier: $ => prec.right(seq(
+      $._unconfigured_class_modifier_identifier,
+      optional($.argument_list),
+    )),
+
     _class_declaration_item: $ => prec.right(seq(
       choice(
         field('name', $._class_name),

@@ -2400,6 +2400,10 @@
           "named": true
         },
         {
+          "type": "argument_list",
+          "named": true
+        },
+        {
           "type": "attribute_declaration",
           "named": true
         },
@@ -2413,6 +2417,10 @@
         },
         {
           "type": "function_prefix_macro",
+          "named": true
+        },
+        {
+          "type": "identifier",
           "named": true
         },
         {
@@ -15276,6 +15284,10 @@
           "named": true
         },
         {
+          "type": "argument_list",
+          "named": true
+        },
+        {
           "type": "attribute_declaration",
           "named": true
         },
@@ -15289,6 +15301,10 @@
         },
         {
           "type": "function_prefix_macro",
+          "named": true
+        },
+        {
+          "type": "identifier",
           "named": true
         },
         {
@@ -17001,6 +17017,10 @@
           "named": true
         },
         {
+          "type": "argument_list",
+          "named": true
+        },
+        {
           "type": "attribute_declaration",
           "named": true
         },
@@ -17014,6 +17034,10 @@
         },
         {
           "type": "function_prefix_macro",
+          "named": true
+        },
+        {
+          "type": "identifier",
           "named": true
         },
         {
