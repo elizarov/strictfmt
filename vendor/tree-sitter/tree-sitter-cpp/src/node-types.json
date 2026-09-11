@@ -10561,6 +10561,10 @@
           "named": true
         },
         {
+          "type": "macro_call_item",
+          "named": true
+        },
+        {
           "type": "macro_method_declaration",
           "named": true
         },
@@ -11405,6 +11409,10 @@
           "named": true
         },
         {
+          "type": "macro_call_item",
+          "named": true
+        },
+        {
           "type": "macro_method_declaration",
           "named": true
         },
@@ -12078,6 +12086,10 @@
         },
         {
           "type": "linkage_specification",
+          "named": true
+        },
+        {
+          "type": "macro_call_item",
           "named": true
         },
         {

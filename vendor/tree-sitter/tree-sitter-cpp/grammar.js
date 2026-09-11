@@ -298,6 +298,11 @@ module.exports = grammar(C, {
   ],
 
   conflicts: $ => [
+    [$.macro_enumerator_list, $._enumerator_list_item],
+    [$.enumerator_list, $.macro_enumerator_list, $._enumerator_list_item],
+    [$.enumerator_list, $._enumerator_list_item],
+    [$.enumerator, $._call_identifier],
+    [$.enumerator, $.expression, $._call_identifier],
     [$.expression, $._macro_list_fragment, $.macro_expression_continuation],
     [$._macro_list_fragment, $.block_macro_call_line_item],
     [$.expression, $._macro_list_fragment],
@@ -1255,7 +1260,7 @@ module.exports = grammar(C, {
     ...preprocIf('_in_field_declaration_list', $ => $._field_declaration_list_item, 2),
     ...preprocIf(
       '_in_enumerator_list',
-      $ => choice(seq($.enumerator, ','), seq($._macro_list_fragment, optional(','))),
+      $ => $._enumerator_list_item,
       0,
       PREPROC_IFDEF | PREPROC_ELSE,
       false,
@@ -1684,11 +1689,16 @@ module.exports = grammar(C, {
       optional(seq('=', field('value', $.expression))),
     ),
 
+    _enumerator_list_item: $ => choice(
+      seq(choice($.enumerator, $.macro_call_item), ','),
+      seq($._macro_list_fragment, optional(',')),
+      prec.dynamic(-10, $.enumerator),
+    ),
+
     enumerator_list: $ => seq(
       '{',
       repeat(choice(
-        seq(choice($.enumerator, $.macro_call_item), ','),
-        seq($._macro_list_fragment, optional(',')),
+        $._enumerator_list_item,
         alias($.preproc_if_in_enumerator_list, $.preproc_if),
         alias($.preproc_ifdef_in_enumerator_list, $.preproc_ifdef),
         seq($.preproc_call, ','),

@@ -10,6 +10,7 @@ MacroCategories:
     - END_NAMESPACE
     - GENERATED_MEMBERS
     - ANNOTATION
+    - ENUM_PREFIX
   DeclarationPrefixMacros:
     - API_EXPORT
   StatementArgumentMacros:
