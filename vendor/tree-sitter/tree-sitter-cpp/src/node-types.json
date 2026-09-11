@@ -1980,6 +1980,10 @@
         "required": true,
         "types": [
           {
+            "type": "expression",
+            "named": true
+          },
+          {
             "type": "semicolonless_call_macro_identifier",
             "named": true
           },

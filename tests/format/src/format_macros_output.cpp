@@ -1435,10 +1435,14 @@
 #define EPC_ALGO_VERSION 17
 
 // eats-pricing-calculator/src/algorithms/global/logging.hpp
-#define ALGO_LOG(level, cfg_level)                                                                    \
-    for (bool _algo_log_fire = ::algorithms::global::ShouldLog((level), (cfg_level)); _algo_log_fire; \
-         _algo_log_fire = false)                                                                      \
-    LOG(level)
+#define ALGO_LOG(level, cfg_level)                                                   \
+    for (                                                                            \
+        bool _algo_log_fire = ::algorithms::global::ShouldLog((level), (cfg_level)); \
+        _algo_log_fire;                                                              \
+        _algo_log_fire = false                                                       \
+    ) {                                                                              \
+        LOG(level)                                                                   \
+    }
 
 // eats-pricing-calculator/src/algorithms/thresholds/v1/tests/basic_test.cpp
 #define THRESHOLDS_BASIC_TEST Y_CAT(Y_CAT(ThresholdsV, EPC_ALGO_VERSION), Test)
@@ -1468,8 +1472,10 @@
 #define EPC_ALGO_VERSION 24
 
 // eats-pricing-calculator/src/infra/logging/logger.hpp
-#define INFRA_LOG(logger, level) \
-    for (bool _infra_log_fire = (logger).ShouldLog(level); _infra_log_fire; _infra_log_fire = false) LOG(level)
+#define INFRA_LOG(logger, level)                                                                       \
+    for (bool _infra_log_fire = (logger).ShouldLog(level); _infra_log_fire; _infra_log_fire = false) { \
+        LOG(level)                                                                                     \
+    }
 
 // eats-report-storage/src/models/sync/sync_data_validation.cpp
 #define CHECK_POSITIVE(PROPERTY)                                                                          \
@@ -2664,38 +2670,32 @@
 #define I_MDA_CONVERT_SEQ_Y0
 
 // market-delivery-actualizer/src/utils/metrics.hpp
-#define I_MDA_GENERATE_METRIC_SEQ(p_module, p_variable, p_tag, p_seq)                                    \
-    struct p_module {                                                                                    \
-        I_MDA_METRICS_DEFINE_FIELDS(p_seq)                                                               \
-    };                                                                                                   \
-                                                                                                         \
-    [[maybe_unused]] inline void DumpMetric(::utils::statistics::Writer& writer, const p_module& stat) { \
-        I_MDA_METRICS_GENERATE_DUMPING(p_seq)                                                            \
-    }                                                                                                    \
-                                                                                                         \
-    [[maybe_unused]] inline void ResetMetric(p_module& stat) { I_MDA_METRICS_GENERATE_RESETTING(p_seq) } \
-                                                                                                         \
+#define I_MDA_GENERATE_METRIC_SEQ(p_module, p_variable, p_tag, p_seq)                                  \
+    struct p_module {                                                                                  \
+        I_MDA_METRICS_DEFINE_FIELDS(p_seq)                                                             \
+    };                                                                                                 \
+    [[maybe_unused]] inline void                                                                       \
+        DumpMetric(::utils::statistics::Writer& writer, const p_module& stat)                          \
+    { I_MDA_METRICS_GENERATE_DUMPING(p_seq)                                                            \
+    }                                                                                                  \
+    [[maybe_unused]] inline void ResetMetric(p_module& stat) { I_MDA_METRICS_GENERATE_RESETTING(p_seq) \
+    }                                                                                                  \
     inline const ::utils::statistics::MetricTag<p_module> p_variable{mda::metrics::CreateMetricPath(p_tag)};
 
 // market-delivery-actualizer/src/utils/metrics.hpp
-#define I_MDA_GENERATE_BASE_METRIC_STRUCT(p_module, p_seq)                                               \
-    struct p_module {                                                                                    \
-        I_MDA_METRICS_DEFINE_FIELDS(p_seq)                                                               \
-    };                                                                                                   \
-                                                                                                         \
-    [[maybe_unused]] inline void                                                                         \
-        p_module##_DumpMetricImpl(::utils::statistics::Writer& writer, const p_module& stat) {           \
-        I_MDA_METRICS_GENERATE_DUMPING(p_seq)                                                            \
-    }                                                                                                    \
-                                                                                                         \
-    [[maybe_unused]] inline void p_module##_ResetMetricImpl(p_module& stat) {                            \
-        I_MDA_METRICS_GENERATE_RESETTING(p_seq)                                                          \
-    }                                                                                                    \
-                                                                                                         \
-    [[maybe_unused]] inline void DumpMetric(::utils::statistics::Writer& writer, const p_module& stat) { \
-        p_module##_DumpMetricImpl(writer, stat);                                                         \
-    }                                                                                                    \
-                                                                                                         \
+#define I_MDA_GENERATE_BASE_METRIC_STRUCT(p_module, p_seq)                                                            \
+    struct p_module {                                                                                                 \
+        I_MDA_METRICS_DEFINE_FIELDS(p_seq)                                                                            \
+    };                                                                                                                \
+    [[maybe_unused]] inline void                                                                                      \
+        p_module##_DumpMetricImpl(::utils::statistics::Writer& writer, const p_module& stat)                          \
+    { I_MDA_METRICS_GENERATE_DUMPING(p_seq)                                                                           \
+    }                                                                                                                 \
+    [[maybe_unused]] inline void p_module##_ResetMetricImpl(p_module& stat) { I_MDA_METRICS_GENERATE_RESETTING(p_seq) \
+    }                                                                                                                 \
+    [[maybe_unused]] inline void DumpMetric(::utils::statistics::Writer& writer, const p_module& stat) {              \
+        p_module##_DumpMetricImpl(writer, stat);                                                                      \
+    }                                                                                                                 \
     [[maybe_unused]] inline void ResetMetric(p_module& stat) { p_module##_ResetMetricImpl(stat); }
 
 // market-delivery-actualizer/src/utils/metrics.hpp
@@ -2795,17 +2795,16 @@
 #define I_DYN2YT_CONVERT_SEQ_Y0
 
 // market-hide-offers-dyn2yt/src/utils/metrics.hpp
-#define I_DYN2YT_GENERATE_METRIC_SEQ(p_module, p_variable, p_tag, p_seq)                                    \
-    struct p_module {                                                                                       \
-        I_DYN2YT_METRICS_DEFINE_FIELDS(p_seq)                                                               \
-    };                                                                                                      \
-                                                                                                            \
-    [[maybe_unused]] inline void DumpMetric(::utils::statistics::Writer& writer, const p_module& stat) {    \
-        I_DYN2YT_METRICS_GENERATE_DUMPING(p_tag, p_seq)                                                     \
-    }                                                                                                       \
-                                                                                                            \
-    [[maybe_unused]] inline void ResetMetric(p_module& stat) { I_DYN2YT_METRICS_GENERATE_RESETTING(p_seq) } \
-                                                                                                            \
+#define I_DYN2YT_GENERATE_METRIC_SEQ(p_module, p_variable, p_tag, p_seq)                                  \
+    struct p_module {                                                                                     \
+        I_DYN2YT_METRICS_DEFINE_FIELDS(p_seq)                                                             \
+    };                                                                                                    \
+    [[maybe_unused]] inline void                                                                          \
+        DumpMetric(::utils::statistics::Writer& writer, const p_module& stat)                             \
+    { I_DYN2YT_METRICS_GENERATE_DUMPING(p_tag, p_seq)                                                     \
+    }                                                                                                     \
+    [[maybe_unused]] inline void ResetMetric(p_module& stat) { I_DYN2YT_METRICS_GENERATE_RESETTING(p_seq) \
+    }                                                                                                     \
     inline const ::utils::statistics::MetricTag<p_module> p_variable{dyn2yt::metrics::CreateMetricPath(p_tag)};
 
 // market-hide-offers-dyn2yt/src/utils/metrics.hpp
@@ -3952,6 +3951,7 @@
 // vehicle-permits/src/utils/unordered_requirements.hpp
 #define UNORDERED_REQUIREMENTS_STD_HASH(Type, fields)                              \
     namespace std {                                                                \
+                                                                                   \
     template <>                                                                    \
     struct hash<Type> {                                                            \
         size_t operator()(const Type& value) const noexcept {                      \
@@ -3960,6 +3960,7 @@
             return seed;                                                           \
         }                                                                          \
     };                                                                             \
+                                                                                   \
     }
 
 // vehicle-permits/src/utils/unordered_requirements.hpp

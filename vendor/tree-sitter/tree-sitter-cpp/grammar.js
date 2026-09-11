@@ -303,6 +303,7 @@ module.exports = grammar(C, {
     [$.argument_list, $.macro_parenthesized_argument],
     [$.preprocessing_token_argument_list, $.macro_parenthesized_argument],
     [$.expression, $.macro_preprocessing_token_sequence_argument],
+    [$.call_expression, $._unconfigured_statement_callee],
     [$._unconfigured_modifier_identifier, $.declaration_suffix_preproc_ifdef],
     [$.co_yield_statement, $._preprocessing_keyword],
     [$.co_return_statement, $._preprocessing_keyword],
@@ -1108,23 +1109,28 @@ module.exports = grammar(C, {
 
     class_macro_call: $ => $.macro_call_item,
 
-    block_macro_call_line_item: $ => prec.dynamic(10, prec.right(PREC.CALL + 8, seq(
-      semicolonlessMacroCall($),
-      optional($._line_break_whitespace),
-    ))),
+    _unconfigured_statement_callee: $ => prec.dynamic(-10, prec(PREC.CALL, $.expression)),
+
+    block_macro_call_line_item: $ => choice(
+      prec.dynamic(10, prec.right(PREC.CALL + 8, seq(
+        semicolonlessMacroCall($),
+        optional($._line_break_whitespace),
+      ))),
+      callExpression($, $._unconfigured_statement_callee),
+    ),
 
     block_macro_call_statement_item: $ => prec.dynamic(10, prec.right(PREC.CALL + 8, seq(
       semicolonlessMacroCall($),
       ';',
     ))),
 
-    top_level_call_statement: $ => prec.right(PREC.CALL + 4, seq(
+    top_level_call_statement: $ => prec.dynamic(1, prec.right(PREC.CALL + 4, seq(
       field('function', $._call_identifier),
       field('arguments', $.argument_list),
       optional(field('suffix', $.bare_macro_identifier)),
       optional($.macro_arrow_chain),
       optional(';'),
-    )),
+    ))),
 
     top_level_macro_call_line_item: $ => prec.dynamic(10, prec(PREC.CALL + 8, seq(
       semicolonlessMacroCall($),
@@ -3802,8 +3808,8 @@ module.exports = grammar(C, {
       semicolonlessMacroCall($),
     )),
 
-    call_expression: ($, original) => choice(
-      prec.dynamic(1, original),
+    call_expression: $ => choice(
+      prec.dynamic(1, callExpression($, $.expression)),
       prec(PREC.CALL, semicolonlessMacroCall($)),
       prec(PREC.CALL, seq(
         field('function', choice(
@@ -4712,6 +4718,13 @@ function memberPointerDeclarator($, declarator) {
     pointerQualifiers($),
     field('declarator', declarator),
   )));
+}
+
+function callExpression($, callee) {
+  return prec(PREC.CALL, seq(
+    field('function', callee),
+    field('arguments', $.argument_list),
+  ));
 }
 
 function declarationSuffixModifier($) {

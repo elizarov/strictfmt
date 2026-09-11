@@ -109,3 +109,70 @@ CHECK_STATEMENT(Value value(input),Error);
 CHECK_STATEMENT(Value value(Convert(data.As<ns::Input>())),Error);
 CHECK_STATEMENT(Value value({{"label",1,2,3}}),Error);
 }
+
+// Unconfigured calls may terminate statements without an explicit semicolon.
+void StatementsWithoutTerminators(){
+STEP(first)
+Consume(value);
+STEP(second);
+if(ready) STEP(third) else STEP(fourth)
+while(ready) STEP(next)
+for(auto item:items) STEP(item)
+do STEP(value) while(ready);
+switch(value){case 0: STEP(value) break;default: STEP(fallback)}
+STEP(done)
+}
+#define RUN_STEP(value) do {STEP(value)} while(false)
+
+// A complete C++ call retains its callee when intermediate calls could end a statement.
+template<class F,class T> void Apply(F&& function,T&& value){
+ns::forward<F>(function)(ns::forward<T>(value));
+}
+
+// Namespace and block call alternatives keep equal preference through conditionals.
+#ifndef ENABLE_OPTIONS
+DECLARE_OPTION(option3);
+DECLARE_OPTION(option4);
+DECLARE_COUNT(option6);
+DECLARE_OPTION(option7);
+DECLARE_COUNT(option8);
+DECLARE_COUNT(option9);
+DECLARE_OPTION(option10);
+DECLARE_OPTION(option11);
+DECLARE_COUNT(option12);
+DECLARE_OPTION(option13);
+DECLARE_TEXT(option15);
+#if ENABLE_EXTRA
+DECLARE_TEXT(option17);
+#endif
+namespace call_types {
+namespace detail {
+class [[nodiscard]] Comparison {
+  template <
+      typename traits::EnableIf<!traits::IsIntegral<Left>::value ||
+                              !traits::IsPointer<Right>::value>::type* = nullptr>
+  static Result Compare(
+      traits::Null , Value* right) {
+    return CompareValues(left_text, right_text, static_cast<Value*>(nullptr),
+                       right);
+  }
+};
+Result Describe(const char* left_text, const char* right_text,
+                                   const char* op) {
+  return MakeResult()
+         << " vs " << FormatValues(left, right);
+}
+class API_EXPORT [[nodiscard]] Helper {
+  Helper(Event::Kind type, const char* file, int line,
+               traits::String message);
+  struct Data {
+  };
+};
+}
+Info* Register(const char* suite, const char* test,
+                       const char* file, int line, Factory factory) {
+  return detail::RegisterInfo(
+      new FactoryAdapter{traits::Move(factory)});
+}
+}
+#endif
