@@ -11,3 +11,5 @@ MacroCategories:
     - GENERATED_MEMBERS
   DeclarationPrefixMacros:
     - API_EXPORT
+  StatementArgumentMacros:
+    - CHECK_STATEMENT

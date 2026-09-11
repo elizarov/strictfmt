@@ -177,13 +177,13 @@ function macroStatementSequence($, declarations = []) {
   return prec.right(seq(
     repeat1(choice(
       ...declarations,
-      seq($.macro_complete_statement_item, ';'),
-      $.compound_statement,
-      $.if_statement,
-      $.for_statement,
-      $.while_statement,
-      $.switch_statement,
-      $.try_statement,
+      // At argument depth, commas separate arguments rather than expression statements.
+      cppStatements($, choice(
+        ...C.grammar.rules._non_case_statement.members.filter(member => member.name !== 'expression_statement'),
+        $.macro_empty_statement_argument,
+        seq(alias($.macro_expression_without_semicolon, $.expression_statement), ';'),
+        alias($.macro_statement_argument_expression_statement, $.expression_statement),
+      )),
     )),
     optional($.macro_call_statement_item),
   ));
@@ -298,6 +298,15 @@ module.exports = grammar(C, {
   ],
 
   conflicts: $ => [
+    [$.co_yield_statement, $._preprocessing_keyword],
+    [$.co_return_statement, $._preprocessing_keyword],
+    [$.labeled_statement, $._preprocessing_token],
+    [$.goto_statement, $._preprocessing_keyword],
+    [$.continue_statement, $._preprocessing_keyword],
+    [$.break_statement, $._preprocessing_keyword],
+    [$.return_statement, $._preprocessing_keyword],
+    [$.for_statement, $.for_range_loop, $._preprocessing_keyword],
+    [$.do_statement, $._preprocessing_keyword],
     [$._unconfigured_class_modifier_identifier, $._class_name],
     [$.type_specifier, $._unconfigured_macro_item, $.preproc_declaration_modifier],
     [$._unconfigured_macro_item, $.preproc_declaration_modifier],
@@ -441,7 +450,6 @@ module.exports = grammar(C, {
     [$._template_method_name, $.template_function],
     [$.template_function, $.qualified_identifier],
     [$.macro_source_item_sequence_argument, $.macro_single_statement_argument],
-    [$.macro_source_item_sequence_argument, $.macro_complete_statement_item],
     [$.macro_source_item_sequence_argument, $.macro_single_statement_argument, $._argument_list_item],
     [$.structured_statement_macro_argument, $.macro_source_item_sequence_argument],
     [$.comma_expression, $.preproc_ifdef_in_initializer_list, $._initializer_list_with_preproc],
@@ -673,9 +681,7 @@ module.exports = grammar(C, {
     [$._argument_list_item, $.macro_call_statement_item],
     [$._argument_list_item, $.macro_single_statement_argument],
     [$._argument_list_item, $.macro_statement_sequence_argument],
-    [$.macro_statement_sequence_argument, $.macro_complete_statement_item],
     [$.macro_call_statement_item],
-    [$.macro_complete_statement_item],
     [$.macro_statement_sequence_argument, $.macro_single_statement_argument, $._argument_list_item],
     [$.macro_statement_sequence_argument, $.macro_single_statement_argument],
     [$.initializer_pair, $.comma_expression],
@@ -3638,20 +3644,6 @@ module.exports = grammar(C, {
       seq(alias($.macro_declaration_without_semicolon, $.declaration), ';'),
     ]),
 
-    macro_complete_statement_item: $ => choice(
-      $.macro_empty_statement_argument,
-      alias($._macro_statement_argument_expression, $.expression_statement),
-      alias($.macro_expression_without_semicolon, $.expression_statement),
-      $.compound_statement,
-      $.if_statement,
-      $.for_statement,
-      $.while_statement,
-      $.switch_statement,
-      $.try_statement,
-      $.macro_return_statement_argument,
-      $.macro_return_argument,
-    ),
-
     macro_call_statement_item: $ => choice(
       $.macro_empty_statement_argument,
       alias($.macro_initialized_declaration_fragment, $.declaration),
@@ -3668,7 +3660,7 @@ module.exports = grammar(C, {
       $.macro_return_argument,
     ),
 
-    macro_single_statement_argument: $ => choice(
+    macro_single_statement_argument: $ => prec.dynamic(1, choice(
       $.macro_empty_statement_argument,
       alias($.macro_initialized_declaration_fragment, $.declaration),
       alias($.macro_declaration_without_semicolon, $.declaration),
@@ -3680,7 +3672,7 @@ module.exports = grammar(C, {
       $.try_statement,
       $.macro_return_statement_argument,
       $.macro_return_argument,
-    ),
+    )),
 
     macro_initialized_declaration_fragment: $ => prec.dynamic(20, prec(PREC.CALL + 10, seq(
       $._declaration_specifiers,

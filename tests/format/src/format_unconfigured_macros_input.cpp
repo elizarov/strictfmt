@@ -32,3 +32,23 @@ class API_EXPORT Forward;
 class Ordinary* pointer;
 class Ordinary function();
 auto RecordFunctionPointer() -> struct Ordinary (*)(int) {return nullptr;}
+
+// Complete statements share their ordinary recursive grammar inside arguments.
+void StatementArguments(){
+CHECK_STATEMENT(;, Error);
+CHECK_STATEMENT(CHECK_STATEMENT(;, Error), Error);
+CHECK_STATEMENT(;, Error)<<message;
+CHECK_STATEMENT(return;, Error);
+CHECK_STATEMENT(do Work(); while(ready);, Error);
+CHECK_STATEMENT(for(auto item:items) Consume(item);, Error);
+CHECK_STATEMENT(if(ready) do Work(); while(More()); else return;, Error);
+CHECK_STATEMENT(while(ready){if(done) break;continue;}, Error);
+CHECK_STATEMENT(try{Work();}catch(const Error& error){throw;}, Error);
+}
+void StatementArgumentBoundaries(){
+Inspect(first,second,Consume(value););
+Inspect(return;,value,);
+}
+template<class... Values> void FoldArguments(Values... values){
+(Consume(values),...);
+}
