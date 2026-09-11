@@ -28,7 +28,7 @@ void Check() {
 }
 ```
 
-An isolated identifier can supply a complete namespace or class item when it cannot form ordinary C++ syntax. Unknown modifiers are also accepted before class, struct, and union names and after function declarators. Configuration may still be needed to attach an identifier to the surrounding code.
+An isolated identifier can supply a complete namespace or class item when it cannot form ordinary C++ syntax. Unknown modifiers are also accepted before class, struct, and union names and after function declarators or alias names. Configuration may still be needed to attach an identifier to the surrounding code.
 
 Macro calls can introduce a `{ ... }` body without configuration, as in tests or loops:
 

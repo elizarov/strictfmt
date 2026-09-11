@@ -94,3 +94,8 @@ STEP(fourth);
 #define DECLARE_ACCESSOR(Name) Value Name() ANNOTATION
 #define FORWARD_ARGUMENTS(args) TOKENS(dummy STEP(ARG,,args))
 #define EXPAND_ELEMENT(i,element) STEP(i) element
+
+// Alias annotations use the same unknown-modifier fallback as declarations.
+template<class T> using OldValue ANNOTATION = T;
+namespace aliases {using OldPointer ANNOTATION = void*;}
+template<class T> using OlderValue ANNOTATION(reason(Nested(value))) = T;

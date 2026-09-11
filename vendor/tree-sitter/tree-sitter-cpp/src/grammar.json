@@ -28441,12 +28441,38 @@
       ]
     },
     "alias_suffix_macro": {
-      "type": "PREC",
-      "value": 22,
-      "content": {
-        "type": "SYMBOL",
-        "name": "bare_macro_identifier"
-      }
+      "type": "CHOICE",
+      "members": [
+        {
+          "type": "PREC_RIGHT",
+          "value": 22,
+          "content": {
+            "type": "SEQ",
+            "members": [
+              {
+                "type": "SYMBOL",
+                "name": "bare_macro_identifier"
+              },
+              {
+                "type": "CHOICE",
+                "members": [
+                  {
+                    "type": "SYMBOL",
+                    "name": "argument_list"
+                  },
+                  {
+                    "type": "BLANK"
+                  }
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "type": "SYMBOL",
+          "name": "_unconfigured_modifier"
+        }
+      ]
     },
     "static_assert_declaration": {
       "type": "SEQ",

@@ -2481,10 +2481,7 @@ module.exports = grammar(C, {
       ),
     )),
 
-    function_suffix_macro: $ => choice(
-      prec.right(PREC.CALL + 7, seq($.bare_macro_identifier, optional($.argument_list))),
-      $._unconfigured_modifier,
-    ),
+    function_suffix_macro: $ => declarationSuffixModifier($),
 
     _function_postfix: $ => prec.right(choice(
       repeat1($.virtual_specifier),
@@ -2919,7 +2916,7 @@ module.exports = grammar(C, {
       ),
     ),
 
-    alias_suffix_macro: $ => prec(PREC.CALL + 7, $.bare_macro_identifier),
+    alias_suffix_macro: $ => declarationSuffixModifier($),
 
     static_assert_declaration: $ => seq(
       'static_assert',
@@ -4709,6 +4706,13 @@ function memberPointerDeclarator($, declarator) {
     pointerQualifiers($),
     field('declarator', declarator),
   )));
+}
+
+function declarationSuffixModifier($) {
+  return choice(
+    prec.right(PREC.CALL + 7, seq($.bare_macro_identifier, optional($.argument_list))),
+    $._unconfigured_modifier,
+  );
 }
 
 function parenthesizedDeclarator($, declarator, preference = PREC.PAREN_DECLARATOR) {
