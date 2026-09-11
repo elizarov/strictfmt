@@ -19,6 +19,9 @@ MainIncludeChar: Quote
 IncludeIsMainRegex: '(Test)?$'
 
 MacroCategories:
+  MethodDeclarationMacros:
+    - FORMAT_METHOD_SIGNATURE
+    - FORMAT_TYPE_METHOD
   StatementArgumentMacros:
     - FORMAT_STATEMENT_DECLARATIONS
   PreprocessorArgumentMacros:
@@ -34,15 +37,8 @@ MacroCategories:
     - FORMAT_PARAMETER_SUFFIX*
     - FORMAT_DECLARATOR_MODIFIER
     - WINAPI
-  CallSyntaxMacros:
-    - FORMAT_ENUM_ATTR
-    - FORMAT_ANON_*
-    - FORMAT_TYPE_*
-    - FORMAT_PASTED_DECL_*
-    - ENUM_STRING_DECLARE
-    - FORMAT_FIXTURE_STATEMENT_ARGUMENT
-    - FORMAT_FIXTURE_DECLARE_OPTION
   SemicolonlessCallMacros:
+    - DECLARE_ATTRIBUTES
     - FORMAT_TOKEN_*
     - FORMAT_SEMILESS_*
     - FORMAT_FIXTURE_CREATE_METRIC

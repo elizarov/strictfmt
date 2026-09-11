@@ -51,6 +51,22 @@ const ASSIGNMENT_OPERATORS = [
   'xor_eq',
 ];
 
+const CPP_KEYWORDS = [
+  'alignas', 'alignof', 'and', 'and_eq', 'asm', 'atomic_cancel', 'atomic_commit', 'atomic_noexcept',
+  'auto', 'bitand', 'bitor', 'bool', 'break', 'case', 'catch', 'char',
+  'char8_t', 'char16_t', 'char32_t', 'class', 'compl', 'concept', 'const', 'consteval',
+  'constexpr', 'constinit', 'const_cast', 'continue', 'co_await', 'co_return', 'co_yield', 'decltype',
+  'default', 'delete', 'do', 'double', 'dynamic_cast', 'else', 'enum', 'explicit',
+  'export', 'extern', 'false', 'float', 'for', 'friend', 'goto', 'if',
+  'inline', 'int', 'long', 'mutable', 'namespace', 'new', 'noexcept', 'not',
+  'not_eq', 'nullptr', 'operator', 'or', 'or_eq', 'private', 'protected', 'public',
+  'reflexpr', 'register', 'reinterpret_cast', 'requires', 'return', 'short', 'signed', 'sizeof',
+  'static', 'static_assert', 'static_cast', 'struct', 'switch', 'synchronized', 'template', 'this',
+  'thread_local', 'throw', 'true', 'try', 'typedef', 'typeid', 'typename', 'union',
+  'unsigned', 'using', 'virtual', 'void', 'volatile', 'wchar_t', 'while', 'xor',
+  'xor_eq',
+];
+
 const PREPROC_IFDEF = 1 << 0;
 const PREPROC_ELSE = 1 << 1;
 const PREPROC_ELIF = 1 << 2;
@@ -83,7 +99,6 @@ function cppNonBinaryExpressions($, base) {
     $.macro_call_expression,
     $.qualified_address_expression,
     $.throw_expression,
-    alias('ref', $.identifier),
     $.co_await_expression,
     $.requires_expression,
     $.requires_clause,
@@ -163,6 +178,21 @@ function macroStatementSequence($, declarations = []) {
   ));
 }
 
+function macroArgumentSequence($, argument) {
+  const comment = choice($.comment, alias($.macro_comment_argument, $.comment));
+  const item = choice(argument, seq(repeat1(comment), optional(argument)));
+  return choice(item, seq(optional(item), repeat1(seq(',', optional(item)))));
+}
+
+function declarationSpecifiers($) {
+  return [
+    repeat($._declaration_modifiers),
+    field('type', $.type_specifier),
+    repeat($._declaration_modifiers),
+    repeat($.post_type_macro_annotation),
+  ];
+}
+
 function typeDescriptor($, type) {
   return prec.right(seq(
     repeat($.type_qualifier),
@@ -237,7 +267,7 @@ module.exports = grammar(C, {
     $.macro_token_paste_number_prefix,
     $.bare_macro_identifier,
     $.declaration_prefix_macro_identifier,
-    $.call_syntax_macro_identifier,
+    $.method_declaration_macro_identifier,
     $.statement_argument_macro_identifier,
     $.type_specifier_macro_identifier,
     $.preprocessor_argument_macro_identifier,
@@ -263,6 +293,63 @@ module.exports = grammar(C, {
   ],
 
   conflicts: $ => [
+    [$.macro_method_declaration, $._macro_argument_list_item],
+    [$.class_specifier, $._contextual_identifier],
+    [$.macro_parameter_list, $.preprocessing_parenthesized_tokens],
+    [$._declaration_modifiers, $._macro_parameter_declaration],
+    [$.type_descriptor, $._macro_parameter_declaration],
+    [$._preprocessing_keyword, $.this],
+    [$._preprocessing_keyword, $.requires_expression],
+    [$._preprocessing_keyword, $.requires_clause],
+    [$._preprocessing_keyword, $.requires_clause, $.requires_expression],
+    [$.noexcept, $._preprocessing_keyword],
+    [$.try_statement, $._preprocessing_keyword],
+    [$._preprocessing_keyword, $.dependent_type_identifier],
+    [$.dependent_type, $._preprocessing_keyword],
+    [$.decltype_auto, $.decltype, $._preprocessing_keyword],
+    [$.auto, $._preprocessing_keyword],
+    [$.type_specifier, $._type_constraint, $._preprocessing_token],
+    [$._type_constraint, $._preprocessing_token],
+    [$.sized_type_specifier, $._preprocessing_token],
+    [$.null, $._preprocessing_keyword],
+    [$.for_statement, $._preprocessing_keyword],
+    [$.while_statement, $._preprocessing_keyword],
+    [$.switch_statement, $._preprocessing_keyword],
+    [$.if_statement, $._preprocessing_keyword],
+    [$.union_specifier, $._preprocessing_keyword],
+    [$.struct_specifier, $._preprocessing_keyword],
+    [$.class_specifier, $._preprocessing_keyword],
+    [$.enum_specifier, $._preprocessing_keyword],
+    [$.alignas_qualifier, $._preprocessing_keyword],
+    [$.type_qualifier, $._preprocessing_keyword],
+    [$._preprocessing_keyword, $.functional_cast_type_specifier],
+    [$.sized_type_specifier, $._preprocessing_keyword, $.functional_cast_type_specifier],
+    [$.sized_type_specifier, $._preprocessing_keyword],
+    [$.storage_class_specifier, $._preprocessing_keyword],
+    [$._declaration_modifiers, $._preprocessing_keyword],
+    [$._call_identifier, $._template_argument_value_expression],
+    [$.type_specifier, $._call_identifier, $._preprocessing_token],
+    [$.type_specifier, $._call_identifier, $._template_argument_value_expression],
+    [$._call_identifier, $._preprocessing_token],
+    [$.type_specifier, $.expression, $._call_identifier, $._preprocessing_token],
+    [$.type_specifier, $._call_identifier],
+    [$.type_specifier, $._call_identifier, $._non_pointer_declarator],
+    [$.expression, $._call_identifier, $._template_argument_value_expression],
+    [$.expression, $._call_identifier, $._conditional_alternative],
+    [$.type_specifier, $.expression, $._call_identifier, $._template_argument_value_expression],
+    [$._field_identifier, $._call_identifier],
+    [$.expression, $._call_identifier],
+    [$.type_specifier, $.expression, $._call_identifier],
+    [$.expression, $._assignment_left_expression, $._preprocessing_token],
+    [$.initializer_list, $.preprocessing_punctuator],
+    [$.preprocessing_token_argument_list, $.macro_call_argument_list],
+    [$.preprocessing_token_argument_list, $.macro_call_argument_sequence],
+    [$.preprocessing_punctuator, $.macro_argument_punctuator],
+    [$._macro_call_argument_list_item, $.macro_argument_sequence],
+    [$.macro_argument_list, $.macro_call_argument_list],
+    [$.macro_call_argument_sequence, $.macro_argument_sequence],
+    [$.parameter_list, $.macro_call_argument_list],
+    [$._parameter_list_item, $.macro_argument_punctuator],
     [$._structured_macro_name, $._raw_macro_name],
     [$._structured_macro_parameters, $._raw_macro_parameters],
     [$.expression, $._macro_initializer_list_fragment],
@@ -573,7 +660,6 @@ module.exports = grammar(C, {
     [$.macro_statement_sequence_argument, $.macro_single_statement_argument],
     [$._macro_argument_list_item, $.macro_expression_without_semicolon],
     [$._macro_argument_list_item, $.macro_expression_without_semicolon, $._argument_list_item],
-    [$.macro_method_declaration, $._macro_argument_list_item],
     [$.initializer_pair, $.comma_expression],
     [$.initializer_list, $._initializer_list_with_preproc],
     [$.comma_expression, $.initializer_list, $._initializer_list_with_preproc],
@@ -631,6 +717,9 @@ module.exports = grammar(C, {
   ],
 
   rules: {
+    // Delay call/declaration choice until the complete argument or parameter syntax is known.
+    _call_identifier: $ => contextualIdentifier($),
+
     _top_level_item: ($, original) => choice(
       alias($.qualified_type_function_definition, $.function_definition),
       $.preproc_unbalanced_else_block,
@@ -674,7 +763,7 @@ module.exports = grammar(C, {
       $.static_assert_declaration,
       $.template_declaration,
       $.template_instantiation,
-      alias($.constructor_or_destructor_definition, $.function_definition),
+      alias($.qualified_constructor_or_destructor_definition, $.function_definition),
       alias($.operator_cast_definition, $.function_definition),
       alias($.operator_cast_declaration, $.declaration),
     ),
@@ -778,10 +867,7 @@ module.exports = grammar(C, {
     ),
 
     _declaration_specifiers: $ => prec.right(seq(
-      repeat($._declaration_modifiers),
-      field('type', $.type_specifier),
-      repeat($._declaration_modifiers),
-      repeat($.post_type_macro_annotation),
+      ...declarationSpecifiers($),
     )),
 
     raw_macro_replacement: $ => $._raw_macro_token_sequence,
@@ -928,7 +1014,7 @@ module.exports = grammar(C, {
     macro_call_replacement_item: $ => seq(
       choice(
         seq(
-          field('function', $.identifier),
+          field('function', $._call_identifier),
           field('arguments', $.macro_argument_list),
         ),
         $.macro_call_expression,
@@ -994,14 +1080,7 @@ module.exports = grammar(C, {
       optional(';'),
     )),
 
-    class_macro_call: $ => choice(
-      $.macro_call_item,
-      prec.dynamic(10, seq(
-        field('function', $.identifier),
-        field('arguments', $.macro_argument_list),
-        $._line_break_whitespace,
-      )),
-    ),
+    class_macro_call: $ => $.macro_call_item,
 
     block_macro_call_line_item: $ => prec.dynamic(10, prec.right(PREC.CALL + 8, seq(
       semicolonlessMacroCall($),
@@ -1014,8 +1093,8 @@ module.exports = grammar(C, {
     ))),
 
     top_level_call_statement: $ => prec.right(PREC.CALL + 4, seq(
-      field('function', $.call_syntax_macro_identifier),
-      field('arguments', $.call_syntax_macro_argument_list),
+      field('function', $._call_identifier),
+      field('arguments', $.macro_call_argument_list),
       optional(field('suffix', $.bare_macro_identifier)),
       optional($.macro_arrow_chain),
       optional(';'),
@@ -1028,8 +1107,8 @@ module.exports = grammar(C, {
 
     macro_call_item: $ => choice(
       prec.right(PREC.CALL + 2, seq(
-        field('function', $.call_syntax_macro_identifier),
-        field('arguments', $.call_syntax_macro_argument_list),
+        field('function', $._call_identifier),
+        field('arguments', $.macro_call_argument_list),
       )),
       prec.right(PREC.CALL + 2, semicolonlessMacroCall($)),
     ),
@@ -1042,19 +1121,19 @@ module.exports = grammar(C, {
     macro_expression_continuation: $ => macroExpressionContinuation($, $.expression),
 
     macro_call_identifier: $ => choice(
-      $.call_syntax_macro_identifier,
+      $._call_identifier,
       $.semicolonless_call_macro_identifier,
       $.semicolonless_preprocessor_call_macro_identifier,
     ),
 
     macro_decorator_call_item: $ => prec(PREC.CALL + 8, seq(
-      field('function', $.call_syntax_macro_identifier),
-      field('arguments', $.call_syntax_macro_argument_list),
+      field('function', $._call_identifier),
+      field('arguments', $.macro_call_argument_list),
     )),
 
     commented_macro_call_item: $ => prec(PREC.CALL + 1, seq(
-      field('function', $.call_syntax_macro_identifier),
-      field('arguments', $.call_syntax_macro_argument_list),
+      field('function', $._call_identifier),
+      field('arguments', $.macro_call_argument_list),
     )),
 
     commented_macro_argument_list: $ => $.macro_argument_list,
@@ -1086,12 +1165,12 @@ module.exports = grammar(C, {
 
     macro_prefixed_call_declaration: $ => choice(
       prec(PREC.CALL + 8, seq(
-        field('function', $.call_syntax_macro_identifier),
-        field('arguments', $.call_syntax_macro_argument_list),
+        field('function', $._call_identifier),
+        field('arguments', $.macro_call_argument_list),
         ';',
       )),
       prec(PREC.CALL + 8, seq(
-        field('function', choice($.bare_macro_identifier, $.identifier)),
+        field('function', $.bare_macro_identifier),
         field('arguments', $.macro_argument_list),
         ';',
       )),
@@ -1110,8 +1189,8 @@ module.exports = grammar(C, {
     )),
 
     macro_function_definition: $ => prec.right(PREC.CALL + 4, seq(
-      field('name', $.call_syntax_macro_identifier),
-      field('arguments', $.call_syntax_macro_argument_list),
+      field('name', $._call_identifier),
+      field('arguments', $.macro_call_argument_list),
       optional(field('declarator', $.parameter_list)),
       field('body', $.compound_statement),
       optional(';'),
@@ -1428,8 +1507,8 @@ module.exports = grammar(C, {
     ),
 
     _macro_function_definition_prefix: $ => prec.right(PREC.CALL + 7, seq(
-      field('name', $.call_syntax_macro_identifier),
-      field('arguments', $.call_syntax_macro_argument_list),
+      field('name', $._call_identifier),
+      field('arguments', $.macro_call_argument_list),
       '{',
     )),
 
@@ -2020,7 +2099,7 @@ module.exports = grammar(C, {
     ),
 
     macro_method_declaration: $ => seq(
-      field('function', $.call_syntax_macro_identifier),
+      field('function', $.method_declaration_macro_identifier),
       '(',
       field('return_type', $.macro_method_return_type),
       ',',
@@ -2029,7 +2108,7 @@ module.exports = grammar(C, {
       field('parameters', $.macro_method_parameter_list),
       optional(seq(
         ',',
-        field('qualifiers', $.macro_method_qualifier_list),
+        field('qualifiers', $.macro_qualifier_list),
       )),
       ')',
       ';',
@@ -2051,6 +2130,29 @@ module.exports = grammar(C, {
       ')',
     ),
 
+    macro_parameter_list: $ => seq(
+      '(',
+      commaSep(choice(
+        alias($._macro_parameter_declaration, $.parameter_declaration),
+        alias($._macro_parenthesized_parameter_declaration, $.parameter_declaration),
+      )),
+      ')',
+    ),
+
+    // Keep the type prefix open while competing expressions and named parameters are parsed.
+    _macro_parameter_declaration: $ => seq(
+      ...declarationSpecifiers($),
+      optional(field('declarator', choice($._declarator, $._abstract_declarator))),
+      repeat($.attribute_specifier),
+    ),
+
+    _macro_parenthesized_parameter_declaration: $ => prec.right(seq(
+      '(',
+      choice($._macro_parameter_declaration, $._macro_parenthesized_parameter_declaration),
+      ')',
+      optional(field('declarator', $._declarator)),
+    )),
+
     macro_parenthesized_parameter_declaration: $ => prec.right(seq(
       '(',
       choice($.parameter_declaration, $.macro_parenthesized_parameter_declaration),
@@ -2058,10 +2160,10 @@ module.exports = grammar(C, {
       optional(field('declarator', $._declarator)),
     )),
 
-    macro_method_qualifier_list: $ => seq(
+    macro_qualifier_list: $ => seq(
       '(',
       commaSep(repeat1(choice(
-        $.macro_method_call_qualifier,
+        $.macro_qualifier_call,
         $.type_qualifier,
         $.virtual_specifier,
         $.noexcept,
@@ -2070,8 +2172,8 @@ module.exports = grammar(C, {
       ')',
     ),
 
-    macro_method_call_qualifier: $ => seq(
-      field('function', $.identifier),
+    macro_qualifier_call: $ => seq(
+      field('function', $._call_identifier),
       field('arguments', $.macro_argument_list),
     ),
 
@@ -2163,6 +2265,12 @@ module.exports = grammar(C, {
 
     constructor_or_destructor_definition: $ => prec.dynamic(2, prec(PREC.CALL + 2, seq(
       $._constructor_or_destructor_header,
+      constructorOrDestructorBody($),
+    ))),
+
+    qualified_constructor_or_destructor_definition: $ => prec.dynamic(2, prec(PREC.CALL + 2, seq(
+      repeat($._constructor_specifiers),
+      field('declarator', alias($.qualified_constructor_or_destructor_declarator, $.function_declarator)),
       constructorOrDestructorBody($),
     ))),
 
@@ -2764,7 +2872,7 @@ module.exports = grammar(C, {
     )),
 
     deduction_guide_declaration: $ => prec(1, seq(
-      field('name', $.identifier),
+      field('name', $._call_identifier),
       field('parameters', $.parameter_list),
       field('return_type', $.trailing_return_type),
       ';',
@@ -2825,11 +2933,11 @@ module.exports = grammar(C, {
 
     _non_case_statement: $ => choice(
       $.disabled_code_placeholder_statement,
+      $.macro_function_definition,
       $.bare_macro_statement,
       alias($.macro_statement_argument_expression_statement, $.expression_statement),
       $.block_macro_call_line_item,
       $.block_macro_call_statement_item,
-      $.top_level_call_statement,
       $.preproc_case_label_fragment,
       $.preproc_selected_else_if_statement,
       $.preproc_selected_braced_if_else_statement,
@@ -3181,9 +3289,12 @@ module.exports = grammar(C, {
       $.string_literal,
       $.char_literal,
       $.identifier,
+      alias($._preprocessing_keyword, $.identifier),
       $.preprocessing_number,
       $.preprocessing_punctuator,
     ),
+
+    _preprocessing_keyword: _ => choice(...CPP_KEYWORDS),
 
     preprocessing_number: _ => /\.?\d(?:[A-Za-z0-9_.]|[eEpP][+-])*/,
 
@@ -3258,40 +3369,20 @@ module.exports = grammar(C, {
       ')',
     ),
 
-    call_syntax_macro_argument_list: $ => seq(
+    macro_call_argument_list: $ => seq(
       '(',
-      optional($.call_syntax_macro_argument_sequence),
+      optional($.macro_call_argument_sequence),
       ')',
     ),
 
-    call_syntax_macro_argument_sequence: $ => {
-      const comment = choice($.comment, alias($.macro_comment_argument, $.comment));
-      const item = choice(
-        $._call_syntax_macro_argument_list_item,
-        seq(repeat1(comment), optional($._call_syntax_macro_argument_list_item)),
-      );
-      return choice(
-        item,
-        seq(optional(item), repeat1(seq(',', optional(item)))),
-      );
-    },
+    macro_call_argument_sequence: $ => macroArgumentSequence($, $._macro_call_argument_list_item),
 
-    _call_syntax_macro_argument_list_item: $ => choice(
+    _macro_call_argument_list_item: $ => choice(
       prec.dynamic(10, $.macro_statement_sequence_argument),
       $._macro_argument_list_item,
     ),
 
-    macro_argument_sequence: $ => {
-      const comment = choice($.comment, alias($.macro_comment_argument, $.comment));
-      const item = choice(
-        $._macro_argument_list_item,
-        seq(repeat1(comment), optional($._macro_argument_list_item)),
-      );
-      return choice(
-        item,
-        seq(optional(item), repeat1(seq(',', optional(item)))),
-      );
-    },
+    macro_argument_sequence: $ => macroArgumentSequence($, $._macro_argument_list_item),
 
     macro_comment_argument: _ => token(prec(4, choice(
       seq('//', /(\\+(.|\r?\n)|[^\\\n])*/),
@@ -3303,6 +3394,7 @@ module.exports = grammar(C, {
     ))),
 
     _macro_argument_list_item: $ => choice(
+      prec.dynamic(-5, alias($.macro_parameter_list, $.parameter_list)),
       $.macro_preprocessing_token_sequence_argument,
       $.macro_preprocessing_token_call,
       $.function_pointer_type_descriptor,
@@ -3343,7 +3435,7 @@ module.exports = grammar(C, {
     },
 
     macro_preprocessing_token_call: $ => prec(PREC.CALL + 4, seq(
-      field('function', $.identifier),
+      field('function', $._call_identifier),
       field('arguments', $.preprocessing_token_argument_list),
     )),
 
@@ -3662,8 +3754,8 @@ module.exports = grammar(C, {
 
     macro_call_expression: $ => choice(
       prec(PREC.CALL, seq(
-        field('function', $.call_syntax_macro_identifier),
-        field('arguments', $.call_syntax_macro_argument_list),
+        field('function', $._call_identifier),
+        field('arguments', $.macro_call_argument_list),
       )),
       prec(PREC.CALL, semicolonlessMacroCall($)),
     ),
@@ -3735,7 +3827,7 @@ module.exports = grammar(C, {
     ),
 
     call_expression: ($, original) => choice(
-      original,
+      prec.dynamic(1, original),
       prec(PREC.CALL, seq(
         field('function', choice(
           $.qualified_identifier,
@@ -3832,7 +3924,7 @@ module.exports = grammar(C, {
     )),
 
     // Module keywords remain identifiers outside module directives.
-    _contextual_identifier: _ => choice('module', 'import'),
+    _contextual_identifier: _ => choice('module', 'import', 'ref'),
 
     _statement_identifier: ($, original) => contextualIdentifier($, original, $.statement_identifier),
     _field_identifier: ($, original) => identifierWithPaste($, original, $.field_identifier),
@@ -4180,18 +4272,23 @@ module.exports = grammar(C, {
       $._preproc_directive_end,
     ),
 
-    // The compound_statement is added to parse macros taking statements as arguments, e.g. MYFORLOOP(1, 10, i, { foo(i); bar(i); })
-    argument_list: $ => seq(
-      '(',
-      choice(
-        seq(
-          commaSepWithPreproc($, $._argument_list_item, '_in_expression_list', PREPROC_IFDEF),
-          optional(','),
-        ),
-        seq(',', commaSep1($._argument_list_item)),
-      ),
-      ')',
-    ),
+    // Empty arguments are macro fragments, not removable trailing C++ argument commas.
+    argument_list: $ => {
+      const directive = preprocListItem($, '_in_expression_list', PREPROC_IFDEF);
+      const item = $._argument_list_item;
+      const directedItem = seq(repeat1(directive), optional(item));
+      return seq(
+        '(',
+        optional(seq(
+          choice(item, directedItem),
+          repeat(choice(
+            seq(',', choice(item, directedItem)),
+            directedItem,
+          )),
+        )),
+        ')',
+      );
+    },
 
     _argument_list_item: $ => choice(
       $.tagged_type_argument,
@@ -4349,8 +4446,7 @@ module.exports = grammar(C, {
       $.qualified_identifier,
       $.compound_literal_expression,
       $.cpp_cast_expression,
-      alias('ref', $.identifier),
-      alias($._contextual_identifier, $.identifier),
+        alias($._contextual_identifier, $.identifier),
       $.user_defined_literal,
       $.suffixed_string_literal,
       $.concatenated_string,
@@ -4412,7 +4508,7 @@ module.exports = grammar(C, {
 
     concatenated_string: $ => {
       const stringFragment = choice($.suffixed_string_literal, $.raw_string_literal, $.string_literal);
-      const macroFragment = choice($.identifier, $.macro_call_expression);
+      const macroFragment = choice($._call_identifier, $.macro_call_expression);
       return choice(
         prec.right(2, seq(stringFragment, repeat1(stringFragment))),
         prec.dynamic(10, prec.right(3, seq(
@@ -4434,7 +4530,7 @@ module.exports = grammar(C, {
       $.preproc_string_literal_fragment,
       repeat(choice(
         $._string,
-        $.identifier,
+        $._call_identifier,
         $.macro_call_expression,
         $.preproc_string_literal_fragment,
       )),
@@ -4444,7 +4540,7 @@ module.exports = grammar(C, {
       $.preproc_string_literal_fragment,
       repeat(choice(
         $._string,
-        $.identifier,
+        $._call_identifier,
         $.macro_call_expression,
         $.preproc_string_literal_fragment,
       )),

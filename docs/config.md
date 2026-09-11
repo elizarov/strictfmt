@@ -50,8 +50,8 @@ MacroCategories:
     - API_EXPORT
   StatementPrefixMacros:
     - DISCARD_RESULT
-  CallSyntaxMacros:
-    - TEST
+  MethodDeclarationMacros:
+    - MOCK_METHOD
   SemicolonlessCallMacros:
     - DIAGNOSTIC_PUSH
   StatementArgumentMacros:

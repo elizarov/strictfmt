@@ -1755,13 +1755,13 @@ class FormatCommandTests(unittest.TestCase):
                 self.assertIn("parse failed", result.stderr)
 
     def test_raw_macro_fallback_does_not_classify_uses(self) -> None:
-        source = "#define RAW_ONLY(name) namespace name {\nRAW_ONLY(Generated,Case){Run();}\n"
+        source = "#define RAW_ONLY do {\nvoid Run() { RAW_ONLY }\n"
         failed = native_format("--stdin", input_text=source)
         self.assertNotEqual(0, failed.returncode)
         self.assertIn("parse failed", failed.stderr)
         with tempfile.TemporaryDirectory(prefix="format_macro_use_", dir=TEST_TEMP_ROOT) as temp_dir:
             config = Path(temp_dir) / ".cpp-format"
-            config.write_text("MacroCategories:\n  CallSyntaxMacros:\n    - RAW_ONLY\n", encoding="utf-8")
+            config.write_text("MacroCategories:\n  BareIdentifierMacros:\n    - RAW_ONLY\n", encoding="utf-8")
             formatted = native_format("--stdin", "--style", str(config), input_text=source)
             self.assertEqual(0, formatted.returncode, msg=formatted.stderr)
 
@@ -1816,8 +1816,7 @@ class FormatCommandTests(unittest.TestCase):
         )
         unconfigured = native_format("--stdin", input_text=source)
 
-        self.assertEqual(1, unconfigured.returncode, msg=f"stdout:\n{unconfigured.stdout}\n\nstderr:\n{unconfigured.stderr}")
-        self.assertIn("parse failed", unconfigured.stderr)
+        self.assertEqual(0, unconfigured.returncode, msg=f"stdout:\n{unconfigured.stdout}\n\nstderr:\n{unconfigured.stderr}")
 
         build_dir = TEST_TEMP_ROOT
         build_dir.mkdir(exist_ok=True)
@@ -1855,35 +1854,14 @@ class FormatCommandTests(unittest.TestCase):
             self.assertEqual(0, idempotent.returncode, msg=f"stdout:\n{idempotent.stdout}\n\nstderr:\n{idempotent.stderr}")
 
     def test_macro_arrow_chain_formats_and_reparses(self) -> None:
-        build_dir = TEST_TEMP_ROOT
-        build_dir.mkdir(exist_ok=True)
+        source = "BENCHMARK(Foo)\n    ->Args({1, 2});\n"
+        result = native_format("--stdin", input_text=source)
+        self.assertEqual(0, result.returncode, msg=result.stderr)
+        self.assertEqual("BENCHMARK(Foo)->Args({1, 2});\n", result.stdout)
 
-        with tempfile.TemporaryDirectory(prefix="format_reparse_guard_", dir=build_dir) as temp_dir:
-            config = Path(temp_dir) / ".cpp-format"
-            config.write_text(
-                "---\n"
-                "ColumnLimit: 120\n"
-                "IndentWidth: 4\n"
-                "TabWidth: 4\n"
-                "MacroCategories:\n"
-                "  CallSyntaxMacros:\n"
-                "    - BENCHMARK\n",
-                encoding="utf-8",
-            )
-            source = "BENCHMARK(Foo)\n    ->Args({1, 2});\n"
-
-            result = native_format("--stdin", "--style", str(config), input_text=source)
-
-            self.assertEqual(0, result.returncode, msg=f"stdout:\n{result.stdout}\n\nstderr:\n{result.stderr}")
-            self.assertEqual("BENCHMARK(Foo)->Args({1, 2});\n", result.stdout)
-
-            second_result = native_format("--dry-run", "--stdin", "--style", str(config), input_text=result.stdout)
-
-            self.assertEqual(
-                0,
-                second_result.returncode,
-                msg=f"stdout:\n{second_result.stdout}\n\nstderr:\n{second_result.stderr}",
-            )
+        second_result = native_format("--stdin", input_text=result.stdout)
+        self.assertEqual(0, second_result.returncode, msg=second_result.stderr)
+        self.assertEqual(result.stdout, second_result.stdout)
 
     def test_compact_empty_brace_ternary_colon_keeps_space(self) -> None:
         result = native_format(
@@ -2340,9 +2318,9 @@ class FormatCommandTests(unittest.TestCase):
                 "    - PARENT_PREFIX\n"
                 "  StatementPrefixMacros:\n"
                 "    - PARENT_STATEMENT_PREFIX\n"
-                "  CallSyntaxMacros:\n"
-                "    - PARENT_CALL\n"
-                "    - SHARED_CALL\n"
+                "  MethodDeclarationMacros:\n"
+                "    - PARENT_METHOD\n"
+                "    - SHARED_METHOD\n"
                 "  SemicolonlessCallMacros:\n"
                 "    - PARENT_SEMILESS\n"
                 "  StatementArgumentMacros:\n"
@@ -2363,9 +2341,9 @@ class FormatCommandTests(unittest.TestCase):
                 "    - CHILD_PREFIX\n"
                 "  StatementPrefixMacros:\n"
                 "    - CHILD_STATEMENT_PREFIX\n"
-                "  CallSyntaxMacros:\n"
-                "    - CHILD_CALL\n"
-                "    - SHARED_CALL\n"
+                "  MethodDeclarationMacros:\n"
+                "    - CHILD_METHOD\n"
+                "    - SHARED_METHOD\n"
                 "  SemicolonlessCallMacros:\n"
                 "    - CHILD_SEMILESS\n"
                 "  StatementArgumentMacros:\n"
@@ -2382,9 +2360,11 @@ class FormatCommandTests(unittest.TestCase):
                 "CHILD_BARE\n"
                 "PARENT_PREFIX int ParentDeclaration();\n"
                 "CHILD_PREFIX int ChildDeclaration();\n"
-                "PARENT_CALL(ParentSuite,ParentCase){Run();}\n"
-                "CHILD_CALL(ChildSuite,ChildCase){Run();}\n"
-                "SHARED_CALL(SharedSuite,SharedCase){Run();}\n"
+                "struct Signatures {\n"
+                "PARENT_METHOD(Result, Parent, (Value* parent));\n"
+                "CHILD_METHOD(Result, Child, (Value&& child));\n"
+                "SHARED_METHOD(Result, Shared, (Value& shared), (ref(&)));\n"
+                "};\n"
                 "typedef PARENT_TYPE(Value) ParentType;\n"
                 "typedef CHILD_TYPE(Value) ChildType;\n"
                 "PARENT_SEMILESS()\n"
@@ -2403,6 +2383,9 @@ class FormatCommandTests(unittest.TestCase):
             result = native_format(str(source), cwd=nested)
 
             self.assertEqual(0, result.returncode, msg=f"stdout:\n{result.stdout}\n\nstderr:\n{result.stderr}")
+            self.assertIn("PARENT_METHOD(Result, Parent, (Value* parent));", result.stdout)
+            self.assertIn("CHILD_METHOD(Result, Child, (Value&& child));", result.stdout)
+            self.assertIn("SHARED_METHOD(Result, Shared, (Value& shared), (ref(&)));", result.stdout)
 
     def test_ignore_file_skips_simple_directory_entries(self) -> None:
         build_dir = TEST_TEMP_ROOT

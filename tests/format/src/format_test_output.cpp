@@ -5867,7 +5867,7 @@ FORMAT_TYPE_EXTERN(External);
 FORMAT_TYPE_INSTANTIATION(Holder);
 #define FORMAT_TYPE_CLASS(Name)                      \
     class Name##Derived final : public Owner {       \
-public:                                              \
+    public:                                          \
         Name##Derived(int value) { member = value; } \
     };
 
@@ -5981,7 +5981,7 @@ namespace InlineSemicolonless {
     FORMAT_SEMILESS_INC(value)       \
     FORMAT_SEMILESS_INC(value)
 #define FORMAT_SEMILESS_TEXT() "part"
-#define FORMAT_SEMILESS_CONCAT() FORMAT_SEMILESS_TEXT() FORMAT_SEMILESS_TEXT()"end"
+#define FORMAT_SEMILESS_CONCAT() FORMAT_SEMILESS_TEXT() FORMAT_SEMILESS_TEXT() "end"
 constexpr const char* text = FORMAT_SEMILESS_CONCAT();
 
 FORMAT_SEMILESS_DECLARE(first)
@@ -7414,7 +7414,7 @@ constexpr int kNested[][3] = {
 };
 constexpr int kNegative[] = {FORMAT_PARAMETER_SUFFIX_LIST - 1};
 #define FORMAT_SEMILESS_TEXT() "x"
-constexpr const char* kText[] = {FORMAT_SEMILESS_TEXT()"y"};
+constexpr const char* kText[] = {FORMAT_SEMILESS_TEXT() "y"};
 #define FORMAT_TYPE_GENERATED(name)  \
     enum class name {                \
         FORMAT_PARAMETER_SUFFIX_ENUM \
@@ -8043,5 +8043,40 @@ constexpr int CallList[] = {
     FORMAT_SEMILESS_LIST_VALUES()
     FORMAT_SEMILESS_LIST_EMPTY()
 };
+
+}
+
+namespace AutomaticMacroCalls {
+
+TEST(PlainFixture, Body) { Run(); }
+TEST_WITH_THREADS(PlainFixture, ParallelBody, 2) { Run(); }
+BENCHMARK_DEFINE(CustomFixture, WithParameters)(Context& context) { Use(context); }
+REGISTER_BENCHMARK(CustomFixture)->Args({1, 2});
+GENERATED_TEST(EmptyArgument, ) { Run(); }
+
+struct Calls {
+    Calls(Value* value);
+    Calls(const Calls& other);
+
+    DECLARE_PARAMETERS(Helper, (int* array, int size), void);
+    DECLARE_CALLBACKS((void (*callback)(int, const char*), int (&values)[3]));
+    CHECK_VALUES((a * b), (c && d));
+    INSPECT_ARGUMENTS(Result, Method, (Context * context));
+    FORMAT_METHOD_SIGNATURE(Result, Method, (Context* context, Value&& value));
+    FORMAT_METHOD_SIGNATURE(Result, Nested, ((Context* context), ((Value&& value))), ());
+    FORMAT_METHOD_SIGNATURE(Result, Qualified, (Context* context), (ref(&), override));
+};
+
+void ControlBodies(Image& image) {
+    FOR_PIXELS(image, x) {
+        FOR_PIXELS(image, y) { Consume(x, y); }
+    }
+}
+void EmptyArguments() { CALL_EMPTY(, CALL_EMPTY(value, ), CALL_EMPTY(), ); }
+
+bool assignable = CHECK_ASSIGNABLE(T, T&&, value = std::move(other));
+const char* name = "prefix-" STRINGIZE(index) "-suffix";
+
+KEYWORD_ARGUMENTS(Flags, PARAMETERS(typename, T), FLAGS(const, noexcept)) { Run(); }
 
 }

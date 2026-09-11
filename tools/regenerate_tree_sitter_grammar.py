@@ -51,7 +51,7 @@ LEXICAL_EXTERNAL_TOKENS = frozenset({
     "nonconditional_directive_start",
     "_preproc_directive_end",
     "bare_macro_identifier",
-    "call_syntax_macro_identifier",
+    "method_declaration_macro_identifier",
     "declaration_prefix_macro_identifier",
     "macro_token_paste_identifier_prefix",
     "macro_token_paste_number_prefix",

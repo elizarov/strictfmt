@@ -115,9 +115,11 @@
 #define SENSITIVE_DATA_MASKING_UNWRAP_SEQ(s, state, x) (::sensitive_data_masking::UnwrapHelper(state).x)
 
 // cargo-claims-billing/src/utils/sensitive_data_masking.hpp
-#define SENSITIVE_DATA_MASKING_MAKE_JSON_PATH_SEQ(prefix, seq)                                             \
-    (::std::is_void_v<decltype(BOOST_PP_SEQ_FOLD_LEFT(SENSITIVE_DATA_MASKING_UNWRAP_SEQ, (prefix), seq))>, \
-     ::sensitive_data_masking::JsonPath{BOOST_PP_SEQ_FOR_EACH(SENSITIVE_DATA_MASKING_STRINGIZE_AND_COMMA, , seq)})
+#define SENSITIVE_DATA_MASKING_MAKE_JSON_PATH_SEQ(prefix, seq)                                                      \
+    (                                                                                                               \
+        ::std::is_void_v<decltype(BOOST_PP_SEQ_FOLD_LEFT(SENSITIVE_DATA_MASKING_UNWRAP_SEQ, (prefix), seq))>,       \
+        ::sensitive_data_masking::JsonPath{BOOST_PP_SEQ_FOR_EACH(SENSITIVE_DATA_MASKING_STRINGIZE_AND_COMMA,, seq)} \
+    )
 
 // cargo-claims-billing/src/utils/sensitive_data_masking.hpp
 #define MAKE_JSON_PATH(prefix, ...) \
@@ -966,12 +968,10 @@
     class ContractorsPartition##n final : public ContractorsBase {                                          \
     public:                                                                                                 \
         static constexpr const char* kName = "contractors-partitioned-" BOOST_PP_STRINGIZE(n) "-processor"; \
+                                                                                                            \
         ContractorsPartition##n(                                                                            \
-            const components::ComponentConfig& config,                                                      \
-            const components::ComponentContext& context                                                     \
-        )                                                                                                   \
-            : ContractorsBase(config, context, kName, n)                                                    \
-        {}                                                                                                  \
+            const components::ComponentConfig& config, const components::ComponentContext& context          \
+        ) : ContractorsBase(config, context, kName, n) {}                                                   \
     };
 
 // driver-tags/src/workers/processors/distlocks_contractors_generator.hpp
@@ -1385,7 +1385,7 @@
 // eats-place-storage/src/utils/place_data_upserters.hpp
 #define INIT_UPSERTER(UPSERTER_NAME)                                                                               \
     class UPSERTER_NAME : public IUpserter {                                                                       \
-public:                                                                                                            \
+    public:                                                                                                        \
         std::string GetMetricLabel() const override;                                                               \
         bool Upsert(                                                                                               \
             storages::postgres::Transaction& trx, handlers::libraries::eats_place_info::PlaceLogbrokerData&& place \
@@ -1666,10 +1666,10 @@ public:                                                                         
 // eats-report-storage/src/utils/define_struct.hpp
 #define DEFINE_PARSABLE_STRUCT(name, attributes)                                                                    \
     struct name {                                                                                                   \
-private:                                                                                                            \
+    private:                                                                                                        \
         const std::unordered_map<std::string, eats_report_storage::utils::FieldFillInterface> fill_ops_;            \
                                                                                                                     \
-public:                                                                                                             \
+    public:                                                                                                         \
         DECLARE_ATTRIBUTES(attributes)                                                                              \
         const std::unordered_map<std::string, eats_report_storage::utils::FieldFillInterface>& GetFillOps() const { \
             return fill_ops_;                                                                                       \
@@ -3965,7 +3965,9 @@ public:                                                                         
 // vehicle-permits/src/utils/unordered_requirements.hpp
 #define UNORDERED_REQUIREMENTS(nspace, Type, fields)    \
     namespace nspace {                                  \
+                                                        \
     UNORDERED_REQUIREMENTS_OPERATOR_EQUAL(Type, fields) \
+                                                        \
     }                                                   \
     UNORDERED_REQUIREMENTS_STD_HASH(nspace::Type, fields)
 
@@ -4468,7 +4470,7 @@ this line is still inside the raw string)text"); \
 // tests/format/src/format_test_input.cpp
 #define FORMAT_TYPE_CLASS(Name)                      \
     class Name##Derived final : public Owner {       \
-public:                                              \
+    public:                                          \
         Name##Derived(int value) { member = value; } \
     };
 
@@ -4502,7 +4504,7 @@ public:                                              \
 #define FORMAT_SEMILESS_TEXT() "part"
 
 // tests/format/src/format_test_input.cpp
-#define FORMAT_SEMILESS_CONCAT() FORMAT_SEMILESS_TEXT() FORMAT_SEMILESS_TEXT()"end"
+#define FORMAT_SEMILESS_CONCAT() FORMAT_SEMILESS_TEXT() FORMAT_SEMILESS_TEXT() "end"
 
 // tests/format/src/format_test_input.cpp
 #define FORMAT_ANON_ENUM(name) \
@@ -5004,3 +5006,15 @@ Name {                                \
     value;                          \
     }                               \
     end
+
+// Outdented case-body braces retain the macro continuation indentation.
+#define FORMAT_MACRO_CASE_BODY(value) \
+    switch (value) {                  \
+        case 0: {                     \
+            InitializeStep();         \
+            UpdateStep();             \
+            break;                    \
+        }                             \
+        default:                      \
+            break;                    \
+    }

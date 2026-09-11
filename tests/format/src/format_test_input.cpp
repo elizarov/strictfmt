@@ -4959,3 +4959,31 @@ using NestedTemplateValue=Constant<Constant<1 FORMAT_SEMILESS_ADD(2)>::value FOR
 constexpr int BareList[]={FORMAT_BARE_LIST_VALUES FORMAT_BARE_LIST_EMPTY};
 constexpr int CallList[]={1,FORMAT_SEMILESS_LIST_VALUES() FORMAT_SEMILESS_LIST_EMPTY()};
 }
+
+namespace AutomaticMacroCalls {
+TEST(PlainFixture, Body) { Run(); }
+TEST_WITH_THREADS(PlainFixture, ParallelBody, 2) { Run(); }
+BENCHMARK_DEFINE(CustomFixture, WithParameters)(Context& context) { Use(context); }
+REGISTER_BENCHMARK(CustomFixture)->Args({1, 2});
+GENERATED_TEST(EmptyArgument,) { Run(); }
+
+struct Calls {
+ Calls(Value* value);
+ Calls(const Calls& other);
+ DECLARE_PARAMETERS(Helper,(int* array,int size),void);
+ DECLARE_CALLBACKS((void (*callback)(int,const char*),int (&values)[3]));
+ CHECK_VALUES((a*b),(c&&d));
+ INSPECT_ARGUMENTS(Result,Method,(Context* context));
+ FORMAT_METHOD_SIGNATURE(Result,Method,(Context* context,Value&& value));
+ FORMAT_METHOD_SIGNATURE(Result,Nested,((Context* context),((Value&& value))),());
+ FORMAT_METHOD_SIGNATURE(Result,Qualified,(Context* context),(ref(&),override));
+};
+
+void ControlBodies(Image& image) {
+ FOR_PIXELS(image,x) { FOR_PIXELS(image,y) { Consume(x,y); } }
+}
+void EmptyArguments() { CALL_EMPTY(,CALL_EMPTY(value,),CALL_EMPTY(),); }
+bool assignable=CHECK_ASSIGNABLE(T,T&&,value=std::move(other));
+const char* name="prefix-" STRINGIZE(index) "-suffix";
+KEYWORD_ARGUMENTS(Flags, PARAMETERS(typename,T),FLAGS(const,noexcept)) { Run(); }
+}

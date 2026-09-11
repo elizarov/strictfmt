@@ -46,9 +46,6 @@ put its `.cpp-format` contents in an HTML comment immediately before the fence:
 ````markdown
 <!-- .cpp-format
 ColumnLimit: 40
-MacroCategories:
-  CallSyntaxMacros:
-    - TEST_CASE
 -->
 ```cpp
 TEST_CASE(

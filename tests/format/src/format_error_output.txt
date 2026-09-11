@@ -1,4 +1,5 @@
-<stdin>: parse failed at 4:10 near missing )
+<stdin>: parse failed at 5:1 near missing )
+<stdin>: parse failed at 7:1 near missing ;
 <stdin>: parse failed at 8:9 near ERROR
 <stdin>: parse failed at 17:5 near ERROR
 <stdin>: parse failed at 17:27 near missing }

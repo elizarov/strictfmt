@@ -6,7 +6,29 @@ Macro categories configure how identifiers are parsed at use sites, including us
 
 ## Macro Arguments
 
-Macro argument lists permit empty and comment-only arguments in any position. `CallSyntaxMacros` also permit a statement sequence as a structured argument in any position, including a sequence whose final statement ends in a semicolon. Separator commas are preserved, including a comma immediately before the closing parenthesis.
+Calls that do not fit ordinary C++ argument syntax accept structured macro fragments, including types, parameter lists, statement sequences, and empty or comment-only arguments. Ordinary C++ interpretations take precedence when both fit. Macro argument separators are preserved, including a comma immediately before the closing parenthesis.
+
+```cpp
+bool assignable = CHECK_ASSIGNABLE(T, T&&, value = std::move(other));
+```
+
+A macro call may introduce a block body, including a loop body inside a function.
+
+```cpp
+UTEST_MT(FormatterMacroFixture, KeepsThreads, 2) { RunThreadedTest(); }
+```
+
+A macro header may also have trailing C++ parameters.
+
+```cpp
+BENCHMARK_DEFINE_F(FormatterBenchmark, Inline)(benchmark::State& state) { UseBenchmarkState(state); }
+```
+
+Namespace-scope calls, including an optional configured bare-macro suffix or `->` chain, form one declaration item.
+
+```cpp
+BENCHMARK_TEMPLATE(RecentPeriodOfPercentilesAccountBenchmark, DefaultClock)->ThreadRange(1, 16);
+```
 
 ## Macro Replacements
 
@@ -76,13 +98,15 @@ Runtime macro category lookup is implemented by the custom scanner; see [scanner
 
 `DeclarationPrefixMacros` names macro identifiers used as modifiers before [declaration-like items](glossary.md#declaration-like-item). A declaration-prefix modifier may have a macro argument list when its spelling is function-like but its use-site role is still a modifier rather than a standalone macro call.
 
+A macro before a declaration may expand to an annotation or a separate declaration. This category identifies `API_EXPORT` as a modifier, keeping it attached to `int value;`. Without configuration, this example fails to parse.
+
 <!-- .cpp-format
 MacroCategories:
   DeclarationPrefixMacros:
-    - ATTRIBUTE_NO_SANITIZE_UNDEFINED
+    - API_EXPORT
 -->
 ```cpp
-ATTRIBUTE_NO_SANITIZE_UNDEFINED std::size_t AttributePrefixedFunction(const BoundsBlock& block, float value) noexcept;
+API_EXPORT int value;
 ```
 
 <!-- .cpp-format
@@ -94,9 +118,22 @@ MacroCategories:
 GTEST_INTERNAL_DEPRECATE_AND_INLINE("Use NewApi() instead") int OldApi();
 ```
 
+Declaration-prefixed macro call: declaration modifiers may precede a macro when the macro itself supplies the declaration body.
+
+<!-- .cpp-format
+MacroCategories:
+  DeclarationPrefixMacros:
+    - API_EXPORT
+-->
+```cpp
+API_EXPORT DEFINE_MUTEX(global_mutex);
+```
+
 ### StatementPrefixMacros
 
 `StatementPrefixMacros` names modifiers that precede a complete statement. A prefix may have macro arguments, and several prefixes may nest. The prefix and its following statement form one control-flow body, including when braces are added to an enclosing control statement.
+
+In `DISCARD_RESULT *value;`, the prefix precedes a dereference expression. Without this category, `DISCARD_RESULT` is parsed as a type and `*` attaches to it as a pointer declarator.
 
 <!-- .cpp-format
 MacroCategories:
@@ -105,6 +142,8 @@ MacroCategories:
     - FOR_EACH_VALUE
 -->
 ```cpp
+void Discard() { DISCARD_RESULT *value; }
+
 void Exercise(bool enabled) {
     if (enabled) {
         DISCARD_RESULT Run();
@@ -118,6 +157,20 @@ void Exercise(bool enabled) {
 ### BareIdentifierMacros
 
 `BareIdentifierMacros` names macro identifiers used as bare tokens in supported non-call positions. A bare token may supply a fragment of an enum or braced initializer list. A configured token remains valid as an expression atom when the same project also passes it as a normal call argument or binary-expression operand.
+
+A bare macro may complete a statement where an ordinary identifier would remain an expression operand. Configuration separates `EMIT_EVENT` from the unary expression `+value;` below; without it, both form one addition expression on the same line.
+
+<!-- .cpp-format
+MacroCategories:
+  BareIdentifierMacros:
+    - EMIT_EVENT
+-->
+```cpp
+void Emit() {
+    EMIT_EVENT
+    +value;
+}
+```
 
 **Calling-convention modifier:** the macro appears in a declarator where a platform calling-convention token is expected.
 
@@ -213,75 +266,20 @@ MacroCategories:
 FlatTuple<GTEST_FLAT_TUPLE_INT256 int> tuple;
 ```
 
-### CallSyntaxMacros
+### MethodDeclarationMacros
 
-`CallSyntaxMacros` names macro identifiers used as macro-style calls where an ordinary C++ expression call does not fit. Configure them for syntax differences such as argument lists containing type fragments, not merely for uppercase or function-like spelling.
+`MethodDeclarationMacros` names class-member macros taking a return type, method name, parameter list, and optional qualifier list. Configuration assigns these argument roles, including nested declarators, instead of treating every argument as an expression.
 
-<!-- .cpp-format
-MacroCategories:
-  CallSyntaxMacros:
-    - CHECK_ASSIGNABLE
--->
-```cpp
-bool assignable = CHECK_ASSIGNABLE(T, T&&, value = std::move(other));
-```
-
-Macro function definition: the macro call header is followed by a compound statement body.
+`Context* context` can also mean multiplication. Configuration selects the parameter interpretation below; without it, the argument formats as `(Context * context)`.
 
 <!-- .cpp-format
 MacroCategories:
-  CallSyntaxMacros:
-    - UTEST_MT
--->
-```cpp
-UTEST_MT(FormatterMacroFixture, KeepsThreads, 2) { RunThreadedTest(); }
-```
-
-Macro function definition with trailing C++ parameters: the macro call is followed by a normal parameter list before the body.
-
-<!-- .cpp-format
-MacroCategories:
-  CallSyntaxMacros:
-    - BENCHMARK_DEFINE_F
--->
-```cpp
-BENCHMARK_DEFINE_F(FormatterBenchmark, Inline)(benchmark::State& state) { UseBenchmarkState(state); }
-```
-
-Namespace-scope macro call statement: the whole call, optional configured bare-macro suffix, and optional `->` chain are formatted as one declaration item.
-
-<!-- .cpp-format
-MacroCategories:
-  CallSyntaxMacros:
-    - BENCHMARK_TEMPLATE
--->
-```cpp
-BENCHMARK_TEMPLATE(RecentPeriodOfPercentilesAccountBenchmark, DefaultClock)->ThreadRange(1, 16);
-```
-
-Declaration-prefixed macro call: declaration modifiers may precede a configured call-syntax macro when the macro itself supplies the declaration body.
-
-<!-- .cpp-format
-MacroCategories:
-  DeclarationPrefixMacros:
-    - API_EXPORT
-  CallSyntaxMacros:
-    - DEFINE_MUTEX
--->
-```cpp
-API_EXPORT DEFINE_MUTEX(global_mutex);
-```
-
-Class member declaration macro: the macro call expands to a method declaration inside class scope.
-
-<!-- .cpp-format
-MacroCategories:
-  CallSyntaxMacros:
+  MethodDeclarationMacros:
     - MOCK_METHOD
 -->
 ```cpp
-class MockValue {
-    MOCK_METHOD(void, SetValue, (std::string_view, std::string&&), (override));
+class MockStore {
+    MOCK_METHOD(void, Save, (Context* context), (ref(&), override));
 };
 ```
 
@@ -289,17 +287,17 @@ class MockValue {
 
 `SemicolonlessCallMacros` names function-like macro invocations that form complete declaration or statement items without requiring a trailing semicolon, or supply fragments of enum and braced initializer lists. Each invocation remains one item, including when adjacent to another item or a control-body delimiter. Configured calls retain their category inside structured macro replacements.
 
+A following parenthesized expression may start another statement or continue a chained call. Configuration separates `EMIT_EVENT(x)` from `(++count);` below; without it, they format as one chained call.
+
 <!-- .cpp-format
 MacroCategories:
   SemicolonlessCallMacros:
-    - GTEST_DISABLE_DEPRECATED_PUSH_
-    - GTEST_DISABLE_DEPRECATED_POP_
+    - EMIT_EVENT
 -->
 ```cpp
-void UseDeprecated() {
-    GTEST_DISABLE_DEPRECATED_PUSH_(/* getenv: deprecated */)
-    UseDeprecatedApi();
-    GTEST_DISABLE_DEPRECATED_POP_()
+void Emit() {
+    EMIT_EVENT(x)
+    (++count);
 }
 ```
 
@@ -307,14 +305,17 @@ void UseDeprecated() {
 
 `TypeSpecifierMacros` names function-like macro identifiers that produce a C++ type specifier at the use site. They compose after declaration modifiers and after `typename` in a dependent type.
 
+A macro call followed by `*` may declare a pointer or multiply expressions. Configuration makes `TYPE_OF(T)` the declared type below; without it, the formatter treats `*` as multiplication and puts spaces on both sides.
+
 <!-- .cpp-format
 MacroCategories:
   TypeSpecifierMacros:
-    - GTEST_REMOVE_REFERENCE_AND_CONST_
+    - TYPE_OF
     - GTEST_BIND_
 -->
 ```cpp
-typedef GTEST_REMOVE_REFERENCE_AND_CONST_(Container) RawContainer;
+void Declare() { TYPE_OF(T)* value; }
+
 typedef typename GTEST_BIND_(Selector, Type) BoundTest;
 ```
 
@@ -323,6 +324,24 @@ typedef typename GTEST_BIND_(Selector, Type) BoundTest;
 `PreprocessorArgumentMacros` names function-like macros whose arguments are preprocessing-token sequences rather than C++ syntax. Use it only when the invocation deliberately inspects or transforms its arguments as tokens, for example a test helper that stringizes an unexpanded macro invocation.
 
 The outer call remains a structured list that the formatter can split. The complete call composes in expression and type-specifier positions. When the macro is also listed in `SemicolonlessCallMacros`, its token arguments are preserved in complete declaration and statement items, including inside structured macro replacements. Within each argument, recursively nested parentheses are recognized while the complete preprocessing-token sequence is preserved as one formatter atom. Only parentheses protect an inner comma from separating outer arguments.
+
+Angle brackets may enclose C++ template arguments or remain ordinary preprocessing tokens. With `ColumnLimit: 20`, `TOKENS` splits its three preprocessing arguments below; without this category, `T<X, Y>` stays together as one C++ argument.
+
+<!-- .cpp-format
+ColumnLimit: 20
+MacroCategories:
+  PreprocessorArgumentMacros:
+    - TOKENS
+-->
+```cpp
+void CheckTokens() {
+    TOKENS(
+        T<X,
+        Y>,
+        NEXT
+    );
+}
+```
 
 <!-- .cpp-format
 MacroCategories:
@@ -348,6 +367,8 @@ using Types = Test<GMOCK_PP_FOR_EACH(TYPE_ELEMENT, ~, (int, float))>;
 
 Macros that look like plain function calls and whose arguments are all normal expressions do not belong here. Use this category for assertion-style macros whose documented argument is a statement.
 
+The first argument may be a declaration that also parses as a chained call. In `UASSERT_NO_THROW` below, `Result (function)(Argument)` declares a function returning `Result`; without this category, it formats as a chained call with no space after `Result`.
+
 <!-- .cpp-format
 MacroCategories:
   StatementArgumentMacros:
@@ -357,6 +378,8 @@ MacroCategories:
 -->
 ```cpp
 void CheckReads() {
+    UASSERT_NO_THROW(Result (function)(Argument));
+
     UEXPECT_THROW([[maybe_unused]] auto bytes_read = source.ReadSome(kBuffer, kDeadline), IoTimeout);
 
     UASSERT_NO_THROW(ydb::TopicWriter writer("test-writer", MakeWriterSettings(topic)));

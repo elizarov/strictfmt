@@ -4702,3 +4702,6 @@ Name {        \
 value;\
 }\
 end
+
+// Outdented case-body braces retain the macro continuation indentation.
+#define FORMAT_MACRO_CASE_BODY(value) switch(value){case 0:{InitializeStep();UpdateStep();break;}default:break;}

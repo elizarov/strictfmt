@@ -38,6 +38,23 @@ bool EndsStatementPrefix(const PrintToken& previous, const PrintToken& current) 
     return false;
 }
 
+bool EndsConcatenatedStringFragment(const PrintToken& previous, const PrintToken& current) {
+    if (previous.syntaxKind != SyntaxNodeKind::RightParen) {
+        return false;
+    }
+    for (
+        const SyntaxNode* fragment = previous.node;
+        fragment != nullptr && fragment->parent != nullptr;
+        fragment = fragment->parent
+    ) {
+        if (fragment->parent->kind == SyntaxNodeKind::ConcatenatedString) {
+            return PrintTokenSyntaxPathContains(current, fragment->parent) &&
+                !PrintTokenSyntaxPathContains(current, fragment);
+        }
+    }
+    return false;
+}
+
 bool IsUnaryContext(const PrintToken& token) { return token.parentKind == SyntaxNodeKind::UnaryExpression; }
 
 bool IsBinaryContext(const PrintToken& token) {
@@ -492,7 +509,7 @@ bool FormatTokenNeedsSpace(const PrintToken* previous, const PrintToken& current
     if (previous->syntaxKind == SyntaxNodeKind::NumberLiteral && current.syntaxKind == SyntaxNodeKind::Ellipsis) {
         return true;
     }
-    if (IsStringLike(*previous) && IsStringLike(current)) {
+    if ((IsStringLike(*previous) && IsStringLike(current)) || EndsConcatenatedStringFragment(*previous, current)) {
         return true;
     }
     if (IsUserDefinedLiteralSuffix(*previous, current)) {

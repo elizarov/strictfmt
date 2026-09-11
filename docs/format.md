@@ -380,7 +380,7 @@ auto value =
 
 ### String fragments
 
-Adjacent strings form an implicit concatenation chain, subject to [string-literal joining](#string-literal-joining). Forced multiline fragments align at expression indentation in single-value contexts and one continuation level deeper in lists.
+Adjacent strings and macro expansions form an implicit concatenation chain, subject to [string-literal joining](#string-literal-joining). Separate compact fragments that remain distinct by one space. Forced multiline fragments align at expression indentation in single-value contexts and one continuation level deeper in lists.
 
 <!-- .cpp-format
 ColumnLimit: 32

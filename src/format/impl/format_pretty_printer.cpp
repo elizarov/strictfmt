@@ -571,7 +571,8 @@ private:
     int CurrentColumn() const { return output_.CurrentColumn(indentLevel_); }
     int CurrentLineIndentLevel() const { return output_.CurrentLineIndentLevel(); }
     void WriteWithIndentOffset(std::string_view text, int offset) {
-        output_.WriteAtIndent(text, indentLevel_ + offset);
+        const int macroOffset = output_.State().macroContinuation ? 1 : 0;
+        output_.WriteAtIndent(text, indentLevel_ + offset + macroOffset);
     }
 
     void NewLineWithIndent(int indentLevel, std::optional<bool> macroContinuation = std::nullopt) {
