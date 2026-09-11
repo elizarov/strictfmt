@@ -3424,11 +3424,6 @@ module.exports = grammar(C, {
       return seq(item, repeat1(item));
     },
 
-    macro_preprocessing_token_call: $ => prec(PREC.CALL + 4, seq(
-      field('function', $._call_identifier),
-      field('arguments', $.preprocessing_token_argument_list),
-    )),
-
     macro_argument_punctuator: $ => choice(
       '...',
       '##',
@@ -4278,12 +4273,15 @@ module.exports = grammar(C, {
         $.macro_parenthesized_argument,
         alias($.macro_parameter_list, $.parameter_list),
         $.macro_preprocessing_token_sequence_argument,
-        $.macro_preprocessing_token_call,
         $.function_pointer_type_descriptor,
         $.macro_dependent_type_argument,
         $.type_descriptor,
         $.type_qualifier,
         $.noexcept,
+        $.type_parameter_declaration,
+        $.template_template_parameter_declaration,
+        $.variadic_type_parameter_declaration,
+        $.optional_type_parameter_declaration,
         $.macro_return_argument,
         $.macro_argument_punctuator,
       )),

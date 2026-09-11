@@ -222,3 +222,15 @@ Second
 #endif
 Last,
 };
+
+// Template parameters use their complete C++ productions inside recursive call arguments.
+void TemplateParameterFragments(){
+TOKENS(typename,class,typename... T,class... U,typename T=Value,template<class> class);
+TOKENS((template<class T> class Container),(typename,class),(((typename... Values))),);
+}
+void OrdinaryNestedCallArguments(){
+SetCursor(LoadCursor(nullptr,ResizeCursorName(corner)));
+report(ClassifyShadow(ValueView(cache),ValueView(proxy)));
+Inspect(Transform(Move(*value),Build(base)));
+}
+#define FORWARD_FIELD(x,y) Forward(FieldName(#x "." #y),x,y)

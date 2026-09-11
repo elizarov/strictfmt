@@ -3250,9 +3250,14 @@
     )
 
 // segments-provider/src/models/validation/proposed_query_changes.cpp
-#define TO_CHANGED_FIELD_NESTED(new_val, old_val, is_disabling, inner_field, field)           \
-    TO_CHANGED_FIELD_NESTED_OVERRIDE(                                                         \
-        new_val, old_val, is_disabling, FieldName(#inner_field "."#field), inner_field, field \
+#define TO_CHANGED_FIELD_NESTED(new_val, old_val, is_disabling, inner_field, field) \
+    TO_CHANGED_FIELD_NESTED_OVERRIDE(                                               \
+        new_val,                                                                    \
+        old_val,                                                                    \
+        is_disabling,                                                               \
+        FieldName(#inner_field "." #field),                                         \
+        inner_field,                                                                \
+        field                                                                       \
     )
 
 // shops/src/custom/logger.hpp

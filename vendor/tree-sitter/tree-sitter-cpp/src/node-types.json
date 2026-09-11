@@ -1120,10 +1120,6 @@
           "named": true
         },
         {
-          "type": "macro_preprocessing_token_call",
-          "named": true
-        },
-        {
           "type": "macro_preprocessing_token_sequence_argument",
           "named": true
         },
@@ -1137,6 +1133,10 @@
         },
         {
           "type": "noexcept",
+          "named": true
+        },
+        {
+          "type": "optional_type_parameter_declaration",
           "named": true
         },
         {
@@ -1160,11 +1160,23 @@
           "named": true
         },
         {
+          "type": "template_template_parameter_declaration",
+          "named": true
+        },
+        {
           "type": "type_descriptor",
           "named": true
         },
         {
+          "type": "type_parameter_declaration",
+          "named": true
+        },
+        {
           "type": "type_qualifier",
+          "named": true
+        },
+        {
+          "type": "variadic_type_parameter_declaration",
           "named": true
         }
       ]
@@ -7404,32 +7416,6 @@
           "named": true
         }
       ]
-    }
-  },
-  {
-    "type": "macro_preprocessing_token_call",
-    "named": true,
-    "fields": {
-      "arguments": {
-        "multiple": false,
-        "required": true,
-        "types": [
-          {
-            "type": "preprocessing_token_argument_list",
-            "named": true
-          }
-        ]
-      },
-      "function": {
-        "multiple": false,
-        "required": true,
-        "types": [
-          {
-            "type": "identifier",
-            "named": true
-          }
-        ]
-      }
     }
   },
   {
@@ -18237,11 +18223,11 @@
   },
   {
     "type": "true",
-    "named": false
+    "named": true
   },
   {
     "type": "true",
-    "named": true
+    "named": false
   },
   {
     "type": "try",

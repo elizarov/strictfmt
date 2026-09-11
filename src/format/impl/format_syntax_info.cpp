@@ -337,7 +337,6 @@ constexpr auto kSyntaxKindMappings = std::to_array<SyntaxKindMapping>({
     Tree(SyntaxNodeKind::Tree, "preprocessing_parenthesized_tokens", Bit(SyntaxNodeClass::PreserveTrailingComma)),
     Tree(SyntaxNodeKind::Tree, "macro_token_paste_expression"),
     Tree(SyntaxNodeKind::Tree, "macro_preprocessing_token_sequence_argument"),
-    Tree(SyntaxNodeKind::Tree, "macro_preprocessing_token_call"),
     Tree(SyntaxNodeKind::Tree, "disabled_code_placeholder_statement"),
     Tree(SyntaxNodeKind::Tree, "disabled_code_placeholder_field"),
     Tree(SyntaxNodeKind::Tree, "throw_expression"),

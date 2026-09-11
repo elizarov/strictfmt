@@ -31111,31 +31111,6 @@
         }
       ]
     },
-    "macro_preprocessing_token_call": {
-      "type": "PREC",
-      "value": 19,
-      "content": {
-        "type": "SEQ",
-        "members": [
-          {
-            "type": "FIELD",
-            "name": "function",
-            "content": {
-              "type": "SYMBOL",
-              "name": "_call_identifier"
-            }
-          },
-          {
-            "type": "FIELD",
-            "name": "arguments",
-            "content": {
-              "type": "SYMBOL",
-              "name": "preprocessing_token_argument_list"
-            }
-          }
-        ]
-      }
-    },
     "macro_argument_punctuator": {
       "type": "CHOICE",
       "members": [
@@ -36720,10 +36695,6 @@
               },
               {
                 "type": "SYMBOL",
-                "name": "macro_preprocessing_token_call"
-              },
-              {
-                "type": "SYMBOL",
                 "name": "function_pointer_type_descriptor"
               },
               {
@@ -36741,6 +36712,22 @@
               {
                 "type": "SYMBOL",
                 "name": "noexcept"
+              },
+              {
+                "type": "SYMBOL",
+                "name": "type_parameter_declaration"
+              },
+              {
+                "type": "SYMBOL",
+                "name": "template_template_parameter_declaration"
+              },
+              {
+                "type": "SYMBOL",
+                "name": "variadic_type_parameter_declaration"
+              },
+              {
+                "type": "SYMBOL",
+                "name": "optional_type_parameter_declaration"
               },
               {
                 "type": "SYMBOL",
