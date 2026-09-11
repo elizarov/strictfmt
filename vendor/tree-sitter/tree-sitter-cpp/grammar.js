@@ -761,7 +761,6 @@ module.exports = grammar(C, {
       $.preproc_guarded_namespace_definition,
       alias($.preproc_if_in_top_level, $.preproc_if),
       alias($.preproc_ifdef_in_top_level, $.preproc_ifdef),
-      $.top_level_macro_run_item,
       alias($.macro_prefixed_function_definition, $.function_definition),
       alias($.macro_prefixed_declaration, $.declaration),
       $.function_definition,
@@ -1100,8 +1099,6 @@ module.exports = grammar(C, {
 
     top_level_item_macro: $ => prec(PREC.CALL + 5, $.bare_macro_identifier),
 
-    top_level_decorator_macro: $ => prec(PREC.CALL + 8, $.macro_decorator_call_item),
-
     class_bare_macro_item: $ => prec.right(seq($.bare_macro_identifier, optional(';'))),
 
     class_macro_call_item: $ => prec.right(PREC.CALL + 8, seq(
@@ -1164,23 +1161,6 @@ module.exports = grammar(C, {
       $.semicolonless_call_macro_identifier,
       $.semicolonless_preprocessor_call_macro_identifier,
     ),
-
-    macro_decorator_call_item: $ => prec(PREC.CALL + 8, seq(
-      field('function', $._call_identifier),
-      field('arguments', $.argument_list),
-    )),
-
-    commented_macro_call_item: $ => prec(PREC.CALL + 1, seq(
-      field('function', $._call_identifier),
-      field('arguments', $.argument_list),
-    )),
-
-    commented_macro_argument_list: $ => $.argument_list,
-
-    top_level_macro_run_item: $ => prec(PREC.CALL + 8, seq(
-      $.top_level_decorator_macro,
-      repeat1($.top_level_decorator_macro),
-    )),
 
     macro_prefixed_function_definition: $ => prec(PREC.CALL + 6, seq(
       $.function_prefix_macro,
@@ -2070,8 +2050,6 @@ module.exports = grammar(C, {
       alias($.qualified_type_function_definition, $.function_definition),
       $.standalone_attribute_preproc_if,
       $.macro_prefixed_field_declaration_item,
-      $.top_level_decorator_macro,
-      $.top_level_macro_run_item,
       alias($.inline_method_definition, $.function_definition),
       alias($.constructor_or_destructor_definition, $.function_definition),
       alias($.constructor_or_destructor_declaration, $.declaration),

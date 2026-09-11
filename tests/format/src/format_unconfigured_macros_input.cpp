@@ -191,3 +191,18 @@ STEP(Default)
 #endif
 Last,
 };
+
+// Adjacent macro items leave the following declaration's header intact.
+STEP(Warnings)
+ACTION(ReturnValue){return 5;}
+STEP(EndWarnings)
+TEST(Items,Declarations){Consume(value);}
+API_EXPORT(annotation) ns::Result GetResult(){return {};}
+namespace scoped_items {
+STEP(Metric,(name,"description"))
+ns::Result Read(){return {};}
+STEP(Last)
+}
+struct GeneratedItems {STEP(First) STEP(Second) void Method();};
+#define GENERATED_ITEMS(Name) struct Name {STEP(Fields) STEP(Methods)}
+REGISTER_CASE(Record,1,2) ANNOTATION;

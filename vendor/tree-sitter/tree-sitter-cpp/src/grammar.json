@@ -54,10 +54,6 @@
           "value": "preproc_ifdef"
         },
         {
-          "type": "SYMBOL",
-          "name": "top_level_macro_run_item"
-        },
-        {
           "type": "ALIAS",
           "content": {
             "type": "SYMBOL",
@@ -6452,14 +6448,6 @@
         {
           "type": "SYMBOL",
           "name": "macro_prefixed_field_declaration_item"
-        },
-        {
-          "type": "SYMBOL",
-          "name": "top_level_decorator_macro"
-        },
-        {
-          "type": "SYMBOL",
-          "name": "top_level_macro_run_item"
         },
         {
           "type": "ALIAS",
@@ -14388,14 +14376,6 @@
         "name": "bare_macro_identifier"
       }
     },
-    "top_level_decorator_macro": {
-      "type": "PREC",
-      "value": 23,
-      "content": {
-        "type": "SYMBOL",
-        "name": "macro_decorator_call_item"
-      }
-    },
     "class_bare_macro_item": {
       "type": "PREC_RIGHT",
       "value": 0,
@@ -14979,80 +14959,6 @@
           "name": "semicolonless_preprocessor_call_macro_identifier"
         }
       ]
-    },
-    "macro_decorator_call_item": {
-      "type": "PREC",
-      "value": 23,
-      "content": {
-        "type": "SEQ",
-        "members": [
-          {
-            "type": "FIELD",
-            "name": "function",
-            "content": {
-              "type": "SYMBOL",
-              "name": "_call_identifier"
-            }
-          },
-          {
-            "type": "FIELD",
-            "name": "arguments",
-            "content": {
-              "type": "SYMBOL",
-              "name": "argument_list"
-            }
-          }
-        ]
-      }
-    },
-    "commented_macro_call_item": {
-      "type": "PREC",
-      "value": 16,
-      "content": {
-        "type": "SEQ",
-        "members": [
-          {
-            "type": "FIELD",
-            "name": "function",
-            "content": {
-              "type": "SYMBOL",
-              "name": "_call_identifier"
-            }
-          },
-          {
-            "type": "FIELD",
-            "name": "arguments",
-            "content": {
-              "type": "SYMBOL",
-              "name": "argument_list"
-            }
-          }
-        ]
-      }
-    },
-    "commented_macro_argument_list": {
-      "type": "SYMBOL",
-      "name": "argument_list"
-    },
-    "top_level_macro_run_item": {
-      "type": "PREC",
-      "value": 23,
-      "content": {
-        "type": "SEQ",
-        "members": [
-          {
-            "type": "SYMBOL",
-            "name": "top_level_decorator_macro"
-          },
-          {
-            "type": "REPEAT1",
-            "content": {
-              "type": "SYMBOL",
-              "name": "top_level_decorator_macro"
-            }
-          }
-        ]
-      }
     },
     "macro_prefixed_function_definition": {
       "type": "PREC",

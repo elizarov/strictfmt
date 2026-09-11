@@ -3822,10 +3822,6 @@
           "named": true
         },
         {
-          "type": "top_level_macro_run_item",
-          "named": true
-        },
-        {
           "type": "type_definition",
           "named": true
         },
@@ -4626,14 +4622,6 @@
         },
         {
           "type": "template_declaration",
-          "named": true
-        },
-        {
-          "type": "top_level_decorator_macro",
-          "named": true
-        },
-        {
-          "type": "top_level_macro_run_item",
           "named": true
         },
         {
@@ -6994,32 +6982,6 @@
     }
   },
   {
-    "type": "macro_decorator_call_item",
-    "named": true,
-    "fields": {
-      "arguments": {
-        "multiple": false,
-        "required": true,
-        "types": [
-          {
-            "type": "argument_list",
-            "named": true
-          }
-        ]
-      },
-      "function": {
-        "multiple": false,
-        "required": true,
-        "types": [
-          {
-            "type": "identifier",
-            "named": true
-          }
-        ]
-      }
-    }
-  },
-  {
     "type": "macro_dependent_type_argument",
     "named": true,
     "fields": {},
@@ -8684,10 +8646,6 @@
           "named": true
         },
         {
-          "type": "top_level_macro_run_item",
-          "named": true
-        },
-        {
           "type": "type_definition",
           "named": true
         },
@@ -10329,19 +10287,11 @@
           "named": true
         },
         {
-          "type": "top_level_decorator_macro",
-          "named": true
-        },
-        {
           "type": "top_level_item_macro",
           "named": true
         },
         {
           "type": "top_level_macro_call_line_item",
-          "named": true
-        },
-        {
-          "type": "top_level_macro_run_item",
           "named": true
         },
         {
@@ -10711,19 +10661,11 @@
           "named": true
         },
         {
-          "type": "top_level_decorator_macro",
-          "named": true
-        },
-        {
           "type": "top_level_item_macro",
           "named": true
         },
         {
           "type": "top_level_macro_call_line_item",
-          "named": true
-        },
-        {
-          "type": "top_level_macro_run_item",
           "named": true
         },
         {
@@ -11233,10 +11175,6 @@
           "named": true
         },
         {
-          "type": "top_level_macro_run_item",
-          "named": true
-        },
-        {
           "type": "type_definition",
           "named": true
         },
@@ -11591,19 +11529,11 @@
           "named": true
         },
         {
-          "type": "top_level_decorator_macro",
-          "named": true
-        },
-        {
           "type": "top_level_item_macro",
           "named": true
         },
         {
           "type": "top_level_macro_call_line_item",
-          "named": true
-        },
-        {
-          "type": "top_level_macro_run_item",
           "named": true
         },
         {
@@ -12275,19 +12205,11 @@
           "named": true
         },
         {
-          "type": "top_level_decorator_macro",
-          "named": true
-        },
-        {
           "type": "top_level_item_macro",
           "named": true
         },
         {
           "type": "top_level_macro_call_line_item",
-          "named": true
-        },
-        {
-          "type": "top_level_macro_run_item",
           "named": true
         },
         {
@@ -16541,21 +16463,6 @@
     }
   },
   {
-    "type": "top_level_decorator_macro",
-    "named": true,
-    "fields": {},
-    "children": {
-      "multiple": false,
-      "required": true,
-      "types": [
-        {
-          "type": "macro_decorator_call_item",
-          "named": true
-        }
-      ]
-    }
-  },
-  {
     "type": "top_level_item_macro",
     "named": true,
     "fields": {},
@@ -16606,21 +16513,6 @@
           }
         ]
       }
-    }
-  },
-  {
-    "type": "top_level_macro_run_item",
-    "named": true,
-    "fields": {},
-    "children": {
-      "multiple": true,
-      "required": true,
-      "types": [
-        {
-          "type": "top_level_decorator_macro",
-          "named": true
-        }
-      ]
     }
   },
   {
@@ -16777,10 +16669,6 @@
         },
         {
           "type": "top_level_macro_call_line_item",
-          "named": true
-        },
-        {
-          "type": "top_level_macro_run_item",
           "named": true
         },
         {
@@ -18045,11 +17933,11 @@
   },
   {
     "type": "false",
-    "named": false
+    "named": true
   },
   {
     "type": "false",
-    "named": true
+    "named": false
   },
   {
     "type": "final",
