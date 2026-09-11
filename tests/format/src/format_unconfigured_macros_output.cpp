@@ -438,3 +438,36 @@ void TypeListCalls() {
     Factory<TYPE_ITEMS const T*>();
     Inspect(Pack<TYPE_ITEMS int>{});
 }
+
+// Argument roles also apply when a call supplies a namespace or class item.
+GENERATE_FIELDS((int, id)(bool, enabled))
+DEFINE_ACTION(
+    Work();
+    Finish();,
+    Startup
+)
+struct ItemArguments {
+    GENERATE_FIELDS((int, value)(Value, data))
+    DEFINE_ACTION(
+        Work();,
+        OnEvent
+    )
+    void Method();
+};
+namespace ItemScope {
+
+TOKENS((int, value)(bool, flag))->Label("values");
+DEFINE_ACTION(
+    if (ready) {
+        Work();
+    } else {
+        Finish();
+    },
+    OnReady
+)
+
+}
+#define TOKEN_FIELDS(Name)                           \
+    struct Name {                                    \
+        GENERATE_FIELDS((int, field)(bool, enabled)) \
+    }

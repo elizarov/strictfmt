@@ -1700,16 +1700,23 @@ class FormatCommandTests(unittest.TestCase):
         self.assert_no_unsupported_placement_warnings(result)
 
     def test_macro_corpus_parses_without_configuration(self) -> None:
+        role_config = MACRO_ROLES_FORMAT_CONFIG.read_text(encoding="utf-8")
+        configurations = {"empty": "MacroCategories: {}\n"}
+        for category in re.findall(r"^  (\w+Macros):$", role_config, re.MULTILINE):
+            configurations[f"without {category}"] = re.sub(
+                rf"^  {category}:\n(?:    .*\n)*", "", role_config, flags=re.MULTILINE
+            )
         TEST_TEMP_ROOT.mkdir(exist_ok=True)
         with tempfile.TemporaryDirectory(prefix="unconfigured_macros_", dir=TEST_TEMP_ROOT) as temp_dir:
             config = Path(temp_dir) / ".cpp-format"
-            config.write_text("MacroCategories: {}\n", encoding="utf-8")
-            for fixture in (UNCONFIGURED_MACROS_INPUT_FIXTURE, UNCONFIGURED_MACROS_OUTPUT_FIXTURE):
-                with self.subTest(fixture=fixture):
-                    result = native_format(
-                        "--stdin", "--dump-syntax-tree", "--style", str(config), input_text=read_fixture(fixture)
-                    )
-                    self.assertEqual(0, result.returncode, msg=result.stderr)
+            for name, settings in configurations.items():
+                config.write_text(settings, encoding="utf-8")
+                for fixture in (UNCONFIGURED_MACROS_INPUT_FIXTURE, UNCONFIGURED_MACROS_OUTPUT_FIXTURE):
+                    with self.subTest(configuration=name, fixture=fixture):
+                        result = native_format(
+                            "--stdin", "--dump-syntax-tree", "--style", str(config), input_text=read_fixture(fixture)
+                        )
+                        self.assertEqual(0, result.returncode, msg=result.stderr)
 
     def test_macro_roles_format_to_expected_output(self) -> None:
         result = native_format(

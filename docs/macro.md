@@ -303,7 +303,7 @@ typedef typename GTEST_BIND_(Selector, Type) BoundTest;
 
 `PreprocessorArgumentMacros` names macros whose arguments are preprocessing-token sequences rather than C++ syntax. Use it only when the invocation deliberately inspects or transforms its arguments as tokens, for example a test helper that stringizes an unexpanded macro invocation.
 
-The outer call remains a structured list that the formatter can split. The complete call composes in expression and type-specifier positions. When the macro is also listed in `SemicolonlessCallMacros`, its token arguments are preserved in complete declaration and statement items, including inside structured macro replacements. Within each argument, recursively nested parentheses are recognized while the complete preprocessing-token sequence is preserved as one formatter atom. Only parentheses protect an inner comma from separating outer arguments.
+The outer call remains a structured list that the formatter can split. The complete call composes in expression and type-specifier positions as well as namespace and class items, including inside structured macro replacements. `SemicolonlessCallMacros` additionally fixes its complete-item or list-fragment role. Within each argument, recursively nested parentheses are recognized while the complete preprocessing-token sequence is preserved as one formatter atom. Only parentheses protect an inner comma from separating outer arguments.
 
 Angle brackets may enclose C++ template arguments or remain ordinary preprocessing tokens. With `ColumnLimit: 20`, `TOKENS` splits its three preprocessing arguments below; without this category, `T<X, Y>` stays together as one C++ argument.
 

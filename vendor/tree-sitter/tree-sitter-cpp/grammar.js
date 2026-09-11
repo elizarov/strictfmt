@@ -1139,8 +1139,7 @@ module.exports = grammar(C, {
     ))),
 
     top_level_call_statement: $ => prec.dynamic(1, prec.right(PREC.CALL + 4, seq(
-      field('function', $._call_identifier),
-      field('arguments', $.argument_list),
+      itemCall($),
       optional(field('suffix', $.bare_macro_identifier)),
       optional($.macro_arrow_chain),
       optional(';'),
@@ -1152,10 +1151,7 @@ module.exports = grammar(C, {
     ))),
 
     macro_call_item: $ => choice(
-      prec.right(PREC.CALL + 2, seq(
-        field('function', $._call_identifier),
-        field('arguments', $.argument_list),
-      )),
+      prec.right(PREC.CALL + 2, itemCall($)),
       prec.right(PREC.CALL + 2, semicolonlessMacroCall($)),
     ),
 
@@ -4724,6 +4720,23 @@ function memberPointerDeclarator($, declarator) {
     pointerQualifiers($),
     field('declarator', declarator),
   )));
+}
+
+function itemCall($) {
+  return choice(
+    seq(
+      field('function', $._call_identifier),
+      field('arguments', $.argument_list),
+    ),
+    seq(
+      field('function', $.preprocessor_argument_macro_identifier),
+      field('arguments', $.preprocessing_token_argument_list),
+    ),
+    seq(
+      field('function', $.statement_argument_macro_identifier),
+      field('arguments', $.macro_statement_argument_list),
+    ),
+  );
 }
 
 function callExpression($, callee) {

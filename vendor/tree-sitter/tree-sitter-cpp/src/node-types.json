@@ -6713,6 +6713,10 @@
             "named": true
           },
           {
+            "type": "macro_statement_argument_list",
+            "named": true
+          },
+          {
             "type": "preprocessing_token_argument_list",
             "named": true
           }
@@ -6727,11 +6731,19 @@
             "named": true
           },
           {
+            "type": "preprocessor_argument_macro_identifier",
+            "named": true
+          },
+          {
             "type": "semicolonless_call_macro_identifier",
             "named": true
           },
           {
             "type": "semicolonless_preprocessor_call_macro_identifier",
+            "named": true
+          },
+          {
+            "type": "statement_argument_macro_identifier",
             "named": true
           }
         ]
@@ -16429,6 +16441,14 @@
           {
             "type": "argument_list",
             "named": true
+          },
+          {
+            "type": "macro_statement_argument_list",
+            "named": true
+          },
+          {
+            "type": "preprocessing_token_argument_list",
+            "named": true
           }
         ]
       },
@@ -16438,6 +16458,14 @@
         "types": [
           {
             "type": "identifier",
+            "named": true
+          },
+          {
+            "type": "preprocessor_argument_macro_identifier",
+            "named": true
+          },
+          {
+            "type": "statement_argument_macro_identifier",
             "named": true
           }
         ]
