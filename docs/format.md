@@ -42,7 +42,7 @@ This document specifies the source layout produced by `strictfmt`. Wrapping exam
 Do not vertically align tokens across lines, with two exceptions:
 
 1. Align a run of trailing `//` comments on consecutive lines in the same syntactic group when the aligned run fits within the line limit. Non-delimiting expression wrappers do not divide an alignment group; a nested delimiter group does.
-2. Align continuation backslashes in macro definitions as specified in [Macro Replacements](macro.md#macro-replacements).
+2. Align continuation backslashes in macro definitions as specified in [Macro Definitions](macro.md#macro-definitions).
 
 A standalone `//` comment immediately following a trailing `//` comment, or its continuation, is a continuation when their `//` tokens start in the same original source column. Align it with the anchor's formatted column. This is the only rule for which an original source column affects formatting.
 
@@ -719,7 +719,7 @@ Without groups, retain source order and blank-separated blocks. Blank lines befo
 
 ## Comma Normalization
 
-For every non-empty comma-separated list inside `{ ... }`, omit the trailing comma in compact and packed layouts and add it in one-item-per-line layout. Remove trailing commas from lists with other delimiters, except for [macro argument separators](macro.md#macro-arguments). Place the terminal comma before trailing definitions or token-free directives. Do not insert a comma after an include-supplied fragment; its separators belong to the included source. Preserve the caller-written separators of configured bare or semicolonless macro expansions that form whole list fragments, and place each expansion on its own line.
+For every non-empty comma-separated list inside `{ ... }`, omit the trailing comma in compact and packed layouts and add it in one-item-per-line layout. Remove trailing commas from lists with other delimiters, except for [macro argument separators](macro.md#macro-categories). Place the terminal comma before trailing definitions or token-free directives. Do not insert a comma after an include-supplied fragment; its separators belong to the included source. Preserve the caller-written separators of configured bare or semicolonless macro expansions that form whole list fragments, and place each expansion on its own line.
 
 <!-- .cpp-format
 ColumnLimit: 30
