@@ -176,3 +176,18 @@ Info* Register(const char* suite, const char* test,
 }
 }
 #endif
+
+// The call fallback also supplies whole enum and initializer-list fragments.
+enum class ExpandedFields {First=0,STEP(Fields) Last,};
+enum class AdjacentFields {STEP(Read) STEP(Write)};
+auto expanded_values={STEP(Read) STEP(Write)};
+auto mixed_values={1,STEP(Middle)2};
+auto nested_values={STEP(Nested({1,2})) STEP(Other())};
+enum class ConditionalFields {
+#if ENABLE_FIELDS
+STEP(Extra)
+#else
+STEP(Default)
+#endif
+Last,
+};

@@ -1592,7 +1592,7 @@
                 "members": [
                   {
                     "type": "SYMBOL",
-                    "name": "macro_expansion"
+                    "name": "_macro_list_fragment"
                   },
                   {
                     "type": "CHOICE",
@@ -1726,7 +1726,7 @@
                 "members": [
                   {
                     "type": "SYMBOL",
-                    "name": "macro_expansion"
+                    "name": "_macro_list_fragment"
                   },
                   {
                     "type": "CHOICE",
@@ -1831,7 +1831,7 @@
                 "members": [
                   {
                     "type": "SYMBOL",
-                    "name": "macro_expansion"
+                    "name": "_macro_list_fragment"
                   },
                   {
                     "type": "CHOICE",
@@ -6294,7 +6294,7 @@
                 "members": [
                   {
                     "type": "SYMBOL",
-                    "name": "macro_expansion"
+                    "name": "_macro_list_fragment"
                   },
                   {
                     "type": "CHOICE",
@@ -14457,7 +14457,7 @@
       "type": "SYMBOL",
       "name": "macro_call_item"
     },
-    "_unconfigured_statement_callee": {
+    "_unconfigured_call_callee": {
       "type": "PREC_DYNAMIC",
       "value": -10,
       "content": {
@@ -14468,6 +14468,44 @@
           "name": "expression"
         }
       }
+    },
+    "_unconfigured_call": {
+      "type": "PREC",
+      "value": 15,
+      "content": {
+        "type": "SEQ",
+        "members": [
+          {
+            "type": "FIELD",
+            "name": "function",
+            "content": {
+              "type": "SYMBOL",
+              "name": "_unconfigured_call_callee"
+            }
+          },
+          {
+            "type": "FIELD",
+            "name": "arguments",
+            "content": {
+              "type": "SYMBOL",
+              "name": "argument_list"
+            }
+          }
+        ]
+      }
+    },
+    "_macro_list_fragment": {
+      "type": "CHOICE",
+      "members": [
+        {
+          "type": "SYMBOL",
+          "name": "macro_expansion"
+        },
+        {
+          "type": "SYMBOL",
+          "name": "_unconfigured_call"
+        }
+      ]
     },
     "block_macro_call_line_item": {
       "type": "CHOICE",
@@ -14545,29 +14583,8 @@
           }
         },
         {
-          "type": "PREC",
-          "value": 15,
-          "content": {
-            "type": "SEQ",
-            "members": [
-              {
-                "type": "FIELD",
-                "name": "function",
-                "content": {
-                  "type": "SYMBOL",
-                  "name": "_unconfigured_statement_callee"
-                }
-              },
-              {
-                "type": "FIELD",
-                "name": "arguments",
-                "content": {
-                  "type": "SYMBOL",
-                  "name": "argument_list"
-                }
-              }
-            ]
-          }
+          "type": "SYMBOL",
+          "name": "_unconfigured_call"
         }
       ]
     },
@@ -32196,7 +32213,7 @@
       "value": -1,
       "content": {
         "type": "SYMBOL",
-        "name": "macro_expansion"
+        "name": "_macro_list_fragment"
       }
     },
     "macro_statement_argument_list": {
@@ -38649,6 +38666,19 @@
   ],
   "conflicts": [
     [
+      "expression",
+      "_macro_list_fragment",
+      "macro_expression_continuation"
+    ],
+    [
+      "_macro_list_fragment",
+      "block_macro_call_line_item"
+    ],
+    [
+      "expression",
+      "_macro_list_fragment"
+    ],
+    [
       "parameter_list",
       "macro_parenthesized_argument"
     ],
@@ -38670,7 +38700,7 @@
     ],
     [
       "call_expression",
-      "_unconfigured_statement_callee"
+      "_unconfigured_call_callee"
     ],
     [
       "_unconfigured_modifier_identifier",

@@ -298,12 +298,15 @@ module.exports = grammar(C, {
   ],
 
   conflicts: $ => [
+    [$.expression, $._macro_list_fragment, $.macro_expression_continuation],
+    [$._macro_list_fragment, $.block_macro_call_line_item],
+    [$.expression, $._macro_list_fragment],
     [$.parameter_list, $.macro_parenthesized_argument],
     [$.preprocessing_parenthesized_tokens, $.macro_parenthesized_argument],
     [$.argument_list, $.macro_parenthesized_argument],
     [$.preprocessing_token_argument_list, $.macro_parenthesized_argument],
     [$.expression, $.macro_preprocessing_token_sequence_argument],
-    [$.call_expression, $._unconfigured_statement_callee],
+    [$.call_expression, $._unconfigured_call_callee],
     [$._unconfigured_modifier_identifier, $.declaration_suffix_preproc_ifdef],
     [$.co_yield_statement, $._preprocessing_keyword],
     [$.co_return_statement, $._preprocessing_keyword],
@@ -1109,14 +1112,18 @@ module.exports = grammar(C, {
 
     class_macro_call: $ => $.macro_call_item,
 
-    _unconfigured_statement_callee: $ => prec.dynamic(-10, prec(PREC.CALL, $.expression)),
+    _unconfigured_call_callee: $ => prec.dynamic(-10, prec(PREC.CALL, $.expression)),
+
+    _unconfigured_call: $ => callExpression($, $._unconfigured_call_callee),
+
+    _macro_list_fragment: $ => choice($.macro_expansion, $._unconfigured_call),
 
     block_macro_call_line_item: $ => choice(
       prec.dynamic(10, prec.right(PREC.CALL + 8, seq(
         semicolonlessMacroCall($),
         optional($._line_break_whitespace),
       ))),
-      callExpression($, $._unconfigured_statement_callee),
+      $._unconfigured_call,
     ),
 
     block_macro_call_statement_item: $ => prec.dynamic(10, prec.right(PREC.CALL + 8, seq(
@@ -1268,7 +1275,7 @@ module.exports = grammar(C, {
     ...preprocIf('_in_field_declaration_list', $ => $._field_declaration_list_item, 2),
     ...preprocIf(
       '_in_enumerator_list',
-      $ => choice(seq($.enumerator, ','), seq($.macro_expansion, optional(','))),
+      $ => choice(seq($.enumerator, ','), seq($._macro_list_fragment, optional(','))),
       0,
       PREPROC_IFDEF | PREPROC_ELSE,
       false,
@@ -1701,7 +1708,7 @@ module.exports = grammar(C, {
       '{',
       repeat(choice(
         seq(choice($.enumerator, $.macro_call_item), ','),
-        seq($.macro_expansion, optional(',')),
+        seq($._macro_list_fragment, optional(',')),
         alias($.preproc_if_in_enumerator_list, $.preproc_if),
         alias($.preproc_ifdef_in_enumerator_list, $.preproc_ifdef),
         seq($.preproc_call, ','),
@@ -3592,7 +3599,7 @@ module.exports = grammar(C, {
       ));
     },
 
-    _macro_initializer_list_fragment: $ => prec.dynamic(-1, $.macro_expansion),
+    _macro_initializer_list_fragment: $ => prec.dynamic(-1, $._macro_list_fragment),
 
     macro_statement_argument_list: $ => seq(
       '(',

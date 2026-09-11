@@ -358,6 +358,7 @@ def compact_generated_parser(cpp_grammar_dir: Path) -> None:
     table = SYMBOL_REFERENCE_RE.sub(replace_symbol, table)
     table = IDENTITY_TABLE_ENTRY_RE.sub(r"\1", table)
     table = LEADING_INDENT_RE.sub("", table)
+    table = table.replace(" = ", "=").replace(", ", ",")
     compacted = generated[:table_start] + table + generated[table_end:]
     parser_path.write_bytes(compacted.encode("utf-8"))
 
