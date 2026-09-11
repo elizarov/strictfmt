@@ -16090,6 +16090,14 @@
           "named": true
         },
         {
+          "type": "argument_list",
+          "named": true
+        },
+        {
+          "type": "attribute_declaration",
+          "named": true
+        },
+        {
           "type": "concept_definition",
           "named": true
         },
@@ -16103,6 +16111,10 @@
         },
         {
           "type": "function_definition",
+          "named": true
+        },
+        {
+          "type": "identifier",
           "named": true
         },
         {

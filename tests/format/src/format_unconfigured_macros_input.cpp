@@ -280,3 +280,12 @@ TOKENS((int,value)(bool,flag))->Label("values");
 DEFINE_ACTION(if(ready)Work();else Finish();,OnReady)
 }
 #define TOKEN_FIELDS(Name) struct Name {GENERATE_FIELDS((int,field)(bool,enabled))}
+
+// Template headers share modifiers and attributes with their recursive declaration bodies.
+template<class T> API_EXPORT API_EXPORT static Result<T> ReadTemplate(T value){return Build(value);}
+template<class T> [[nodiscard]] API_EXPORT Result<T> ReadAnnotatedTemplate(T value){return Build(value);}
+template<class T> requires Enabled<T> API_EXPORT Result<T> ReadEnabledTemplate(T value){return Build(value);}
+template<class T> struct TemplateContainer {
+template<class U> API_EXPORT Pair<T,U> Convert(U value){return Build(value);}
+};
+#define TEMPLATE_ACCESSOR(Name) template<class T> API_EXPORT Result<T> Name(T value){return Build(value);}

@@ -157,19 +157,22 @@ function initializerClause($) {
 }
 
 function templateDeclarationItem($, qualifiedFunction = $.qualified_type_function_definition, declaration = $.declaration) {
-  return choice(
-    $._empty_declaration,
-    $.alias_declaration,
-    alias(qualifiedFunction, $.function_definition),
-    alias($.constructor_or_destructor_declaration, $.declaration),
-    alias($.operator_cast_declaration, $.declaration),
-    alias($.operator_cast_definition, $.function_definition),
-    $.preproc_value_declaration,
-    declaration,
-    $.template_declaration,
-    $.function_definition,
-    $.concept_definition,
-    $.friend_declaration,
+  return seq(
+    repeat(choice($._unconfigured_modifier, $.attribute_declaration)),
+    choice(
+      $._empty_declaration,
+      $.alias_declaration,
+      alias(qualifiedFunction, $.function_definition),
+      alias($.constructor_or_destructor_declaration, $.declaration),
+      alias($.operator_cast_declaration, $.declaration),
+      alias($.operator_cast_definition, $.function_definition),
+      $.preproc_value_declaration,
+      declaration,
+      $.template_declaration,
+      $.function_definition,
+      $.concept_definition,
+      $.friend_declaration,
+    ),
   );
 }
 
@@ -298,6 +301,13 @@ module.exports = grammar(C, {
   ],
 
   conflicts: $ => [
+    [$._declaration_modifiers, $.template_declaration],
+    [$.type_specifier, $._type_constraint, $._unconfigured_modifier_identifier],
+    [$._type_constraint, $._unconfigured_modifier_identifier],
+    [$.sized_type_specifier, $._unconfigured_modifier_identifier],
+    [$.type_specifier, $._unconfigured_modifier_identifier, $._non_pointer_declarator],
+    [$.type_specifier, $._unconfigured_modifier_identifier],
+    [$.type_specifier, $._call_identifier, $._unconfigured_modifier_identifier, $._non_pointer_declarator],
     [$.type_specifier, $._unconfigured_macro_item, $._template_argument_value_expression],
     [$.expression, $._call_identifier, $._unconfigured_macro_item, $._template_argument_value_expression],
     [$.type_specifier, $.expression, $._unconfigured_macro_item, $._template_argument_value_expression],
