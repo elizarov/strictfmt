@@ -91,6 +91,10 @@ The generated C++ parser must fit every limit imposed by the pinned upstream gen
 
 Generated-source compaction may change only the C spelling of values emitted by the stock generator. It must preserve every table value, table dimension, and runtime-facing structure, keep the parser in one source file, and require no runtime or parser-header change. Re-encoding or splitting parse tables is not source compaction and is not permitted by this exception.
 
+## Parser Goals
+
+The grammar and parser aim to accept all legal C++ code, including code with macros that would otherwise require slow macro expansion, and produce a useful syntax tree showing its structure and the roles of its elements. Rejecting invalid C++ code is not a goal.
+
 ## Structural Genericity
 
 Grammar must model C++ constructs generically, following the shape of the C++ language rather than the source samples. Every piece of the grammar must work and parse in a recursive way. A grammar rule must not encode a shallow convenience shape that only works for the current nesting level or current fixture; if adding one more nesting level would require another special case, the rule is not generic enough. If a construct can appear where another C++ construct can appear, the grammar must compose through the same recursive nonterminal.

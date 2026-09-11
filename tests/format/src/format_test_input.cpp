@@ -4977,12 +4977,23 @@ struct Calls {
  FORMAT_METHOD_SIGNATURE(Result,Method,(Context* context,Value&& value));
  FORMAT_METHOD_SIGNATURE(Result,Nested,((Context* context),((Value&& value))),());
  FORMAT_METHOD_SIGNATURE(Result,Qualified,(Context* context),(ref(&),override));
+ FORMAT_METHOD_SIGNATURE(Result,Trailing,(Context* context),(ref(&),override),);
+ FORMAT_METHOD_SIGNATURE(void,EmptyQualifier,(),);
 };
 
 void ControlBodies(Image& image) {
  FOR_PIXELS(image,x) { FOR_PIXELS(image,y) { Consume(x,y); } }
 }
 void EmptyArguments() { CALL_EMPTY(,CALL_EMPTY(value,),CALL_EMPTY(),); }
+void TrailingCallCommas() {
+ Invoke(value*factor,);
+ object.Invoke(value*factor,);
+ ::ns::Invoke<T>(value*factor,);
+ (GetCallable())(value*factor,);
+ Invoke(PATH_PART PATH_PART "leaf",);
+ Invoke(final->price(), override.member,);
+ Source request(dependencies, ns::Make<Request>(value), dependencies.extra.http_client, source_context,);
+}
 bool assignable=CHECK_ASSIGNABLE(T,T&&,value=std::move(other));
 const char* name="prefix-" STRINGIZE(index) "-suffix";
 KEYWORD_ARGUMENTS(Flags, PARAMETERS(typename,T),FLAGS(const,noexcept)) { Run(); }

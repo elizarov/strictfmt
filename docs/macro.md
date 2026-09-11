@@ -15,7 +15,18 @@ A macro's syntactic role cannot always be inferred from its use, so arbitrary co
 
 Categories apply at use sites, including inside other macro replacements. Configure them in [`.cpp-format`](config.md) using C/C++ identifiers, optionally followed by `*` to match a prefix such as `ATTRIBUTE*`; no other glob syntax is supported. The [custom scanner](scanner.md) performs category lookup.
 
-Without configuration, calls accept structured macro fragments, including types, parameter lists, statement sequences, and empty or comment-only arguments. Ordinary C++ interpretations take precedence when both fit. Macro argument separators are preserved, including a comma immediately before the closing parenthesis.
+Macros may have argument lists regardless of their syntactic role.
+
+### Macros without configuration
+
+Function and macro calls share one argument grammar, accepting expressions, types, parameter lists, statement sequences, and empty or comment-only arguments. Their commas follow the same [comma normalization](format.md#comma-normalization) rules:
+
+```cpp
+void Check() {
+    call(value);
+    call(value, );
+}
+```
 
 Macro calls can introduce a `{ ... }` body without configuration, as in tests or loops:
 
@@ -33,7 +44,7 @@ A macro call may also be followed by C++ parameters before its body:
 BENCHMARK_DEFINE_F(StoreFixture, Save)(benchmark::State& state) { RunBenchmark(state); }
 ```
 
-At namespace scope, a call and its following `->` chain or [configured suffix](#bareidentifiermacros) stay together as one declaration:
+At namespace scope, a call and its following `->` chain stay together as one declaration:
 
 ```cpp
 BENCHMARK_REGISTER_F(StoreFixture, Save)->Threads(4);
@@ -41,7 +52,7 @@ BENCHMARK_REGISTER_F(StoreFixture, Save)->Threads(4);
 
 ### DeclarationPrefixMacros
 
-`DeclarationPrefixMacros` names macro identifiers used as modifiers before [declaration-like items](glossary.md#declaration-like-item). A declaration-prefix modifier may have a macro argument list when its spelling is function-like but its use-site role is still a modifier rather than a standalone macro call.
+`DeclarationPrefixMacros` names macro identifiers used as modifiers before [declaration-like items](glossary.md#declaration-like-item).
 
 A macro before a declaration may expand to an annotation or a separate declaration. This category identifies `API_EXPORT` as a modifier, keeping it attached to `int value;`. Without configuration, this example fails to parse.
 
@@ -76,7 +87,7 @@ API_EXPORT DEFINE_MUTEX(global_mutex);
 
 ### StatementPrefixMacros
 
-`StatementPrefixMacros` names modifiers that precede a complete statement. A prefix may have macro arguments, and several prefixes may nest. The prefix and its following statement form one control-flow body, including when braces are added to an enclosing control statement.
+`StatementPrefixMacros` names modifiers that precede a complete statement. Several prefixes may nest. The prefix and its following statement form one control-flow body, including when braces are added to an enclosing control statement.
 
 In `DISCARD_RESULT *value;`, the prefix precedes a dereference expression. Without this category, `DISCARD_RESULT` is parsed as a type and `*` attaches to it as a pointer declarator.
 
@@ -169,7 +180,7 @@ enum netrc_t {
 };
 ```
 
-Declarator suffix macro: the macro appears after a declarator where an attribute-like suffix is expected, including parameter, field and function declarators.
+Declarator suffix macro: the macro appears after a declarator where an attribute-like suffix is expected, including parameter, field and function declarators. A suffix also stays attached to a preceding namespace-scope macro call.
 
 <!-- .cpp-format
 MacroCategories:
@@ -230,7 +241,7 @@ class MockStore {
 
 ### SemicolonlessCallMacros
 
-`SemicolonlessCallMacros` names function-like macro invocations that form complete declaration or statement items without requiring a trailing semicolon, or supply fragments of enum and braced initializer lists. Each invocation remains one item, including when adjacent to another item or a control-body delimiter. Configured calls retain their category inside structured macro replacements.
+`SemicolonlessCallMacros` names macro calls that form complete declaration or statement items without requiring a trailing semicolon, or supply fragments of enum and braced initializer lists. Each invocation remains one item, including when adjacent to another item or a control-body delimiter. Configured calls retain their category inside structured macro replacements.
 
 A following parenthesized expression may start another statement or continue a chained call. Configuration separates `EMIT_EVENT(x)` from `(++count);` below; without it, they format as one chained call.
 
@@ -268,7 +279,7 @@ Several such macros can follow one another; calls keep their configured argument
 
 ### TypeSpecifierMacros
 
-`TypeSpecifierMacros` names function-like macro identifiers that produce a C++ type specifier at the use site. They compose after declaration modifiers and after `typename` in a dependent type.
+`TypeSpecifierMacros` names macro calls that produce a C++ type specifier at the use site. They compose after declaration modifiers and after `typename` in a dependent type.
 
 A macro call followed by `*` may declare a pointer or multiply expressions. Configuration makes `TYPE_OF(T)` the declared type below; without it, the formatter treats `*` as multiplication and puts spaces on both sides.
 
@@ -286,7 +297,7 @@ typedef typename GTEST_BIND_(Selector, Type) BoundTest;
 
 ### PreprocessorArgumentMacros
 
-`PreprocessorArgumentMacros` names function-like macros whose arguments are preprocessing-token sequences rather than C++ syntax. Use it only when the invocation deliberately inspects or transforms its arguments as tokens, for example a test helper that stringizes an unexpanded macro invocation.
+`PreprocessorArgumentMacros` names macros whose arguments are preprocessing-token sequences rather than C++ syntax. Use it only when the invocation deliberately inspects or transforms its arguments as tokens, for example a test helper that stringizes an unexpanded macro invocation.
 
 The outer call remains a structured list that the formatter can split. The complete call composes in expression and type-specifier positions. When the macro is also listed in `SemicolonlessCallMacros`, its token arguments are preserved in complete declaration and statement items, including inside structured macro replacements. Within each argument, recursively nested parentheses are recognized while the complete preprocessing-token sequence is preserved as one formatter atom. Only parentheses protect an inner comma from separating outer arguments.
 

@@ -1344,6 +1344,35 @@ class FormatCommandTests(unittest.TestCase):
             result.stdout,
         )
 
+    def test_call_argument_structure_is_independent_of_trailing_comma(self) -> None:
+        calls = (
+            "Invoke(value * factor)",
+            "object.Invoke(value * factor)",
+            "ns::Invoke<T>(value * factor)",
+            "(GetCallable())(value * factor)",
+            "Invoke(Other(value, ), value * factor)",
+            'Invoke(PATH_PART PATH_PART "leaf")',
+            "Invoke((Context * context), void (*)(int))",
+            "Invoke(return value)",
+            "Invoke(final->price(), override.member)",
+            "Source request(dependencies, ns::Make<Request>(value), dependencies.extra.http_client, source_context)",
+        )
+        for call in calls:
+            with self.subTest(call=call):
+                trees = []
+                outputs = []
+                for expression in (call, call[:-1] + ",)"):
+                    source = f"void Exercise() {{ {expression}; }}\n"
+                    tree = native_format("--stdin", "--dump-syntax-tree", input_text=source)
+                    formatted = native_format("--stdin", input_text=source)
+                    self.assertEqual(0, tree.returncode, msg=tree.stderr)
+                    self.assertEqual(0, formatted.returncode, msg=formatted.stderr)
+                    trees.append(re.sub(r"\n\s+- kind: Comma(?=\n\s+- kind: RightParen)", "", tree.stdout))
+                    outputs.append(formatted.stdout)
+                self.assertEqual(trees[0], trees[1])
+                self.assertIn(", );", outputs[1])
+                self.assertEqual(outputs[0], outputs[1].replace(", );", ");"))
+
     def test_enum_macro_call_final_item_keeps_trailing_comma(self) -> None:
         result = native_format(
             "--stdin",
