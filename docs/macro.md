@@ -30,7 +30,7 @@ void Check() {
 
 Calls also fit type-only positions, including aliases and function parameters.
 
-An isolated identifier can supply a complete namespace or class item when it cannot form ordinary C++ syntax. Unknown modifiers are also accepted before class, struct, and union names and after function declarators or alias names. Configuration may still be needed to attach an identifier to the surrounding code.
+An isolated identifier can supply a complete namespace or class item, or a template-list fragment, when it cannot form ordinary C++ syntax. Unknown modifiers are also accepted before class, struct, and union names and after function declarators or alias names. Configuration may still be needed to attach an identifier to the surrounding code.
 
 Enum items may omit separating commas. Calls can supply enum or braced initializer list fragments, form statements without a trailing semicolon, or introduce a `{ ... }` body without configuration, as in tests or loops:
 

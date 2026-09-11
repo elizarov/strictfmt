@@ -26029,12 +26029,21 @@
       ]
     },
     "macro_template_argument_fragment": {
-      "type": "PREC",
-      "value": 1,
-      "content": {
-        "type": "SYMBOL",
-        "name": "bare_macro_identifier"
-      }
+      "type": "CHOICE",
+      "members": [
+        {
+          "type": "PREC",
+          "value": 1,
+          "content": {
+            "type": "SYMBOL",
+            "name": "bare_macro_identifier"
+          }
+        },
+        {
+          "type": "SYMBOL",
+          "name": "_unconfigured_macro_item"
+        }
+      ]
     },
     "_template_argument_expression": {
       "type": "CHOICE",
@@ -38508,6 +38517,28 @@
     }
   ],
   "conflicts": [
+    [
+      "type_specifier",
+      "_unconfigured_macro_item",
+      "_template_argument_value_expression"
+    ],
+    [
+      "expression",
+      "_call_identifier",
+      "_unconfigured_macro_item",
+      "_template_argument_value_expression"
+    ],
+    [
+      "type_specifier",
+      "expression",
+      "_unconfigured_macro_item",
+      "_template_argument_value_expression"
+    ],
+    [
+      "expression",
+      "_unconfigured_macro_item",
+      "_template_argument_value_expression"
+    ],
     [
       "type_specifier",
       "_call_identifier",

@@ -426,3 +426,15 @@ int ArrayReference(int (&matrix)[2][2], int row) { return matrix[row][0]; }
 
 template <typename T, typename D, typename D::Value (T::*member)>
 struct MemberPointer;
+
+// Template-list fragments compose recursively with ordinary types and expressions.
+Pack<TYPE_ITEMS int> values;
+
+using ExpandedTypes = Pack<TYPE_ITEMS int, Pack<TYPE_ITEMS Value>>;
+
+void ConsumeTypes(Pack<TYPE_ITEMS const Value*> values) { Inspect(values); }
+template <class T>
+void TypeListCalls() {
+    Factory<TYPE_ITEMS const T*>();
+    Inspect(Pack<TYPE_ITEMS int>{});
+}

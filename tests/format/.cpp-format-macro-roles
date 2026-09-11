@@ -11,6 +11,7 @@ MacroCategories:
     - GENERATED_MEMBERS
     - ANNOTATION
     - ENUM_PREFIX
+    - TYPE_ITEMS
   DeclarationPrefixMacros:
     - API_EXPORT
   StatementArgumentMacros:

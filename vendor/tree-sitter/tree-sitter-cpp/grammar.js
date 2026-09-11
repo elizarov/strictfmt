@@ -298,6 +298,10 @@ module.exports = grammar(C, {
   ],
 
   conflicts: $ => [
+    [$.type_specifier, $._unconfigured_macro_item, $._template_argument_value_expression],
+    [$.expression, $._call_identifier, $._unconfigured_macro_item, $._template_argument_value_expression],
+    [$.type_specifier, $.expression, $._unconfigured_macro_item, $._template_argument_value_expression],
+    [$.expression, $._unconfigured_macro_item, $._template_argument_value_expression],
     [$.type_specifier, $._call_identifier, $._class_name],
     [$.macro_enumerator_list, $._enumerator_list_item],
     [$.enumerator_list, $.macro_enumerator_list, $._enumerator_list_item],
@@ -2660,7 +2664,10 @@ module.exports = grammar(C, {
       $.macro_template_argument_fragment,
     ),
 
-    macro_template_argument_fragment: $ => prec(1, $.bare_macro_identifier),
+    macro_template_argument_fragment: $ => choice(
+      prec(1, $.bare_macro_identifier),
+      $._unconfigured_macro_item,
+    ),
 
     _template_argument_expression: $ => choice(
       $._template_argument_value_expression,
