@@ -5,3 +5,9 @@ MacroCategories:
     - DECLARE_METHOD
   PreprocessorArgumentMacros:
     - TOKENS
+  BareIdentifierMacros:
+    - BEGIN_NAMESPACE
+    - END_NAMESPACE
+    - GENERATED_MEMBERS
+  DeclarationPrefixMacros:
+    - API_EXPORT

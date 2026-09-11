@@ -298,6 +298,22 @@ module.exports = grammar(C, {
   ],
 
   conflicts: $ => [
+    [$.type_specifier, $._unconfigured_macro_item, $.preproc_declaration_modifier],
+    [$._unconfigured_macro_item, $.preproc_declaration_modifier],
+    [$._unconfigured_macro_item, $._non_pointer_declarator],
+    [$.type_specifier, $._unconfigured_macro_item, $._non_pointer_declarator],
+    [$.type_specifier, $._call_identifier, $._unconfigured_macro_item, $._non_pointer_declarator],
+    [$.expression, $._call_identifier, $._unconfigured_macro_item],
+    [$.type_specifier, $._call_identifier, $._unconfigured_macro_item],
+    [$._call_identifier, $._unconfigured_macro_item],
+    [$._unconfigured_macro_item, $._class_name],
+    [$.type_specifier, $.expression, $._unconfigured_macro_item],
+    [$.type_specifier, $.expression, $._call_identifier, $._unconfigured_macro_item],
+    [$.expression, $._unconfigured_macro_item],
+    [$.type_specifier, $._type_constraint, $._unconfigured_macro_item],
+    [$._type_constraint, $._unconfigured_macro_item],
+    [$.sized_type_specifier, $._unconfigured_macro_item],
+    [$.type_specifier, $._unconfigured_macro_item],
     [$.parameter_list, $.macro_parameter_list, $.macro_parenthesized_argument],
     [$._parameter_list_item, $.macro_argument_punctuator, $._unary_left_fold],
     [$.macro_parameter_list, $.preprocessing_parenthesized_tokens, $.macro_parenthesized_argument],
@@ -756,6 +772,7 @@ module.exports = grammar(C, {
       $.deduction_guide_declaration,
       $.alias_declaration,
       $.top_level_item_macro,
+      alias($._unconfigured_macro_item, $.top_level_item_macro),
       $.macro_function_definition,
       alias($.preproc_selected_macro_function_definition, $.function_definition),
       alias($.preproc_selected_function_definition, $.function_definition),
@@ -950,6 +967,7 @@ module.exports = grammar(C, {
 
     _macro_replacement_declaration_item: $ => choice(
       $.class_bare_macro_item,
+      alias($._unconfigured_macro_item, $.class_bare_macro_item),
       $._empty_declaration,
       $.type_definition,
       $.alias_declaration,
@@ -1059,6 +1077,9 @@ module.exports = grammar(C, {
       field('function', $._field_identifier),
       field('arguments', $.argument_list),
     ),
+
+    // An isolated identifier may expand to a complete item; prefer complete C++ syntax.
+    _unconfigured_macro_item: $ => prec.dynamic(-10, $.identifier),
 
     top_level_item_macro: $ => prec(PREC.CALL + 5, $.bare_macro_identifier),
 
@@ -2016,6 +2037,7 @@ module.exports = grammar(C, {
       alias($.constructor_or_destructor_declaration, $.declaration),
       $.class_macro_call_item,
       $.class_bare_macro_item,
+      alias($._unconfigured_macro_item, $.class_bare_macro_item),
       $.macro_method_declaration,
       alias($.qualified_macro_initialized_field_declaration, $.field_declaration),
       $.static_assert_declaration,

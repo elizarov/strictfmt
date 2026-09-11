@@ -28,6 +28,8 @@ void Check() {
 }
 ```
 
+An isolated identifier can supply a complete namespace or class item when it cannot form ordinary C++ syntax. Configuration may still be needed to attach it to the surrounding code.
+
 Macro calls can introduce a `{ ... }` body without configuration, as in tests or loops:
 
 ```cpp
@@ -54,7 +56,7 @@ BENCHMARK_REGISTER_F(StoreFixture, Save)->Threads(4);
 
 `DeclarationPrefixMacros` names macro identifiers used as modifiers before [declaration-like items](glossary.md#declaration-like-item).
 
-A macro before a declaration may expand to an annotation or a separate declaration. This category identifies `API_EXPORT` as a modifier, keeping it attached to `int value;`. Without configuration, this example fails to parse.
+A macro before a declaration may expand to an annotation or a separate declaration. This category identifies `API_EXPORT` as a modifier, keeping it attached to `int value;`. Without configuration, it is a separate item on its own line.
 
 <!-- .cpp-format
 MacroCategories:

@@ -176,6 +176,15 @@
           "name": "top_level_item_macro"
         },
         {
+          "type": "ALIAS",
+          "content": {
+            "type": "SYMBOL",
+            "name": "_unconfigured_macro_item"
+          },
+          "named": true,
+          "value": "top_level_item_macro"
+        },
+        {
           "type": "SYMBOL",
           "name": "macro_function_definition"
         },
@@ -6486,6 +6495,15 @@
         {
           "type": "SYMBOL",
           "name": "class_bare_macro_item"
+        },
+        {
+          "type": "ALIAS",
+          "content": {
+            "type": "SYMBOL",
+            "name": "_unconfigured_macro_item"
+          },
+          "named": true,
+          "value": "class_bare_macro_item"
         },
         {
           "type": "SYMBOL",
@@ -13647,6 +13665,15 @@
           "name": "class_bare_macro_item"
         },
         {
+          "type": "ALIAS",
+          "content": {
+            "type": "SYMBOL",
+            "name": "_unconfigured_macro_item"
+          },
+          "named": true,
+          "value": "class_bare_macro_item"
+        },
+        {
           "type": "SYMBOL",
           "name": "_empty_declaration"
         },
@@ -14344,6 +14371,14 @@
           }
         }
       ]
+    },
+    "_unconfigured_macro_item": {
+      "type": "PREC_DYNAMIC",
+      "value": -10,
+      "content": {
+        "type": "SYMBOL",
+        "name": "identifier"
+      }
     },
     "top_level_item_macro": {
       "type": "PREC",
@@ -38375,6 +38410,80 @@
     }
   ],
   "conflicts": [
+    [
+      "type_specifier",
+      "_unconfigured_macro_item",
+      "preproc_declaration_modifier"
+    ],
+    [
+      "_unconfigured_macro_item",
+      "preproc_declaration_modifier"
+    ],
+    [
+      "_unconfigured_macro_item",
+      "_non_pointer_declarator"
+    ],
+    [
+      "type_specifier",
+      "_unconfigured_macro_item",
+      "_non_pointer_declarator"
+    ],
+    [
+      "type_specifier",
+      "_call_identifier",
+      "_unconfigured_macro_item",
+      "_non_pointer_declarator"
+    ],
+    [
+      "expression",
+      "_call_identifier",
+      "_unconfigured_macro_item"
+    ],
+    [
+      "type_specifier",
+      "_call_identifier",
+      "_unconfigured_macro_item"
+    ],
+    [
+      "_call_identifier",
+      "_unconfigured_macro_item"
+    ],
+    [
+      "_unconfigured_macro_item",
+      "_class_name"
+    ],
+    [
+      "type_specifier",
+      "expression",
+      "_unconfigured_macro_item"
+    ],
+    [
+      "type_specifier",
+      "expression",
+      "_call_identifier",
+      "_unconfigured_macro_item"
+    ],
+    [
+      "expression",
+      "_unconfigured_macro_item"
+    ],
+    [
+      "type_specifier",
+      "_type_constraint",
+      "_unconfigured_macro_item"
+    ],
+    [
+      "_type_constraint",
+      "_unconfigured_macro_item"
+    ],
+    [
+      "sized_type_specifier",
+      "_unconfigured_macro_item"
+    ],
+    [
+      "type_specifier",
+      "_unconfigured_macro_item"
+    ],
     [
       "parameter_list",
       "macro_parameter_list",

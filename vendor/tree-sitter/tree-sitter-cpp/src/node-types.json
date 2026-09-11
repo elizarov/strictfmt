@@ -2316,6 +2316,10 @@
         {
           "type": "bare_macro_identifier",
           "named": true
+        },
+        {
+          "type": "identifier",
+          "named": true
         }
       ]
     }
@@ -16414,6 +16418,10 @@
       "types": [
         {
           "type": "bare_macro_identifier",
+          "named": true
+        },
+        {
+          "type": "identifier",
           "named": true
         }
       ]

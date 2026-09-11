@@ -255,8 +255,13 @@ void TestOutput() {
 void TestParseMacroConfiguration() {
     FormatterConfig config;
     const auto check = [&](std::string_view name, bool expected) {
-        const auto model = ParseFormatModel(std::string(name) + "\n", config);
-        Check(model.parse.ok == expected, "macro classification follows the current parse configuration");
+        const auto model = ParseFormatModel(std::string(name) + " value;", config);
+        Check(model.parse.ok, "configured and unconfigured identifiers parse");
+        bool hasBareItem = false;
+        for (const auto& node : model.nodes) {
+            hasBareItem |= node.kind == SyntaxNodeKind::BareMacroItem;
+        }
+        Check(hasBareItem == expected, "macro classification follows the current parse configuration");
     };
     config.bareIdentifierMacros = {"LEFT"};
     check("LEFT", true);
