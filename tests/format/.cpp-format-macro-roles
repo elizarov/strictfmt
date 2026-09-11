@@ -1,0 +1,7 @@
+# Formatting roles for the corpus also parsed without macro configuration.
+ColumnLimit: 80
+MacroCategories:
+  MethodDeclarationMacros:
+    - DECLARE_METHOD
+  PreprocessorArgumentMacros:
+    - TOKENS

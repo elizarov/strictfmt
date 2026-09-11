@@ -1108,6 +1108,10 @@
           "named": true
         },
         {
+          "type": "macro_parenthesized_argument",
+          "named": true
+        },
+        {
           "type": "macro_preprocessing_token_call",
           "named": true
         },

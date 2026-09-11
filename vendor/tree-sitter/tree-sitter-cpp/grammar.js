@@ -298,6 +298,16 @@ module.exports = grammar(C, {
   ],
 
   conflicts: $ => [
+    [$.parameter_list, $.macro_parameter_list, $.macro_parenthesized_argument],
+    [$._parameter_list_item, $.macro_argument_punctuator, $._unary_left_fold],
+    [$.macro_parameter_list, $.preprocessing_parenthesized_tokens, $.macro_parenthesized_argument],
+    [$.preprocessing_parenthesized_tokens, $.argument_sequence],
+    [$.preprocessing_punctuator, $.macro_argument_punctuator, $._unary_left_fold],
+    [$.macro_parameter_list, $._macro_parenthesized_parameter_declaration],
+    [$.parenthesized_expression, $._argument_list_item],
+    [$.comma_expression, $._unary_right_fold, $._binary_fold, $._argument_list_item],
+    [$.parenthesized_expression, $.macro_statement_sequence_argument, $._argument_list_item],
+    [$.macro_parameter_list, $.macro_parenthesized_argument],
     [$.concatenated_string, $.macro_preprocessing_token_sequence_argument],
     [$.macro_expansion, $.identifier_call],
     [$.call_expression, $.identifier_call],
@@ -4231,6 +4241,7 @@ module.exports = grammar(C, {
       prec.dynamic(10, $.macro_statement_sequence_argument),
       // Expressions win when a fragment also has an ordinary C++ interpretation.
       prec.dynamic(-5, choice(
+        $.macro_parenthesized_argument,
         alias($.macro_parameter_list, $.parameter_list),
         $.macro_preprocessing_token_sequence_argument,
         $.macro_preprocessing_token_call,

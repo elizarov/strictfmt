@@ -52,6 +52,8 @@ PREPROCESSOR_EOF_INPUT_FIXTURE = Path("src") / "format_preprocessor_eof_input.cp
 PREPROCESSOR_EOF_OUTPUT_FIXTURE = Path("src") / "format_preprocessor_eof_output.cpp"
 MACROS_INPUT_FIXTURE = Path("src") / "format_macros_input.cpp"
 MACROS_OUTPUT_FIXTURE = Path("src") / "format_macros_output.cpp"
+UNCONFIGURED_MACROS_INPUT_FIXTURE = Path("src") / "format_unconfigured_macros_input.cpp"
+UNCONFIGURED_MACROS_OUTPUT_FIXTURE = Path("src") / "format_unconfigured_macros_output.cpp"
 MAIN_INCLUDE_INPUT_FIXTURE = Path("src") / "format_main_include_input.cpp"
 MAIN_INCLUDE_OUTPUT_FIXTURE = Path("src") / "format_main_include_output.cpp"
 OPTIMIZATION_INPUT_FIXTURE = Path("src") / "format_optimization_input.cpp"
@@ -74,6 +76,7 @@ DIRECTIVE_TOKEN_ERROR_OUTPUT_FIXTURE = Path("src") / "format_directive_token_err
 TEMPLATE_ANGLE_ERROR_INPUT_FIXTURE = Path("src") / "format_template_angle_error_input.cpp"
 TEMPLATE_ANGLE_ERROR_OUTPUT_FIXTURE = Path("src") / "format_template_angle_error_output.txt"
 USERVER_FORMAT_CONFIG = TEST_ROOT / ".cpp-format-userver"
+MACRO_ROLES_FORMAT_CONFIG = TEST_ROOT / ".cpp-format-macro-roles"
 DEFAULT_FORMAT_CONFIG = TEST_ROOT / ".cpp-format"
 OPTIMIZATION_FORMAT_CONFIG = TEST_ROOT / ".cpp-format-optimization"
 CHAIN_FORMAT_CONFIG = TEST_ROOT / ".cpp-format-chain"
@@ -81,6 +84,7 @@ NON_ASCII_FORMAT_CONFIG = TEST_ROOT / ".cpp-format-non-ascii"
 FORMATTED_GOLDEN_OUTPUTS = (
     ("default", OUTPUT_FIXTURE, None),
     ("macros", MACROS_OUTPUT_FIXTURE, None),
+    ("macro-roles", UNCONFIGURED_MACROS_OUTPUT_FIXTURE, MACRO_ROLES_FORMAT_CONFIG),
     ("preprocessor-eof", PREPROCESSOR_EOF_OUTPUT_FIXTURE, None),
     ("optimization", OPTIMIZATION_OUTPUT_FIXTURE, OPTIMIZATION_FORMAT_CONFIG),
     ("chain", CHAIN_OUTPUT_FIXTURE, CHAIN_FORMAT_CONFIG),
@@ -1693,6 +1697,27 @@ class FormatCommandTests(unittest.TestCase):
         result = native_format("--stdin", cwd=TEST_ROOT, input_text=read_fixture(MACROS_INPUT_FIXTURE))
         self.assertEqual(0, result.returncode, msg=result.stderr)
         self.assertEqual(read_fixture(MACROS_OUTPUT_FIXTURE), result.stdout)
+        self.assert_no_unsupported_placement_warnings(result)
+
+    def test_macro_corpus_parses_without_configuration(self) -> None:
+        TEST_TEMP_ROOT.mkdir(exist_ok=True)
+        with tempfile.TemporaryDirectory(prefix="unconfigured_macros_", dir=TEST_TEMP_ROOT) as temp_dir:
+            config = Path(temp_dir) / ".cpp-format"
+            config.write_text("MacroCategories: {}\n", encoding="utf-8")
+            for fixture in (UNCONFIGURED_MACROS_INPUT_FIXTURE, UNCONFIGURED_MACROS_OUTPUT_FIXTURE):
+                with self.subTest(fixture=fixture):
+                    result = native_format(
+                        "--stdin", "--dump-syntax-tree", "--style", str(config), input_text=read_fixture(fixture)
+                    )
+                    self.assertEqual(0, result.returncode, msg=result.stderr)
+
+    def test_macro_roles_format_to_expected_output(self) -> None:
+        result = native_format(
+            "--stdin", "--style", str(MACRO_ROLES_FORMAT_CONFIG),
+            input_text=read_fixture(UNCONFIGURED_MACROS_INPUT_FIXTURE),
+        )
+        self.assertEqual(0, result.returncode, msg=result.stderr)
+        self.assertEqual(read_fixture(UNCONFIGURED_MACROS_OUTPUT_FIXTURE), result.stdout)
         self.assert_no_unsupported_placement_warnings(result)
 
     def test_macro_replacements_choose_structured_or_raw_in_one_parse(self) -> None:
