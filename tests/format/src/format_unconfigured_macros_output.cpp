@@ -111,3 +111,50 @@ void StatementArgumentBoundaries() {
 }
 template <class... Values>
 void FoldArguments(Values... values) { (Consume(values), ...); }
+
+// Function annotations reuse the class-header modifier grammar.
+struct AnnotatedMethods {
+    AnnotatedMethods() ANNOTATION;
+    ~AnnotatedMethods() noexcept ANNOTATION {}
+    Value Get() const & noexcept ANNOTATION;
+    Value Read() ANNOTATION(lock(Nested(value)));
+    virtual void Update() ANNOTATION(lock) = 0;
+    virtual void Refresh() ANNOTATION final;
+    auto Compute() ANNOTATION -> Value;
+};
+
+void Function() ANNOTATION {}
+
+typedef void (*AnnotatedCallback)() ANNOTATION;
+using AnnotatedFunction = void (*)() ANNOTATION;
+
+void (*callback)() ANNOTATION;
+
+// These ambiguous shapes can use declaration annotations until roles are configured.
+struct AnnotationFragments {
+    static Result ANNOTATION Callback(Window window);
+
+    Value value ANNOTATION;
+};
+
+void AdjacentCallFragments() {
+    TOKENS(call() token);
+    TOKENS((token) suffix);
+    CHECK_STATEMENT(ns::Value variable("name", Nested(input)));
+    CHECK_STATEMENT(ns::Value variable(std::move(input)));
+    STEP(first)
+    STEP(second)
+    STEP(third)
+    return;
+}
+void MixedCallTerminators() {
+    STEP(first)
+    STEP(second);
+    STEP(third)
+    STEP(fourth);
+}
+
+// Explicit roles also disambiguate newly structured replacement fragments.
+#define DECLARE_ACCESSOR(Name) Value Name() ANNOTATION
+#define FORWARD_ARGUMENTS(args) TOKENS(dummy STEP(ARG,, args))
+#define EXPAND_ELEMENT(i, element) STEP(i) element

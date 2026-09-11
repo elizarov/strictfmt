@@ -9,7 +9,10 @@ MacroCategories:
     - BEGIN_NAMESPACE
     - END_NAMESPACE
     - GENERATED_MEMBERS
+    - ANNOTATION
   DeclarationPrefixMacros:
     - API_EXPORT
   StatementArgumentMacros:
     - CHECK_STATEMENT
+  SemicolonlessCallMacros:
+    - STEP

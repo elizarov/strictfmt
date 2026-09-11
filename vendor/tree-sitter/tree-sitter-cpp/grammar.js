@@ -298,6 +298,7 @@ module.exports = grammar(C, {
   ],
 
   conflicts: $ => [
+    [$._unconfigured_modifier_identifier, $.declaration_suffix_preproc_ifdef],
     [$.co_yield_statement, $._preprocessing_keyword],
     [$.co_return_statement, $._preprocessing_keyword],
     [$.labeled_statement, $._preprocessing_token],
@@ -307,7 +308,7 @@ module.exports = grammar(C, {
     [$.return_statement, $._preprocessing_keyword],
     [$.for_statement, $.for_range_loop, $._preprocessing_keyword],
     [$.do_statement, $._preprocessing_keyword],
-    [$._unconfigured_class_modifier_identifier, $._class_name],
+    [$._unconfigured_modifier_identifier, $._class_name],
     [$.type_specifier, $._unconfigured_macro_item, $.preproc_declaration_modifier],
     [$._unconfigured_macro_item, $.preproc_declaration_modifier],
     [$._unconfigured_macro_item, $._non_pointer_declarator],
@@ -1406,16 +1407,16 @@ module.exports = grammar(C, {
         $.alignas_qualifier,
         $.attribute_declaration,
         $.function_prefix_macro,
-        $._unconfigured_class_modifier,
+        $._unconfigured_modifier,
       )),
       optional($.ms_declspec_modifier),
       $._class_declaration_item,
     ),
 
-    _unconfigured_class_modifier_identifier: $ => prec.dynamic(-10, $.identifier),
+    _unconfigured_modifier_identifier: $ => prec.dynamic(-10, $.identifier),
 
-    _unconfigured_class_modifier: $ => prec.right(seq(
-      $._unconfigured_class_modifier_identifier,
+    _unconfigured_modifier: $ => prec.right(seq(
+      $._unconfigured_modifier_identifier,
       optional($.argument_list),
     )),
 
@@ -2480,10 +2481,10 @@ module.exports = grammar(C, {
       ),
     )),
 
-    function_suffix_macro: $ => prec.right(PREC.CALL + 7, choice(
-      $.bare_macro_identifier,
-      seq($.bare_macro_identifier, $.argument_list),
-    )),
+    function_suffix_macro: $ => choice(
+      prec.right(PREC.CALL + 7, seq($.bare_macro_identifier, optional($.argument_list))),
+      $._unconfigured_modifier,
+    ),
 
     _function_postfix: $ => prec.right(choice(
       repeat1($.virtual_specifier),

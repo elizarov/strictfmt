@@ -18303,7 +18303,7 @@
               },
               {
                 "type": "SYMBOL",
-                "name": "_unconfigured_class_modifier"
+                "name": "_unconfigured_modifier"
               }
             ]
           }
@@ -18326,7 +18326,7 @@
         }
       ]
     },
-    "_unconfigured_class_modifier_identifier": {
+    "_unconfigured_modifier_identifier": {
       "type": "PREC_DYNAMIC",
       "value": -10,
       "content": {
@@ -18334,7 +18334,7 @@
         "name": "identifier"
       }
     },
-    "_unconfigured_class_modifier": {
+    "_unconfigured_modifier": {
       "type": "PREC_RIGHT",
       "value": 0,
       "content": {
@@ -18342,7 +18342,7 @@
         "members": [
           {
             "type": "SYMBOL",
-            "name": "_unconfigured_class_modifier_identifier"
+            "name": "_unconfigured_modifier_identifier"
           },
           {
             "type": "CHOICE",
@@ -24891,16 +24891,12 @@
       }
     },
     "function_suffix_macro": {
-      "type": "PREC_RIGHT",
-      "value": 22,
-      "content": {
-        "type": "CHOICE",
-        "members": [
-          {
-            "type": "SYMBOL",
-            "name": "bare_macro_identifier"
-          },
-          {
+      "type": "CHOICE",
+      "members": [
+        {
+          "type": "PREC_RIGHT",
+          "value": 22,
+          "content": {
             "type": "SEQ",
             "members": [
               {
@@ -24908,13 +24904,25 @@
                 "name": "bare_macro_identifier"
               },
               {
-                "type": "SYMBOL",
-                "name": "argument_list"
+                "type": "CHOICE",
+                "members": [
+                  {
+                    "type": "SYMBOL",
+                    "name": "argument_list"
+                  },
+                  {
+                    "type": "BLANK"
+                  }
+                ]
               }
             ]
           }
-        ]
-      }
+        },
+        {
+          "type": "SYMBOL",
+          "name": "_unconfigured_modifier"
+        }
+      ]
     },
     "_function_postfix": {
       "type": "PREC_RIGHT",
@@ -38561,6 +38569,10 @@
   ],
   "conflicts": [
     [
+      "_unconfigured_modifier_identifier",
+      "declaration_suffix_preproc_ifdef"
+    ],
+    [
       "co_yield_statement",
       "_preprocessing_keyword"
     ],
@@ -38598,7 +38610,7 @@
       "_preprocessing_keyword"
     ],
     [
-      "_unconfigured_class_modifier_identifier",
+      "_unconfigured_modifier_identifier",
       "_class_name"
     ],
     [

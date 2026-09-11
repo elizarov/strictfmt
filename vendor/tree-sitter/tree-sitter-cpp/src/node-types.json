@@ -5712,6 +5712,10 @@
         {
           "type": "bare_macro_identifier",
           "named": true
+        },
+        {
+          "type": "identifier",
+          "named": true
         }
       ]
     }
