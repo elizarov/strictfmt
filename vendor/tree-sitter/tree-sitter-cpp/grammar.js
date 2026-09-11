@@ -298,6 +298,7 @@ module.exports = grammar(C, {
   ],
 
   conflicts: $ => [
+    [$.type_specifier, $._call_identifier, $._class_name],
     [$.macro_enumerator_list, $._enumerator_list_item],
     [$.enumerator_list, $.macro_enumerator_list, $._enumerator_list_item],
     [$.enumerator_list, $._enumerator_list_item],
@@ -3296,10 +3297,15 @@ module.exports = grammar(C, {
       field('body', $.compound_statement),
     ),
 
-    type_specifier_macro_call: $ => prec(PREC.CALL + 8, seq(
-      field('function', $.type_specifier_macro_identifier),
-      field('arguments', $.argument_list),
-    )),
+    _unconfigured_type_call_identifier: $ => prec.dynamic(-10, $._call_identifier),
+
+    type_specifier_macro_call: $ => choice(
+      callExpression($, $._unconfigured_type_call_identifier),
+      prec(PREC.CALL + 8, seq(
+        field('function', $.type_specifier_macro_identifier),
+        field('arguments', $.argument_list),
+      )),
+    ),
 
     preprocessing_token_macro_call: $ => prec(PREC.CALL + 8, seq(
       field('function', $.preprocessor_argument_macro_identifier),

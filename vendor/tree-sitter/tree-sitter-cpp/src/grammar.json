@@ -30150,30 +30150,68 @@
         }
       ]
     },
-    "type_specifier_macro_call": {
-      "type": "PREC",
-      "value": 23,
+    "_unconfigured_type_call_identifier": {
+      "type": "PREC_DYNAMIC",
+      "value": -10,
       "content": {
-        "type": "SEQ",
-        "members": [
-          {
-            "type": "FIELD",
-            "name": "function",
-            "content": {
-              "type": "SYMBOL",
-              "name": "type_specifier_macro_identifier"
-            }
-          },
-          {
-            "type": "FIELD",
-            "name": "arguments",
-            "content": {
-              "type": "SYMBOL",
-              "name": "argument_list"
-            }
-          }
-        ]
+        "type": "SYMBOL",
+        "name": "_call_identifier"
       }
+    },
+    "type_specifier_macro_call": {
+      "type": "CHOICE",
+      "members": [
+        {
+          "type": "PREC",
+          "value": 15,
+          "content": {
+            "type": "SEQ",
+            "members": [
+              {
+                "type": "FIELD",
+                "name": "function",
+                "content": {
+                  "type": "SYMBOL",
+                  "name": "_unconfigured_type_call_identifier"
+                }
+              },
+              {
+                "type": "FIELD",
+                "name": "arguments",
+                "content": {
+                  "type": "SYMBOL",
+                  "name": "argument_list"
+                }
+              }
+            ]
+          }
+        },
+        {
+          "type": "PREC",
+          "value": 23,
+          "content": {
+            "type": "SEQ",
+            "members": [
+              {
+                "type": "FIELD",
+                "name": "function",
+                "content": {
+                  "type": "SYMBOL",
+                  "name": "type_specifier_macro_identifier"
+                }
+              },
+              {
+                "type": "FIELD",
+                "name": "arguments",
+                "content": {
+                  "type": "SYMBOL",
+                  "name": "argument_list"
+                }
+              }
+            ]
+          }
+        }
+      ]
     },
     "preprocessing_token_macro_call": {
       "type": "PREC",
@@ -38470,6 +38508,11 @@
     }
   ],
   "conflicts": [
+    [
+      "type_specifier",
+      "_call_identifier",
+      "_class_name"
+    ],
     [
       "macro_enumerator_list",
       "_enumerator_list_item"

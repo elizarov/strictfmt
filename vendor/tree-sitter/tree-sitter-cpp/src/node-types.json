@@ -16903,6 +16903,10 @@
         "required": true,
         "types": [
           {
+            "type": "identifier",
+            "named": true
+          },
+          {
             "type": "type_specifier_macro_identifier",
             "named": true
           }

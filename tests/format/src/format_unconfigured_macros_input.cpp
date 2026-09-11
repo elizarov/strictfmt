@@ -234,3 +234,26 @@ report(ClassifyShadow(ValueView(cache),ValueView(proxy)));
 Inspect(Transform(Move(*value),Build(base)));
 }
 #define FORWARD_FIELD(x,y) Forward(FieldName(#x "." #y),x,y)
+
+// Named calls also fit contexts where C++ requires a type.
+typedef TYPE_OF(T) ValueType;
+typedef typename TYPE_OF(Selector,T) BoundType;
+using ConstPointer=const TYPE_OF(T)*;
+using NestedReference=TYPE_OF(TYPE_OF(T))&;
+TYPE_OF(T) MakeValue();
+void TypeArguments(){
+auto release=[](TYPE_OF(T)* value){Release(value);};
+TYPE_OF(T)* value;
+Consume(function(T)*value);
+}
+
+// Keep calls distinct from parenthesized declarators when type calls are possible.
+void CallTypeAmbiguities(){
+PushBack(MergeObjects(ns::Move(*value),BuildIndex(base)));
+target.PushBack(MergeObjects(ns::Move(*value),BuildIndex(base)));
+Value& reference(Get());
+Value* pointer(GetPointer());
+T (*callback)(int);
+}
+int ArrayReference(int (&matrix)[2][2],int row){return matrix[row][0];}
+template<typename T,typename D,typename D::Value(T::*member)> struct MemberPointer;

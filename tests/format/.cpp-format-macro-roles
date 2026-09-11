@@ -17,3 +17,5 @@ MacroCategories:
     - CHECK_STATEMENT
   SemicolonlessCallMacros:
     - STEP
+  TypeSpecifierMacros:
+    - TYPE_OF
