@@ -169,3 +169,13 @@ using OldPointer ANNOTATION = void*;
 }
 template <class T>
 using OlderValue ANNOTATION(reason(Nested(value))) = T;
+
+// Adjacent parenthesized fragments recurse through the common argument grammar.
+void AdjacentParenthesizedFragments() {
+    TOKENS((int, field)(bool, other));
+    TOKENS(((int, field)(bool, other))((Map<Key, Value>, entries)));
+    TOKENS(prefix(int, field) middle(bool, other) suffix);
+    CHECK_STATEMENT(Value value(input), Error);
+    CHECK_STATEMENT(Value value(Convert(data.As<ns::Input>())), Error);
+    CHECK_STATEMENT(Value value({{"label", 1, 2, 3}}), Error);
+}

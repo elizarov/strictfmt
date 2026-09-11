@@ -7437,6 +7437,10 @@
           "named": true
         },
         {
+          "type": "macro_parenthesized_argument",
+          "named": true
+        },
+        {
           "type": "number_literal",
           "named": true
         }

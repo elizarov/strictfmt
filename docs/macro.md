@@ -19,7 +19,7 @@ Macros may have argument lists regardless of their syntactic role.
 
 ### Macros without configuration
 
-Function and macro calls share one argument grammar, accepting expressions, types, parameter lists, statement sequences, and empty or comment-only arguments. Parenthesized argument fragments use the same grammar recursively. Their commas follow the same [comma normalization](format.md#comma-normalization) rules:
+Function and macro calls share one argument grammar, accepting expressions, types, parameter lists, statement sequences, and empty or comment-only arguments. Parenthesized argument fragments use the same grammar recursively and can appear in adjacent sequences. Their commas follow the same [comma normalization](format.md#comma-normalization) rules:
 
 ```cpp
 void Check() {

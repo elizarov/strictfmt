@@ -298,6 +298,11 @@ module.exports = grammar(C, {
   ],
 
   conflicts: $ => [
+    [$.parameter_list, $.macro_parenthesized_argument],
+    [$.preprocessing_parenthesized_tokens, $.macro_parenthesized_argument],
+    [$.argument_list, $.macro_parenthesized_argument],
+    [$.preprocessing_token_argument_list, $.macro_parenthesized_argument],
+    [$.expression, $.macro_preprocessing_token_sequence_argument],
     [$._unconfigured_modifier_identifier, $.declaration_suffix_preproc_ifdef],
     [$.co_yield_statement, $._preprocessing_keyword],
     [$.co_return_statement, $._preprocessing_keyword],
@@ -3413,6 +3418,7 @@ module.exports = grammar(C, {
       const item = choice(
         $._call_identifier,
         $.number_literal,
+        $.macro_parenthesized_argument,
       );
       return seq(item, repeat1(item));
     },
