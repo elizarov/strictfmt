@@ -12,10 +12,13 @@ TOKENS((,), ((const, override)), (((int, field))));
 BEGIN_NAMESPACE
 namespace nested {
 API_EXPORT int value;
+API_EXPORT() int empty;
+API_EXPORT("test",Nested(value)) int arguments;
 API_EXPORT API_EXPORT int Read(){return value;}
 struct Record {
 GENERATED_MEMBERS
 API_EXPORT void Update();
+API_EXPORT("test") void Refresh();
 GENERATED_MEMBERS
 };
 }

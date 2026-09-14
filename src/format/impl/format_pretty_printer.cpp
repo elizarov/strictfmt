@@ -491,6 +491,17 @@ private:
         }
     }
 
+    static bool IsStatementPositionMacroCallItem(const SyntaxNode& node) {
+        if (node.kind != SyntaxNodeKind::MacroCallItem) {
+            return false;
+        }
+        const SyntaxNode* parent = node.parent;
+        while (parent != nullptr && parent->kind == SyntaxNodeKind::MacroCallItem) {
+            parent = parent->parent;
+        }
+        return parent != nullptr && IsStatementItemContainer(parent->kind);
+    }
+
     static bool ClosesStatementPositionMacroCallItem(const PrintToken& token) {
         if (
             token.kind != PrintTokenKind::Known ||
@@ -504,14 +515,7 @@ private:
             return false;
         }
         const SyntaxNode* macroCall = arguments->parent;
-        if (macroCall == nullptr || macroCall->kind != SyntaxNodeKind::MacroCallItem) {
-            return false;
-        }
-        const SyntaxNode* macroCallParent = macroCall->parent;
-        while (macroCallParent != nullptr && macroCallParent->kind == SyntaxNodeKind::MacroCallItem) {
-            macroCallParent = macroCallParent->parent;
-        }
-        return macroCallParent != nullptr && IsStatementItemContainer(macroCallParent->kind);
+        return macroCall != nullptr && IsStatementPositionMacroCallItem(*macroCall);
     }
 
     const SyntaxNode* ImmediatePreprocessorListParent(const PrintToken& token) {
@@ -1046,11 +1050,11 @@ private:
     }
 
     static const SyntaxNode* StructuralMacroItemOwner(const PrintToken& token) {
-        if (!token.inBareMacroItem && !token.inMacroListExpansion) {
+        if (!token.inBareMacroItem && !token.inMacroCallItem && !token.inMacroListExpansion) {
             return nullptr;
         }
         for (const SyntaxNode* node = token.node; node != nullptr; node = node->parent) {
-            if (node->kind == SyntaxNodeKind::BareMacroItem) {
+            if (node->kind == SyntaxNodeKind::BareMacroItem || IsStatementPositionMacroCallItem(*node)) {
                 return node;
             }
             const SyntaxNode* list = MacroExpansionList(*node);
@@ -1067,6 +1071,7 @@ private:
             previous == nullptr ||
             current.kind == PrintTokenKind::TrailingComment ||
             current.syntaxKind == SyntaxNodeKind::Comma ||
+            current.syntaxKind == SyntaxNodeKind::Semicolon ||
             previous->macroDefinition != current.macroDefinition
         ) {
             return;
@@ -1464,13 +1469,6 @@ private:
                 BufferToken(token);
                 if (parenDepth_ > 0) {
                     --parenDepth_;
-                }
-                if (ClosesStatementPositionMacroCallItem(token) && !(rawNext != nullptr && (
-                    rawNext->kind == PrintTokenKind::TrailingComment || rawNext->syntaxKind == SyntaxNodeKind::Semicolon
-                ))) {
-                    FlushPendingTokens();
-                    NewLine(ShouldContinueMacroLine(token, next));
-                    return;
                 }
                 if (
                     token.parentKind == SyntaxNodeKind::RequiresClause &&

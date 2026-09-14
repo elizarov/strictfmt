@@ -35,6 +35,7 @@ enum PrintTokenAncestryFlag : std::uint8_t {
     InBareMacroItem = 1u << 4,
     InTemplateList = 1u << 5,
     InMacroListExpansion = 1u << 6,
+    InMacroCallItem = 1u << 7,
 };
 
 bool IsStandalonePreprocessorBranchToken(const SyntaxNode& node, SyntaxNodeKind parentKind) {
@@ -177,6 +178,7 @@ struct TokenContext {
         ancestryFlags |= (node.classes & static_cast<std::uint64_t>(SyntaxNodeClass::ConditionalFunctionHeader)) != 0 ?
             InConditionalFunctionHeader : 0;
         ancestryFlags |= kind == SyntaxNodeKind::BareMacroItem ? InBareMacroItem : 0;
+        ancestryFlags |= kind == SyntaxNodeKind::MacroCallItem ? InMacroCallItem : 0;
         ancestryFlags |= MacroExpansionList(node) != nullptr ? InMacroListExpansion : 0;
         ancestryFlags |=
             (kind == SyntaxNodeKind::TemplateArgumentList || kind == SyntaxNodeKind::TemplateParameterList) ?
@@ -217,6 +219,7 @@ PrintToken
     token.inConditionalStreamOperatorChain = (context.ancestryFlags & InConditionalStreamOperatorChain) != 0;
     token.inConditionalFunctionHeader = (context.ancestryFlags & InConditionalFunctionHeader) != 0;
     token.inBareMacroItem = (context.ancestryFlags & InBareMacroItem) != 0;
+    token.inMacroCallItem = (context.ancestryFlags & InMacroCallItem) != 0;
     token.inMacroListExpansion = (context.ancestryFlags & InMacroListExpansion) != 0;
     token.inTemplateList = (context.ancestryFlags & InTemplateList) != 0;
     token.inTemplateDeclarationBlock = context.inTemplateDeclarationBlock;

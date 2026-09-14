@@ -8048,6 +8048,36 @@ constexpr int CallList[] = {
 
 namespace AutomaticMacroCalls {
 
+namespace ItemBoundaries {
+
+API_EXPORT
+int bare;
+API_EXPORT()
+int empty;
+API_EXPORT("test", Nested(value))
+int arguments;
+API_EXPORT("test")  // The comment belongs to the call item.
+int commented;
+REGISTER_ITEM(value) FORMAT_BARE_EMPTY
+int after_suffix;
+REGISTER_ITEM(value)->Configure(1)->Finish()
+int after_chain;
+REGISTER_ITEM(value)->Configure(1);
+int after_terminated_chain;
+
+struct Nested {
+    API_EXPORT
+    int bare;
+    API_EXPORT("test")
+    int arguments;
+};
+#if ENABLE_ITEMS
+API_EXPORT("test")
+int conditional;
+#endif
+
+}
+
 TEST(PlainFixture, Body) { Run(); }
 TEST_WITH_THREADS(PlainFixture, ParallelBody, 2) { Run(); }
 BENCHMARK_DEFINE(CustomFixture, WithParameters)(Context& context) { Use(context); }

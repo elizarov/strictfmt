@@ -58,7 +58,7 @@ BENCHMARK_REGISTER_F(StoreFixture, Save)->Threads(4);
 
 `DeclarationPrefixMacros` names macro identifiers used as modifiers before [declaration-like items](glossary.md#declaration-like-item).
 
-A macro before a declaration may expand to an annotation or a separate declaration. This category identifies `API_EXPORT` as a modifier, keeping it attached to `int value;`. Without configuration, it is a separate item on its own line.
+A macro before a declaration may expand to an annotation or a separate declaration. This category keeps `API_EXPORT` attached to the following declaration. Without configuration, the macro is a separate item on its own line.
 
 <!-- .cpp-format
 MacroCategories:
@@ -69,13 +69,17 @@ MacroCategories:
 API_EXPORT int value;
 ```
 
+**Parse failure with overlapping categories:** an annotation may also belong to [BareIdentifierMacros](#bareidentifiermacros) for use inside declarators. The example below fails to parse if `PRINTF_FORMAT` is configured only as a bare identifier. Adding `DeclarationPrefixMacros` lets it precede the function definition. With neither category configured, this example parses successfully.
+
 <!-- .cpp-format
 MacroCategories:
+  BareIdentifierMacros:
+    - PRINTF_FORMAT
   DeclarationPrefixMacros:
-    - GTEST_INTERNAL_DEPRECATE_AND_INLINE
+    - PRINTF_FORMAT
 -->
 ```cpp
-GTEST_INTERNAL_DEPRECATE_AND_INLINE("Use NewApi() instead") int OldApi();
+PRINTF_FORMAT(1, 2) static void Print(const char* format, ...) {}
 ```
 
 Declaration-prefixed macro call: declaration modifiers may precede a macro when the macro itself supplies the declaration body.
@@ -114,6 +118,27 @@ void Exercise(bool enabled) {
 }
 ```
 
+**Parse failures:** a prefix before a member call, streamed expression, or block may not fit ordinary C++ syntax. Each function below fails to parse without this category.
+
+<!-- .cpp-format
+MacroCategories:
+  StatementPrefixMacros:
+    - DISCARD_RESULT
+    - RAISE
+    - DEFER
+-->
+```cpp
+void Discard(Message& message) { DISCARD_RESULT message.Parse(); }
+
+void Fail() { RAISE Error() << "failure"; }
+
+void Use() {
+    DEFER {
+        Cleanup();
+    }
+}
+```
+
 ### BareIdentifierMacros
 
 `BareIdentifierMacros` names macro identifiers used as bare tokens in supported non-call positions. A bare token may supply a fragment of an enum or braced initializer list. A configured token remains valid as an expression atom when the same project also passes it as a normal call argument or binary-expression operand. It may also [continue an expression](#expression-continuations).
@@ -132,15 +157,18 @@ void Emit() {
 }
 ```
 
-**Calling-convention modifier:** the macro appears in a declarator where a platform calling-convention token is expected.
+**Parse failures:** a calling-convention modifier between the return type and function name, or a macro supplying arguments after a qualified function name, needs this category. Each declaration below fails to parse without it.
 
 <!-- .cpp-format
 MacroCategories:
   BareIdentifierMacros:
-    - WINAPI
+    - CALLBACK
+    - ARGUMENTS
 -->
 ```cpp
-typedef PDH_STATUS (WINAPI* PdhAddEnglishCounterAFn)(PDH_HQUERY, LPCSTR, DWORD_PTR, PDH_HCOUNTER*);
+int CALLBACK Callback(int value) { return value; }
+
+constexpr auto value = ns::Build ARGUMENTS;
 ```
 
 Post-type declarator annotation: the macro appears after the declared type and before the normal declarator or abstract type suffix.
@@ -347,23 +375,40 @@ using Types = Test<GMOCK_PP_FOR_EACH(TYPE_ELEMENT, ~, (int, float))>;
 
 Macros that look like plain function calls and whose arguments are all normal expressions do not belong here. Use this category for assertion-style macros whose documented argument is a statement.
 
-The first argument may be a declaration that also parses as a chained call. In `UASSERT_NO_THROW` below, `Result (function)(Argument)` declares a function returning `Result`; without this category, it formats as a chained call with no space after `Result`.
+The first argument may be a declaration that also parses as a chained call. In `ASSERT_NO_THROW` below, `Result (function)(Argument)` declares a function returning `Result`; without this category, it formats as a chained call with no space after `Result`.
 
 <!-- .cpp-format
 MacroCategories:
   StatementArgumentMacros:
-    - UEXPECT_THROW
-    - UASSERT_NO_THROW
+    - ASSERT_NO_THROW
+-->
+```cpp
+void Check() { ASSERT_NO_THROW(Result (function)(Argument)); }
+```
+
+**Parse failures:** an initialized variable declaration need not fit the shared call-argument grammar. Each invocation below fails to parse without this category.
+
+<!-- .cpp-format
+MacroCategories:
+  StatementArgumentMacros:
+    - EXPECT_THROW
+-->
+```cpp
+void Check() {
+    EXPECT_THROW(auto value = Read(), Error);
+    EXPECT_THROW(ns::Value value(input), Error);
+}
+```
+
+The first argument can also be a complete block:
+
+<!-- .cpp-format
+MacroCategories:
+  StatementArgumentMacros:
     - EXPECT_DEATH
 -->
 ```cpp
-void CheckReads() {
-    UASSERT_NO_THROW(Result (function)(Argument));
-
-    UEXPECT_THROW([[maybe_unused]] auto bytes_read = source.ReadSome(kBuffer, kDeadline), IoTimeout);
-
-    UASSERT_NO_THROW(ydb::TopicWriter writer("test-writer", MakeWriterSettings(topic)));
-
+void CheckChild() {
     EXPECT_DEATH(
         {
             RunChildProcess();
