@@ -74,8 +74,8 @@ int FormatUserverExternCValue(int input);
 
 namespace format_userver_fixture {
 
-void __rseq_percpu* FormatUserverPerCpuIdentity(void __rseq_percpu* pointer) {
-    void __rseq_percpu* result = (void __rseq_percpu*)pointer;
+void __rseq_percpu * FormatUserverPerCpuIdentity(void __rseq_percpu * pointer) {
+    void __rseq_percpu * result = (void __rseq_percpu *)pointer;
     return result;
 }
 

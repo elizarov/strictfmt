@@ -15,15 +15,17 @@ enum TokenType {
     RAW_MACRO_TOKEN,
     MACRO_TOKEN_PASTE_IDENTIFIER_PREFIX,
     MACRO_TOKEN_PASTE_NUMBER_PREFIX,
-    BARE_MACRO_IDENTIFIER,
-    DECLARATION_PREFIX_MACRO_IDENTIFIER,
+    EXPRESSION_CONTINUATION_MACRO_IDENTIFIER,
+    DECLARATION_MODIFIER_MACRO_IDENTIFIER,
     METHOD_DECLARATION_MACRO_IDENTIFIER,
     STATEMENT_ARGUMENT_MACRO_IDENTIFIER,
     TYPE_SPECIFIER_MACRO_IDENTIFIER,
     PREPROCESSOR_ARGUMENT_MACRO_IDENTIFIER,
-    SEMICOLONLESS_CALL_MACRO_IDENTIFIER,
+    ITEM_MACRO_IDENTIFIER,
+    ITEM_CALL_MACRO_IDENTIFIER,
     STATEMENT_PREFIX_MACRO_IDENTIFIER,
-    SEMICOLONLESS_PREPROCESSOR_CALL_MACRO_IDENTIFIER,
+    PREPROCESSOR_ITEM_MACRO_IDENTIFIER,
+    PREPROCESSOR_CONTINUATION_MACRO_IDENTIFIER,
     PREPROC_DIRECTIVE_END,
     LINE_BREAK_WHITESPACE,
     MACRO_DEFINITION_START,
@@ -33,13 +35,13 @@ enum TokenType {
 };
 
 enum MacroCategory {
-    MACRO_CATEGORY_BARE_IDENTIFIER = 0,
+    MACRO_CATEGORY_EXPRESSION_CONTINUATION = 0,
     MACRO_CATEGORY_METHOD_DECLARATION = 1,
     MACRO_CATEGORY_STATEMENT_ARGUMENT = 2,
-    MACRO_CATEGORY_DECLARATION_PREFIX = 3,
+    MACRO_CATEGORY_DECLARATION_MODIFIER = 3,
     MACRO_CATEGORY_TYPE_SPECIFIER = 4,
     MACRO_CATEGORY_PREPROCESSOR_ARGUMENT = 5,
-    MACRO_CATEGORY_SEMICOLONLESS_CALL = 6,
+    MACRO_CATEGORY_ITEM = 6,
     MACRO_CATEGORY_STATEMENT_PREFIX = 7,
 };
 
@@ -230,12 +232,14 @@ static bool classify_macro_identifier_token(
     bool allow_method_declaration,
     bool allow_statement_argument,
     bool allow_type_specifier,
-    bool allow_declaration_prefix,
-    bool allow_bare,
+    bool allow_declaration_modifier,
+    bool allow_expression_continuation,
     bool allow_preprocessor_argument,
-    bool allow_semicolonless_call,
+    bool allow_item,
+    bool allow_item_call,
     bool allow_statement_prefix,
-    bool allow_semicolonless_preprocessor_call
+    bool allow_preprocessor_item,
+    bool allow_preprocessor_continuation
 ) {
     const bool method_declaration_match =
         allow_method_declaration &&
@@ -246,17 +250,18 @@ static bool classify_macro_identifier_token(
     const bool type_specifier_match =
         allow_type_specifier &&
         strictfmt_tree_sitter_cpp_macro_category_matches(MACRO_CATEGORY_TYPE_SPECIFIER, name, length);
-    const bool declaration_prefix_match =
-        allow_declaration_prefix &&
-        strictfmt_tree_sitter_cpp_macro_category_matches(MACRO_CATEGORY_DECLARATION_PREFIX, name, length);
-    const bool bare_match =
-        allow_bare && strictfmt_tree_sitter_cpp_macro_category_matches(MACRO_CATEGORY_BARE_IDENTIFIER, name, length);
+    const bool declaration_modifier_match =
+        allow_declaration_modifier &&
+        strictfmt_tree_sitter_cpp_macro_category_matches(MACRO_CATEGORY_DECLARATION_MODIFIER, name, length);
+    const bool expression_continuation_match =
+        (allow_expression_continuation || allow_preprocessor_continuation) &&
+        strictfmt_tree_sitter_cpp_macro_category_matches(MACRO_CATEGORY_EXPRESSION_CONTINUATION, name, length);
     const bool preprocessor_argument_match =
-        (allow_preprocessor_argument || allow_semicolonless_preprocessor_call) &&
+        (allow_preprocessor_argument || allow_preprocessor_item || allow_preprocessor_continuation) &&
         strictfmt_tree_sitter_cpp_macro_category_matches(MACRO_CATEGORY_PREPROCESSOR_ARGUMENT, name, length);
-    const bool semicolonless_call_match =
-        (allow_semicolonless_call || allow_semicolonless_preprocessor_call) &&
-        strictfmt_tree_sitter_cpp_macro_category_matches(MACRO_CATEGORY_SEMICOLONLESS_CALL, name, length);
+    const bool item_match =
+        (allow_item || allow_item_call || allow_preprocessor_item) &&
+        strictfmt_tree_sitter_cpp_macro_category_matches(MACRO_CATEGORY_ITEM, name, length);
 
     if (allow_statement_prefix &&
         strictfmt_tree_sitter_cpp_macro_category_matches(MACRO_CATEGORY_STATEMENT_PREFIX, name, length)) {
@@ -264,18 +269,24 @@ static bool classify_macro_identifier_token(
         return true;
     }
 
-    if (declaration_prefix_match) {
-        lexer->result_symbol = DECLARATION_PREFIX_MACRO_IDENTIFIER;
+    if (declaration_modifier_match) {
+        lexer->result_symbol = DECLARATION_MODIFIER_MACRO_IDENTIFIER;
         return true;
     }
 
     const bool has_arguments =
-        (preprocessor_argument_match || semicolonless_call_match || method_declaration_match ||
+        (preprocessor_argument_match || item_match || method_declaration_match ||
          statement_argument_match || type_specifier_match) && has_following_argument_list(lexer);
 
-    if (allow_semicolonless_preprocessor_call && preprocessor_argument_match &&
-        semicolonless_call_match && has_arguments) {
-        lexer->result_symbol = SEMICOLONLESS_PREPROCESSOR_CALL_MACRO_IDENTIFIER;
+    if (allow_preprocessor_item && preprocessor_argument_match &&
+        item_match && has_arguments) {
+        lexer->result_symbol = PREPROCESSOR_ITEM_MACRO_IDENTIFIER;
+        return true;
+    }
+
+    if (allow_preprocessor_continuation && preprocessor_argument_match &&
+        expression_continuation_match && has_arguments) {
+        lexer->result_symbol = PREPROCESSOR_CONTINUATION_MACRO_IDENTIFIER;
         return true;
     }
 
@@ -284,9 +295,15 @@ static bool classify_macro_identifier_token(
         return true;
     }
 
-    if (allow_semicolonless_call && semicolonless_call_match && has_arguments) {
-        lexer->result_symbol = SEMICOLONLESS_CALL_MACRO_IDENTIFIER;
-        return true;
+    if (item_match) {
+        if (has_arguments && allow_item_call) {
+            lexer->result_symbol = ITEM_CALL_MACRO_IDENTIFIER;
+            return true;
+        }
+        if (!has_arguments && allow_item) {
+            lexer->result_symbol = ITEM_MACRO_IDENTIFIER;
+            return true;
+        }
     }
 
     if (method_declaration_match && has_arguments) {
@@ -304,8 +321,8 @@ static bool classify_macro_identifier_token(
         return true;
     }
 
-    if (bare_match) {
-        lexer->result_symbol = BARE_MACRO_IDENTIFIER;
+    if (allow_expression_continuation && expression_continuation_match) {
+        lexer->result_symbol = EXPRESSION_CONTINUATION_MACRO_IDENTIFIER;
         return true;
     }
 
@@ -330,12 +347,14 @@ static bool has_valid_macro_identifier(TSLexer *lexer, const bool *valid_symbols
         valid_symbols[METHOD_DECLARATION_MACRO_IDENTIFIER],
         valid_symbols[STATEMENT_ARGUMENT_MACRO_IDENTIFIER],
         valid_symbols[TYPE_SPECIFIER_MACRO_IDENTIFIER],
-        valid_symbols[DECLARATION_PREFIX_MACRO_IDENTIFIER],
-        valid_symbols[BARE_MACRO_IDENTIFIER],
+        valid_symbols[DECLARATION_MODIFIER_MACRO_IDENTIFIER],
+        valid_symbols[EXPRESSION_CONTINUATION_MACRO_IDENTIFIER],
         valid_symbols[PREPROCESSOR_ARGUMENT_MACRO_IDENTIFIER],
-        valid_symbols[SEMICOLONLESS_CALL_MACRO_IDENTIFIER],
+        valid_symbols[ITEM_MACRO_IDENTIFIER],
+        valid_symbols[ITEM_CALL_MACRO_IDENTIFIER],
         valid_symbols[STATEMENT_PREFIX_MACRO_IDENTIFIER],
-        valid_symbols[SEMICOLONLESS_PREPROCESSOR_CALL_MACRO_IDENTIFIER]
+        valid_symbols[PREPROCESSOR_ITEM_MACRO_IDENTIFIER],
+        valid_symbols[PREPROCESSOR_CONTINUATION_MACRO_IDENTIFIER]
     );
 }
 
@@ -351,12 +370,14 @@ static bool scan_macro_identifier_token(
     bool allow_method_declaration,
     bool allow_statement_argument,
     bool allow_type_specifier,
-    bool allow_declaration_prefix,
-    bool allow_bare,
+    bool allow_declaration_modifier,
+    bool allow_expression_continuation,
     bool allow_preprocessor_argument,
-    bool allow_semicolonless_call,
+    bool allow_item,
+    bool allow_item_call,
     bool allow_statement_prefix,
-    bool allow_semicolonless_preprocessor_call
+    bool allow_preprocessor_item,
+    bool allow_preprocessor_continuation
 ) {
     char name[MAX_MACRO_NAME_LENGTH];
     unsigned length = 0;
@@ -377,12 +398,14 @@ static bool scan_macro_identifier_token(
         allow_method_declaration,
         allow_statement_argument,
         allow_type_specifier,
-        allow_declaration_prefix,
-        allow_bare,
+        allow_declaration_modifier,
+        allow_expression_continuation,
         allow_preprocessor_argument,
-        allow_semicolonless_call,
+        allow_item,
+        allow_item_call,
         allow_statement_prefix,
-        allow_semicolonless_preprocessor_call
+        allow_preprocessor_item,
+        allow_preprocessor_continuation
     );
 }
 
@@ -795,12 +818,13 @@ bool tree_sitter_cpp_external_scanner_scan(void *payload, TSLexer *lexer, const 
 
     if (valid_symbols[MACRO_TOKEN_PASTE_IDENTIFIER_PREFIX] ||
         valid_symbols[MACRO_TOKEN_PASTE_NUMBER_PREFIX] ||
-        valid_symbols[BARE_MACRO_IDENTIFIER] ||
-        valid_symbols[DECLARATION_PREFIX_MACRO_IDENTIFIER] || valid_symbols[METHOD_DECLARATION_MACRO_IDENTIFIER] ||
+        valid_symbols[EXPRESSION_CONTINUATION_MACRO_IDENTIFIER] ||
+        valid_symbols[DECLARATION_MODIFIER_MACRO_IDENTIFIER] || valid_symbols[METHOD_DECLARATION_MACRO_IDENTIFIER] ||
         valid_symbols[STATEMENT_ARGUMENT_MACRO_IDENTIFIER] || valid_symbols[TYPE_SPECIFIER_MACRO_IDENTIFIER] ||
         valid_symbols[PREPROCESSOR_ARGUMENT_MACRO_IDENTIFIER] ||
-        valid_symbols[SEMICOLONLESS_CALL_MACRO_IDENTIFIER] || valid_symbols[STATEMENT_PREFIX_MACRO_IDENTIFIER] ||
-        valid_symbols[SEMICOLONLESS_PREPROCESSOR_CALL_MACRO_IDENTIFIER]) {
+        valid_symbols[ITEM_MACRO_IDENTIFIER] || valid_symbols[ITEM_CALL_MACRO_IDENTIFIER] ||
+        valid_symbols[STATEMENT_PREFIX_MACRO_IDENTIFIER] || valid_symbols[PREPROCESSOR_ITEM_MACRO_IDENTIFIER] ||
+        valid_symbols[PREPROCESSOR_CONTINUATION_MACRO_IDENTIFIER]) {
         skip_external_whitespace(lexer);
     }
 
@@ -818,11 +842,12 @@ bool tree_sitter_cpp_external_scanner_scan(void *payload, TSLexer *lexer, const 
     }
 
     if ((valid_symbols[MACRO_TOKEN_PASTE_IDENTIFIER_PREFIX] || valid_symbols[METHOD_DECLARATION_MACRO_IDENTIFIER] ||
-         valid_symbols[DECLARATION_PREFIX_MACRO_IDENTIFIER] ||
+         valid_symbols[DECLARATION_MODIFIER_MACRO_IDENTIFIER] ||
          valid_symbols[STATEMENT_ARGUMENT_MACRO_IDENTIFIER] || valid_symbols[TYPE_SPECIFIER_MACRO_IDENTIFIER] ||
-         valid_symbols[BARE_MACRO_IDENTIFIER] || valid_symbols[PREPROCESSOR_ARGUMENT_MACRO_IDENTIFIER] ||
-         valid_symbols[SEMICOLONLESS_CALL_MACRO_IDENTIFIER] || valid_symbols[STATEMENT_PREFIX_MACRO_IDENTIFIER] ||
-         valid_symbols[SEMICOLONLESS_PREPROCESSOR_CALL_MACRO_IDENTIFIER]) &&
+         valid_symbols[EXPRESSION_CONTINUATION_MACRO_IDENTIFIER] || valid_symbols[PREPROCESSOR_ARGUMENT_MACRO_IDENTIFIER] ||
+         valid_symbols[ITEM_MACRO_IDENTIFIER] || valid_symbols[ITEM_CALL_MACRO_IDENTIFIER] ||
+         valid_symbols[STATEMENT_PREFIX_MACRO_IDENTIFIER] || valid_symbols[PREPROCESSOR_ITEM_MACRO_IDENTIFIER] ||
+         valid_symbols[PREPROCESSOR_CONTINUATION_MACRO_IDENTIFIER]) &&
         is_identifier_start(lexer->lookahead)) {
         return scan_macro_identifier_token(
             lexer,
@@ -830,12 +855,14 @@ bool tree_sitter_cpp_external_scanner_scan(void *payload, TSLexer *lexer, const 
             valid_symbols[METHOD_DECLARATION_MACRO_IDENTIFIER],
             valid_symbols[STATEMENT_ARGUMENT_MACRO_IDENTIFIER],
             valid_symbols[TYPE_SPECIFIER_MACRO_IDENTIFIER],
-            valid_symbols[DECLARATION_PREFIX_MACRO_IDENTIFIER],
-            valid_symbols[BARE_MACRO_IDENTIFIER],
+            valid_symbols[DECLARATION_MODIFIER_MACRO_IDENTIFIER],
+            valid_symbols[EXPRESSION_CONTINUATION_MACRO_IDENTIFIER],
             valid_symbols[PREPROCESSOR_ARGUMENT_MACRO_IDENTIFIER],
-            valid_symbols[SEMICOLONLESS_CALL_MACRO_IDENTIFIER],
+            valid_symbols[ITEM_MACRO_IDENTIFIER],
+            valid_symbols[ITEM_CALL_MACRO_IDENTIFIER],
             valid_symbols[STATEMENT_PREFIX_MACRO_IDENTIFIER],
-            valid_symbols[SEMICOLONLESS_PREPROCESSOR_CALL_MACRO_IDENTIFIER]
+            valid_symbols[PREPROCESSOR_ITEM_MACRO_IDENTIFIER],
+            valid_symbols[PREPROCESSOR_CONTINUATION_MACRO_IDENTIFIER]
         );
     }
 

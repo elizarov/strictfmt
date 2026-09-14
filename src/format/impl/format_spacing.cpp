@@ -21,18 +21,13 @@ bool IsDeclaratorBindingToken(const PrintToken& token) {
     ));
 }
 
-bool EndsStatementPrefix(const PrintToken& previous, const PrintToken& current) {
-    if (
-        previous.parentKind != SyntaxNodeKind::StatementPrefixMacro && previous.syntaxKind != SyntaxNodeKind::RightParen
-    ) {
+bool EndsMacroModifier(const PrintToken& previous, const PrintToken& current) {
+    if (previous.parentKind != SyntaxNodeKind::MacroModifier && previous.syntaxKind != SyntaxNodeKind::RightParen) {
         return false;
     }
     for (const SyntaxNode* node = previous.node; node != nullptr; node = node->parent) {
-        if (node->kind == SyntaxNodeKind::StatementPrefixMacro) {
-            return node->parent != nullptr &&
-                node->parent->kind == SyntaxNodeKind::MacroPrefixedStatement &&
-                PrintTokenSyntaxPathContains(current, node->parent) &&
-                !PrintTokenSyntaxPathContains(current, node);
+        if (node->kind == SyntaxNodeKind::MacroModifier) {
+            return !PrintTokenSyntaxPathContains(current, node);
         }
     }
     return false;
@@ -487,7 +482,7 @@ bool FormatTokenNeedsSpace(const PrintToken* previous, const PrintToken& current
     ) {
         return false;
     }
-    if (current.syntaxKind != SyntaxNodeKind::Semicolon && EndsStatementPrefix(*previous, current)) {
+    if (!IsClosingDelimiterOrSeparator(current) && EndsMacroModifier(*previous, current)) {
         return true;
     }
     if (current.inMacroValue && !previous->inMacroValue && FormatTokensShareMacroDefinition(previous, &current)) {

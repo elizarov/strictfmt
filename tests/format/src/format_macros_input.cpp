@@ -4465,43 +4465,43 @@ using Name##Function = int(int);
 #define FORMAT_LIST_ENTRY(name,value) value,
 
 // tests/format/src/format_test_input.cpp
-#define FORMAT_PARAMETER_SUFFIX_LIST 6,7,
+#define FORMAT_ITEM_LIST 6,7,
 
 // tests/format/src/format_test_input.cpp
-#define FORMAT_PARAMETER_SUFFIX_EMPTY
+#define FORMAT_ITEM_EMPTY
 
 // tests/format/src/format_test_input.cpp
-#define FORMAT_PARAMETER_SUFFIX_VALUE 9
+#define FORMAT_ITEM_VALUE 9
 
 // tests/format/src/format_test_input.cpp
 #define FORMAT_SEMILESS_VALUE() 10
 
 // tests/format/src/format_test_input.cpp
-#define FORMAT_PARAMETER_SUFFIX_ENUM One,Two,
+#define FORMAT_ITEM_ENUM One,Two,
 
 // tests/format/src/format_test_input.cpp
 #define FORMAT_SEMILESS_TEXT() "x"
 
 // tests/format/src/format_test_input.cpp
-#define FORMAT_TYPE_GENERATED(name) enum class name { FORMAT_PARAMETER_SUFFIX_ENUM Last }
+#define FORMAT_TYPE_GENERATED(name) enum class name { FORMAT_ITEM_ENUM Last }
 
 // tests/format/src/format_test_input.cpp
-#define FORMAT_BARE_FIELD int first=1;
+#define FORMAT_ITEM_FIELD int first=1;
 
 // tests/format/src/format_test_input.cpp
-#define FORMAT_BARE_EXTRA int second=2;
+#define FORMAT_ITEM_EXTRA int second=2;
 
 // tests/format/src/format_test_input.cpp
-#define FORMAT_BARE_EMPTY
+#define FORMAT_ITEM_EMPTY
 
 // tests/format/src/format_test_input.cpp
-#define FORMAT_BARE_COMBINED FORMAT_BARE_FIELD FORMAT_BARE_EXTRA
+#define FORMAT_ITEM_COMBINED FORMAT_ITEM_FIELD FORMAT_ITEM_EXTRA
 
 // tests/format/src/format_test_input.cpp
-#define FORMAT_BARE_UNION_FIELD int number;
+#define FORMAT_ITEM_UNION_FIELD int number;
 
 // tests/format/src/format_test_input.cpp
-#define FORMAT_SEMILESS_DECLARE_GENERATED(Type) struct Type { FORMAT_BARE_COMBINED int last=3; };
+#define FORMAT_SEMILESS_DECLARE_GENERATED(Type) struct Type { FORMAT_ITEM_COMBINED int last=3; };
 
 // tests/format/src/format_test_input.cpp
 #define FORMAT_BARE_INCREMENT(Value) ((Value)+1)
@@ -4568,25 +4568,25 @@ FORMAT_BARE_INCREMENT(Value)
 #define FORMAT_FIXTURE_ARITHMETIC_TAIL(Value) + (Value)
 
 // tests/format/src/format_test_input.cpp
-#define FORMAT_SEMILESS_COMPARE(Left,Right) FORMAT_FIXTURE_LOGICAL_TAIL(Left,Right)
+#define FORMAT_CONTINUATION_COMPARE(Left,Right) FORMAT_FIXTURE_LOGICAL_TAIL(Left,Right)
 
 // tests/format/src/format_test_input.cpp
-#define FORMAT_SEMILESS_ADD(Value) FORMAT_FIXTURE_ARITHMETIC_TAIL(Value)
+#define FORMAT_CONTINUATION_ADD(Value) FORMAT_FIXTURE_ARITHMETIC_TAIL(Value)
 
 // tests/format/src/format_test_input.cpp
-#define FORMAT_BARE_TRUE_TAIL FORMAT_SEMILESS_COMPARE(1,1)
+#define FORMAT_CONTINUATION_TRUE_TAIL FORMAT_CONTINUATION_COMPARE(1,1)
 
 // tests/format/src/format_test_input.cpp
 #define FORMAT_TOKEN_COMPARE(Callback,Field) Callback(a.Field,b.Field)
 
 // tests/format/src/format_test_input.cpp
-#define FORMAT_SEMILESS_EQUAL(Type) inline bool operator==(const Type& a,const Type& b)noexcept{return true FORMAT_TOKEN_COMPARE(FORMAT_SEMILESS_COMPARE,first) FORMAT_TOKEN_COMPARE(FORMAT_SEMILESS_COMPARE,second);}
+#define FORMAT_SEMILESS_EQUAL(Type) inline bool operator==(const Type& a,const Type& b)noexcept{return true FORMAT_TOKEN_COMPARE(FORMAT_CONTINUATION_COMPARE,first) FORMAT_TOKEN_COMPARE(FORMAT_CONTINUATION_COMPARE,second);}
 
 // tests/format/src/format_test_input.cpp
-#define FORMAT_BARE_LIST_VALUES 3,4,
+#define FORMAT_ITEM_LIST_VALUES 3,4,
 
 // tests/format/src/format_test_input.cpp
-#define FORMAT_BARE_LIST_EMPTY
+#define FORMAT_ITEM_LIST_EMPTY
 
 // tests/format/src/format_test_input.cpp
 #define FORMAT_SEMILESS_LIST_VALUES() 5,6,

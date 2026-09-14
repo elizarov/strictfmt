@@ -88,7 +88,7 @@ Selected common-body ordinary function start with a branch-local include:
 
 <!-- .cpp-format
 MacroCategories:
-  DeclarationPrefixMacros:
+  DeclarationModifierMacros:
     - API_EXPORT
 -->
 ```cpp

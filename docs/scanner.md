@@ -19,7 +19,7 @@ The scanner uses four inputs:
 - Small scanner payload state for raw string delimiters, directive boundaries, and split right angles.
 - Formatter macro category configuration, exposed through `strictfmt_tree_sitter_cpp_macro_category_matches`.
 
-`src/format/impl/format_model_parse.cpp` owns the callback bridge from parser to formatter configuration. `ParseFormatModel` installs a thread-local `FormatterConfig` for the parse, and the scanner calls back into that config when it needs to know whether an identifier belongs to `BareIdentifierMacros`, `DeclarationPrefixMacros`, `StatementPrefixMacros`, `MethodDeclarationMacros`, `SemicolonlessCallMacros`, `StatementArgumentMacros`, `TypeSpecifierMacros`, or `PreprocessorArgumentMacros`.
+`src/format/impl/format_model_parse.cpp` owns the callback bridge from parser to formatter configuration. `ParseFormatModel` installs a thread-local `FormatterConfig` for the parse, and the scanner calls back into that config when it needs to know whether an identifier belongs to `ExpressionContinuationMacros`, `DeclarationModifierMacros`, `StatementPrefixMacros`, `MethodDeclarationMacros`, `ItemMacros`, `StatementArgumentMacros`, `TypeSpecifierMacros`, or `PreprocessorArgumentMacros`.
 
 The parse scope builds a first-byte category mask to reject impossible macro matches cheaply. Every possible match still uses the exact-name or prefix matcher; the mask has the same configuration lifetime and thread isolation as the callback bridge.
 
@@ -37,17 +37,21 @@ A generated token rule cannot express "remember this delimiter and later stop on
 
 The scanner owns these identifier tokens:
 
-- `bare_macro_identifier`
-- `declaration_prefix_macro_identifier`
+- `expression_continuation_macro_identifier`
+- `declaration_modifier_macro_identifier`
 - `statement_prefix_macro_identifier`
 - `method_declaration_macro_identifier`
-- `semicolonless_call_macro_identifier`
-- `semicolonless_preprocessor_call_macro_identifier`
+- `item_macro_identifier`
+- `item_call_macro_identifier`
+- `preprocessor_item_macro_identifier`
+- `preprocessor_continuation_macro_identifier`
 - `statement_argument_macro_identifier`
 - `type_specifier_macro_identifier`
 - `preprocessor_argument_macro_identifier`
 
 The scanner reads a normal C/C++ identifier and then asks the formatter configuration whether the identifier belongs to the relevant macro category. This keeps macro categories runtime-configurable while the generated parser stays static.
+
+The two item tokens distinguish a bare use from an invocation with arguments. Both use `ItemMacros`; argument-list lookahead prevents an invocation from ending before its opening parenthesis.
 
 ### Macro Replacement Boundaries
 
@@ -57,7 +61,7 @@ The grammar resolves both alternatives through a shared definition-body reductio
 
 The scanner builds without formatter dependencies by default. The strictfmt build defines `STRICTFMT_RUNTIME_MACRO_CATEGORIES` to enable the use-site category callback; standalone editor parsers use ordinary identifiers.
 
-The scanner classifies identifiers by configured macro category. [macro.md](macro.md) specifies the categories and their supported grammar uses. The combined semicolonless/preprocessor identifier records both matching runtime categories. For `PreprocessorArgumentMacros`, the scanner owns only the configured identifier token; the grammar recursively balances the invocation's parentheses and separates its preprocessing-token arguments.
+The scanner classifies identifiers by configured macro category. [macro.md](macro.md) specifies the categories and their supported grammar uses. Combined preprocessing-token identifiers record the argument category together with an item or expression-continuation role. For `PreprocessorArgumentMacros`, the scanner owns only the configured identifier token; the grammar recursively balances the invocation's parentheses and separates its preprocessing-token arguments.
 
 ### Token-Paste Prefixes
 

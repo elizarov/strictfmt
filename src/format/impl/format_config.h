@@ -19,11 +19,11 @@ struct FormatterConfig {
     int tabWidth = 4;
     std::string mainIncludeRegex = "(Test)?$";
     bool mainIncludeQuote = true;
-    std::vector<std::string> bareIdentifierMacros;
-    std::vector<std::string> declarationPrefixMacros;
+    std::vector<std::string> expressionContinuationMacros;
+    std::vector<std::string> declarationModifierMacros;
     std::vector<std::string> statementPrefixMacros;
     std::vector<std::string> methodDeclarationMacros;
-    std::vector<std::string> semicolonlessCallMacros;
+    std::vector<std::string> itemMacros;
     std::vector<std::string> statementArgumentMacros;
     std::vector<std::string> typeSpecifierMacros;
     std::vector<std::string> preprocessorArgumentMacros;

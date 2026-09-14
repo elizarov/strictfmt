@@ -44,15 +44,15 @@ MainIncludeChar: Quote
 IncludeIsMainRegex: '(Test)?$'
 
 MacroCategories:
-  BareIdentifierMacros:
-    - CALLBACK
-  DeclarationPrefixMacros:
+  ExpressionContinuationMacros:
+    - BENCHMARK_OPTIONS
+  DeclarationModifierMacros:
     - API_EXPORT
   StatementPrefixMacros:
     - DISCARD_RESULT
   MethodDeclarationMacros:
     - MOCK_METHOD
-  SemicolonlessCallMacros:
+  ItemMacros:
     - DIAGNOSTIC_PUSH
   StatementArgumentMacros:
     - EXPECT_THROW

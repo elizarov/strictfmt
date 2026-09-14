@@ -208,11 +208,11 @@ STEP(Last)
 }
 struct GeneratedItems {STEP(First) STEP(Second) void Method();};
 #define GENERATED_ITEMS(Name) struct Name {STEP(Fields) STEP(Methods)}
-REGISTER_CASE(Record,1,2) ANNOTATION;
+REGISTER_CASE(Record,1,2) APPEND_OPTIONS;
 
 // Enum fragments can supply values or separators without configuration.
 enum class PrefixedValues {First=ENUM_PREFIX Value,Second=ENUM_PREFIX Other,};
-enum class PrefixedItems {ENUM_PREFIX First,ENUM_PREFIX Last};
+enum class PrefixedItems {ENUM_ITEMS First,ENUM_ITEMS Last};
 struct EnumFragments {
 enum Nested {First=ENUM_PREFIX (Compute(1)+2),Last,};
 };

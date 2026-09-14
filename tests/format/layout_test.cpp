@@ -257,24 +257,24 @@ void TestParseMacroConfiguration() {
     const auto check = [&](std::string_view name, bool expected) {
         const auto model = ParseFormatModel(std::string(name) + " value;", config);
         Check(model.parse.ok, "configured and unconfigured identifiers parse");
-        bool hasBareItem = false;
+        bool hasMacroItem = false;
         for (const auto& node : model.nodes) {
-            hasBareItem |= node.kind == SyntaxNodeKind::BareMacroItem;
+            hasMacroItem |= node.kind == SyntaxNodeKind::BareMacroItem || node.kind == SyntaxNodeKind::MacroCallItem;
         }
-        Check(hasBareItem == expected, "macro classification follows the current parse configuration");
+        Check(hasMacroItem == expected, "macro classification follows the current parse configuration");
     };
-    config.bareIdentifierMacros = {"LEFT"};
+    config.itemMacros = {"LEFT"};
     check("LEFT", true);
     check("LONG", false);
     check("RIGHT", false);
-    config.bareIdentifierMacros = {"R*"};
+    config.itemMacros = {"R*"};
     check("RIGHT", true);
     check("LEFT", false);
     // Direct API configurations retain the matcher's empty-prefix behavior.
-    config.bareIdentifierMacros = {"*"};
+    config.itemMacros = {"*"};
     check("LEFT", true);
     check("RIGHT", true);
-    config.bareIdentifierMacros.clear();
+    config.itemMacros.clear();
     check("LEFT", false);
     check("RIGHT", false);
 }

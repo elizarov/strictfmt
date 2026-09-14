@@ -27,11 +27,11 @@ struct MacroCategoryConfig {
 };
 
 constexpr std::array MACRO_CATEGORY_CONFIGS = {
-    MacroCategoryConfig{"BareIdentifierMacros", &FormatterConfig::bareIdentifierMacros},
-    MacroCategoryConfig{"DeclarationPrefixMacros", &FormatterConfig::declarationPrefixMacros},
+    MacroCategoryConfig{"ExpressionContinuationMacros", &FormatterConfig::expressionContinuationMacros},
+    MacroCategoryConfig{"DeclarationModifierMacros", &FormatterConfig::declarationModifierMacros},
     MacroCategoryConfig{"StatementPrefixMacros", &FormatterConfig::statementPrefixMacros},
     MacroCategoryConfig{"MethodDeclarationMacros", &FormatterConfig::methodDeclarationMacros},
-    MacroCategoryConfig{"SemicolonlessCallMacros", &FormatterConfig::semicolonlessCallMacros},
+    MacroCategoryConfig{"ItemMacros", &FormatterConfig::itemMacros},
     MacroCategoryConfig{"StatementArgumentMacros", &FormatterConfig::statementArgumentMacros},
     MacroCategoryConfig{"TypeSpecifierMacros", &FormatterConfig::typeSpecifierMacros},
     MacroCategoryConfig{"PreprocessorArgumentMacros", &FormatterConfig::preprocessorArgumentMacros},

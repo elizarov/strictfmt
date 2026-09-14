@@ -93,7 +93,6 @@ function cppNonBinaryExpressions($, base) {
     alias($.delete_array_expression, $.delete_expression),
     $.macro_expansion,
     $.macro_expression_continuation,
-    $.macro_qualified_identifier,
     base,
     $.reflect_expression,
     $.splice_specifier,
@@ -122,21 +121,22 @@ function cppNonBinaryExpressions($, base) {
 }
 
 function macroExpressionContinuation($, expression) {
-  // Preserve existing item and list-fragment roles when a sequence can use either.
-  return prec.dynamic(-3, prec.left(PREC.ASSIGNMENT, seq(
+  // A configured continuation owns its left expression, including parenthesized callees.
+  return prec.dynamic(3, prec.left(PREC.ASSIGNMENT, seq(
     field('argument', expression),
-    $.macro_expansion,
+    $.expression_continuation_macro,
   )));
 }
 
-function semicolonlessMacroCall($) {
+function itemMacro($, requireArguments = false) {
   return choice(
+    ...(requireArguments ? [] : [$.item_macro_identifier]),
     seq(
-      field('function', $.semicolonless_call_macro_identifier),
+      field('function', $.item_call_macro_identifier),
       field('arguments', $.argument_list),
     ),
     seq(
-      field('function', $.semicolonless_preprocessor_call_macro_identifier),
+      field('function', $.preprocessor_item_macro_identifier),
       field('arguments', $.preprocessing_token_argument_list),
     ),
   );
@@ -197,7 +197,6 @@ function declarationSpecifiers($) {
     repeat($._declaration_modifiers),
     field('type', $.type_specifier),
     repeat($._declaration_modifiers),
-    repeat($.post_type_macro_annotation),
   ];
 }
 
@@ -206,7 +205,7 @@ function typeDescriptor($, type) {
     repeat($.type_qualifier),
     field('type', type),
     repeat($.type_qualifier),
-    repeat($.post_type_macro_annotation),
+    repeat($.declaration_modifier_macro),
     field('declarator', optional($._abstract_declarator)),
   ));
 }
@@ -273,15 +272,17 @@ module.exports = grammar(C, {
     $._raw_macro_token,
     $.macro_token_paste_identifier_prefix,
     $.macro_token_paste_number_prefix,
-    $.bare_macro_identifier,
-    $.declaration_prefix_macro_identifier,
+    $.expression_continuation_macro_identifier,
+    $.declaration_modifier_macro_identifier,
     $.method_declaration_macro_identifier,
     $.statement_argument_macro_identifier,
     $.type_specifier_macro_identifier,
     $.preprocessor_argument_macro_identifier,
-    $.semicolonless_call_macro_identifier,
+    $.item_macro_identifier,
+    $.item_call_macro_identifier,
     $.statement_prefix_macro_identifier,
-    $.semicolonless_preprocessor_call_macro_identifier,
+    $.preprocessor_item_macro_identifier,
+    $.preprocessor_continuation_macro_identifier,
     $._preproc_directive_end,
     $._line_break_whitespace,
     $.macro_definition_start,
@@ -301,6 +302,7 @@ module.exports = grammar(C, {
   ],
 
   conflicts: $ => [
+    [$._declaration_modifiers, $.qualified_type_function_definition, $._declaration_declarator_list],
     [$._declaration_modifiers, $.template_declaration],
     [$.type_specifier, $._type_constraint, $._unconfigured_modifier_identifier],
     [$._type_constraint, $._unconfigured_modifier_identifier],
@@ -473,7 +475,6 @@ module.exports = grammar(C, {
     [$.expression, $._initializer_list_with_preproc],
     [$.macro_expansion, $._callable_template_callee],
     [$.call_expression, $.macro_expansion],
-    [$.macro_expansion, $.macro_qualified_identifier],
     [$.operator_cast_field_identifier, $._scope_name],
     [$.expression, $.template_function, $._conditional_alternative],
     [$.expression, $.template_function],
@@ -611,14 +612,8 @@ module.exports = grammar(C, {
     [$.template_function, $.template_type, $.expression],
     [$.template_function, $.template_type, $.expression, $._callable_template_callee],
     [$.template_function, $.template_type, $.qualified_identifier],
-    [$.template_function, $.template_type, $.macro_qualified_identifier],
-    [$.template_type, $.macro_qualified_identifier],
-    [$._template_argument_expression, $.macro_qualified_identifier],
     [$.template_type, $.qualified_type_identifier],
     [$.qualified_type_identifier, $.qualified_identifier],
-    [$.qualified_identifier, $.macro_qualified_identifier],
-    [$.expression, $.macro_qualified_identifier],
-    [$._declarator, $.macro_qualified_identifier],
     [$.qualified_type_identifier, $._declarator],
     [$._declarator, $._qualified_declaration_type],
     [$._declarator, $._qualified_type_function_declarator],
@@ -700,9 +695,6 @@ module.exports = grammar(C, {
     [$._parameter_list_item, $._unary_left_fold],
     [$._declaration_modifiers, $.type_descriptor],
     [$._declaration_specifiers, $.type_descriptor],
-    [$.type_descriptor, $.macro_qualified_identifier],
-    [$.type_descriptor, $.calling_convention_macro],
-    [$.type_descriptor, $.calling_convention_macro, $.macro_qualified_identifier],
     [$._declarator, $._constructor_or_destructor_header],
     [$._declarator],
     [$.argument_list, $.macro_statement_argument_list],
@@ -726,13 +718,7 @@ module.exports = grammar(C, {
     [$.template_type, $.template_method, $.dependent_field_identifier],
     [$.template_method, $.dependent_field_identifier],
     [$._function_declaration_declarator, $._function_attributes_start],
-    [$.top_level_item_macro, $.function_prefix_macro],
-    [$.top_level_item_macro, $.function_prefix_macro, $.calling_convention_macro],
-    [$.top_level_item_macro, $.function_prefix_macro, $.calling_convention_macro, $.macro_qualified_identifier],
-    [$.function_prefix_macro, $.calling_convention_macro],
-    [$.calling_convention_macro, $.macro_qualified_identifier],
-    [$.function_prefix_macro, $.macro_qualified_identifier],
-    [$.function_prefix_macro, $.calling_convention_macro, $.macro_qualified_identifier],
+    [$.top_level_item_macro, $.declaration_modifier_macro],
     [$._declaration_modifiers, $.attributed_friend_declaration],
     [$._declaration_modifiers, $.attributed_statement, $.standalone_attribute_preproc_if],
     [$._declaration_modifiers, $.attributed_statement, $.macro_attribute_replacement_list],
@@ -1117,13 +1103,12 @@ module.exports = grammar(C, {
     // An isolated identifier may expand to a complete item; prefer complete C++ syntax.
     _unconfigured_macro_item: $ => prec.dynamic(-10, $.identifier),
 
-    top_level_item_macro: $ => prec(PREC.CALL + 5, $.bare_macro_identifier),
+    top_level_item_macro: $ => prec(PREC.CALL + 5, $.item_macro_identifier),
 
-    class_bare_macro_item: $ => prec.right(seq($.bare_macro_identifier, optional(';'))),
+    class_bare_macro_item: $ => prec.right(seq($.item_macro_identifier, optional(';'))),
 
     class_macro_call_item: $ => prec.right(PREC.CALL + 8, seq(
       $.class_macro_call,
-      repeat($.class_macro_call),
       optional(';'),
     )),
 
@@ -1137,49 +1122,51 @@ module.exports = grammar(C, {
 
     block_macro_call_line_item: $ => choice(
       prec.dynamic(10, prec.right(PREC.CALL + 8, seq(
-        semicolonlessMacroCall($),
+        itemMacro($),
         optional($._line_break_whitespace),
       ))),
       $._unconfigured_call,
     ),
 
     block_macro_call_statement_item: $ => prec.dynamic(10, prec.right(PREC.CALL + 8, seq(
-      semicolonlessMacroCall($),
+      itemMacro($),
       ';',
     ))),
 
     top_level_call_statement: $ => prec.dynamic(1, prec.right(PREC.CALL + 4, seq(
       itemCall($),
-      optional(field('suffix', $.bare_macro_identifier)),
+      repeat(field('suffix', $.expression_continuation_macro)),
       optional($.macro_arrow_chain),
       optional(';'),
     ))),
 
     top_level_macro_call_line_item: $ => prec.dynamic(10, prec(PREC.CALL + 8, seq(
-      semicolonlessMacroCall($),
+      itemMacro($),
       optional($._line_break_whitespace),
     ))),
 
     macro_call_item: $ => choice(
       prec.right(PREC.CALL + 2, itemCall($)),
-      prec.right(PREC.CALL + 2, semicolonlessMacroCall($)),
+      prec.right(PREC.CALL + 2, itemMacro($)),
     ),
 
-    macro_expansion: $ => prec.dynamic(1, choice(
-      $.bare_macro_identifier,
-      prec(PREC.CALL, semicolonlessMacroCall($)),
+    macro_expansion: $ => prec.dynamic(1, prec.right(PREC.CALL, itemMacro($))),
+
+    expression_continuation_macro: $ => prec.right(PREC.CALL + 6, choice(
+      seq($.expression_continuation_macro_identifier, optional($.argument_list)),
+      seq($.preprocessor_continuation_macro_identifier, $.preprocessing_token_argument_list),
     )),
 
     macro_expression_continuation: $ => macroExpressionContinuation($, $.expression),
 
     macro_call_identifier: $ => choice(
       $._call_identifier,
-      $.semicolonless_call_macro_identifier,
-      $.semicolonless_preprocessor_call_macro_identifier,
+      $.item_call_macro_identifier,
+      $.preprocessor_item_macro_identifier,
     ),
 
     macro_prefixed_function_definition: $ => prec(PREC.CALL + 6, seq(
-      $.function_prefix_macro,
+      $.declaration_modifier_macro,
       choice(
         $.function_definition,
         alias($.qualified_type_function_definition, $.function_definition),
@@ -1190,7 +1177,7 @@ module.exports = grammar(C, {
     )),
 
     macro_prefixed_declaration: $ => prec(PREC.CALL + 6, seq(
-      $.function_prefix_macro,
+      $.declaration_modifier_macro,
       choice(
         $.declaration,
         alias($.constructor_or_destructor_declaration, $.declaration),
@@ -1205,14 +1192,14 @@ module.exports = grammar(C, {
         ';',
       )),
       prec(PREC.CALL + 8, seq(
-        field('function', $.bare_macro_identifier),
+        field('function', $.item_call_macro_identifier),
         field('arguments', $.argument_list),
         ';',
       )),
     ),
 
     macro_prefixed_field_declaration_item: $ => prec(PREC.CALL + 6, seq(
-      $.function_prefix_macro,
+      $.declaration_modifier_macro,
       choice(
         alias($.inline_method_definition, $.function_definition),
         $.field_declaration,
@@ -1420,7 +1407,7 @@ module.exports = grammar(C, {
         $.attribute_specifier,
         $.alignas_qualifier,
         $.attribute_declaration,
-        $.function_prefix_macro,
+        $.declaration_modifier_macro,
         $._unconfigured_modifier,
       )),
       optional($.ms_declspec_modifier),
@@ -1481,7 +1468,6 @@ module.exports = grammar(C, {
         alias($.preproc_ifdef_in_function_return_type, $.preproc_ifdef),
       ),
       repeat($._declaration_modifiers),
-      repeat($.post_type_macro_annotation),
     )),
 
     preproc_if_in_function_return_type: $ => seq(
@@ -1591,7 +1577,7 @@ module.exports = grammar(C, {
 
     qualified_type_function_definition: $ => prec(PREC.CALL + 2, seq(
       field('type', $._qualified_declaration_type),
-      repeat($.post_type_macro_annotation),
+      repeat($.declaration_modifier_macro),
       field('declarator', $._qualified_type_function_declarator),
       field('body', choice($.compound_statement, $.try_statement, $.delete_method_clause)),
     )),
@@ -1600,7 +1586,6 @@ module.exports = grammar(C, {
       repeat($._declaration_modifiers),
       field('type', $._qualified_declaration_type),
       repeat($._declaration_modifiers),
-      repeat($.post_type_macro_annotation),
     )),
 
     macro_declaration: $ => declarationWithSpecifiers(
@@ -1652,21 +1637,14 @@ module.exports = grammar(C, {
 
     _declaration_modifiers: ($, original) => choice(
       original,
-      $.function_prefix_macro,
+      $.declaration_modifier_macro,
       'virtual',
     ),
 
-    function_prefix_macro: $ => prec.right(PREC.CALL + 6, choice(
-      $.declaration_prefix_macro_identifier,
-      seq($.declaration_prefix_macro_identifier, $.argument_list),
+    declaration_modifier_macro: $ => prec.right(PREC.CALL + 6, seq(
+      $.declaration_modifier_macro_identifier,
+      optional($.argument_list),
     )),
-
-    ms_call_modifier: ($, original) => choice(
-      original,
-      $.calling_convention_macro,
-    ),
-
-    calling_convention_macro: $ => prec(1, $.bare_macro_identifier),
 
     explicit_function_specifier: $ => choice(
       'explicit',
@@ -1986,7 +1964,7 @@ module.exports = grammar(C, {
       )),
     ),
 
-    macro_initializer: $ => $.bare_macro_identifier,
+    macro_initializer: $ => $.expression_continuation_macro,
 
     preproc_value_declaration: $ => prec(1, seq(
       $._declaration_specifiers,
@@ -2226,7 +2204,7 @@ module.exports = grammar(C, {
     qualified_macro_initialized_field_declaration: $ => prec(2, seq(
       field('type', $.qualified_type_identifier),
       field('declarator', $.identifier),
-      field('initializer', $.bare_macro_identifier),
+      field('initializer', $.expression_continuation_macro),
       ';',
     )),
 
@@ -2249,7 +2227,7 @@ module.exports = grammar(C, {
 
     _field_declaration_declarator_list: $ => commaSep1(choice(
       seq(
-        repeat($.post_type_macro_annotation),
+        repeat($.declaration_modifier_macro),
         field('declarator', $._field_declarator),
         optional($.bitfield_clause),
         optional(choice(
@@ -2409,11 +2387,6 @@ module.exports = grammar(C, {
       $.abstract_member_pointer_declarator,
     ),
 
-    post_type_macro_annotation: $ => prec.right(PREC.CALL + 7, choice(
-      seq($.bare_macro_identifier, $.argument_list),
-      $.bare_macro_identifier,
-    )),
-
     reference_declarator: $ => referenceDeclarator($, $._declarator),
     reference_field_declarator: $ => referenceDeclarator($, $._field_declarator),
     reference_type_declarator: $ => referenceDeclarator($, $._type_declarator),
@@ -2442,7 +2415,7 @@ module.exports = grammar(C, {
 
     abstract_parenthesized_declarator: $ => prec(1, seq(
       '(',
-      optional(choice($.ms_call_modifier, $.function_prefix_macro)),
+      optional(choice($.ms_call_modifier, $.declaration_modifier_macro)),
       $._abstract_declarator,
       ')',
     )),
@@ -2671,7 +2644,7 @@ module.exports = grammar(C, {
     ),
 
     macro_template_argument_fragment: $ => choice(
-      prec(1, $.bare_macro_identifier),
+      prec(1, $.macro_expansion),
       $._unconfigured_macro_item,
     ),
 
@@ -2879,7 +2852,7 @@ module.exports = grammar(C, {
         '=',
         field('return_type', $.primitive_type),
         '(',
-        $.calling_convention_macro,
+        $.declaration_modifier_macro,
         '*',
         ')',
         $._function_declarator_seq,
@@ -3004,7 +2977,7 @@ module.exports = grammar(C, {
       optional($.argument_list),
     )),
 
-    bare_macro_statement: $ => prec(1, $.bare_macro_identifier),
+    bare_macro_statement: $ => prec(1, $.item_macro_identifier),
 
     switch_statement: $ => seq(
       'switch',
@@ -3742,11 +3715,6 @@ module.exports = grammar(C, {
 
     macro_expression_without_semicolon: $ => prec(PREC.CALL + 2, $.expression),
 
-    macro_qualified_identifier: $ => seq(
-      $.bare_macro_identifier,
-      $.identifier,
-    ),
-
     qualified_address_expression: $ => prec(3, seq(
       '&',
       choice($.qualified_identifier, $.template_function),
@@ -3814,19 +3782,19 @@ module.exports = grammar(C, {
         field('function', $._call_identifier),
         field('arguments', $.argument_list),
       ),
-      semicolonlessMacroCall($),
+      itemMacro($, true),
     )),
 
     call_expression: $ => choice(
       prec.dynamic(1, callExpression($, $.expression)),
-      prec(PREC.CALL, semicolonlessMacroCall($)),
+      prec(PREC.CALL, itemMacro($, true)),
       prec(PREC.CALL, seq(
         field('function', choice(
           $.qualified_identifier,
           $.template_function,
           alias($._callable_template_function, $.template_function),
         )),
-        field('arguments', choice($.argument_list, $.bare_macro_identifier)),
+        field('arguments', $.argument_list),
       )),
       seq(
         field('function', choice(
@@ -3850,7 +3818,7 @@ module.exports = grammar(C, {
       $.parenthesized_expression,
       $.call_expression,
       $.subscript_expression,
-      $.bare_macro_identifier,
+      $.item_macro_identifier,
     ),
 
     co_await_expression: $ => prec.left(PREC.UNARY, seq(
@@ -4758,13 +4726,13 @@ function callExpression($, callee) {
 
 function declarationSuffixModifier($) {
   return choice(
-    prec.right(PREC.CALL + 7, seq($.bare_macro_identifier, optional($.argument_list))),
+    $.declaration_modifier_macro,
     $._unconfigured_modifier,
   );
 }
 
 function parenthesizedDeclarator($, declarator, preference = PREC.PAREN_DECLARATOR) {
-  return prec.dynamic(preference, seq('(', optional(choice($.ms_call_modifier, $.function_prefix_macro)), declarator, ')'));
+  return prec.dynamic(preference, seq('(', optional(choice($.ms_call_modifier, $.declaration_modifier_macro)), declarator, ')'));
 }
 
 function attributedDeclarator($, declarator) {
@@ -4784,13 +4752,13 @@ function arrayDeclarator($, declarator) {
 function declarationDeclaratorList($, declarator) {
   return commaSep1(field('declarator', choice(
     seq(
-      repeat($.post_type_macro_annotation),
+      repeat($.declaration_modifier_macro),
       optional($.ms_call_modifier),
       declarator,
       optional($.gnu_asm_expression),
     ),
     $.init_declarator,
-    prec.dynamic(1, seq(repeat1($.post_type_macro_annotation), $.init_declarator)),
+    prec.dynamic(1, seq(repeat1($.declaration_modifier_macro), $.init_declarator)),
   )));
 }
 

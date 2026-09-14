@@ -342,7 +342,7 @@ struct GeneratedItems {
         STEP(Fields)          \
         STEP(Methods)         \
     }
-REGISTER_CASE(Record, 1, 2) ANNOTATION;
+REGISTER_CASE(Record, 1, 2) APPEND_OPTIONS;
 
 // Enum fragments can supply values or separators without configuration.
 enum class PrefixedValues {
@@ -351,9 +351,9 @@ enum class PrefixedValues {
 };
 
 enum class PrefixedItems {
-    ENUM_PREFIX
+    ENUM_ITEMS
     First,
-    ENUM_PREFIX
+    ENUM_ITEMS
     Last,
 };
 

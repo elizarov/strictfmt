@@ -6342,11 +6342,11 @@ using QualifiedRvalueArray = Box<Result> (&&)[2];
 using QualifiedDataMember = Box<Result> (Owner::*);
 #define FORMAT_DECLARATOR_MODIFIER
 #define FORMAT_DECLARATOR_ATTRIBUTE(...)
-using AnnotatedAlias = Box<Result> (FORMAT_DECLARATOR_MODIFIER*)(int);
-using AnnotatedReference = Box<Result> (FORMAT_DECLARATOR_ATTRIBUTE(unused)&)(int);
+using AnnotatedAlias = Box<Result> (FORMAT_DECLARATOR_MODIFIER *)(int);
+using AnnotatedReference = Box<Result> (FORMAT_DECLARATOR_ATTRIBUTE(unused) &)(int);
 
-Box<Result> (FORMAT_DECLARATOR_MODIFIER*annotated_pointer)(int);
-Box<Result> (FORMAT_DECLARATOR_ATTRIBUTE(unused)*another_pointer)(int);
+Box<Result> (FORMAT_DECLARATOR_MODIFIER *annotated_pointer)(int);
+Box<Result> (FORMAT_DECLARATOR_ATTRIBUTE(unused) *another_pointer)(int);
 
 }
 
@@ -6729,7 +6729,7 @@ int Called(int value FORMAT_PARAMETER_SUFFIX_CALL(value)) { return value; }
 template <class T>
 void Default(T value FORMAT_PARAMETER_SUFFIX_CALL(T) = {}) { (void)value; }
 int& Identity(int& value FORMAT_PARAMETER_SUFFIX) { return value; }
-void Pointer(int* pointer FORMAT_PARAMETER_SUFFIX, int array FORMAT_PARAMETER_SUFFIX[2]) {}
+void Pointer(int* pointer FORMAT_PARAMETER_SUFFIX, int array FORMAT_PARAMETER_SUFFIX [2]) {}
 void Capture() {
     auto identity = [](auto value FORMAT_PARAMETER_SUFFIX) { return value; };
     (void)identity(1);
@@ -7358,22 +7358,22 @@ constexpr int kValues[] = {
     5,
 };
 
-#define FORMAT_PARAMETER_SUFFIX_LIST 6, 7,
-#define FORMAT_PARAMETER_SUFFIX_EMPTY
+#define FORMAT_ITEM_LIST 6, 7,
+#define FORMAT_ITEM_EMPTY
 constexpr int kBare[] = {
     0,
-    FORMAT_PARAMETER_SUFFIX_LIST
-    FORMAT_PARAMETER_SUFFIX_EMPTY
+    FORMAT_ITEM_LIST
+    FORMAT_ITEM_EMPTY
     8,
 };
 constexpr int kBareFinal[] = {
-    FORMAT_PARAMETER_SUFFIX_LIST
+    FORMAT_ITEM_LIST
 };
-#define FORMAT_PARAMETER_SUFFIX_VALUE 9
+#define FORMAT_ITEM_VALUE 9
 constexpr int kExplicitComma[] = {
-    FORMAT_PARAMETER_SUFFIX_VALUE,
+    FORMAT_ITEM_VALUE,
 };
-constexpr int kExpression[] = {FORMAT_PARAMETER_SUFFIX_VALUE + 1};
+constexpr int kExpression[] = {FORMAT_ITEM_VALUE + 1};
 #define FORMAT_SEMILESS_VALUE() 10
 constexpr int kCallComma[] = {
     FORMAT_SEMILESS_VALUE(),
@@ -7381,44 +7381,44 @@ constexpr int kCallComma[] = {
 constexpr int kCallExpression[] = {FORMAT_SEMILESS_VALUE() + 1};
 constexpr int kConditional[] = {
 #if defined(FORMAT_GENERATOR_ALTERNATIVE)
-    FORMAT_PARAMETER_SUFFIX_LIST
+    FORMAT_ITEM_LIST
 #else
-    FORMAT_PARAMETER_SUFFIX_LIST
+    FORMAT_ITEM_LIST
 #endif
     8,
 };
 
-#define FORMAT_PARAMETER_SUFFIX_ENUM One, Two,
+#define FORMAT_ITEM_ENUM One, Two,
 enum class BareEnum {
-    FORMAT_PARAMETER_SUFFIX_ENUM
+    FORMAT_ITEM_ENUM
     Last,
 };
 
 enum class ConditionalEnum {
 #if defined(FORMAT_GENERATOR_ALTERNATIVE)
-    FORMAT_PARAMETER_SUFFIX_ENUM
+    FORMAT_ITEM_ENUM
 #else
-    FORMAT_PARAMETER_SUFFIX_ENUM
+    FORMAT_ITEM_ENUM
 #endif
     Last,
 };
 
 constexpr int kNested[][3] = {
     {
-        FORMAT_PARAMETER_SUFFIX_LIST
+        FORMAT_ITEM_LIST
         8,
     }, {
-        FORMAT_PARAMETER_SUFFIX_LIST
+        FORMAT_ITEM_LIST
         9,
     },
 };
-constexpr int kNegative[] = {FORMAT_PARAMETER_SUFFIX_LIST - 1};
+constexpr int kNegative[] = {FORMAT_ITEM_LIST - 1};
 #define FORMAT_SEMILESS_TEXT() "x"
 constexpr const char* kText[] = {FORMAT_SEMILESS_TEXT() "y"};
-#define FORMAT_TYPE_GENERATED(name)  \
-    enum class name {                \
-        FORMAT_PARAMETER_SUFFIX_ENUM \
-        Last,                        \
+#define FORMAT_TYPE_GENERATED(name) \
+    enum class name {               \
+        FORMAT_ITEM_ENUM            \
+        Last,                       \
     }
 FORMAT_TYPE_GENERATED(MacroEnum);
 
@@ -7753,64 +7753,64 @@ constexpr int Shift(int value) {
 
 namespace BareClassGenerators {
 
-#define FORMAT_BARE_FIELD int first = 1;
-#define FORMAT_BARE_EXTRA int second = 2;
-#define FORMAT_BARE_EMPTY
-#define FORMAT_BARE_COMBINED \
-    FORMAT_BARE_FIELD        \
-    FORMAT_BARE_EXTRA
+#define FORMAT_ITEM_FIELD int first = 1;
+#define FORMAT_ITEM_EXTRA int second = 2;
+#define FORMAT_ITEM_EMPTY
+#define FORMAT_ITEM_COMBINED \
+    FORMAT_ITEM_FIELD        \
+    FORMAT_ITEM_EXTRA
 struct Plain {
-    FORMAT_BARE_FIELD
+    FORMAT_ITEM_FIELD
     int last = 3;
 };
 
 struct Combined {
-    FORMAT_BARE_COMBINED
-    FORMAT_BARE_EMPTY
+    FORMAT_ITEM_COMBINED
+    FORMAT_ITEM_EMPTY
     int last = 3;
 };
 
 class Access {
-    FORMAT_BARE_EMPTY
+    FORMAT_ITEM_EMPTY
 public:
-    FORMAT_BARE_FIELD;
-    FORMAT_BARE_EXTRA
-    FORMAT_BARE_EMPTY
+    FORMAT_ITEM_FIELD;
+    FORMAT_ITEM_EXTRA
+    FORMAT_ITEM_EMPTY
     int last = 3;
 };
 
 struct Nested {
     struct Inner {
-        FORMAT_BARE_COMBINED
+        FORMAT_ITEM_COMBINED
     };
-    FORMAT_BARE_FIELD
+    FORMAT_ITEM_FIELD
 };
 
 template <class T>
 struct Generic {
-    FORMAT_BARE_COMBINED
+    FORMAT_ITEM_COMBINED
     using Value = T;
 };
 
-#define FORMAT_BARE_UNION_FIELD int number;
+#define FORMAT_ITEM_UNION_FIELD int number;
 union Storage {
-    FORMAT_BARE_UNION_FIELD
+    FORMAT_ITEM_UNION_FIELD
     char character;
 };
 #define FORMAT_SEMILESS_DECLARE_GENERATED(Type) \
     struct Type {                               \
-        FORMAT_BARE_COMBINED                    \
+        FORMAT_ITEM_COMBINED                    \
         int last = 3;                           \
     };
 
 FORMAT_SEMILESS_DECLARE_GENERATED(Generated)
 struct Conditional {
 #if defined(FORMAT_CLASS_ALTERNATIVE)
-    FORMAT_BARE_FIELD
+    FORMAT_ITEM_FIELD
 #else
-    FORMAT_BARE_FIELD
+    FORMAT_ITEM_FIELD
 #endif
-    FORMAT_BARE_EXTRA
+    FORMAT_ITEM_EXTRA
 };
 #define FORMAT_BARE_INCREMENT(Value) ((Value) + 1)
 #define FORMAT_TYPE_FORWARD_BARE(Value) FORMAT_BARE_INCREMENT(Value)
@@ -7985,38 +7985,40 @@ namespace MacroExpressionTails {
 
 #define FORMAT_FIXTURE_LOGICAL_TAIL(Left, Right) &&((Left) == (Right))
 #define FORMAT_FIXTURE_ARITHMETIC_TAIL(Value) +(Value)
-#define FORMAT_SEMILESS_COMPARE(Left, Right) FORMAT_FIXTURE_LOGICAL_TAIL(Left, Right)
-#define FORMAT_SEMILESS_ADD(Value) FORMAT_FIXTURE_ARITHMETIC_TAIL(Value)
-#define FORMAT_BARE_TRUE_TAIL FORMAT_SEMILESS_COMPARE(1, 1)
+#define FORMAT_CONTINUATION_COMPARE(Left, Right) FORMAT_FIXTURE_LOGICAL_TAIL(Left, Right)
+#define FORMAT_CONTINUATION_ADD(Value) FORMAT_FIXTURE_ARITHMETIC_TAIL(Value)
+#define FORMAT_CONTINUATION_TRUE_TAIL FORMAT_CONTINUATION_COMPARE(1, 1)
 #define FORMAT_TOKEN_COMPARE(Callback, Field) Callback(a.Field, b.Field)
 struct Value {
     int first;
     int second;
 };
 
-#define FORMAT_SEMILESS_EQUAL(Type)                                                            \
-    inline bool operator==(const Type& a, const Type& b) noexcept {                            \
-        return true FORMAT_TOKEN_COMPARE(FORMAT_SEMILESS_COMPARE, first) FORMAT_TOKEN_COMPARE( \
-            FORMAT_SEMILESS_COMPARE, second                                                    \
-        );                                                                                     \
+#define FORMAT_SEMILESS_EQUAL(Type)                                                                \
+    inline bool operator==(const Type& a, const Type& b) noexcept {                                \
+        return true FORMAT_TOKEN_COMPARE(FORMAT_CONTINUATION_COMPARE, first) FORMAT_TOKEN_COMPARE( \
+            FORMAT_CONTINUATION_COMPARE, second                                                    \
+        );                                                                                         \
     }
 FORMAT_SEMILESS_EQUAL(Value)
-constexpr bool Same(int left, int right) { return true FORMAT_SEMILESS_COMPARE(left, right) FORMAT_BARE_TRUE_TAIL; }
-constexpr int Add(int value) { return value FORMAT_SEMILESS_ADD(2) FORMAT_SEMILESS_ADD(3); }
-constexpr int Parenthesized(int value) { return (value FORMAT_SEMILESS_ADD(2)) * 3; }
-constexpr bool Conditional(bool condition, int left, int right) {
-    return condition ? true FORMAT_SEMILESS_COMPARE(left, right) : false;
+constexpr bool Same(int left, int right) {
+    return true FORMAT_CONTINUATION_COMPARE(left, right) FORMAT_CONTINUATION_TRUE_TAIL;
 }
-constexpr int Arguments(int value) { return Add(value FORMAT_SEMILESS_ADD(1)); }
+constexpr int Add(int value) { return value FORMAT_CONTINUATION_ADD(2) FORMAT_CONTINUATION_ADD(3); }
+constexpr int Parenthesized(int value) { return (value FORMAT_CONTINUATION_ADD(2)) * 3; }
+constexpr bool Conditional(bool condition, int left, int right) {
+    return condition ? true FORMAT_CONTINUATION_COMPARE(left, right) : false;
+}
+constexpr int Arguments(int value) { return Add(value FORMAT_CONTINUATION_ADD(1)); }
 
-constexpr bool Initializer = true FORMAT_BARE_TRUE_TAIL;
-constexpr int Values[] = {1 FORMAT_SEMILESS_ADD(2), 3 FORMAT_SEMILESS_ADD(4)};
+constexpr bool Initializer = true FORMAT_CONTINUATION_TRUE_TAIL;
+constexpr int Values[] = {1 FORMAT_CONTINUATION_ADD(2), 3 FORMAT_CONTINUATION_ADD(4)};
 
 void Statements(int& value) {
-    if (true FORMAT_BARE_TRUE_TAIL) {
-        value = value FORMAT_SEMILESS_ADD(1);
+    if (true FORMAT_CONTINUATION_TRUE_TAIL) {
+        value = value FORMAT_CONTINUATION_ADD(1);
     }
-    while (value FORMAT_SEMILESS_ADD(1) < 3) {
+    while (value FORMAT_CONTINUATION_ADD(1) < 3) {
         ++value;
     }
 }
@@ -8026,17 +8028,17 @@ struct Constant {
     static constexpr int value = Value;
 };
 
-using TemplateValue = Constant<1 FORMAT_SEMILESS_ADD(2)>;
-using ParenthesizedTemplateValue = Constant<(3 > 2) FORMAT_SEMILESS_ADD(2)>;
-using NestedTemplateValue = Constant<Constant<1 FORMAT_SEMILESS_ADD(2)>::value FORMAT_SEMILESS_ADD(4)>;
+using TemplateValue = Constant<1 FORMAT_CONTINUATION_ADD(2)>;
+using ParenthesizedTemplateValue = Constant<(3 > 2) FORMAT_CONTINUATION_ADD(2)>;
+using NestedTemplateValue = Constant<Constant<1 FORMAT_CONTINUATION_ADD(2)>::value FORMAT_CONTINUATION_ADD(4)>;
 
-#define FORMAT_BARE_LIST_VALUES 3, 4,
-#define FORMAT_BARE_LIST_EMPTY
+#define FORMAT_ITEM_LIST_VALUES 3, 4,
+#define FORMAT_ITEM_LIST_EMPTY
 #define FORMAT_SEMILESS_LIST_VALUES() 5, 6,
 #define FORMAT_SEMILESS_LIST_EMPTY()
 constexpr int BareList[] = {
-    FORMAT_BARE_LIST_VALUES
-    FORMAT_BARE_LIST_EMPTY
+    FORMAT_ITEM_LIST_VALUES
+    FORMAT_ITEM_LIST_EMPTY
 };
 constexpr int CallList[] = {
     1,
@@ -8058,7 +8060,7 @@ API_EXPORT("test", Nested(value))
 int arguments;
 API_EXPORT("test")  // The comment belongs to the call item.
 int commented;
-REGISTER_ITEM(value) FORMAT_BARE_EMPTY
+REGISTER_ITEM(value) FORMAT_CONTINUATION_OPTIONS
 int after_suffix;
 REGISTER_ITEM(value)->Configure(1)->Finish()
 int after_chain;
@@ -8119,5 +8121,58 @@ bool assignable = CHECK_ASSIGNABLE(T, T&&, value = std::move(other));
 const char* name = "prefix-" STRINGIZE(index) "-suffix";
 
 KEYWORD_ARGUMENTS(Flags, PARAMETERS(typename, T), FLAGS(const, noexcept)) { Run(); }
+
+}
+
+namespace OrthogonalMacroRoles {
+
+FORMAT_DECLARATOR_MODIFIER int Before();
+FORMAT_DECLARATOR_MODIFIER(tag) int BeforeWithArguments();
+int FORMAT_DECLARATOR_MODIFIER Between(int value) { return value; }
+int FORMAT_DECLARATOR_MODIFIER(tag) BetweenWithArguments(int value) { return value; }
+
+using Callback = int (FORMAT_DECLARATOR_MODIFIER *)(int);
+using CalledCallback = int (FORMAT_DECLARATOR_MODIFIER(tag) *)(int);
+using Qualified = Value FORMAT_DECLARATOR_MODIFIER *;
+using CalledQualified = Value FORMAT_DECLARATOR_MODIFIER(tag) *;
+
+struct FORMAT_DECLARATOR_MODIFIER Record {
+    int field FORMAT_DECLARATOR_MODIFIER;
+    int called_field FORMAT_DECLARATOR_MODIFIER(tag);
+
+    void Borrow(Value& value FORMAT_DECLARATOR_MODIFIER);
+    void BorrowCalled(Value& value FORMAT_DECLARATOR_MODIFIER(tag));
+    void Method() FORMAT_DECLARATOR_MODIFIER;
+    void CalledMethod() FORMAT_DECLARATOR_MODIFIER(tag);
+    FORMAT_ITEM_MEMBERS
+    FORMAT_ITEM_MEMBERS(tag)
+};
+
+FORMAT_ITEM_REGISTER
+FORMAT_ITEM_REGISTER(tag)
+void Emit() {
+    FORMAT_ITEM_EMIT
+    +value;
+    FORMAT_ITEM_EMIT(tag)
+    (++value);
+}
+
+enum Items {
+    FORMAT_ITEM_VALUES
+    FORMAT_ITEM_VALUES(tag)
+    Last,
+};
+
+auto values = {
+    FORMAT_ITEM_VALUES
+    FORMAT_ITEM_VALUES(tag)
+    1,
+};
+Pack<FORMAT_ITEM_TYPES int, FORMAT_ITEM_TYPES(tag) Value> types;
+constexpr auto built = ns::Build FORMAT_CONTINUATION_ARGUMENTS;
+constexpr auto called = (ns::Build) FORMAT_CONTINUATION_ARGUMENTS(tag);
+auto chained = factory()[0] FORMAT_CONTINUATION_OPTIONS(tag) FORMAT_CONTINUATION_MORE;
+int arithmetic = (left + right) FORMAT_CONTINUATION_ADD(value * factor);
+bool compared = true FORMAT_TOKEN_COMPARE(FORMAT_CONTINUATION_COMPARE, field);
 
 }

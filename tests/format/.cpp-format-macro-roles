@@ -1,26 +1,27 @@
 # Formatting roles for the corpus also parsed without macro configuration.
 ColumnLimit: 80
 MacroCategories:
+  ExpressionContinuationMacros:
+    - APPEND_OPTIONS
   MethodDeclarationMacros:
     - DECLARE_METHOD
   PreprocessorArgumentMacros:
     - GENERATE_FIELDS
     - TOKENS
-  BareIdentifierMacros:
-    - BEGIN_NAMESPACE
-    - END_NAMESPACE
-    - GENERATED_MEMBERS
-    - ANNOTATION
-    - ENUM_PREFIX
-    - TYPE_ITEMS
-  DeclarationPrefixMacros:
+  DeclarationModifierMacros:
     - API_EXPORT
+    - ANNOTATION
   StatementArgumentMacros:
     - CHECK_STATEMENT
     - DEFINE_ACTION
-  SemicolonlessCallMacros:
+  ItemMacros:
     - GENERATE_FIELDS
     - DEFINE_ACTION
     - STEP
+    - BEGIN_NAMESPACE
+    - END_NAMESPACE
+    - GENERATED_MEMBERS
+    - TYPE_ITEMS
+    - ENUM_ITEMS
   TypeSpecifierMacros:
     - TYPE_OF

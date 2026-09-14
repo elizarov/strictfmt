@@ -19,6 +19,9 @@ MainIncludeChar: Quote
 IncludeIsMainRegex: '(Test)?$'
 
 MacroCategories:
+  ExpressionContinuationMacros:
+    - FORMAT_TOKEN_COMPARE
+    - FORMAT_CONTINUATION_*
   MethodDeclarationMacros:
     - FORMAT_METHOD_SIGNATURE
     - FORMAT_TYPE_METHOD
@@ -26,23 +29,24 @@ MacroCategories:
     - FORMAT_STATEMENT_DECLARATIONS
   PreprocessorArgumentMacros:
     - FORMAT_TOKEN_*
-  DeclarationPrefixMacros:
+  DeclarationModifierMacros:
     - FORMAT_ATTRIBUTE_*
     - FORMAT_DECLARATOR_MODIFIER
     - FORMAT_DECLARATOR_ATTRIBUTE
+    - FORMAT_PARAMETER_SUFFIX
+    - FORMAT_PARAMETER_SUFFIX_CALL
+    - WINAPI
   StatementPrefixMacros:
     - FORMAT_STATEMENT_PREFIX_*
-  BareIdentifierMacros:
-    - FORMAT_BARE_*
-    - FORMAT_PARAMETER_SUFFIX*
-    - FORMAT_DECLARATOR_MODIFIER
-    - WINAPI
-  SemicolonlessCallMacros:
+  ItemMacros:
     - DECLARE_ATTRIBUTES
-    - FORMAT_TOKEN_*
+    - FORMAT_TOKEN_ITEM
+    - FORMAT_TOKEN_STATEMENT
+    - FORMAT_TOKEN_WRAPPER
     - FORMAT_SEMILESS_*
     - FORMAT_FIXTURE_CREATE_METRIC
     - FORMAT_FIXTURE_REGISTER_TYPE
+    - FORMAT_ITEM_*
 
 StreamShift:
   ConfigurationMethods:

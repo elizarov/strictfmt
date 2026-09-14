@@ -1822,7 +1822,7 @@ class FormatCommandTests(unittest.TestCase):
         self.assertIn("parse failed", failed.stderr)
         with tempfile.TemporaryDirectory(prefix="format_macro_use_", dir=TEST_TEMP_ROOT) as temp_dir:
             config = Path(temp_dir) / ".cpp-format"
-            config.write_text("MacroCategories:\n  BareIdentifierMacros:\n    - RAW_ONLY\n", encoding="utf-8")
+            config.write_text("MacroCategories:\n  ItemMacros:\n    - RAW_ONLY\n", encoding="utf-8")
             formatted = native_format("--stdin", "--style", str(config), input_text=source)
             self.assertEqual(0, formatted.returncode, msg=formatted.stderr)
 
@@ -2188,7 +2188,7 @@ class FormatCommandTests(unittest.TestCase):
         with tempfile.TemporaryDirectory(prefix="format_validation_", dir=TEST_TEMP_ROOT) as temp_dir:
             config = Path(temp_dir) / ".cpp-format"
             config.write_text(
-                "ColumnLimit: 50\nIndentWidth: 4\nMacroCategories:\n  SemicolonlessCallMacros:\n    - ITEM\n",
+                "ColumnLimit: 50\nIndentWidth: 4\nMacroCategories:\n  ItemMacros:\n    - ITEM\n",
                 encoding="utf-8",
             )
             for name, source, expected in cases:
@@ -2373,16 +2373,16 @@ class FormatCommandTests(unittest.TestCase):
             (root / ".cpp-format").write_text(
                 "---\n"
                 "MacroCategories:\n"
-                "  BareIdentifierMacros:\n"
-                "    - PARENT_BARE\n"
-                "  DeclarationPrefixMacros:\n"
+                "  ExpressionContinuationMacros:\n"
+                "    - PARENT_CONTINUATION\n"
+                "  DeclarationModifierMacros:\n"
                 "    - PARENT_PREFIX\n"
                 "  StatementPrefixMacros:\n"
                 "    - PARENT_STATEMENT_PREFIX\n"
                 "  MethodDeclarationMacros:\n"
                 "    - PARENT_METHOD\n"
                 "    - SHARED_METHOD\n"
-                "  SemicolonlessCallMacros:\n"
+                "  ItemMacros:\n"
                 "    - PARENT_SEMILESS\n"
                 "  StatementArgumentMacros:\n"
                 "    - PARENT_STATEMENT\n"
@@ -2396,16 +2396,16 @@ class FormatCommandTests(unittest.TestCase):
                 "---\n"
                 "Inherit: Parent\n"
                 "MacroCategories:\n"
-                "  BareIdentifierMacros:\n"
-                "    - CHILD_BARE\n"
-                "  DeclarationPrefixMacros:\n"
+                "  ExpressionContinuationMacros:\n"
+                "    - CHILD_CONTINUATION\n"
+                "  DeclarationModifierMacros:\n"
                 "    - CHILD_PREFIX\n"
                 "  StatementPrefixMacros:\n"
                 "    - CHILD_STATEMENT_PREFIX\n"
                 "  MethodDeclarationMacros:\n"
                 "    - CHILD_METHOD\n"
                 "    - SHARED_METHOD\n"
-                "  SemicolonlessCallMacros:\n"
+                "  ItemMacros:\n"
                 "    - CHILD_SEMILESS\n"
                 "  StatementArgumentMacros:\n"
                 "    - CHILD_STATEMENT\n"
@@ -2417,8 +2417,7 @@ class FormatCommandTests(unittest.TestCase):
             )
             source = nested / "sample.cpp"
             source.write_text(
-                "PARENT_BARE\n"
-                "CHILD_BARE\n"
+                "int value = 1 PARENT_CONTINUATION CHILD_CONTINUATION(2);\n"
                 "PARENT_PREFIX int ParentDeclaration();\n"
                 "CHILD_PREFIX int ChildDeclaration();\n"
                 "struct Signatures {\n"

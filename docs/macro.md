@@ -4,11 +4,11 @@
 
 A macro's syntactic role cannot always be inferred from its use, so arbitrary code with macros cannot be parsed reliably. Some macros therefore need configuration for correct parsing and formatting.
 
-- [DeclarationPrefixMacros](#declarationprefixmacros) identifies modifiers attached to the following declaration.
+- [DeclarationModifierMacros](#declarationmodifiermacros) identifies annotations and qualifiers within declarations and types.
 - [StatementPrefixMacros](#statementprefixmacros) identifies modifiers attached to the following statement.
-- [BareIdentifierMacros](#bareidentifiermacros) identifies bare tokens that supply items, modifiers, or syntax fragments.
 - [MethodDeclarationMacros](#methoddeclarationmacros) assigns return-type, name, parameter-list, and qualifier-list roles to method-declaration arguments.
-- [SemicolonlessCallMacros](#semicolonlesscallmacros) identifies calls that supply complete items without a semicolon or fragments of enum and initializer lists.
+- [ItemMacros](#itemmacros) identifies complete declaration or statement items and list fragments.
+- [ExpressionContinuationMacros](#expressioncontinuationmacros) identifies fragments appended to an expression, such as operators or a supplied argument list.
 - [TypeSpecifierMacros](#typespecifiermacros) identifies calls that supply a type specifier.
 - [PreprocessorArgumentMacros](#preprocessorargumentmacros) preserves arguments as preprocessing-token sequences.
 - [StatementArgumentMacros](#statementargumentmacros) parses the first argument as a sequence of statements or declarations.
@@ -54,43 +54,49 @@ At namespace scope, a call and its following `->` chain stay together as one dec
 BENCHMARK_REGISTER_F(StoreFixture, Save)->Threads(4);
 ```
 
-### DeclarationPrefixMacros
+### DeclarationModifierMacros
 
-`DeclarationPrefixMacros` names macro identifiers used as modifiers before [declaration-like items](glossary.md#declaration-like-item).
+`DeclarationModifierMacros` names annotations, qualifiers, and calling conventions within declarations or types. They can precede a declaration, occur between its type and declarator, or follow a declarator; one configuration covers all these positions.
 
-A macro before a declaration may expand to an annotation or a separate declaration. This category keeps `API_EXPORT` attached to the following declaration. Without configuration, the macro is a separate item on its own line.
+A macro before a declaration may supply an annotation or a separate declaration. Configuration keeps `API_EXPORT` attached below; without it, the macro occupies its own line.
 
 <!-- .cpp-format
 MacroCategories:
-  DeclarationPrefixMacros:
+  DeclarationModifierMacros:
     - API_EXPORT
 -->
 ```cpp
 API_EXPORT int value;
 ```
 
-**Parse failure with overlapping categories:** an annotation may also belong to [BareIdentifierMacros](#bareidentifiermacros) for use inside declarators. The example below fails to parse if `PRINTF_FORMAT` is configured only as a bare identifier. Adding `DeclarationPrefixMacros` lets it precede the function definition. With neither category configured, this example parses successfully.
+**Parse failure:** without configuration, a calling convention between a return type and function name can be mistaken for the declarator itself.
 
 <!-- .cpp-format
 MacroCategories:
-  BareIdentifierMacros:
-    - PRINTF_FORMAT
-  DeclarationPrefixMacros:
-    - PRINTF_FORMAT
+  DeclarationModifierMacros:
+    - CALLBACK
 -->
 ```cpp
-PRINTF_FORMAT(1, 2) static void Print(const char* format, ...) {}
+int CALLBACK Callback(int value) { return value; }
 ```
 
-Declaration-prefixed macro call: declaration modifiers may precede a macro when the macro itself supplies the declaration body.
+The same category covers declarator suffixes and annotations with arguments:
 
 <!-- .cpp-format
 MacroCategories:
-  DeclarationPrefixMacros:
-    - API_EXPORT
+  DeclarationModifierMacros:
+    - ALIGN
+    - LIFETIME_BOUND
+    - LOCK_EXCLUDED
 -->
 ```cpp
-API_EXPORT DEFINE_MUTEX(global_mutex);
+static const unsigned char ALIGN(16) lookup_table[];
+
+struct View {
+    Data& Borrow(Data& value LIFETIME_BOUND);
+
+    void Verify() LOCK_EXCLUDED(mutex);
+};
 ```
 
 ### StatementPrefixMacros
@@ -139,121 +145,6 @@ void Use() {
 }
 ```
 
-### BareIdentifierMacros
-
-`BareIdentifierMacros` names macro identifiers used as bare tokens in supported non-call positions. A bare token may supply a fragment of an enum or braced initializer list. A configured token remains valid as an expression atom when the same project also passes it as a normal call argument or binary-expression operand. It may also [continue an expression](#expression-continuations).
-
-A bare macro may complete a statement where an ordinary identifier would remain an expression operand. Configuration separates `EMIT_EVENT` from the unary expression `+value;` below; without it, both form one addition expression on the same line.
-
-<!-- .cpp-format
-MacroCategories:
-  BareIdentifierMacros:
-    - EMIT_EVENT
--->
-```cpp
-void Emit() {
-    EMIT_EVENT
-    +value;
-}
-```
-
-**Parse failures:** a calling-convention modifier between the return type and function name, or a macro supplying arguments after a qualified function name, needs this category. Each declaration below fails to parse without it.
-
-<!-- .cpp-format
-MacroCategories:
-  BareIdentifierMacros:
-    - CALLBACK
-    - ARGUMENTS
--->
-```cpp
-int CALLBACK Callback(int value) { return value; }
-
-constexpr auto value = ns::Build ARGUMENTS;
-```
-
-Post-type declarator annotation: the macro appears after the declared type and before the normal declarator or abstract type suffix.
-
-<!-- .cpp-format
-MacroCategories:
-  BareIdentifierMacros:
-    - ALIGN
-    - USERVER_MOVE_ONLY_FUNCTION_INVOKE_QUALS
--->
-```cpp
-static const unsigned char ALIGN(16) lookup_table[];
-
-auto value = static_cast<Functor USERVER_MOVE_ONLY_FUNCTION_INVOKE_QUALS>(*slot);
-```
-
-**Complete declaration-level item:** the macro stands as a full declaration item at namespace or class scope, such as namespace wrappers or generated members. A class-scope item may include a caller-written semicolon.
-
-<!-- .cpp-format
-MacroCategories:
-  BareIdentifierMacros:
-    - USERVER_NAMESPACE_BEGIN
-    - USERVER_NAMESPACE_END
--->
-```cpp
-USERVER_NAMESPACE_BEGIN
-void UseNamespace();
-USERVER_NAMESPACE_END
-```
-
-**Qualified-identifier prefix:** the macro supplies an optional namespace qualifier before an identifier.
-
-<!-- .cpp-format
-MacroCategories:
-  BareIdentifierMacros:
-    - CURL_8_13_NAMESPACE
--->
-```cpp
-enum netrc_t {
-    netrc_optional = CURL_8_13_NAMESPACE CURL_NETRC_OPTIONAL,
-};
-```
-
-Declarator suffix macro: the macro appears after a declarator where an attribute-like suffix is expected, including parameter, field and function declarators. A suffix also stays attached to a preceding namespace-scope macro call.
-
-<!-- .cpp-format
-MacroCategories:
-  BareIdentifierMacros:
-    - FORMAT_USERVER_LIFETIME_BOUND
-    - GTEST_LOCK_EXCLUDED_
--->
-```cpp
-class DataView {
-    Data& operator*() & FORMAT_USERVER_LIFETIME_BOUND;
-
-    Data& Borrow(Data& value FORMAT_USERVER_LIFETIME_BOUND);
-
-    void Verify() GTEST_LOCK_EXCLUDED_(mutex);
-};
-```
-
-Parameter-list item: the macro appears as a complete parameter-list item, usually to inject an implementation-specific SFINAE or attribute parameter.
-
-<!-- .cpp-format
-MacroCategories:
-  BareIdentifierMacros:
-    - ENABLE_IF
--->
-```cpp
-class Value {
-    explicit Value(T value, ENABLE_IF(std::is_integral_v<T>)) noexcept;
-};
-```
-
-Template-argument fragment: the macro expands to one or more template arguments and any separators needed before the next visible argument.
-
-<!-- .cpp-format
-MacroCategories:
-  BareIdentifierMacros:
-    - GTEST_FLAT_TUPLE_INT256
--->
-```cpp
-FlatTuple<GTEST_FLAT_TUPLE_INT256 int> tuple;
-```
-
 ### MethodDeclarationMacros
 
 `MethodDeclarationMacros` names class-member macros taking a return type, method name, parameter list, and optional qualifier list. Configuration assigns these argument roles, including nested declarators, instead of treating every argument as an expression.
@@ -271,33 +162,76 @@ class MockStore {
 };
 ```
 
-### SemicolonlessCallMacros
+### ItemMacros
 
-`SemicolonlessCallMacros` names macro calls that form complete declaration or statement items without requiring a trailing semicolon, or supply fragments of enum and braced initializer lists. Each invocation remains one item, including when adjacent to another item or a control-body delimiter. Configured calls retain their category inside structured macro replacements.
+`ItemMacros` names complete declaration or statement items, or fragments of enum, initializer, and template lists that supply their own separators. An item can also serve as an expression atom when used as an operand or argument.
 
-A following parenthesized expression may start another statement or continue a chained call. Configuration separates `EMIT_EVENT(x)` from `(++count);` below; without it, they format as one chained call.
+A following expression may start another statement or continue the macro invocation. Configuration separates both forms of `EMIT_EVENT` below; without it, they become an addition expression and a chained call, respectively.
 
 <!-- .cpp-format
 MacroCategories:
-  SemicolonlessCallMacros:
+  ItemMacros:
     - EMIT_EVENT
 -->
 ```cpp
 void Emit() {
+    EMIT_EVENT
+    +value;
     EMIT_EVENT(x)
     (++count);
 }
 ```
 
-#### Expression continuations
-
-`SemicolonlessCallMacros` and `BareIdentifierMacros` can also append operators and operands to an expression. Below, `1 ADD(2) PLUS_ONE` expands to `1 + (2) + 1`:
+Namespace wrappers and generated class members also belong here:
 
 <!-- .cpp-format
 MacroCategories:
-  SemicolonlessCallMacros:
+  ItemMacros:
+    - BEGIN_NAMESPACE
+    - END_NAMESPACE
+    - GENERATED_MEMBERS
+-->
+```cpp
+BEGIN_NAMESPACE
+struct Record {
+    GENERATED_MEMBERS
+    int value;
+};
+END_NAMESPACE
+```
+
+### ExpressionContinuationMacros
+
+`ExpressionContinuationMacros` names fragments appended to an expression, such as operators and operands, a member-call chain, or a supplied call argument list. Several continuations can follow one another. They stay attached to the expression rather than forming separate items.
+
+Without configuration, `MORE_OPTIONS` below becomes a separate namespace item:
+
+<!-- .cpp-format
+MacroCategories:
+  ExpressionContinuationMacros:
+    - MORE_OPTIONS
+-->
+```cpp
+REGISTER_BENCHMARK(Run) MORE_OPTIONS;
+```
+
+**Parse failure:** an argument-list macro after a qualified function name cannot form an ordinary C++ call without configuration.
+
+<!-- .cpp-format
+MacroCategories:
+  ExpressionContinuationMacros:
+    - ARGUMENTS
+-->
+```cpp
+constexpr auto value = ns::Build ARGUMENTS;
+```
+
+Continuations compose with arbitrary expressions and may take arguments themselves:
+
+<!-- .cpp-format
+MacroCategories:
+  ExpressionContinuationMacros:
     - ADD
-  BareIdentifierMacros:
     - PLUS_ONE
 -->
 ```cpp
@@ -306,8 +240,6 @@ MacroCategories:
 
 int total = 1 ADD(2) PLUS_ONE;
 ```
-
-Several such macros can follow one another; calls keep their configured argument syntax. When a macro could instead form a complete statement, declaration, or list fragment, that interpretation takes precedence.
 
 ### TypeSpecifierMacros
 
@@ -331,7 +263,7 @@ typedef typename GTEST_BIND_(Selector, Type) BoundTest;
 
 `PreprocessorArgumentMacros` names macros whose arguments are preprocessing-token sequences rather than C++ syntax. Use it only when the invocation deliberately inspects or transforms its arguments as tokens, for example a test helper that stringizes an unexpanded macro invocation.
 
-The outer call remains a structured list that the formatter can split. The complete call composes in expression and type-specifier positions as well as namespace and class items, including inside structured macro replacements. `SemicolonlessCallMacros` additionally fixes its complete-item or list-fragment role. Within each argument, recursively nested parentheses are recognized while the complete preprocessing-token sequence is preserved as one formatter atom. Only parentheses protect an inner comma from separating outer arguments.
+The outer call remains a structured list that the formatter can split. The complete call composes in expression and type-specifier positions as well as namespace and class items, including inside structured macro replacements. `ItemMacros` additionally fixes its complete-item or list-fragment role. Within each argument, recursively nested parentheses are recognized while the complete preprocessing-token sequence is preserved as one formatter atom. Only parentheses protect an inner comma from separating outer arguments.
 
 Angle brackets may enclose C++ template arguments or remain ordinary preprocessing tokens. With `ColumnLimit: 20`, `TOKENS` splits its three preprocessing arguments below; without this category, `T<X, Y>` stays together as one C++ argument.
 

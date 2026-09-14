@@ -530,7 +530,8 @@ constexpr auto kSyntaxKindMappings = std::to_array<SyntaxKindMapping>({
     Tree(SyntaxNodeKind::Attribute, "attribute"),
     Tree(SyntaxNodeKind::AttributedStatement, "attributed_statement"),
     Tree(SyntaxNodeKind::MacroPrefixedStatement, "macro_prefixed_statement"),
-    Tree(SyntaxNodeKind::StatementPrefixMacro, "statement_prefix_macro"),
+    Tree(SyntaxNodeKind::MacroModifier, "statement_prefix_macro"),
+    Tree(SyntaxNodeKind::MacroModifier, "declaration_modifier_macro"),
     Tree(SyntaxNodeKind::Tree, "preproc_declaration_modifier", Bit(SyntaxNodeClass::DeclarationModifierPreprocessor)),
     Tree(SyntaxNodeKind::MsCallModifier, "ms_call_modifier"),
     Tree(SyntaxNodeKind::MsDeclspecModifier, "ms_declspec_modifier"),
@@ -554,11 +555,13 @@ constexpr auto kSyntaxKindMappings = std::to_array<SyntaxKindMapping>({
     Tree(SyntaxNodeKind::NumberLiteral, "pure_virtual_zero", kNumberLiteralClasses),
     Tree(SyntaxNodeKind::NumberLiteral, "preprocessing_number", kNumberLiteralClasses),
     Tree(SyntaxNodeKind::Identifier, "identifier"),
-    Tree(SyntaxNodeKind::Identifier, "bare_macro_identifier"),
-    Tree(SyntaxNodeKind::Identifier, "declaration_prefix_macro_identifier"),
+    Tree(SyntaxNodeKind::Identifier, "expression_continuation_macro_identifier"),
+    Tree(SyntaxNodeKind::Identifier, "declaration_modifier_macro_identifier"),
     Tree(SyntaxNodeKind::Identifier, "method_declaration_macro_identifier"),
-    Tree(SyntaxNodeKind::Identifier, "semicolonless_call_macro_identifier"),
-    Tree(SyntaxNodeKind::Identifier, "semicolonless_preprocessor_call_macro_identifier"),
+    Tree(SyntaxNodeKind::Identifier, "item_macro_identifier"),
+    Tree(SyntaxNodeKind::Identifier, "item_call_macro_identifier"),
+    Tree(SyntaxNodeKind::Identifier, "preprocessor_item_macro_identifier"),
+    Tree(SyntaxNodeKind::Identifier, "preprocessor_continuation_macro_identifier"),
     Tree(SyntaxNodeKind::Identifier, "statement_argument_macro_identifier"),
     Tree(SyntaxNodeKind::Identifier, "type_specifier_macro_identifier"),
     Tree(SyntaxNodeKind::Identifier, "preprocessor_argument_macro_identifier"),
@@ -567,7 +570,6 @@ constexpr auto kSyntaxKindMappings = std::to_array<SyntaxKindMapping>({
     Tree(SyntaxNodeKind::Tree, "nested_namespace_specifier", Bit(SyntaxNodeClass::QualifiedName)),
     Tree(SyntaxNodeKind::Identifier, "type_identifier"),
     Tree(SyntaxNodeKind::Identifier, "qualified_identifier", Bit(SyntaxNodeClass::QualifiedName)),
-    Tree(SyntaxNodeKind::Identifier, "macro_qualified_identifier", Bit(SyntaxNodeClass::QualifiedName)),
     Token(
         SyntaxNodeKind::PreprocessorDirectiveInclude,
         "#include",
@@ -929,7 +931,6 @@ const SymbolInfoTable& SyntaxInfoBySymbol() {
             "gnu_asm_expression",
             "identifier",
             "lambda_expression",
-            "macro_qualified_identifier",
             "new_expression",
             "null",
             "number_literal",
@@ -1253,8 +1254,8 @@ std::string_view SyntaxNodeKindName(SyntaxNodeKind kind) {
             return "AttributedStatement";
         case SyntaxNodeKind::MacroPrefixedStatement:
             return "MacroPrefixedStatement";
-        case SyntaxNodeKind::StatementPrefixMacro:
-            return "StatementPrefixMacro";
+        case SyntaxNodeKind::MacroModifier:
+            return "MacroModifier";
         case SyntaxNodeKind::MacroCallItem:
             return "MacroCallItem";
         case SyntaxNodeKind::MacroExpansion:
