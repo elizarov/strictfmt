@@ -574,6 +574,7 @@ private:
         bool hasTemplateHeader = false;
         bool hasTemplateDeclaredEntity = false;
         bool omittedTerminalComma = false;
+        const int availableWidth = config_.columnLimit - CurrentColumn();
         for (const PrintToken& token : pendingTokens_) {
             if (
                 const SyntaxNode* list = ImmediatePreprocessorListParent(token);
@@ -620,6 +621,10 @@ private:
             }
             const int tokenWidth = FormatTokenWidth(token);
             width += tokenWidth;
+            // Remaining tokens cannot reduce the width already accumulated.
+            if (width > availableWidth) {
+                return false;
+            }
             hasText = hasText || tokenWidth > 0;
             previousStringLike = token.stringLike;
             omittedTerminalComma = false;
@@ -631,7 +636,7 @@ private:
         )) {
             return false;
         }
-        return CurrentColumn() + width <= config_.columnLimit;
+        return width <= availableWidth;
     }
 
     void FlushPendingTokensCompact() {
