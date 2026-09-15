@@ -754,7 +754,12 @@ private:
         sequence.children = sequence.children.first(groupedCount);
     }
 
-    void GroupMemberCallArguments(std::vector<FormatBreakNode*>& children, int depth) {
+    static void EraseChildren(std::span<FormatBreakNode*>& children, size_t begin, size_t end) {
+        std::move(children.begin() + end, children.end(), children.begin() + begin);
+        children = children.first(children.size() - (end - begin));
+    }
+
+    void GroupMemberCallArguments(std::span<FormatBreakNode*>& children, int depth) {
         for (size_t index = 0; index + 1 < children.size();) {
             FormatBreakNode* chain = children[index];
             if (
@@ -771,11 +776,11 @@ private:
             auto call = MakeNode(FormatBreakNodeKind::Sequence, depth + 1);
             call->children = StoreNodePointers({chain->operands.back(), children[index + 1]});
             chain->operands.back() = call;
-            children.erase(children.begin() + static_cast<std::ptrdiff_t>(index + 1));
+            EraseChildren(children, index + 1, index + 2);
         }
     }
 
-    void GroupRepeatedCallApplications(std::vector<FormatBreakNode*>& children, int depth) {
+    void GroupRepeatedCallApplications(std::span<FormatBreakNode*>& children, int depth) {
         for (size_t begin = 1; begin < children.size();) {
             if (!IsArgumentList(children[begin])) {
                 ++begin;
@@ -793,24 +798,16 @@ private:
             auto receiver = MakeNode(FormatBreakNodeKind::Sequence, depth + 1);
             receiver->children = StoreNodePointers({children[begin - 1], children[begin]});
 
-            std::vector<FormatBreakNode*> operands;
-            operands.reserve(end - begin);
-            operands.push_back(receiver);
-            operands.insert(
-                operands.end(),
-                children.begin() + static_cast<std::ptrdiff_t>(begin + 1),
-                children.begin() + static_cast<std::ptrdiff_t>(end)
-            );
+            auto operands = model_.nodePointers.Allocate(end - begin);
+            operands.front() = receiver;
+            std::copy(children.begin() + begin + 1, children.begin() + end, operands.begin() + 1);
 
             auto chain = MakeNode(FormatBreakNodeKind::Chain, depth);
             chain->chainKind = FormatBreakChainKind::CallApplication;
-            chain->operands = StoreNodePointers(operands);
+            chain->operands = operands;
 
             children[begin - 1] = chain;
-            children.erase(
-                children.begin() + static_cast<std::ptrdiff_t>(begin),
-                children.begin() + static_cast<std::ptrdiff_t>(end)
-            );
+            EraseChildren(children, begin, end);
             begin = begin > 1 ? begin - 1 : 1;
         }
     }
@@ -2217,16 +2214,17 @@ private:
             }
             return MakeNode(FormatBreakNodeKind::Sequence, depth);
         }
-        std::vector<FormatBreakNode*> builtChildren;
-        builtChildren.reserve(children.size());
+        auto builtChildren = model_.nodePointers.Allocate(children.size());
+        size_t childCount = 0;
         for (const SyntaxNode* child : children) {
             if (child == nullptr) {
                 continue;
             }
             if (FormatBreakNode* built = BuildSyntaxNode(*child, depth + 1)) {
-                builtChildren.push_back(built);
+                builtChildren[childCount++] = built;
             }
         }
+        builtChildren = builtChildren.first(childCount);
         FormatBreakCostNormalizer::NormalizeNamedListPrefixes(builtChildren);
         GroupRepeatedCallApplications(builtChildren, depth);
         GroupMemberCallArguments(builtChildren, depth);
@@ -2234,7 +2232,7 @@ private:
             return builtChildren.front();
         }
         auto sequence = MakeNode(FormatBreakNodeKind::Sequence, depth);
-        sequence->children = StoreNodePointers(builtChildren);
+        sequence->children = builtChildren;
         GroupAdjacentStrings(*sequence, depth);
         return sequence;
     }
@@ -2252,8 +2250,8 @@ private:
             }
             return MakeNode(FormatBreakNodeKind::Sequence, depth);
         }
-        std::vector<FormatBreakNode*> builtChildren;
-        builtChildren.reserve(end - begin);
+        auto builtChildren = model_.nodePointers.Allocate(end - begin);
+        size_t childCount = 0;
         for (size_t index = begin; index < end;) {
             if (!children[index] || !ContainsSelected(*children[index])) {
                 ++index;
@@ -2264,21 +2262,22 @@ private:
                 FormatBreakNode*
                     templated = BuildAdjacentTemplateDeclaration(children, index, end, depth + 1, afterTemplate)
             ) {
-                builtChildren.push_back(templated);
+                builtChildren[childCount++] = templated;
                 index = afterTemplate;
                 continue;
             }
             size_t afterDelimited = index;
             if (FormatBreakNode* delimited = BuildDirectDelimited(children, index, end, depth + 1, afterDelimited)) {
-                builtChildren.push_back(delimited);
+                builtChildren[childCount++] = delimited;
                 index = afterDelimited;
                 continue;
             }
             if (FormatBreakNode* built = BuildSyntaxNode(*children[index], depth + 1)) {
-                builtChildren.push_back(built);
+                builtChildren[childCount++] = built;
             }
             ++index;
         }
+        builtChildren = builtChildren.first(childCount);
         FormatBreakCostNormalizer::NormalizeNamedListPrefixes(builtChildren);
         GroupRepeatedCallApplications(builtChildren, depth);
         GroupMemberCallArguments(builtChildren, depth);
@@ -2286,7 +2285,7 @@ private:
             return builtChildren.front();
         }
         auto sequence = MakeNode(FormatBreakNodeKind::Sequence, depth);
-        sequence->children = StoreNodePointers(builtChildren);
+        sequence->children = builtChildren;
         GroupAdjacentStrings(*sequence, depth);
         return sequence;
     }
