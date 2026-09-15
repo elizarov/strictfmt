@@ -20,7 +20,6 @@ struct FormatLayoutOwner {
     const SyntaxNode* syntax = nullptr;
     size_t begin = 0;
     size_t end = 0;
-    std::vector<FormatLayoutOwnerId> children;
 };
 
 // One cost region borrows its enclosing owners but owns its token projection and

@@ -418,6 +418,20 @@ void TestPersistentLayoutOwners() {
     const auto ownerId = tree.SourceItem(tokens.front().node);
     Check(ownerId != 0, "source item has a stable layout owner");
     const auto& owner = tree.Owner(ownerId);
+    // Check complete source extents independently of the tree's bottom-up construction.
+    for (const auto& token : tokens) {
+        for (const SyntaxNode* syntax = token.node; syntax != nullptr; syntax = syntax->parent) {
+            size_t begin = tokens.size(), end = 0;
+            for (size_t index = 0; index < tokens.size(); ++index) {
+                if (PrintTokenSyntaxPathContains(tokens[index], syntax)) {
+                    begin = std::min(begin, index);
+                    end = index + 1;
+                }
+            }
+            const auto& extent = tree.Owner(tree.FindOwner(syntax));
+            Check(extent.begin == begin && extent.end == end, "owner range covers exactly its descendant tokens");
+        }
+    }
     const auto& complete = tree.CompleteModel(ownerId);
     const auto* originalRoot = complete.root;
     const auto* firstToken = &tokens.front();

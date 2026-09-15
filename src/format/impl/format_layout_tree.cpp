@@ -9,14 +9,25 @@
 #include "format/impl/format_chain_continuation.h"
 
 FormatLayoutTree::FormatLayoutTree(std::span<const PrintToken> tokens) : tokens_(tokens) {
+    owners_.reserve(tokens.size() + 1);
+    ownerIds_.reserve(tokens.size());
     owners_.push_back({});
     for (size_t index = 0; index < tokens.size(); ++index) {
-        FormatLayoutOwnerId id = AddOwner(tokens[index].node);
-        while (id != 0) {
+        const FormatLayoutOwnerId id = AddOwner(tokens[index].node);
+        if (id != 0) {
             FormatLayoutOwner& owner = owners_[id];
             owner.begin = std::min(owner.begin, index);
             owner.end = index + 1;
-            id = owner.parent;
+        }
+    }
+    // Parents are created before children. Propagating each finished range once
+    // is equivalent to walking every token's ancestors, without repeated updates.
+    for (size_t id = owners_.size(); --id > 0;) {
+        const FormatLayoutOwner& owner = owners_[id];
+        if (owner.parent != 0) {
+            FormatLayoutOwner& parent = owners_[owner.parent];
+            parent.begin = std::min(parent.begin, owner.begin);
+            parent.end = std::max(parent.end, owner.end);
         }
     }
     structuralIndents_.resize(owners_.size());
@@ -38,7 +49,6 @@ FormatLayoutOwnerId FormatLayoutTree::AddOwner(const SyntaxNode* syntax) {
     const FormatLayoutOwnerId parent = AddOwner(syntax->parent);
     const FormatLayoutOwnerId id = owners_.size();
     owners_.push_back({.id = id, .parent = parent, .syntax = syntax, .begin = tokens_.size()});
-    owners_[parent].children.push_back(id);
     ownerIds_.emplace(syntax, id);
     return id;
 }
