@@ -52,7 +52,8 @@ public:
     void WriteVerbatim(std::string_view text);
     void AppendCompleteLines(std::string_view text);
     void Space();
-    void ResetCommentContinuation();
+    // Returns whether an active continuation was cleared.
+    bool ResetCommentContinuation();
     void WriteComment(
         std::string_view text,
         int structuralIndent,

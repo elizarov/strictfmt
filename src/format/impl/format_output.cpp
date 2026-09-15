@@ -482,7 +482,9 @@ void FormatOutput::WriteAtIndent(std::string_view text, int indent) { impl_->Wri
 void FormatOutput::WriteVerbatim(std::string_view text) { impl_->WriteVerbatim(text); }
 void FormatOutput::AppendCompleteLines(std::string_view text) { impl_->AppendCompleteLines(text); }
 void FormatOutput::Space() { impl_->Space(); }
-void FormatOutput::ResetCommentContinuation() { impl_->activeCommentContinuationAnchor_.reset(); }
+bool FormatOutput::ResetCommentContinuation() {
+    return std::exchange(impl_->activeCommentContinuationAnchor_, std::nullopt).has_value();
+}
 void FormatOutput::WriteComment(
     std::string_view text,
     int structuralIndent,

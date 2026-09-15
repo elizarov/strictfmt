@@ -153,8 +153,12 @@ void FormatLayoutProgramBuilder::Space() {
     measure_.Space();
 }
 void FormatLayoutProgramBuilder::ResetCommentContinuation() {
-    Record({.kind = FormatLayoutCommandKind::ResetComments});
-    measure_.ResetCommentContinuation();
+    CheckPlanning();
+    // Only a comment can establish a continuation anchor. Repeated resets have
+    // no effect in either measurement or replay and need no output command.
+    if (measure_.ResetCommentContinuation()) {
+        Record({.kind = FormatLayoutCommandKind::ResetComments});
+    }
 }
 void FormatLayoutProgramBuilder::WriteComment(
     std::string_view text,

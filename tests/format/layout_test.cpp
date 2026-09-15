@@ -161,7 +161,9 @@ void TestResolvedLayoutIndentation() {
 
     SyntaxNode comments;
     auto write = [&](auto& output) {
+        output.ResetCommentContinuation();
         output.Write("#define ACTION", 0);
+        output.ResetCommentContinuation();
         output.NewLine(true);
         output.Write("one;", 0);
         output.BlankLine(true);
@@ -174,12 +176,21 @@ void TestResolvedLayoutIndentation() {
         output.WriteComment("// second", 0, &comments, FormatOutputComment::Trailing, true);
         output.NewLine();
         output.WriteComment("// continued", 1, &comments, FormatOutputComment::Continuation, true);
+        output.NewLine();
+        output.ResetCommentContinuation();
+        output.Write("next;", 0);
+        output.ResetCommentContinuation();
+        output.NewLine();
+        output.WriteComment("// detached", 1, &comments, FormatOutputComment::Continuation, true);
     };
     FormatOutput reference(4, 80);
     write(reference);
     FormatLayoutProgramBuilder recorded(4, 80);
     write(recorded);
     const auto selected = recorded.Finish();
+    Check(std::count_if(selected.commands.begin(), selected.commands.end(), [](const auto& command) {
+        return command.kind == FormatLayoutCommandKind::ResetComments;
+    }) == 1, "only an active comment continuation requires a reset command");
     Check(EmitFormatLayoutProgram(selected, 4, 80) == reference.Finish(),
         "resolved anchors preserve macro suffix and comment alignment semantics");
 }
