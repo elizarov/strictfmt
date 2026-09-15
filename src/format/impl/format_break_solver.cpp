@@ -1551,14 +1551,14 @@ private:
         return Better(exact, greedy) ? exact : greedy;
     }
 
-    static FormatBreakChoice ChoiceFor(const NodeResult& result, const FormatBreakNode& node) {
-        const std::optional<FormatBreakChoice> choice = FormatChoiceHistory::Find(result.choices, node.id);
+    FormatBreakChoice ChoiceFor(const NodeResult& result, const FormatBreakNode& node) {
+        const std::optional<FormatBreakChoice> choice = choiceHistory_.Find(result.choices, node.id);
         return choice.value_or(FormatBreakChoice::Compact);
     }
 
     static bool IsBreakingChoice(FormatBreakChoice choice) { return choice != FormatBreakChoice::Compact; }
 
-    static bool HasSelectedBreak(const FormatBreakNode& node, const NodeResult& result) {
+    bool HasSelectedBreak(const FormatBreakNode& node, const NodeResult& result) {
         if (node.kind != FormatBreakNodeKind::Token && IsBreakingChoice(ChoiceFor(result, node))) {
             return true;
         }
@@ -1589,7 +1589,7 @@ private:
             FormatTokenText(FormatBreakTokenValue(token)).find('\n') != std::string_view::npos;
     }
 
-    static bool HasPhysicalLineBreak(const FormatBreakNode& node, const NodeResult& result) {
+    bool HasPhysicalLineBreak(const FormatBreakNode& node, const NodeResult& result) {
         if (node.kind == FormatBreakNodeKind::Token) {
             return TokenHasPhysicalLineBreak(node.token);
         }
@@ -1629,12 +1629,12 @@ private:
         return IsStringLike(token) && FormatTokenText(token).find('\n') != std::string_view::npos;
     }
 
-    static bool IsTailExpansionBreak(const FormatBreakNode& node, const NodeResult& compact) {
+    bool IsTailExpansionBreak(const FormatBreakNode& node, const NodeResult& compact) {
         return (node.kind == FormatBreakNodeKind::Delimited || node.kind == FormatBreakNodeKind::BodyHeader) &&
             IsBreakingChoice(ChoiceFor(compact, node));
     }
 
-    static CompactTailExpansionKind CompactTailExpansion(const FormatBreakNode& node, const NodeResult& compact) {
+    CompactTailExpansionKind CompactTailExpansion(const FormatBreakNode& node, const NodeResult& compact) {
         if (IsIntrinsicMultilineLiteral(node)) {
             return CompactTailExpansionKind::IntrinsicMultilineLiteral;
         }
@@ -1677,13 +1677,11 @@ private:
         return CompactTailExpansion(*node.children.back(), compact);
     }
 
-    static bool CanKeepCompactPrefixEndingInTailExpansion(const FormatBreakNode& node, const NodeResult& compact) {
+    bool CanKeepCompactPrefixEndingInTailExpansion(const FormatBreakNode& node, const NodeResult& compact) {
         return CompactTailExpansion(node, compact) != CompactTailExpansionKind::None;
     }
 
-    static CompactTailExpansionKind
-        DelimitedCompactTailExpansion(const FormatBreakNode& node, const NodeResult& compact)
-    {
+    CompactTailExpansionKind DelimitedCompactTailExpansion(const FormatBreakNode& node, const NodeResult& compact) {
         if (node.items.empty()) {
             return CompactTailExpansionKind::None;
         }
@@ -1705,11 +1703,11 @@ private:
         return CompactTailExpansion(*tail, compact);
     }
 
-    static bool CanKeepDelimitedCompactWithExtraLines(const FormatBreakNode& node, const NodeResult& compact) {
+    bool CanKeepDelimitedCompactWithExtraLines(const FormatBreakNode& node, const NodeResult& compact) {
         return DelimitedCompactTailExpansion(node, compact) != CompactTailExpansionKind::None;
     }
 
-    static bool CanKeepChainCompactWithExtraLines(const FormatBreakNode& node, const NodeResult& compact) {
+    bool CanKeepChainCompactWithExtraLines(const FormatBreakNode& node, const NodeResult& compact) {
         if (node.operands.empty() || ChoiceFor(compact, node) != FormatBreakChoice::Compact) {
             return false;
         }
@@ -1800,7 +1798,7 @@ private:
         return result;
     }
 
-    static bool TrailingBodyHeaderHeaderHasSelectedBreak(const FormatBreakNode& node, const NodeResult& result) {
+    bool TrailingBodyHeaderHeaderHasSelectedBreak(const FormatBreakNode& node, const NodeResult& result) {
         if (node.kind == FormatBreakNodeKind::BodyHeader) {
             return !node.children.empty() &&
                 node.children.front() != nullptr &&

@@ -8,9 +8,9 @@
 #include "format/impl/format_break_solution.h"
 
 // Immutable, arena-owned choice histories shared by solver candidates. Handles
-// remain valid until this history is destroyed; append/concatenate preserve old
-// handles. Lookup uses the last matching record, while materialization keeps the
-// first choice/render base per node and deduplicates
+// belong to this arena and remain valid until it is destroyed. Appending and
+// concatenating preserve old handles. Lookup uses the last matching record;
+// materialization keeps the first choice/render base per node and deduplicates
 // attached operators. This module owns no candidate costs or layout search.
 class FormatChoiceHistory {
 public:
@@ -23,7 +23,7 @@ public:
     Handle Concat(Handle left, Handle right);
     Handle AddChoice(Handle history, int nodeId, FormatBreakChoice choice, int indentLevel = -1);
     Handle AddAttachedOperator(Handle history, std::uint32_t sourceIndex);
-    static std::optional<FormatBreakChoice> Find(Handle history, int nodeId);
+    std::optional<FormatBreakChoice> Find(Handle history, int nodeId);
     static FormatBreakSolution Materialize(Handle history, size_t choiceCount);
 
 private:

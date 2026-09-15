@@ -660,7 +660,7 @@ void TestChoiceHistory() {
     const auto latest = history.AddChoice(first, 1, FormatBreakChoice::Compact, 9);
     Check(history.Concat(nullptr, latest) == latest && history.Concat(latest, nullptr) == latest,
         "empty history is a concatenation identity");
-    Check(FormatChoiceHistory::Find(latest, 1) == FormatBreakChoice::Compact, "lookup gives the latest matching record");
+    Check(history.Find(latest, 1) == FormatBreakChoice::Compact, "lookup gives the latest matching record");
     auto records = history.AddAttachedOperator(latest, 9);
     records = history.AddAttachedOperator(records, 4);
     records = history.AddAttachedOperator(records, 9);
@@ -677,10 +677,29 @@ void TestChoiceHistory() {
     for (int index = 0; index < 1024; ++index) {
         records = history.AddChoice(records, 99, FormatBreakChoice::Split, index);
     }
-    Check(FormatChoiceHistory::Find(first, 1) == FormatBreakChoice::Split && !FormatChoiceHistory::Find(first, 2),
+    Check(history.Find(first, 1) == FormatBreakChoice::Split && !history.Find(first, 2),
         "arena growth and branch appends leave earlier handles unchanged");
     Check(FormatChoiceHistory::Materialize(records, 4).choices.size() == 4,
         "records outside the model index range do not grow the solution");
+
+    auto left = history.AddAttachedOperator(first, 9);
+    auto right = history.AddChoice(nullptr, 3, FormatBreakChoice::SplitPacked, 4);
+    for (int depth = 0; depth < 80; ++depth) {
+        const auto next = history.Concat(left, right);
+        left = right;
+        right = next;
+    }
+    Check(!history.Find(right, 2) && history.Find(right, 1) == FormatBreakChoice::Split,
+        "lookup visits shared subtrees once, including a missing id inside their range");
+    const auto shared = FormatChoiceHistory::Materialize(right, 4);
+    Check(shared.choices[1] == FormatBreakChoice::Split && shared.indentLevels[1] == 2 &&
+        shared.choices[3] == FormatBreakChoice::SplitPacked && shared.indentLevels[3] == 4 &&
+        shared.attachedChainOperators == std::vector<std::uint32_t>({9}),
+        "materialization visits a shared DAG without unfolding exponentially many paths");
+    const auto conflicting = history.Concat(history.AddChoice(right, 1, FormatBreakChoice::Compact), right);
+    Check(history.Find(conflicting, 1) == FormatBreakChoice::Split &&
+        FormatChoiceHistory::Materialize(conflicting, 4).choices[1] == FormatBreakChoice::Split,
+        "shared branches preserve lookup and materialization precedence");
 }
 
 

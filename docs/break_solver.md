@@ -12,7 +12,7 @@ Candidate storage keeps small append paths and simple state checks inline so one
 
 `FormatCompactLayout` owns cached compact physical-line measurement; its results contain no search or cost state.
 
-`FormatChoiceHistory` owns immutable shared decision histories and their lookup/materialization precedence. Solver candidates carry opaque handles; `FormatBreakSolution` is the materialized contract consumed by emission and diagnostics.
+`FormatChoiceHistory` owns immutable shared decision histories and their lookup/materialization precedence. Each lookup and materialization visits shared history entries at most once, preserving last-record lookup and first-record materialization without unfolding the decision DAG. Iterative traversal also avoids recursion proportional to history depth. Solver candidates carry opaque handles; `FormatBreakSolution` is the materialized contract consumed by emission and diagnostics.
 
 `FormatValueProfile` stores sorted occurrence counts for both cost profiles. It keeps four values inline, allocates overflow storage only for a fifth distinct value, and ignores zero. Profile comparison proceeds from greatest value to least, and `Merge` adds child occurrence counts. Adding a shared surrounding profile therefore cannot change the greatest value where two alternatives differ.
 
