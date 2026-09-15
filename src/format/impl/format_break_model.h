@@ -121,6 +121,16 @@ struct FormatBreakNodeData {
 struct FormatBreakNode : FormatBreakNodeData {
     FormatBreakNode() = default;
     explicit FormatBreakNode(const FormatBreakNodeData& data) : FormatBreakNodeData(data) {}
+    FormatBreakNode(FormatBreakNodeKind kind, int depth, const SyntaxNode* owner, int id, FormatBreakToken token = {}) :
+        FormatBreakNodeData{
+            .id = id,
+            .rawDepth = depth,
+            .structuralDepth = depth,
+            .breakCost = depth,
+            .syntaxOwner = owner,
+            .token = token,
+            .kind = kind,
+        } {}
 
     std::span<FormatBreakNode*> children;
     std::span<FormatBreakListItem> items;

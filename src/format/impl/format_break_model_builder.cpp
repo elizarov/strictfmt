@@ -379,23 +379,14 @@ private:
     const SyntaxNode* currentSyntaxOwner_ = nullptr;
 
     FormatBreakNode* MakeNode(FormatBreakNodeKind kind, int depth) {
-        model_.nodes->emplace_back();
-        FormatBreakNode& node = model_.nodes->back();
-        node.id = nextId_++;
-        node.syntaxOwner = currentSyntaxOwner_;
-        node.kind = kind;
-        node.rawDepth = depth;
-        node.structuralDepth = depth;
-        node.breakCost = depth;
+        auto& node = model_.nodes->emplace_back(kind, depth, currentSyntaxOwner_, nextId_++);
         model_.hasLayoutChoice =
             model_.hasLayoutChoice || (kind != FormatBreakNodeKind::Token && kind != FormatBreakNodeKind::Sequence);
         return &node;
     }
 
     FormatBreakNode* BuildToken(const FormatBreakToken& token, int depth) {
-        auto node = MakeNode(FormatBreakNodeKind::Token, depth);
-        node->token = token;
-        return node;
+        return &model_.nodes->emplace_back(FormatBreakNodeKind::Token, depth, currentSyntaxOwner_, nextId_++, token);
     }
 
     static bool IsStringTokenChild(const FormatBreakNode* node) {
