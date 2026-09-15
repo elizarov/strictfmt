@@ -1,4 +1,4 @@
-#include "format/impl/format_break_emitter.h"
+#include "format/impl/format_layout_lowerer.h"
 
 #include <algorithm>
 #include <utility>
@@ -7,25 +7,26 @@
 #include "format/impl/format_break_solution.h"
 #include "format/impl/format_config.h"
 #include "format/impl/format_delimiter_stack.h"
+#include "format/impl/format_layout_tree.h"
+#include "format/impl/format_list_continuation.h"
+#include "format/impl/format_chain_continuation.h"
 
 namespace {
 
-class BreakEmitter {
+class LayoutLowerer {
 public:
-    BreakEmitter(const FormatterConfig& config, FormatBreakOutput& output, const SyntaxNode* terminalToken) :
-        config_(config), output_(output), terminalToken_(terminalToken) {}
+    LayoutLowerer(const FormatterConfig& config, FormatLayoutSink& output, FormatLayoutTree& tree) :
+        config_(config), output_(output), tree_(tree) {}
 
-    FormatBreakEmissionSummary Emit(const FormatBreakNode& root, const FormatBreakSolution& solution, int baseIndent) {
-        CollectSplitContexts(root, solution, summary_.splitLists);
-        EmitBreakNode(root, solution, baseIndent);
-        return std::move(summary_);
+    void Lower(const FormatBreakNode& root, const FormatBreakSolution& solution, int baseIndent) {
+        RecordSplitLists(root, solution);
+        LowerBreakNode(root, solution, baseIndent);
     }
 
 private:
     const FormatterConfig& config_;
-    FormatBreakOutput& output_;
-    const SyntaxNode* terminalToken_;
-    FormatBreakEmissionSummary summary_;
+    FormatLayoutSink& output_;
+    FormatLayoutTree& tree_;
     bool suppressNextBreakTokenSpace_ = false;
 
     void NewLineWithIndent(int indent) { output_.BreakLine(indent, false); }
@@ -45,10 +46,11 @@ private:
         if (
             continuationBaseIndent &&
             printToken.kind == PrintTokenKind::Known &&
-            printToken.syntaxKind == SyntaxNodeKind::LeftBrace &&
-            printToken.node == terminalToken_
+            printToken.syntaxKind == SyntaxNodeKind::LeftBrace
         ) {
-            summary_.blockOpenIndent = std::max(0, *continuationBaseIndent - (printToken.inMacroValue ? 1 : 0));
+            tree_.RecordBlockIndent(
+                printToken.node, std::max(0, *continuationBaseIndent - (printToken.inMacroValue ? 1 : 0))
+            );
         }
         output_.WriteToken(token, text, continuationBaseIndent, suppressSpace);
     }
@@ -87,7 +89,13 @@ private:
         WriteBreakTokenText(token, FormatTokenText(FormatBreakTokenValue(token)), continuationBaseIndent);
     }
 
-    void EmitBreakNode(const FormatBreakNode& node, const FormatBreakSolution& solution, int baseIndent) {
+    void LowerBreakNode(const FormatBreakNode& node, const FormatBreakSolution& solution, int baseIndent) {
+        output_.EnterNode(node);
+        struct LeaveScope {
+            FormatLayoutSink& sink;
+
+            ~LeaveScope() { sink.LeaveNode(); }
+        } scope{output_};
         if (
             node.id >= 0 &&
             static_cast<size_t>(node.id) < solution.indentLevels.size() &&
@@ -95,7 +103,7 @@ private:
         ) {
             baseIndent = solution.indentLevels[static_cast<size_t>(node.id)];
         }
-        const FormatBreakOutputState state = output_.State();
+        const FormatLayoutSinkState state = output_.State();
         if (state.atLineStart && state.pendingIndentLevel) {
             baseIndent = std::max(baseIndent, *state.pendingIndentLevel);
         }
@@ -105,29 +113,29 @@ private:
                 return;
             case FormatBreakNodeKind::Sequence:
                 for (const FormatBreakNode* child : node.children) {
-                    EmitBreakNode(*child, solution, baseIndent);
+                    LowerBreakNode(*child, solution, baseIndent);
                 }
                 return;
             case FormatBreakNodeKind::Delimited:
-                EmitDelimitedNode(node, solution, baseIndent);
+                LowerDelimitedNode(node, solution, baseIndent);
                 return;
             case FormatBreakNodeKind::PrefixList:
-                EmitPrefixListNode(node, solution, baseIndent);
+                LowerPrefixListNode(node, solution, baseIndent);
                 return;
             case FormatBreakNodeKind::StatementSequence:
-                EmitStatementSequenceNode(node, solution, baseIndent);
+                LowerStatementSequenceNode(node, solution, baseIndent);
                 return;
             case FormatBreakNodeKind::FunctionSignature:
-                EmitFunctionSignatureNode(node, solution, baseIndent);
+                LowerFunctionSignatureNode(node, solution, baseIndent);
                 return;
             case FormatBreakNodeKind::BodyHeader:
-                EmitBodyHeaderNode(node, solution, baseIndent);
+                LowerBodyHeaderNode(node, solution, baseIndent);
                 return;
             case FormatBreakNodeKind::Chain:
-                EmitChainNode(node, solution, baseIndent);
+                LowerChainNode(node, solution, baseIndent);
                 return;
             case FormatBreakNodeKind::AdjacentStrings:
-                EmitAdjacentStringsNode(node, solution, baseIndent);
+                LowerAdjacentStringsNode(node, solution, baseIndent);
                 return;
         }
     }
@@ -160,7 +168,7 @@ private:
         int indentLevel = 0;
     };
 
-    void EmitDelimiterStackNode(const FormatBreakNode& node, const FormatBreakSolution& solution, int baseIndent) {
+    void LowerDelimiterStackNode(const FormatBreakNode& node, const FormatBreakSolution& solution, int baseIndent) {
         const std::optional<FormatDelimiterStack> stack =
             CollectFormatDelimiterStack(node, FormatDelimiterStackPolicy::Emission);
         if (!stack) {
@@ -189,7 +197,7 @@ private:
         if (detachLeaf && output_.State().lineHasText) {
             NewLineWithIndent(nextOpenIndent);
         }
-        EmitBreakNode(*stack->leaf, solution, nextOpenIndent);
+        LowerBreakNode(*stack->leaf, solution, nextOpenIndent);
         for (size_t runIndex = delimiterRuns.size(); runIndex-- > 0;) {
             const DelimiterStackRun& run = delimiterRuns[runIndex];
             const bool firstClosingRun = runIndex + 1 == delimiterRuns.size();
@@ -206,17 +214,17 @@ private:
         return index < node.items.size() && node.items[index].blankLineBefore;
     }
 
-    void EmitDelimitedNode(const FormatBreakNode& node, const FormatBreakSolution& solution, int baseIndent) {
+    void LowerDelimitedNode(const FormatBreakNode& node, const FormatBreakSolution& solution, int baseIndent) {
         const FormatBreakChoice choice = ChoiceFor(solution, node.id);
         if (
             choice == FormatBreakChoice::SplitDelimiterStack ||
             choice == FormatBreakChoice::SplitDelimiterStackDetachedLeaf
         ) {
-            EmitDelimiterStackNode(node, solution, baseIndent);
+            LowerDelimiterStackNode(node, solution, baseIndent);
             return;
         }
         if (!IsSplitChoice(choice) || node.items.empty()) {
-            EmitBreakNode(*node.children[0], solution, baseIndent);
+            LowerBreakNode(*node.children[0], solution, baseIndent);
             if (FormatBreakHasLeadingTrailingComment(node)) {
                 WriteBreakToken(node.leadingTrailingComment);
             }
@@ -225,7 +233,7 @@ private:
                 if (node.suppressCompactDelimiterPadding && index == 0) {
                     suppressNextBreakTokenSpace_ = true;
                 }
-                EmitBreakNode(*item.node, solution, baseIndent);
+                LowerBreakNode(*item.node, solution, baseIndent);
                 if (FormatBreakTokenKind(item.separator) == PrintTokenKind::Known) {
                     WriteBreakToken(item.separator);
                 }
@@ -236,11 +244,11 @@ private:
             if (node.suppressCompactDelimiterPadding) {
                 suppressNextBreakTokenSpace_ = true;
             }
-            EmitBreakNode(*node.children[1], solution, baseIndent);
+            LowerBreakNode(*node.children[1], solution, baseIndent);
             return;
         }
 
-        EmitBreakNode(*node.children[0], solution, baseIndent);
+        LowerBreakNode(*node.children[0], solution, baseIndent);
         if (FormatBreakHasLeadingTrailingComment(node)) {
             WriteBreakToken(node.leadingTrailingComment);
         }
@@ -250,7 +258,7 @@ private:
         BreakListLine(baseIndent + 1, HasBlankLineBeforeItem(node, 0));
         for (size_t index = 0; index < node.items.size(); ++index) {
             const FormatBreakListItem& item = node.items[index];
-            EmitBreakNode(*item.node, solution, baseIndent + 1);
+            LowerBreakNode(*item.node, solution, baseIndent + 1);
             if (FormatBreakTokenKind(item.separator) == PrintTokenKind::Known) {
                 WriteBreakToken(item.separator);
             }
@@ -275,19 +283,19 @@ private:
                 }
             }
         }
-        EmitBreakNode(*node.children[1], solution, baseIndent);
+        LowerBreakNode(*node.children[1], solution, baseIndent);
     }
 
-    void EmitPrefixListNode(const FormatBreakNode& node, const FormatBreakSolution& solution, int baseIndent) {
+    void LowerPrefixListNode(const FormatBreakNode& node, const FormatBreakSolution& solution, int baseIndent) {
         const FormatBreakChoice choice = ChoiceFor(solution, node.id);
         if (!IsSplitChoice(choice)) {
-            EmitBreakNode(*node.children[0], solution, baseIndent);
+            LowerBreakNode(*node.children[0], solution, baseIndent);
             if (FormatBreakHasLeadingTrailingComment(node)) {
                 WriteBreakToken(node.leadingTrailingComment);
             }
             for (size_t index = 0; index < node.items.size(); ++index) {
                 const FormatBreakListItem& item = node.items[index];
-                EmitBreakNode(*item.node, solution, baseIndent);
+                LowerBreakNode(*item.node, solution, baseIndent);
                 if (FormatBreakTokenKind(item.separator) == PrintTokenKind::Known) {
                     WriteBreakToken(item.separator);
                 }
@@ -298,14 +306,14 @@ private:
             return;
         }
 
-        EmitBreakNode(*node.children[0], solution, baseIndent);
+        LowerBreakNode(*node.children[0], solution, baseIndent);
         if (FormatBreakHasLeadingTrailingComment(node)) {
             WriteBreakToken(node.leadingTrailingComment);
         }
         BreakListLine(baseIndent + 1, HasBlankLineBeforeItem(node, 0));
         for (size_t index = 0; index < node.items.size(); ++index) {
             const FormatBreakListItem& item = node.items[index];
-            EmitBreakNode(*item.node, solution, baseIndent + 1);
+            LowerBreakNode(*item.node, solution, baseIndent + 1);
             if (FormatBreakTokenKind(item.separator) == PrintTokenKind::Known) {
                 WriteBreakToken(item.separator);
             }
@@ -318,14 +326,14 @@ private:
         }
     }
 
-    void EmitStatementSequenceNode(const FormatBreakNode& node, const FormatBreakSolution& solution, int baseIndent) {
+    void LowerStatementSequenceNode(const FormatBreakNode& node, const FormatBreakSolution& solution, int baseIndent) {
         const FormatBreakChoice choice = ChoiceFor(solution, node.id);
         for (size_t index = 0; index < node.items.size(); ++index) {
             const FormatBreakListItem& item = node.items[index];
             if (choice == FormatBreakChoice::Split && index > 0) {
                 BreakListLine(baseIndent, HasBlankLineBeforeItem(node, index));
             }
-            EmitBreakNode(*item.node, solution, baseIndent);
+            LowerBreakNode(*item.node, solution, baseIndent);
             if (FormatBreakTokenKind(item.separator) == PrintTokenKind::Known) {
                 WriteBreakToken(item.separator);
             }
@@ -335,10 +343,10 @@ private:
         }
     }
 
-    void EmitDelimitedNodeAfterAttachedOpen(
+    void LowerDelimitedNodeAfterAttachedOpen(
         const FormatBreakNode& node, const FormatBreakSolution& solution, int baseIndent
     ) {
-        EmitBreakNode(*node.children[0], solution, baseIndent);
+        LowerBreakNode(*node.children[0], solution, baseIndent);
         if (FormatBreakHasLeadingTrailingComment(node)) {
             WriteBreakToken(node.leadingTrailingComment);
         }
@@ -348,7 +356,7 @@ private:
         BreakListLine(baseIndent + 1, HasBlankLineBeforeItem(node, 0));
         for (size_t index = 0; index < node.items.size(); ++index) {
             const FormatBreakListItem& item = node.items[index];
-            EmitBreakNode(*item.node, solution, baseIndent + 1);
+            LowerBreakNode(*item.node, solution, baseIndent + 1);
             if (FormatBreakTokenKind(item.separator) == PrintTokenKind::Known) {
                 WriteBreakToken(item.separator);
             }
@@ -370,45 +378,45 @@ private:
                 );
             }
         }
-        EmitBreakNode(*node.children[1], solution, baseIndent);
+        LowerBreakNode(*node.children[1], solution, baseIndent);
     }
 
-    void EmitFunctionSignatureNode(const FormatBreakNode& node, const FormatBreakSolution& solution, int baseIndent) {
+    void LowerFunctionSignatureNode(const FormatBreakNode& node, const FormatBreakSolution& solution, int baseIndent) {
         const FormatBreakChoice choice = ChoiceFor(solution, node.id);
         if (choice != FormatBreakChoice::Split || node.children.size() < 2) {
             for (const FormatBreakNode* child : node.children) {
-                EmitBreakNode(*child, solution, baseIndent);
+                LowerBreakNode(*child, solution, baseIndent);
             }
             return;
         }
-        EmitBreakNode(*node.children[0], solution, baseIndent);
+        LowerBreakNode(*node.children[0], solution, baseIndent);
         NewLineWithIndent(baseIndent + 1);
-        EmitBreakNode(*node.children[1], solution, baseIndent + 1);
+        LowerBreakNode(*node.children[1], solution, baseIndent + 1);
         if (node.children.size() > 2) {
             if (node.functionSignatureHasBody) {
                 NewLineWithIndent(baseIndent);
-                EmitBreakNode(*node.children[2], solution, baseIndent);
+                LowerBreakNode(*node.children[2], solution, baseIndent);
             } else {
-                EmitBreakNode(*node.children[2], solution, baseIndent + 1);
+                LowerBreakNode(*node.children[2], solution, baseIndent + 1);
             }
         }
     }
 
-    void EmitBodyHeaderNode(const FormatBreakNode& node, const FormatBreakSolution& solution, int baseIndent) {
+    void LowerBodyHeaderNode(const FormatBreakNode& node, const FormatBreakSolution& solution, int baseIndent) {
         const FormatBreakChoice choice = ChoiceFor(solution, node.id);
         if (node.bodyHeaderRequiresDetachedBody && node.children.size() >= 2) {
-            EmitBreakNode(*node.children[0], solution, baseIndent);
+            LowerBreakNode(*node.children[0], solution, baseIndent);
             NewLineWithIndent(baseIndent);
-            EmitBreakNode(*node.children[1], solution, baseIndent);
+            LowerBreakNode(*node.children[1], solution, baseIndent);
             return;
         }
         if (!IsBodyHeaderSplitChoice(choice) || node.children.size() < 2) {
             for (const FormatBreakNode* child : node.children) {
-                EmitBreakNode(*child, solution, baseIndent);
+                LowerBreakNode(*child, solution, baseIndent);
             }
             return;
         }
-        EmitBreakNode(*node.children[0], solution, baseIndent);
+        LowerBreakNode(*node.children[0], solution, baseIndent);
         const int bodyIndent = node.continuedBodyHeaderOwnerIndent.value_or(
             choice == FormatBreakChoice::BodyHeaderSplitAtParentIndent ? std::max(0, baseIndent - 1) : baseIndent
         );
@@ -418,10 +426,10 @@ private:
         ) {
             NewLineWithIndent(bodyIndent);
         }
-        EmitBreakNode(*node.children[1], solution, bodyIndent);
+        LowerBreakNode(*node.children[1], solution, bodyIndent);
     }
 
-    void EmitCommentsBeforeChainOperator(const FormatBreakNode& node, size_t index) {
+    void LowerCommentsBeforeChainOperator(const FormatBreakNode& node, size_t index) {
         if (index >= node.commentsBeforeOperators.size()) {
             return;
         }
@@ -430,24 +438,24 @@ private:
         }
     }
 
-    void EmitChainNode(const FormatBreakNode& node, const FormatBreakSolution& solution, int baseIndent) {
+    void LowerChainNode(const FormatBreakNode& node, const FormatBreakSolution& solution, int baseIndent) {
         const FormatBreakChoice choice = ChoiceFor(solution, node.id);
         if (choice == FormatBreakChoice::Compact) {
             for (size_t index = 0; index < node.operands.size(); ++index) {
-                EmitBreakNode(*node.operands[index], solution, baseIndent);
+                LowerBreakNode(*node.operands[index], solution, baseIndent);
                 if (index < node.operators.size()) {
-                    EmitCommentsBeforeChainOperator(node, index);
+                    LowerCommentsBeforeChainOperator(node, index);
                     WriteBreakToken(node.operators[index]);
                 }
             }
             return;
         }
         const int splitBaseIndent = node.requiredChainBreakBaseIndent.value_or(baseIndent);
-        summary_.chainIndents.push_back({.chain = &node, .baseIndent = splitBaseIndent});
+        tree_.Chains().RecordSelection(node, splitBaseIndent);
 
         if (node.chainKind == FormatBreakChainKind::StreamBeforeOperator) {
             if (!node.chainStartsWithOperator) {
-                EmitBreakNode(*node.operands.front(), solution, baseIndent);
+                LowerBreakNode(*node.operands.front(), solution, baseIndent);
             }
             if (node.chainStartsWithOperator && output_.State().atLineStart) {
                 output_.SetPendingIndent(splitBaseIndent + 1);
@@ -455,9 +463,9 @@ private:
                 NewLineWithIndent(splitBaseIndent + 1);
             }
             for (size_t index = 0; index < node.operators.size(); ++index) {
-                EmitCommentsBeforeChainOperator(node, index);
+                LowerCommentsBeforeChainOperator(node, index);
                 WriteBreakToken(node.operators[index]);
-                EmitBreakNode(*node.operands[index + 1], solution, splitBaseIndent + 1);
+                LowerBreakNode(*node.operands[index + 1], solution, splitBaseIndent + 1);
                 if (
                     choice == FormatBreakChoice::Split &&
                     index + 1 < node.operators.size() &&
@@ -473,44 +481,44 @@ private:
         }
 
         if (node.chainKind == FormatBreakChainKind::CallApplication) {
-            EmitBreakNode(*node.operands.front(), solution, baseIndent);
+            LowerBreakNode(*node.operands.front(), solution, baseIndent);
             if (choice == FormatBreakChoice::CallCompactTail) {
                 NewLineWithIndent(splitBaseIndent + 1);
                 for (size_t index = 1; index < node.operands.size(); ++index) {
-                    EmitBreakNode(*node.operands[index], solution, splitBaseIndent + 1);
+                    LowerBreakNode(*node.operands[index], solution, splitBaseIndent + 1);
                 }
                 return;
             }
             for (size_t index = 1; index < node.operands.size(); ++index) {
                 NewLineWithIndent(splitBaseIndent + 1);
-                EmitBreakNode(*node.operands[index], solution, splitBaseIndent + 1);
+                LowerBreakNode(*node.operands[index], solution, splitBaseIndent + 1);
             }
             return;
         }
 
         if (node.chainKind == FormatBreakChainKind::MemberBeforeOperator) {
-            EmitBreakNode(*node.operands.front(), solution, baseIndent);
+            LowerBreakNode(*node.operands.front(), solution, baseIndent);
             if (choice == FormatBreakChoice::MemberCompactTail) {
                 NewLineWithIndent(splitBaseIndent + 1);
                 for (size_t index = 0; index < node.operators.size(); ++index) {
-                    EmitCommentsBeforeChainOperator(node, index);
+                    LowerCommentsBeforeChainOperator(node, index);
                     WriteBreakToken(node.operators[index]);
-                    EmitBreakNode(*node.operands[index + 1], solution, splitBaseIndent + 1);
+                    LowerBreakNode(*node.operands[index + 1], solution, splitBaseIndent + 1);
                 }
                 return;
             }
             for (size_t index = 0; index < node.operators.size(); ++index) {
                 NewLineWithIndent(splitBaseIndent + 1);
-                EmitCommentsBeforeChainOperator(node, index);
+                LowerCommentsBeforeChainOperator(node, index);
                 WriteBreakToken(node.operators[index]);
-                EmitBreakNode(*node.operands[index + 1], solution, splitBaseIndent + 1);
+                LowerBreakNode(*node.operands[index + 1], solution, splitBaseIndent + 1);
             }
             return;
         }
 
         if (node.chainKind == FormatBreakChainKind::Ternary && node.operators.size() > 2) {
             for (size_t index = 0; index < node.operands.size(); ++index) {
-                EmitBreakNode(*node.operands[index], solution, index == 0 ? baseIndent : splitBaseIndent + 1);
+                LowerBreakNode(*node.operands[index], solution, index == 0 ? baseIndent : splitBaseIndent + 1);
                 if (index < node.operators.size()) {
                     WriteBreakToken(node.operators[index]);
                     if (
@@ -531,7 +539,7 @@ private:
             const bool breakAfterColon =
                 choice == FormatBreakChoice::TernaryBreakAfterColon || choice == FormatBreakChoice::Split;
             for (size_t index = 0; index < node.operands.size(); ++index) {
-                EmitBreakNode(*node.operands[index], solution, index == 0 ? baseIndent : continuationIndent);
+                LowerBreakNode(*node.operands[index], solution, index == 0 ? baseIndent : continuationIndent);
                 if (index < node.operators.size()) {
                     WriteBreakToken(node.operators[index]);
                     if ((index == 0 && breakAfterQuestion) || (index == 1 && breakAfterColon)) {
@@ -544,7 +552,7 @@ private:
 
         const int continuationIndent = node.flatSplitIndent ? splitBaseIndent : splitBaseIndent + 1;
         for (size_t index = 0; index < node.operands.size(); ++index) {
-            EmitBreakNode(*node.operands[index], solution, index == 0 ? baseIndent : continuationIndent);
+            LowerBreakNode(*node.operands[index], solution, index == 0 ? baseIndent : continuationIndent);
             if (index < node.operators.size()) {
                 WriteBreakToken(node.operators[index]);
                 if (IsAttachedChainOperator(solution, node.operators[index])) {
@@ -556,7 +564,7 @@ private:
                     ChoiceFor(solution, node.operands[index + 1]->id) == FormatBreakChoice::SplitAttachedOpen
                 ) {
                     const size_t attachedOperandIndex = index + 1;
-                    EmitDelimitedNodeAfterAttachedOpen(
+                    LowerDelimitedNodeAfterAttachedOpen(
                         *node.operands[attachedOperandIndex], solution, continuationIndent
                     );
                     if (attachedOperandIndex < node.operators.size()) {
@@ -571,7 +579,7 @@ private:
         }
     }
 
-    void EmitAdjacentStringsNode(const FormatBreakNode& node, const FormatBreakSolution& solution, int baseIndent) {
+    void LowerAdjacentStringsNode(const FormatBreakNode& node, const FormatBreakSolution& solution, int baseIndent) {
         const FormatBreakChoice choice = ChoiceFor(solution, node.id);
         const int continuationIndent = node.flatSplitIndent ? baseIndent : baseIndent + 1;
         const bool hasCompactTexts = node.compactStringTexts.size() == node.operands.size() &&
@@ -591,13 +599,11 @@ private:
             if (choice == FormatBreakChoice::Split && index > 0) {
                 NewLineWithIndent(continuationIndent);
             }
-            EmitBreakNode(*node.operands[index], solution, index == 0 ? baseIndent : continuationIndent);
+            LowerBreakNode(*node.operands[index], solution, index == 0 ? baseIndent : continuationIndent);
         }
     }
 
-    void CollectSplitContexts(
-        const FormatBreakNode& node, const FormatBreakSolution& solution, std::vector<FormatBreakSplitList>& result
-    ) const {
+    void RecordSplitLists(const FormatBreakNode& node, const FormatBreakSolution& solution) const {
         if (
             node.kind == FormatBreakNodeKind::Delimited &&
             node.children.size() > 1 &&
@@ -608,9 +614,7 @@ private:
             const FormatBreakToken& open = node.children.front()->token;
             if (open.token != nullptr && open.token->node != nullptr) {
                 const int baseIndent = solution.indentLevels[static_cast<size_t>(node.id)];
-                result.push_back(
-                    {.openToken = open.token->node, .itemIndent = baseIndent + 1, .closeIndent = baseIndent}
-                );
+                tree_.Lists().RecordSelection(open.token->node, baseIndent + 1, baseIndent);
             }
         }
         if (
@@ -622,22 +626,22 @@ private:
             const FormatBreakToken& prefix = node.children.front()->token;
             if (prefix.token != nullptr && prefix.token->node != nullptr) {
                 const int baseIndent = solution.indentLevels[static_cast<size_t>(node.id)];
-                result.push_back({.openToken = prefix.token->node, .itemIndent = baseIndent + 1});
+                tree_.Lists().RecordSelection(prefix.token->node, baseIndent + 1, 0);
             }
         }
         for (const FormatBreakNode* child : node.children) {
             if (child) {
-                CollectSplitContexts(*child, solution, result);
+                RecordSplitLists(*child, solution);
             }
         }
         for (const FormatBreakListItem& item : node.items) {
             if (item.node) {
-                CollectSplitContexts(*item.node, solution, result);
+                RecordSplitLists(*item.node, solution);
             }
         }
         for (const FormatBreakNode* operand : node.operands) {
             if (operand) {
-                CollectSplitContexts(*operand, solution, result);
+                RecordSplitLists(*operand, solution);
             }
         }
     }
@@ -646,16 +650,16 @@ private:
 
 }  // namespace
 
-FormatBreakEmissionSummary EmitFormatBreakModel(
+void LowerFormatLayout(
     const FormatterConfig& config,
     const FormatBreakModel& model,
     const FormatBreakSolution& solution,
     int baseIndent,
-    const SyntaxNode* terminalToken,
-    FormatBreakOutput& output
+    FormatLayoutTree& tree,
+    FormatLayoutSink& output
 ) {
     if (model.root == nullptr) {
-        return {};
+        return;
     }
-    return BreakEmitter(config, output, terminalToken).Emit(*model.root, solution, baseIndent);
+    LayoutLowerer(config, output, tree).Lower(*model.root, solution, baseIndent);
 }

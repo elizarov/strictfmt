@@ -298,11 +298,13 @@ auto expanded_values = {
     STEP(Read)
     STEP(Write)
 };
+
 auto mixed_values = {
     1,
     STEP(Middle)
     2,
 };
+
 auto nested_values = {
     STEP(Nested({1, 2}))
     STEP(Other())

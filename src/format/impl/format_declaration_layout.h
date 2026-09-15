@@ -1,46 +1,28 @@
 #pragma once
 
-#include <cstdint>
 #include <memory>
 #include <optional>
 #include <span>
 
 #include "format/impl/format_print_token.h"
 
-struct FormatterConfig;
-struct FormatModelTextStats;
-struct FormatBreakModel;
-struct FormatBreakModelContext;
-struct FormatBreakSolution;
+class FormatLayoutTree;
+struct FormatLayoutProgram;
 
-struct FormatDeclarationLayoutView {
-    const FormatBreakModel* model;
-    const FormatBreakSolution* solution;
+struct FormatDeclarationBoundary {
+    const SyntaxNode* left = nullptr;
+    const SyntaxNode* right = nullptr;
+    bool required = false;
 };
 
-// Pre-analyzes declaration values, owns grouping state and cached solved layouts.
-// Tokens/model/config must outlive this object; boundary flags parallel tokens and
-// are consumed only during construction. Query boundaries in emission order.
-// Reuse requires identical token adjacency, incoming state, and model context;
-// diagnostic dumping must bypass reuse. Returned views live as long as this object.
+// Schedules declaration-group boundaries in source order. Once planning finishes,
+// grouping observes the selected program; it never builds or solves a layout.
 class FormatDeclarationLayout {
 public:
-    FormatDeclarationLayout(
-        const FormatterConfig& config,
-        std::span<const PrintToken> tokens,
-        std::span<const std::uint8_t> mandatoryBlockOpens,
-        FormatModelTextStats* stats = nullptr
-    );
+    explicit FormatDeclarationLayout(std::span<const PrintToken> tokens);
     ~FormatDeclarationLayout();
-
-    bool NeedsBlankLineBefore(size_t tokenIndex);
-    std::optional<FormatDeclarationLayoutView> FindReusableLayout(
-        std::span<const PrintToken> tokens,
-        const FormatBreakModelContext& context,
-        int startColumn,
-        int baseIndentLevel,
-        int breakLineSuffixWidth
-    ) const;
+    std::optional<FormatDeclarationBoundary> BoundaryBefore(size_t tokenIndex);
+    void Resolve(const FormatLayoutTree& tree, FormatLayoutProgram& program) const;
 
 private:
     struct Impl;

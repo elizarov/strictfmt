@@ -5,8 +5,9 @@
 #include <span>
 
 struct PrintToken;
-struct FormatBreakModelContext;
-struct FormatBreakSplitList;
+class FormatLayoutTree;
+struct FormatLayoutRegionContext;
+struct SyntaxNode;
 
 enum class FormatListContinuationKind {
     Preprocessor,
@@ -18,30 +19,29 @@ struct FormatListContinuationBreak {
     std::optional<int> indent;  // No break for a leading conditional-branch comma.
 };
 
-// Plans virtual delimiters and retains selected list indentation across mandatory
-// blocks and preprocessor regions. Tokens/syntax are borrowed for this object's
-// lifetime. Each Plan returns a context valid until the next plan of that kind;
-// Accept follows that segment's emission. Call BeforeToken in source order.
-// TakeBoundary consumes a matching closer and returns the physical action; output
-// and structural indentation remain with the caller. PlanBlock accepts block-role
-// braces selected by the printer; it does not classify mandatory boundaries.
+// The layout tree owns these persistent list placements. Plans identify complete
+// list owners; lowering records selected item/closer indentation. Boundary queries
+// use lexical ownership and never retire or consume a placement. Tokens and
+// syntax outlive the tree; each plan view lasts until the next plan of its kind.
 class FormatListContinuation {
 public:
-    explicit FormatListContinuation(std::span<const PrintToken> tokens);
+    explicit FormatListContinuation(FormatLayoutTree& tree);
     ~FormatListContinuation();
 
-    const FormatBreakModelContext* PlanBlock(size_t index);
-    std::optional<int> AcceptBlock(std::span<const FormatBreakSplitList> selected);
-    const FormatBreakModelContext* PlanPreprocessor(size_t index, std::span<const PrintToken> pending, int itemIndent);
-    int AcceptPreprocessor(std::span<const FormatBreakSplitList> selected);
+    const FormatLayoutRegionContext* PlanBlock(size_t index);
+    void RecordSelection(const SyntaxNode* open, int itemIndent, int closeIndent);
+    std::optional<int> ResolveBlock();
+    const FormatLayoutRegionContext*
+        PlanPreprocessor(size_t index, std::span<const PrintToken> pending, int itemIndent);
+    int ResolvePreprocessor();
     std::optional<int> PreprocessorIndent(const PrintToken& token) const;
     std::optional<bool> ConditionalDirectiveComma(size_t index) const;
     bool IsFinalPreprocessorItem(size_t index) const;
 
-    std::optional<FormatListContinuationBreak> TakeBoundary(const PrintToken& token, FormatListContinuationKind kind);
-    void BeforeToken(const PrintToken& token);
+    std::optional<FormatListContinuationBreak>
+        BoundaryFor(const PrintToken& token, FormatListContinuationKind kind) const;
     bool ContinuesList(const PrintToken& token) const;
-    std::optional<int> CloseBlock(const PrintToken& token, const PrintToken* next);
+    std::optional<int> AfterBlock(const PrintToken& token, const PrintToken* next) const;
 
 private:
     struct Impl;

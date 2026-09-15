@@ -40,6 +40,7 @@ struct FormatOutput::Impl {
     size_t macroContinuationGroup_ = 0;
     std::optional<size_t> activeCommentContinuationAnchor_;
     int currentColumn_ = 0;
+    size_t currentLineIndex_ = 0;
     bool forceColumnZeroLine_ = false;
 
     void TrimTrailingSpaces() {
@@ -63,6 +64,7 @@ struct FormatOutput::Impl {
     void TrimTrailingBlankLines() {
         while (output_.size() >= 2 && output_.back() == '\n' && output_[output_.size() - 2] == '\n') {
             output_.pop_back();
+            --currentLineIndex_;
         }
     }
 
@@ -82,6 +84,7 @@ struct FormatOutput::Impl {
         }
         if (output_.empty() || output_.back() != '\n') {
             output_.push_back('\n');
+            ++currentLineIndex_;
         }
         state_.atLineStart = true;
         state_.lineHasText = false;
@@ -105,9 +108,11 @@ struct FormatOutput::Impl {
             if (!output_.ends_with("\n\\\n")) {
                 WriteMacroContinuation();
                 output_.push_back('\n');
+                ++currentLineIndex_;
             }
         } else if (output_.size() < 2 || output_[output_.size() - 2] != '\n') {
             output_.push_back('\n');
+            ++currentLineIndex_;
         }
         state_.atLineStart = true;
         state_.lineHasText = false;
@@ -122,6 +127,7 @@ struct FormatOutput::Impl {
             output_.pop_back();
         }
         currentColumn_ = 0;
+        currentLineIndex_ = 0;
         AdvanceCurrentColumn(output_);
         state_.atLineStart = false;
         state_.lineHasText = currentColumn_ > 0;
@@ -397,6 +403,7 @@ struct FormatOutput::Impl {
     }
 
     void AdvanceCurrentColumn(std::string_view text) {
+        currentLineIndex_ += std::count(text.begin(), text.end(), '\n');
         const size_t newline = text.find_last_of('\n');
         if (newline == std::string_view::npos) {
             currentColumn_ += Utf8CharacterCount(text);
@@ -422,6 +429,7 @@ struct FormatOutput::Impl {
         TrimTrailingBlankLines();
         if (!output_.empty() && output_.back() != '\n') {
             output_.push_back('\n');
+            ++currentLineIndex_;
         }
         AlignLineComments();
         AlignMacroContinuations();
@@ -439,6 +447,7 @@ struct FormatOutput::Impl {
     }
     void AppendCompleteLines(std::string_view text) {
         output_.append(text);
+        currentLineIndex_ += std::count(text.begin(), text.end(), '\n');
         currentColumn_ = 0;
         state_.atLineStart = true;
         state_.lineHasText = false;
@@ -454,6 +463,7 @@ std::string FormatOutput::Finish() { return impl_->Finish(); }
 const FormatOutputState& FormatOutput::State() const { return impl_->state_; }
 int FormatOutput::CurrentColumn(int structuralIndent) const { return impl_->CurrentColumn(structuralIndent); }
 int FormatOutput::CurrentLineIndentLevel() const { return impl_->CurrentLineIndentLevel(); }
+size_t FormatOutput::CurrentLineIndex() const { return impl_->currentLineIndex_; }
 void FormatOutput::SetPendingIndent(std::optional<int> indent) { impl_->state_.pendingIndentLevel = indent; }
 void FormatOutput::ForceColumnZero() { impl_->ForceColumnZero(); }
 void FormatOutput::NewLine(bool macroContinuation) { impl_->NewLine(macroContinuation); }

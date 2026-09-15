@@ -2,19 +2,25 @@
 
 ## Overview
 
-`strictfmt` formats one source text at a time. Source text and configuration enter `FormatSourceText`; tree-sitter parsing and bottom-up normalization produce the formatter-owned model. `BuildPrintTokens` projects that model into tokens. The printer chooses mandatory boundaries and coordinates declaration and continuation analysis. Each segment passes through break-model construction, exact layout solving, solution emission, and physical output buffering. The outer formatting pipeline preserves the original line ending style.
+`strictfmt` formats one source text at a time. Source text and configuration enter `FormatSourceText`; tree-sitter parsing and bottom-up normalization produce the formatter-owned model. `BuildPrintTokens` projects that model into tokens. The layout tree retains complete source structure and selected owner placements. The planner chooses mandatory boundaries and coordinates declaration analysis. Each segment projects a cost region and solves its layout exactly. Selected layouts lower to a retained output program; a separate emitter replays that program without syntax traversal or structural feedback. The outer formatting pipeline preserves the original line ending style.
 
 ```mermaid
 flowchart LR
     source[Source and configuration] --> syntax[Parse and normalize]
     syntax --> tokens[Build print tokens]
-    tokens --> printer[Choose mandatory boundaries]
-    printer --> model[Build break model and costs]
+    tokens --> planner[Plan mandatory boundaries]
+    tokens --> tree[Retain complete layout tree]
+    tree --> model[Project cost region]
+    planner --> model
     model --> solver[Solve segment layout]
-    solver --> emitter[Emit selected solution]
-    emitter --> output[Buffer physical output]
-    emitter -. Continuation summaries .-> printer
+    solver --> lowerer[Record selected layout and owner placements]
+    lowerer --> program[Complete output program]
+    program --> emitter[Replay physical output]
 ```
+
+The layout tree retains the complete source ownership topology for the whole formatting operation. Mandatory boundaries delimit cost regions without discarding enclosing owners. Complete item models are materialized once and reused by boundary analysis; region models and selected solutions remain valid until formatting ends. Regions project the complete model rather than reinterpret a partial token stream; projected nodes retain their origins. List and chain placements belong to this tree, and boundary queries do not consume them. Declaration owners retain their structural indentation independently of header continuations.
+
+The completed tree also owns the selected output program. Every write carries its resolved indentation anchor; line boundaries cannot reset it. Planning measures operations with the physical output state machine; replay performs final comment and macro alignment once. No layout decision depends on final emission. Declaration-group separators are resolved after planning from selected token lines, excluding nested compound bodies; they never require advance solving.
 
 Print-token construction materializes canonical known-token text and immutable syntax traits used by later compact checks, spacing, and break-model construction. Ancestry traits are propagated during the same syntax traversal that emits tokens. Syntax normalization materializes targeted immutable descendant facts on their owning nodes when later formatting would otherwise repeat the recursive query. Adjacent-source spacing is cached once and reused only when consecutive source indices prove that the same tokens remain adjacent in a buffered segment; spacing at formatter-controlled segment boundaries is recomputed.
 
@@ -27,23 +33,26 @@ Print-token construction materializes canonical known-token text and immutable s
 - `src/format/impl/format_args.h|cpp` own command-line option parsing and usage text.
 - `src/format/impl/format_diff.h|cpp` own greedy line synchronization and unified-diff emission for `--diff`.
 - `src/format/impl/format_break_cost.h|cpp` own structural prefix-depth adjustments and final break-cost subtree discounts, including the no-discount traversal shortcut.
-- `src/format/impl/format_break_emitter.h|cpp` own recursive solved-layout emission through a physical-output adapter and report deferred list/chain/block indentation to the printer.
+- `src/format/impl/format_layout_lowerer.h|cpp` own recursive lowering of selected region layouts and recording list, chain, and block placements on persistent owners.
+- `src/format/impl/format_layout_program.h|cpp` own output commands, immutable owner indentation anchors, exact planning measurements, and syntax-independent replay.
 - `src/format/impl/format_break_model.h|cpp` own the break model data structures and shared break model predicates.
-- `src/format/impl/format_break_model_builder.h|cpp` own conversion from print tokens to break models.
+- `src/format/impl/format_break_model_builder.h|cpp` own conversion from print tokens to break models with builder-local token selection and spacing.
+- `src/format/impl/format_layout_projection.h|cpp` own cost-region projection, preserving complete structural roles, boundary delimiters, and separator trivia.
+- `src/format/impl/format_layout_tree.h|cpp` own stable source-layout owners, immutable complete item models, and retained cost-region models and solutions.
 - `src/format/impl/format_break_model_dump.h|cpp` own serialization of break-decision trees.
 - `src/format/impl/format_break_model_inline_helpers.h` owns small inline accessors for optional break model tokens.
 - `src/format/impl/format_compact_layout.h|cpp` own exact compact physical-line measurement and its immutable-model cache.
 - `src/format/impl/format_delimiter_stack.h|cpp` own shared transparent parenthesis-stack recognition for solving and emission, preserving their distinct closing-blank-line policies.
-- `src/format/impl/format_chain_continuation.h|cpp` own uniform chain constraints, render bases, and flat indentation across mandatory block and directive boundaries.
-- `src/format/impl/format_list_continuation.h|cpp` own virtual list-delimiter planning, selected continuation indentation, and list boundary state across blocks and preprocessor directives.
+- `src/format/impl/format_chain_continuation.h|cpp` own persistent complete-chain placements, shared operator constraints, and render bases across mandatory boundaries.
+- `src/format/impl/format_list_continuation.h|cpp` own persistent list placements and lexical boundary queries across blocks and preprocessor directives.
 - `src/format/impl/format_syntax_helpers.h` owns shared direct-child lexical queries used by structural printing and continuation planning.
 - `src/format/impl/format_break_solver.h|cpp` own the break optimizer; see [break_solver.md].
 - `src/format/impl/format_choice_history.h|cpp` own immutable choice-history storage, lookup, concatenation, and materialization.
 - `src/format/impl/format_candidates.h|cpp` own layout-candidate value storage, overflow accounting, cost comparison, continuation-state equivalence, and dominance pruning.
-- `src/format/impl/format_break_solution.h` owns the materialized layout data shared by solving, emission, diagnostics, and declaration analysis.
+- `src/format/impl/format_break_solution.h` owns the materialized layout data shared by solving, lowering, and diagnostics.
 - `src/format/impl/format_value_profile.h|cpp` own the sparse value profile shared by break optimization costs.
 - `src/format/impl/format_config.h|cpp` own formatter configuration, ignore files, upward discovery, inheritance, parsing, and caching.
-- `src/format/impl/format_declaration_layout.h|cpp` own declaration-value advance analysis, declaration grouping, and exact reuse of pre-solved layouts.
+- `src/format/impl/format_declaration_layout.h|cpp` own declaration-group scheduling and boundary resolution from the selected output program.
 - `src/format/impl/format_model_text_stats.h` owns optional model-to-text phase timings.
 - `src/format/impl/format_include_sort.h|cpp` own include run normalization, grouping, main-include detection, and sorting.
 - `src/format/impl/format_model.h|cpp` own format model storage/construction, parent/depth maintenance, and shared node-dependent compact-body facts.
@@ -56,7 +65,7 @@ Print-token construction materializes canonical known-token text and immutable s
 - `vendor/tree-sitter/tree-sitter-cpp/src/scanner.c` owns custom tree-sitter external tokens, including runtime-configured macro identifiers, raw string delimiter state, and preprocessor directive newline ownership; see [scanner.md](scanner.md).
 - `src/format/impl/format_print_token.h` owns print-token data and borrowed-source metadata.
 - `src/format/impl/format_print_token_builder.h|cpp` own normalized syntax traversal through a private inherited context, centralized print-token construction, ancestry facts, comment continuations, and initial adjacent-source spacing.
-- `src/format/impl/format_pretty_printer.h|cpp` own mandatory line breaks, segment build/solve/emit orchestration, structural brace/statement indentation, and syntax-based comment placement.
+- `src/format/impl/format_pretty_printer.h|cpp` own mandatory boundaries, structural indentation, syntax-based comment placement, and coordination of region projection, solving, and program construction.
 - `src/format/impl/format_output.h|cpp` own physical text, columns, pending line indentation, macro continuation suffixes, and deferred comment and continuation alignment through a syntax-independent output buffer.
 - `src/format/impl/format_preprocessor_text.h|cpp` own directive text canonicalization, preserved payload indentation, and conditional payload terminal-comma normalization.
 - `src/format/impl/format_raw_macro.h|cpp` own raw macro replacement whitespace normalization, identification of alignable continuation suffixes, and the raw preprocessor line-preservation helpers used by the pretty printer.

@@ -22,6 +22,7 @@ This document owns shared terminology used across the `strictfmt` documentation.
 - **formatter configuration**: The effective `FormatterConfig` loaded from `.cpp-format` files, inheritance, and built-in defaults.
 - **ignore file**: A `.cpp-format-ignore` file that controls which paths the formatter skips.
 - **include run**: A contiguous include area that the formatter may preserve or regroup according to formatter configuration.
+- **layout tree**: The complete, persistent source ownership topology and immutable structural layout models, retained with cost-region projections and their selected solutions and completed output program for one formatting operation.
 - **line break opportunity**: An optional boundary where the break optimizer may choose a split layout.
 - **line ending style**: The LF, CRLF, or CR newline spelling preserved for formatted source when the input uses one style.
 - **list**: A formatter-owned grammar list whose separators, when present, are commas. Comma-operator chains are not lists.

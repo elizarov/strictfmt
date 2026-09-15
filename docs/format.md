@@ -639,7 +639,7 @@ Remaining ties prefer compact choices in source order.
 
 #### Break-Decision Trees
 
-The solver builds one tree per formatted segment. The dump retains tokens, decision nodes (`*`), and some grouping nodes; the trees below also show collapsed syntax layers (`-`) so raw depth can be counted.
+The solver optimizes one cost-region projection per formatted segment. The dump retains tokens, decision nodes (`*`), and some grouping nodes; the trees below also show collapsed syntax layers (`-`) so raw depth can be counted.
 
 ##### Surcharges and Discounts
 

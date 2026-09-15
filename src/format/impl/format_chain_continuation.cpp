@@ -4,31 +4,25 @@
 #include <unordered_map>
 #include <unordered_set>
 
-#include "format/impl/format_break_emitter.h"
-#include "format/impl/format_break_model_builder.h"
+#include "format/impl/format_layout_tree.h"
 #include "format/impl/format_break_model_inline_helpers.h"
 
 struct FormatChainContinuation::Impl {
-    explicit Impl(std::span<const PrintToken> tokens) : tokens_(tokens) {}
+    explicit Impl(FormatLayoutTree& tree) : tree_(tree), tokens_(tree.Tokens()) {}
+
+    FormatLayoutTree& tree_;
 
     std::span<const PrintToken> tokens_;
-    std::unordered_set<const SyntaxNode*> requiredChainBreakOperators_;
-    std::unordered_map<const SyntaxNode*, const SyntaxNode*> requiredChainBreakGroups_;
-    std::unordered_map<const SyntaxNode*, FormatBreakChainLayout> requiredChainBreakLayouts_;
-    std::unordered_set<const SyntaxNode*> pendingCrossBlockChainGroups_;
 
-    static const SyntaxNode* CrossBlockSourceItem(const SyntaxNode* block) {
-        for (
-            const SyntaxNode* cursor = block;
-            cursor != nullptr && cursor->parent != nullptr;
-            cursor = cursor->parent
-        ) {
-            if (SyntaxNodeHasClass(*cursor->parent, SyntaxNodeClass::SourceItemScope)) {
-                return cursor;
-            }
-        }
-        return nullptr;
-    }
+    struct Placement {
+        const FormatBreakNode* owner = nullptr;
+        std::optional<int> baseIndent;
+        bool uniform = false;
+    };
+
+    std::unordered_map<const SyntaxNode*, Placement> placements_;
+    std::unordered_map<const SyntaxNode*, const SyntaxNode*> requiredChainBreakGroups_;
+    std::unordered_set<const SyntaxNode*> pendingCrossBlockChainGroups_;
 
     static bool HasUniformSplitForm(const FormatBreakNode& node) {
         if (node.kind != FormatBreakNodeKind::Chain || node.operators.empty()) {
@@ -80,17 +74,14 @@ struct FormatChainContinuation::Impl {
         ) {
             const SyntaxNode* group = FormatBreakTokenValue(node.operators.front()).node;
             pendingCrossBlockChainGroups_.insert(group);
+            auto& placement = placements_[group];
+            placement.owner = &node;
+            placement.uniform = HasUniformSplitForm(node);
             for (const FormatBreakToken& token : node.operators) {
                 const PrintToken& printToken = FormatBreakTokenValue(token);
                 if (printToken.node != nullptr) {
                     requiredChainBreakGroups_.insert_or_assign(printToken.node, group);
-                    requiredChainBreakLayouts_[printToken.node].flatSplitIndent = node.flatSplitIndent;
-                    if (HasUniformSplitForm(node) && (
-                        node.chainKind != FormatBreakChainKind::Ternary ||
-                        printToken.syntaxKind == SyntaxNodeKind::Colon
-                    )) {
-                        requiredChainBreakOperators_.insert(printToken.node);
-                    }
+
                 }
             }
         }
@@ -98,9 +89,9 @@ struct FormatChainContinuation::Impl {
     }
 
     void RecordCrossBlockChainBaseIndents(int baseIndent, const SyntaxNode* selectedGroup = nullptr) {
-        for (const auto& [operatorNode, group] : requiredChainBreakGroups_) {
-            if (pendingCrossBlockChainGroups_.contains(group) && (selectedGroup == nullptr || group == selectedGroup)) {
-                requiredChainBreakLayouts_[operatorNode].baseIndent = baseIndent;
+        for (const auto* group : pendingCrossBlockChainGroups_) {
+            if (selectedGroup == nullptr || group == selectedGroup) {
+                placements_.at(group).baseIndent = baseIndent;
             }
         }
         if (selectedGroup == nullptr) {
@@ -154,74 +145,79 @@ struct FormatChainContinuation::Impl {
             return;
         }
         const SyntaxNode* block = directive ? token.node : (token.node == nullptr ? nullptr : token.node->parent);
-        const SyntaxNode* item = CrossBlockSourceItem(block);
-        if (item == nullptr) {
+        const auto ownerId = tree_.SourceItem(block);
+        if (ownerId == 0) {
             return;
         }
-        size_t begin = currentTokenIndex_;
-        while (begin > 0 && PrintTokenSyntaxPathContains(tokens_[begin - 1], item)) {
-            --begin;
-        }
-        size_t end = currentTokenIndex_ + 1;
-        size_t afterBlock = end;
-        while (end < tokens_.size() && PrintTokenSyntaxPathContains(tokens_[end], item)) {
+        const auto& item = tree_.Owner(ownerId);
+        const size_t end = item.end;
+        size_t afterBlock = currentTokenIndex_ + 1;
+        for (size_t index = afterBlock; index < end; ++index) {
             if (
-                tokens_[end].syntaxKind == SyntaxNodeKind::RightBrace &&
-                tokens_[end].node != nullptr &&
-                tokens_[end].node->parent == block
+                tokens_[index].syntaxKind == SyntaxNodeKind::RightBrace &&
+                tokens_[index].node != nullptr &&
+                tokens_[index].node->parent == block
             ) {
-                afterBlock = end + 1;
+                afterBlock = index + 1;
             }
-            ++end;
         }
         if (!directive && !MayHaveCrossBlockChain(afterBlock, end)) {
             return;
         }
-        FormatBreakModel model =
-            BuildFormatBreakModel(std::span<const PrintToken>{tokens_.data() + begin, end - begin});
+        const FormatBreakModel& model = tree_.CompleteModel(ownerId);
         if (model.root != nullptr) {
             CollectCrossBlockChainBreaks(*model.root, token, directive);
         }
     }
 
-    void Constrain(FormatBreakModelContext& effectiveContext) const {
-        if (!requiredChainBreakOperators_.empty()) {
-            effectiveContext.requiredChainBreakOperators = &requiredChainBreakOperators_;
-        }
-        if (!requiredChainBreakLayouts_.empty()) {
-            effectiveContext.requiredChainBreakLayouts = &requiredChainBreakLayouts_;
-        }
-    }
-    std::optional<int> ContinuationIndent(const PrintToken& token) const {
-        const auto layout = requiredChainBreakLayouts_.find(token.node);
-        if (layout == requiredChainBreakLayouts_.end() || !layout->second.baseIndent) {
+    std::optional<FormatLayoutChainPlacement> Lookup(const SyntaxNode* token) const {
+        const auto group = requiredChainBreakGroups_.find(token);
+        if (group == requiredChainBreakGroups_.end()) {
             return std::nullopt;
         }
-        return *layout->second.baseIndent + (layout->second.flatSplitIndent ? 0 : 1);
+        const auto& placement = placements_.at(group->second);
+        return FormatLayoutChainPlacement{
+            .baseIndent = placement.baseIndent,
+            .flatSplitIndent = placement.owner->flatSplitIndent,
+            .requiredBreak = placement.uniform &&
+                (placement.owner->chainKind != FormatBreakChainKind::Ternary || token->kind == SyntaxNodeKind::Colon),
+        };
     }
-    void AcceptEmission(std::span<const FormatBreakChainIndent> chains) {
-        for (const FormatBreakChainIndent& chain : chains) {
-            for (const FormatBreakToken& op : chain.chain->operators) {
-                const auto group = requiredChainBreakGroups_.find(FormatBreakTokenValue(op).node);
-                if (group != requiredChainBreakGroups_.end()) {
-                    RecordCrossBlockChainBaseIndents(chain.baseIndent, group->second);
-                }
+    std::optional<int> ContinuationIndent(const PrintToken& token) const {
+        const auto layout = Lookup(token.node);
+        if (!layout || !layout->baseIndent) {
+            return std::nullopt;
+        }
+        return *layout->baseIndent + (layout->flatSplitIndent ? 0 : 1);
+    }
+    void RecordSelection(const FormatBreakNode& chain, int baseIndent) {
+        for (const FormatBreakToken& op : chain.operators) {
+            const auto group = requiredChainBreakGroups_.find(FormatBreakTokenValue(op).node);
+            if (group != requiredChainBreakGroups_.end()) {
+                RecordCrossBlockChainBaseIndents(baseIndent, group->second);
             }
         }
     }
+
 };
 
-FormatChainContinuation::FormatChainContinuation(std::span<const PrintToken> tokens) :
-    impl_(std::make_unique<Impl>(tokens)) {}
+FormatChainContinuation::FormatChainContinuation(FormatLayoutTree& tree) : impl_(std::make_unique<Impl>(tree)) {}
 FormatChainContinuation::~FormatChainContinuation() = default;
 void FormatChainContinuation::AnalyzeBlock(size_t tokenIndex) { impl_->AnalyzeBoundary(tokenIndex, false); }
 void FormatChainContinuation::AnalyzeDirective(size_t tokenIndex) { impl_->AnalyzeBoundary(tokenIndex, true); }
-void FormatChainContinuation::Constrain(FormatBreakModelContext& context) const { impl_->Constrain(context); }
+void FormatChainContinuation::Constrain(FormatLayoutRegionContext& context) const {
+    if (!impl_->placements_.empty()) {
+        context.chainPlacements = this;
+    }
+}
+std::optional<FormatLayoutChainPlacement> FormatChainContinuation::Lookup(const SyntaxNode* token) const {
+    return impl_->Lookup(token);
+}
 std::optional<int> FormatChainContinuation::ContinuationIndent(const PrintToken& token) const {
     return impl_->ContinuationIndent(token);
 }
-void FormatChainContinuation::AcceptEmission(std::span<const FormatBreakChainIndent> chains) {
-    impl_->AcceptEmission(chains);
+void FormatChainContinuation::RecordSelection(const FormatBreakNode& chain, int baseIndent) {
+    impl_->RecordSelection(chain, baseIndent);
 }
 void FormatChainContinuation::FinishBoundary(int fallbackBaseIndent) {
     impl_->RecordCrossBlockChainBaseIndents(fallbackBaseIndent);

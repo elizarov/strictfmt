@@ -38,6 +38,7 @@ public:
     const FormatOutputState& State() const;
     int CurrentColumn(int structuralIndent) const;
     int CurrentLineIndentLevel() const;
+    size_t CurrentLineIndex() const;
     void SetPendingIndent(std::optional<int> indent);
     void ForceColumnZero();
 

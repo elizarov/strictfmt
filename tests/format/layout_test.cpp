@@ -8,16 +8,18 @@
 #include <string>
 #include <string_view>
 #include <utility>
+#include <unordered_set>
 
 #include "format/impl/format_model.h"
 #include "format/impl/format_output.h"
 #include "format/impl/format_choice_history.h"
 #include "format/impl/format_candidates.h"
 #include "format/impl/format_delimiter_stack.h"
-#include "format/impl/format_break_emitter.h"
+#include "format/impl/format_layout_program.h"
 #include "format/impl/format_break_model.h"
 #include "format/impl/format_list_continuation.h"
 #include "format/impl/format_chain_continuation.h"
+#include "format/impl/format_layout_tree.h"
 #include "format/impl/format_config.h"
 #include "format/impl/format_model_parse.h"
 #include "format/impl/format_print_token_builder.h"
@@ -91,6 +93,91 @@ void TestIncrementalMacroParsing() {
         Check(std::string_view(actual.get()) == expected.get(), "incremental macro tree matches a fresh parse");
         source = updated;
     }
+}
+
+void TestLayoutProgram() {
+    FormatLayoutProgramBuilder builder(4, 80);
+    builder.SetTokenCount(2);
+    PrintToken first{.sourceIndex = 0};
+    PrintToken second{.sourceIndex = 1};
+    {
+        auto scope = builder.TokenScope(first, 17);
+        builder.Write("value", 1);
+        builder.NewLine();
+        builder.SetPendingIndent(2);
+    }
+    builder.ForceColumnZero();
+    builder.Write("#define VALUE 2", 0);
+    builder.NewLine();
+    {
+        auto scope = builder.TokenScope(second, 17);
+        builder.SetPendingIndent(2);
+        builder.Write("+ VALUE", 0);
+        builder.NewLine();
+        builder.BlankLine();
+        builder.ReopenLastLine(true);
+        builder.Write(";", 0);
+    }
+    const auto program = builder.Finish();
+    const std::string expected = "    value\n#define VALUE 2\n        + VALUE;\n";
+    Check(EmitFormatLayoutProgram(program, 4, 80) == expected, "selected anchors survive directives and reopen");
+    Check(EmitFormatLayoutProgram(program, 4, 80) == expected, "completed layout replays without mutation");
+    Check(program.tokenLines[0].first == 0 && program.tokenLines[0].last == 0 &&
+        program.tokenLines[1].first == 2 && program.tokenLines[1].last == 2, "selected source-token line ranges");
+    Check(std::any_of(program.anchors.begin(), program.anchors.end(), [](const auto& anchor) {
+        return anchor.owner == 17 && anchor.indent == 2;
+    }), "continuation anchor retains its syntax owner");
+    bool rejected = false;
+    try { builder.NewLine(); } catch (const std::logic_error&) { rejected = true; }
+    Check(rejected, "completed program rejects further planning");
+
+    FormatOutput lines(4, 80);
+    lines.Write("one\ntwo", 0);
+    Check(lines.CurrentLineIndex() == 1, "embedded newline is measured");
+    lines.BlankLine();
+    Check(lines.CurrentLineIndex() == 3, "blank line is measured");
+    lines.ReopenLastLine(true);
+    Check(lines.CurrentLineIndex() == 1, "reopen removes both boundary newlines");
+    lines.NewLine();
+    lines.AppendCompleteLines("three\nfour\n");
+    Check(lines.CurrentLineIndex() == 4, "complete lines are measured");
+}
+
+void TestResolvedLayoutIndentation() {
+    FormatLayoutProgramBuilder builder(4, 80);
+    builder.Write("first;", 0);
+    builder.NewLine();
+    builder.SetPendingIndent(2);
+    builder.GroupBoundary({}, false);
+    builder.Write("next;", 0);
+    auto program = builder.Finish();
+    program.groupBoundaries[0].required = true;
+    Check(EmitFormatLayoutProgram(program, 4, 80) == "first;\n\n        next;\n",
+        "late blank-line insertion cannot reset a resolved write indentation");
+
+    SyntaxNode comments;
+    auto write = [&](auto& output) {
+        output.Write("#define ACTION", 0);
+        output.NewLine(true);
+        output.Write("one;", 0);
+        output.BlankLine(true);
+        output.Write("longer;", 0);
+        output.NewLine();
+        output.Write("int a;", 0);
+        output.WriteComment("// first", 0, &comments, FormatOutputComment::Trailing, true);
+        output.NewLine();
+        output.Write("int longer;", 0);
+        output.WriteComment("// second", 0, &comments, FormatOutputComment::Trailing, true);
+        output.NewLine();
+        output.WriteComment("// continued", 1, &comments, FormatOutputComment::Continuation, true);
+    };
+    FormatOutput reference(4, 80);
+    write(reference);
+    FormatLayoutProgramBuilder recorded(4, 80);
+    write(recorded);
+    const auto selected = recorded.Finish();
+    Check(EmitFormatLayoutProgram(selected, 4, 80) == reference.Finish(),
+        "resolved anchors preserve macro suffix and comment alignment semantics");
 }
 
 void TestOutput() {
@@ -279,6 +366,79 @@ void TestParseMacroConfiguration() {
     check("RIGHT", false);
 }
 
+void TestPersistentLayoutOwners() {
+    FormatterConfig config;
+    auto syntax = ParseFormatModel("int value = left + [] { work(); return middle; }() + right;", config);
+    Check(syntax.parse.ok, "persistent layout fixture parses");
+    const auto tokens = BuildPrintTokens(syntax, config.tabWidth);
+    FormatLayoutTree tree(tokens);
+    const auto ownerId = tree.SourceItem(tokens.front().node);
+    Check(ownerId != 0, "source item has a stable layout owner");
+    const auto& owner = tree.Owner(ownerId);
+    const auto& complete = tree.CompleteModel(ownerId);
+    const auto* originalRoot = complete.root;
+    const auto* firstToken = &tokens.front();
+    const auto& first = tree.AddRegion(std::span(tokens).first(3), {});
+    const auto* firstRoot = first.model.root;
+    for (size_t index = 3; index < tokens.size(); ++index) {
+        tree.AddRegion(std::span(tokens).subspan(index, 1), {});
+    }
+    Check(&owner == &tree.Owner(ownerId) && complete.root == originalRoot &&
+        &complete == &tree.CompleteModel(ownerId), "cost regions preserve enclosing owners and complete models");
+    Check(first.model.root == firstRoot && first.tokens.front().node == firstToken->node &&
+        &first.tokens.front() != firstToken, "regions retain stable token projections independently");
+}
+
+void TestPersistentHeaderIndent() {
+    FormatterConfig config;
+    auto syntax = ParseFormatModel("Record::Record() : first_(0), last_(1) { Work(); Done(); }", config);
+    Check(syntax.parse.ok, "persistent header fixture parses");
+    const auto tokens = BuildPrintTokens(syntax, config.tabWidth);
+    FormatLayoutTree tree(tokens);
+    tree.BeginToken(tokens.front(), 2);
+    for (const auto& token : tokens) tree.BeginToken(token, 7);
+    size_t begin = 0;
+    size_t end = 0;
+    for (size_t index = 0; index < tokens.size(); ++index) {
+        if (FormatTokenText(tokens[index]) == "last_") begin = index;
+        if (tokens[index].syntaxKind == SyntaxNodeKind::LeftBrace) { end = index + 1; break; }
+    }
+    FormatLayoutRegionContext context;
+    tree.ConstrainBodyHeader(context, std::span(tokens).subspan(begin, end - begin));
+    Check(context.continuedBodyHeader != nullptr && context.continuedBodyHeaderOwnerIndent == 2,
+        "later continuation indentation cannot replace the declaration owner's structural indentation");
+}
+
+void TestCompleteConditionalLayout() {
+    FormatterConfig config;
+    auto syntax = ParseFormatModel("int values[] = {\n#if ENABLED\n1,\n#else\n2,\n#endif\n3};", config);
+    Check(syntax.parse.ok, "complete conditional fixture parses");
+    const auto tokens = BuildPrintTokens(syntax, config.tabWidth);
+    FormatLayoutTree tree(tokens);
+    const auto& model = tree.CompleteModel(tree.SourceItem(tokens.front().node));
+    std::unordered_set<const SyntaxNode*> retained;
+    const auto visit = [&](auto&& self, const FormatBreakNode& node) -> void {
+        const auto token = [&](const FormatBreakToken& value) { if (value.token != nullptr) retained.insert(value.token->node); };
+        token(node.token);
+        token(node.leadingTrailingComment);
+        token(node.sourceTrailingComma);
+        for (const auto& op : node.operators) token(op);
+        for (const auto& comments : node.commentsBeforeOperators) for (const auto& comment : comments) token(comment);
+        for (const auto* child : node.children) self(self, *child);
+        for (const auto* operand : node.operands) self(self, *operand);
+        for (const auto& item : node.items) {
+            self(self, *item.node);
+            token(item.separator);
+            token(item.trailingComment);
+        }
+    };
+    visit(visit, *model.root);
+    for (const auto& token : tokens) {
+        Check(token.kind == PrintTokenKind::BlankLine || retained.contains(token.node),
+            "complete layouts retain directive headers, branch children, and separators");
+    }
+}
+
 void TestChainContinuation() {
     FormatterConfig config;
     FormatModel model = ParseFormatModel(
@@ -286,7 +446,8 @@ void TestChainContinuation() {
     );
     Check(model.parse.ok, "chain continuation fixture parses");
     const auto tokens = BuildPrintTokens(model, config.tabWidth);
-    FormatChainContinuation continuation(tokens);
+    FormatLayoutTree tree(tokens);
+    auto& continuation = tree.Chains();
     size_t blocks = 0;
     for (size_t index = 0; index < tokens.size(); ++index) {
         const PrintToken& token = tokens[index];
@@ -295,28 +456,32 @@ void TestChainContinuation() {
         }
         ++blocks;
         continuation.AnalyzeBlock(index);
-        FormatBreakModelContext context;
+        FormatLayoutRegionContext context;
         continuation.Constrain(context);
         if (blocks == 1) {
-            Check(context.requiredChainBreakOperators == nullptr,
+            Check(context.chainPlacements == nullptr,
                 "operators inside the function body do not cross its opening brace");
         } else {
-            Check(context.requiredChainBreakOperators != nullptr && context.requiredChainBreakOperators->size() == 2,
+            Check(context.chainPlacements != nullptr,
                 "only the two enclosing plus operators cross the lambda body");
             const SyntaxNode* body = token.node->parent;
             for (const PrintToken& candidate : tokens) {
                 if (candidate.syntaxKind == SyntaxNodeKind::Plus) {
-                    Check(context.requiredChainBreakOperators->contains(candidate.node) !=
+                    Check(context.chainPlacements->Lookup(candidate.node).has_value() !=
                         PrintTokenSyntaxPathContains(candidate, body), "inner and enclosing chain operators stay distinct");
                 }
             }
             continuation.FinishBoundary(3);
             continuation.Constrain(context);
-            Check(context.requiredChainBreakLayouts != nullptr && context.requiredChainBreakLayouts->size() == 2,
-                "enclosing operators retain their cross-block render base");
-            for (const auto& [node, layout] : *context.requiredChainBreakLayouts) {
-                Check(layout.baseIndent == 3, "unresolved chain render bases use the selected block fallback");
+            size_t constrained = 0;
+            for (const auto& candidate : tokens) {
+                if (const auto layout = context.chainPlacements->Lookup(candidate.node)) {
+                    Check(layout->baseIndent == 3 && layout->requiredBreak,
+                        "operators share the selected placement of their complete chain owner");
+                    ++constrained;
+                }
             }
+            Check(constrained == 2, "only enclosing operators reference the persistent chain placement");
         }
     }
     Check(blocks == 2, "both function and lambda block boundaries were exercised");
@@ -353,14 +518,15 @@ void TestListContinuation() {
         return PrintToken{.kind = PrintTokenKind::Known, .syntaxKind = node.kind, .node = &node};
     };
     const std::array tokens{token(open), token(blockOpen), token(blockClose), token(comma), token(close)};
-    FormatListContinuation continuation(tokens);
+    FormatLayoutTree tree(tokens);
+    auto& continuation = tree.Lists();
     const auto* plan = continuation.PlanBlock(1);
-    Check(plan != nullptr && plan->virtualDelimiters.size() == 1, "block plan retains its enclosing list delimiter");
-    Check(plan->virtualDelimiters.front().forceSplit, "following list item requires the virtual list to split");
-    const std::array selected{FormatBreakSplitList{&open, 3, 1}};
-    Check(continuation.AcceptBlock(selected) == 3, "selected list indentation is retained across the block");
-    Check(!continuation.TakeBoundary(tokens[3], FormatListContinuationKind::Block), "list continuation waits for its block to close");
-    continuation.CloseBlock(tokens[2], &tokens[3]);
+    Check(plan != nullptr && plan->listBoundaries.size() == 1, "block plan retains its enclosing list delimiter");
+    Check(plan->listBoundaries.front().forceSplit, "following list item requires the complete list to split");
+    continuation.RecordSelection(&open, 3, 1);
+    Check(continuation.ResolveBlock() == 3, "selected list indentation is retained across the block");
+    Check(!continuation.BoundaryFor(tokens[1], FormatListContinuationKind::Block), "body header precedes its list boundary");
+    continuation.AfterBlock(tokens[2], &tokens[3]);
 
     SyntaxNode nested;
     nested.kind = SyntaxNodeKind::ArgumentList;
@@ -372,12 +538,12 @@ void TestListContinuation() {
     nestedComma.kind = SyntaxNodeKind::Comma;
     nestedComma.parent = &nested;
     nested.children = {&nestedOpen, &nestedComma};
-    Check(!continuation.TakeBoundary(token(nestedComma), FormatListContinuationKind::Block), "nested list separator cannot consume its enclosing continuation");
-    const auto separator = continuation.TakeBoundary(tokens[3], FormatListContinuationKind::Block);
+    Check(!continuation.BoundaryFor(token(nestedComma), FormatListContinuationKind::Block), "nested list separator cannot consume its enclosing continuation");
+    const auto separator = continuation.BoundaryFor(tokens[3], FormatListContinuationKind::Block);
     Check(separator && !separator->beforeToken && separator->indent == 3, "separator breaks after itself at the selected item indent");
-    const auto closer = continuation.TakeBoundary(tokens[4], FormatListContinuationKind::Block);
+    const auto closer = continuation.BoundaryFor(tokens[4], FormatListContinuationKind::Block);
     Check(closer && closer->beforeToken && closer->indent == 1, "closer breaks before itself at the selected close indent");
-    Check(!continuation.TakeBoundary(tokens[4], FormatListContinuationKind::Block), "closer consumes its continuation once");
+    Check(continuation.BoundaryFor(tokens[4], FormatListContinuationKind::Block)->indent == 1, "boundary lookup never consumes the selected owner placement");
 }
 
 
@@ -388,23 +554,19 @@ void TestChoiceHistory() {
     Check(history.Concat(nullptr, latest) == latest && history.Concat(latest, nullptr) == latest,
         "empty history is a concatenation identity");
     Check(FormatChoiceHistory::Find(latest, 1) == FormatBreakChoice::Compact, "lookup gives the latest matching record");
-    auto records = history.AddContinuationLines(latest, 1, 4);
-    records = history.AddContinuationLines(records, 1, 7);
-    records = history.AddAttachedOperator(records, 9);
+    auto records = history.AddAttachedOperator(latest, 9);
     records = history.AddAttachedOperator(records, 4);
     records = history.AddAttachedOperator(records, 9);
     const auto solution = FormatChoiceHistory::Materialize(records, 4);
     Check(solution.choices[1] == FormatBreakChoice::Split && solution.indentLevels[1] == 2,
         "materialization retains the first choice and render base");
-    Check(solution.declarationValueContinuationLines[1] == 7, "materialization retains the last continuation count");
     Check(solution.attachedChainOperators == std::vector<std::uint32_t>({4, 9}), "attached operator indexes are sorted and unique");
     Check(solution.choices[3] == FormatBreakChoice::Compact && solution.indentLevels[3] == -1,
         "unassigned nodes retain materialization defaults");
-    auto branch = history.AddContinuationLines(first, 2, 3);
-    branch = history.AddChoice(branch, 2, FormatBreakChoice::Split, 5);
+    auto branch = history.AddChoice(first, 2, FormatBreakChoice::Split, 5);
     const auto branchSolution = FormatChoiceHistory::Materialize(branch, 4);
-    Check(branchSolution.choices[2] == FormatBreakChoice::Compact && branchSolution.indentLevels[2] == -1,
-        "metadata records preserve their existing position in choice precedence");
+    Check(branchSolution.choices[2] == FormatBreakChoice::Split && branchSolution.indentLevels[2] == 5,
+        "branches retain their own choices and render bases");
     for (int index = 0; index < 1024; ++index) {
         records = history.AddChoice(records, 99, FormatBreakChoice::Split, index);
     }
@@ -529,8 +691,13 @@ void TestDelimiterStack() {
 int main() {
     try {
         TestOutput();
+        TestLayoutProgram();
+        TestResolvedLayoutIndentation();
         TestParseMacroConfiguration();
         TestIncrementalMacroParsing();
+        TestPersistentLayoutOwners();
+        TestPersistentHeaderIndent();
+        TestCompleteConditionalLayout();
         TestChainContinuation();
         TestListContinuation();
         TestChoiceHistory();

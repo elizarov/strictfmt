@@ -139,7 +139,7 @@ endif()
 add_library(strictfmt_core STATIC
     src/format/format.cpp
     src/format/impl/format_break_cost.cpp
-    src/format/impl/format_break_emitter.cpp
+    src/format/impl/format_layout_lowerer.cpp
     src/format/impl/format_break_model.cpp
     src/format/impl/format_break_model_builder.cpp
     src/format/impl/format_break_model_dump.cpp
@@ -160,6 +160,9 @@ add_library(strictfmt_core STATIC
     src/format/impl/format_model_parse.cpp
     src/format/impl/format_print_token_builder.cpp
     src/format/impl/format_list_continuation.cpp
+    src/format/impl/format_layout_program.cpp
+    src/format/impl/format_layout_tree.cpp
+    src/format/impl/format_layout_projection.cpp
     src/format/impl/format_output.cpp
     src/format/impl/format_pretty_printer.cpp
     src/format/impl/format_preprocessor_text.cpp

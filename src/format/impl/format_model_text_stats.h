@@ -2,7 +2,7 @@
 
 #include <chrono>
 
-// Optional accumulated timings for the model-to-text pipeline and its advance analyses.
+// Optional accumulated timings for the model-to-text pipeline; emission includes selected-layout lowering and final replay.
 struct FormatModelTextStats {
     std::chrono::nanoseconds tokenize{};
     std::chrono::nanoseconds print{};

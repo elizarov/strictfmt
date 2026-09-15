@@ -37,11 +37,6 @@ struct SyntaxNode {
     size_t depth = 0;
     SyntaxChildList children;
 
-    // Break model scratch storage. These fields are valid only for the active formatting pass mark.
-    mutable const PrintToken* formatPrintToken = nullptr;
-    mutable std::uint32_t formatSelectionMark = 0;
-    mutable std::uint32_t formatTokenMark = 0;
-    mutable bool formatSpaceBefore = false;
     mutable std::uint8_t compactCallableBodyCache = 0;
 };
 

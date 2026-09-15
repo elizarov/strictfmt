@@ -7,8 +7,6 @@
 #include <span>
 #include <string>
 #include <string_view>
-#include <unordered_map>
-#include <unordered_set>
 #include <vector>
 
 #include "format/impl/format_spacing.h"
@@ -77,6 +75,8 @@ struct FormatBreakListItem {
 
 struct FormatBreakNode {
     int id = 0;
+    const SyntaxNode* syntaxOwner = nullptr;
+    const FormatBreakNode* origin = nullptr;
     int rawDepth = 0;
     int structuralDepth = 0;
     int breakCost = 0;
@@ -90,6 +90,7 @@ struct FormatBreakNode {
     bool flatSplitIndent = false;
     bool suppressCompactDelimiterPadding = false;
     bool functionSignatureHasBody = false;
+    const SyntaxNode* bodySyntax = nullptr;
     bool bodyHeaderIsLambda = false;
     bool bodyHeaderSingleStatementBody = false;
     bool bodyHeaderDetachBodyAfterExpandedHeader = false;
@@ -106,6 +107,7 @@ struct FormatBreakNode {
     std::optional<int> requiredChainBreakBaseIndent;
     const SyntaxNode* declarationValueOwner = nullptr;
     FormatBreakToken leadingTrailingComment;
+    FormatBreakToken sourceTrailingComma;
     std::span<FormatBreakNode*> children;
     std::vector<FormatBreakListItem> items;
     std::span<FormatBreakNode*> operands;
@@ -165,34 +167,6 @@ struct FormatBreakModel {
     FormatBreakArena<FormatBreakToken> tokens;
     FormatBreakNode* root = nullptr;
     bool hasLayoutChoice = false;
-};
-
-struct FormatBreakVirtualDelimiter {
-    const SyntaxNode* open = nullptr;
-    FormatBreakToken close;
-    bool forceSplit = false;
-};
-
-struct FormatBreakChainLayout {
-    std::optional<int> baseIndent;
-    bool flatSplitIndent = false;
-};
-
-struct FormatBreakLeadingSeparator {
-    const SyntaxNode* token = nullptr;
-    int indent = 0;
-};
-
-struct FormatBreakModelContext {
-    // A separator starting a physical line after its preceding operand was emitted.
-    std::optional<FormatBreakLeadingSeparator> leadingSeparator;
-    std::vector<FormatBreakVirtualDelimiter> virtualDelimiters;
-    // A body whose header began in an earlier mandatory segment, with its enclosing scope's indentation.
-    const SyntaxNode* continuedBodyHeader = nullptr;
-    int continuedBodyHeaderOwnerIndent = 0;
-    const std::unordered_set<const SyntaxNode*>* requiredChainBreakOperators = nullptr;
-    const std::unordered_map<const SyntaxNode*, FormatBreakChainLayout>* requiredChainBreakLayouts = nullptr;
-    bool forceSplitStreamChain = false;
 };
 
 bool FormatBreakLeadingNameMatches(const FormatBreakNode& node, std::string_view candidate);

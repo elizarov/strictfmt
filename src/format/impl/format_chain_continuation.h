@@ -4,25 +4,28 @@
 #include <optional>
 #include <span>
 
-struct PrintToken;
-struct FormatBreakModelContext;
-struct FormatBreakChainIndent;
+#include "format/impl/format_layout_projection.h"
 
-// Keeps uniform chain breaks, render bases, and indentation policy consistent
-// across mandatory blocks and directives. Analyze each boundary before building
-// its segment, constrain subsequent models, accept emitted bases, then finish it
-// with a fallback for unresolved groups. Tokens and syntax nodes are borrowed for
-// this object's lifetime; constrained contexts borrow its maps until consumed.
+struct PrintToken;
+class FormatLayoutTree;
+struct FormatLayoutRegionContext;
+struct FormatBreakNode;
+
+// The layout tree owns one placement per complete chain. Operators reference
+// that owner instead of copying its indentation policy. Boundary analysis reads
+// retained models; selected render bases or explicit enclosing-scope bases
+// resolve placements before projecting later regions.
 class FormatChainContinuation {
 public:
-    explicit FormatChainContinuation(std::span<const PrintToken> tokens);
+    explicit FormatChainContinuation(FormatLayoutTree& tree);
     ~FormatChainContinuation();
 
     void AnalyzeBlock(size_t tokenIndex);
     void AnalyzeDirective(size_t tokenIndex);
-    void Constrain(FormatBreakModelContext& context) const;
+    void Constrain(FormatLayoutRegionContext& context) const;
+    std::optional<FormatLayoutChainPlacement> Lookup(const SyntaxNode* token) const;
     std::optional<int> ContinuationIndent(const PrintToken& token) const;
-    void AcceptEmission(std::span<const FormatBreakChainIndent> chains);
+    void RecordSelection(const FormatBreakNode& chain, int baseIndent);
     void FinishBoundary(int fallbackBaseIndent);
 
 private:

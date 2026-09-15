@@ -10,7 +10,7 @@
 #include <vector>
 
 #include "format/impl/format_break_model_builder.h"
-#include "format/impl/format_break_emitter.h"
+#include "format/impl/format_layout_lowerer.h"
 #include "format/impl/format_break_model_dump.h"
 #include "format/impl/format_break_model_inline_helpers.h"
 #include "format/impl/format_break_solver.h"
@@ -24,6 +24,7 @@
 #include "format/impl/format_list_continuation.h"
 #include "format/impl/format_syntax_helpers.h"
 #include "format/impl/format_chain_continuation.h"
+#include "format/impl/format_layout_tree.h"
 #include "tools/tools_common.h"
 #include "util/utf8.h"
 
@@ -253,9 +254,9 @@ bool KeepsStructuralCommentInBreakModel(const PrintToken& token) {
         (token.node != nullptr && token.node->parent != nullptr && IsFormatterOwnedValue(*token.node->parent));
 }
 
-class Printer final : private FormatBreakOutput {
+class LayoutPlanner final : private FormatLayoutSink {
 public:
-    Printer(
+    LayoutPlanner(
         const FormatterConfig& config,
         std::string_view sourcePath,
         FormatModelTextStats* stats,
@@ -269,15 +270,11 @@ public:
         tabWidth_(std::max(1, config.tabWidth)),
         output_(indentWidth_, config.columnLimit) {}
 
-    std::string Print(const std::vector<PrintToken>& tokens, size_t sourceSize) {
+    std::unique_ptr<const FormatLayoutTree> Plan(const std::vector<PrintToken>& tokens, size_t sourceSize) {
         activeTokens_ = &tokens;
-        listContinuation_ = std::make_unique<FormatListContinuation>(tokens);
-        chainContinuation_ = std::make_unique<FormatChainContinuation>(tokens);
-        std::vector<std::uint8_t> mandatoryBlockOpens(tokens.size());
-        for (size_t index = 0; index < tokens.size(); ++index) {
-            mandatoryBlockOpens[index] = IsMandatoryBlockOpen(index);
-        }
-        declarationLayout_ = std::make_unique<FormatDeclarationLayout>(config_, tokens, mandatoryBlockOpens, stats_);
+        layoutTree_ = std::make_unique<FormatLayoutTree>(tokens);
+        declarationLayout_ = std::make_unique<FormatDeclarationLayout>(tokens);
+        output_.SetTokenCount(tokens.size());
         output_.Reserve(std::max(tokens.size() * 8, sourceSize));
         pendingTokens_.reserve(64);
         const PrintToken* previous = nullptr;
@@ -291,6 +288,7 @@ public:
             const PrintToken* rawPrevious = index == 0 ? nullptr : &tokens[index - 1];
             const PrintToken* next = nextIndex < tokens.size() ? &tokens[nextIndex] : nullptr;
             const PrintToken* rawNext = RawNextToken(tokens, index);
+            auto tokenScope = output_.TokenScope(tokens[index], layoutTree_->FindOwner(tokens[index].node));
             PrintOne(tokens[index], previous, rawPrevious, next, rawNext);
             if (!IsStructuralTriviaToken(tokens[index])) {
                 previous = &tokens[index];
@@ -298,7 +296,10 @@ public:
         }
         activeTokens_ = nullptr;
         FlushPendingTokens();
-        return output_.Finish();
+        auto program = output_.Finish();
+        declarationLayout_->Resolve(*layoutTree_, program);
+        layoutTree_->Complete(std::move(program));
+        return std::move(layoutTree_);
     }
 
 private:
@@ -308,9 +309,8 @@ private:
     FormatBreakModelDumpWriter* breakModelDump_ = nullptr;
     int indentWidth_ = 4;
     int tabWidth_ = 4;
-    FormatOutput output_;
-    std::unique_ptr<FormatListContinuation> listContinuation_;
-    std::unique_ptr<FormatChainContinuation> chainContinuation_;
+    FormatLayoutProgramBuilder output_;
+    std::unique_ptr<FormatLayoutTree> layoutTree_;
     std::vector<PrintToken> pendingTokens_;
     std::unique_ptr<FormatDeclarationLayout> declarationLayout_;
     bool pendingSourceBlankLine_ = false;
@@ -320,7 +320,6 @@ private:
     bool firstIncludeRun_ = true;
     const std::vector<PrintToken>* activeTokens_ = nullptr;
     size_t currentTokenIndex_ = 0;
-    std::optional<int> emittedBlockOpenIndent_;
     std::vector<BraceRole> compactRightBraceRoles_;
     int switchDepth_ = 0;
     int parenDepth_ = 0;
@@ -652,14 +651,15 @@ private:
         }
     }
 
-    bool CanFlushPendingTokensCompact(const FormatBreakModelContext& context) const {
+    bool CanFlushPendingTokensCompact(const FormatLayoutRegionContext& context) const {
         if (pendingSourceBlankLine_ || context.continuedBodyHeader != nullptr || context.leadingSeparator.has_value()) {
             return false;
         }
-        if (!context.virtualDelimiters.empty() || (
-            context.requiredChainBreakOperators != nullptr &&
+        if (!context.listBoundaries.empty() || (
+            context.chainPlacements != nullptr &&
             std::any_of(pendingTokens_.begin(), pendingTokens_.end(), [&](const PrintToken& token) {
-                return token.node != nullptr && context.requiredChainBreakOperators->contains(token.node);
+                const auto layout = context.chainPlacements->Lookup(token.node);
+                return layout && layout->requiredBreak;
             })
         )) {
             return false;
@@ -745,6 +745,7 @@ private:
             if (token.spaceBefore && !output_.State().atLineStart && !omittedTerminalComma) {
                 Space();
             }
+            auto tokenScope = output_.TokenScope(token, layoutTree_->FindOwner(token.node));
             Write(FormatTokenText(token));
             omittedTerminalComma = false;
         }
@@ -774,6 +775,7 @@ private:
             return;
         }
         const PrintToken& printToken = FormatBreakTokenValue(token);
+        auto tokenScope = output_.TokenScope(printToken, layoutTree_->FindOwner(printToken.node));
         if (
             printToken.macroDefinition != nullptr &&
             !printToken.inMacroValue &&
@@ -826,7 +828,12 @@ private:
         Write(text);
     }
 
-    FormatBreakOutputState State() const override {
+    void EnterNode(const FormatBreakNode& node) override {
+        output_.PushOwner(layoutTree_->FindOwner(node.syntaxOwner));
+    }
+    void LeaveNode() override { output_.PopOwner(); }
+
+    FormatLayoutSinkState State() const override {
         return {
             .atLineStart = output_.State().atLineStart,
             .lineHasText = output_.State().lineHasText,
@@ -837,44 +844,15 @@ private:
     void BreakLine(int indentLevel, bool blankLine) override { BreakListLine(indentLevel, blankLine); }
     void SetPendingIndent(int indentLevel) override { output_.SetPendingIndent(indentLevel); }
 
-    void ConstrainContinuedBodyHeader(FormatBreakModelContext& context) const {
-        if (activeTokens_ == nullptr || pendingTokens_.front().sourceIndex == 0) {
-            return;
-        }
-        const PrintToken& previous = (*activeTokens_)[pendingTokens_.front().sourceIndex - 1];
-        for (const PrintToken& token : pendingTokens_) {
-            if (
-                token.node == nullptr ||
-                token.node->kind != SyntaxNodeKind::LeftBrace ||
-                token.node->parent == nullptr ||
-                token.node->parent->parent == nullptr ||
-                !SyntaxNodeHasClass(*token.node->parent, SyntaxNodeClass::CompoundBlock) || (
-                    token.grandParentKind != SyntaxNodeKind::FunctionDefinition &&
-                    !SyntaxNodeHasClass(*token.node->parent->parent, SyntaxNodeClass::DeclaredTypeSpecifier)
-                )
-            ) {
-                continue;
-            }
-            const SyntaxNode* body = token.node->parent;
-            if (PrintTokenSyntaxPathContains(previous, body->parent)) {
-                // An earlier header segment has already been emitted. The current continuation indentation
-                // belongs to the header; the declaration body still belongs to the enclosing structural scope.
-                context.continuedBodyHeader = body;
-                context.continuedBodyHeaderOwnerIndent = pendingIndentRestoreAfterFlush_.value_or(indentLevel_);
-                return;
-            }
-        }
-    }
-
-    void ConstrainLeadingSeparator(FormatBreakModelContext& context) {
+    void ConstrainLeadingSeparator(FormatLayoutRegionContext& context) {
         if (output_.State().atLineStart) {
             const auto first = std::find_if(pendingTokens_.begin(), pendingTokens_.end(), [](const PrintToken& token) {
                 return !IsCommentToken(token.kind) && token.kind != PrintTokenKind::BlankLine;
             });
             if (first != pendingTokens_.end()) {
-                std::optional<int> continuationIndent = chainContinuation_->ContinuationIndent(*first);
+                std::optional<int> continuationIndent = layoutTree_->Chains().ContinuationIndent(*first);
                 if (first->syntaxKind == SyntaxNodeKind::Comma) {
-                    std::optional<int> listIndent = listContinuation_->PreprocessorIndent(*first);
+                    std::optional<int> listIndent = layoutTree_->Lists().PreprocessorIndent(*first);
                     if (!listIndent && ImmediatePreprocessorListParent(*first) != nullptr) {
                         listIndent = output_.State().pendingIndentLevel.value_or(indentLevel_ + 1);
                     }
@@ -901,20 +879,19 @@ private:
                     continuationIndent = output_.State().pendingIndentLevel.value_or(indentLevel_) + 1;
                 }
                 if (continuationIndent) {
-                    context.leadingSeparator = FormatBreakLeadingSeparator{first->node, *continuationIndent};
+                    context.leadingSeparator = FormatLayoutLeadingSeparator{first->node, *continuationIndent};
                     output_.SetPendingIndent(*continuationIndent);
                 }
             }
         }
     }
 
-    std::vector<FormatBreakSplitList> FlushPendingTokens(const FormatBreakModelContext& context = {}) {
-        emittedBlockOpenIndent_.reset();
+    void FlushPendingTokens(const FormatLayoutRegionContext& context = {}) {
         if (pendingTokens_.empty()) {
-            return {};
+            return;
         }
-        FormatBreakModelContext effectiveContext = context;
-        ConstrainContinuedBodyHeader(effectiveContext);
+        FormatLayoutRegionContext effectiveContext = context;
+        layoutTree_->ConstrainBodyHeader(effectiveContext, pendingTokens_);
         if (
             effectiveContext.continuedBodyHeader != nullptr &&
             output_.State().atLineStart &&
@@ -924,7 +901,7 @@ private:
             // The header ended before this segment; its continuation indentation must not indent the body opener.
             output_.SetPendingIndent(effectiveContext.continuedBodyHeaderOwnerIndent);
         }
-        chainContinuation_->Constrain(effectiveContext);
+        layoutTree_->Chains().Constrain(effectiveContext);
         ConstrainLeadingSeparator(effectiveContext);
         if (breakModelDump_ == nullptr && CanFlushPendingTokensCompact(effectiveContext)) {
             FlushPendingTokensCompact();
@@ -932,7 +909,7 @@ private:
                 indentLevel_ = *pendingIndentRestoreAfterFlush_;
                 pendingIndentRestoreAfterFlush_.reset();
             }
-            return {};
+            return;
         }
         const auto modelStart =
             stats_ == nullptr ? std::chrono::steady_clock::time_point{} : std::chrono::steady_clock::now();
@@ -951,24 +928,16 @@ private:
         const int baseIndentLevel = output_.State().pendingIndentLevel.value_or(indentLevel_);
         const int startColumn = CurrentColumn();
         const int breakLineSuffixWidth = emittingMacroDefinition_ ? 2 : 0;
-        const std::optional<FormatDeclarationLayoutView> cached =
-            breakModelDump_ != nullptr ? std::nullopt : declarationLayout_->FindReusableLayout(
-                pendingTokens_, effectiveContext, startColumn, baseIndentLevel, breakLineSuffixWidth
-            );
-        FormatBreakModel model;
-        if (!cached) {
-            model = BuildFormatBreakModel(pendingTokens_, effectiveContext);
-        }
+        FormatLayoutRegion* region = &layoutTree_->AddRegion(pendingTokens_, effectiveContext);
         if (stats_ != nullptr) {
             stats_->breakModel += std::chrono::steady_clock::now() - modelStart;
         }
-        const FormatBreakModel& effectiveModel = !cached ? model : *cached->model;
-        FormatBreakSolution solution;
-        const FormatBreakSolution* effectiveSolution = !cached ? &solution : cached->solution;
-        if (!cached && (breakModelDump_ != nullptr || BreakModelHasLayoutChoice(effectiveModel))) {
+        const FormatBreakModel& effectiveModel = region->model;
+        const FormatBreakSolution* effectiveSolution = &region->solution;
+        if (breakModelDump_ != nullptr || BreakModelHasLayoutChoice(effectiveModel)) {
             const auto solveStart =
                 stats_ == nullptr ? std::chrono::steady_clock::time_point{} : std::chrono::steady_clock::now();
-            solution = SolveFormatBreaks(
+            region->solution = SolveFormatBreaks(
                 config_, effectiveModel, startColumn, baseIndentLevel, indentWidth_, breakLineSuffixWidth
             );
             if (stats_ != nullptr) {
@@ -980,23 +949,17 @@ private:
                 pendingTokens_, effectiveModel, *effectiveSolution, startColumn, baseIndentLevel, breakLineSuffixWidth
             );
         }
-        std::vector<FormatBreakSplitList> splitContexts;
         if (effectiveModel.root) {
             const auto emitStart =
                 stats_ == nullptr ? std::chrono::steady_clock::time_point{} : std::chrono::steady_clock::now();
-            const FormatBreakEmissionSummary emission = EmitFormatBreakModel(
-                config_, effectiveModel, *effectiveSolution, baseIndentLevel, pendingTokens_.back().node, *this
-            );
-            emittedBlockOpenIndent_ = emission.blockOpenIndent;
-            splitContexts = emission.splitLists;
-            chainContinuation_->AcceptEmission(emission.chainIndents);
+            LowerFormatLayout(config_, effectiveModel, *effectiveSolution, baseIndentLevel, *layoutTree_, *this);
             if (stats_ != nullptr) {
                 stats_->emit += std::chrono::steady_clock::now() - emitStart;
             }
         }
         emittingMacroDefinition_ = previousEmittingMacroDefinition;
         if (output_.State().lineHasText && !output_.State().pendingIndentLevel) {
-            output_.SetPendingIndent(chainContinuation_->ContinuationIndent(pendingTokens_.back()));
+            output_.SetPendingIndent(layoutTree_->Chains().ContinuationIndent(pendingTokens_.back()));
         }
         pendingTokens_.clear();
         pendingSourceBlankLine_ = false;
@@ -1004,7 +967,6 @@ private:
             indentLevel_ = *pendingIndentRestoreAfterFlush_;
             pendingIndentRestoreAfterFlush_.reset();
         }
-        return splitContexts;
     }
 
     bool HasBufferedLineText() const { return output_.State().lineHasText || !pendingTokens_.empty(); }
@@ -1035,7 +997,7 @@ private:
     }
 
     bool TryPrintListBoundary(const PrintToken& token, FormatListContinuationKind kind) {
-        const auto boundary = listContinuation_->TakeBoundary(token, kind);
+        const auto boundary = layoutTree_->Lists().BoundaryFor(token, kind);
         if (!boundary) {
             return false;
         }
@@ -1114,7 +1076,7 @@ private:
                 if (previous.syntaxKind == SyntaxNodeKind::Comma && listIndent) {
                     return listIndent;
                 }
-                if (const auto continuation = chainContinuation_->ContinuationIndent(previous)) {
+                if (const auto continuation = layoutTree_->Chains().ContinuationIndent(previous)) {
                     return continuation;
                 }
                 break;
@@ -1137,7 +1099,7 @@ private:
                 CloseCaseBodyIndentIfNeeded(previous->macroDefinition);
                 output_.SetPendingIndent(indentLevel_);
             }
-            if (const std::optional<int> itemIndent = listContinuation_->PreprocessorIndent(current)) {
+            if (const std::optional<int> itemIndent = layoutTree_->Lists().PreprocessorIndent(current)) {
                 output_.SetPendingIndent(*itemIndent);
             } else if (macroContinuationResumeIndent_) {
                 output_.SetPendingIndent(*macroContinuationResumeIndent_);
@@ -1150,22 +1112,22 @@ private:
         ) {
             const bool definition = current.syntaxKind == SyntaxNodeKind::PreprocessorDirectiveDefine;
             if (definition) {
-                chainContinuation_->AnalyzeDirective(currentTokenIndex_);
+                layoutTree_->Chains().AnalyzeDirective(currentTokenIndex_);
             }
-            const FormatBreakModelContext* plan =
-                definition && !listContinuation_->PreprocessorIndent(current) ? listContinuation_->PlanPreprocessor(
+            const FormatLayoutRegionContext* plan =
+                definition && !layoutTree_->Lists().PreprocessorIndent(current) ? layoutTree_->Lists().PlanPreprocessor(
                     currentTokenIndex_, pendingTokens_, output_.State().pendingIndentLevel.value_or(indentLevel_ + 1)
                 ) : nullptr;
-            const auto selected = FlushPendingTokens(plan == nullptr ? FormatBreakModelContext{} : *plan);
+            FlushPendingTokens(plan == nullptr ? FormatLayoutRegionContext{} : *plan);
             if (plan != nullptr) {
-                output_.SetPendingIndent(listContinuation_->AcceptPreprocessor(selected));
+                output_.SetPendingIndent(layoutTree_->Lists().ResolvePreprocessor());
             }
             if (definition) {
-                chainContinuation_
-                    ->FinishBoundary(listContinuation_->PreprocessorIndent(current).value_or(indentLevel_));
+                layoutTree_
+                    ->Chains().FinishBoundary(layoutTree_->Lists().PreprocessorIndent(current).value_or(indentLevel_));
             }
             macroContinuationResumeIndent_ =
-                DirectiveContinuationIndent(listContinuation_->PreprocessorIndent(current));
+                DirectiveContinuationIndent(layoutTree_->Lists().PreprocessorIndent(current));
             if (output_.State().lineHasText) {
                 NewLine(false);
             }
@@ -1318,7 +1280,7 @@ private:
             return false;
         }
         const SyntaxNode* level = token.node->parent;
-        const bool beforeSplitListClose = listContinuation_->ContinuesList(token) &&
+        const bool beforeSplitListClose = layoutTree_->Lists().ContinuesList(token) &&
             next->node == DirectMatchingClosingDelimiterChild(*level, DirectOpeningDelimiterChild(*level));
         if (HasBufferedLineText() && !beforeSplitListClose) {
             return false;
@@ -1363,13 +1325,17 @@ private:
             BlankLine(token.inMacroValue);
             pendingNamespaceSeparator_ = false;
         }
-        listContinuation_->BeforeToken(token);
-        if (declarationLayout_->NeedsBlankLineBefore(currentTokenIndex_)) {
+        if (const auto boundary = declarationLayout_->BoundaryBefore(currentTokenIndex_)) {
             FlushPendingTokens();
-            BlankLine(token.inMacroValue);
+            if (boundary->required) {
+                BlankLine(token.inMacroValue);
+            } else {
+                output_.GroupBoundary(*boundary, token.inMacroValue);
+            }
         }
         PrepareMacroItemBoundary(rawPrevious, token);
         PrepareMacroBoundary(rawPrevious, token);
+        layoutTree_->BeginToken(token, pendingIndentRestoreAfterFlush_.value_or(indentLevel_));
         if (token.kind == PrintTokenKind::BlankLine) {
             pendingSourceBlankLine_ = pendingSourceBlankLine_ || !pendingTokens_.empty();
             const PrintToken* sourcePrevious =
@@ -1378,7 +1344,7 @@ private:
                 rawNext != nullptr && rawNext->kind != PrintTokenKind::BlankLine ? rawNext : next;
             if (ShouldPreserveSourceBlankLine(token, sourcePrevious, sourceNext)) {
                 FlushPendingTokens();
-                const bool continuesSplitList = listContinuation_->ContinuesList(token);
+                const bool continuesSplitList = layoutTree_->Lists().ContinuesList(token);
                 const std::optional<int> pendingIndent =
                     continuesSplitList ? output_.State().pendingIndentLevel : std::nullopt;
                 BlankLine(token.inMacroValue);
@@ -1477,12 +1443,12 @@ private:
     }
 
     void PrintPreprocessor(const PrintToken& token, const PrintToken* next) {
-        chainContinuation_->AnalyzeDirective(currentTokenIndex_);
+        layoutTree_->Chains().AnalyzeDirective(currentTokenIndex_);
         const std::string line = FormatPreprocessorText(token.text);
         const SyntaxNodeKind lineDirectiveKind = SyntaxNodeKindFromPreprocessorDirectiveLine(line);
         const bool isInclude = PrintTokenSyntaxHasClass(token, SyntaxNodeClass::IncludeDirective) ||
             SyntaxNodeKindHasClass(lineDirectiveKind, SyntaxNodeClass::IncludeDirective);
-        const std::optional<bool> conditionalComma = listContinuation_->ConditionalDirectiveComma(currentTokenIndex_);
+        const std::optional<bool> conditionalComma = layoutTree_->Lists().ConditionalDirectiveComma(currentTokenIndex_);
         const bool listConditional = conditionalComma.has_value();
         const bool trailingListComma = conditionalComma.value_or(false);
         const bool closesConditionalFunctionHeader = (
@@ -1520,13 +1486,14 @@ private:
             output_.SetPendingIndent(declarationIndent);
             return;
         }
-        std::optional<int> listItemIndent = listContinuation_->PreprocessorIndent(token);
-        const FormatBreakModelContext* splitListPlan = listItemIndent ? nullptr : listContinuation_->PlanPreprocessor(
-            currentTokenIndex_, pendingTokens_, output_.State().pendingIndentLevel.value_or(indentLevel_ + 1)
-        );
+        std::optional<int> listItemIndent = layoutTree_->Lists().PreprocessorIndent(token);
+        const FormatLayoutRegionContext* splitListPlan =
+            listItemIndent ? nullptr : layoutTree_->Lists().PlanPreprocessor(
+                currentTokenIndex_, pendingTokens_, output_.State().pendingIndentLevel.value_or(indentLevel_ + 1)
+            );
         if (splitListPlan != nullptr) {
-            const auto selected = FlushPendingTokens(*splitListPlan);
-            listItemIndent = listContinuation_->AcceptPreprocessor(selected);
+            FlushPendingTokens(*splitListPlan);
+            listItemIndent = layoutTree_->Lists().ResolvePreprocessor();
         } else if (HasBufferedLineText()) {
             FlushPendingTokens();
         }
@@ -1536,7 +1503,7 @@ private:
         const std::optional<int> includeInitializerContinuationIndent =
             isInclude && token.parentKind == SyntaxNodeKind::InitDeclarator && output_.State().lineHasText ?
                 std::optional<int>(CurrentLineIndentLevel() + 1) : std::nullopt;
-        chainContinuation_->FinishBoundary(listItemIndent.value_or(indentLevel_));
+        layoutTree_->Chains().FinishBoundary(listItemIndent.value_or(indentLevel_));
         const std::optional<int> continuationIndent = DirectiveContinuationIndent(listItemIndent);
         if (output_.State().lineHasText) {
             NewLine();
@@ -1545,7 +1512,7 @@ private:
             listConditional && !token.structuredPreprocessor && listItemIndent ? FormatPreprocessorText(token.text, {
                 .payloadIndent = *listItemIndent,
                 .indentWidth = indentWidth_,
-                .terminalComma = !listContinuation_->IsFinalPreprocessorItem(currentTokenIndex_) ?
+                .terminalComma = !layoutTree_->Lists().IsFinalPreprocessorItem(currentTokenIndex_) ?
                     FormatPreprocessorComma::Preserve :
                     (trailingListComma ? FormatPreprocessorComma::Add : FormatPreprocessorComma::Remove),
             }) : line;
@@ -1770,7 +1737,7 @@ private:
 
     void PrintLeftBrace(const PrintToken& token, const PrintToken* previous, const PrintToken* rawNext) {
         if (IsMandatoryBlockOpen(currentTokenIndex_)) {
-            chainContinuation_->AnalyzeBlock(currentTokenIndex_);
+            layoutTree_->Chains().AnalyzeBlock(currentTokenIndex_);
         }
         const int crossBlockFallbackBaseIndent = std::max(0, output_.State().pendingIndentLevel.value_or(indentLevel_));
         const bool followedByTrailingComment = rawNext != nullptr && rawNext->kind == PrintTokenKind::TrailingComment;
@@ -1781,7 +1748,7 @@ private:
                 prebufferedTokenSourceIndices_.insert(rawNext->sourceIndex);
             }
             FlushPendingTokens();
-            chainContinuation_->FinishBoundary(crossBlockFallbackBaseIndent);
+            layoutTree_->Chains().FinishBoundary(crossBlockFallbackBaseIndent);
             if (!followedByTrailingComment) {
                 NewLine(ShouldContinueMacroLine(token, rawNext));
             }
@@ -1809,8 +1776,8 @@ private:
             compactRightBraceRoles_.push_back(role);
             return;
         }
-        const FormatBreakModelContext* splitListPlan =
-            RoleForBrace(token) == BraceRole::Block ? listContinuation_->PlanBlock(currentTokenIndex_) : nullptr;
+        const FormatLayoutRegionContext* splitListPlan =
+            RoleForBrace(token) == BraceRole::Block ? layoutTree_->Lists().PlanBlock(currentTokenIndex_) : nullptr;
         BufferToken(token);
         if (role == BraceRole::Compact || IsCompactSingleStatementFunctionBodyBrace(token)) {
             return;
@@ -1819,14 +1786,13 @@ private:
             BufferToken(*rawNext);
             prebufferedTokenSourceIndices_.insert(rawNext->sourceIndex);
         }
-        const std::vector<FormatBreakSplitList> splitContexts =
-            FlushPendingTokens(splitListPlan != nullptr ? *splitListPlan : FormatBreakModelContext{});
+        FlushPendingTokens(splitListPlan != nullptr ? *splitListPlan : FormatLayoutRegionContext{});
         const std::optional<int> splitListItemIndent =
-            splitListPlan == nullptr ? std::nullopt : listContinuation_->AcceptBlock(splitContexts);
-        chainContinuation_->FinishBoundary(splitListItemIndent.value_or(crossBlockFallbackBaseIndent));
+            splitListPlan == nullptr ? std::nullopt : layoutTree_->Lists().ResolveBlock();
+        layoutTree_->Chains().FinishBoundary(splitListItemIndent.value_or(crossBlockFallbackBaseIndent));
         const bool functionBlock = token.parentKind == SyntaxNodeKind::CompoundStatement &&
             token.grandParentKind == SyntaxNodeKind::FunctionDefinition;
-        int openLineIndent = emittedBlockOpenIndent_.value_or(splitListItemIndent.value_or(
+        int openLineIndent = layoutTree_->BlockIndent(token.node).value_or(splitListItemIndent.value_or(
             token.inMacroValue || functionBlock ? indentLevel_ :
                 (output_.State().lineHasText ? CurrentLineIndentLevel() : indentLevel_)
         ));
@@ -1966,7 +1932,7 @@ private:
                 pendingIndentRestoreAfterFlush_ = *restoreIndent;
             }
             BufferToken(token);
-            const std::optional<int> splitListContinuationIndent = listContinuation_->CloseBlock(token, next);
+            const std::optional<int> splitListContinuationIndent = layoutTree_->Lists().AfterBlock(token, next);
             if (isSwitchBody) {
                 switchDepth_ = std::max(0, switchDepth_ - 1);
             }
@@ -2006,8 +1972,12 @@ std::string PrintFormatModel(
     const auto printStart =
         stats == nullptr ? std::chrono::steady_clock::time_point{} : std::chrono::steady_clock::now();
     const size_t sourceSize = model.sourceText == nullptr ? 0 : model.sourceText->size();
-    std::string result = Printer(config, sourcePath, stats, breakModelDump).Print(tokens, sourceSize);
+    const auto layout = LayoutPlanner(config, sourcePath, stats, breakModelDump).Plan(tokens, sourceSize);
+    const auto emitStart =
+        stats == nullptr ? std::chrono::steady_clock::time_point{} : std::chrono::steady_clock::now();
+    std::string result = EmitFormatLayoutProgram(layout->Program(), config.indentWidth, config.columnLimit);
     if (stats != nullptr) {
+        stats->emit += std::chrono::steady_clock::now() - emitStart;
         stats->print += std::chrono::steady_clock::now() - printStart;
     }
     return result;

@@ -730,6 +730,7 @@ namespace alternative_unary {
 auto negative =
 #define NEGATIVE_MARKER 1
     not first;
+
 auto inverted =
 #define INVERT_MARKER 1
     compl first;

@@ -9,7 +9,6 @@ struct FormatChoiceHistory::Entry {
     const Entry* right = nullptr;
     int nodeId = -1;
     int indentLevel = -1;
-    int declarationValueContinuationLines = -1;
     std::uint32_t attachedChainOperator = std::numeric_limits<std::uint32_t>::max();
     FormatBreakChoice choice = FormatBreakChoice::Compact;
     bool leaf = false;
@@ -60,23 +59,6 @@ void AppendChoices(
     AppendChoices(tree->right, choices, indentLevels, assigned);
 }
 
-void
-    AppendDeclarationValueContinuationLines(const FormatChoiceHistory::Entry* tree, std::vector<int>& continuationLines)
-{
-    if (tree == nullptr) {
-        return;
-    }
-    if (tree->leaf) {
-        const size_t index = static_cast<size_t>(tree->nodeId);
-        if (index < continuationLines.size() && tree->declarationValueContinuationLines >= 0) {
-            continuationLines[index] = tree->declarationValueContinuationLines;
-        }
-        return;
-    }
-    AppendDeclarationValueContinuationLines(tree->left, continuationLines);
-    AppendDeclarationValueContinuationLines(tree->right, continuationLines);
-}
-
 void AppendAttachedChainOperators(const FormatChoiceHistory::Entry* tree, std::vector<std::uint32_t>& sourceIndices) {
     if (tree == nullptr) {
         return;
@@ -103,10 +85,6 @@ FormatChoiceHistory::Handle
 {
     return Concat(history, impl_->MakeChoice(nodeId, choice, indentLevel));
 }
-FormatChoiceHistory::Handle FormatChoiceHistory::AddContinuationLines(Handle history, int nodeId, int lines) {
-    impl_->choiceArena_.push_back(Entry{.nodeId = nodeId, .declarationValueContinuationLines = lines, .leaf = true});
-    return Concat(history, &impl_->choiceArena_.back());
-}
 FormatChoiceHistory::Handle FormatChoiceHistory::AddAttachedOperator(Handle history, std::uint32_t sourceIndex) {
     impl_->choiceArena_.push_back(Entry{.attachedChainOperator = sourceIndex, .leaf = true});
     return Concat(history, &impl_->choiceArena_.back());
@@ -128,10 +106,8 @@ FormatBreakSolution FormatChoiceHistory::Materialize(Handle history, size_t choi
     FormatBreakSolution solution;
     solution.choices.assign(choiceCount, FormatBreakChoice::Compact);
     solution.indentLevels.assign(choiceCount, -1);
-    solution.declarationValueContinuationLines.assign(choiceCount, -1);
     std::vector<bool> assigned(choiceCount, false);
     AppendChoices(history, solution.choices, solution.indentLevels, assigned);
-    AppendDeclarationValueContinuationLines(history, solution.declarationValueContinuationLines);
     AppendAttachedChainOperators(history, solution.attachedChainOperators);
     std::sort(solution.attachedChainOperators.begin(), solution.attachedChainOperators.end());
     solution.attachedChainOperators.erase(

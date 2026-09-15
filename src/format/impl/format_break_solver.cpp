@@ -215,9 +215,6 @@ private:
     void AddChoice(NodeResult& result, int nodeId, FormatBreakChoice choice, int indentLevel = -1) {
         result.choices = choiceHistory_.AddChoice(result.choices, nodeId, choice, indentLevel);
     }
-    void AddDeclarationValueContinuationLines(NodeResult& result, int nodeId, int continuationLines) {
-        result.choices = choiceHistory_.AddContinuationLines(result.choices, nodeId, continuationLines);
-    }
     void AddAttachedChainOperator(NodeResult& result, const FormatBreakToken& op) {
         result.choices = choiceHistory_.AddAttachedOperator(result.choices, FormatBreakTokenValue(op).sourceIndex);
     }
@@ -2602,9 +2599,6 @@ private:
                     }
                     NodeResult next = prefix;
                     Merge(next, operand);
-                    if (node.declarationValueOwner != nullptr && index + 1 == node.operands.size()) {
-                        AddDeclarationValueContinuationLines(next, node.id, operand.extraLines);
-                    }
                     if (index < node.operators.size()) {
                         AppendCommentsBeforeChainOperator(node, index, next);
                         AppendToken(next, node.operators[index]);
@@ -2729,9 +2723,6 @@ private:
                     }
                 }
                 Merge(normal, operand);
-                if (node.declarationValueOwner != nullptr && index + 2 == node.operands.size()) {
-                    AddDeclarationValueContinuationLines(normal, node.id, operand.extraLines + 1);
-                }
 
                 NodeResult attached;
                 if (CanAttachSplitOpenAfterOperator(node.operators[index], *node.operands[index + 1])) {

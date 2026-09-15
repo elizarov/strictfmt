@@ -1,13 +1,14 @@
 #include "format/impl/format_declaration_layout.h"
 
 #include <algorithm>
+#include <limits>
 #include <unordered_map>
 #include <unordered_set>
 #include <vector>
 
-#include "format/impl/format_break_model_builder.h"
-#include "format/impl/format_break_solver.h"
-#include "format/impl/format_model_text_stats.h"
+#include "format/impl/format_layout_tree.h"
+#include "format/impl/format_break_model_inline_helpers.h"
+#include "format/impl/format_syntax_helpers.h"
 
 namespace {
 
@@ -25,14 +26,6 @@ struct DeclarationGroupState {
     const SyntaxNode* preparedItem = nullptr;
 };
 
-struct CachedDeclarationLayout {
-    std::uint32_t endSourceIndex = 0;
-    int startColumn = 0;
-    int baseIndentLevel = 0;
-    FormatBreakModel model;
-    FormatBreakSolution solution;
-};
-
 const SyntaxNode* DeclarationScopeItem(const SyntaxNode* node) {
     for (const SyntaxNode* cursor = node; cursor != nullptr && cursor->parent != nullptr; cursor = cursor->parent) {
         // DeclarationScope is a syntax-local normalized class, so its authoritative value is stored on the node.
@@ -46,22 +39,20 @@ const SyntaxNode* DeclarationScopeItem(const SyntaxNode* node) {
 }  // namespace
 
 struct FormatDeclarationLayout::Impl {
-    const FormatterConfig& config_;
     std::span<const PrintToken> tokens_;
-    FormatModelTextStats* stats_;
-    int indentWidth_;
-    std::unordered_set<const SyntaxNode*> isolatedDeclarationItems_;
     std::unordered_map<const SyntaxNode*, DeclarationGroupState> declarationGroupStates_;
-    std::vector<std::unique_ptr<CachedDeclarationLayout>> declarationLayoutsBySourceIndex_;
     std::vector<const SyntaxNode*> nextDeclarationItemsBySourceIndex_;
 
-    Impl(
-        const FormatterConfig& config,
-        std::span<const PrintToken> tokens,
-        std::span<const std::uint8_t> mandatoryBlockOpens,
-        FormatModelTextStats* stats
-    ) : config_(config), tokens_(tokens), stats_(stats), indentWidth_(std::max(1, config.indentWidth)) {
-        AnalyzeDeclarationGroups(tokens, mandatoryBlockOpens);
+    explicit Impl(std::span<const PrintToken> tokens) : tokens_(tokens) {
+        nextDeclarationItemsBySourceIndex_.resize(tokens.size());
+        const SyntaxNode* next = nullptr;
+        for (size_t index = tokens.size(); index-- > 0;) {
+            nextDeclarationItemsBySourceIndex_[index] = next;
+            const SyntaxNode* item = tokens[index].declarationScopeItem;
+            if (DeclarationGroup(item) != DeclarationGroupKind::None) {
+                next = item;
+            }
+        }
     }
 
     static DeclarationGroupKind DeclarationGroup(const SyntaxNode* item) {
@@ -89,196 +80,6 @@ struct FormatDeclarationLayout::Impl {
         return DeclarationGroupKind::None;
     }
 
-    bool HasLargeDeclarationValue(
-        const FormatBreakModel& model, const FormatBreakSolution& solution, const SyntaxNode& item
-    ) const {
-        if (model.nodes == nullptr) {
-            return false;
-        }
-        return std::any_of(model.nodes->begin(), model.nodes->end(), [&](const FormatBreakNode& node) {
-            const size_t index = static_cast<size_t>(node.id);
-            return node.declarationValueOwner != nullptr &&
-                DeclarationScopeItem(node.declarationValueOwner) == &item &&
-                index < solution.declarationValueContinuationLines.size() &&
-                solution.declarationValueContinuationLines[index] > 1;
-        });
-    }
-
-    static int DeclarationIndent(const SyntaxNode& item) {
-        int indent = 0;
-        for (const SyntaxNode* cursor = item.parent; cursor != nullptr; cursor = cursor->parent) {
-            if (cursor->kind == SyntaxNodeKind::FieldDeclarationList) {
-                ++indent;
-            }
-        }
-        return indent;
-    }
-
-    bool HasProvablyCompactDeclarationLayout(
-        std::span<const PrintToken> tokens,
-        size_t begin,
-        size_t end,
-        int declarationIndent,
-        std::span<const std::uint8_t> mandatoryBlockOpens
-    ) const {
-        int column = declarationIndent * indentWidth_;
-        bool hasText = false;
-        bool previousStringLike = false;
-        const PrintToken* previous = nullptr;
-        for (size_t index = begin; index < end; ++index) {
-            const PrintToken& token = tokens[index];
-            if (
-                (token.kind != PrintTokenKind::Known && token.kind != PrintTokenKind::Text) ||
-                token.containsSourceLineBreak ||
-                token.inMacroValue ||
-                token.macroDefinition != nullptr ||
-                token.inMacroStatementSequence ||
-                token.inLeadingStreamOperatorChain ||
-                token.inConditionalStreamOperatorChain ||
-                token.inTemplateDeclaration ||
-                (token.stringLike && previousStringLike) ||
-                token.inFieldInitializerList ||
-                mandatoryBlockOpens[index] != 0
-            ) {
-                return false;
-            }
-            if (FormatTokenNeedsSpace(previous, token) && hasText) {
-                ++column;
-            }
-            const int tokenWidth = FormatTokenWidth(token);
-            column += tokenWidth;
-            if (column > config_.columnLimit) {
-                return false;
-            }
-            hasText = hasText || tokenWidth > 0;
-            previous = &token;
-            previousStringLike = token.stringLike;
-        }
-        // A compact one-line declaration has zero continuation lines; no solved layout can make it an isolated
-        // declaration-group item under the same compact eligibility and width checks.
-        return true;
-    }
-
-    void
-        AnalyzeDeclarationGroups(std::span<const PrintToken> tokens, std::span<const std::uint8_t> mandatoryBlockOpens)
-    {
-        // A large declaration value must be known before its first token is emitted so the mandatory blank line
-        // can precede it. Pre-solving uses the ordinary break model and solver; the printer only observes the
-        // number of continuation lines selected for each declaration owner/value relation.
-        isolatedDeclarationItems_.clear();
-        declarationGroupStates_.clear();
-        declarationLayoutsBySourceIndex_.clear();
-        declarationLayoutsBySourceIndex_.resize(tokens.size());
-        nextDeclarationItemsBySourceIndex_.resize(tokens.size());
-        const SyntaxNode* nextDeclarationItem = nullptr;
-        for (size_t index = tokens.size(); index-- > 0;) {
-            nextDeclarationItemsBySourceIndex_[index] = nextDeclarationItem;
-            const SyntaxNode* item = tokens[index].declarationScopeItem;
-            if (DeclarationGroup(item) != DeclarationGroupKind::None) {
-                nextDeclarationItem = item;
-            }
-        }
-        std::unordered_set<const SyntaxNode*> analyzedItems;
-        for (size_t index = 0; index < tokens.size();) {
-            const SyntaxNode* item = tokens[index].declarationScopeItem;
-            if (item == nullptr || !analyzedItems.insert(item).second) {
-                ++index;
-                continue;
-            }
-            const DeclarationGroupKind group = DeclarationGroup(item);
-            if (group != DeclarationGroupKind::Object && group != DeclarationGroupKind::Alias) {
-                ++index;
-                continue;
-            }
-            size_t end = index + 1;
-            while (end < tokens.size() && PrintTokenSyntaxPathContains(tokens[end], item)) {
-                ++end;
-            }
-            const int declarationIndent = DeclarationIndent(*item);
-            if (HasProvablyCompactDeclarationLayout(tokens, index, end, declarationIndent, mandatoryBlockOpens)) {
-                ++index;
-                continue;
-            }
-            const auto modelStart =
-                stats_ == nullptr ? std::chrono::steady_clock::time_point{} : std::chrono::steady_clock::now();
-            FormatBreakModel model =
-                BuildFormatBreakModel(std::span<const PrintToken>{tokens.data() + index, end - index});
-            if (stats_ != nullptr) {
-                stats_->breakModel += std::chrono::steady_clock::now() - modelStart;
-            }
-            const bool hasDeclarationValue = model.nodes != nullptr &&
-                std::any_of(model.nodes->begin(), model.nodes->end(), [&](const FormatBreakNode& node) {
-                    return node.declarationValueOwner != nullptr &&
-                        DeclarationScopeItem(node.declarationValueOwner) == item;
-                });
-            if (!hasDeclarationValue || model.root == nullptr) {
-                ++index;
-                continue;
-            }
-            const auto solveStart =
-                stats_ == nullptr ? std::chrono::steady_clock::time_point{} : std::chrono::steady_clock::now();
-            FormatBreakSolution solution =
-                SolveFormatBreaks(config_, model, declarationIndent * indentWidth_, declarationIndent, indentWidth_, 0);
-            if (stats_ != nullptr) {
-                stats_->solve += std::chrono::steady_clock::now() - solveStart;
-            }
-            if (HasLargeDeclarationValue(model, solution, *item)) {
-                isolatedDeclarationItems_.insert(item);
-            }
-            const std::uint32_t sourceIndex = tokens[index].sourceIndex;
-            if (sourceIndex < declarationLayoutsBySourceIndex_.size()) {
-                declarationLayoutsBySourceIndex_[sourceIndex] =
-                    std::make_unique<CachedDeclarationLayout>(CachedDeclarationLayout{
-                        .endSourceIndex = tokens[end - 1].sourceIndex + 1,
-                        .startColumn = declarationIndent * indentWidth_,
-                        .baseIndentLevel = declarationIndent,
-                        .model = std::move(model),
-                        .solution = std::move(solution),
-                    });
-            }
-            ++index;
-        }
-    }
-
-    const CachedDeclarationLayout* ReusableDeclarationLayout(
-        std::span<const PrintToken> pendingTokens,
-        const FormatBreakModelContext& context,
-        int startColumn,
-        int baseIndentLevel,
-        int breakLineSuffixWidth
-    ) const {
-        if (
-            breakLineSuffixWidth != 0 ||
-            context.forceSplitStreamChain ||
-            context.leadingSeparator.has_value() ||
-            context.continuedBodyHeader != nullptr ||
-            !context.virtualDelimiters.empty() ||
-            context.requiredChainBreakOperators != nullptr ||
-            context.requiredChainBreakLayouts != nullptr ||
-            pendingTokens.empty()
-        ) {
-            return nullptr;
-        }
-        const std::uint32_t begin = pendingTokens.front().sourceIndex;
-        if (begin >= declarationLayoutsBySourceIndex_.size()) {
-            return nullptr;
-        }
-        const std::unique_ptr<CachedDeclarationLayout>& cached = declarationLayoutsBySourceIndex_[begin];
-        if (
-            cached == nullptr ||
-            cached->endSourceIndex != pendingTokens.back().sourceIndex + 1 ||
-            cached->endSourceIndex - begin != pendingTokens.size() ||
-            cached->startColumn != startColumn ||
-            cached->baseIndentLevel != baseIndentLevel
-        ) {
-            return nullptr;
-        }
-        // The complete consecutive source-token span, incoming state, suffix width, and every model context input
-        // are identical to declaration pre-analysis. Break-model construction and solving are pure in those inputs,
-        // so reusing both objects produces the same choices and token emission as rebuilding them here.
-        return cached.get();
-    }
-
     bool RequiresDeclarationGroupSeparation(const SyntaxNode* left, const SyntaxNode* right) const {
         if (
             left == nullptr ||
@@ -288,9 +89,6 @@ struct FormatDeclarationLayout::Impl {
             !SyntaxNodeHasClass(*left->parent, SyntaxNodeClass::DeclarationScope)
         ) {
             return false;
-        }
-        if (isolatedDeclarationItems_.contains(left) || isolatedDeclarationItems_.contains(right)) {
-            return true;
         }
         const DeclarationGroupKind leftGroup = DeclarationGroup(left);
         const DeclarationGroupKind rightGroup = DeclarationGroup(right);
@@ -316,73 +114,232 @@ struct FormatDeclarationLayout::Impl {
         return nextDeclarationItemsBySourceIndex_[index];
     }
 
-    bool NeedsBlankLineBefore(size_t index) {
-        const PrintToken& token = tokens_[index];
-        bool blankLine = false;
-        const SyntaxNode* item = token.declarationScopeItem;
-        const DeclarationGroupKind group = DeclarationGroup(item);
-        if (group != DeclarationGroupKind::None) {
-            DeclarationGroupState& state = declarationGroupStates_[item->parent];
-            if (item != state.previousItem) {
-                if (item != state.preparedItem && RequiresDeclarationGroupSeparation(state.previousItem, item)) {
-                    blankLine = true;
-                }
-                state.previousItem = item;
-                state.preparedItem = nullptr;
-            }
-            return blankLine;
-        }
-        if (item == nullptr || item->parent == nullptr) {
-            return blankLine;
-        }
-        // A declaration terminator may be a declaration-scope sibling when the parser flattens a bare
-        // class, struct, or enum declaration. It completes the preceding group item; it is not a prefix
-        // of the next declaration. Trailing comments and their continuation lines also belong to that item.
+    std::optional<FormatDeclarationBoundary> Boundary(const SyntaxNode* left, const SyntaxNode* right) const {
         if (
+            left == nullptr ||
+            right == nullptr ||
+            left->parent == nullptr ||
+            left->parent != right->parent ||
+            !SyntaxNodeHasClass(*left->parent, SyntaxNodeClass::DeclarationScope) ||
+            DeclarationGroup(left) == DeclarationGroupKind::None ||
+            DeclarationGroup(right) == DeclarationGroupKind::None
+        ) {
+            return std::nullopt;
+        }
+        return FormatDeclarationBoundary{left, right, RequiresDeclarationGroupSeparation(left, right)};
+    }
+
+    std::optional<FormatDeclarationBoundary> BoundaryBefore(size_t index) {
+        const PrintToken& token = tokens_[index];
+        const SyntaxNode* item = token.declarationScopeItem;
+        if (DeclarationGroup(item) != DeclarationGroupKind::None) {
+            DeclarationGroupState& state = declarationGroupStates_[item->parent];
+            if (item == state.previousItem) {
+                return std::nullopt;
+            }
+            const auto boundary = item == state.preparedItem ? std::nullopt : Boundary(state.previousItem, item);
+            state.previousItem = item;
+            state.preparedItem = nullptr;
+            return boundary;
+        }
+        if (
+            item == nullptr ||
+            item->parent == nullptr ||
             token.kind == PrintTokenKind::TrailingComment ||
             token.commentContinuation ||
             (token.node != nullptr && token.node->kind == SyntaxNodeKind::Semicolon)
         ) {
-            return blankLine;
+            return std::nullopt;
         }
-
         DeclarationGroupState& state = declarationGroupStates_[item->parent];
-        const SyntaxNode* nextItem = NextDeclarationItem(index);
-        const bool prefixesNextItem = nextItem != nullptr && nextItem->parent == item->parent;
-        const bool separates = prefixesNextItem && RequiresDeclarationGroupSeparation(state.previousItem, nextItem);
-        if (separates && state.preparedItem != nextItem) {
-            blankLine = true;
-            state.preparedItem = nextItem;
+        const SyntaxNode* next = NextDeclarationItem(index);
+        if (next == nullptr || next->parent != item->parent || next == state.preparedItem) {
+            return std::nullopt;
         }
-        return blankLine;
+        const auto boundary = Boundary(state.previousItem, next);
+        if (boundary) {
+            state.preparedItem = next;
+        }
+        return boundary;
     }
 
 };
 
-FormatDeclarationLayout::FormatDeclarationLayout(
-    const FormatterConfig& config,
-    std::span<const PrintToken> tokens,
-    std::span<const std::uint8_t> mandatoryBlockOpens,
-    FormatModelTextStats* stats
-) : impl_(std::make_unique<Impl>(config, tokens, mandatoryBlockOpens, stats)) {}
-
+FormatDeclarationLayout::FormatDeclarationLayout(std::span<const PrintToken> tokens) :
+    impl_(std::make_unique<Impl>(tokens)) {}
 FormatDeclarationLayout::~FormatDeclarationLayout() = default;
-
-bool FormatDeclarationLayout::NeedsBlankLineBefore(size_t tokenIndex) {
-    return impl_->NeedsBlankLineBefore(tokenIndex);
+std::optional<FormatDeclarationBoundary> FormatDeclarationLayout::BoundaryBefore(size_t index) {
+    return impl_->BoundaryBefore(index);
 }
 
-std::optional<FormatDeclarationLayoutView> FormatDeclarationLayout::FindReusableLayout(
-    std::span<const PrintToken> tokens,
-    const FormatBreakModelContext& context,
-    int startColumn,
-    int baseIndentLevel,
-    int breakLineSuffixWidth
-) const {
-    const CachedDeclarationLayout* cached =
-        impl_->ReusableDeclarationLayout(tokens, context, startColumn, baseIndentLevel, breakLineSuffixWidth);
-    if (cached == nullptr) {
-        return std::nullopt;
+namespace {
+
+struct TokenRange {
+    size_t begin = std::numeric_limits<size_t>::max();
+    size_t end = 0;
+
+    void Add(size_t index) {
+        begin = std::min(begin, index);
+        end = std::max(end, index + 1);
     }
-    return FormatDeclarationLayoutView{&cached->model, &cached->solution};
+};
+
+TokenRange SourceRange(const FormatBreakNode& node, const FormatLayoutTree& tree) {
+    TokenRange range;
+    auto token = [&](const FormatBreakToken& value) {
+        if (value.token != nullptr) {
+            range.Add(value.token->sourceIndex);
+        }
+    };
+    auto child = [&](const FormatBreakNode* value) {
+        if (value == nullptr) {
+            return;
+        }
+        const auto nested = SourceRange(*value, tree);
+        range.begin = std::min(range.begin, nested.begin);
+        range.end = std::max(range.end, nested.end);
+    };
+    token(node.token);
+    token(node.leadingTrailingComment);
+    token(node.sourceTrailingComma);
+    for (const auto* value : node.children) {
+        child(value);
+    }
+    for (const auto* value : node.operands) {
+        child(value);
+    }
+    for (const auto& value : node.operators) {
+        token(value);
+    }
+    for (const auto& item : node.items) {
+        child(item.node);
+        token(item.separator);
+        token(item.trailingComment);
+    }
+    if (node.bodySyntax != nullptr) {
+        const auto& body = tree.Owner(tree.FindOwner(node.bodySyntax));
+        if (body.begin < body.end) {
+            range.Add(body.begin);
+            range.Add(body.end - 1);
+        }
+    }
+    return range;
+}
+
+bool IsMeasured(const FormatLayoutTokenLines& lines) { return lines.first != std::numeric_limits<size_t>::max(); }
+
+// Counts the selected value's physical continuation lines while treating every
+// nested compound body as opaque. Source ranges retain bodies omitted from cost
+// regions; interval union prevents nested scopes from being subtracted twice.
+bool LargeValue(const FormatBreakNode& node, const FormatLayoutTree& tree, const FormatLayoutProgram& program) {
+    if (node.operands.size() < 2) {
+        return false;
+    }
+    const auto prefix = SourceRange(*node.operands[node.operands.size() - 2], tree);
+    const auto value = SourceRange(*node.operands.back(), tree);
+    if (prefix.begin >= prefix.end || value.begin >= value.end) {
+        return false;
+    }
+    auto lastLine = [&](TokenRange range) -> std::optional<size_t> {
+        for (size_t index = range.end; index-- > range.begin;) {
+            if (index < program.tokenLines.size() && IsMeasured(program.tokenLines[index])) {
+                return program.tokenLines[index].last;
+            }
+        }
+        return std::nullopt;
+    };
+    const auto start = lastLine(prefix);
+    const auto end = lastLine(value);
+    if (!start || !end || *end <= *start + 1) {
+        return false;
+    }
+    std::vector<std::pair<size_t, size_t>> bodies;
+    const auto tokens = tree.Tokens();
+    for (size_t index = value.begin; index < value.end && index < tokens.size(); ++index) {
+        const auto* open = tokens[index].node;
+        if (
+            open == nullptr ||
+            open->kind != SyntaxNodeKind::LeftBrace ||
+            open->parent == nullptr ||
+            !SyntaxNodeHasClass(*open->parent, SyntaxNodeClass::CompoundBlock)
+        ) {
+            continue;
+        }
+        const auto* close = DirectMatchingClosingDelimiterChild(*open->parent, open);
+        if (close == nullptr) {
+            continue;
+        }
+        const auto& closeOwner = tree.Owner(tree.FindOwner(close));
+        if (closeOwner.begin >= program.tokenLines.size()) {
+            continue;
+        }
+        const auto& openLines = program.tokenLines[index];
+        const auto& closeLines = program.tokenLines[closeOwner.begin];
+        if (IsMeasured(openLines) && IsMeasured(closeLines)) {
+            bodies.emplace_back(std::max(*start, openLines.last), std::min(*end, closeLines.first));
+        }
+    }
+    std::sort(bodies.begin(), bodies.end());
+    size_t excluded = 0;
+    size_t covered = *start;
+    for (const auto& [begin, end] : bodies) {
+        const size_t from = std::max(covered, begin);
+        if (end > from) {
+            excluded += end - from;
+        }
+        covered = std::max(covered, end);
+    }
+    return *end - *start - excluded > 1;
+}
+
+void CollectLargeValues(
+    const FormatBreakNode& node,
+    const FormatLayoutTree& tree,
+    const FormatLayoutProgram& program,
+    std::unordered_set<const SyntaxNode*>& isolated,
+    std::unordered_set<const SyntaxNode*>& examined
+) {
+    if (node.declarationValueOwner != nullptr && examined.insert(node.declarationValueOwner).second) {
+        const auto* item = DeclarationScopeItem(node.declarationValueOwner);
+        if (
+            item != nullptr && (
+                SyntaxNodeHasClass(*item, SyntaxNodeClass::DeclarationGroupObject) ||
+                SyntaxNodeHasClass(*item, SyntaxNodeClass::DeclarationGroupAlias)
+            ) &&
+            !isolated.contains(item) &&
+            LargeValue(node, tree, program)
+        ) {
+            isolated.insert(item);
+        }
+    }
+    for (const auto* child : node.children) {
+        if (child != nullptr) {
+            CollectLargeValues(*child, tree, program, isolated, examined);
+        }
+    }
+    for (const auto* child : node.operands) {
+        if (child != nullptr) {
+            CollectLargeValues(*child, tree, program, isolated, examined);
+        }
+    }
+    for (const auto& item : node.items) {
+        if (item.node != nullptr) {
+            CollectLargeValues(*item.node, tree, program, isolated, examined);
+        }
+    }
+}
+
+}  // namespace
+
+void FormatDeclarationLayout::Resolve(const FormatLayoutTree& tree, FormatLayoutProgram& program) const {
+    std::unordered_set<const SyntaxNode*> isolated;
+    std::unordered_set<const SyntaxNode*> examined;
+    tree.VisitCompleteModels([&](const FormatBreakModel& model) {
+        if (model.root != nullptr) {
+            CollectLargeValues(*model.root, tree, program, isolated, examined);
+        }
+    });
+    for (auto& boundary : program.groupBoundaries) {
+        boundary.required = boundary.required || isolated.contains(boundary.left) || isolated.contains(boundary.right);
+    }
 }

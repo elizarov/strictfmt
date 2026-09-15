@@ -6979,6 +6979,7 @@ constexpr int conditional[]{
 #include "format_initializer_value.inc"
 #endif
 };
+
 constexpr int guarded[]{
     0,
 #ifdef FORMAT_INCLUDE_ALTERNATIVE
@@ -6986,6 +6987,7 @@ constexpr int guarded[]{
 #endif
     4,
 };
+
 constexpr int conditionalMultiple[]{
 #if defined(FORMAT_INCLUDE_ALTERNATIVE)
 #include "format_initializer_values.inc"
@@ -6995,6 +6997,7 @@ constexpr int conditionalMultiple[]{
     5,
 #endif
 };
+
 constexpr int nestedConditional[]{
 #if defined(FORMAT_INCLUDE_ALTERNATIVE)
 #ifdef FORMAT_NESTED_INCLUDE
@@ -7211,6 +7214,7 @@ constexpr int kConditional[] = {
 #endif
     5,
 };
+
 constexpr int kExpression = 1
 #define FORMAT_LIST_OPERAND 2
     + FORMAT_LIST_OPERAND
@@ -7365,19 +7369,25 @@ constexpr int kBare[] = {
     FORMAT_ITEM_EMPTY
     8,
 };
+
 constexpr int kBareFinal[] = {
     FORMAT_ITEM_LIST
 };
+
 #define FORMAT_ITEM_VALUE 9
 constexpr int kExplicitComma[] = {
     FORMAT_ITEM_VALUE,
 };
+
 constexpr int kExpression[] = {FORMAT_ITEM_VALUE + 1};
+
 #define FORMAT_SEMILESS_VALUE() 10
 constexpr int kCallComma[] = {
     FORMAT_SEMILESS_VALUE(),
 };
+
 constexpr int kCallExpression[] = {FORMAT_SEMILESS_VALUE() + 1};
+
 constexpr int kConditional[] = {
 #if defined(FORMAT_GENERATOR_ALTERNATIVE)
     FORMAT_ITEM_LIST
@@ -7411,6 +7421,7 @@ constexpr int kNested[][3] = {
         9,
     },
 };
+
 constexpr int kNegative[] = {FORMAT_ITEM_LIST - 1};
 #define FORMAT_SEMILESS_TEXT() "x"
 constexpr const char* kText[] = {FORMAT_SEMILESS_TEXT() "y"};
@@ -8039,6 +8050,7 @@ constexpr int BareList[] = {
     FORMAT_ITEM_LIST_VALUES
     FORMAT_ITEM_LIST_EMPTY
 };
+
 constexpr int CallList[] = {
     1,
     FORMAT_SEMILESS_LIST_VALUES()
@@ -8167,6 +8179,7 @@ auto values = {
     FORMAT_ITEM_VALUES(tag)
     1,
 };
+
 Pack<FORMAT_ITEM_TYPES int, FORMAT_ITEM_TYPES(tag) Value> types;
 constexpr auto built = ns::Build FORMAT_CONTINUATION_ARGUMENTS;
 constexpr auto called = (ns::Build) FORMAT_CONTINUATION_ARGUMENTS(tag);

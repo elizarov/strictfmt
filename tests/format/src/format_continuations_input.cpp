@@ -160,3 +160,36 @@ void NestedOpeningDelimiter(){Consume(First(),
 #define AFTER_CALL 1
 Second());}
 }
+
+namespace ConditionalValueGroups {
+constexpr int first[] = {
+#if ENABLED
+1,
+#else
+2,
+#endif
+3};
+constexpr int second[] = {4};
+}
+
+namespace CommentedBodySeparator {
+auto value = Pack{[] { First(); Second(); } // item
+, [] { Third(); Fourth(); }};
+}
+
+namespace SelectedValueGroups {
+int before;
+auto size = sizeof([] { Prepare(); Finish(); });
+auto nested = Wrap([] { if (Ready()) { Prepare(); Finish(); } return Value(); });
+int afterBodies;
+// This comment belongs to the multiline value.
+constexpr int values[] = {1,
+#define SELECTED_VALUE 2
+SELECTED_VALUE
+#undef SELECTED_VALUE
+};
+int afterValues;
+using Plain = int;
+using Target = Wrapper<FirstLongArgument, SecondLongArgument, ThirdLongArgument>;
+using Next = int;
+}
