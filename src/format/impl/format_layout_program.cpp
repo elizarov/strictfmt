@@ -26,6 +26,10 @@ void FormatLayoutProgramBuilder::PopOwner() {
 void FormatLayoutProgramBuilder::SetTokenCount(size_t count) {
     CheckPlanning();
     program_.tokenLines.resize(count);
+    // Most tokens add one write and some add spacing or line commands. Reserve
+    // from the known input size instead of repeatedly copying resolved commands.
+    program_.commands.reserve(count + count / 2);
+    program_.anchors.reserve(count + 1);
 }
 void FormatLayoutProgramBuilder::Reserve(size_t size) {
     CheckPlanning();
