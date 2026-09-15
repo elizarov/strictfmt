@@ -617,7 +617,7 @@ void NormalizeAttachedTrailingBlockComment(SyntaxNode& node) {
 }
 
 constexpr std::uint64_t kDeclarationGroupClasses = static_cast<std::uint64_t>(SyntaxNodeClass::DeclarationGroupType) |
-    static_cast<std::uint64_t>(SyntaxNodeClass::DeclarationGroupForwardType) |
+    static_cast<std::uint64_t>(SyntaxNodeClass::DeclarationGroupBodylessType) |
     static_cast<std::uint64_t>(SyntaxNodeClass::DeclarationGroupCallable) |
     static_cast<std::uint64_t>(SyntaxNodeClass::DeclarationGroupObject) |
     static_cast<std::uint64_t>(SyntaxNodeClass::DeclarationGroupAlias);
@@ -751,7 +751,7 @@ void ClassifyDeclarationGroup(SyntaxNode& node) {
     }
     if (IsTypeSpecifier(node)) {
         const SyntaxNodeClass group = TypeSpecifierHasDefinitionBody(node) ? SyntaxNodeClass::DeclarationGroupType :
-            SyntaxNodeClass::DeclarationGroupForwardType;
+            SyntaxNodeClass::DeclarationGroupBodylessType;
         node.classes |= static_cast<std::uint64_t>(group);
         return;
     }
@@ -763,13 +763,17 @@ void ClassifyDeclarationGroup(SyntaxNode& node) {
         node.classes |= static_cast<std::uint64_t>(SyntaxNodeClass::DeclarationGroupCallable);
         return;
     }
-    if (node.kind == SyntaxNodeKind::Declaration || node.kind == SyntaxNodeKind::FieldDeclaration) {
+    if (
+        node.kind == SyntaxNodeKind::Declaration ||
+        node.kind == SyntaxNodeKind::FieldDeclaration ||
+        node.kind == SyntaxNodeKind::TemplateInstantiation
+    ) {
         SyntaxNodeClass group = SyntaxNodeClass::DeclarationGroupObject;
         const DirectTypeDeclarationKind typeDeclaration = DirectTypeDeclaration(node);
         if (typeDeclaration == DirectTypeDeclarationKind::Definition) {
             group = SyntaxNodeClass::DeclarationGroupType;
         } else if (typeDeclaration == DirectTypeDeclarationKind::Forward) {
-            group = SyntaxNodeClass::DeclarationGroupForwardType;
+            group = SyntaxNodeClass::DeclarationGroupBodylessType;
         } else if (ContainsDeclarationSyntaxKind(node, SyntaxNodeKind::KeywordTypedef)) {
             group = SyntaxNodeClass::DeclarationGroupAlias;
         } else if (ContainsCallableDeclarator(node)) {
@@ -785,14 +789,7 @@ void ClassifyDeclarationGroup(SyntaxNode& node) {
     ) {
         return;
     }
-    std::uint64_t group = SingleIntroducedDeclarationGroup(node);
-    if (
-        node.kind == SyntaxNodeKind::TemplateInstantiation &&
-        group == static_cast<std::uint64_t>(SyntaxNodeClass::DeclarationGroupForwardType)
-    ) {
-        group = static_cast<std::uint64_t>(SyntaxNodeClass::DeclarationGroupType);
-    }
-    node.classes |= group;
+    node.classes |= SingleIntroducedDeclarationGroup(node);
 }
 
 bool ContainsListPreprocessor(const SyntaxNode& node) {

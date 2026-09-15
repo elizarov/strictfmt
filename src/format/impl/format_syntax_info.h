@@ -349,7 +349,7 @@ enum class SyntaxNodeClass : std::uint64_t {
     DeclaredTypeSpecifier = 1ull << 57,
     LexicalAtom = 1ull << 58,
     QualifiedName = 1ull << 59,
-    DeclarationGroupForwardType = 1ull << 60,
+    DeclarationGroupBodylessType = 1ull << 60,
     NamedList = 1ull << 61,
     ContainsListPreprocessor = 1ull << 62,
 };

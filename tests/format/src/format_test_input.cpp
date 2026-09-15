@@ -5061,3 +5061,31 @@ Compact::Compact() : computed_([] { Prepare(); return Get(); }()), last_(Get()) 
 SingleStatement::SingleStatement() : computed_([] { Prepare(); return Get(); }()), // computed value
 last_(Get()) { Check(); }
 }
+
+namespace TemplateInstantiationGroups {
+template<class T> class Container;
+template class Container<int>;
+template class Container<double>;
+extern template class Container<bool>;
+extern template class Container<char>;
+template struct Record<int>;
+template struct Record<double>;
+template union Storage<int>;
+template union Storage<double>;
+
+// Preserve an intentional group boundary.
+template class Container<long>;
+template class Container<short>;
+struct FirstDefinition{};
+struct SecondDefinition{};
+template<class T> concept Sized = sizeof(T) > 0;
+template<class T> concept Aligned = alignof(T) > 0;
+template int Convert<int>(int);
+template double Convert<double>(double);
+extern template int Convert<int>(int);
+extern template double Convert<double>(double);
+template int value<int>;
+template double value<double>;
+extern template int value<int>;
+extern template double value<double>;
+}

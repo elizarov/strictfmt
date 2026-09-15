@@ -216,7 +216,6 @@ Metric* ContextualRefIdentifier(Storage& storage) {
 }
 
 extern template class ExplicitTemplateInstantiation<ExplicitOptions>;
-
 template class ExplicitTemplateInstantiation<RuntimeOptions>;
 
 struct MacroInitializerFixture {

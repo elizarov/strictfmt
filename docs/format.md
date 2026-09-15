@@ -408,7 +408,7 @@ auto result = call(
 
 In declaration scopes, group by declared entity: types (including concepts), callables, objects or fields, and type aliases. Declaration wrappers inherit the kind of the entity they introduce.
 
-- Separate different kinds, and each non-forward type declaration, with one empty line.
+- Separate different kinds with one empty line. Within types, isolate definitions with bodies and concepts; group forward declarations and explicit instantiations.
 - Isolate an object or alias whose initializer or target takes more than one continuation line. Nested compound scopes do not affect this count.
 - Access specifiers and leading standalone comments attach to the following group.
 
@@ -501,7 +501,7 @@ auto update = [context, options](
 
 ### Templates
 
-A template prefix precedes the declaration on a separate line. Keep `requires` on the template line only when the complete prefix and compact clause fit; otherwise move it one indent deeper and wrap structurally.
+A template parameter list precedes the declaration on a separate line. Keep `requires` on the template line only when the complete prefix and compact clause fit; otherwise move it one indent deeper and wrap structurally.
 
 <!-- .cpp-format
 ColumnLimit: 40

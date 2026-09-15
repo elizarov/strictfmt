@@ -14,7 +14,7 @@ namespace {
 enum class DeclarationGroupKind {
     None,
     Type,
-    ForwardType,
+    BodylessType,
     Callable,
     Object,
     Alias,
@@ -74,8 +74,8 @@ struct FormatDeclarationLayout::Impl {
         if ((classes & static_cast<std::uint64_t>(SyntaxNodeClass::DeclarationGroupType)) != 0) {
             return DeclarationGroupKind::Type;
         }
-        if ((classes & static_cast<std::uint64_t>(SyntaxNodeClass::DeclarationGroupForwardType)) != 0) {
-            return DeclarationGroupKind::ForwardType;
+        if ((classes & static_cast<std::uint64_t>(SyntaxNodeClass::DeclarationGroupBodylessType)) != 0) {
+            return DeclarationGroupKind::BodylessType;
         }
         if ((classes & static_cast<std::uint64_t>(SyntaxNodeClass::DeclarationGroupCallable)) != 0) {
             return DeclarationGroupKind::Callable;
@@ -296,13 +296,13 @@ struct FormatDeclarationLayout::Impl {
         if (leftGroup == DeclarationGroupKind::None || rightGroup == DeclarationGroupKind::None) {
             return false;
         }
-        if (leftGroup == DeclarationGroupKind::ForwardType && rightGroup == DeclarationGroupKind::ForwardType) {
+        if (leftGroup == DeclarationGroupKind::BodylessType && rightGroup == DeclarationGroupKind::BodylessType) {
             return false;
         }
         return leftGroup == DeclarationGroupKind::Type ||
-            leftGroup == DeclarationGroupKind::ForwardType ||
+            leftGroup == DeclarationGroupKind::BodylessType ||
             rightGroup == DeclarationGroupKind::Type ||
-            rightGroup == DeclarationGroupKind::ForwardType ||
+            rightGroup == DeclarationGroupKind::BodylessType ||
             leftGroup != rightGroup;
     }
 

@@ -101,7 +101,7 @@ constexpr std::uint64_t kSymbolLocalClasses = Bit(SyntaxNodeClass::OpaqueSource)
     Bit(SyntaxNodeClass::ConditionalStreamOperatorChain) |
     Bit(SyntaxNodeClass::DeclarationScope) |
     Bit(SyntaxNodeClass::DeclarationGroupType) |
-    Bit(SyntaxNodeClass::DeclarationGroupForwardType) |
+    Bit(SyntaxNodeClass::DeclarationGroupBodylessType) |
     Bit(SyntaxNodeClass::DeclarationGroupCallable) |
     Bit(SyntaxNodeClass::DeclarationGroupObject) |
     Bit(SyntaxNodeClass::DeclarationGroupAlias) |
