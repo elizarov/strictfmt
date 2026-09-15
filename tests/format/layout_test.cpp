@@ -449,7 +449,7 @@ void TestSyntaxMap() {
 
 void TestPersistentLayoutOwners() {
     FormatterConfig config;
-    auto syntax = ParseFormatModel("int value = left + [] { work(); return middle; }() + right;", config);
+    auto syntax = ParseFormatModel("int value = left + [] { // boundary\n work(); // inner\n return middle; }() + right;", config);
     Check(syntax.parse.ok, "persistent layout fixture parses");
     const auto tokens = BuildPrintTokens(syntax, config.tabWidth);
     FormatLayoutTree tree(tokens);
@@ -471,6 +471,18 @@ void TestPersistentLayoutOwners() {
         }
     }
     const auto& complete = tree.CompleteModel(ownerId);
+    Check(std::any_of(complete.nodes->begin(), complete.nodes->end(), [](const auto& node) {
+        return node.hasIndependentBodyItems;
+    }), "enclosing model retains the presence of independently formatted body items");
+    const auto work = std::find_if(tokens.begin(), tokens.end(), [](const auto& token) {
+        return FormatTokenText(token) == "work";
+    });
+    Check(work != tokens.end(), "body statement has its own source identity");
+    const auto& bodyItem = tree.CompleteModel(tree.SourceItem(work->node));
+    const auto containsWork = [&](const auto& node) { return node.token.token != nullptr && node.token.token->node == work->node; };
+    Check(std::none_of(complete.nodes->begin(), complete.nodes->end(), containsWork) &&
+        std::any_of(bodyItem.nodes->begin(), bodyItem.nodes->end(), containsWork),
+        "body item model owns its content without rebuilding it in the enclosing model");
     const auto* originalRoot = complete.root;
     const auto* firstToken = &tokens.front();
     const auto& first = tree.AddRegion(std::span(tokens).first(3), {});

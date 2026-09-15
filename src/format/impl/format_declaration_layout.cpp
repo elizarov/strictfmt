@@ -235,6 +235,24 @@ TokenRange SourceRange(const FormatBreakNode& node, const FormatLayoutTree& tree
 
 bool IsMeasured(const FormatLayoutTokenLines& lines) { return lines.first != std::numeric_limits<size_t>::max(); }
 
+bool MayHaveLargeValue(const SyntaxNode* item, const FormatLayoutTree& tree, const FormatLayoutProgram& program) {
+    const auto& owner = tree.Owner(tree.FindOwner(item));
+    size_t first = std::numeric_limits<size_t>::max();
+    size_t last = 0;
+    for (size_t index = owner.begin; index < std::min(owner.end, program.tokenLines.size()); ++index) {
+        const auto& lines = program.tokenLines[index];
+        if (IsMeasured(lines)) {
+            first = std::min(first, lines.first);
+            last = std::max(last, lines.last);
+            if (last - first > 1) {
+                return true;
+            }
+        }
+    }
+    // The value's continuation range cannot exceed the whole declaration's range.
+    return false;
+}
+
 // Counts the selected value's physical continuation lines while treating every
 // nested compound body as opaque. Source ranges retain bodies omitted from cost
 // regions; interval union prevents nested scopes from being subtracted twice.
@@ -331,7 +349,7 @@ void CollectLargeValues(
 
 }  // namespace
 
-void FormatDeclarationLayout::Resolve(const FormatLayoutTree& tree, FormatLayoutProgram& program) const {
+void FormatDeclarationLayout::Resolve(FormatLayoutTree& tree, FormatLayoutProgram& program) const {
     // Only object and alias values can add an optional boundary. If none of
     // those boundaries remains, traversing complete models cannot change output.
     if (std::none_of(program.groupBoundaries.begin(), program.groupBoundaries.end(), [](const auto& boundary) {
@@ -341,11 +359,25 @@ void FormatDeclarationLayout::Resolve(const FormatLayoutTree& tree, FormatLayout
     }
     std::unordered_set<const SyntaxNode*> isolated;
     std::unordered_set<const SyntaxNode*> examined;
-    tree.VisitCompleteModels([&](const FormatBreakModel& model) {
-        if (model.root != nullptr) {
-            CollectLargeValues(*model.root, tree, program, isolated, examined);
+    std::unordered_set<const SyntaxNode*> declarations;
+    for (const auto& boundary : program.groupBoundaries) {
+        if (boundary.required) {
+            continue;
         }
-    });
+        for (const auto* item : {boundary.left, boundary.right}) {
+            if (
+                !CanIsolateLargeValue(item) ||
+                !declarations.insert(item).second ||
+                !MayHaveLargeValue(item, tree, program)
+            ) {
+                continue;
+            }
+            const auto& model = tree.CompleteModel(tree.FindOwner(item));
+            if (model.root != nullptr) {
+                CollectLargeValues(*model.root, tree, program, isolated, examined);
+            }
+        }
+    }
     for (auto& boundary : program.groupBoundaries) {
         boundary.required = boundary.required || isolated.contains(boundary.left) || isolated.contains(boundary.right);
     }

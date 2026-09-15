@@ -24,6 +24,8 @@ A packed list's separately evaluated body inherits the opener's charged flag, bu
 
 The builder retains initial depth in `rawDepth`; `FormatBreakCostNormalizer` materializes the depth adjustments specified in [format.md] in `structuralDepth`. `breakCost` starts at the same depth and every structural-depth shift updates both values. After building the complete model, the normalizer applies the specified subtree discounts from outer subtrees inward. Costs are fixed before solving, so memoization needs no layout-history state, and the emission choices and indentation rules are unchanged.
 
+Complete item models retain only the braces and boundary trivia of nested compound scopes whose items format in independent regions. Compact single-statement bodies and models rooted within a body retain their contents. Omitted body items mark the enclosing fragment incomplete for whole-line macro checks; source ownership and body extents remain in the persistent layout tree.
+
 ## Search Shape
 
 `Solver::Solve` evaluates a subproblem identified by break node, current column, current indentation level, and whether the current line already has text. Both the best result and the complete ordered alternative set are memoized by this state. Reusing alternatives avoids repeating recursive search through nested layout combinations; it preserves candidate order and retains every continuation-sensitive choice. Cached results and their choice trees remain immutable for the lifetime of the segment's solver. Owner placements are fixed during region projection; configuration and line-suffix width are fixed for that solver, so they require no additional per-subproblem cache key.

@@ -155,9 +155,3 @@ std::optional<int> FormatLayoutTree::BlockIndent(const SyntaxNode* token) const 
     const auto found = blockIndents_.find(token);
     return found == blockIndents_.end() ? std::nullopt : std::optional(found->second);
 }
-
-void FormatLayoutTree::VisitCompleteModels(const std::function<void(const FormatBreakModel&)>& visitor) const {
-    for (const auto& [owner, model] : completeModels_) {
-        visitor(model);
-    }
-}

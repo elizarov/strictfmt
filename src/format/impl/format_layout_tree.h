@@ -1,7 +1,6 @@
 #pragma once
 
 #include <deque>
-#include <functional>
 #include <memory>
 #include <span>
 #include <unordered_map>
@@ -40,7 +39,6 @@ public:
     explicit FormatLayoutTree(std::span<const PrintToken> tokens);
     ~FormatLayoutTree();
 
-    void VisitCompleteModels(const std::function<void(const FormatBreakModel&)>& visitor) const;
     void Complete(FormatLayoutProgram program);
     const FormatLayoutProgram& Program() const;
     void RecordBlockIndent(const SyntaxNode* token, int indent);

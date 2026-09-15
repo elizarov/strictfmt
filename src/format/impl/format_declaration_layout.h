@@ -22,7 +22,7 @@ public:
     explicit FormatDeclarationLayout(std::span<const PrintToken> tokens);
     ~FormatDeclarationLayout();
     std::optional<FormatDeclarationBoundary> BoundaryBefore(size_t tokenIndex);
-    void Resolve(const FormatLayoutTree& tree, FormatLayoutProgram& program) const;
+    void Resolve(FormatLayoutTree& tree, FormatLayoutProgram& program) const;
 
 private:
     struct Impl;

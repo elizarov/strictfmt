@@ -390,6 +390,9 @@ private:
     }
 
     bool Complete(const FormatBreakNode& node) const {
+        if (node.hasIndependentBodyItems) {
+            return false;
+        }
         if (node.kind == FormatBreakNodeKind::Token) {
             return node.token.token == nullptr ||
                 node.token.token->node == nullptr ||

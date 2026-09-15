@@ -1116,6 +1116,40 @@ private:
         if (!SyntaxNodeKindHasClass(node.kind, SyntaxNodeClass::Tree)) {
             return nullptr;
         }
+        if (
+            &node != root_ &&
+            SyntaxNodeHasClass(node, SyntaxNodeClass::CompoundBlock) &&
+            SyntaxNodeHasClass(node, SyntaxNodeClass::SourceItemScope) &&
+            !CallableBodyAllowsCompactSingleStatementForm(node, ParentKind(node))
+        ) {
+            // An expanded body owns independent cost regions. Its enclosing
+            // model needs the braces and boundary trivia, not the body items.
+            ConstSyntaxChildList boundary;
+            bool hasOpen = false;
+            bool hasClose = false;
+            bool prefix = true;
+            bool suffix = false;
+            for (const auto* child : node.children) {
+                if (child == nullptr) {
+                    continue;
+                }
+                const bool open = child->kind == SyntaxNodeKind::LeftBrace;
+                const bool close = child->kind == SyntaxNodeKind::RightBrace;
+                hasOpen |= open && TokenForNode(*child).has_value();
+                hasClose |= close && TokenForNode(*child).has_value();
+                if (open || close || (IsSyntaxTriviaNode(child) && (prefix || suffix))) {
+                    boundary.push_back(child);
+                } else {
+                    prefix = false;
+                }
+                suffix |= close;
+            }
+            if (hasOpen && hasClose) {
+                auto* body = BuildSequenceFromChildren(boundary, 0, boundary.size(), depth);
+                body->hasIndependentBodyItems = boundary.size() != node.children.size();
+                return body;
+            }
+        }
         if (SyntaxNodeHasLocalClass(node, SyntaxNodeClass::QualifiedName)) {
             if (auto qualifiedName = BuildQualifiedName(node, depth)) {
                 return qualifiedName;
