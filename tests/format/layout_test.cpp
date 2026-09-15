@@ -20,6 +20,7 @@
 #include "format/impl/format_layout_lowerer.h"
 #include "format/impl/format_break_solver.h"
 #include "format/impl/format_break_model.h"
+#include "format/impl/format_break_model_builder.h"
 #include "format/impl/format_list_continuation.h"
 #include "format/impl/format_chain_continuation.h"
 #include "format/impl/format_layout_tree.h"
@@ -579,6 +580,34 @@ void TestSparseLayoutProjection() {
     }
 }
 
+void TestListItemStorage() {
+    FormatterConfig config;
+    std::string source = "auto result = Build(";
+    for (int index = 0; index < 300; ++index) {
+        if (index != 0) source += ",";
+        source += "argument" + std::to_string(index);
+    }
+    source += ");";
+    auto syntax = ParseFormatModel(source, config);
+    Check(syntax.parse.ok, "growing list fixture parses");
+    const auto tokens = BuildPrintTokens(syntax, config.tabWidth);
+    auto complete = BuildFormatBreakModel(tokens);
+    auto projection = ProjectFormatLayout(complete, tokens, {});
+    auto moved = std::move(complete);
+    for (const auto* model : {&moved, &projection}) {
+        const auto list = std::find_if(model->nodes->begin(), model->nodes->end(), [](const auto& node) {
+            return node.items.size() == 300;
+        });
+        Check(list != model->nodes->end(), "complete and projected lists retain every item across arena growth");
+        for (size_t index = 0; index < list->items.size(); ++index) {
+            const auto* item = list->items[index].node;
+            Check(item != nullptr && item->kind == FormatBreakNodeKind::Token &&
+                FormatTokenText(*item->token.token) == "argument" + std::to_string(index),
+                "list-item spans preserve order and values after model ownership transfer");
+        }
+    }
+}
+
 void TestPersistentHeaderIndent() {
     FormatterConfig config;
     auto syntax = ParseFormatModel("Record::Record() : first_(0), last_(1) { Work(); Done(); }", config);
@@ -871,7 +900,8 @@ void TestDelimiterStack() {
     inner.kind = FormatBreakNodeKind::Delimited;
     inner.delimiterKind = FormatBreakDelimiterKind::Paren;
     inner.children = delimiters;
-    inner.items = {{.node = &leaf}};
+    std::array innerItems{FormatBreakListItem{.node = &leaf}};
+    inner.items = innerItems;
     FormatBreakNode wrapper;
     wrapper.kind = FormatBreakNodeKind::Sequence;
     std::array wrapped{&inner};
@@ -880,7 +910,8 @@ void TestDelimiterStack() {
     outer.kind = FormatBreakNodeKind::Delimited;
     outer.delimiterKind = FormatBreakDelimiterKind::Paren;
     outer.children = delimiters;
-    outer.items = {{.node = &wrapper}};
+    std::array outerItems{FormatBreakListItem{.node = &wrapper}};
+    outer.items = outerItems;
     const auto view = CollectFormatDelimiterStack(outer, FormatDelimiterStackPolicy::Solving);
     Check(view && view->delimiters.size() == 2 && view->delimiters[0] == &outer &&
         view->delimiters[1] == &inner && view->leaf == &leaf, "stack recognition unwraps only transparent sequences in order");
@@ -907,6 +938,7 @@ int main() {
         TestIncrementalMacroParsing();
         TestPersistentLayoutOwners();
         TestSparseLayoutProjection();
+        TestListItemStorage();
         TestBreakArena();
         TestSyntaxMap();
         TestPersistentHeaderIndent();

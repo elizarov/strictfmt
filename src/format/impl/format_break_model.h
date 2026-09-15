@@ -119,11 +119,8 @@ struct FormatBreakNodeData {
 };
 
 struct FormatBreakNode : FormatBreakNodeData {
-    explicit FormatBreakNode(std::pmr::memory_resource* resource = std::pmr::get_default_resource()) :
-        items(resource) {}
-
     std::span<FormatBreakNode*> children;
-    std::pmr::vector<FormatBreakListItem> items;
+    std::span<FormatBreakListItem> items;
     std::span<FormatBreakNode*> operands;
     std::span<FormatBreakToken> operators;
     std::vector<std::vector<FormatBreakToken>> commentsBeforeOperators;
@@ -131,7 +128,7 @@ struct FormatBreakNode : FormatBreakNodeData {
     std::vector<std::string> compactStringTexts;
 };
 
-template <typename T>
+template <typename T, size_t BlockSize = 256>
 class FormatBreakArena {
     static_assert(std::is_trivially_copyable_v<T>);
 
@@ -141,8 +138,6 @@ public:
     std::span<T> Allocate(size_t count);
 
 private:
-    static constexpr size_t kBlockSize = 256;
-
     std::span<T> AllocateStorage(size_t count);
     void AllocateBlock(size_t capacity);
 
@@ -159,27 +154,27 @@ private:
     size_t remaining_ = 0;
 };
 
-template <typename T>
-std::span<T> FormatBreakArena<T>::Append(std::span<const T> values) {
+template <typename T, size_t BlockSize>
+std::span<T> FormatBreakArena<T, BlockSize>::Append(std::span<const T> values) {
     std::span<T> result = AllocateStorage(values.size());
     std::uninitialized_copy(values.begin(), values.end(), result.begin());
     return result;
 }
 
-template <typename T>
-std::span<T> FormatBreakArena<T>::Allocate(size_t count) {
+template <typename T, size_t BlockSize>
+std::span<T> FormatBreakArena<T, BlockSize>::Allocate(size_t count) {
     std::span<T> result = AllocateStorage(count);
     std::uninitialized_default_construct(result.begin(), result.end());
     return result;
 }
 
-template <typename T>
-std::span<T> FormatBreakArena<T>::AllocateStorage(size_t count) {
+template <typename T, size_t BlockSize>
+std::span<T> FormatBreakArena<T, BlockSize>::AllocateStorage(size_t count) {
     if (count == 0) {
         return {};
     }
     if (remaining_ < count) {
-        AllocateBlock(std::max(count, kBlockSize));
+        AllocateBlock(std::max(count, BlockSize));
     }
     T* result = cursor_;
     cursor_ += count;
@@ -187,8 +182,8 @@ std::span<T> FormatBreakArena<T>::AllocateStorage(size_t count) {
     return {result, count};
 }
 
-template <typename T>
-void FormatBreakArena<T>::AllocateBlock(size_t capacity) {
+template <typename T, size_t BlockSize>
+void FormatBreakArena<T, BlockSize>::AllocateBlock(size_t capacity) {
     if (resource_ == nullptr) {
         resource_ = std::pmr::get_default_resource();
     }
@@ -207,11 +202,13 @@ struct FormatBreakModel {
             resource == nullptr ? std::pmr::get_default_resource() : resource
         )),
         nodePointers(resource),
-        tokens(resource) {}
+        tokens(resource),
+        listItems(resource) {}
 
     std::unique_ptr<std::pmr::deque<FormatBreakNode>> nodes;
     FormatBreakArena<FormatBreakNode*> nodePointers;
     FormatBreakArena<FormatBreakToken> tokens;
+    FormatBreakArena<FormatBreakListItem, 16> listItems;
     FormatBreakNode* root = nullptr;
     bool hasLayoutChoice = false;
 };

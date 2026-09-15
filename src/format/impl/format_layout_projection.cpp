@@ -132,7 +132,7 @@ private:
     }
 
     FormatBreakNode* New() {
-        auto& node = model_.nodes->emplace_back(model_.nodes->get_allocator().resource());
+        auto& node = model_.nodes->emplace_back();
         node.id = static_cast<int>(model_.nodes->size());
         return &node;
     }
@@ -321,7 +321,8 @@ private:
 
     FormatBreakNode* List(const FormatBreakNode& source) {
         auto* node = Copy(source);
-        node->items.reserve(source.items.size());
+        node->items = model_.listItems.Allocate(source.items.size());
+        size_t itemCount = 0;
         auto delimiters = model_.nodePointers.Allocate(source.children.size());
         bool openSelected = false;
         bool closeSelected = false;
@@ -361,8 +362,9 @@ private:
             projected.node = value == nullptr ? New() : value;
             projected.separator = separator;
             projected.trailingComment = comment;
-            node->items.push_back(projected);
+            node->items[itemCount++] = projected;
         }
+        node->items = node->items.first(itemCount);
         node->leadingTrailingComment = Token(source.leadingTrailingComment);
         const bool completeDelimiters = source.kind == FormatBreakNodeKind::StatementSequence ||
             (openSelected && (source.kind == FormatBreakNodeKind::PrefixList || closeSelected));

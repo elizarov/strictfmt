@@ -330,6 +330,7 @@ private:
     const SyntaxNode* root_ = nullptr;
     FormatSyntaxMap<FormatBreakToken> selectedTokens_;
     int nextId_ = 1;
+    std::vector<size_t> itemCapacities_;
     FormatBreakCostNormalizer costNormalizer_;
 
     static bool StartsWithStandaloneComment(const FormatBreakNode* node) {
@@ -378,7 +379,7 @@ private:
     const SyntaxNode* currentSyntaxOwner_ = nullptr;
 
     FormatBreakNode* MakeNode(FormatBreakNodeKind kind, int depth) {
-        model_.nodes->emplace_back(model_.nodes->get_allocator().resource());
+        model_.nodes->emplace_back();
         FormatBreakNode& node = model_.nodes->back();
         node.id = nextId_++;
         node.syntaxOwner = currentSyntaxOwner_;
@@ -422,7 +423,20 @@ private:
 
     void AppendListItem(FormatBreakNode& list, FormatBreakNode* item, bool blankLineBefore) {
         list.forceSplit = list.forceSplit || blankLineBefore;
-        list.items.push_back(FormatBreakListItem{.node = item, .blankLineBefore = blankLineBefore});
+        const auto id = static_cast<size_t>(list.id);
+        if (itemCapacities_.size() <= id) {
+            itemCapacities_.resize(id + 1);
+        }
+        auto& capacity = itemCapacities_[id];
+        const size_t count = list.items.size();
+        if (count == capacity) {
+            capacity = std::max(size_t{2}, capacity * 2);
+            auto storage = model_.listItems.Allocate(capacity);
+            std::copy(list.items.begin(), list.items.end(), storage.begin());
+            list.items = storage.first(count);
+        }
+        list.items = {list.items.data(), count + 1};
+        list.items.back() = FormatBreakListItem{.node = item, .blankLineBefore = blankLineBefore};
     }
 
     FormatBreakNode* BuildListItem(const ConstSyntaxChildList& children, int depth, bool parameter) {
@@ -3189,7 +3203,7 @@ private:
                     afterDelimited = closeIndex + 1;
                     return FinishDelimited(delimited);
                 }
-                delimited->items.clear();
+                delimited->items = delimited->items.first(0);
             }
         }
 
