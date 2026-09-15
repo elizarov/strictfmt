@@ -102,6 +102,7 @@ struct FormatBreakNode {
     bool ternaryRequiresColonBreaks = false;
     bool splitTrailingBodyHeaderAtParentIndent = false;
     std::optional<size_t> splitTrailingCommaItem;
+    std::optional<int> continuedBodyHeaderOwnerIndent;
     std::optional<int> requiredChainBreakBaseIndent;
     const SyntaxNode* declarationValueOwner = nullptr;
     FormatBreakToken leadingTrailingComment;
@@ -174,6 +175,9 @@ struct FormatBreakVirtualDelimiter {
 
 struct FormatBreakModelContext {
     std::vector<FormatBreakVirtualDelimiter> virtualDelimiters;
+    // A body whose header began in an earlier mandatory segment, with its enclosing scope's indentation.
+    const SyntaxNode* continuedBodyHeader = nullptr;
+    int continuedBodyHeaderOwnerIndent = 0;
     const std::unordered_set<const SyntaxNode*>* requiredChainBreakOperators = nullptr;
     const std::unordered_map<const SyntaxNode*, int>* requiredChainBreakBaseIndents = nullptr;
     bool forceSplitStreamChain = false;

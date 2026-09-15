@@ -409,8 +409,9 @@ private:
             return;
         }
         EmitBreakNode(*node.children[0], solution, baseIndent);
-        const int bodyIndent =
-            choice == FormatBreakChoice::BodyHeaderSplitAtParentIndent ? std::max(0, baseIndent - 1) : baseIndent;
+        const int bodyIndent = node.continuedBodyHeaderOwnerIndent.value_or(
+            choice == FormatBreakChoice::BodyHeaderSplitAtParentIndent ? std::max(0, baseIndent - 1) : baseIndent
+        );
         if (
             choice == FormatBreakChoice::BodyHeaderSplitAtParentIndent ||
             choice == FormatBreakChoice::BodyHeaderDetachedBody

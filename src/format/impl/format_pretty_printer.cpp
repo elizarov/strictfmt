@@ -652,7 +652,7 @@ private:
     }
 
     bool CanFlushPendingTokensCompact(const FormatBreakModelContext& context) const {
-        if (pendingSourceBlankLine_) {
+        if (pendingSourceBlankLine_ || context.continuedBodyHeader != nullptr) {
             return false;
         }
         if (!context.virtualDelimiters.empty() || (
@@ -830,12 +830,38 @@ private:
     void BreakLine(int indentLevel, bool blankLine) override { BreakListLine(indentLevel, blankLine); }
     void SetPendingIndent(int indentLevel) override { output_.SetPendingIndent(indentLevel); }
 
+    void ConstrainContinuedBodyHeader(FormatBreakModelContext& context) const {
+        if (activeTokens_ == nullptr || pendingTokens_.front().sourceIndex == 0) {
+            return;
+        }
+        const PrintToken& previous = (*activeTokens_)[pendingTokens_.front().sourceIndex - 1];
+        for (const PrintToken& token : pendingTokens_) {
+            if (
+                token.syntaxKind != SyntaxNodeKind::LeftBrace ||
+                token.parentKind != SyntaxNodeKind::CompoundStatement ||
+                token.grandParentKind != SyntaxNodeKind::FunctionDefinition ||
+                token.node == nullptr
+            ) {
+                continue;
+            }
+            const SyntaxNode* body = token.node->parent;
+            if (PrintTokenSyntaxPathContains(previous, body->parent)) {
+                // An earlier header segment has already been emitted. The current continuation indentation
+                // belongs to the header; the function body still belongs to the enclosing structural scope.
+                context.continuedBodyHeader = body;
+                context.continuedBodyHeaderOwnerIndent = pendingIndentRestoreAfterFlush_.value_or(indentLevel_);
+                return;
+            }
+        }
+    }
+
     std::vector<FormatBreakSplitList> FlushPendingTokens(const FormatBreakModelContext& context = {}) {
         emittedBlockOpenIndent_.reset();
         if (pendingTokens_.empty()) {
             return {};
         }
         FormatBreakModelContext effectiveContext = context;
+        ConstrainContinuedBodyHeader(effectiveContext);
         chainContinuation_->Constrain(effectiveContext);
         if (breakModelDump_ == nullptr && CanFlushPendingTokensCompact(effectiveContext)) {
             FlushPendingTokensCompact();

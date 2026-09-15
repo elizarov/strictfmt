@@ -95,7 +95,8 @@ struct FormatCompactLayout::Impl {
                 }
                 break;
             case FormatBreakNodeKind::BodyHeader:
-                if (node.bodyHeaderRequiresDetachedBody) {
+                // A continued header needs the solver's indentation-dependent brace-placement check.
+                if (node.bodyHeaderRequiresDetachedBody || node.continuedBodyHeaderOwnerIndent.has_value()) {
                     cached.valid = false;
                     break;
                 }

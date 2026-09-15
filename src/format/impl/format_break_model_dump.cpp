@@ -226,6 +226,10 @@ void
     WriteBooleanField(output, fieldIndent, "function-signature-has-body", node.functionSignatureHasBody);
     WriteBooleanField(output, fieldIndent, "body-header-is-lambda", node.bodyHeaderIsLambda);
     WriteBooleanField(output, fieldIndent, "body-header-single-statement-body", node.bodyHeaderSingleStatementBody);
+    if (node.continuedBodyHeaderOwnerIndent) {
+        WriteIndent(output, fieldIndent);
+        std::fprintf(output, "continued-body-header-owner-indent: %d\n", *node.continuedBodyHeaderOwnerIndent);
+    }
     WriteBooleanField(
         output,
         fieldIndent,

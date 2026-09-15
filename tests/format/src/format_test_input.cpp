@@ -5047,3 +5047,17 @@ auto chained=factory()[0] FORMAT_CONTINUATION_OPTIONS(tag) FORMAT_CONTINUATION_M
 int arithmetic=(left+right) FORMAT_CONTINUATION_ADD(value*factor);
 bool compared=true FORMAT_TOKEN_COMPARE(FORMAT_CONTINUATION_COMPARE,field);
 }
+
+namespace ContinuedConstructorHeaders {
+Packed::Packed() : first_value_with_a_long_name_(FirstValue()), second_value_with_a_long_name_(SecondValue()), computed_([] { Prepare(); return Get(); }()), last_(Get()) { Check(); Done(); }
+Expanded::Expanded() : first_value_with_a_long_name_(FirstValue()), second_value_with_a_long_name_(SecondValue()), third_value_with_a_long_name_(ThirdValue()), computed_([] { Prepare(); return Get(); }()), last_(Convert(Get())) { Check(); Done(); }
+struct Nested {
+Nested() : computed_([] { Prepare(); return Get(); }()), // computed value
+last_(Get()) { Check(); Done(); }
+};
+Empty::Empty() : computed_([] { Prepare(); return Get(); }()), // computed value
+last_(Get()) {}
+Compact::Compact() : computed_([] { Prepare(); return Get(); }()), last_(Get()) { Check(); Done(); }
+SingleStatement::SingleStatement() : computed_([] { Prepare(); return Get(); }()), // computed value
+last_(Get()) { Check(); }
+}

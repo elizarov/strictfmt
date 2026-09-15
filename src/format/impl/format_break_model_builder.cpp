@@ -1685,6 +1685,9 @@ private:
     {
         auto result = MakeNode(FormatBreakNodeKind::BodyHeader, depth);
         result->bodyHeaderDetachBodyAfterExpandedHeader = !IsEmptyCompoundBlock(bodyNode);
+        if (&bodyNode == context_.continuedBodyHeader) {
+            result->continuedBodyHeaderOwnerIndent = context_.continuedBodyHeaderOwnerIndent;
+        }
         result->children = StoreNodePointers({header, body});
         return result;
     }

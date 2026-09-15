@@ -2260,8 +2260,8 @@ private:
     {
         return node.bodyHeaderDetachBodyAfterExpandedHeader &&
             header.valid &&
-            header.extraLines > 0 &&
-            header.endIndentLevel == ownerIndentLevel + 1;
+            (header.extraLines > 0 || node.continuedBodyHeaderOwnerIndent.has_value()) &&
+            header.endIndentLevel == node.continuedBodyHeaderOwnerIndent.value_or(ownerIndentLevel) + 1;
     }
 
     NodeResults
@@ -2273,8 +2273,11 @@ private:
         NodeResults alternatives;
         for (const NodeResult& header : SolveAlternatives(*node.children[0], column, indentLevel, lineHasText)) {
             if (
-                ExpandedBodyHeaderNeedsDetachedBody(node, header, indentLevel) ||
-                (node.bodyHeaderSingleStatementBody && header.extraLines > 0) || (
+                ExpandedBodyHeaderNeedsDetachedBody(node, header, indentLevel) || (
+                    node.bodyHeaderSingleStatementBody &&
+                    (header.extraLines > 0 || node.continuedBodyHeaderOwnerIndent.has_value())
+                ) ||
+                (
                     !lineHasText &&
                     node.bodyHeaderSplitAtParentIndentWhenLineStarts &&
                     !node.bodyHeaderSingleStatementBody
@@ -2353,10 +2356,11 @@ private:
             }
             const bool detachedBody = choice == FormatBreakChoice::BodyHeaderSplitAtParentIndent ||
                 choice == FormatBreakChoice::BodyHeaderDetachedBody;
+            const int detachedBodyIndent = node.continuedBodyHeaderOwnerIndent.value_or(bodyIndentLevel);
             if (
                 detachedBody &&
                 !node.bodyHeaderRequiresDetachedBody &&
-                !ExpandedBodyHeaderNeedsDetachedBody(node, header, bodyIndentLevel)
+                !ExpandedBodyHeaderNeedsDetachedBody(node, header, detachedBodyIndent)
             ) {
                 continue;
             }
@@ -2366,7 +2370,7 @@ private:
             AddChoice(result, node.id, choice, indentLevel);
             Merge(result, header);
             if (detachedBody) {
-                AppendBreak(result, bodyIndentLevel, node.breakCost);
+                AppendBreak(result, detachedBodyIndent, node.breakCost);
             }
             NodeResult body = SolveBodyHeaderSplitBody(
                 *node.children[1], result.endColumn, result.endIndentLevel, result.endLineHasText
