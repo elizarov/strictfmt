@@ -375,16 +375,10 @@ private:
             children.push_back(item.node);
             auto* separator = TokenNode(item.separator, source.rawDepth + 1);
             auto* comment = TokenNode(item.trailingComment, source.rawDepth + 1);
-            const bool commentPrecedesSeparator = separator != nullptr &&
-                comment != nullptr &&
-                comment->token.token->sourceIndex < separator->token.token->sourceIndex;
-            if (commentPrecedesSeparator) {
-                children.push_back(comment);
-            }
             if (separator != nullptr) {
                 children.push_back(separator);
             }
-            if (comment != nullptr && !commentPrecedesSeparator) {
+            if (comment != nullptr) {
                 children.push_back(comment);
             }
         }

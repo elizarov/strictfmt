@@ -375,7 +375,7 @@ struct FormatListContinuation::Impl {
                 context != blockPlan_->deferredContexts.rend();
                 ++context
             ) {
-                const auto selected = selections_.find(context->openToken);
+                const auto selected = selections_.find(context->list);
                 if (selected != selections_.end()) {
                     context->itemIndent = selected->second.itemIndent;
                     context->closeIndent = selected->second.closeIndent;
@@ -393,7 +393,7 @@ struct FormatListContinuation::Impl {
         return preprocessorPlan_ ? &preprocessorPlan_->breakContext : nullptr;
     }
     int ResolvePreprocessor() {
-        const auto selected = selections_.find(preprocessorPlan_->deferredContext.openToken);
+        const auto selected = selections_.find(preprocessorPlan_->deferredContext.list);
         if (selected != selections_.end()) {
             preprocessorPlan_->deferredContext.itemIndent = selected->second.itemIndent;
             preprocessorPlan_->deferredContext.closeIndent = selected->second.closeIndent;
@@ -514,5 +514,10 @@ std::optional<int> FormatListContinuation::AfterBlock(const PrintToken& token, c
 }
 
 void FormatListContinuation::RecordSelection(const SyntaxNode* open, int itemIndent, int closeIndent) {
-    impl_->selections_.insert_or_assign(open, Impl::Selection{itemIndent, closeIndent});
+    impl_->selections_.insert_or_assign(open->parent, Impl::Selection{itemIndent, closeIndent});
+}
+
+std::optional<int> FormatListContinuation::SelectedItemIndent(const SyntaxNode* list) const {
+    const auto selected = impl_->selections_.find(list);
+    return selected == impl_->selections_.end() ? std::nullopt : std::optional(selected->second.itemIndent);
 }

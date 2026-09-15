@@ -8219,8 +8219,7 @@ struct Nested {
         computed_([] {
             Prepare();
             return Get();
-        }()),
-        // computed value
+        }()),  // computed value
         last_(Get())
     {
         Check();
@@ -8232,8 +8231,7 @@ Empty::Empty() :
     computed_([] {
         Prepare();
         return Get();
-    }()),
-    // computed value
+    }()),  // computed value
     last_(Get()) {}
 Compact::Compact() : computed_([] {
     Prepare();
@@ -8246,8 +8244,7 @@ SingleStatement::SingleStatement() :
     computed_([] {
         Prepare();
         return Get();
-    }()),
-    // computed value
+    }()),  // computed value
     last_(Get())
 {
     Check();

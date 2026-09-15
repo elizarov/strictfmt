@@ -335,24 +335,33 @@ private:
         return index + 1 < tokens.size() ? &tokens[index + 1] : nullptr;
     }
 
-    void BufferFollowingAttachedComments() {
+    void BufferFollowingAttachedComments(bool trailingOnly = false) {
         if (activeTokens_ == nullptr) {
             return;
         }
-        for (size_t index = currentTokenIndex_ + 1; index < activeTokens_->size(); ++index) {
-            const PrintToken& candidate = (*activeTokens_)[index];
+        size_t end = currentTokenIndex_ + 1;
+        bool trailing = false;
+        while (end < activeTokens_->size()) {
+            const PrintToken& candidate = (*activeTokens_)[end];
             if (candidate.kind == PrintTokenKind::TrailingComment) {
-                BufferToken(candidate);
-                prebufferedTokenSourceIndices_.insert(candidate.sourceIndex);
-                return;
+                trailing = true;
+                ++end;
+                break;
             }
             if (
                 candidate.kind != PrintTokenKind::Text ||
                 candidate.node == nullptr ||
                 !SyntaxNodeHasClass(*candidate.node, SyntaxNodeClass::Comment)
             ) {
-                return;
+                break;
             }
+            ++end;
+        }
+        if (trailingOnly && !trailing) {
+            return;
+        }
+        for (size_t index = currentTokenIndex_ + 1; index < end; ++index) {
+            const PrintToken& candidate = (*activeTokens_)[index];
             BufferToken(candidate);
             prebufferedTokenSourceIndices_.insert(candidate.sourceIndex);
         }
@@ -996,6 +1005,25 @@ private:
         return &(*activeTokens_)[currentTokenIndex_ + offset];
     }
 
+    void FlushListItem(std::optional<int> itemIndent = std::nullopt) {
+        const SyntaxNode* list = pendingTokens_.back().node->parent;
+        const int fallbackIndent =
+            output_.State().atLineStart ? CurrentColumn() / indentWidth_ : CurrentLineIndentLevel();
+        BufferFollowingAttachedComments(true);
+        const PrintToken& last = pendingTokens_.back();
+        const PrintToken* next = activeTokens_ != nullptr && last.sourceIndex + 1 < activeTokens_->size() ?
+            &(*activeTokens_)[last.sourceIndex + 1] : nullptr;
+        const bool macroContinuation = ShouldContinueMacroLine(last, next);
+        FlushPendingTokens();
+        if (!itemIndent) {
+            itemIndent = layoutTree_->Lists().SelectedItemIndent(list);
+        }
+        NewLineWithIndent(
+            itemIndent.value_or(output_.State().atLineStart ? fallbackIndent : CurrentLineIndentLevel()),
+            macroContinuation
+        );
+    }
+
     bool TryPrintListBoundary(const PrintToken& token, FormatListContinuationKind kind) {
         const auto boundary = layoutTree_->Lists().BoundaryFor(token, kind);
         if (!boundary) {
@@ -1011,8 +1039,7 @@ private:
             const bool leadingComma = token.syntaxKind == SyntaxNodeKind::Comma && !HasBufferedCodeText();
             BufferToken(token);
             if (boundary->indent && !leadingComma) {
-                FlushPendingTokens();
-                NewLineWithIndent(*boundary->indent, ShouldContinueMacroLine(token, RawTokenAfterCurrent(1)));
+                FlushListItem(*boundary->indent);
             }
         }
         return true;
@@ -1045,8 +1072,7 @@ private:
             return true;
         }
         BufferToken(token);
-        FlushPendingTokens();
-        NewLineWithIndent(CurrentLineIndentLevel());
+        FlushListItem();
         return true;
     }
 

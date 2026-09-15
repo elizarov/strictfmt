@@ -30,6 +30,7 @@ public:
 
     const FormatLayoutRegionContext* PlanBlock(size_t index);
     void RecordSelection(const SyntaxNode* open, int itemIndent, int closeIndent);
+    std::optional<int> SelectedItemIndent(const SyntaxNode* list) const;
     std::optional<int> ResolveBlock();
     const FormatLayoutRegionContext*
         PlanPreprocessor(size_t index, std::span<const PrintToken> pending, int itemIndent);

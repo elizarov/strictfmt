@@ -175,6 +175,27 @@ constexpr int second[] = {4};
 namespace CommentedBodySeparator {
 auto value = Pack{[] { First(); Second(); } // item
 , [] { Third(); Fourth(); }};
+auto called = Call([] { First(); Second(); } // argument
+, Next());
+auto trailing = Pack{[] { First(); Second(); } // last
+,};
+auto blockComment = Pack{[] { First(); Second(); } /* item */
+, [] { Third(); Fourth(); }};
+auto directed = Pack{[] { First(); Second(); } // item
+,
+#define NEXT_ITEM 2
+NEXT_ITEM};
+auto canonical = Call([] { First(); Second(); }, // argument
+Next());
+auto labeled = Call([] { First(); Second(); }, /*next=*/ Next());
+struct Initializers {
+Initializers() : first(0) // initializer
+, second(0)
+#if EXTRA_INITIALIZER
+, third(0)
+#endif
+{}
+};
 }
 
 namespace SelectedValueGroups {
