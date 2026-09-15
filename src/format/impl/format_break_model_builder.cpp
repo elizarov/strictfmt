@@ -6,6 +6,7 @@
 #include <array>
 #include <cstdint>
 #include <initializer_list>
+#include <iterator>
 #include <optional>
 #include <span>
 #include <utility>
@@ -1256,8 +1257,16 @@ private:
                 if (local.operands.size() != local.operators.size()) {
                     return false;
                 }
-                local.operands.insert(local.operands.end(), nested.operands.begin(), nested.operands.end());
-                local.operators.insert(local.operators.end(), nested.operators.begin(), nested.operators.end());
+                if (local.operands.empty()) {
+                    local = std::move(nested);
+                } else {
+                    local.operands.insert(
+                        local.operands.end(),
+                        std::make_move_iterator(nested.operands.begin()),
+                        std::make_move_iterator(nested.operands.end())
+                    );
+                    local.operators.insert(local.operators.end(), nested.operators.begin(), nested.operators.end());
+                }
                 continue;
             }
             const std::optional<FormatBreakToken> token = TokenForNode(*child);
@@ -1289,8 +1298,7 @@ private:
         if (local.operands.empty() || local.operands.size() != local.operators.size() + 1) {
             return false;
         }
-        result.operands.insert(result.operands.end(), local.operands.begin(), local.operands.end());
-        result.operators.insert(result.operators.end(), local.operators.begin(), local.operators.end());
+        result = std::move(local);
         return true;
     }
 
@@ -2182,6 +2190,13 @@ private:
     }
 
     FormatBreakNode* BuildSequenceFromPointers(const ConstSyntaxChildList& children, int depth) {
+        if (children.size() == 1 && children.front() != nullptr) {
+            // Every sibling-group transformation is an identity for a single child.
+            if (auto* child = BuildSyntaxNode(*children.front(), depth + 1)) {
+                return child;
+            }
+            return MakeNode(FormatBreakNodeKind::Sequence, depth);
+        }
         std::vector<FormatBreakNode*> builtChildren;
         builtChildren.reserve(children.size());
         for (const SyntaxNode* child : children) {
@@ -2207,6 +2222,16 @@ private:
     FormatBreakNode*
         BuildSequenceFromChildren(std::span<const SyntaxNode* const> children, size_t begin, size_t end, int depth)
     {
+        if (end - begin == 1) {
+            // Neither an adjacent declaration nor a delimiter pair fits one child.
+            const auto* child = children[begin];
+            if (child != nullptr && ContainsSelected(*child)) {
+                if (auto* built = BuildSyntaxNode(*child, depth + 1)) {
+                    return built;
+                }
+            }
+            return MakeNode(FormatBreakNodeKind::Sequence, depth);
+        }
         std::vector<FormatBreakNode*> builtChildren;
         builtChildren.reserve(end - begin);
         for (size_t index = begin; index < end;) {
