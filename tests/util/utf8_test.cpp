@@ -89,6 +89,14 @@ int main(int argc, char** argv) {
         }
     }
     const std::string ascii(256, 'a');
+    for (size_t offset = 0; offset < 32; ++offset) {
+        const std::string prefix(offset, 'a');
+        for (int byte = 0; byte < 256; ++byte) {
+            const auto text = prefix + static_cast<char>(byte) + "\n";
+            if (!Check(text, static_cast<int>(offset) + (byte == '\r' ? 1 : 2), __LINE__)) return 1;
+        }
+        if (!Check(prefix + "\xcc\x81z", static_cast<int>(offset) + (offset == 0 ? 2 : 1), __LINE__)) return 1;
+    }
     if (
         !Check(ascii, 256, __LINE__) ||
         !Check(ascii + "\xcc\x81", 256, __LINE__) ||

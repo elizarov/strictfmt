@@ -2,6 +2,7 @@
 
 #include <cstddef>
 #include <cstdint>
+#include <cstring>
 #include <iterator>
 
 namespace {
@@ -210,7 +211,20 @@ int CountGraphemes(std::string_view text) {
 int Utf8CharacterCount(std::string_view text) {
     // ASCII has one cluster per byte except CR/LF pairs. Check the entire text:
     // a following non-ASCII combining mark can still join its ASCII predecessor.
-    for (unsigned char byte : text) {
+    size_t offset = 0;
+    constexpr std::uint64_t kHighBits = UINT64_C(0x8080808080808080);
+    constexpr std::uint64_t kLowBits = UINT64_C(0x0101010101010101);
+    constexpr std::uint64_t kCarriageReturns = UINT64_C(0x0d0d0d0d0d0d0d0d);
+    for (; text.size() - offset >= sizeof(std::uint64_t); offset += sizeof(std::uint64_t)) {
+        std::uint64_t bytes;
+        std::memcpy(&bytes, text.data() + offset, sizeof(bytes));
+        const auto carriageReturns = bytes ^ kCarriageReturns;
+        // The zero-byte test detects CR in any byte lane, independently of byte order.
+        if (((bytes | ((carriageReturns - kLowBits) & ~carriageReturns)) & kHighBits) != 0) {
+            return CountGraphemes(text);
+        }
+    }
+    for (unsigned char byte : text.substr(offset)) {
         if (byte >= 0x80 || byte == '\r') {
             return CountGraphemes(text);
         }
