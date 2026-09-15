@@ -278,25 +278,32 @@ public:
             }
             const bool spaceBefore =
                 token.spaceBeforeKnown ? token.spaceBefore : FormatTokenNeedsSpace(previous, token);
+            const SyntaxNode* sharedAncestor = token.node;
             if (token.node != nullptr) {
                 auto [selected, inserted] = selectedTokens_.Insert(token.node, {});
                 *selected = FormatBreakToken{&token, spaceBefore};
                 // An entry without a token marks an ancestor. Once marked, its
                 // own ancestors are already present, so selection needs one table.
                 if (inserted) {
-                    for (
-                        const SyntaxNode* ancestor = token.node->parent;
-                        ancestor != nullptr && selectedTokens_.Insert(ancestor, {}).second;
-                        ancestor = ancestor->parent
-                    ) {}
+                    sharedAncestor = token.node->parent;
+                    while (sharedAncestor != nullptr && selectedTokens_.Insert(sharedAncestor, {}).second) {
+                        sharedAncestor = sharedAncestor->parent;
+                    }
                 }
             }
-            root_ = firstToken ? token.node : CommonAncestor(root_, token.node);
+            if (firstToken) {
+                root_ = token.node;
+            } else if (sharedAncestor == nullptr || root_ == nullptr) {
+                root_ = nullptr;
+            } else if (sharedAncestor->depth < root_->depth) {
+                root_ = sharedAncestor;
+            }
             firstToken = false;
             previous = &token;
         }
-        // CommonAncestor is associative for nodes in one immutable tree, so accumulating it in the existing token
-        // pass is identical to the former second pass over the same ordered token span.
+        // Selection contains every ancestor of earlier tokens. The first shared
+        // ancestor can extend their common root only when it is above that root;
+        // finding it during insertion avoids a second ancestry walk per token.
     }
 
     FormatBreakModel Build() {
@@ -334,29 +341,6 @@ private:
         return node->kind == FormatBreakNodeKind::Sequence &&
             !node->children.empty() &&
             StartsWithStandaloneComment(node->children.front());
-    }
-
-    static size_t AncestorCount(const SyntaxNode* node) { return node == nullptr ? 0 : node->depth + 1; }
-
-    static const SyntaxNode* CommonAncestor(const SyntaxNode* left, const SyntaxNode* right) {
-        size_t leftDepth = AncestorCount(left);
-        size_t rightDepth = AncestorCount(right);
-        while (leftDepth > rightDepth && left != nullptr) {
-            left = left->parent;
-            --leftDepth;
-        }
-        while (rightDepth > leftDepth && right != nullptr) {
-            right = right->parent;
-            --rightDepth;
-        }
-        while (left != right) {
-            if (left == nullptr || right == nullptr) {
-                return nullptr;
-            }
-            left = left->parent;
-            right = right->parent;
-        }
-        return left;
     }
 
     bool ContainsSelected(const SyntaxNode& node) const { return selectedTokens_.Contains(&node); }
