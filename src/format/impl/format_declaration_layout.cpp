@@ -36,6 +36,13 @@ const SyntaxNode* DeclarationScopeItem(const SyntaxNode* node) {
     return nullptr;
 }
 
+bool CanIsolateLargeValue(const SyntaxNode* item) {
+    return item != nullptr && (
+        SyntaxNodeHasClass(*item, SyntaxNodeClass::DeclarationGroupObject) ||
+        SyntaxNodeHasClass(*item, SyntaxNodeClass::DeclarationGroupAlias)
+    );
+}
+
 }  // namespace
 
 struct FormatDeclarationLayout::Impl {
@@ -301,14 +308,7 @@ void CollectLargeValues(
 ) {
     if (node.declarationValueOwner != nullptr && examined.insert(node.declarationValueOwner).second) {
         const auto* item = DeclarationScopeItem(node.declarationValueOwner);
-        if (
-            item != nullptr && (
-                SyntaxNodeHasClass(*item, SyntaxNodeClass::DeclarationGroupObject) ||
-                SyntaxNodeHasClass(*item, SyntaxNodeClass::DeclarationGroupAlias)
-            ) &&
-            !isolated.contains(item) &&
-            LargeValue(node, tree, program)
-        ) {
+        if (CanIsolateLargeValue(item) && !isolated.contains(item) && LargeValue(node, tree, program)) {
             isolated.insert(item);
         }
     }
@@ -332,6 +332,13 @@ void CollectLargeValues(
 }  // namespace
 
 void FormatDeclarationLayout::Resolve(const FormatLayoutTree& tree, FormatLayoutProgram& program) const {
+    // Only object and alias values can add an optional boundary. If none of
+    // those boundaries remains, traversing complete models cannot change output.
+    if (std::none_of(program.groupBoundaries.begin(), program.groupBoundaries.end(), [](const auto& boundary) {
+        return !boundary.required && (CanIsolateLargeValue(boundary.left) || CanIsolateLargeValue(boundary.right));
+    })) {
+        return;
+    }
     std::unordered_set<const SyntaxNode*> isolated;
     std::unordered_set<const SyntaxNode*> examined;
     tree.VisitCompleteModels([&](const FormatBreakModel& model) {
