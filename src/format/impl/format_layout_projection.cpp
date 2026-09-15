@@ -98,8 +98,9 @@ private:
                     node.chainKind == FormatBreakChainKind::AfterOperator ||
                     node.chainKind == FormatBreakChainKind::Ternary
                 ) {
-                    node.operands[index + 1] =
-                        Sequence({TokenNode(op, node.rawDepth + 1), node.operands[index + 1]}, node.rawDepth + 1);
+                    node.operands[index + 1] = Sequence(
+                        std::array{TokenNode(op, node.rawDepth + 1), node.operands[index + 1]}, node.rawDepth + 1
+                    );
                     op.contextOnly = true;
                 }
                 if (node.chainKind == FormatBreakChainKind::Ternary && node.operators.size() == 2) {
@@ -159,7 +160,7 @@ private:
         };
     }
 
-    std::span<FormatBreakNode*> Store(const std::vector<FormatBreakNode*>& nodes) {
+    std::span<FormatBreakNode*> Store(std::span<FormatBreakNode* const> nodes) {
         return model_.nodePointers.Append(nodes);
     }
 
@@ -192,7 +193,7 @@ private:
         }
     }
 
-    FormatBreakNode* Sequence(std::vector<FormatBreakNode*> children, int depth) {
+    FormatBreakNode* Sequence(std::span<FormatBreakNode* const> children, int depth) {
         if (children.empty()) {
             return nullptr;
         }
@@ -279,17 +280,19 @@ private:
             return Chain(source);
         }
         auto* node = Copy(source);
-        std::vector<FormatBreakNode*> children;
+        auto children = model_.nodePointers.Allocate(source.children.size() + source.operands.size());
+        size_t childCount = 0;
         for (const auto* child : source.children) {
             if (auto* projected = Project(*child)) {
-                children.push_back(projected);
+                children[childCount++] = projected;
             }
         }
         for (const auto* operand : source.operands) {
             if (auto* projected = Project(*operand)) {
-                children.push_back(projected);
+                children[childCount++] = projected;
             }
         }
+        children = children.first(childCount);
         if (children.empty()) {
             return nullptr;
         }
@@ -297,12 +300,12 @@ private:
             node->continuedBodyHeaderOwnerIndent = context_.continuedBodyHeaderOwnerIndent;
         }
         if (source.kind == FormatBreakNodeKind::AdjacentStrings) {
-            node->operands = Store(children);
+            node->operands = children;
             if (children.size() != source.operands.size()) {
                 node->compactStringTexts.clear();
             }
         } else {
-            node->children = Store(children);
+            node->children = children;
             if (children.size() != source.children.size() && (
                 source.kind == FormatBreakNodeKind::BodyHeader || source.kind == FormatBreakNodeKind::FunctionSignature
             )) {
@@ -319,7 +322,7 @@ private:
     FormatBreakNode* List(const FormatBreakNode& source) {
         auto* node = Copy(source);
         node->items.reserve(source.items.size());
-        std::vector<FormatBreakNode*> delimiters;
+        auto delimiters = model_.nodePointers.Allocate(source.children.size());
         bool openSelected = false;
         bool closeSelected = false;
         for (size_t index = 0; index < source.children.size(); ++index) {
@@ -341,7 +344,7 @@ private:
                     }
                 }
             }
-            delimiters.push_back(child);
+            delimiters[index] = child;
         }
         for (size_t index = 0; index < source.items.size(); ++index) {
             const auto& item = source.items[index];
@@ -364,7 +367,7 @@ private:
         const bool completeDelimiters = source.kind == FormatBreakNodeKind::StatementSequence ||
             (openSelected && (source.kind == FormatBreakNodeKind::PrefixList || closeSelected));
         if (completeDelimiters) {
-            node->children = Store(delimiters);
+            node->children = delimiters;
             if (
                 node->items.size() != source.items.size() ||
                 !closeSelected ||

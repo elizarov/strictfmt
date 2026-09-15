@@ -138,11 +138,12 @@ class FormatBreakArena {
 public:
     explicit FormatBreakArena(std::pmr::memory_resource* resource = nullptr) : resource_(resource) {}
     std::span<T> Append(std::span<const T> values);
+    std::span<T> Allocate(size_t count);
 
 private:
     static constexpr size_t kBlockSize = 256;
 
-    std::span<T> Allocate(size_t count);
+    std::span<T> AllocateStorage(size_t count);
     void AllocateBlock(size_t capacity);
 
     struct Deallocate {
@@ -160,13 +161,20 @@ private:
 
 template <typename T>
 std::span<T> FormatBreakArena<T>::Append(std::span<const T> values) {
-    std::span<T> result = Allocate(values.size());
+    std::span<T> result = AllocateStorage(values.size());
     std::uninitialized_copy(values.begin(), values.end(), result.begin());
     return result;
 }
 
 template <typename T>
 std::span<T> FormatBreakArena<T>::Allocate(size_t count) {
+    std::span<T> result = AllocateStorage(count);
+    std::uninitialized_default_construct(result.begin(), result.end());
+    return result;
+}
+
+template <typename T>
+std::span<T> FormatBreakArena<T>::AllocateStorage(size_t count) {
     if (count == 0) {
         return {};
     }

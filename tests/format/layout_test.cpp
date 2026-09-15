@@ -534,6 +534,8 @@ void TestBreakArena() {
     FormatBreakArena<size_t> arena(&storage);
     std::array<size_t, 3> source{7, 11, 13};
     const auto retained = arena.Append(source);
+    const auto filled = arena.Allocate(3);
+    std::copy(source.begin(), source.end(), filled.begin());
     source[0] = 99;
     auto moved = std::move(arena);
     for (size_t index = 0; index < 32; ++index) {
@@ -543,6 +545,12 @@ void TestBreakArena() {
     }
     Check(retained[0] == 7 && retained[1] == 11 && retained[2] == 13,
         "arena spans retain copied values across growth and ownership transfer");
+    Check(std::equal(filled.begin(), filled.end(), retained.begin()),
+        "directly filled arena spans stay independent and stable across growth");
+    FormatBreakArena<FormatBreakToken> tokens(&storage);
+    const auto defaults = tokens.Allocate(2);
+    Check(defaults[0].token == nullptr && !defaults[0].spaceBefore && !defaults[1].contextOnly,
+        "direct arena allocation runs element default initializers");
 }
 
 void TestSparseLayoutProjection() {
