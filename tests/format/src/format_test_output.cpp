@@ -7194,8 +7194,7 @@ constexpr int kValues[] = {
 constexpr int kSeparatorGap[] = {
     1
 #define FORMAT_LIST_VALUE 2
-    ,
-    FORMAT_LIST_VALUE
+    , FORMAT_LIST_VALUE
 #undef FORMAT_LIST_VALUE
     ,
 };
@@ -7214,7 +7213,8 @@ constexpr int kConditional[] = {
 };
 constexpr int kExpression = 1
 #define FORMAT_LIST_OPERAND 2
-+ FORMAT_LIST_OPERAND
++
+    FORMAT_LIST_OPERAND
 #undef FORMAT_LIST_OPERAND
 ;
 

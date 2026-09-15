@@ -7,9 +7,9 @@ struct PrintToken;
 struct FormatBreakModelContext;
 struct FormatBreakChainIndent;
 
-// Keeps uniform chain breaks and their render bases consistent across mandatory
-// block boundaries. Analyze each block before building its segment, constrain
-// subsequent segment models, accept emitted chain bases, then finish the block
+// Keeps uniform chain breaks, render bases, and indentation policy consistent
+// across mandatory blocks and directives. Analyze each boundary before building
+// its segment, constrain subsequent models, accept emitted bases, then finish it
 // with a fallback for unresolved groups. Tokens and syntax nodes are borrowed for
 // this object's lifetime; constrained contexts borrow its maps until consumed.
 class FormatChainContinuation {
@@ -18,9 +18,10 @@ public:
     ~FormatChainContinuation();
 
     void AnalyzeBlock(size_t tokenIndex);
+    void AnalyzeDirective(size_t tokenIndex);
     void Constrain(FormatBreakModelContext& context) const;
     void AcceptEmission(std::span<const FormatBreakChainIndent> chains);
-    void FinishBlock(int fallbackBaseIndent);
+    void FinishBoundary(int fallbackBaseIndent);
 
 private:
     struct Impl;

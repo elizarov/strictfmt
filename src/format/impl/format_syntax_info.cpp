@@ -200,7 +200,7 @@ constexpr auto kSyntaxKindMappings = std::to_array<SyntaxKindMapping>({
     Tree(
         SyntaxNodeKind::FieldInitializerList,
         "field_initializer_list",
-        Bit(SyntaxNodeClass::PrefixList) | Bit(SyntaxNodeClass::SemanticDelimitedParent)
+        Bit(SyntaxNodeClass::PrefixList) | kPreprocessorSplitListClasses
     ),
     Tree(SyntaxNodeKind::FieldInitializer, "field_initializer"),
     Tree(
@@ -246,7 +246,11 @@ constexpr auto kSyntaxKindMappings = std::to_array<SyntaxKindMapping>({
         "elaborated_type_specifier",
         Bit(SyntaxNodeClass::DeclaredTypeSpecifier)
     ),
-    Tree(SyntaxNodeKind::BaseClassClause, "base_class_clause", Bit(SyntaxNodeClass::PrefixList)),
+    Tree(
+        SyntaxNodeKind::BaseClassClause,
+        "base_class_clause",
+        Bit(SyntaxNodeClass::PrefixList) | kPreprocessorSplitListClasses
+    ),
     Tree(SyntaxNodeKind::AccessSpecifier, "access_specifier"),
     Tree(SyntaxNodeKind::AccessSpecifier, "access_specifier_label"),
     Tree(

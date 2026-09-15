@@ -329,6 +329,7 @@ private:
     std::vector<CaseBodyFrame> activeCaseBodies_;
     std::vector<int> conditionalFunctionIndents_;
     std::optional<int> pendingIndentRestoreAfterFlush_;
+    std::optional<int> macroContinuationResumeIndent_;
     std::unordered_set<std::uint32_t> prebufferedTokenSourceIndices_;
 
     static const PrintToken* RawNextToken(const std::vector<PrintToken>& tokens, size_t index) {
@@ -458,7 +459,7 @@ private:
             return false;
         }
         const SyntaxNode* container = next.node->parent;
-        if (!SyntaxNodeHasClass(*container, SyntaxNodeClass::SemanticDelimitedParent)) {
+        if (SyntaxNodeHasClass(*container, SyntaxNodeClass::CompoundBlock)) {
             return false;
         }
         return PrintTokenSyntaxPathContains(token, container) &&
@@ -518,7 +519,7 @@ private:
         return macroCall != nullptr && IsStatementPositionMacroCallItem(*macroCall);
     }
 
-    const SyntaxNode* ImmediatePreprocessorListParent(const PrintToken& token) {
+    static const SyntaxNode* ImmediatePreprocessorListParent(const PrintToken& token) {
         const SyntaxNode* parent = token.node == nullptr ? nullptr : token.node->parent;
         if (
             parent == nullptr ||
@@ -670,6 +671,12 @@ private:
         bool hasTemplateDeclaredEntity = false;
         bool omittedTerminalComma = false;
         for (const PrintToken& token : pendingTokens_) {
+            if (
+                const SyntaxNode* list = ImmediatePreprocessorListParent(token);
+                list != nullptr && SyntaxNodeHasClass(*list, SyntaxNodeClass::PrefixList)
+            ) {
+                return false;
+            }
             if (token.kind != PrintTokenKind::Known && token.kind != PrintTokenKind::Text) {
                 return false;
             }
@@ -837,17 +844,21 @@ private:
         const PrintToken& previous = (*activeTokens_)[pendingTokens_.front().sourceIndex - 1];
         for (const PrintToken& token : pendingTokens_) {
             if (
-                token.syntaxKind != SyntaxNodeKind::LeftBrace ||
-                token.parentKind != SyntaxNodeKind::CompoundStatement ||
-                token.grandParentKind != SyntaxNodeKind::FunctionDefinition ||
-                token.node == nullptr
+                token.node == nullptr ||
+                token.node->kind != SyntaxNodeKind::LeftBrace ||
+                token.node->parent == nullptr ||
+                token.node->parent->parent == nullptr ||
+                !SyntaxNodeHasClass(*token.node->parent, SyntaxNodeClass::CompoundBlock) || (
+                    token.grandParentKind != SyntaxNodeKind::FunctionDefinition &&
+                    !SyntaxNodeHasClass(*token.node->parent->parent, SyntaxNodeClass::DeclaredTypeSpecifier)
+                )
             ) {
                 continue;
             }
             const SyntaxNode* body = token.node->parent;
             if (PrintTokenSyntaxPathContains(previous, body->parent)) {
                 // An earlier header segment has already been emitted. The current continuation indentation
-                // belongs to the header; the function body still belongs to the enclosing structural scope.
+                // belongs to the header; the declaration body still belongs to the enclosing structural scope.
                 context.continuedBodyHeader = body;
                 context.continuedBodyHeaderOwnerIndent = pendingIndentRestoreAfterFlush_.value_or(indentLevel_);
                 return;
@@ -862,6 +873,15 @@ private:
         }
         FormatBreakModelContext effectiveContext = context;
         ConstrainContinuedBodyHeader(effectiveContext);
+        if (
+            effectiveContext.continuedBodyHeader != nullptr &&
+            output_.State().atLineStart &&
+            pendingTokens_.front().node != nullptr &&
+            pendingTokens_.front().node->parent == effectiveContext.continuedBodyHeader
+        ) {
+            // The header ended before this segment; its continuation indentation must not indent the body opener.
+            output_.SetPendingIndent(effectiveContext.continuedBodyHeaderOwnerIndent);
+        }
         chainContinuation_->Constrain(effectiveContext);
         if (breakModelDump_ == nullptr && CanFlushPendingTokensCompact(effectiveContext)) {
             FlushPendingTokensCompact();
@@ -1004,6 +1024,10 @@ private:
         ) {
             return false;
         }
+        if (!HasBufferedLineText()) {
+            BufferToken(token);
+            return true;
+        }
         BufferToken(token);
         FlushPendingTokens();
         NewLineWithIndent(CurrentLineIndentLevel());
@@ -1028,21 +1052,6 @@ private:
 
     void PrepareMacroBoundary(const PrintToken* previous, const PrintToken& current) {
         if (
-            current.syntaxKind == SyntaxNodeKind::PreprocessorDirectiveDefine &&
-            !listContinuation_->PreprocessorIndent(current)
-        ) {
-            const FormatBreakModelContext* plan = listContinuation_->PlanPreprocessor(
-                currentTokenIndex_, pendingTokens_, output_.State().pendingIndentLevel.value_or(indentLevel_ + 1)
-            );
-            if (plan != nullptr) {
-                FlushPendingTokens(*plan);
-                output_.SetPendingIndent(listContinuation_->AcceptPreprocessor());
-            }
-        }
-        if (current.macroDefinition != nullptr && !current.inMacroValue && output_.State().atLineStart) {
-            output_.ForceColumnZero();
-        }
-        if (
             previous != nullptr &&
             previous->macroDefinition != nullptr &&
             previous->macroDefinition != current.macroDefinition
@@ -1057,21 +1066,37 @@ private:
             }
             if (const std::optional<int> itemIndent = listContinuation_->PreprocessorIndent(current)) {
                 output_.SetPendingIndent(*itemIndent);
+            } else if (macroContinuationResumeIndent_) {
+                output_.SetPendingIndent(*macroContinuationResumeIndent_);
             }
-            if (current.macroDefinition != nullptr && !current.inMacroValue) {
-                output_.ForceColumnZero();
-            }
+            macroContinuationResumeIndent_.reset();
         }
         if (
             current.macroDefinition != nullptr &&
-            (previous == nullptr || previous->macroDefinition != current.macroDefinition) &&
-            HasBufferedLineText()
+            (previous == nullptr || previous->macroDefinition != current.macroDefinition)
         ) {
-            FlushPendingTokens();
-            NewLine(false);
-            if (!current.inMacroValue) {
-                output_.ForceColumnZero();
+            const bool definition = current.syntaxKind == SyntaxNodeKind::PreprocessorDirectiveDefine;
+            if (definition) {
+                chainContinuation_->AnalyzeDirective(currentTokenIndex_);
             }
+            const FormatBreakModelContext* plan =
+                definition && !listContinuation_->PreprocessorIndent(current) ? listContinuation_->PlanPreprocessor(
+                    currentTokenIndex_, pendingTokens_, output_.State().pendingIndentLevel.value_or(indentLevel_ + 1)
+                ) : nullptr;
+            const auto selected = FlushPendingTokens(plan == nullptr ? FormatBreakModelContext{} : *plan);
+            if (plan != nullptr) {
+                output_.SetPendingIndent(listContinuation_->AcceptPreprocessor(selected));
+            }
+            if (definition) {
+                chainContinuation_->FinishBoundary(indentLevel_);
+            }
+            macroContinuationResumeIndent_ = output_.State().pendingIndentLevel;
+            if (output_.State().lineHasText) {
+                NewLine(false);
+            }
+        }
+        if (current.macroDefinition != nullptr && !current.inMacroValue && output_.State().atLineStart) {
+            output_.ForceColumnZero();
         }
     }
 
@@ -1315,7 +1340,6 @@ private:
             return;
         }
         if (token.kind == PrintTokenKind::Preprocessor) {
-            FlushPendingTokens();
             PrintPreprocessor(token, next);
             return;
         }
@@ -1378,13 +1402,11 @@ private:
     }
 
     void PrintPreprocessor(const PrintToken& token, const PrintToken* next) {
+        chainContinuation_->AnalyzeDirective(currentTokenIndex_);
         const std::string line = FormatPreprocessorText(token.text);
         const SyntaxNodeKind lineDirectiveKind = SyntaxNodeKindFromPreprocessorDirectiveLine(line);
         const bool isInclude = PrintTokenSyntaxHasClass(token, SyntaxNodeClass::IncludeDirective) ||
             SyntaxNodeKindHasClass(lineDirectiveKind, SyntaxNodeClass::IncludeDirective);
-        const std::optional<int> includeInitializerContinuationIndent =
-            isInclude && token.parentKind == SyntaxNodeKind::InitDeclarator && output_.State().lineHasText ?
-                std::optional<int>(CurrentLineIndentLevel() + 1) : std::nullopt;
         const std::optional<bool> conditionalComma = listContinuation_->ConditionalDirectiveComma(currentTokenIndex_);
         const bool listConditional = conditionalComma.has_value();
         const bool trailingListComma = conditionalComma.value_or(false);
@@ -1428,14 +1450,19 @@ private:
             currentTokenIndex_, pendingTokens_, output_.State().pendingIndentLevel.value_or(indentLevel_ + 1)
         );
         if (splitListPlan != nullptr) {
-            FlushPendingTokens(*splitListPlan);
-            listItemIndent = listContinuation_->AcceptPreprocessor();
-        } else if ((listItemIndent || token.structuredPreprocessor) && HasBufferedLineText()) {
+            const auto selected = FlushPendingTokens(*splitListPlan);
+            listItemIndent = listContinuation_->AcceptPreprocessor(selected);
+        } else if (HasBufferedLineText()) {
             FlushPendingTokens();
         }
         if (!listItemIndent && listConditional) {
             listItemIndent = output_.State().pendingIndentLevel.value_or(indentLevel_ + 1);
         }
+        const std::optional<int> includeInitializerContinuationIndent =
+            isInclude && token.parentKind == SyntaxNodeKind::InitDeclarator && output_.State().lineHasText ?
+                std::optional<int>(CurrentLineIndentLevel() + 1) : std::nullopt;
+        chainContinuation_->FinishBoundary(indentLevel_);
+        const std::optional<int> continuationIndent = output_.State().pendingIndentLevel;
         if (output_.State().lineHasText) {
             NewLine();
         }
@@ -1457,6 +1484,8 @@ private:
             output_.SetPendingIndent(*listItemIndent);
         } else if (includeInitializerContinuationIndent) {
             output_.SetPendingIndent(*includeInitializerContinuationIndent);
+        } else if (continuationIndent) {
+            output_.SetPendingIndent(*continuationIndent);
         }
         return;
     }
@@ -1679,7 +1708,7 @@ private:
                 prebufferedTokenSourceIndices_.insert(rawNext->sourceIndex);
             }
             FlushPendingTokens();
-            chainContinuation_->FinishBlock(crossBlockFallbackBaseIndent);
+            chainContinuation_->FinishBoundary(crossBlockFallbackBaseIndent);
             if (!followedByTrailingComment) {
                 NewLine(ShouldContinueMacroLine(token, rawNext));
             }
@@ -1721,7 +1750,7 @@ private:
             FlushPendingTokens(splitListPlan != nullptr ? *splitListPlan : FormatBreakModelContext{});
         const std::optional<int> splitListItemIndent =
             splitListPlan == nullptr ? std::nullopt : listContinuation_->AcceptBlock(splitContexts);
-        chainContinuation_->FinishBlock(splitListItemIndent.value_or(crossBlockFallbackBaseIndent));
+        chainContinuation_->FinishBoundary(splitListItemIndent.value_or(crossBlockFallbackBaseIndent));
         const bool functionBlock = token.parentKind == SyntaxNodeKind::CompoundStatement &&
             token.grandParentKind == SyntaxNodeKind::FunctionDefinition;
         int openLineIndent = emittedBlockOpenIndent_.value_or(splitListItemIndent.value_or(

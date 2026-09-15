@@ -33,7 +33,7 @@ public:
     const FormatBreakModelContext* PlanBlock(size_t index);
     std::optional<int> AcceptBlock(std::span<const FormatBreakSplitList> selected);
     const FormatBreakModelContext* PlanPreprocessor(size_t index, std::span<const PrintToken> pending, int itemIndent);
-    int AcceptPreprocessor();
+    int AcceptPreprocessor(std::span<const FormatBreakSplitList> selected);
     std::optional<int> PreprocessorIndent(const PrintToken& token) const;
     std::optional<bool> ConditionalDirectiveComma(size_t index) const;
     bool IsFinalPreprocessorItem(size_t index) const;

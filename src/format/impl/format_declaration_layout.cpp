@@ -253,7 +253,7 @@ struct FormatDeclarationLayout::Impl {
             context.continuedBodyHeader != nullptr ||
             !context.virtualDelimiters.empty() ||
             context.requiredChainBreakOperators != nullptr ||
-            context.requiredChainBreakBaseIndents != nullptr ||
+            context.requiredChainBreakLayouts != nullptr ||
             pendingTokens.empty()
         ) {
             return nullptr;

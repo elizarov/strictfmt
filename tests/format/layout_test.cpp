@@ -310,12 +310,12 @@ void TestChainContinuation() {
                         PrintTokenSyntaxPathContains(candidate, body), "inner and enclosing chain operators stay distinct");
                 }
             }
-            continuation.FinishBlock(3);
+            continuation.FinishBoundary(3);
             continuation.Constrain(context);
-            Check(context.requiredChainBreakBaseIndents != nullptr && context.requiredChainBreakBaseIndents->size() == 2,
+            Check(context.requiredChainBreakLayouts != nullptr && context.requiredChainBreakLayouts->size() == 2,
                 "enclosing operators retain their cross-block render base");
-            for (const auto& [node, indent] : *context.requiredChainBreakBaseIndents) {
-                Check(indent == 3, "unresolved chain render bases use the selected block fallback");
+            for (const auto& [node, layout] : *context.requiredChainBreakLayouts) {
+                Check(layout.baseIndent == 3, "unresolved chain render bases use the selected block fallback");
             }
         }
     }

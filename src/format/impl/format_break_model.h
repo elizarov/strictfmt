@@ -173,13 +173,18 @@ struct FormatBreakVirtualDelimiter {
     bool forceSplit = false;
 };
 
+struct FormatBreakChainLayout {
+    std::optional<int> baseIndent;
+    bool flatSplitIndent = false;
+};
+
 struct FormatBreakModelContext {
     std::vector<FormatBreakVirtualDelimiter> virtualDelimiters;
     // A body whose header began in an earlier mandatory segment, with its enclosing scope's indentation.
     const SyntaxNode* continuedBodyHeader = nullptr;
     int continuedBodyHeaderOwnerIndent = 0;
     const std::unordered_set<const SyntaxNode*>* requiredChainBreakOperators = nullptr;
-    const std::unordered_map<const SyntaxNode*, int>* requiredChainBreakBaseIndents = nullptr;
+    const std::unordered_map<const SyntaxNode*, FormatBreakChainLayout>* requiredChainBreakLayouts = nullptr;
     bool forceSplitStreamChain = false;
 };
 

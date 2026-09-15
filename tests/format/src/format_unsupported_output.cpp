@@ -24,7 +24,7 @@ concept FormatUserverConvertible = requires(T& value) {
 #else
     true
 #endif
-;
+    ;
 
 extern int* ConditionalDeclarationSuffix(void)
 #ifdef FORMAT_USERVER_THROW
@@ -33,7 +33,8 @@ extern int* ConditionalDeclarationSuffix(void)
 ;
 
 bool ConditionalLogicalFragment(int error_code) {
-    if (error_code == kWouldBlock
+    if (
+        error_code == kWouldBlock
 #if FORMAT_USERVER_HAS_DUPLICATE_WOULD_BLOCK
         || error_code == kAgain
 #endif
@@ -44,10 +45,11 @@ bool ConditionalLogicalFragment(int error_code) {
 }
 
 bool ConditionalMultiLineLogicalFragment(Connection* conn) {
-    if (conn->xactStatus != kInTransaction
+    if (
+        conn->xactStatus != kInTransaction
 #if FORMAT_USERVER_PIPELINE_STATUS
         && (conn->pipelineStatus == kPipelineOff ||
-            conn->asyncStatus == kAsyncIdle)
+        conn->asyncStatus == kAsyncIdle)
 #endif
     ) {
         return true;
@@ -67,14 +69,14 @@ if (Flush(conn) < 0)
 
 void PreprocessorSelectedBracedIf(Connection* conn, std::string& status) {
 #if FORMAT_USERVER_NEW_MONGO
-if (HasReadableServer(conn)) {
+        if (HasReadableServer(conn)) {
 #else
-if (HasReadableServer(const_cast<Connection*>(conn))) {
+        if (HasReadableServer(const_cast<Connection*>(conn))) {
 #endif
-status.append("Secondary AVAILABLE");
-} else {
-status.append("Secondary UNAVAILABLE");
-}
+        status.append("Secondary AVAILABLE");
+        } else {
+        status.append("Secondary UNAVAILABLE");
+        }
 }
 
 bool ConditionalWholeCondition(int error_code) {

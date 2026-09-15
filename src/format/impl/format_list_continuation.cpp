@@ -26,6 +26,7 @@ struct MandatoryBlockSplitListPlan {
 
 struct PreprocessorSplitListContext {
     const SyntaxNode* list = nullptr;
+    const SyntaxNode* openToken = nullptr;
     const SyntaxNode* closeToken = nullptr;
     int itemIndent = 0;
     int closeIndent = 0;
@@ -110,26 +111,19 @@ struct FormatListContinuation::Impl {
         )) {
             return false;
         }
-        if (PrintTokenSyntaxHasClass(token, SyntaxNodeClass::ConditionalPreprocessorOpen)) {
-            return true;
-        }
-        for (const SyntaxNode* parent = token.node->parent; parent != nullptr; parent = parent->parent) {
-            if (SyntaxNodeHasClass(*parent, SyntaxNodeClass::PreprocessorSplitList)) {
-                return true;
-            }
-            if (
-                !SyntaxNodeHasClass(*parent, SyntaxNodeClass::ConditionalPreprocessorTree) &&
-                parent != token.macroDefinition
-            ) {
-                return false;
-            }
-        }
-        return false;
+        return NearestPreprocessorSplitListAncestor(token) != nullptr;
     }
 
     static const SyntaxNode* NearestPreprocessorSplitListAncestor(const PrintToken& token) {
         for (const SyntaxNode* cursor = token.node; cursor != nullptr; cursor = cursor->parent) {
             if (SyntaxNodeKindHasClass(cursor->kind, SyntaxNodeClass::PreprocessorSplitList)) {
+                return cursor;
+            }
+            if (SyntaxNodeHasClass(*cursor, SyntaxNodeClass::CompoundBlock)) {
+                return nullptr;
+            }
+            const SyntaxNode* open = DirectOpeningDelimiterChild(*cursor);
+            if (open != nullptr && DirectMatchingClosingDelimiterChild(*cursor, open) != nullptr) {
                 return cursor;
             }
         }
@@ -155,7 +149,8 @@ struct FormatListContinuation::Impl {
             if (
                 token->kind == PrintTokenKind::Known &&
                 PrintTokenSyntaxHasClass(*token, SyntaxNodeClass::OpeningDelimiter) &&
-                PrintTokenSyntaxPathContains(*token, list)
+                token->node != nullptr &&
+                token->node->parent == list
             ) {
                 return token->node;
             }
@@ -175,7 +170,8 @@ struct FormatListContinuation::Impl {
             if (
                 candidate.kind == PrintTokenKind::Known &&
                 candidate.syntaxKind == closeKind &&
-                PrintTokenSyntaxPathContains(candidate, list)
+                candidate.node != nullptr &&
+                candidate.node->parent == list
             ) {
                 return index;
             }
@@ -259,6 +255,14 @@ struct FormatListContinuation::Impl {
         if (list == nullptr) {
             return std::nullopt;
         }
+        if (SyntaxNodeHasClass(*list, SyntaxNodeClass::PrefixList)) {
+            return PreprocessorSplitListPlan{.deferredContext = {
+                .list = list,
+                .openToken = DirectTokenChild(*list, SyntaxNodeKind::Colon),
+                .itemIndent = itemIndentLevel,
+                .closeIndent = std::max(0, itemIndentLevel - 1),
+            }};
+        }
         const SyntaxNode* listOpen = DirectOpeningDelimiterChild(*list);
         const SyntaxNode* pendingOpen = FindPendingOpeningDelimiterFor(list, pendingTokens_);
         if (pendingOpen != nullptr) {
@@ -281,6 +285,7 @@ struct FormatListContinuation::Impl {
             .breakContext = {.virtualDelimiters = {{.open = listOpen, .close = virtualClose, .forceSplit = true}}},
             .deferredContext = {
                 .list = list,
+                .openToken = listOpen,
                 .closeToken = listClose,
                 .itemIndent = itemIndentLevel,
                 .closeIndent = std::max(0, itemIndentLevel - 1),
@@ -392,7 +397,13 @@ struct FormatListContinuation::Impl {
         preprocessorPlan_ = BuildPreprocessorSplitListPlan(index, pending, itemIndent);
         return preprocessorPlan_ ? &preprocessorPlan_->breakContext : nullptr;
     }
-    int AcceptPreprocessor() {
+    int AcceptPreprocessor(std::span<const FormatBreakSplitList> selected) {
+        for (const FormatBreakSplitList& context : selected) {
+            if (context.openToken == preprocessorPlan_->deferredContext.openToken) {
+                preprocessorPlan_->deferredContext.itemIndent = context.itemIndent;
+                preprocessorPlan_->deferredContext.closeIndent = context.closeIndent;
+            }
+        }
         preprocessorSplitListContexts_.push_back(preprocessorPlan_->deferredContext);
         return preprocessorSplitListContexts_.back().itemIndent;
     }
@@ -488,7 +499,9 @@ const FormatBreakModelContext*
 {
     return impl_->PlanPreprocessor(index, pending, itemIndent);
 }
-int FormatListContinuation::AcceptPreprocessor() { return impl_->AcceptPreprocessor(); }
+int FormatListContinuation::AcceptPreprocessor(std::span<const FormatBreakSplitList> selected) {
+    return impl_->AcceptPreprocessor(selected);
+}
 std::optional<int> FormatListContinuation::PreprocessorIndent(const PrintToken& token) const {
     return impl_->PreprocessorIndent(token);
 }

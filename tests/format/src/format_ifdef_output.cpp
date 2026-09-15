@@ -184,12 +184,14 @@ template <
 struct ConditionalDefaultTemplateArgument;
 
 struct ConditionalLeadingFieldInitializers {
-    ConditionalLeadingFieldInitializers() : size(0), sp(0)
+    ConditionalLeadingFieldInitializers() :
+        size(0),
+        sp(0)
 #if defined(FORMAT_USERVER_USE_SEGMENTED_STACKS)
-    , segments_ctx()
+        , segments_ctx()
 #endif
 #if defined(FORMAT_USERVER_USE_VALGRIND)
-    , valgrind_stack_id(0)
+        , valgrind_stack_id(0)
 #endif
     {}
 

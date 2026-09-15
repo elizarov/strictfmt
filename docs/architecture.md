@@ -34,8 +34,8 @@ Print-token construction materializes canonical known-token text and immutable s
 - `src/format/impl/format_break_model_inline_helpers.h` owns small inline accessors for optional break model tokens.
 - `src/format/impl/format_compact_layout.h|cpp` own exact compact physical-line measurement and its immutable-model cache.
 - `src/format/impl/format_delimiter_stack.h|cpp` own shared transparent parenthesis-stack recognition for solving and emission, preserving their distinct closing-blank-line policies.
-- `src/format/impl/format_chain_continuation.h|cpp` own uniform chain constraints and render-base propagation across mandatory block boundaries.
-- `src/format/impl/format_list_continuation.h|cpp` own virtual list-delimiter planning, selected continuation indentation, and list boundary state across blocks and conditional preprocessor regions.
+- `src/format/impl/format_chain_continuation.h|cpp` own uniform chain constraints, render bases, and flat indentation across mandatory block and directive boundaries.
+- `src/format/impl/format_list_continuation.h|cpp` own virtual list-delimiter planning, selected continuation indentation, and list boundary state across blocks and preprocessor directives.
 - `src/format/impl/format_syntax_helpers.h` owns shared direct-child lexical queries used by structural printing and continuation planning.
 - `src/format/impl/format_break_solver.h|cpp` own the break optimizer; see [break_solver.md].
 - `src/format/impl/format_choice_history.h|cpp` own immutable choice-history storage, lookup, concatenation, and materialization.

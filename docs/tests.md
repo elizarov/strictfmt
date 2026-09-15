@@ -93,6 +93,7 @@ target passes its resolved version to the Python harness, which requires
 - `tests/format/.cpp-format-optimization` owns the 15-column break-selection
   golden configuration.
 - `tests/format/.cpp-format-chain` owns the 40-column operator-chain golden configuration.
+- `tests/format/.cpp-format-continuations` owns the 40-column continuation golden configuration.
 - `tests/format/.cpp-format-non-ascii` owns the 40-column Unicode golden configuration.
 - `tests/format/.cpp-format-macro-roles` owns the configured formatting roles for
   the corpus also checked without macro configuration.
@@ -123,6 +124,8 @@ and exist only to exercise one command or configuration edge.
 - `tests/format/src/format_chain_input.cpp` ->
   `tests/format/src/format_chain_output.cpp`: operand expansion, closing-line
   continuations, and operator-chain ownership across mandatory block boundaries.
+- `tests/format/src/format_continuations_input.cpp` ->
+  `tests/format/src/format_continuations_output.cpp`: header, list, chain, and delimiter context across mandatory blocks, comments, and directives.
 - `tests/format/src/format_non_ascii_input.cpp` ->
   `tests/format/src/format_non_ascii_output.cpp`: UTF-8 identifiers, literals, comments, and grapheme-cluster widths.
 - `tests/format/src/format_userver_input.cpp` ->

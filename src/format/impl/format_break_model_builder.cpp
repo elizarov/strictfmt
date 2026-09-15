@@ -387,12 +387,13 @@ private:
             } else {
                 node.forceSplit = true;
             }
-            if (context_.requiredChainBreakBaseIndents != nullptr) {
+            if (context_.requiredChainBreakLayouts != nullptr) {
                 for (const FormatBreakToken& token : node.operators) {
                     const SyntaxNode* operatorNode = FormatBreakTokenValue(token).node;
-                    const auto base = context_.requiredChainBreakBaseIndents->find(operatorNode);
-                    if (base != context_.requiredChainBreakBaseIndents->end()) {
-                        node.requiredChainBreakBaseIndent = base->second;
+                    const auto layout = context_.requiredChainBreakLayouts->find(operatorNode);
+                    if (layout != context_.requiredChainBreakLayouts->end()) {
+                        node.requiredChainBreakBaseIndent = layout->second.baseIndent;
+                        node.flatSplitIndent = layout->second.flatSplitIndent;
                         break;
                     }
                 }
@@ -3078,6 +3079,7 @@ private:
         }
 
         auto list = MakeNode(FormatBreakNodeKind::PrefixList, depth);
+        list->forceSplit = SyntaxNodeHasClass(node, SyntaxNodeClass::ContainsListPreprocessor);
         list->children = StoreNodePointers({BuildToken(*prefix, depth + 1)});
 
         ConstSyntaxChildList itemChildren;
