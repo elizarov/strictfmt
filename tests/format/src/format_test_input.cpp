@@ -5089,3 +5089,8 @@ template double value<double>;
 extern template int value<int>;
 extern template double value<double>;
 }
+
+// Deep nesting revisits the same nodes at many columns and indentation levels.
+auto deepCalls = Wrap(Wrap(Wrap(Wrap(Wrap(Wrap(Wrap(Wrap(Wrap(Wrap(Wrap(Wrap(Wrap(Wrap(Wrap(Wrap(Wrap(Wrap(Wrap(Wrap(Wrap(Wrap(Wrap(Wrap(Wrap(Wrap(Wrap(Wrap(Wrap(Wrap(Wrap(Wrap(Wrap(Wrap(Wrap(Wrap(Wrap(Wrap(Wrap(Wrap(Wrap(Wrap(Wrap(Wrap(Wrap(Wrap(Wrap(Wrap(Wrap(Wrap(Wrap(Wrap(Wrap(Wrap(Wrap(Wrap(Wrap(Wrap(Wrap(Wrap(Wrap(Wrap(Wrap(Wrap(value))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))));
+using deepTypes = Name<Name<Name<Name<Name<Name<Name<Name<Name<Name<Name<Name<Name<Name<Name<Name<Name<Name<Name<Name<Name<Name<Name<Name<Name<Name<Name<Name<Name<Name<Name<Name<Name<Name<Name<Name<Name<Name<Name<Name<Name<Name<Name<Name<Name<Name<Name<Name<Name<Name<Name<Name<Name<Name<Name<Name<Name<Name<Name<Name<Name<Name<Name<Name<value>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>;
+auto deepConditional = (test ? (test ? (test ? (test ? (test ? (test ? (test ? (test ? (test ? (test ? (test ? (test ? (test ? (test ? (test ? (test ? (test ? (test ? (test ? (test ? (test ? (test ? (test ? (test ? (test ? (test ? (test ? (test ? (test ? (test ? (test ? (test ? value : other) : other) : other) : other) : other) : other) : other) : other) : other) : other) : other) : other) : other) : other) : other) : other) : other) : other) : other) : other) : other) : other) : other) : other) : other) : other) : other) : other) : other) : other) : other) : other);

@@ -9,6 +9,7 @@
 #include <optional>
 #include <span>
 #include <string_view>
+#include <unordered_map>
 #include <utility>
 #include <vector>
 
@@ -24,10 +25,32 @@ namespace {
 using NodeResult = FormatLayoutCandidate;
 using NodeResults = FormatLayoutCandidates;
 
+struct MemoKey {
+    int nodeId;
+    int column;
+    int indentLevel;
+    bool lineHasText;
+
+    bool operator==(const MemoKey&) const = default;
+};
+
+struct MemoKeyHash {
+    size_t operator()(const MemoKey& key) const {
+        std::uint64_t value = (static_cast<std::uint64_t>(static_cast<std::uint32_t>(key.column)) << 32) |
+            static_cast<std::uint32_t>(key.indentLevel);
+        value ^= static_cast<std::uint64_t>(static_cast<std::uint32_t>(key.nodeId)) * 0x9e3779b97f4a7c15ULL;
+        value ^= static_cast<std::uint64_t>(key.lineHasText) * 0xd6e8feb86659fd93ULL;
+        value = (value ^ (value >> 30)) * 0xbf58476d1ce4e5b9ULL;
+        value = (value ^ (value >> 27)) * 0x94d049bb133111ebULL;
+        return static_cast<size_t>(value ^ (value >> 31));
+    }
+};
+
 struct ResultMemoEntry {
     int column = 0;
     int indentLevel = 0;
     bool lineHasText = false;
+    std::uint8_t directCount = 1;
     NodeResult result;
     ResultMemoEntry* next = nullptr;
 };
@@ -36,9 +59,31 @@ struct AlternativesMemoEntry {
     int column = 0;
     int indentLevel = 0;
     bool lineHasText = false;
+    std::uint8_t directCount = 1;
     std::pmr::vector<NodeResult> results;
     AlternativesMemoEntry* next = nullptr;
 };
+
+template <typename Entry>
+std::uint8_t
+    IndexOlderStates(const Entry* head, int nodeId, std::unordered_map<MemoKey, const Entry*, MemoKeyHash>& index)
+{
+    // Small caches avoid hash storage. Promotion bounds every direct scan;
+    // indexed caches keep only the newest entry outside the index.
+    if (head == nullptr) {
+        return 1;
+    }
+    if (head->directCount != 0 && head->directCount < 16) {
+        return head->directCount + 1;
+    }
+    for (const auto* entry = head; entry != nullptr; entry = entry->next) {
+        index.insert_or_assign({nodeId, entry->column, entry->indentLevel, entry->lineHasText}, entry);
+        if (head->directCount == 0) {
+            break;
+        }
+    }
+    return 0;
+}
 
 struct DelimiterStackRun {
     size_t begin = 0;
@@ -126,9 +171,11 @@ private:
     int breakLineSuffixWidth_ = 0;
     std::vector<ResultMemoEntry*> memoHeads_;
     std::deque<ResultMemoEntry> memoEntries_;
+    std::unordered_map<MemoKey, const ResultMemoEntry*, MemoKeyHash> olderResults_;
     std::vector<AlternativesMemoEntry*> alternativesMemoHeads_;
     std::pmr::monotonic_buffer_resource alternativesStorage_;
     std::deque<AlternativesMemoEntry> alternativesMemoEntries_;
+    std::unordered_map<MemoKey, const AlternativesMemoEntry*, MemoKeyHash> olderAlternatives_;
     FormatChoiceHistory choiceHistory_;
     std::deque<DelimiterStackPartitionPath> delimiterStackPartitionPathArena_;
     FormatCompactLayout compactLayout_;
@@ -233,24 +280,33 @@ private:
     }
 
     const NodeResult* FindMemoizedResult(int nodeId, int column, int indentLevel, bool lineHasText) const {
-        for (
-            const ResultMemoEntry* entry = memoHeads_[static_cast<size_t>(nodeId)];
-            entry != nullptr;
-            entry = entry->next
-        ) {
-            if (entry->column == column && entry->indentLevel == indentLevel && entry->lineHasText == lineHasText) {
-                return &entry->result;
-            }
+        const auto* head = memoHeads_[static_cast<size_t>(nodeId)];
+        if (head == nullptr) {
+            return nullptr;
         }
-        return nullptr;
+        if (head->column == column && head->indentLevel == indentLevel && head->lineHasText == lineHasText) {
+            return &head->result;
+        }
+        if (head->directCount != 0) {
+            for (const auto* entry = head->next; entry != nullptr; entry = entry->next) {
+                if (entry->column == column && entry->indentLevel == indentLevel && entry->lineHasText == lineHasText) {
+                    return &entry->result;
+                }
+            }
+            return nullptr;
+        }
+        const auto found = olderResults_.find({nodeId, column, indentLevel, lineHasText});
+        return found == olderResults_.end() ? nullptr : &found->second->result;
     }
 
     void StoreMemoizedResult(int nodeId, int column, int indentLevel, bool lineHasText, NodeResult result) {
         ResultMemoEntry*& head = memoHeads_[static_cast<size_t>(nodeId)];
+        const auto directCount = IndexOlderStates(head, nodeId, olderResults_);
         memoEntries_.push_back({
             .column = column,
             .indentLevel = indentLevel,
             .lineHasText = lineHasText,
+            .directCount = directCount,
             .result = std::move(result),
             .next = head,
         });
@@ -260,16 +316,23 @@ private:
     const AlternativesMemoEntry*
         FindMemoizedAlternatives(int nodeId, int column, int indentLevel, bool lineHasText) const
     {
-        for (
-            const AlternativesMemoEntry* entry = alternativesMemoHeads_[static_cast<size_t>(nodeId)];
-            entry != nullptr;
-            entry = entry->next
-        ) {
-            if (entry->column == column && entry->indentLevel == indentLevel && entry->lineHasText == lineHasText) {
-                return entry;
-            }
+        const auto* head = alternativesMemoHeads_[static_cast<size_t>(nodeId)];
+        if (head == nullptr) {
+            return nullptr;
         }
-        return nullptr;
+        if (head->column == column && head->indentLevel == indentLevel && head->lineHasText == lineHasText) {
+            return head;
+        }
+        if (head->directCount != 0) {
+            for (const auto* entry = head->next; entry != nullptr; entry = entry->next) {
+                if (entry->column == column && entry->indentLevel == indentLevel && entry->lineHasText == lineHasText) {
+                    return entry;
+                }
+            }
+            return nullptr;
+        }
+        const auto found = olderAlternatives_.find({nodeId, column, indentLevel, lineHasText});
+        return found == olderAlternatives_.end() ? nullptr : found->second;
     }
 
     std::span<const NodeResult>
@@ -278,10 +341,12 @@ private:
         // Memoized frontiers never change size. Keep only their live candidates in the solver arena;
         // mutable enumeration retains its inline storage, and recursive solves cannot invalidate these spans.
         AlternativesMemoEntry*& head = alternativesMemoHeads_[static_cast<size_t>(nodeId)];
+        const auto directCount = IndexOlderStates(head, nodeId, olderAlternatives_);
         alternativesMemoEntries_.push_back({
             .column = column,
             .indentLevel = indentLevel,
             .lineHasText = lineHasText,
+            .directCount = directCount,
             .results = std::pmr::vector<NodeResult>(
                 std::make_move_iterator(results.begin()), std::make_move_iterator(results.end()), &alternativesStorage_
             ),
