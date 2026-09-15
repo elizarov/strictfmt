@@ -138,10 +138,8 @@ private:
     }
 
     FormatBreakNode* Copy(const FormatBreakNode& source) {
-        auto* node = New();
-        const int id = node->id;
-        static_cast<FormatBreakNodeData&>(*node) = source;
-        node->id = id;
+        auto* node = &model_.nodes->emplace_back(static_cast<const FormatBreakNodeData&>(source));
+        node->id = static_cast<int>(model_.nodes->size());
         node->origin = &source;
         node->compactStringTexts = source.compactStringTexts;
         return node;

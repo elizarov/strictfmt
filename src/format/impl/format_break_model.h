@@ -79,8 +79,7 @@ struct FormatBreakListItem {
     bool preserveSeparator = false;
 };
 
-// Projection preserves these values while rebuilding child collections. Keeping
-// them separate avoids copying owned vectors that would immediately be discarded.
+// Projection copies this metadata directly while rebuilding child collections.
 struct FormatBreakNodeData {
     int id = 0;
     int rawDepth = 0;
@@ -120,6 +119,9 @@ struct FormatBreakNodeData {
 };
 
 struct FormatBreakNode : FormatBreakNodeData {
+    FormatBreakNode() = default;
+    explicit FormatBreakNode(const FormatBreakNodeData& data) : FormatBreakNodeData(data) {}
+
     std::span<FormatBreakNode*> children;
     std::span<FormatBreakListItem> items;
     std::span<FormatBreakNode*> operands;
