@@ -581,6 +581,30 @@ void TestSparseLayoutProjection() {
     }
 }
 
+void TestRegionOwnerContainment() {
+    FormatterConfig config;
+    auto syntax = ParseFormatModel("int first; int second;", config);
+    Check(syntax.parse.ok, "owner-containment fixture parses");
+    const auto original = BuildPrintTokens(syntax, config.tabWidth);
+    Check(original.size() == 6, "owner-containment fixture has two three-token declarations");
+    for (bool interleaved : {false, true}) {
+        auto tokens = original;
+        if (interleaved) {
+            tokens = {original[0], original[3], original[1], original[2], original[4], original[5]};
+        }
+        for (size_t index = 0; index < tokens.size(); ++index) tokens[index].sourceIndex = index;
+        FormatLayoutTree tree(tokens, syntax.nodes);
+        const auto rootOwner = tree.FindOwner(syntax.root);
+        const auto& complete = tree.CompleteModel(rootOwner);
+        std::array selected{tokens[0], tokens[interleaved ? 3 : 2], tokens[interleaved ? 1 : 3]};
+        if (!interleaved) selected.back().sourceIndex = 1;
+        const auto& region = tree.AddRegion(selected, {});
+        Check(region.model.root->origin == complete.root,
+            "owner containment rejects gaps and source positions belonging to another token");
+        Check(tree.Owner(rootOwner).tokenCount == tokens.size(), "owner counts include every descendant token once");
+    }
+}
+
 void TestSharedProjectionTokens() {
     FormatterConfig config;
     auto syntax = ParseFormatModel("Build(first, second + third);", config);
@@ -1072,6 +1096,7 @@ int main() {
         TestIncrementalMacroParsing();
         TestPersistentLayoutOwners();
         TestSparseLayoutProjection();
+        TestRegionOwnerContainment();
         TestSharedProjectionTokens();
         TestListItemStorage();
         TestSpacingAncestry();

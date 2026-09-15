@@ -20,6 +20,7 @@ FormatLayoutTree::FormatLayoutTree(std::span<const PrintToken> tokens, std::span
         const FormatLayoutOwnerId id = AddOwner(tokens[index].node);
         if (id != 0) {
             FormatLayoutOwner& owner = owners_[id];
+            ++owner.tokenCount;
             owner.begin = std::min(owner.begin, index);
             owner.end = index + 1;
         }
@@ -32,6 +33,7 @@ FormatLayoutTree::FormatLayoutTree(std::span<const PrintToken> tokens, std::span
             FormatLayoutOwner& parent = owners_[owner.parent];
             parent.begin = std::min(parent.begin, owner.begin);
             parent.end = std::max(parent.end, owner.end);
+            parent.tokenCount += owner.tokenCount;
         }
     }
     structuralIndents_.resize(owners_.size());
@@ -52,7 +54,7 @@ FormatLayoutOwnerId FormatLayoutTree::AddOwner(const SyntaxNode* syntax) {
     }
     const FormatLayoutOwnerId parent = AddOwner(syntax->parent);
     const FormatLayoutOwnerId id = owners_.size();
-    owners_.push_back({.id = id, .parent = parent, .syntax = syntax, .begin = tokens_.size()});
+    owners_.push_back({.parent = parent, .syntax = syntax, .begin = tokens_.size()});
     if (syntaxNodes_.empty()) {
         ownerIds_.Insert(syntax, id);
     } else {
@@ -149,6 +151,18 @@ FormatLayoutRegion&
     region.tokens.assign(tokens.begin(), tokens.end());
     auto common = tokens.empty() ? 0 : FindOwner(tokens.front().node);
     for (const auto& token : tokens) {
+        const auto& owner = owners_[common];
+        // A gapless source range proves containment without walking the token's
+        // ancestors again. Reordered selections retain their original positions.
+        if (
+            owner.tokenCount == owner.end - owner.begin &&
+            token.sourceIndex >= owner.begin &&
+            token.sourceIndex < owner.end &&
+            token.sourceIndex < tokens_.size() &&
+            tokens_[token.sourceIndex].node == token.node
+        ) {
+            continue;
+        }
         auto other = FindOwner(token.node);
         while (common != other) {
             if (common > other) {

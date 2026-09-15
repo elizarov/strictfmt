@@ -15,7 +15,7 @@ class FormatListContinuation;
 class FormatChainContinuation;
 
 struct FormatLayoutOwner {
-    FormatLayoutOwnerId id = 0;
+    size_t tokenCount = 0;
     FormatLayoutOwnerId parent = 0;
     const SyntaxNode* syntax = nullptr;
     size_t begin = 0;

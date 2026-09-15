@@ -215,3 +215,6 @@ struct Widget_{int x;};
 struct C{void Fff(){A();B();}};
 auto f=[](int x){A();B();};
 auto g=[](int x){return x;};
+
+// deep qualification retains one common declaration owner
+using Deep = A::B::C::D::E::F::G::H::I::J::K::L::M::N::O::P::Value;

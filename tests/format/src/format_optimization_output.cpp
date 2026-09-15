@@ -765,3 +765,15 @@ auto g = [](
 ) {
     return x;
 };
+
+// deep qualification retains one common declaration owner
+using Deep =
+    A::B::C::
+        D::E::
+        F::G::
+        H::I::
+        J::K::
+        L::M::
+        N::O::
+        P::
+        Value;
