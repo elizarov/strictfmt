@@ -1,6 +1,7 @@
 #pragma once
 
 #include <memory>
+#include <optional>
 #include <span>
 
 struct PrintToken;
@@ -20,6 +21,7 @@ public:
     void AnalyzeBlock(size_t tokenIndex);
     void AnalyzeDirective(size_t tokenIndex);
     void Constrain(FormatBreakModelContext& context) const;
+    std::optional<int> ContinuationIndent(const PrintToken& token) const;
     void AcceptEmission(std::span<const FormatBreakChainIndent> chains);
     void FinishBoundary(int fallbackBaseIndent);
 

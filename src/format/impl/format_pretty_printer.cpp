@@ -653,7 +653,7 @@ private:
     }
 
     bool CanFlushPendingTokensCompact(const FormatBreakModelContext& context) const {
-        if (pendingSourceBlankLine_ || context.continuedBodyHeader != nullptr) {
+        if (pendingSourceBlankLine_ || context.continuedBodyHeader != nullptr || context.leadingSeparator.has_value()) {
             return false;
         }
         if (!context.virtualDelimiters.empty() || (
@@ -866,6 +866,48 @@ private:
         }
     }
 
+    void ConstrainLeadingSeparator(FormatBreakModelContext& context) {
+        if (output_.State().atLineStart) {
+            const auto first = std::find_if(pendingTokens_.begin(), pendingTokens_.end(), [](const PrintToken& token) {
+                return !IsCommentToken(token.kind) && token.kind != PrintTokenKind::BlankLine;
+            });
+            if (first != pendingTokens_.end()) {
+                std::optional<int> continuationIndent = chainContinuation_->ContinuationIndent(*first);
+                if (first->syntaxKind == SyntaxNodeKind::Comma) {
+                    std::optional<int> listIndent = listContinuation_->PreprocessorIndent(*first);
+                    if (!listIndent && ImmediatePreprocessorListParent(*first) != nullptr) {
+                        listIndent = output_.State().pendingIndentLevel.value_or(indentLevel_ + 1);
+                    }
+                    if (listIndent) {
+                        continuationIndent = listIndent;
+                    } else if (!continuationIndent) {
+                        continuationIndent = output_.State().pendingIndentLevel.value_or(indentLevel_) + 1;
+                    }
+                }
+                if (
+                    first->syntaxKind == SyntaxNodeKind::Arrow &&
+                    first->parentKind == SyntaxNodeKind::TrailingReturnType
+                ) {
+                    continuationIndent = indentLevel_ + 1;
+                }
+                if (
+                    !continuationIndent &&
+                    PrintTokenSyntaxHasClass(*first, SyntaxNodeClass::UnaryOperator) &&
+                    first->node != nullptr &&
+                    first->node->parent != nullptr &&
+                    first->node->parent->children.front() != first->node &&
+                    first->node->parent->children.back() == first->node
+                ) {
+                    continuationIndent = output_.State().pendingIndentLevel.value_or(indentLevel_) + 1;
+                }
+                if (continuationIndent) {
+                    context.leadingSeparator = FormatBreakLeadingSeparator{first->node, *continuationIndent};
+                    output_.SetPendingIndent(*continuationIndent);
+                }
+            }
+        }
+    }
+
     std::vector<FormatBreakSplitList> FlushPendingTokens(const FormatBreakModelContext& context = {}) {
         emittedBlockOpenIndent_.reset();
         if (pendingTokens_.empty()) {
@@ -883,6 +925,7 @@ private:
             output_.SetPendingIndent(effectiveContext.continuedBodyHeaderOwnerIndent);
         }
         chainContinuation_->Constrain(effectiveContext);
+        ConstrainLeadingSeparator(effectiveContext);
         if (breakModelDump_ == nullptr && CanFlushPendingTokensCompact(effectiveContext)) {
             FlushPendingTokensCompact();
             if (pendingIndentRestoreAfterFlush_) {
@@ -952,6 +995,9 @@ private:
             }
         }
         emittingMacroDefinition_ = previousEmittingMacroDefinition;
+        if (output_.State().lineHasText && !output_.State().pendingIndentLevel) {
+            output_.SetPendingIndent(chainContinuation_->ContinuationIndent(pendingTokens_.back()));
+        }
         pendingTokens_.clear();
         pendingSourceBlankLine_ = false;
         if (pendingIndentRestoreAfterFlush_) {
@@ -962,6 +1008,13 @@ private:
     }
 
     bool HasBufferedLineText() const { return output_.State().lineHasText || !pendingTokens_.empty(); }
+
+    bool HasBufferedCodeText() const {
+        return output_.State().lineHasText ||
+            std::any_of(pendingTokens_.begin(), pendingTokens_.end(), [](const PrintToken& token) {
+                return !IsCommentToken(token.kind) && token.kind != PrintTokenKind::BlankLine;
+            });
+    }
 
     bool ShouldBreakAfterSemicolon() const {
         if (braceStack_.empty()) {
@@ -993,8 +1046,9 @@ private:
             NewLineWithIndent(*boundary->indent, token.inMacroValue);
             BufferToken(token);
         } else {
+            const bool leadingComma = token.syntaxKind == SyntaxNodeKind::Comma && !HasBufferedCodeText();
             BufferToken(token);
-            if (boundary->indent) {
+            if (boundary->indent && !leadingComma) {
                 FlushPendingTokens();
                 NewLineWithIndent(*boundary->indent, ShouldContinueMacroLine(token, RawTokenAfterCurrent(1)));
             }
@@ -1024,7 +1078,7 @@ private:
         ) {
             return false;
         }
-        if (!HasBufferedLineText()) {
+        if (!HasBufferedCodeText()) {
             BufferToken(token);
             return true;
         }
@@ -1048,6 +1102,25 @@ private:
         NewLineWithIndent(indentLevel_);
         BufferToken(token);
         return true;
+    }
+
+    std::optional<int> DirectiveContinuationIndent(std::optional<int> listIndent = std::nullopt) const {
+        if (activeTokens_ != nullptr) {
+            for (size_t index = currentTokenIndex_; index > 0;) {
+                const PrintToken& previous = (*activeTokens_)[--index];
+                if (IsCommentToken(previous.kind) || previous.kind == PrintTokenKind::BlankLine) {
+                    continue;
+                }
+                if (previous.syntaxKind == SyntaxNodeKind::Comma && listIndent) {
+                    return listIndent;
+                }
+                if (const auto continuation = chainContinuation_->ContinuationIndent(previous)) {
+                    return continuation;
+                }
+                break;
+            }
+        }
+        return listIndent ? listIndent : output_.State().pendingIndentLevel;
     }
 
     void PrepareMacroBoundary(const PrintToken* previous, const PrintToken& current) {
@@ -1088,9 +1161,11 @@ private:
                 output_.SetPendingIndent(listContinuation_->AcceptPreprocessor(selected));
             }
             if (definition) {
-                chainContinuation_->FinishBoundary(indentLevel_);
+                chainContinuation_
+                    ->FinishBoundary(listContinuation_->PreprocessorIndent(current).value_or(indentLevel_));
             }
-            macroContinuationResumeIndent_ = output_.State().pendingIndentLevel;
+            macroContinuationResumeIndent_ =
+                DirectiveContinuationIndent(listContinuation_->PreprocessorIndent(current));
             if (output_.State().lineHasText) {
                 NewLine(false);
             }
@@ -1461,8 +1536,8 @@ private:
         const std::optional<int> includeInitializerContinuationIndent =
             isInclude && token.parentKind == SyntaxNodeKind::InitDeclarator && output_.State().lineHasText ?
                 std::optional<int>(CurrentLineIndentLevel() + 1) : std::nullopt;
-        chainContinuation_->FinishBoundary(indentLevel_);
-        const std::optional<int> continuationIndent = output_.State().pendingIndentLevel;
+        chainContinuation_->FinishBoundary(listItemIndent.value_or(indentLevel_));
+        const std::optional<int> continuationIndent = DirectiveContinuationIndent(listItemIndent);
         if (output_.State().lineHasText) {
             NewLine();
         }
@@ -1480,9 +1555,7 @@ private:
             conditionalFunctionIndents_.push_back(indentLevel_);
             ++indentLevel_;
         }
-        if (listItemIndent) {
-            output_.SetPendingIndent(*listItemIndent);
-        } else if (includeInitializerContinuationIndent) {
+        if (includeInitializerContinuationIndent) {
             output_.SetPendingIndent(*includeInitializerContinuationIndent);
         } else if (continuationIndent) {
             output_.SetPendingIndent(*continuationIndent);

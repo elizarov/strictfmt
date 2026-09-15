@@ -178,7 +178,14 @@ struct FormatBreakChainLayout {
     bool flatSplitIndent = false;
 };
 
+struct FormatBreakLeadingSeparator {
+    const SyntaxNode* token = nullptr;
+    int indent = 0;
+};
+
 struct FormatBreakModelContext {
+    // A separator starting a physical line after its preceding operand was emitted.
+    std::optional<FormatBreakLeadingSeparator> leadingSeparator;
     std::vector<FormatBreakVirtualDelimiter> virtualDelimiters;
     // A body whose header began in an earlier mandatory segment, with its enclosing scope's indentation.
     const SyntaxNode* continuedBodyHeader = nullptr;

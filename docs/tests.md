@@ -126,6 +126,8 @@ and exist only to exercise one command or configuration edge.
   continuations, and operator-chain ownership across mandatory block boundaries.
 - `tests/format/src/format_continuations_input.cpp` ->
   `tests/format/src/format_continuations_output.cpp`: header, list, chain, and delimiter context across mandatory blocks, comments, and directives.
+- `tests/format/src/format_forced_separators_input.cpp` ->
+  `tests/format/src/format_forced_separators_output.cpp`: operators and commas after mandatory boundaries, using `.cpp-format-continuations`.
 - `tests/format/src/format_non_ascii_input.cpp` ->
   `tests/format/src/format_non_ascii_output.cpp`: UTF-8 identifiers, literals, comments, and grapheme-cluster widths.
 - `tests/format/src/format_userver_input.cpp` ->

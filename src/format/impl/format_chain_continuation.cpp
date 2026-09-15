@@ -72,7 +72,12 @@ struct FormatChainContinuation::Impl {
                 requiresSplit = directive || (index + 1 < node.operands.size() && !(index == 0 && receiverMayExpand));
             }
         }
-        if (requiresSplit && HasUniformSplitForm(node)) {
+        if (
+            requiresSplit &&
+            node.kind == FormatBreakNodeKind::Chain &&
+            !node.operators.empty() &&
+            (directive || HasUniformSplitForm(node))
+        ) {
             const SyntaxNode* group = FormatBreakTokenValue(node.operators.front()).node;
             pendingCrossBlockChainGroups_.insert(group);
             for (const FormatBreakToken& token : node.operators) {
@@ -80,10 +85,10 @@ struct FormatChainContinuation::Impl {
                 if (printToken.node != nullptr) {
                     requiredChainBreakGroups_.insert_or_assign(printToken.node, group);
                     requiredChainBreakLayouts_[printToken.node].flatSplitIndent = node.flatSplitIndent;
-                    if (
+                    if (HasUniformSplitForm(node) && (
                         node.chainKind != FormatBreakChainKind::Ternary ||
                         printToken.syntaxKind == SyntaxNodeKind::Colon
-                    ) {
+                    )) {
                         requiredChainBreakOperators_.insert(printToken.node);
                     }
                 }
@@ -187,6 +192,13 @@ struct FormatChainContinuation::Impl {
             effectiveContext.requiredChainBreakLayouts = &requiredChainBreakLayouts_;
         }
     }
+    std::optional<int> ContinuationIndent(const PrintToken& token) const {
+        const auto layout = requiredChainBreakLayouts_.find(token.node);
+        if (layout == requiredChainBreakLayouts_.end() || !layout->second.baseIndent) {
+            return std::nullopt;
+        }
+        return *layout->second.baseIndent + (layout->second.flatSplitIndent ? 0 : 1);
+    }
     void AcceptEmission(std::span<const FormatBreakChainIndent> chains) {
         for (const FormatBreakChainIndent& chain : chains) {
             for (const FormatBreakToken& op : chain.chain->operators) {
@@ -205,6 +217,9 @@ FormatChainContinuation::~FormatChainContinuation() = default;
 void FormatChainContinuation::AnalyzeBlock(size_t tokenIndex) { impl_->AnalyzeBoundary(tokenIndex, false); }
 void FormatChainContinuation::AnalyzeDirective(size_t tokenIndex) { impl_->AnalyzeBoundary(tokenIndex, true); }
 void FormatChainContinuation::Constrain(FormatBreakModelContext& context) const { impl_->Constrain(context); }
+std::optional<int> FormatChainContinuation::ContinuationIndent(const PrintToken& token) const {
+    return impl_->ContinuationIndent(token);
+}
 void FormatChainContinuation::AcceptEmission(std::span<const FormatBreakChainIndent> chains) {
     impl_->AcceptEmission(chains);
 }

@@ -62,6 +62,8 @@ CHAIN_INPUT_FIXTURE = Path("src") / "format_chain_input.cpp"
 CHAIN_OUTPUT_FIXTURE = Path("src") / "format_chain_output.cpp"
 CONTINUATIONS_INPUT_FIXTURE = Path("src") / "format_continuations_input.cpp"
 CONTINUATIONS_OUTPUT_FIXTURE = Path("src") / "format_continuations_output.cpp"
+FORCED_SEPARATORS_INPUT_FIXTURE = Path("src") / "format_forced_separators_input.cpp"
+FORCED_SEPARATORS_OUTPUT_FIXTURE = Path("src") / "format_forced_separators_output.cpp"
 NON_ASCII_INPUT_FIXTURE = Path("src") / "format_non_ascii_input.cpp"
 NON_ASCII_OUTPUT_FIXTURE = Path("src") / "format_non_ascii_output.cpp"
 USERVER_INPUT_FIXTURE = Path("src") / "format_userver_input.cpp"
@@ -92,6 +94,7 @@ FORMATTED_GOLDEN_OUTPUTS = (
     ("optimization", OPTIMIZATION_OUTPUT_FIXTURE, OPTIMIZATION_FORMAT_CONFIG),
     ("chain", CHAIN_OUTPUT_FIXTURE, CHAIN_FORMAT_CONFIG),
     ("continuations", CONTINUATIONS_OUTPUT_FIXTURE, CONTINUATIONS_FORMAT_CONFIG),
+    ("forced-separators", FORCED_SEPARATORS_OUTPUT_FIXTURE, CONTINUATIONS_FORMAT_CONFIG),
     ("non-ascii", NON_ASCII_OUTPUT_FIXTURE, NON_ASCII_FORMAT_CONFIG),
     ("userver", USERVER_OUTPUT_FIXTURE, USERVER_FORMAT_CONFIG),
     ("ifdef", IFDEF_OUTPUT_FIXTURE, USERVER_FORMAT_CONFIG),
@@ -483,6 +486,15 @@ class FormatCommandTests(unittest.TestCase):
         )
         self.assertEqual(0, result.returncode, msg=result.stderr)
         self.assertEqual(read_fixture(CONTINUATIONS_OUTPUT_FIXTURE), result.stdout)
+        self.assert_no_unsupported_placement_warnings(result)
+
+    def test_forced_separators_stdin_formats_to_expected_output(self) -> None:
+        result = native_format(
+            "--stdin", "--style", str(CONTINUATIONS_FORMAT_CONFIG),
+            input_text=read_fixture(FORCED_SEPARATORS_INPUT_FIXTURE),
+        )
+        self.assertEqual(0, result.returncode, msg=result.stderr)
+        self.assertEqual(read_fixture(FORCED_SEPARATORS_OUTPUT_FIXTURE), result.stdout)
         self.assert_no_unsupported_placement_warnings(result)
 
     def test_non_ascii_stdin_formats_to_expected_output(self) -> None:

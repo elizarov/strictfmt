@@ -7213,8 +7213,7 @@ constexpr int kConditional[] = {
 };
 constexpr int kExpression = 1
 #define FORMAT_LIST_OPERAND 2
-+
-    FORMAT_LIST_OPERAND
+    + FORMAT_LIST_OPERAND
 #undef FORMAT_LIST_OPERAND
 ;
 

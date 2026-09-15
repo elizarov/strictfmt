@@ -250,6 +250,7 @@ struct FormatDeclarationLayout::Impl {
         if (
             breakLineSuffixWidth != 0 ||
             context.forceSplitStreamChain ||
+            context.leadingSeparator.has_value() ||
             context.continuedBodyHeader != nullptr ||
             !context.virtualDelimiters.empty() ||
             context.requiredChainBreakOperators != nullptr ||

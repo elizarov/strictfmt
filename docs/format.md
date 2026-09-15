@@ -85,6 +85,14 @@ Mandatory line breaks are structural boundaries. The break is always taken befor
 - Break around preprocessor directives and apply the structured macro breaks and continuation lines specified in [macro.md](macro.md).
 - Apply the mandatory separators specified under [Declaration Groups](#declaration-groups).
 
+When a mandatory break precedes an operator or comma, place it at the continuation indentation with the following operand or item, without an optional break immediately after it. Intervening comments retain their order around that separator.
+
+```cpp
+constexpr int kExpression = 1
+#define FORMAT_LIST_OPERAND 2
+    + FORMAT_LIST_OPERAND;
+```
+
 ## Line Break Opportunities
 
 Optional breaks within a [formatted segment](glossary.md#formatted-segment) occur:

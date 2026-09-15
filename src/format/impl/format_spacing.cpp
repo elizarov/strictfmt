@@ -58,21 +58,6 @@ bool IsBinaryContext(const PrintToken& token) {
         token.parentKind == SyntaxNodeKind::ConditionalExpression;
 }
 
-bool IsAlternativeBinaryOperatorToken(const PrintToken& token) {
-    if (token.kind != PrintTokenKind::Text || !IsBinaryContext(token)) {
-        return false;
-    }
-    return token.text == "and" ||
-        token.text == "and_eq" ||
-        token.text == "bitand" ||
-        token.text == "bitor" ||
-        token.text == "not_eq" ||
-        token.text == "or" ||
-        token.text == "or_eq" ||
-        token.text == "xor" ||
-        token.text == "xor_eq";
-}
-
 bool IsTriviaNode(const SyntaxNode* node) {
     return node == nullptr ||
         (node->classes & static_cast<std::uint64_t>(SyntaxNodeClass::Trivia)) != 0 ||
@@ -177,12 +162,10 @@ bool IsLeadingGlobalScopeToken(const PrintToken& token) {
 }
 
 bool IsBinaryOperatorSpacingContext(const PrintToken& token) {
-    if (IsAlternativeBinaryOperatorToken(token)) {
-        return true;
-    }
     if (
         token.kind != PrintTokenKind::Known ||
         !PrintTokenSyntaxHasClass(token, SyntaxNodeClass::BinaryOperator) ||
+        PrintTokenSyntaxHasClass(token, SyntaxNodeClass::MemberOperator) ||
         IsConditionDeclarationBindingToken(token) ||
         IsUnaryContext(token) || (
             (token.syntaxKind == SyntaxNodeKind::Less || token.syntaxKind == SyntaxNodeKind::Greater) &&
@@ -228,10 +211,8 @@ bool IsWordBoundaryChar(char ch) {
 }
 
 bool StartsWithWordBoundary(const PrintToken& token) {
-    if (token.kind == PrintTokenKind::Text) {
-        return !token.text.empty() && IsWordBoundaryChar(token.text.front());
-    }
-    return token.kind == PrintTokenKind::Known && PrintTokenSyntaxHasClass(token, SyntaxNodeClass::Keyword);
+    const std::string_view text = FormatTokenText(token);
+    return !text.empty() && IsWordBoundaryChar(text.front());
 }
 
 bool KeywordOperatorNeedsSpaceAfter(const PrintToken& previous, const PrintToken& current) {
@@ -339,6 +320,7 @@ bool IsTemplateArgumentExpressionOperator(const PrintToken& token) {
     const bool result = token.kind == PrintTokenKind::Known &&
         IsTemplateDelimiterContext(token) &&
         PrintTokenSyntaxHasClass(token, SyntaxNodeClass::BinaryOperator) &&
+        !PrintTokenSyntaxHasClass(token, SyntaxNodeClass::MemberOperator) &&
         !IsDeclaratorBindingToken(token) &&
         !IsMemberPointerDeclaratorStar(token) &&
         !IsUnaryContext(token) &&
@@ -733,11 +715,11 @@ bool FormatTokenNeedsSpace(const PrintToken* previous, const PrintToken& current
             return true;
         }
         if (current.parentKind == SyntaxNodeKind::LambdaCaptureSpecifier) {
-            return previous->kind == PrintTokenKind::Known && (
+            return IsBinaryOperatorSpacingContext(*previous) || (previous->kind == PrintTokenKind::Known && (
                 SyntaxNodeKindHasClass(prev, SyntaxNodeClass::AssignmentOperator) ||
                 prev == SyntaxNodeKind::Comma ||
                 prev == SyntaxNodeKind::Question
-            );
+            ));
         }
         return false;
     }

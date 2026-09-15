@@ -307,9 +307,12 @@ public:
                 }
             }
         }
-        if (context_.requiredChainBreakOperators != nullptr && !context_.requiredChainBreakOperators->empty()) {
-            // With no required operator, every predicate in the recursive pass is false and the model is unchanged.
-            ApplyRequiredChainBreaks(*model_.root);
+        if (
+            context_.requiredChainBreakOperators != nullptr ||
+            context_.requiredChainBreakLayouts != nullptr ||
+            context_.leadingSeparator.has_value()
+        ) {
+            ApplyChainContinuation(*model_.root);
         }
         costNormalizer_.Finalize(*model_.root);
         return std::move(model_);
@@ -375,17 +378,31 @@ private:
             context_.requiredChainBreakOperators->contains(FormatBreakTokenValue(token).node);
     }
 
-    void ApplyRequiredChainBreaks(FormatBreakNode& node) {
+    void ApplyChainContinuation(FormatBreakNode& node) {
         if (
+            context_.leadingSeparator &&
             node.kind == FormatBreakNodeKind::Chain &&
-            std::any_of(node.operators.begin(), node.operators.end(), [this](const FormatBreakToken& token) {
-                return RequiresChainBreak(token);
-            })
+            node.operators.size() == 1 &&
+            node.operators.front().token == nullptr &&
+            !node.operands.empty()
         ) {
-            if (node.chainKind == FormatBreakChainKind::Ternary) {
-                node.ternaryRequiresColonBreaks = true;
-            } else {
-                node.forceSplit = true;
+            const FormatBreakToken* prefix = FormatBreakNodeToken(node.operands.front());
+            if (prefix != nullptr && FormatBreakTokenValue(*prefix).node == context_.leadingSeparator->token) {
+                node.kind = FormatBreakNodeKind::Sequence;
+                node.children = node.operands;
+                node.operands = {};
+                node.operators = {};
+            }
+        }
+        if (node.kind == FormatBreakNodeKind::Chain) {
+            if (std::any_of(node.operators.begin(), node.operators.end(), [this](const FormatBreakToken& token) {
+                return RequiresChainBreak(token);
+            })) {
+                if (node.chainKind == FormatBreakChainKind::Ternary) {
+                    node.ternaryRequiresColonBreaks = true;
+                } else {
+                    node.forceSplit = true;
+                }
             }
             if (context_.requiredChainBreakLayouts != nullptr) {
                 for (const FormatBreakToken& token : node.operators) {
@@ -398,20 +415,49 @@ private:
                     }
                 }
             }
+            for (size_t index = 0; index < node.operators.size(); ++index) {
+                FormatBreakToken& op = node.operators[index];
+                if (
+                    !context_.leadingSeparator ||
+                    FormatBreakTokenValue(op).node != context_.leadingSeparator->token ||
+                    op.contextOnly
+                ) {
+                    continue;
+                }
+                node.requiredChainBreakBaseIndent = context_.leadingSeparator->indent - (node.flatSplitIndent ? 0 : 1);
+                if (
+                    node.chainKind == FormatBreakChainKind::AfterOperator ||
+                    node.chainKind == FormatBreakChainKind::Ternary
+                ) {
+                    node.operands[index + 1] = ExtendChainOperand(
+                        node.operands[index + 1], std::span<const FormatBreakToken>{&op, 1}, true, node.rawDepth + 1
+                    );
+                    op.contextOnly = true;
+                }
+                if (node.chainKind == FormatBreakChainKind::Ternary && node.operators.size() == 2) {
+                    if (FormatBreakTokenSyntaxKind(op) == SyntaxNodeKind::Question) {
+                        node.ternaryRequiresQuestionBreak = true;
+                    } else {
+                        node.ternaryRequiresColonBreaks = true;
+                    }
+                } else {
+                    node.forceSplit = true;
+                }
+            }
         }
         for (FormatBreakNode* child : node.children) {
             if (child != nullptr) {
-                ApplyRequiredChainBreaks(*child);
+                ApplyChainContinuation(*child);
             }
         }
         for (FormatBreakListItem& item : node.items) {
             if (item.node != nullptr) {
-                ApplyRequiredChainBreaks(*item.node);
+                ApplyChainContinuation(*item.node);
             }
         }
         for (FormatBreakNode* operand : node.operands) {
             if (operand != nullptr) {
-                ApplyRequiredChainBreaks(*operand);
+                ApplyChainContinuation(*operand);
             }
         }
     }
@@ -1924,7 +1970,11 @@ private:
         if (nestedFunctionDeclaratorIndex) {
             return BuildNestedFunctionSignature(node, *declaratorIndex, *nestedFunctionDeclaratorIndex, depth, end);
         }
-        if (!ContainsSelected(*node.children[*declaratorIndex])) {
+        if (!ContainsSelected(*node.children[*declaratorIndex]) || std::none_of(
+            node.children.begin(), node.children.begin() + *declaratorIndex, [this](const SyntaxNode* child) {
+                return child != nullptr && ContainsSelected(*child);
+            }
+        )) {
             return nullptr;
         }
 
@@ -2678,6 +2728,20 @@ private:
         bool& forceSplit
     ) {
         if (boundary.comments.empty()) {
+            return;
+        }
+        if (
+            context_.leadingSeparator && FormatBreakTokenValue(boundary.token).node == context_.leadingSeparator->token
+        ) {
+            const auto afterOperator =
+                std::find_if(boundary.comments.begin(), boundary.comments.end(), [&](const FormatBreakToken& comment) {
+                    return
+                        FormatBreakTokenValue(comment).sourceIndex > FormatBreakTokenValue(boundary.token).sourceIndex;
+                });
+            left = ExtendChainOperand(
+                left, std::span<const FormatBreakToken>{boundary.comments.begin(), afterOperator}, false, depth + 1
+            );
+            boundary.comments.erase(boundary.comments.begin(), afterOperator);
             return;
         }
         forceSplit = true;
