@@ -133,7 +133,9 @@ const FormatBreakModel& FormatLayoutTree::CompleteModel(FormatLayoutOwnerId owne
     const FormatLayoutOwner& item = owners_.at(owner);
     return completeModels_
         .emplace(owner, BuildFormatBreakModel(
-            tokens_.subspan(item.begin, item.end - item.begin), syntaxNodes_.empty() ? nullptr : &syntaxWorkspace_
+            tokens_.subspan(item.begin, item.end - item.begin),
+            syntaxNodes_.empty() ? nullptr : &syntaxWorkspace_,
+            &modelStorage_
         ))
         .first
         ->second;
@@ -157,7 +159,11 @@ FormatLayoutRegion&
         }
     }
     region.model = ProjectFormatLayout(
-        CompleteModel(common), region.tokens, context, syntaxNodes_.empty() ? nullptr : &syntaxWorkspace_
+        CompleteModel(common),
+        region.tokens,
+        context,
+        syntaxNodes_.empty() ? nullptr : &syntaxWorkspace_,
+        &modelStorage_
     );
     return region;
 }

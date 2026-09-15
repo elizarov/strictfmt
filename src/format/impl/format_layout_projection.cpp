@@ -12,9 +12,11 @@ namespace {
 class Projection {
 public:
     Projection(
-        std::span<const PrintToken> tokens, const FormatLayoutRegionContext& context, FormatBreakWorkspace* workspace
-    ) : context_(context), selected_(workspace) {
-        model_.nodes = std::make_unique<std::deque<FormatBreakNode>>();
+        std::span<const PrintToken> tokens,
+        const FormatLayoutRegionContext& context,
+        FormatBreakWorkspace* workspace,
+        std::pmr::memory_resource* resource
+    ) : context_(context), selected_(workspace), model_(resource) {
         selected_.Reserve(tokens.size());
         for (const auto& token : tokens) {
             selected_.InsertOrAssign(token.node, FormatBreakToken{&token});
@@ -628,7 +630,8 @@ FormatBreakModel ProjectFormatLayout(
     const FormatBreakModel& complete,
     std::span<const PrintToken> tokens,
     const FormatLayoutRegionContext& context,
-    FormatBreakWorkspace* workspace
+    FormatBreakWorkspace* workspace,
+    std::pmr::memory_resource* resource
 ) {
-    return Projection(tokens, context, workspace).Build(complete);
+    return Projection(tokens, context, workspace, resource).Build(complete);
 }

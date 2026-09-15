@@ -35,5 +35,6 @@ FormatBreakModel ProjectFormatLayout(
     const FormatBreakModel& complete,
     std::span<const PrintToken> tokens,
     const FormatLayoutRegionContext& context,
-    FormatBreakWorkspace* workspace = nullptr
+    FormatBreakWorkspace* workspace = nullptr,
+    std::pmr::memory_resource* resource = nullptr
 );

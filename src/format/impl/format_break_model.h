@@ -3,10 +3,12 @@
 #include <algorithm>
 #include <deque>
 #include <memory>
+#include <memory_resource>
 #include <optional>
 #include <span>
 #include <string>
 #include <string_view>
+#include <type_traits>
 #include <vector>
 
 #include "format/impl/format_spacing.h"
@@ -128,7 +130,10 @@ struct FormatBreakNode : FormatBreakNodeData {
 
 template <typename T>
 class FormatBreakArena {
+    static_assert(std::is_trivially_copyable_v<T>);
+
 public:
+    explicit FormatBreakArena(std::pmr::memory_resource* resource = nullptr) : resource_(resource) {}
     std::span<T> Append(std::span<const T> values);
 
 private:
@@ -137,7 +142,15 @@ private:
     std::span<T> Allocate(size_t count);
     void AllocateBlock(size_t capacity);
 
-    std::vector<std::unique_ptr<T[]>> blocks_;
+    struct Deallocate {
+        std::pmr::memory_resource* resource;
+        size_t capacity;
+
+        void operator()(T* memory) const { resource->deallocate(memory, capacity * sizeof(T), alignof(T)); }
+    };
+
+    std::pmr::memory_resource* resource_;
+    std::vector<std::unique_ptr<T, Deallocate>> blocks_;
     T* cursor_ = nullptr;
     size_t remaining_ = 0;
 };
@@ -145,7 +158,7 @@ private:
 template <typename T>
 std::span<T> FormatBreakArena<T>::Append(std::span<const T> values) {
     std::span<T> result = Allocate(values.size());
-    std::copy(values.begin(), values.end(), result.begin());
+    std::uninitialized_copy(values.begin(), values.end(), result.begin());
     return result;
 }
 
@@ -165,13 +178,27 @@ std::span<T> FormatBreakArena<T>::Allocate(size_t count) {
 
 template <typename T>
 void FormatBreakArena<T>::AllocateBlock(size_t capacity) {
-    blocks_.push_back(std::make_unique<T[]>(capacity));
+    if (resource_ == nullptr) {
+        resource_ = std::pmr::get_default_resource();
+    }
+    auto block = std::unique_ptr<T, Deallocate>(
+        static_cast<T*>(resource_->allocate(capacity * sizeof(T), alignof(T))), {resource_, capacity}
+    );
+    blocks_.push_back(std::move(block));
     cursor_ = blocks_.back().get();
     remaining_ = capacity;
 }
 
 struct FormatBreakModel {
-    std::unique_ptr<std::deque<FormatBreakNode>> nodes;
+    FormatBreakModel() = default;
+    explicit FormatBreakModel(std::pmr::memory_resource* resource) :
+        nodes(std::make_unique<std::pmr::deque<FormatBreakNode>>(
+            resource == nullptr ? std::pmr::get_default_resource() : resource
+        )),
+        nodePointers(resource),
+        tokens(resource) {}
+
+    std::unique_ptr<std::pmr::deque<FormatBreakNode>> nodes;
     FormatBreakArena<FormatBreakNode*> nodePointers;
     FormatBreakArena<FormatBreakToken> tokens;
     FormatBreakNode* root = nullptr;

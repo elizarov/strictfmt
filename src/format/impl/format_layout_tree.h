@@ -65,6 +65,8 @@ private:
     std::vector<FormatLayoutOwnerId> ownerByNode_;
     FormatSyntaxMap<FormatLayoutOwnerId> ownerIds_;
     FormatBreakWorkspace syntaxWorkspace_;
+    // Models destroy their elements before the shared allocation pool is released.
+    std::pmr::monotonic_buffer_resource modelStorage_;
     std::unordered_map<FormatLayoutOwnerId, FormatBreakModel> completeModels_;
     std::deque<FormatLayoutRegion> regions_;
     std::vector<std::optional<int>> structuralIndents_;
