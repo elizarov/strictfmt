@@ -25,6 +25,7 @@
 #include "format/impl/format_chain_continuation.h"
 #include "format/impl/format_layout_tree.h"
 #include "format/impl/format_syntax_map.h"
+#include "format/impl/format_spacing.h"
 #include "format/impl/format_config.h"
 #include "format/impl/format_model_parse.h"
 #include "format/impl/format_print_token_builder.h"
@@ -608,6 +609,42 @@ void TestListItemStorage() {
     }
 }
 
+void TestSpacingAncestry() {
+    FormatterConfig config;
+    config.declarationModifierMacros = {"ANNOTATION"};
+    std::string source = "ANNOTATION(Nested(value)) int value; "
+        "auto text = \"prefix\" TEXT(Nested(value)) \"suffix\"; auto result = ";
+    for (int depth = 0; depth < 256; ++depth) source += "F(";
+    source += "value";
+    for (int depth = 0; depth < 256; ++depth) source += ")+value";
+    source += ";";
+    auto syntax = ParseFormatModel(source, config);
+    Check(syntax.parse.ok, "spacing ancestry fixture parses");
+    const auto tokens = BuildPrintTokens(syntax, config.tabWidth);
+    bool modifier = false;
+    bool concatenation = false;
+    for (size_t index = 0; index < tokens.size(); ++index) {
+        const auto& token = tokens[index];
+        bool expectedModifier = false;
+        bool expectedConcatenation = false;
+        for (const auto* node = token.node; node != nullptr; node = node->parent) {
+            expectedModifier |= node->kind == SyntaxNodeKind::MacroModifier;
+            expectedConcatenation |= node->kind == SyntaxNodeKind::ConcatenatedString;
+        }
+        Check(token.spacingAncestryKnown && token.inMacroModifier == expectedModifier &&
+            token.inConcatenatedString == expectedConcatenation, "inherited spacing flags match the syntax ancestry");
+        modifier |= token.inMacroModifier && token.syntaxKind == SyntaxNodeKind::RightParen;
+        concatenation |= token.inConcatenatedString && token.syntaxKind == SyntaxNodeKind::RightParen;
+        if (index != 0) {
+            auto previous = tokens[index - 1];
+            previous.spacingAncestryKnown = false;
+            Check(FormatTokenNeedsSpace(&tokens[index - 1], token) == FormatTokenNeedsSpace(&previous, token),
+                "spacing ancestry shortcuts preserve the uncached decision");
+        }
+    }
+    Check(modifier && concatenation, "spacing ancestry fixture exercises both positive ancestor cases");
+}
+
 void TestPersistentHeaderIndent() {
     FormatterConfig config;
     auto syntax = ParseFormatModel("Record::Record() : first_(0), last_(1) { Work(); Done(); }", config);
@@ -939,6 +976,7 @@ int main() {
         TestPersistentLayoutOwners();
         TestSparseLayoutProjection();
         TestListItemStorage();
+        TestSpacingAncestry();
         TestBreakArena();
         TestSyntaxMap();
         TestPersistentHeaderIndent();

@@ -22,6 +22,9 @@ bool IsDeclaratorBindingToken(const PrintToken& token) {
 }
 
 bool EndsMacroModifier(const PrintToken& previous, const PrintToken& current) {
+    if (previous.spacingAncestryKnown && !previous.inMacroModifier) {
+        return false;
+    }
     if (previous.parentKind != SyntaxNodeKind::MacroModifier && previous.syntaxKind != SyntaxNodeKind::RightParen) {
         return false;
     }
@@ -34,7 +37,10 @@ bool EndsMacroModifier(const PrintToken& previous, const PrintToken& current) {
 }
 
 bool EndsConcatenatedStringFragment(const PrintToken& previous, const PrintToken& current) {
-    if (previous.syntaxKind != SyntaxNodeKind::RightParen) {
+    if (
+        previous.syntaxKind != SyntaxNodeKind::RightParen ||
+        (previous.spacingAncestryKnown && !previous.inConcatenatedString)
+    ) {
         return false;
     }
     for (

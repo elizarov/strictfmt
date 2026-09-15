@@ -27,7 +27,7 @@ void InitializePrintTokenTraits(PrintToken& token) {
         token.grandParentKind == SyntaxNodeKind::FieldInitializerList;
 }
 
-enum PrintTokenAncestryFlag : std::uint8_t {
+enum PrintTokenAncestryFlag : std::uint16_t {
     InMacroStatementSequence = 1u << 0,
     InLeadingStreamOperatorChain = 1u << 1,
     InConditionalStreamOperatorChain = 1u << 2,
@@ -36,6 +36,8 @@ enum PrintTokenAncestryFlag : std::uint8_t {
     InTemplateList = 1u << 5,
     InMacroListExpansion = 1u << 6,
     InMacroCallItem = 1u << 7,
+    InMacroModifier = 1u << 8,
+    InConcatenatedString = 1u << 9,
 };
 
 bool IsStandalonePreprocessorBranchToken(const SyntaxNode& node, SyntaxNodeKind parentKind) {
@@ -153,7 +155,7 @@ struct TokenContext {
     bool inCompactSingleStatementBody = false;
     const SyntaxNode* macroDefinition = nullptr;
     bool inMacroValue = false;
-    std::uint8_t ancestryFlags = 0;
+    std::uint16_t ancestryFlags = 0;
     const SyntaxNode* declarationScopeItem = nullptr;
     bool inTemplateDeclarationBlock = false;
     bool inTemplateDeclarationHeader = false;
@@ -179,6 +181,8 @@ struct TokenContext {
             InConditionalFunctionHeader : 0;
         ancestryFlags |= kind == SyntaxNodeKind::BareMacroItem ? InBareMacroItem : 0;
         ancestryFlags |= kind == SyntaxNodeKind::MacroCallItem ? InMacroCallItem : 0;
+        ancestryFlags |= kind == SyntaxNodeKind::MacroModifier ? InMacroModifier : 0;
+        ancestryFlags |= kind == SyntaxNodeKind::ConcatenatedString ? InConcatenatedString : 0;
         ancestryFlags |= MacroExpansionList(node) != nullptr ? InMacroListExpansion : 0;
         ancestryFlags |=
             (kind == SyntaxNodeKind::TemplateArgumentList || kind == SyntaxNodeKind::TemplateParameterList) ?
@@ -222,6 +226,9 @@ PrintToken
     token.inMacroCallItem = (context.ancestryFlags & InMacroCallItem) != 0;
     token.inMacroListExpansion = (context.ancestryFlags & InMacroListExpansion) != 0;
     token.inTemplateList = (context.ancestryFlags & InTemplateList) != 0;
+    token.spacingAncestryKnown = true;
+    token.inMacroModifier = (context.ancestryFlags & InMacroModifier) != 0;
+    token.inConcatenatedString = (context.ancestryFlags & InConcatenatedString) != 0;
     token.inTemplateDeclarationBlock = context.inTemplateDeclarationBlock;
     token.inTemplateDeclarationHeader = context.inTemplateDeclarationHeader;
     token.declarationScopeItem = context.declarationScopeItem;

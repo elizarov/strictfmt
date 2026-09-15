@@ -48,6 +48,10 @@ struct PrintToken {
     bool forcedLeadingPreprocessorListComma : 1;
     bool spaceBefore : 1;
     bool spaceBeforeKnown : 1;
+    // Negative ancestry guards; independently constructed tokens use parent traversal.
+    bool spacingAncestryKnown : 1;
+    bool inMacroModifier : 1;
+    bool inConcatenatedString : 1;
     mutable unsigned templateArgumentExpressionOperator : 2;
     const SyntaxNode* node = nullptr;
     const SyntaxNode* declarationScopeItem = nullptr;
