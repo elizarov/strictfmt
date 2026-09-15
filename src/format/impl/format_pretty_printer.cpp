@@ -220,9 +220,11 @@ public:
         tabWidth_(std::max(1, config.tabWidth)),
         output_(indentWidth_, config.columnLimit) {}
 
-    std::unique_ptr<const FormatLayoutTree> Plan(const std::vector<PrintToken>& tokens, size_t sourceSize) {
+    std::unique_ptr<const FormatLayoutTree>
+        Plan(const std::vector<PrintToken>& tokens, size_t sourceSize, std::span<const SyntaxNode> syntaxNodes)
+    {
         activeTokens_ = &tokens;
-        layoutTree_ = std::make_unique<FormatLayoutTree>(tokens);
+        layoutTree_ = std::make_unique<FormatLayoutTree>(tokens, syntaxNodes);
         declarationLayout_ = std::make_unique<FormatDeclarationLayout>(tokens);
         output_.SetTokenCount(tokens.size());
         output_.Reserve(std::max(tokens.size() * 8, sourceSize));
@@ -1818,7 +1820,7 @@ std::string PrintFormatModel(
     const auto printStart =
         stats == nullptr ? std::chrono::steady_clock::time_point{} : std::chrono::steady_clock::now();
     const size_t sourceSize = model.sourceText == nullptr ? 0 : model.sourceText->size();
-    const auto layout = LayoutPlanner(config, sourcePath, stats, breakModelDump).Plan(tokens, sourceSize);
+    const auto layout = LayoutPlanner(config, sourcePath, stats, breakModelDump).Plan(tokens, sourceSize, model.nodes);
     const auto emitStart =
         stats == nullptr ? std::chrono::steady_clock::time_point{} : std::chrono::steady_clock::now();
     std::string result = EmitFormatLayoutProgram(layout->Program(), config.indentWidth, config.columnLimit);

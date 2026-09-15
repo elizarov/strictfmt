@@ -465,7 +465,14 @@ void TestPersistentLayoutOwners() {
     auto syntax = ParseFormatModel("int value = left + [] { // boundary\n work(); // inner\n return middle; }() + right;", config);
     Check(syntax.parse.ok, "persistent layout fixture parses");
     const auto tokens = BuildPrintTokens(syntax, config.tabWidth);
-    FormatLayoutTree tree(tokens);
+    FormatLayoutTree tree(tokens, syntax.nodes);
+    FormatLayoutTree sparse(tokens);
+    for (const auto& node : syntax.nodes) {
+        Check(tree.FindOwner(&node) == sparse.FindOwner(&node), "dense and sparse syntax owner lookup agree");
+    }
+    SyntaxNode unrelated;
+    Check(tree.FindOwner(nullptr) == 0 && tree.FindOwner(&unrelated) == 0,
+        "dense syntax lookup rejects nodes outside its source model");
     const auto ownerId = tree.SourceItem(tokens.front().node);
     Check(ownerId != 0, "source item has a stable layout owner");
     const auto& owner = tree.Owner(ownerId);

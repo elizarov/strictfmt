@@ -8,9 +8,13 @@
 #include "format/impl/format_list_continuation.h"
 #include "format/impl/format_chain_continuation.h"
 
-FormatLayoutTree::FormatLayoutTree(std::span<const PrintToken> tokens) : tokens_(tokens) {
-    owners_.reserve(tokens.size() + 1);
-    ownerIds_.Reserve(tokens.size());
+FormatLayoutTree::FormatLayoutTree(std::span<const PrintToken> tokens, std::span<const SyntaxNode> syntaxNodes) :
+    tokens_(tokens), syntaxNodes_(syntaxNodes), ownerByNode_(syntaxNodes.size())
+{
+    owners_.reserve((syntaxNodes.empty() ? tokens.size() : syntaxNodes.size()) + 1);
+    if (syntaxNodes.empty()) {
+        ownerIds_.Reserve(tokens.size());
+    }
     owners_.push_back({});
     for (size_t index = 0; index < tokens.size(); ++index) {
         const FormatLayoutOwnerId id = AddOwner(tokens[index].node);
@@ -43,13 +47,17 @@ FormatLayoutOwnerId FormatLayoutTree::AddOwner(const SyntaxNode* syntax) {
     if (syntax == nullptr) {
         return 0;
     }
-    if (const auto* found = ownerIds_.Find(syntax)) {
-        return *found;
+    if (const auto found = FindOwner(syntax)) {
+        return found;
     }
     const FormatLayoutOwnerId parent = AddOwner(syntax->parent);
     const FormatLayoutOwnerId id = owners_.size();
     owners_.push_back({.id = id, .parent = parent, .syntax = syntax, .begin = tokens_.size()});
-    ownerIds_.Insert(syntax, id);
+    if (syntaxNodes_.empty()) {
+        ownerIds_.Insert(syntax, id);
+    } else {
+        ownerByNode_[static_cast<size_t>(syntax - syntaxNodes_.data())] = id;
+    }
     return id;
 }
 
@@ -57,6 +65,13 @@ std::span<const PrintToken> FormatLayoutTree::Tokens() const { return tokens_; }
 const FormatLayoutOwner& FormatLayoutTree::Owner(FormatLayoutOwnerId id) const { return owners_.at(id); }
 
 FormatLayoutOwnerId FormatLayoutTree::FindOwner(const SyntaxNode* syntax) const {
+    if (!syntaxNodes_.empty()) {
+        // The parsed model's node storage is contiguous and immutable. External
+        // syntax queries still return no owner without subtracting unrelated pointers.
+        const auto offset =
+            reinterpret_cast<std::uintptr_t>(syntax) - reinterpret_cast<std::uintptr_t>(syntaxNodes_.data());
+        return offset < syntaxNodes_.size_bytes() ? ownerByNode_[offset / sizeof(SyntaxNode)] : 0;
+    }
     const auto* found = ownerIds_.Find(syntax);
     return found == nullptr ? 0 : *found;
 }

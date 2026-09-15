@@ -33,10 +33,11 @@ struct FormatLayoutRegion {
 
 // The complete source topology is built once. Complete item models are immutable
 // and materialized on demand; cost regions and their solutions have this same
-// lifetime. Source syntax and the original tokens must outlive the tree.
+// lifetime. Source syntax and the original tokens must outlive the tree. When
+// supplied, syntaxNodes must contain every token node and its ancestors.
 class FormatLayoutTree {
 public:
-    explicit FormatLayoutTree(std::span<const PrintToken> tokens);
+    explicit FormatLayoutTree(std::span<const PrintToken> tokens, std::span<const SyntaxNode> syntaxNodes = {});
     ~FormatLayoutTree();
 
     void Complete(FormatLayoutProgram program);
@@ -60,6 +61,8 @@ private:
     std::unordered_map<const SyntaxNode*, int> blockIndents_;
     std::span<const PrintToken> tokens_;
     std::vector<FormatLayoutOwner> owners_;
+    std::span<const SyntaxNode> syntaxNodes_;
+    std::vector<FormatLayoutOwnerId> ownerByNode_;
     FormatSyntaxMap<FormatLayoutOwnerId> ownerIds_;
     std::unordered_map<FormatLayoutOwnerId, FormatBreakModel> completeModels_;
     std::deque<FormatLayoutRegion> regions_;
