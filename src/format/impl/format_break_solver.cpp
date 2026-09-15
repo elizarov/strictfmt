@@ -108,11 +108,11 @@ public:
         candidateOrder_(config.columnLimit),
         indentWidth_(indentWidth),
         breakLineSuffixWidth_(breakLineSuffixWidth),
-        memoHeads_(model.nodes == nullptr ? 1 : model.nodes->size() + 1, nullptr),
-        alternativesMemoHeads_(model.nodes == nullptr ? 1 : model.nodes->size() + 1, nullptr),
+        memoHeads_(model.NodeIdCount() + 1, nullptr),
+        alternativesMemoHeads_(model.NodeIdCount() + 1, nullptr),
         compactLayout_(model),
-        containsForceSplitAdjacentStrings_(model.nodes == nullptr ? 1 : model.nodes->size() + 1, -1),
-        containsNonSingleStatementBodyHeader_(model.nodes == nullptr ? 1 : model.nodes->size() + 1, -1) {}
+        containsForceSplitAdjacentStrings_(model.NodeIdCount() + 1, -1),
+        containsNonSingleStatementBodyHeader_(model.NodeIdCount() + 1, -1) {}
 
     NodeResult Solve(const FormatBreakNode& node, int column, int indentLevel, bool lineHasText) {
         if (const NodeResult* found = FindMemoizedResult(node.id, column, indentLevel, lineHasText)) {
@@ -3327,6 +3327,6 @@ FormatBreakSolution SolveFormatBreaks(
     if (!result.valid) {
         return solution;
     }
-    const size_t choiceCount = model.nodes == nullptr ? 0 : model.nodes->size() + 1;
+    const size_t choiceCount = model.NodeIdCount() + 1;
     return FormatChoiceHistory::Materialize(result.choices, choiceCount);
 }

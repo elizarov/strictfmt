@@ -219,6 +219,10 @@ struct FormatBreakModel {
     std::vector<std::vector<std::string>> stringRuns;
     FormatBreakNode* root = nullptr;
     bool hasLayoutChoice = false;
+    // Projections retain source ids and append fresh ids for synthesized or changed token nodes.
+    size_t nodeIdCount = 0;
+
+    size_t NodeIdCount() const { return nodeIdCount != 0 ? nodeIdCount : (nodes == nullptr ? 0 : nodes->size()); }
 };
 
 bool FormatBreakLeadingNameMatches(const FormatBreakNode& node, std::string_view candidate);

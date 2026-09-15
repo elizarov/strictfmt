@@ -25,7 +25,8 @@ public:
 
     FormatBreakModel Build(const FormatBreakModel& complete) {
         root_ = complete.root;
-        intersections_.resize(complete.nodes == nullptr ? 1 : complete.nodes->size() + 1, 0);
+        sourceNodeCount_ = model_.nodeIdCount = complete.NodeIdCount();
+        intersections_.resize(complete.NodeIdCount() + 1, 0);
         model_.root = complete.root == nullptr ? nullptr : Project(*complete.root);
         if (model_.root == nullptr) {
             model_.root = New();
@@ -41,6 +42,7 @@ private:
     FormatSyntaxMap<FormatBreakToken> selected_;
     FormatBreakModel model_;
     const FormatBreakNode* root_ = nullptr;
+    size_t sourceNodeCount_ = 0;
     mutable std::vector<std::uint8_t> intersections_;
 
     bool RequiresChainBreak(const FormatBreakToken& token) const {
@@ -135,13 +137,15 @@ private:
 
     FormatBreakNode* New() {
         auto& node = model_.nodes->emplace_back();
-        node.id = static_cast<int>(model_.nodes->size());
+        node.id = static_cast<int>(++model_.nodeIdCount);
         return &node;
     }
 
     FormatBreakNode* Copy(const FormatBreakNode& source) {
         auto* node = &model_.nodes->emplace_back(static_cast<const FormatBreakNodeData&>(source));
-        node->id = static_cast<int>(model_.nodes->size());
+        if (source.kind == FormatBreakNodeKind::Token) {
+            node->id = static_cast<int>(++model_.nodeIdCount);
+        }
         node->origin = &source;
         node->compactStringTexts = source.compactStringTexts;
         return node;
@@ -176,19 +180,31 @@ private:
         return node;
     }
 
-    static void Shift(FormatBreakNode& node, int amount) {
+    // Only token leaves are shared; structural nodes and all mutable spans are projection-owned.
+    void OwnToken(FormatBreakNode*& node) {
+        if (node->kind == FormatBreakNodeKind::Token && static_cast<size_t>(node->id) <= sourceNodeCount_) {
+            node = Copy(*node);
+        }
+    }
+
+    void Shift(FormatBreakNode*& pointer, int amount) {
+        if (amount == 0) {
+            return;
+        }
+        OwnToken(pointer);
+        auto& node = *pointer;
         node.rawDepth -= amount;
         node.structuralDepth = std::max(0, node.structuralDepth - amount);
         node.breakCost = std::max(0, node.breakCost - amount);
-        for (auto* child : node.children) {
-            Shift(*child, amount);
+        for (auto*& child : node.children) {
+            Shift(child, amount);
         }
-        for (auto* operand : node.operands) {
-            Shift(*operand, amount);
+        for (auto*& operand : node.operands) {
+            Shift(operand, amount);
         }
         for (auto& item : node.items) {
             if (item.node != nullptr) {
-                Shift(*item.node, amount);
+                Shift(item.node, amount);
             }
         }
     }
@@ -256,11 +272,18 @@ private:
         return false;
     }
 
-    FormatBreakNode* Project(const FormatBreakNode& source) {
+    FormatBreakNode* Project(FormatBreakNode& source) {
         if (source.kind == FormatBreakNodeKind::Token) {
             const auto token = Token(source.token);
             if (token.token == nullptr) {
                 return nullptr;
+            }
+            if (
+                token.spaceBefore == source.token.spaceBefore &&
+                token.contextOnly == source.token.contextOnly &&
+                (token.token == source.token.token || *token.token == *source.token.token)
+            ) {
+                return &source;
             }
             auto* node = Copy(source);
             node->token = token;
@@ -282,12 +305,12 @@ private:
         auto* node = Copy(source);
         auto children = model_.nodePointers.Allocate(source.children.size() + source.operands.size());
         size_t childCount = 0;
-        for (const auto* child : source.children) {
+        for (auto* child : source.children) {
             if (auto* projected = Project(*child)) {
                 children[childCount++] = projected;
             }
         }
-        for (const auto* operand : source.operands) {
+        for (auto* operand : source.operands) {
             if (auto* projected = Project(*operand)) {
                 children[childCount++] = projected;
             }
@@ -309,8 +332,8 @@ private:
             if (children.size() != source.children.size() && (
                 source.kind == FormatBreakNodeKind::BodyHeader || source.kind == FormatBreakNodeKind::FunctionSignature
             )) {
-                for (auto* child : children) {
-                    Shift(*child, 1);
+                for (auto*& child : children) {
+                    Shift(child, 1);
                 }
                 return Sequence(children, source.rawDepth);
             }
@@ -402,8 +425,8 @@ private:
         if (closeSelected) {
             children.push_back(delimiters.back());
         }
-        for (auto* child : children) {
-            Shift(*child, 1);
+        for (auto*& child : children) {
+            Shift(child, 1);
         }
         return Sequence(children, source.rawDepth);
     }
@@ -463,8 +486,10 @@ private:
     }
 
     void ExtractLeadingTrivia(
-        FormatBreakNode& node, const PrintToken& op, bool before, std::vector<FormatBreakNode*>& moved
+        FormatBreakNode*& pointer, const PrintToken& op, bool before, std::vector<FormatBreakNode*>& moved
     ) {
+        OwnToken(pointer);
+        auto& node = *pointer;
         if (node.kind == FormatBreakNodeKind::Token && node.token.token != nullptr && !node.token.contextOnly) {
             const auto& token = *node.token.token;
             if (token.node == op.node) {
@@ -474,8 +499,8 @@ private:
                 node.token.contextOnly = true;
             }
         }
-        for (auto* child : node.children) {
-            ExtractLeadingTrivia(*child, op, before, moved);
+        for (auto*& child : node.children) {
+            ExtractLeadingTrivia(child, op, before, moved);
         }
     }
 
@@ -540,8 +565,8 @@ private:
                     continue;
                 }
                 std::vector<FormatBreakNode*> before, after;
-                ExtractLeadingTrivia(*operands[index], *op.token, false, after);
-                ExtractLeadingTrivia(*operands[index + 1], *op.token, true, before);
+                ExtractLeadingTrivia(operands[index], *op.token, false, after);
+                ExtractLeadingTrivia(operands[index + 1], *op.token, true, before);
                 before.insert(before.begin(), operands[index]);
                 operands[index] = Sequence(before, source.rawDepth + 1);
                 after.push_back(operands[index + 1]);
@@ -550,8 +575,8 @@ private:
             }
         }
         if (operators.empty() && source.chainKind != FormatBreakChainKind::CallApplication) {
-            for (auto* operand : operands) {
-                Shift(*operand, 1);
+            for (auto*& operand : operands) {
+                Shift(operand, 1);
             }
             return Sequence(operands, source.rawDepth);
         }
@@ -576,6 +601,9 @@ private:
             })) {
                 continue;
             }
+            for (auto*& operand : child->operands) {
+                Shift(operand, child->rawDepth - source.rawDepth);
+            }
             operands[index] = child->operands.front();
             operands.insert(operands.begin() + index + 1, child->operands.begin() + 1, child->operands.end());
             operators.insert(operators.begin() + index, child->operators.begin(), child->operators.end());
@@ -588,9 +616,6 @@ private:
             }
             commentsBeforeOperators.insert(commentsBeforeOperators.begin() + index, comments.begin(), comments.end());
             node->forceSplit |= child->forceSplit;
-            for (auto* operand : child->operands) {
-                Shift(*operand, child->rawDepth - source.rawDepth);
-            }
         }
         if (source.chainKind == FormatBreakChainKind::StreamBeforeOperator) {
             node->chainStartsWithOperator = !HasCode(*operands.front());
@@ -599,8 +624,8 @@ private:
                 std::vector<FormatBreakNode*> comments;
                 const auto* first = operators.empty() ? nullptr : operators.front().token;
                 if (first != nullptr) {
-                    ExtractLeadingTrivia(*operands.front(), *first, true, comments);
-                    ExtractLeadingTrivia(*operands.front(), *first, false, comments);
+                    ExtractLeadingTrivia(operands.front(), *first, true, comments);
+                    ExtractLeadingTrivia(operands.front(), *first, false, comments);
                     if (commentsBeforeOperators.empty()) {
                         commentsBeforeOperators.resize(operators.size());
                     }

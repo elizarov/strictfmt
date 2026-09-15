@@ -11,8 +11,7 @@ struct FormatCompactLayout::Impl {
 
     mutable std::vector<CachedLine> compactLineShapes_;
 
-    explicit Impl(const FormatBreakModel& model) :
-        compactLineShapes_(model.nodes == nullptr ? 1 : model.nodes->size() + 1) {}
+    explicit Impl(const FormatBreakModel& model) : compactLineShapes_(model.NodeIdCount() + 1) {}
 
     static bool CompactTokenTextIsValid(const FormatBreakToken& token, std::string_view text) {
         if (token.contextOnly) {

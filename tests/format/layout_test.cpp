@@ -581,6 +581,66 @@ void TestSparseLayoutProjection() {
     }
 }
 
+void TestSharedProjectionTokens() {
+    FormatterConfig config;
+    auto syntax = ParseFormatModel("Build(first, second + third);", config);
+    Check(syntax.parse.ok, "shared-token fixture parses");
+    const auto tokens = BuildPrintTokens(syntax, config.tabWidth);
+    auto complete = BuildFormatBreakModel(tokens);
+    struct SavedToken {
+        const FormatBreakNode* node;
+        FormatBreakToken token;
+        int rawDepth, structuralDepth, breakCost;
+    };
+    std::vector<SavedToken> saved;
+    for (const auto& node : *complete.nodes) {
+        if (node.kind == FormatBreakNodeKind::Token) {
+            saved.push_back({&node, node.token, node.rawDepth, node.structuralDepth, node.breakCost});
+        }
+    }
+    auto copiedTokens = tokens;
+    auto full = ProjectFormatLayout(complete, copiedTokens, {});
+    Check(std::none_of(full.nodes->begin(), full.nodes->end(), [](const auto& node) {
+        return node.kind == FormatBreakNodeKind::Token;
+    }), "unchanged token nodes are borrowed even when the selection contains token copies");
+    const auto findToken = [&](std::string_view text) {
+        return std::find_if(tokens.begin(), tokens.end(), [&](const auto& token) {
+            return FormatTokenText(token) == text;
+        });
+    };
+    auto first = findToken("first");
+    Check(first != tokens.end(), "shared-token fixture contains the partial-list selection");
+    auto partial = ProjectFormatLayout(complete, std::span(&*first, 1), {});
+    Check(std::any_of(partial.nodes->begin(), partial.nodes->end(), [&](const auto& node) {
+        return node.kind == FormatBreakNodeKind::Token && node.token.token->node == first->node &&
+            node.id > static_cast<int>(complete.NodeIdCount()) && node.origin != nullptr &&
+            node.rawDepth != node.origin->rawDepth;
+    }), "partial-list depth adjustments copy borrowed tokens before mutation");
+    copiedTokens[first - tokens.begin()].text = "replacement";
+    auto changed = ProjectFormatLayout(complete, copiedTokens, {});
+    Check(std::any_of(changed.nodes->begin(), changed.nodes->end(), [](const auto& node) {
+        return node.kind == FormatBreakNodeKind::Token && node.token.token->text == "replacement";
+    }), "changed token metadata is retained in an owned projection node");
+    const auto plus = findToken("+");
+    Check(plus != tokens.end(), "shared-token fixture contains a continuation operator");
+    auto continued = ProjectFormatLayout(complete, tokens, {
+        .leadingSeparator = FormatLayoutLeadingSeparator{plus->node, 1}
+    });
+    for (const auto& before : saved) {
+        Check(before.node->token.token == before.token.token &&
+            before.node->token.spaceBefore == before.token.spaceBefore &&
+            before.node->token.contextOnly == before.token.contextOnly &&
+            before.node->rawDepth == before.rawDepth && before.node->structuralDepth == before.structuralDepth &&
+            before.node->breakCost == before.breakCost,
+            "partial and continued projections leave complete token nodes unchanged");
+    }
+    for (const auto* model : {&full, &partial, &changed, &continued}) {
+        const auto solution = SolveFormatBreaks(config, *model, 0, 0, config.indentWidth, 0);
+        Check(solution.choices.size() == model->NodeIdCount() + 1,
+            "solver storage covers both borrowed source ids and new projection ids");
+    }
+}
+
 void TestListItemStorage() {
     FormatterConfig config;
     std::string source = "auto result = Build(";
@@ -1002,6 +1062,7 @@ int main() {
         TestIncrementalMacroParsing();
         TestPersistentLayoutOwners();
         TestSparseLayoutProjection();
+        TestSharedProjectionTokens();
         TestListItemStorage();
         TestSpacingAncestry();
         TestModelStringStorage();

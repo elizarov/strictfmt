@@ -56,6 +56,8 @@ struct PrintToken {
     const SyntaxNode* node = nullptr;
     const SyntaxNode* declarationScopeItem = nullptr;
     const SyntaxNode* macroDefinition = nullptr;
+
+    bool operator==(const PrintToken&) const = default;
 };
 
 inline bool PrintTokenSyntaxHasClass(const PrintToken& token, SyntaxNodeClass syntaxNodeClass) {
