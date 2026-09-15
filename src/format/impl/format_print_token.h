@@ -7,7 +7,7 @@
 // Tokens carry borrowed source/model references and materialized syntax facts.
 // sourceIndex identifies original adjacency; buffered or reordered tokens must
 // recompute spacing whenever that adjacency no longer holds.
-enum class PrintTokenKind {
+enum class PrintTokenKind : std::uint8_t {
     Known,
     Text,
     Comment,
@@ -20,9 +20,9 @@ enum class PrintTokenKind {
 struct PrintToken {
     PrintTokenKind kind = PrintTokenKind::Text;
     SyntaxNodeKind syntaxKind = SyntaxNodeKind::Unknown;
-    std::string_view text;
     SyntaxNodeKind parentKind = SyntaxNodeKind::Unknown;
     SyntaxNodeKind grandParentKind = SyntaxNodeKind::Unknown;
+    std::string_view text;
     std::uint64_t syntaxClasses = 0;
     std::uint32_t sourceIndex = static_cast<std::uint32_t>(-1);
     bool inTemplateDeclaration : 1;
