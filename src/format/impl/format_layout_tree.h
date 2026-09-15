@@ -64,6 +64,7 @@ private:
     std::span<const SyntaxNode> syntaxNodes_;
     std::vector<FormatLayoutOwnerId> ownerByNode_;
     FormatSyntaxMap<FormatLayoutOwnerId> ownerIds_;
+    FormatBreakWorkspace syntaxWorkspace_;
     std::unordered_map<FormatLayoutOwnerId, FormatBreakModel> completeModels_;
     std::deque<FormatLayoutRegion> regions_;
     std::vector<std::optional<int>> structuralIndents_;

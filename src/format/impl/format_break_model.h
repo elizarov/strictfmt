@@ -10,6 +10,7 @@
 #include <vector>
 
 #include "format/impl/format_spacing.h"
+#include "format/impl/format_syntax_map.h"
 
 enum class FormatBreakNodeKind {
     Token,
@@ -63,6 +64,8 @@ struct FormatBreakToken {
     bool spaceBefore = false;
     bool contextOnly = false;
 };
+
+using FormatBreakWorkspace = FormatSyntaxMap<FormatBreakToken>::Workspace;
 
 struct FormatBreakListItem {
     FormatBreakNode* node = nullptr;

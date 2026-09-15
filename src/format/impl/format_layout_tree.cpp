@@ -9,7 +9,7 @@
 #include "format/impl/format_chain_continuation.h"
 
 FormatLayoutTree::FormatLayoutTree(std::span<const PrintToken> tokens, std::span<const SyntaxNode> syntaxNodes) :
-    tokens_(tokens), syntaxNodes_(syntaxNodes), ownerByNode_(syntaxNodes.size())
+    tokens_(tokens), syntaxNodes_(syntaxNodes), ownerByNode_(syntaxNodes.size()), syntaxWorkspace_(syntaxNodes)
 {
     owners_.reserve((syntaxNodes.empty() ? tokens.size() : syntaxNodes.size()) + 1);
     if (syntaxNodes.empty()) {
@@ -132,7 +132,11 @@ const FormatBreakModel& FormatLayoutTree::CompleteModel(FormatLayoutOwnerId owne
     }
     const FormatLayoutOwner& item = owners_.at(owner);
     return completeModels_
-        .emplace(owner, BuildFormatBreakModel(tokens_.subspan(item.begin, item.end - item.begin))).first->second;
+        .emplace(owner, BuildFormatBreakModel(
+            tokens_.subspan(item.begin, item.end - item.begin), syntaxNodes_.empty() ? nullptr : &syntaxWorkspace_
+        ))
+        .first
+        ->second;
 }
 
 FormatLayoutRegion&
@@ -152,7 +156,9 @@ FormatLayoutRegion&
             }
         }
     }
-    region.model = ProjectFormatLayout(CompleteModel(common), region.tokens, context);
+    region.model = ProjectFormatLayout(
+        CompleteModel(common), region.tokens, context, syntaxNodes_.empty() ? nullptr : &syntaxWorkspace_
+    );
     return region;
 }
 

@@ -455,6 +455,19 @@ void TestSyntaxMap() {
     values.InsertOrAssign(nullptr, 42);
     Check(*values.Find(&nodes[123]) == 99 && *values.Find(nullptr) == 42 && values.Find(&missing) == nullptr,
         "assignment preserves distinct and missing identities");
+    FormatSyntaxMap<size_t>::Workspace workspace(nodes);
+    for (size_t generation = 0; generation < 3; ++generation) {
+        FormatSyntaxMap<size_t> selected(&workspace);
+        selected.Reserve(nodes.size());
+        Check(!selected.Contains(&nodes[0]) && !selected.Contains(nullptr), "workspace reuse starts with an empty selection");
+        for (size_t index = 0; index < nodes.size(); ++index) selected.Insert(&nodes[index], index + generation);
+        for (size_t index = 0; index < nodes.size(); ++index) {
+            Check(*selected.Find(&nodes[index]) == index + generation, "dense selections retain exact node values");
+        }
+        selected.Insert(nullptr, generation);
+        Check(*selected.Find(nullptr) == generation && !selected.Contains(&missing),
+            "workspace null and missing keys retain independent identities");
+    }
     FormatSyntaxMap<bool> membership;
     membership.Insert(&nodes[0], false);
     Check(membership.Contains(&nodes[0]) && !membership.Contains(&nodes[1]), "membership is independent of value");

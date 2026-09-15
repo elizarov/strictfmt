@@ -6,5 +6,5 @@
 
 // Builds a complete structural layout and fixes its break costs before returning.
 // The result owns break nodes but borrows tokens and syntax, which must outlive it.
-// Selection and spacing are builder-local; the syntax and other models stay immutable.
-FormatBreakModel BuildFormatBreakModel(std::span<const PrintToken> tokens);
+// Selection and spacing are scoped to this build; the syntax and other models stay immutable.
+FormatBreakModel BuildFormatBreakModel(std::span<const PrintToken> tokens, FormatBreakWorkspace* workspace = nullptr);

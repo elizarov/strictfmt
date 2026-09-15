@@ -266,7 +266,9 @@ bool UsesFlatNonCallParenthesisContinuation(const FormatBreakToken& open) {
 
 class BreakModelBuilder {
 public:
-    explicit BreakModelBuilder(std::span<const PrintToken> tokens) {
+    BreakModelBuilder(std::span<const PrintToken> tokens, FormatBreakWorkspace* workspace) :
+        selectedTokens_(workspace)
+    {
         model_.nodes = std::make_unique<std::deque<FormatBreakNode>>();
         selectedTokens_.Reserve(tokens.size());
         const PrintToken* previous = nullptr;
@@ -3304,4 +3306,6 @@ private:
 
 }  // namespace
 
-FormatBreakModel BuildFormatBreakModel(std::span<const PrintToken> tokens) { return BreakModelBuilder(tokens).Build(); }
+FormatBreakModel BuildFormatBreakModel(std::span<const PrintToken> tokens, FormatBreakWorkspace* workspace) {
+    return BreakModelBuilder(tokens, workspace).Build();
+}

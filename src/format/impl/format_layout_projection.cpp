@@ -11,11 +11,13 @@ namespace {
 
 class Projection {
 public:
-    Projection(std::span<const PrintToken> tokens, const FormatLayoutRegionContext& context) : context_(context) {
+    Projection(
+        std::span<const PrintToken> tokens, const FormatLayoutRegionContext& context, FormatBreakWorkspace* workspace
+    ) : context_(context), selected_(workspace) {
         model_.nodes = std::make_unique<std::deque<FormatBreakNode>>();
         selected_.Reserve(tokens.size());
         for (const auto& token : tokens) {
-            selected_.InsertOrAssign(token.node, &token);
+            selected_.InsertOrAssign(token.node, FormatBreakToken{&token});
         }
     }
 
@@ -32,7 +34,7 @@ public:
 
 private:
     const FormatLayoutRegionContext& context_;
-    FormatSyntaxMap<const PrintToken*> selected_;
+    FormatSyntaxMap<FormatBreakToken> selected_;
     FormatBreakModel model_;
     const FormatBreakNode* root_ = nullptr;
     mutable std::vector<std::uint8_t> intersections_;
@@ -148,9 +150,9 @@ private:
         }
         const auto* found = selected_.Find(token.token->node);
         return found == nullptr ? FormatBreakToken{} : FormatBreakToken{
-            (*found),
-            token.spaceBefore != token.token->spaceBefore || !(*found)->spaceBeforeKnown ? token.spaceBefore :
-                (*found)->spaceBefore,
+            found->token,
+            token.spaceBefore != token.token->spaceBefore || !found->token->spaceBeforeKnown ? token.spaceBefore :
+                found->token->spaceBefore,
             token.contextOnly,
         };
     }
@@ -623,7 +625,10 @@ private:
 }  // namespace
 
 FormatBreakModel ProjectFormatLayout(
-    const FormatBreakModel& complete, std::span<const PrintToken> tokens, const FormatLayoutRegionContext& context
+    const FormatBreakModel& complete,
+    std::span<const PrintToken> tokens,
+    const FormatLayoutRegionContext& context,
+    FormatBreakWorkspace* workspace
 ) {
-    return Projection(tokens, context).Build(complete);
+    return Projection(tokens, context, workspace).Build(complete);
 }

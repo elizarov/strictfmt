@@ -32,5 +32,8 @@ struct FormatLayoutRegionContext {
 };
 
 FormatBreakModel ProjectFormatLayout(
-    const FormatBreakModel& complete, std::span<const PrintToken> tokens, const FormatLayoutRegionContext& context
+    const FormatBreakModel& complete,
+    std::span<const PrintToken> tokens,
+    const FormatLayoutRegionContext& context,
+    FormatBreakWorkspace* workspace = nullptr
 );
