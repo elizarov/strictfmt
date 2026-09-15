@@ -26,6 +26,7 @@ This document owns shared terminology used across the `strictfmt` documentation.
 - **line break opportunity**: An optional boundary where the break optimizer may choose a split layout.
 - **line ending style**: The LF, CRLF, or CR newline spelling preserved for formatted source when the input uses one style.
 - **list**: A formatter-owned grammar list whose separators, when present, are commas. Comma-operator chains are not lists.
+- **lowering**: Translating selected structural layout choices into concrete token writes, line breaks, and indentation anchors; see [architecture.md](architecture.md#lowering-selected-layouts).
 - **macro category**: A formatter configuration list that tells the grammar which macro identifiers use special parsing roles.
 - **mandatory line break**: A structural boundary that the formatter always emits before optional wrapping is considered.
 - **pretty printer**: The formatter component that turns the format model and break choices into formatted source.

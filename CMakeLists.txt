@@ -161,6 +161,7 @@ add_library(strictfmt_core STATIC
     src/format/impl/format_print_token_builder.cpp
     src/format/impl/format_list_continuation.cpp
     src/format/impl/format_layout_program.cpp
+    src/format/impl/format_layout_writer.cpp
     src/format/impl/format_layout_tree.cpp
     src/format/impl/format_layout_projection.cpp
     src/format/impl/format_output.cpp

@@ -66,3 +66,7 @@ inline bool PrintTokenSyntaxPathContains(const PrintToken& token, const SyntaxNo
     }
     return false;
 }
+
+inline bool PrintTokenContinuesMacroLine(const PrintToken& token, const PrintToken* next) {
+    return token.inMacroValue && next != nullptr && next->macroDefinition == token.macroDefinition;
+}

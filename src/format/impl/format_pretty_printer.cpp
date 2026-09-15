@@ -5,12 +5,14 @@
 #include <cstdint>
 #include <memory>
 #include <optional>
+#include <span>
 #include <string>
 #include <unordered_set>
 #include <vector>
 
 #include "format/impl/format_break_model_builder.h"
 #include "format/impl/format_layout_lowerer.h"
+#include "format/impl/format_layout_writer.h"
 #include "format/impl/format_break_model_dump.h"
 #include "format/impl/format_break_model_inline_helpers.h"
 #include "format/impl/format_break_solver.h"
@@ -117,19 +119,6 @@ bool IsConditionalRhsPreprocessorToken(const PrintToken& token) {
         (token.node->classes & static_cast<std::uint64_t>(SyntaxNodeClass::ConditionalRhsPreprocessor)) != 0;
 }
 
-bool HasDirectListDelimiterPair(const SyntaxNode& node) {
-    for (const SyntaxNode* child : node.children) {
-        if (child == nullptr || !SyntaxNodeKindHasClass(child->kind, SyntaxNodeClass::OpeningDelimiter)) {
-            continue;
-        }
-        const SyntaxNodeKind close = MatchingListCloseToken(child->kind);
-        if (close != SyntaxNodeKind::Unknown && HasDirectKnownChild(node, close)) {
-            return true;
-        }
-    }
-    return false;
-}
-
 bool HasDirectDelimiterPair(const SyntaxNode& node, SyntaxNodeKind openKind) {
     return HasDirectKnownChild(node, openKind) && HasDirectKnownChild(node, MatchingListCloseToken(openKind));
 }
@@ -142,45 +131,6 @@ bool IsSeparatedListContainer(const SyntaxNode& node) {
     }
     return
         HasDirectKnownChild(node, SyntaxNodeKind::Semicolon) && HasDirectDelimiterPair(node, SyntaxNodeKind::LeftParen);
-}
-
-bool SyntaxSubtreeEndsWith(const SyntaxNode& node, SyntaxNodeKind kind) {
-    if (node.kind == kind) {
-        return true;
-    }
-    for (auto child = node.children.rbegin(); child != node.children.rend(); ++child) {
-        if (*child == nullptr || SyntaxNodeHasClass(**child, SyntaxNodeClass::Trivia)) {
-            continue;
-        }
-        return SyntaxSubtreeEndsWith(**child, kind);
-    }
-    return false;
-}
-
-bool TrailingCommentReturnsToStructuralIndent(const PrintToken& token) {
-    if (token.node == nullptr || token.node->parent == nullptr) {
-        return false;
-    }
-    if (SyntaxNodeHasClass(*token.node->parent, SyntaxNodeClass::SourceItemScope)) {
-        return true;
-    }
-    const SyntaxNode* previous = nullptr;
-    for (const SyntaxNode* child : token.node->parent->children) {
-        if (child == token.node) {
-            break;
-        }
-        if (child != nullptr && !SyntaxNodeHasClass(*child, SyntaxNodeClass::Trivia)) {
-            previous = child;
-        }
-    }
-    return previous != nullptr && (
-        previous->kind == SyntaxNodeKind::LeftBrace || (
-            previous->kind == SyntaxNodeKind::TemplateParameterList &&
-            token.node->parent->kind == SyntaxNodeKind::TemplateDeclaration
-        ) ||
-        SyntaxSubtreeEndsWith(*previous, SyntaxNodeKind::RightBrace) ||
-        (previous->kind == SyntaxNodeKind::Colon && token.node->parent->kind == SyntaxNodeKind::CaseStatement)
-    );
 }
 
 bool HasSeparatedListAncestor(const SyntaxNode* node) {
@@ -254,7 +204,7 @@ bool KeepsStructuralCommentInBreakModel(const PrintToken& token) {
         (token.node != nullptr && token.node->parent != nullptr && IsFormatterOwnedValue(*token.node->parent));
 }
 
-class LayoutPlanner final : private FormatLayoutSink {
+class LayoutPlanner final {
 public:
     LayoutPlanner(
         const FormatterConfig& config,
@@ -316,7 +266,6 @@ private:
     bool pendingSourceBlankLine_ = false;
     bool pendingNamespaceSeparator_ = false;
     int indentLevel_ = 0;
-    bool emittingMacroDefinition_ = false;
     bool firstIncludeRun_ = true;
     const std::vector<PrintToken>* activeTokens_ = nullptr;
     size_t currentTokenIndex_ = 0;
@@ -579,8 +528,8 @@ private:
     void NewLine(bool macroContinuation = false) { output_.NewLine(macroContinuation); }
     void BlankLine(bool macroContinuation = false) { output_.BlankLine(macroContinuation); }
     void ReopenLastOutputLine() { output_.ReopenLastLine(); }
-    void Write(std::string_view text) override { output_.Write(text, indentLevel_); }
-    void Space() override { output_.Space(); }
+    void Write(std::string_view text) { output_.Write(text, indentLevel_); }
+    void Space() { output_.Space(); }
     int CurrentColumn() const { return output_.CurrentColumn(indentLevel_); }
     int CurrentLineIndentLevel() const { return output_.CurrentLineIndentLevel(); }
     void WriteWithIndentOffset(std::string_view text, int offset) {
@@ -588,65 +537,9 @@ private:
         output_.WriteAtIndent(text, indentLevel_ + offset + macroOffset);
     }
 
-    void NewLineWithIndent(int indentLevel, std::optional<bool> macroContinuation = std::nullopt) {
-        NewLine(macroContinuation.value_or(emittingMacroDefinition_));
+    void NewLineWithIndent(int indentLevel, bool macroContinuation = false) {
+        NewLine(macroContinuation);
         output_.SetPendingIndent(std::max(0, indentLevel));
-    }
-
-    void BlankLineWithIndent(int indentLevel) {
-        BlankLine(emittingMacroDefinition_);
-        output_.SetPendingIndent(std::max(0, indentLevel));
-    }
-
-    void BreakListLine(int indentLevel, bool blankLine) {
-        if (blankLine) {
-            BlankLineWithIndent(indentLevel);
-            return;
-        }
-        NewLineWithIndent(indentLevel);
-    }
-
-    static const SyntaxNode* LineCommentAlignmentGroup(const PrintToken& token) {
-        const SyntaxNode* group = token.node == nullptr ? nullptr : token.node->parent;
-        while (
-            group != nullptr &&
-            SyntaxNodeHasClass(*group, SyntaxNodeClass::Expression) &&
-            !HasDirectListDelimiterPair(*group)
-        ) {
-            group = group->parent;
-        }
-        return group;
-    }
-
-    void WriteTrailingComment(const PrintToken& token, std::string_view text, bool spaceBefore) {
-        output_.WriteComment(
-            text,
-            indentLevel_,
-            LineCommentAlignmentGroup(token),
-            FormatOutputComment::Trailing,
-            IsLineCommentToken(token),
-            spaceBefore
-        );
-    }
-
-    void WriteStandaloneTrailingComment(const PrintToken& token, std::string_view text) {
-        output_.WriteComment(
-            text,
-            indentLevel_,
-            LineCommentAlignmentGroup(token),
-            FormatOutputComment::Standalone,
-            IsLineCommentToken(token)
-        );
-    }
-
-    void WriteCommentContinuation(const PrintToken& token, std::string_view text) {
-        output_.WriteComment(
-            text,
-            indentLevel_,
-            LineCommentAlignmentGroup(token),
-            FormatOutputComment::Continuation,
-            IsLineCommentToken(token)
-        );
     }
 
     void CloseCaseBodyIndentIfNeeded(const SyntaxNode* macroDefinition) {
@@ -774,84 +667,14 @@ private:
         pendingTokens_.push_back(buffered);
     }
 
-    void WriteToken(
-        const FormatBreakToken& token,
-        std::string_view text,
-        std::optional<int> continuationBaseIndent,
-        bool suppressSpace
-    ) override {
-        if (token.contextOnly) {
-            return;
-        }
-        const PrintToken& printToken = FormatBreakTokenValue(token);
-        auto tokenScope = output_.TokenScope(printToken, layoutTree_->FindOwner(printToken.node));
-        if (
-            printToken.macroDefinition != nullptr &&
-            !printToken.inMacroValue &&
-            output_.State().atLineStart &&
-            !output_.State().macroContinuation
-        ) {
-            output_.ForceColumnZero();
-        }
-        if (printToken.kind == PrintTokenKind::Comment) {
-            const int commentIndent =
-                output_.State().atLineStart ? CurrentColumn() / indentWidth_ : CurrentLineIndentLevel();
-            if (!output_.State().atLineStart) {
-                NewLineWithIndent(commentIndent);
-            }
-            if (printToken.commentContinuation) {
-                WriteCommentContinuation(printToken, text);
-            } else {
-                Write(text);
-            }
-            NewLineWithIndent(commentIndent);
-            return;
-        }
-        if (printToken.kind == PrintTokenKind::TrailingComment) {
-            const int breakModelContinuationIndent = continuationBaseIndent ?
-                *continuationBaseIndent + (*continuationBaseIndent == indentLevel_ ? 1 : 0) : 0;
-            const int commentIndent =
-                output_.State().atLineStart ? CurrentColumn() / indentWidth_ : CurrentLineIndentLevel();
-            const int continuationIndent = std::max(commentIndent, breakModelContinuationIndent);
-            if (!output_.State().atLineStart) {
-                WriteTrailingComment(printToken, text, token.spaceBefore);
-            } else {
-                WriteStandaloneTrailingComment(printToken, text);
-            }
-            const PrintToken* nextToken =
-                activeTokens_ != nullptr && printToken.sourceIndex + 1 < activeTokens_->size() ?
-                    &(*activeTokens_)[printToken.sourceIndex + 1] : nullptr;
-            if (
-                TrailingCommentReturnsToStructuralIndent(printToken) ||
-                (printToken.macroDefinition != nullptr && !ShouldContinueMacroLine(printToken, nextToken))
-            ) {
-                NewLine(ShouldContinueMacroLine(printToken, nextToken));
-            } else {
-                NewLineWithIndent(continuationIndent);
-            }
-            return;
-        }
-        if (token.spaceBefore && !suppressSpace && !output_.State().atLineStart) {
-            Space();
-        }
-        Write(text);
+    FormatLayoutWriter MakeLayoutWriter(bool macroContinuation = false) {
+        return FormatLayoutWriter(output_, *layoutTree_, {
+            .sourceTokens = activeTokens_ == nullptr ? std::span<const PrintToken>{} : *activeTokens_,
+            .structuralIndent = indentLevel_,
+            .indentWidth = indentWidth_,
+            .macroContinuation = macroContinuation,
+        });
     }
-
-    void EnterNode(const FormatBreakNode& node) override {
-        output_.PushOwner(layoutTree_->FindOwner(node.syntaxOwner));
-    }
-    void LeaveNode() override { output_.PopOwner(); }
-
-    FormatLayoutSinkState State() const override {
-        return {
-            .atLineStart = output_.State().atLineStart,
-            .lineHasText = output_.State().lineHasText,
-            .pendingIndentLevel = output_.State().pendingIndentLevel,
-        };
-    }
-
-    void BreakLine(int indentLevel, bool blankLine) override { BreakListLine(indentLevel, blankLine); }
-    void SetPendingIndent(int indentLevel) override { output_.SetPendingIndent(indentLevel); }
 
     void ConstrainLeadingSeparator(FormatLayoutRegionContext& context) {
         if (output_.State().atLineStart) {
@@ -926,17 +749,16 @@ private:
             std::any_of(pendingTokens_.begin(), pendingTokens_.end(), [](const PrintToken& token) {
                 return token.inConditionalStreamOperatorChain;
             });
-        const bool previousEmittingMacroDefinition = emittingMacroDefinition_;
-        emittingMacroDefinition_ =
+        const bool emittingMacroDefinition =
             std::any_of(pendingTokens_.begin(), pendingTokens_.end(), [](const PrintToken& token) {
                 return token.macroDefinition != nullptr;
             });
-        if (emittingMacroDefinition_ && pendingTokens_.front().inMacroValue && output_.State().atLineStart) {
+        if (emittingMacroDefinition && pendingTokens_.front().inMacroValue && output_.State().atLineStart) {
             output_.SetPendingIndent(std::max(output_.State().pendingIndentLevel.value_or(0), indentLevel_ + 1));
         }
         const int baseIndentLevel = output_.State().pendingIndentLevel.value_or(indentLevel_);
         const int startColumn = CurrentColumn();
-        const int breakLineSuffixWidth = emittingMacroDefinition_ ? 2 : 0;
+        const int breakLineSuffixWidth = emittingMacroDefinition ? 2 : 0;
         FormatLayoutRegion* region = &layoutTree_->AddRegion(pendingTokens_, effectiveContext);
         if (stats_ != nullptr) {
             stats_->breakModel += std::chrono::steady_clock::now() - modelStart;
@@ -961,12 +783,12 @@ private:
         if (effectiveModel.root) {
             const auto emitStart =
                 stats_ == nullptr ? std::chrono::steady_clock::time_point{} : std::chrono::steady_clock::now();
-            LowerFormatLayout(config_, effectiveModel, *effectiveSolution, baseIndentLevel, *layoutTree_, *this);
+            auto writer = MakeLayoutWriter(emittingMacroDefinition);
+            LowerFormatLayout(config_, effectiveModel, *effectiveSolution, baseIndentLevel, *layoutTree_, writer);
             if (stats_ != nullptr) {
                 stats_->emit += std::chrono::steady_clock::now() - emitStart;
             }
         }
-        emittingMacroDefinition_ = previousEmittingMacroDefinition;
         if (output_.State().lineHasText && !output_.State().pendingIndentLevel) {
             output_.SetPendingIndent(layoutTree_->Chains().ContinuationIndent(pendingTokens_.back()));
         }
@@ -994,10 +816,6 @@ private:
         return parenDepth_ <= braceStack_.back().parenDepth;
     }
 
-    bool ShouldContinueMacroLine(const PrintToken& token, const PrintToken* next) const {
-        return token.inMacroValue && next != nullptr && next->macroDefinition == token.macroDefinition;
-    }
-
     const PrintToken* RawTokenAfterCurrent(size_t offset) const {
         if (activeTokens_ == nullptr || currentTokenIndex_ + offset >= activeTokens_->size()) {
             return nullptr;
@@ -1013,7 +831,7 @@ private:
         const PrintToken& last = pendingTokens_.back();
         const PrintToken* next = activeTokens_ != nullptr && last.sourceIndex + 1 < activeTokens_->size() ?
             &(*activeTokens_)[last.sourceIndex + 1] : nullptr;
-        const bool macroContinuation = ShouldContinueMacroLine(last, next);
+        const bool macroContinuation = PrintTokenContinuesMacroLine(last, next);
         FlushPendingTokens();
         if (!itemIndent) {
             itemIndent = layoutTree_->Lists().SelectedItemIndent(list);
@@ -1198,7 +1016,7 @@ private:
             FlushPendingTokens();
         }
         if (output_.State().lineHasText) {
-            NewLineWithIndent(CurrentLineIndentLevel(), ShouldContinueMacroLine(*previous, &current));
+            NewLineWithIndent(CurrentLineIndentLevel(), PrintTokenContinuesMacroLine(*previous, &current));
         }
     }
 
@@ -1431,22 +1249,24 @@ private:
     }
 
     void PrintComment(const PrintToken& token, const PrintToken* previous, const PrintToken* next) {
+        auto writer = MakeLayoutWriter();
         if (token.kind == PrintTokenKind::TrailingComment && output_.State().lineHasText) {
-            WriteTrailingComment(token, token.text, FormatTokenNeedsSpace(previous, token));
-            NewLine(ShouldContinueMacroLine(token, next));
+            writer
+                .WriteComment(token, token.text, FormatOutputComment::Trailing, FormatTokenNeedsSpace(previous, token));
+            NewLine(PrintTokenContinuesMacroLine(token, next));
             return;
         }
         if (output_.State().lineHasText) {
-            NewLine(ShouldContinueMacroLine(token, next));
+            NewLine(PrintTokenContinuesMacroLine(token, next));
         }
         if (token.commentContinuation) {
-            WriteCommentContinuation(token, token.text);
+            writer.WriteComment(token, token.text, FormatOutputComment::Continuation);
         } else if (token.kind == PrintTokenKind::TrailingComment) {
-            WriteStandaloneTrailingComment(token, token.text);
+            writer.WriteComment(token, token.text, FormatOutputComment::Standalone);
         } else {
             Write(token.text);
         }
-        NewLine(ShouldContinueMacroLine(token, next));
+        NewLine(PrintTokenContinuesMacroLine(token, next));
     }
 
     void PrintIncludeRun(const PrintToken& token, const PrintToken* next) {
@@ -1596,7 +1416,7 @@ private:
                     token.grandParentKind == SyntaxNodeKind::TemplateDeclaration
                 ) {
                     FlushPendingTokens();
-                    NewLine(ShouldContinueMacroLine(token, next));
+                    NewLine(PrintTokenContinuesMacroLine(token, next));
                 }
                 return;
             case SyntaxNodeKind::LeftBracket:
@@ -1656,7 +1476,7 @@ private:
                     )
                 ) {
                     FlushPendingTokens();
-                    NewLine(ShouldContinueMacroLine(token, next));
+                    NewLine(PrintTokenContinuesMacroLine(token, next));
                 }
                 return;
             case SyntaxNodeKind::LeftBrace:
@@ -1685,7 +1505,7 @@ private:
                         }
                     } else if (!token.inCompactSingleStatementBody && HasBufferedLineText()) {
                         FlushPendingTokens();
-                        NewLine(ShouldContinueMacroLine(token, next));
+                        NewLine(PrintTokenContinuesMacroLine(token, next));
                     }
                     return;
                 }
@@ -1696,7 +1516,7 @@ private:
                     !(rawNext != nullptr && rawNext->kind == PrintTokenKind::TrailingComment)
                 ) {
                     FlushPendingTokens();
-                    NewLine(ShouldContinueMacroLine(token, next));
+                    NewLine(PrintTokenContinuesMacroLine(token, next));
                 }
                 return;
             case SyntaxNodeKind::Comma:
@@ -1715,7 +1535,7 @@ private:
                     !(rawNext != nullptr && rawNext->kind == PrintTokenKind::TrailingComment)
                 ) {
                     FlushPendingTokens();
-                    NewLine(ShouldContinueMacroLine(token, next));
+                    NewLine(PrintTokenContinuesMacroLine(token, next));
                 }
                 return;
             case SyntaxNodeKind::Colon:
@@ -1734,7 +1554,7 @@ private:
                     if (rawNext != nullptr && rawNext->kind == PrintTokenKind::TrailingComment) {
                         return;
                     }
-                    NewLine(ShouldContinueMacroLine(token, next));
+                    NewLine(PrintTokenContinuesMacroLine(token, next));
                     return;
                 }
                 if (previous != nullptr && previous->kind == PrintTokenKind::Known && (
@@ -1743,7 +1563,7 @@ private:
                 )) {
                     FlushPendingTokens();
                     if (rawNext == nullptr || rawNext->kind != PrintTokenKind::TrailingComment) {
-                        NewLine(ShouldContinueMacroLine(token, next));
+                        NewLine(PrintTokenContinuesMacroLine(token, next));
                     }
                 }
                 return;
@@ -1776,7 +1596,7 @@ private:
             FlushPendingTokens();
             layoutTree_->Chains().FinishBoundary(crossBlockFallbackBaseIndent);
             if (!followedByTrailingComment) {
-                NewLine(ShouldContinueMacroLine(token, rawNext));
+                NewLine(PrintTokenContinuesMacroLine(token, rawNext));
             }
             return;
         }
@@ -1842,11 +1662,11 @@ private:
         if (role == BraceRole::Block || role == BraceRole::Enum) {
             indentLevel_ = std::max(indentLevel_, openLineIndent) + 1;
             if (!followedByTrailingComment) {
-                NewLine(ShouldContinueMacroLine(token, rawNext));
+                NewLine(PrintTokenContinuesMacroLine(token, rawNext));
             }
         } else if (role == BraceRole::NamespaceLike || role == BraceRole::CaseBlock) {
             if (!followedByTrailingComment) {
-                NewLine(ShouldContinueMacroLine(token, rawNext));
+                NewLine(PrintTokenContinuesMacroLine(token, rawNext));
             }
             pendingNamespaceSeparator_ = role == BraceRole::NamespaceLike;
         }
@@ -1870,7 +1690,7 @@ private:
             }
             FlushPendingTokens();
             if (rawNext == nullptr || rawNext->kind != PrintTokenKind::TrailingComment) {
-                NewLine(ShouldContinueMacroLine(token, next));
+                NewLine(PrintTokenContinuesMacroLine(token, next));
             }
             return;
         }
@@ -1893,14 +1713,14 @@ private:
             if (rawNext != nullptr && rawNext->kind == PrintTokenKind::TrailingComment) {
                 return;
             }
-            NewLine(ShouldContinueMacroLine(token, next));
+            NewLine(PrintTokenContinuesMacroLine(token, next));
             return;
         }
         if (IsCompactSingleStatementFunctionBodyBrace(token)) {
             BufferToken(token);
             FlushPendingTokens();
             if (rawNext == nullptr || rawNext->kind != PrintTokenKind::TrailingComment) {
-                NewLine(ShouldContinueMacroLine(token, next));
+                NewLine(PrintTokenContinuesMacroLine(token, next));
             }
             return;
         }
@@ -1931,7 +1751,7 @@ private:
             if (rawNext != nullptr && rawNext->kind == PrintTokenKind::TrailingComment) {
                 return;
             }
-            NewLine(ShouldContinueMacroLine(token, next));
+            NewLine(PrintTokenContinuesMacroLine(token, next));
             return;
         }
         if (role == BraceRole::CaseBlock) {
@@ -1940,7 +1760,7 @@ private:
             }
             WriteWithIndentOffset("}", -1);
             if (rawNext == nullptr || rawNext->kind != PrintTokenKind::TrailingComment) {
-                NewLine(ShouldContinueMacroLine(token, next));
+                NewLine(PrintTokenContinuesMacroLine(token, next));
             }
             return;
         }
@@ -1967,7 +1787,7 @@ private:
             }
             FlushPendingTokens();
             if (rawNext == nullptr || rawNext->kind != PrintTokenKind::TrailingComment) {
-                NewLine(ShouldContinueMacroLine(token, next));
+                NewLine(PrintTokenContinuesMacroLine(token, next));
                 output_.SetPendingIndent(splitListContinuationIndent);
             }
             return;

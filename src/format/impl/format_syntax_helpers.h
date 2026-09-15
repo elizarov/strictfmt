@@ -62,3 +62,16 @@ inline const SyntaxNode* DirectMatchingClosingDelimiterChild(const SyntaxNode& n
     const SyntaxNodeKind closingKind = open == nullptr ? SyntaxNodeKind::Unknown : MatchingListCloseToken(open->kind);
     return closingKind == SyntaxNodeKind::Unknown ? nullptr : DirectTokenChild(node, closingKind);
 }
+
+inline bool HasDirectListDelimiterPair(const SyntaxNode& node) {
+    for (const SyntaxNode* child : node.children) {
+        if (child == nullptr || !SyntaxNodeKindHasClass(child->kind, SyntaxNodeClass::OpeningDelimiter)) {
+            continue;
+        }
+        const SyntaxNodeKind close = MatchingListCloseToken(child->kind);
+        if (close != SyntaxNodeKind::Unknown && HasDirectKnownChild(node, close)) {
+            return true;
+        }
+    }
+    return false;
+}

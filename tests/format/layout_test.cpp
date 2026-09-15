@@ -16,6 +16,9 @@
 #include "format/impl/format_candidates.h"
 #include "format/impl/format_delimiter_stack.h"
 #include "format/impl/format_layout_program.h"
+#include "format/impl/format_layout_writer.h"
+#include "format/impl/format_layout_lowerer.h"
+#include "format/impl/format_break_solver.h"
 #include "format/impl/format_break_model.h"
 #include "format/impl/format_list_continuation.h"
 #include "format/impl/format_chain_continuation.h"
@@ -178,6 +181,46 @@ void TestResolvedLayoutIndentation() {
     const auto selected = recorded.Finish();
     Check(EmitFormatLayoutProgram(selected, 4, 80) == reference.Finish(),
         "resolved anchors preserve macro suffix and comment alignment semantics");
+}
+
+void TestIndependentLayoutLowering() {
+    auto lower = [](std::string_view source, int structuralIndent, bool macroContinuation) {
+        FormatterConfig config;
+        config.columnLimit = 40;
+        auto syntax = ParseFormatModel(source, config);
+        Check(syntax.parse.ok, "independent lowering input parses");
+        const auto tokens = BuildPrintTokens(syntax, config.tabWidth);
+        FormatLayoutTree tree(tokens);
+        auto& region = tree.AddRegion(tokens, {});
+        region.solution = SolveFormatBreaks(
+            config, region.model, structuralIndent * config.indentWidth, structuralIndent, config.indentWidth,
+            macroContinuation ? 2 : 0);
+        FormatLayoutProgramBuilder program(config.indentWidth, config.columnLimit);
+        program.SetTokenCount(tokens.size());
+        program.SetPendingIndent(structuralIndent);
+        FormatLayoutWriteContext context{
+            .sourceTokens = tokens,
+            .structuralIndent = structuralIndent,
+            .indentWidth = config.indentWidth,
+            .macroContinuation = macroContinuation,
+        };
+        FormatLayoutWriter writer(program, tree, context);
+        context.structuralIndent = 99;
+        context.macroContinuation = !macroContinuation;
+        LowerFormatLayout(config, region.model, region.solution, structuralIndent, tree, writer);
+        return program.Finish();
+    };
+    // Neither a planner nor the original syntax/models survive into replay.
+    const auto list = lower("auto value=Pack{first, // first\nsecond};\n", 1, false);
+    const std::string expected = "    auto value = Pack{\n        first,  // first\n        second,\n    };\n";
+    Check(EmitFormatLayoutProgram(list, 4, 40) == expected,
+        "independent lowering preserves trailing comments and captures structural indentation");
+    Check(EmitFormatLayoutProgram(list, 4, 40) == expected,
+        "lowered program owns its text and replays after syntax and region destruction");
+    const auto macro = lower("#define VALUE Make(first_argument, second)\n", 0, true);
+    Check(EmitFormatLayoutProgram(macro, 4, 40) ==
+        "#define VALUE \\\n    Make(first_argument, second)\n",
+        "independent lowering captures macro continuation mode");
 }
 
 void TestOutput() {
@@ -693,6 +736,7 @@ int main() {
         TestOutput();
         TestLayoutProgram();
         TestResolvedLayoutIndentation();
+        TestIndependentLayoutLowering();
         TestParseMacroConfiguration();
         TestIncrementalMacroParsing();
         TestPersistentLayoutOwners();

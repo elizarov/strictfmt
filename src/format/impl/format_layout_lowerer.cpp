@@ -8,6 +8,7 @@
 #include "format/impl/format_config.h"
 #include "format/impl/format_delimiter_stack.h"
 #include "format/impl/format_layout_tree.h"
+#include "format/impl/format_layout_writer.h"
 #include "format/impl/format_list_continuation.h"
 #include "format/impl/format_chain_continuation.h"
 
@@ -15,7 +16,7 @@ namespace {
 
 class LayoutLowerer {
 public:
-    LayoutLowerer(const FormatterConfig& config, FormatLayoutSink& output, FormatLayoutTree& tree) :
+    LayoutLowerer(const FormatterConfig& config, FormatLayoutWriter& output, FormatLayoutTree& tree) :
         config_(config), output_(output), tree_(tree) {}
 
     void Lower(const FormatBreakNode& root, const FormatBreakSolution& solution, int baseIndent) {
@@ -25,7 +26,7 @@ public:
 
 private:
     const FormatterConfig& config_;
-    FormatLayoutSink& output_;
+    FormatLayoutWriter& output_;
     FormatLayoutTree& tree_;
     bool suppressNextBreakTokenSpace_ = false;
 
@@ -92,7 +93,7 @@ private:
     void LowerBreakNode(const FormatBreakNode& node, const FormatBreakSolution& solution, int baseIndent) {
         output_.EnterNode(node);
         struct LeaveScope {
-            FormatLayoutSink& sink;
+            FormatLayoutWriter& sink;
 
             ~LeaveScope() { sink.LeaveNode(); }
         } scope{output_};
@@ -103,7 +104,7 @@ private:
         ) {
             baseIndent = solution.indentLevels[static_cast<size_t>(node.id)];
         }
-        const FormatLayoutSinkState state = output_.State();
+        const FormatOutputState state = output_.State();
         if (state.atLineStart && state.pendingIndentLevel) {
             baseIndent = std::max(baseIndent, *state.pendingIndentLevel);
         }
@@ -656,7 +657,7 @@ void LowerFormatLayout(
     const FormatBreakSolution& solution,
     int baseIndent,
     FormatLayoutTree& tree,
-    FormatLayoutSink& output
+    FormatLayoutWriter& output
 ) {
     if (model.root == nullptr) {
         return;
