@@ -30,7 +30,9 @@ public:
         if (model_.root == nullptr) {
             model_.root = New();
         }
-        ApplyChainContinuation(*model_.root);
+        if (context_.leadingSeparator || context_.chainPlacements != nullptr) {
+            ApplyChainContinuation(*model_.root);
+        }
         return std::move(model_);
     }
 
@@ -255,9 +257,6 @@ private:
     }
 
     FormatBreakNode* Project(const FormatBreakNode& source) {
-        if (!Intersects(source)) {
-            return nullptr;
-        }
         if (source.kind == FormatBreakNodeKind::Token) {
             const auto token = Token(source.token);
             if (token.token == nullptr) {
@@ -266,6 +265,9 @@ private:
             auto* node = Copy(source);
             node->token = token;
             return node;
+        }
+        if (!Intersects(source)) {
+            return nullptr;
         }
         if (
             source.kind == FormatBreakNodeKind::Delimited ||
