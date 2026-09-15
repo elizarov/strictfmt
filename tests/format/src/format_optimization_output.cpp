@@ -777,3 +777,20 @@ using Deep =
         N::O::
         P::
         Value;
+
+// qualification collection retains global and dependent prefixes
+using Q =
+    typename ::A::
+        template B<
+            T
+        >::C::
+        template D<
+            U
+        >::
+        Value;
+
+auto q =
+    ::A::B::
+        C::f<
+            int
+        >();

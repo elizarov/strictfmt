@@ -1256,73 +1256,61 @@ private:
     };
 
     bool CollectQualifiedNameParts(const SyntaxNode& node, QualifiedNameParts& result) const {
-        QualifiedNameParts local;
+        const size_t operandBegin = result.operands.size();
+        const size_t operatorBegin = result.operators.size();
+        const auto empty =
+            [&] { return result.operands.size() == operandBegin && result.operators.size() == operatorBegin; };
+        const auto balanced =
+            [&] { return result.operands.size() - operandBegin == result.operators.size() - operatorBegin; };
         ConstSyntaxChildList pendingOperand;
         for (const SyntaxNode* child : node.children) {
             if (child == nullptr || !ContainsSelected(*child)) {
                 continue;
             }
             if (SyntaxNodeHasLocalClass(*child, SyntaxNodeClass::QualifiedName)) {
-                QualifiedNameParts nested;
-                if (!CollectQualifiedNameParts(*child, nested) || nested.operands.empty()) {
+                if ((!pendingOperand.empty() && !empty()) || !balanced()) {
+                    return false;
+                }
+                const size_t nestedBegin = result.operands.size();
+                // Append into one accumulator; copying a collected suffix at each
+                // enclosing qualifier makes deeply nested names quadratic.
+                if (!CollectQualifiedNameParts(*child, result) || result.operands.size() == nestedBegin) {
                     return false;
                 }
                 if (!pendingOperand.empty()) {
-                    if (!local.operands.empty() || !local.operators.empty()) {
-                        return false;
-                    }
-                    nested
-                        .operands
-                        .front()
-                        .insert(nested.operands.front().begin(), pendingOperand.begin(), pendingOperand.end());
+                    auto& first = result.operands[nestedBegin];
+                    first.insert(first.begin(), pendingOperand.begin(), pendingOperand.end());
                     pendingOperand.clear();
-                }
-                if (local.operands.size() != local.operators.size()) {
-                    return false;
-                }
-                if (local.operands.empty()) {
-                    local = std::move(nested);
-                } else {
-                    local.operands.insert(
-                        local.operands.end(),
-                        std::make_move_iterator(nested.operands.begin()),
-                        std::make_move_iterator(nested.operands.end())
-                    );
-                    local.operators.insert(local.operators.end(), nested.operators.begin(), nested.operators.end());
                 }
                 continue;
             }
             const std::optional<FormatBreakToken> token = TokenForNode(*child);
             if (token && FormatBreakTokenSyntaxKind(*token) == SyntaxNodeKind::ColonColon) {
-                if (pendingOperand.empty() && local.operands.empty() && local.operators.empty()) {
+                if (pendingOperand.empty() && empty()) {
                     // A leading global-scope operator is part of the first operand and is not breakable.
                     pendingOperand.push_back(child);
                     continue;
                 }
-                if (pendingOperand.empty() || local.operands.size() != local.operators.size()) {
+                if (pendingOperand.empty() || !balanced()) {
                     return false;
                 }
-                local.operands.push_back(std::move(pendingOperand));
+                result.operands.push_back(std::move(pendingOperand));
                 pendingOperand.clear();
-                local.operators.push_back(*token);
+                result.operators.push_back(*token);
                 continue;
             }
-            if (!local.operands.empty() && local.operands.size() > local.operators.size()) {
+            if (result.operands.size() - operandBegin > result.operators.size() - operatorBegin) {
                 return false;
             }
             pendingOperand.push_back(child);
         }
         if (!pendingOperand.empty()) {
-            if (local.operands.size() != local.operators.size()) {
+            if (!balanced()) {
                 return false;
             }
-            local.operands.push_back(std::move(pendingOperand));
+            result.operands.push_back(std::move(pendingOperand));
         }
-        if (local.operands.empty() || local.operands.size() != local.operators.size() + 1) {
-            return false;
-        }
-        result = std::move(local);
-        return true;
+        return result.operands.size() - operandBegin == result.operators.size() - operatorBegin + 1;
     }
 
     FormatBreakNode* BuildQualifiedNamePrefix(const QualifiedNameParts& parts, size_t operandCount, int depth) {

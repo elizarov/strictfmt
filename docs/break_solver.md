@@ -24,6 +24,8 @@ A packed list's separately evaluated body inherits the opener's charged flag, bu
 
 The builder retains initial depth in `rawDepth`; `FormatBreakCostNormalizer` materializes the depth adjustments specified in [format.md] in `structuralDepth`. `breakCost` starts at the same depth and every structural-depth shift updates both values. After building the complete model, the normalizer applies the specified subtree discounts from outer subtrees inward. Costs are fixed before solving, so memoization needs no layout-history state, and the emission choices and indentation rules are unchanged.
 
+Qualified-name collection appends into one shared operand/operator accumulator, avoiding repeated copies of nested suffixes.
+
 Token selection visits each newly selected ancestor once. Its first already selected ancestor also determines whether the common model root must move upward, so root discovery needs no separate ancestry traversal.
 
 Complete item models retain only the braces and boundary trivia of nested compound scopes whose items format in independent regions. Compact single-statement bodies and models rooted within a body retain their contents. Omitted body items mark the enclosing fragment incomplete for whole-line macro checks; source ownership and body extents remain in the persistent layout tree.

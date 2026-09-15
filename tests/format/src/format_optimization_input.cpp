@@ -218,3 +218,7 @@ auto g=[](int x){return x;};
 
 // deep qualification retains one common declaration owner
 using Deep = A::B::C::D::E::F::G::H::I::J::K::L::M::N::O::P::Value;
+
+// qualification collection retains global and dependent prefixes
+using Q = typename ::A::template B<T>::C::template D<U>::Value;
+auto q = ::A::B::C::f<int>();
