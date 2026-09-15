@@ -516,6 +516,32 @@ void TestPersistentLayoutOwners() {
         &first.tokens.front() != firstToken, "regions retain stable token projections independently");
 }
 
+void TestSparseLayoutProjection() {
+    FormatterConfig config;
+    std::string source = "using Result = ";
+    for (int depth = 0; depth < 256; ++depth) source += "Name::";
+    source += "Value;";
+    auto syntax = ParseFormatModel(source, config);
+    Check(syntax.parse.ok, "deep sparse projection fixture parses");
+    const auto tokens = BuildPrintTokens(syntax, config.tabWidth);
+    FormatLayoutTree tree(tokens, syntax.nodes);
+    const auto& complete = tree.CompleteModel(tree.SourceItem(tokens.front().node));
+    for (const auto name : {"Name", "Value"}) {
+        const auto found = std::find_if(tokens.begin(), tokens.end(), [&](const auto& token) {
+            return FormatTokenText(token) == name;
+        });
+        Check(found != tokens.end(), "sparse selection exists in the complete model");
+        const auto projection = ProjectFormatLayout(complete, std::span(&*found, 1), {});
+        const auto solution = SolveFormatBreaks(config, projection, 0, 0, config.indentWidth, 0);
+        FormatLayoutProgramBuilder program(config.indentWidth, config.columnLimit);
+        program.SetTokenCount(tokens.size());
+        FormatLayoutWriter writer(program, tree, {.sourceTokens = tokens, .indentWidth = config.indentWidth});
+        LowerFormatLayout(config, projection, solution, 0, tree, writer);
+        Check(EmitFormatLayoutProgram(program.Finish(), config.indentWidth, config.columnLimit) == std::string(name) + "\n",
+            "a deep sparse projection retains exactly its independently selected token");
+    }
+}
+
 void TestPersistentHeaderIndent() {
     FormatterConfig config;
     auto syntax = ParseFormatModel("Record::Record() : first_(0), last_(1) { Work(); Done(); }", config);
@@ -843,6 +869,7 @@ int main() {
         TestParseMacroConfiguration();
         TestIncrementalMacroParsing();
         TestPersistentLayoutOwners();
+        TestSparseLayoutProjection();
         TestSyntaxMap();
         TestPersistentHeaderIndent();
         TestCompleteConditionalLayout();

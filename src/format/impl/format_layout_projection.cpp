@@ -21,6 +21,7 @@ public:
 
     FormatBreakModel Build(const FormatBreakModel& complete) {
         root_ = complete.root;
+        intersections_.resize(complete.nodes == nullptr ? 1 : complete.nodes->size() + 1, 0);
         model_.root = complete.root == nullptr ? nullptr : Project(*complete.root);
         if (model_.root == nullptr) {
             model_.root = New();
@@ -34,6 +35,7 @@ private:
     FormatSyntaxMap<const PrintToken*> selected_;
     FormatBreakModel model_;
     const FormatBreakNode* root_ = nullptr;
+    mutable std::vector<std::uint8_t> intersections_;
 
     bool RequiresChainBreak(const FormatBreakToken& token) const {
         const auto layout = context_.chainPlacements == nullptr ? std::nullopt :
@@ -201,6 +203,14 @@ private:
     }
 
     bool Intersects(const FormatBreakNode& node) const {
+        auto& cached = intersections_[static_cast<size_t>(node.id)];
+        if (cached == 0) {
+            cached = ComputeIntersection(node) ? 2 : 1;
+        }
+        return cached == 2;
+    }
+
+    bool ComputeIntersection(const FormatBreakNode& node) const {
         const auto selected = [&](const FormatBreakToken& token) {
             return token.token != nullptr && selected_.Contains(token.token->node);
         };

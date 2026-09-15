@@ -28,6 +28,8 @@ Token selection visits each newly selected ancestor once. Its first already sele
 
 Complete item models retain only the braces and boundary trivia of nested compound scopes whose items format in independent regions. Compact single-statement bodies and models rooted within a body retain their contents. Omitted body items mark the enclosing fragment incomplete for whole-line macro checks; source ownership and body extents remain in the persistent layout tree.
 
+Projection caches whether each immutable complete-model subtree intersects its fixed token selection. Sparse regions therefore do not repeat a full descendant scan at every enclosing node.
+
 ## Search Shape
 
 `Solver::Solve` evaluates a subproblem identified by break node, current column, current indentation level, and whether the current line already has text. Both the best result and the complete ordered alternative set are memoized by this state. Small per-node caches use bounded direct scans. Once that bound is exceeded, older states use exact hash lookup while the newest state remains directly accessible, avoiding growing scans as deeper layout combinations accumulate. Reusing alternatives avoids repeating recursive search through nested layout combinations; it preserves candidate order and retains every continuation-sensitive choice. Cached results and their choice trees remain immutable for the lifetime of the segment's solver. Owner placements are fixed during region projection; configuration and line-suffix width are fixed for that solver, so they require no additional per-subproblem cache key.
