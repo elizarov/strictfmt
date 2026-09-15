@@ -718,11 +718,12 @@ private:
     }
 
     void GroupAdjacentStrings(FormatBreakNode& sequence, int depth) {
-        std::vector<FormatBreakNode*> grouped;
-        grouped.reserve(sequence.children.size());
+        // This sequence exclusively owns its child span. Compact it in place;
+        // each grouped run copies its operands before its first slot is replaced.
+        size_t groupedCount = 0;
         for (size_t index = 0; index < sequence.children.size();) {
             if (!IsStringTokenChild(sequence.children[index])) {
-                grouped.push_back(sequence.children[index]);
+                sequence.children[groupedCount++] = sequence.children[index];
                 ++index;
                 continue;
             }
@@ -732,17 +733,14 @@ private:
                 ++index;
             }
             if (index - begin == 1) {
-                grouped.push_back(sequence.children[begin]);
+                sequence.children[groupedCount++] = sequence.children[begin];
                 continue;
             }
 
             auto strings = MakeNode(FormatBreakNodeKind::AdjacentStrings, depth + 1);
-            std::vector<FormatBreakNode*> operands;
-            operands.reserve(index - begin);
             std::vector<std::string_view> spellings;
             spellings.reserve(index - begin);
             for (size_t cursor = begin; cursor < index; ++cursor) {
-                operands.push_back(sequence.children[cursor]);
                 spellings.push_back(
                     FormatTokenText(FormatBreakTokenValue(*FormatBreakNodeToken(sequence.children[cursor])))
                 );
@@ -750,10 +748,10 @@ private:
             FormatAdjacentStrings analysis = AnalyzeAdjacentStrings(spellings);
             strings->forceSplit = analysis.requiresSplit;
             strings->compactStringTexts = std::move(analysis.compactSpellings);
-            strings->operands = StoreNodePointers(operands);
-            grouped.push_back(strings);
+            strings->operands = StoreNodePointers(sequence.children.subspan(begin, index - begin));
+            sequence.children[groupedCount++] = strings;
         }
-        sequence.children = StoreNodePointers(grouped);
+        sequence.children = sequence.children.first(groupedCount);
     }
 
     void GroupMemberCallArguments(std::vector<FormatBreakNode*>& children, int depth) {
