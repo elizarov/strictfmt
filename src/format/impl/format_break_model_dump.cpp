@@ -290,7 +290,7 @@ std::string SegmentText(std::span<const PrintToken> tokens) {
     std::string result;
     const PrintToken* previous = nullptr;
     for (const PrintToken& token : tokens) {
-        if (FormatTokenNeedsSpace(previous, token) && !result.empty()) {
+        if (FormatTokenSpaceBefore(previous, token) && !result.empty()) {
             result.push_back(' ');
         }
         result.append(FormatTokenText(token));

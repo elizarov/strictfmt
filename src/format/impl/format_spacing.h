@@ -16,6 +16,12 @@ bool IsCaseLabelKeyword(const PrintToken& token);
 bool FormatTokensShareMacroDefinition(const PrintToken* left, const PrintToken* right);
 bool IsTemplateAnglePrintToken(const PrintToken& token);
 bool FormatTokenNeedsSpace(const PrintToken* previous, const PrintToken& current);
+inline bool FormatTokenSpaceBefore(const PrintToken* previous, const PrintToken& current) {
+    const bool sourceAdjacent = previous != nullptr &&
+        previous->sourceIndex < current.sourceIndex &&
+        previous->sourceIndex + 1 == current.sourceIndex;
+    return sourceAdjacent && current.spaceBeforeKnown ? current.spaceBefore : FormatTokenNeedsSpace(previous, current);
+}
 inline std::string_view FormatTokenText(const PrintToken& token) { return token.text; }
 inline int FormatTokenWidth(const PrintToken& token) { return Utf8CharacterCount(token.text); }
 

@@ -700,8 +700,18 @@ void TestSpacingAncestry() {
             previous.spacingAncestryKnown = false;
             Check(FormatTokenNeedsSpace(&tokens[index - 1], token) == FormatTokenNeedsSpace(&previous, token),
                 "spacing ancestry shortcuts preserve the uncached decision");
+            Check(FormatTokenSpaceBefore(&tokens[index - 1], token) == FormatTokenNeedsSpace(&tokens[index - 1], token),
+                "adjacent tokens reuse the exact original spacing decision");
         }
+        const PrintToken* separated = index > 1 ? &tokens[index - 2] : nullptr;
+        Check(FormatTokenSpaceBefore(separated, token) == FormatTokenNeedsSpace(separated, token),
+            "missing or separated predecessors recompute spacing");
     }
+    const PrintToken unknown{.kind = PrintTokenKind::Text, .text = "word"};
+    auto first = tokens.front();
+    first.spaceBefore = !FormatTokenNeedsSpace(&unknown, first);
+    Check(FormatTokenSpaceBefore(&unknown, first) == FormatTokenNeedsSpace(&unknown, first),
+        "an unknown source position cannot wrap around to count as adjacent");
     Check(modifier && concatenation, "spacing ancestry fixture exercises both positive ancestor cases");
 }
 

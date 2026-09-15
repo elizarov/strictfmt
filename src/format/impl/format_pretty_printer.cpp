@@ -509,7 +509,7 @@ private:
         ) {
             return false;
         }
-        if (FormatTokenNeedsSpace(previous, token) && hasText) {
+        if (FormatTokenSpaceBefore(previous, token) && hasText) {
             ++width;
         }
         const int tokenWidth = FormatTokenWidth(token);
@@ -660,9 +660,7 @@ private:
         if (!pendingTokens_.empty()) {
             previous = &pendingTokens_.back();
         }
-        const bool sourceAdjacent = previous != nullptr && previous->sourceIndex + 1 == token.sourceIndex;
-        const bool spaceBefore =
-            sourceAdjacent && token.spaceBeforeKnown ? token.spaceBefore : FormatTokenNeedsSpace(previous, token);
+        const bool spaceBefore = FormatTokenSpaceBefore(previous, token);
         PrintToken buffered = token;
         buffered.spaceBefore = spaceBefore;
         buffered.spaceBeforeKnown = true;
@@ -1253,8 +1251,9 @@ private:
     void PrintComment(const PrintToken& token, const PrintToken* previous, const PrintToken* next) {
         auto writer = MakeLayoutWriter();
         if (token.kind == PrintTokenKind::TrailingComment && output_.State().lineHasText) {
-            writer
-                .WriteComment(token, token.text, FormatOutputComment::Trailing, FormatTokenNeedsSpace(previous, token));
+            writer.WriteComment(
+                token, token.text, FormatOutputComment::Trailing, FormatTokenSpaceBefore(previous, token)
+            );
             NewLine(PrintTokenContinuesMacroLine(token, next));
             return;
         }

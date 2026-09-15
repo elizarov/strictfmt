@@ -470,7 +470,7 @@ bool FormatTokenNeedsSpace(const PrintToken* previous, const PrintToken& current
     ) {
         return false;
     }
-    if (!IsClosingDelimiterOrSeparator(current) && EndsMacroModifier(*previous, current)) {
+    if (EndsMacroModifier(*previous, current) && !IsClosingDelimiterOrSeparator(current)) {
         return true;
     }
     if (current.inMacroValue && !previous->inMacroValue && FormatTokensShareMacroDefinition(previous, &current)) {
