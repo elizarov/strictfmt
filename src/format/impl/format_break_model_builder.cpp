@@ -761,7 +761,8 @@ private:
             }
             FormatAdjacentStrings analysis = AnalyzeAdjacentStrings(spellings);
             strings->forceSplit = analysis.requiresSplit;
-            strings->compactStringTexts = std::move(analysis.compactSpellings);
+            model_.stringRuns.push_back(std::move(analysis.compactSpellings));
+            strings->compactStringTexts = model_.stringRuns.back();
             strings->operands = StoreNodePointers(sequence.children.subspan(begin, index - begin));
             sequence.children[groupedCount++] = strings;
         }
@@ -2361,16 +2362,17 @@ private:
         FormatBreakNode* leftChain = MatchingChain(left, FormatBreakChainKind::MemberBeforeOperator);
         std::vector<FormatBreakNode*> operands;
         std::vector<FormatBreakToken> operators;
-        std::vector<std::vector<FormatBreakToken>> commentsBeforeOperators;
+        std::vector<std::span<const FormatBreakToken>> commentsBeforeOperators;
         if (leftChain != nullptr) {
             operands.insert(operands.end(), leftChain->operands.begin(), leftChain->operands.end());
             operators.insert(operators.end(), leftChain->operators.begin(), leftChain->operators.end());
-            commentsBeforeOperators = leftChain->commentsBeforeOperators;
+            commentsBeforeOperators
+                .assign(leftChain->commentsBeforeOperators.begin(), leftChain->commentsBeforeOperators.end());
         } else {
             operands.push_back(left);
         }
         operators.push_back(*op);
-        commentsBeforeOperators.push_back(std::move(commentsBeforeOperator));
+        commentsBeforeOperators.push_back(StoreTokens(commentsBeforeOperator));
         operands.push_back(right);
 
         auto chain = MakeNode(FormatBreakNodeKind::Chain, depth);
@@ -2378,11 +2380,11 @@ private:
         chain->chainPrefersSplitWhenCompactBreaks = std::any_of(
             commentsBeforeOperators.begin(),
             commentsBeforeOperators.end(),
-            [](const std::vector<FormatBreakToken>& comments) { return !comments.empty(); }
+            [](std::span<const FormatBreakToken> comments) { return !comments.empty(); }
         );
         chain->operands = StoreNodePointers(operands);
         chain->operators = StoreTokens(operators);
-        chain->commentsBeforeOperators = std::move(commentsBeforeOperators);
+        chain->commentsBeforeOperators = model_.commentLists.Append(commentsBeforeOperators);
         return chain;
     }
 
@@ -2506,7 +2508,7 @@ private:
     std::vector<FormatBreakToken> AppendBinaryChainOperand(
         std::vector<FormatBreakNode*>& operands,
         std::vector<FormatBreakToken>& operators,
-        std::vector<std::vector<FormatBreakToken>>& commentsBeforeOperators,
+        std::vector<std::span<const FormatBreakToken>>& commentsBeforeOperators,
         std::span<const SyntaxNode* const> children,
         size_t begin,
         size_t end,
@@ -2657,7 +2659,7 @@ private:
         SyntaxNodeKind op,
         std::vector<FormatBreakNode*>& operands,
         std::vector<FormatBreakToken>& operators,
-        std::vector<std::vector<FormatBreakToken>>& commentsBeforeOperators,
+        std::vector<std::span<const FormatBreakToken>>& commentsBeforeOperators,
         int depth,
         bool& forceSplit
     ) {
@@ -2685,7 +2687,7 @@ private:
             .comments.insert(boundary.comments.begin(), commentsBeforeOperator.begin(), commentsBeforeOperator.end());
         PlaceChainOperatorComments(node, boundary, operands.back(), streamChain, true, depth, forceSplit);
         operators.push_back(boundary.token);
-        commentsBeforeOperators.push_back(streamChain ? boundary.comments : std::vector<FormatBreakToken>{});
+        commentsBeforeOperators.push_back(streamChain ? StoreTokens(boundary.comments) : std::span<FormatBreakToken>{});
         const size_t rightOperandIndex = operands.size();
         AppendBinaryChainOperand(
             operands,
@@ -2727,7 +2729,7 @@ private:
 
         std::vector<FormatBreakNode*> operands;
         std::vector<FormatBreakToken> operators;
-        std::vector<std::vector<FormatBreakToken>> commentsBeforeOperators;
+        std::vector<std::span<const FormatBreakToken>> commentsBeforeOperators;
         std::vector<ChainOperatorBoundary> boundaries;
         for (size_t index = 0; index < operatorIndices.size(); ++index) {
             boundaries.push_back(ReadChainOperatorBoundary(
@@ -2744,7 +2746,7 @@ private:
             ChainOperatorBoundary& boundary = boundaries[index];
             PlaceChainOperatorComments(node, boundary, operands.back(), true, index != 0, depth, forceSplit);
             operators.push_back(boundary.token);
-            commentsBeforeOperators.push_back(std::move(boundary.comments));
+            commentsBeforeOperators.push_back(StoreTokens(boundary.comments));
             const size_t operandBegin = boundary.rightBegin;
             const size_t operandEnd =
                 index + 1 < boundaries.size() ? boundaries[index + 1].leftEnd : node.children.size();
@@ -2774,7 +2776,7 @@ private:
         chain->forceSplit = forceSplit;
         chain->operands = StoreNodePointers(operands);
         chain->operators = StoreTokens(operators);
-        chain->commentsBeforeOperators = std::move(commentsBeforeOperators);
+        chain->commentsBeforeOperators = model_.commentLists.Append(commentsBeforeOperators);
         return chain;
     }
 
@@ -2828,7 +2830,7 @@ private:
         ) {
             std::vector<FormatBreakNode*> operands;
             std::vector<FormatBreakToken> operators;
-            std::vector<std::vector<FormatBreakToken>> commentsBeforeOperators;
+            std::vector<std::span<const FormatBreakToken>> commentsBeforeOperators;
             operands.reserve(2);
             operators.reserve(1);
             AppendBinaryChain(
@@ -2842,11 +2844,11 @@ private:
             chain->chainPrefersSplitWhenCompactBreaks = std::any_of(
                 commentsBeforeOperators.begin(),
                 commentsBeforeOperators.end(),
-                [](const std::vector<FormatBreakToken>& comments) { return !comments.empty(); }
+                [](std::span<const FormatBreakToken> comments) { return !comments.empty(); }
             );
             chain->operands = StoreNodePointers(operands);
             chain->operators = StoreTokens(operators);
-            chain->commentsBeforeOperators = std::move(commentsBeforeOperators);
+            chain->commentsBeforeOperators = model_.commentLists.Append(commentsBeforeOperators);
             return chain;
         }
 

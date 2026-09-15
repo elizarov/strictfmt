@@ -645,6 +645,33 @@ void TestSpacingAncestry() {
     Check(modifier && concatenation, "spacing ancestry fixture exercises both positive ancestor cases");
 }
 
+void TestModelStringStorage() {
+    FormatterConfig config;
+    std::string source = "auto values = Build(";
+    for (int index = 0; index < 40; ++index) {
+        if (index != 0) source += ",";
+        source += "\"part" + std::to_string(index) + "\" \"suffix\"";
+    }
+    source += ");";
+    auto syntax = ParseFormatModel(source, config);
+    Check(syntax.parse.ok, "multiple string-run fixture parses");
+    const auto tokens = BuildPrintTokens(syntax, config.tabWidth);
+    auto complete = BuildFormatBreakModel(tokens);
+    auto projection = ProjectFormatLayout(complete, tokens, {});
+    auto moved = std::move(complete);
+    for (const auto* model : {&moved, &projection}) {
+        int runs = 0;
+        for (const auto& node : *model->nodes) {
+            if (node.kind != FormatBreakNodeKind::AdjacentStrings) continue;
+            Check(node.compactStringTexts.size() == 2 && node.compactStringTexts.back().empty() &&
+                node.compactStringTexts.front() == "\"part" + std::to_string(runs) + "suffix\"",
+                "string spans retain their contents across model growth, projection and moves");
+            ++runs;
+        }
+        Check(runs == 40, "complete and projected models retain every string run");
+    }
+}
+
 void TestPersistentHeaderIndent() {
     FormatterConfig config;
     auto syntax = ParseFormatModel("Record::Record() : first_(0), last_(1) { Work(); Done(); }", config);
@@ -977,6 +1004,7 @@ int main() {
         TestSparseLayoutProjection();
         TestListItemStorage();
         TestSpacingAncestry();
+        TestModelStringStorage();
         TestBreakArena();
         TestSyntaxMap();
         TestPersistentHeaderIndent();

@@ -302,7 +302,7 @@ private:
         if (source.kind == FormatBreakNodeKind::AdjacentStrings) {
             node->operands = children;
             if (children.size() != source.operands.size()) {
-                node->compactStringTexts.clear();
+                node->compactStringTexts = {};
             }
         } else {
             node->children = children;
@@ -483,6 +483,7 @@ private:
         auto* node = Copy(source);
         std::vector<FormatBreakNode*> operands;
         std::vector<FormatBreakToken> operators;
+        std::vector<std::span<const FormatBreakToken>> commentsBeforeOperators;
         for (size_t index = 0; index < source.operands.size(); ++index) {
             auto* operand = Project(*source.operands[index]);
             auto op = index < source.operators.size() ? Token(source.operators[index]) : FormatBreakToken{};
@@ -503,8 +504,8 @@ private:
                 }
                 if (!comments.empty()) {
                     // Missing suffix entries and empty comment vectors are equivalent.
-                    node->commentsBeforeOperators.resize(operators.size());
-                    node->commentsBeforeOperators.back() = std::move(comments);
+                    commentsBeforeOperators.resize(operators.size());
+                    commentsBeforeOperators.back() = model_.tokens.Append(comments);
                 }
             }
         }
@@ -578,16 +579,14 @@ private:
             operands[index] = child->operands.front();
             operands.insert(operands.begin() + index + 1, child->operands.begin() + 1, child->operands.end());
             operators.insert(operators.begin() + index, child->operators.begin(), child->operators.end());
-            if (node->commentsBeforeOperators.size() < operators.size() - child->operators.size()) {
-                node->commentsBeforeOperators.resize(operators.size() - child->operators.size());
+            if (commentsBeforeOperators.size() < operators.size() - child->operators.size()) {
+                commentsBeforeOperators.resize(operators.size() - child->operators.size());
             }
-            std::vector<std::vector<FormatBreakToken>> comments(child->operators.size());
+            std::vector<std::span<const FormatBreakToken>> comments(child->operators.size());
             for (size_t j = 0; j < std::min(comments.size(), child->commentsBeforeOperators.size()); ++j) {
                 comments[j] = child->commentsBeforeOperators[j];
             }
-            node
-                ->commentsBeforeOperators
-                .insert(node->commentsBeforeOperators.begin() + index, comments.begin(), comments.end());
+            commentsBeforeOperators.insert(commentsBeforeOperators.begin() + index, comments.begin(), comments.end());
             node->forceSplit |= child->forceSplit;
             for (auto* operand : child->operands) {
                 Shift(*operand, child->rawDepth - source.rawDepth);
@@ -602,19 +601,20 @@ private:
                 if (first != nullptr) {
                     ExtractLeadingTrivia(*operands.front(), *first, true, comments);
                     ExtractLeadingTrivia(*operands.front(), *first, false, comments);
-                    if (node->commentsBeforeOperators.empty()) {
-                        node->commentsBeforeOperators.resize(operators.size());
+                    if (commentsBeforeOperators.empty()) {
+                        commentsBeforeOperators.resize(operators.size());
                     }
+                    std::vector<FormatBreakToken>
+                        leadingComments(commentsBeforeOperators.front().begin(), commentsBeforeOperators.front().end());
                     for (const auto* comment : comments) {
-                        node->commentsBeforeOperators.front().push_back(comment->token);
+                        leadingComments.push_back(comment->token);
                     }
                     std::stable_sort(
-                        node->commentsBeforeOperators.front().begin(),
-                        node->commentsBeforeOperators.front().end(),
-                        [](const auto& left, const auto& right) {
+                        leadingComments.begin(), leadingComments.end(), [](const auto& left, const auto& right) {
                             return left.token->sourceIndex < right.token->sourceIndex;
                         }
                     );
+                    commentsBeforeOperators.front() = model_.tokens.Append(leadingComments);
                 }
             }
             node->forceSplit |= context_.forceSplitStreamChain && !node->chainStartsWithOperator && &source == root_;
@@ -624,6 +624,7 @@ private:
         }
         node->operands = Store(operands);
         node->operators = model_.tokens.Append(operators);
+        node->commentsBeforeOperators = model_.commentLists.Append(commentsBeforeOperators);
         model_.hasLayoutChoice = true;
         return node;
     }

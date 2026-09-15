@@ -123,10 +123,12 @@ struct FormatBreakNode : FormatBreakNodeData {
     std::span<FormatBreakListItem> items;
     std::span<FormatBreakNode*> operands;
     std::span<FormatBreakToken> operators;
-    std::vector<std::vector<FormatBreakToken>> commentsBeforeOperators;
+    std::span<const std::span<const FormatBreakToken>> commentsBeforeOperators;
     // AdjacentStrings compact spelling by operand. Empty entries are absorbed into the preceding non-empty run.
-    std::vector<std::string> compactStringTexts;
+    std::span<const std::string> compactStringTexts;
 };
+
+static_assert(std::is_trivially_destructible_v<FormatBreakNode>);
 
 template <typename T, size_t BlockSize = 256>
 class FormatBreakArena {
@@ -203,12 +205,15 @@ struct FormatBreakModel {
         )),
         nodePointers(resource),
         tokens(resource),
-        listItems(resource) {}
+        listItems(resource),
+        commentLists(resource) {}
 
     std::unique_ptr<std::pmr::deque<FormatBreakNode>> nodes;
     FormatBreakArena<FormatBreakNode*> nodePointers;
     FormatBreakArena<FormatBreakToken> tokens;
     FormatBreakArena<FormatBreakListItem, 16> listItems;
+    FormatBreakArena<std::span<const FormatBreakToken>, 16> commentLists;
+    std::vector<std::vector<std::string>> stringRuns;
     FormatBreakNode* root = nullptr;
     bool hasLayoutChoice = false;
 };

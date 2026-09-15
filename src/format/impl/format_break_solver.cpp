@@ -1682,7 +1682,7 @@ private:
         return std::any_of(
             node.commentsBeforeOperators.begin(),
             node.commentsBeforeOperators.end(),
-            [](const std::vector<FormatBreakToken>& comments) { return !comments.empty(); }
+            [](std::span<const FormatBreakToken> comments) { return !comments.empty(); }
         );
     }
 
