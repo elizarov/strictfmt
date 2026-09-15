@@ -268,7 +268,6 @@ class BreakModelBuilder {
 public:
     explicit BreakModelBuilder(std::span<const PrintToken> tokens) {
         model_.nodes = std::make_unique<std::deque<FormatBreakNode>>();
-        selectedNodes_.Reserve(tokens.size());
         selectedTokens_.Reserve(tokens.size());
         const PrintToken* previous = nullptr;
         bool firstToken = true;
@@ -280,13 +279,18 @@ public:
             const bool spaceBefore =
                 token.spaceBeforeKnown ? token.spaceBefore : FormatTokenNeedsSpace(previous, token);
             if (token.node != nullptr) {
-                selectedTokens_.InsertOrAssign(token.node, FormatBreakToken{&token, spaceBefore});
+                auto [selected, inserted] = selectedTokens_.Insert(token.node, {});
+                *selected = FormatBreakToken{&token, spaceBefore};
+                // An entry without a token marks an ancestor. Once marked, its
+                // own ancestors are already present, so selection needs one table.
+                if (inserted) {
+                    for (
+                        const SyntaxNode* ancestor = token.node->parent;
+                        ancestor != nullptr && selectedTokens_.Insert(ancestor, {}).second;
+                        ancestor = ancestor->parent
+                    ) {}
+                }
             }
-            for (
-                const SyntaxNode* ancestor = token.node;
-                ancestor != nullptr && selectedNodes_.Insert(ancestor, true).second;
-                ancestor = ancestor->parent
-            ) {}
             root_ = firstToken ? token.node : CommonAncestor(root_, token.node);
             firstToken = false;
             previous = &token;
@@ -316,7 +320,6 @@ public:
 private:
     FormatBreakModel model_;
     const SyntaxNode* root_ = nullptr;
-    FormatSyntaxMap<bool> selectedNodes_;
     FormatSyntaxMap<FormatBreakToken> selectedTokens_;
     int nextId_ = 1;
     FormatBreakCostNormalizer costNormalizer_;
@@ -356,7 +359,7 @@ private:
         return left;
     }
 
-    bool ContainsSelected(const SyntaxNode& node) const { return selectedNodes_.Contains(&node); }
+    bool ContainsSelected(const SyntaxNode& node) const { return selectedTokens_.Contains(&node); }
 
     SyntaxNodeKind ParentKind(const SyntaxNode& node) const {
         return node.parent == nullptr ? SyntaxNodeKind::Unknown : node.parent->kind;
@@ -364,7 +367,7 @@ private:
 
     std::optional<FormatBreakToken> TokenForNode(const SyntaxNode& node) const {
         const auto* token = selectedTokens_.Find(&node);
-        return token == nullptr ? std::nullopt : std::optional(*token);
+        return token == nullptr || token->token == nullptr ? std::nullopt : std::optional(*token);
     }
 
     std::span<FormatBreakNode*> StoreNodePointers(std::span<FormatBreakNode* const> nodes) {
