@@ -2237,7 +2237,7 @@ private:
         if (end - begin == 1) {
             // Neither an adjacent declaration nor a delimiter pair fits one child.
             const auto* child = children[begin];
-            if (child != nullptr && ContainsSelected(*child)) {
+            if (child != nullptr) {
                 if (auto* built = BuildSyntaxNode(*child, depth + 1)) {
                     return built;
                 }
