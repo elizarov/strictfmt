@@ -1,6 +1,7 @@
 #pragma once
 
 #include <algorithm>
+#include <cstdint>
 #include <deque>
 #include <memory>
 #include <memory_resource>
@@ -14,7 +15,7 @@
 #include "format/impl/format_spacing.h"
 #include "format/impl/format_syntax_map.h"
 
-enum class FormatBreakNodeKind {
+enum class FormatBreakNodeKind : std::uint8_t {
     Token,
     Sequence,
     Delimited,
@@ -26,7 +27,7 @@ enum class FormatBreakNodeKind {
     AdjacentStrings,
 };
 
-enum class FormatBreakDelimiterKind {
+enum class FormatBreakDelimiterKind : std::uint8_t {
     None,
     Paren,
     Bracket,
@@ -34,7 +35,7 @@ enum class FormatBreakDelimiterKind {
     Angle,
 };
 
-enum class FormatBreakChainKind {
+enum class FormatBreakChainKind : std::uint8_t {
     AfterOperator,
     CallApplication,
     MemberBeforeOperator,
@@ -82,34 +83,34 @@ struct FormatBreakListItem {
 // them separate avoids copying owned vectors that would immediately be discarded.
 struct FormatBreakNodeData {
     int id = 0;
-    const SyntaxNode* syntaxOwner = nullptr;
-    const FormatBreakNode* origin = nullptr;
     int rawDepth = 0;
     int structuralDepth = 0;
     int breakCost = 0;
-    FormatBreakNodeKind kind = FormatBreakNodeKind::Sequence;
+    const SyntaxNode* syntaxOwner = nullptr;
+    const FormatBreakNode* origin = nullptr;
     FormatBreakToken token;
+    FormatBreakNodeKind kind = FormatBreakNodeKind::Sequence;
     FormatBreakDelimiterKind delimiterKind = FormatBreakDelimiterKind::None;
     FormatBreakChainKind chainKind = FormatBreakChainKind::AfterOperator;
     bool forceSplit = false;
-    bool hasIndependentBodyItems = false;
-    bool blankLineBeforeClose = false;
-    bool compactRequiresUnbrokenItems = false;
-    bool flatSplitIndent = false;
-    bool suppressCompactDelimiterPadding = false;
-    bool functionSignatureHasBody = false;
+    bool hasIndependentBodyItems : 1 = false;
+    bool blankLineBeforeClose : 1 = false;
+    bool compactRequiresUnbrokenItems : 1 = false;
+    bool flatSplitIndent : 1 = false;
+    bool suppressCompactDelimiterPadding : 1 = false;
+    bool functionSignatureHasBody : 1 = false;
+    bool bodyHeaderIsLambda : 1 = false;
+    bool bodyHeaderSingleStatementBody : 1 = false;
+    bool bodyHeaderDetachBodyAfterExpandedHeader : 1 = false;
+    bool bodyHeaderRequiresDetachedBody : 1 = false;
+    bool bodyHeaderSplitAtParentIndentWhenLineStarts : 1 = false;
+    bool chainPrefersSplitWhenCompactBreaks : 1 = false;
+    bool chainCompactRequiresFitOnOneLine : 1 = false;
+    bool chainStartsWithOperator : 1 = false;
+    bool ternaryRequiresQuestionBreak : 1 = false;
+    bool ternaryRequiresColonBreaks : 1 = false;
+    bool splitTrailingBodyHeaderAtParentIndent : 1 = false;
     const SyntaxNode* bodySyntax = nullptr;
-    bool bodyHeaderIsLambda = false;
-    bool bodyHeaderSingleStatementBody = false;
-    bool bodyHeaderDetachBodyAfterExpandedHeader = false;
-    bool bodyHeaderRequiresDetachedBody = false;
-    bool bodyHeaderSplitAtParentIndentWhenLineStarts = false;
-    bool chainPrefersSplitWhenCompactBreaks = false;
-    bool chainCompactRequiresFitOnOneLine = false;
-    bool chainStartsWithOperator = false;
-    bool ternaryRequiresQuestionBreak = false;
-    bool ternaryRequiresColonBreaks = false;
-    bool splitTrailingBodyHeaderAtParentIndent = false;
     std::optional<size_t> splitTrailingCommaItem;
     std::optional<int> continuedBodyHeaderOwnerIndent;
     std::optional<int> requiredChainBreakBaseIndent;
