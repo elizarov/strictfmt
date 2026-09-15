@@ -517,7 +517,7 @@ bool FormatTokenNeedsSpace(const PrintToken* previous, const PrintToken& current
             return true;
         }
     }
-    if ((IsStringLike(*previous) && IsWordLike(current)) || (IsWordLike(*previous) && IsStringLike(current))) {
+    if ((IsStringLike(*previous) && IsWordLike(current)) || (IsStringLike(current) && IsWordLike(*previous))) {
         return true;
     }
     if (current.parentKind == SyntaxNodeKind::RefQualifier) {
@@ -574,7 +574,7 @@ bool FormatTokenNeedsSpace(const PrintToken* previous, const PrintToken& current
     if (SyntaxNodeKindHasClass(prev, SyntaxNodeClass::PreprocessorDirective)) {
         return true;
     }
-    if (cur == SyntaxNodeKind::Less && IsTemplateAnglePrintToken(current) && IsOperatorSpellingContext(*previous)) {
+    if (cur == SyntaxNodeKind::Less && IsOperatorSpellingContext(*previous) && IsTemplateAnglePrintToken(current)) {
         return prev == SyntaxNodeKind::Less || prev == SyntaxNodeKind::LessLess;
     }
     if (IsTemplateArgumentExpressionOperator(*previous) || IsTemplateArgumentExpressionOperator(current)) {
