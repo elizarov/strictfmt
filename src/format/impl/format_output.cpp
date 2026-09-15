@@ -125,10 +125,13 @@ struct FormatOutput::Impl {
     void ReopenLastOutputLine() {
         if (!output_.empty() && output_.back() == '\n') {
             output_.pop_back();
+            --currentLineIndex_;
         }
-        currentColumn_ = 0;
-        currentLineIndex_ = 0;
-        AdvanceCurrentColumn(output_);
+        // Earlier physical lines are unchanged. Recount only the reopened line,
+        // so repeated reopening does not scan a growing output prefix.
+        const size_t newline = output_.find_last_of('\n');
+        const size_t begin = newline == std::string::npos ? 0 : newline + 1;
+        currentColumn_ = Utf8CharacterCount(std::string_view(output_).substr(begin));
         state_.atLineStart = false;
         state_.lineHasText = currentColumn_ > 0;
         state_.macroContinuation = false;

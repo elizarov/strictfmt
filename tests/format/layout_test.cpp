@@ -145,6 +145,19 @@ void TestLayoutProgram() {
     lines.NewLine();
     lines.AppendCompleteLines("three\nfour\n");
     Check(lines.CurrentLineIndex() == 4, "complete lines are measured");
+    for (size_t index = 0; index < 1024; ++index) {
+        lines.Write("\xc3\xa9\nvalue", 1);
+        lines.NewLine();
+        lines.BlankLine();
+        lines.ReopenLastLine(true);
+        Check(lines.CurrentLineIndex() == 5 + index * 2 && lines.CurrentColumn(0) == 5,
+            "reopening preserves prefix line counts and measures only the final line");
+        lines.Write("\xc3\xa9", 0);
+        lines.ReopenLastLine();
+        Check(lines.CurrentLineIndex() == 5 + index * 2 && lines.CurrentColumn(0) == 6,
+            "reopening an unterminated Unicode line preserves its character column");
+        lines.NewLine();
+    }
 }
 
 void TestResolvedLayoutIndentation() {
