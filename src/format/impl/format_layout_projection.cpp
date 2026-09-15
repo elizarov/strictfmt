@@ -131,7 +131,7 @@ private:
     }
 
     FormatBreakNode* New() {
-        auto& node = model_.nodes->emplace_back();
+        auto& node = model_.nodes->emplace_back(model_.nodes->get_allocator().resource());
         node.id = static_cast<int>(model_.nodes->size());
         return &node;
     }

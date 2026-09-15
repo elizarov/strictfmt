@@ -378,7 +378,7 @@ private:
     const SyntaxNode* currentSyntaxOwner_ = nullptr;
 
     FormatBreakNode* MakeNode(FormatBreakNodeKind kind, int depth) {
-        model_.nodes->emplace_back();
+        model_.nodes->emplace_back(model_.nodes->get_allocator().resource());
         FormatBreakNode& node = model_.nodes->back();
         node.id = nextId_++;
         node.syntaxOwner = currentSyntaxOwner_;

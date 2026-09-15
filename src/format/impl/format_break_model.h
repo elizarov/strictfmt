@@ -119,8 +119,11 @@ struct FormatBreakNodeData {
 };
 
 struct FormatBreakNode : FormatBreakNodeData {
+    explicit FormatBreakNode(std::pmr::memory_resource* resource = std::pmr::get_default_resource()) :
+        items(resource) {}
+
     std::span<FormatBreakNode*> children;
-    std::vector<FormatBreakListItem> items;
+    std::pmr::vector<FormatBreakListItem> items;
     std::span<FormatBreakNode*> operands;
     std::span<FormatBreakToken> operators;
     std::vector<std::vector<FormatBreakToken>> commentsBeforeOperators;
