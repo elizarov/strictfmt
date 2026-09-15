@@ -73,7 +73,9 @@ struct FormatBreakListItem {
     bool preserveSeparator = false;
 };
 
-struct FormatBreakNode {
+// Projection preserves these values while rebuilding child collections. Keeping
+// them separate avoids copying owned vectors that would immediately be discarded.
+struct FormatBreakNodeData {
     int id = 0;
     const SyntaxNode* syntaxOwner = nullptr;
     const FormatBreakNode* origin = nullptr;
@@ -108,6 +110,9 @@ struct FormatBreakNode {
     const SyntaxNode* declarationValueOwner = nullptr;
     FormatBreakToken leadingTrailingComment;
     FormatBreakToken sourceTrailingComma;
+};
+
+struct FormatBreakNode : FormatBreakNodeData {
     std::span<FormatBreakNode*> children;
     std::vector<FormatBreakListItem> items;
     std::span<FormatBreakNode*> operands;

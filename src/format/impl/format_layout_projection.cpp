@@ -133,14 +133,10 @@ private:
     FormatBreakNode* Copy(const FormatBreakNode& source) {
         auto* node = New();
         const int id = node->id;
-        *node = source;
+        static_cast<FormatBreakNodeData&>(*node) = source;
         node->id = id;
         node->origin = &source;
-        node->children = {};
-        node->operands = {};
-        node->operators = {};
-        node->items.clear();
-        node->commentsBeforeOperators.clear();
+        node->compactStringTexts = source.compactStringTexts;
         return node;
     }
 
@@ -308,6 +304,7 @@ private:
 
     FormatBreakNode* List(const FormatBreakNode& source) {
         auto* node = Copy(source);
+        node->items.reserve(source.items.size());
         std::vector<FormatBreakNode*> delimiters;
         bool openSelected = false;
         bool closeSelected = false;
@@ -482,7 +479,11 @@ private:
                         }
                     }
                 }
-                node->commentsBeforeOperators.push_back(std::move(comments));
+                if (!comments.empty()) {
+                    // Missing suffix entries and empty comment vectors are equivalent.
+                    node->commentsBeforeOperators.resize(operators.size());
+                    node->commentsBeforeOperators.back() = std::move(comments);
+                }
             }
         }
         if (operands.empty()) {
