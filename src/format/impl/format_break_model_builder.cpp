@@ -1,4 +1,5 @@
 #include "format/impl/format_break_model_builder.h"
+#include "format/impl/format_syntax_map.h"
 #include "format/impl/format_string_literals.h"
 
 #include <algorithm>
@@ -8,8 +9,6 @@
 #include <optional>
 #include <span>
 #include <utility>
-#include <unordered_map>
-#include <unordered_set>
 
 #include "format/impl/format_break_cost.h"
 #include "format/impl/format_break_model_inline_helpers.h"
@@ -268,6 +267,8 @@ class BreakModelBuilder {
 public:
     explicit BreakModelBuilder(std::span<const PrintToken> tokens) {
         model_.nodes = std::make_unique<std::deque<FormatBreakNode>>();
+        selectedNodes_.Reserve(tokens.size());
+        selectedTokens_.Reserve(tokens.size());
         const PrintToken* previous = nullptr;
         bool firstToken = true;
         for (size_t index = 0; index < tokens.size(); ++index) {
@@ -278,11 +279,11 @@ public:
             const bool spaceBefore =
                 token.spaceBeforeKnown ? token.spaceBefore : FormatTokenNeedsSpace(previous, token);
             if (token.node != nullptr) {
-                selectedTokens_.insert_or_assign(token.node, FormatBreakToken{&token, spaceBefore});
+                selectedTokens_.InsertOrAssign(token.node, FormatBreakToken{&token, spaceBefore});
             }
             for (
                 const SyntaxNode* ancestor = token.node;
-                ancestor != nullptr && selectedNodes_.insert(ancestor).second;
+                ancestor != nullptr && selectedNodes_.Insert(ancestor, true).second;
                 ancestor = ancestor->parent
             ) {}
             root_ = firstToken ? token.node : CommonAncestor(root_, token.node);
@@ -314,8 +315,8 @@ public:
 private:
     FormatBreakModel model_;
     const SyntaxNode* root_ = nullptr;
-    std::unordered_set<const SyntaxNode*> selectedNodes_;
-    std::unordered_map<const SyntaxNode*, FormatBreakToken> selectedTokens_;
+    FormatSyntaxMap<bool> selectedNodes_;
+    FormatSyntaxMap<FormatBreakToken> selectedTokens_;
     int nextId_ = 1;
     FormatBreakCostNormalizer costNormalizer_;
 
@@ -354,15 +355,15 @@ private:
         return left;
     }
 
-    bool ContainsSelected(const SyntaxNode& node) const { return selectedNodes_.contains(&node); }
+    bool ContainsSelected(const SyntaxNode& node) const { return selectedNodes_.Contains(&node); }
 
     SyntaxNodeKind ParentKind(const SyntaxNode& node) const {
         return node.parent == nullptr ? SyntaxNodeKind::Unknown : node.parent->kind;
     }
 
     std::optional<FormatBreakToken> TokenForNode(const SyntaxNode& node) const {
-        const auto token = selectedTokens_.find(&node);
-        return token == selectedTokens_.end() ? std::nullopt : std::optional(token->second);
+        const auto* token = selectedTokens_.Find(&node);
+        return token == nullptr ? std::nullopt : std::optional(*token);
     }
 
     std::span<FormatBreakNode*> StoreNodePointers(std::span<FormatBreakNode* const> nodes) {
@@ -2502,7 +2503,7 @@ private:
 
     bool SetFirstSelectedTokenSpace(const SyntaxNode& node, const PrintToken& previous) {
         if (const std::optional<FormatBreakToken> token = TokenForNode(node)) {
-            selectedTokens_.at(&node).spaceBefore = FormatTokenNeedsSpace(&previous, FormatBreakTokenValue(*token));
+            selectedTokens_.Find(&node)->spaceBefore = FormatTokenNeedsSpace(&previous, FormatBreakTokenValue(*token));
             return true;
         }
         for (const SyntaxNode* child : node.children) {

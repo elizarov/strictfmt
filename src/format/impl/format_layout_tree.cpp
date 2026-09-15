@@ -10,7 +10,7 @@
 
 FormatLayoutTree::FormatLayoutTree(std::span<const PrintToken> tokens) : tokens_(tokens) {
     owners_.reserve(tokens.size() + 1);
-    ownerIds_.reserve(tokens.size());
+    ownerIds_.Reserve(tokens.size());
     owners_.push_back({});
     for (size_t index = 0; index < tokens.size(); ++index) {
         const FormatLayoutOwnerId id = AddOwner(tokens[index].node);
@@ -43,13 +43,13 @@ FormatLayoutOwnerId FormatLayoutTree::AddOwner(const SyntaxNode* syntax) {
     if (syntax == nullptr) {
         return 0;
     }
-    if (const auto found = ownerIds_.find(syntax); found != ownerIds_.end()) {
-        return found->second;
+    if (const auto* found = ownerIds_.Find(syntax)) {
+        return *found;
     }
     const FormatLayoutOwnerId parent = AddOwner(syntax->parent);
     const FormatLayoutOwnerId id = owners_.size();
     owners_.push_back({.id = id, .parent = parent, .syntax = syntax, .begin = tokens_.size()});
-    ownerIds_.emplace(syntax, id);
+    ownerIds_.Insert(syntax, id);
     return id;
 }
 
@@ -57,8 +57,8 @@ std::span<const PrintToken> FormatLayoutTree::Tokens() const { return tokens_; }
 const FormatLayoutOwner& FormatLayoutTree::Owner(FormatLayoutOwnerId id) const { return owners_.at(id); }
 
 FormatLayoutOwnerId FormatLayoutTree::FindOwner(const SyntaxNode* syntax) const {
-    const auto found = ownerIds_.find(syntax);
-    return found == ownerIds_.end() ? 0 : found->second;
+    const auto* found = ownerIds_.Find(syntax);
+    return found == nullptr ? 0 : *found;
 }
 
 FormatLayoutOwnerId FormatLayoutTree::SourceItem(const SyntaxNode* syntax) const {

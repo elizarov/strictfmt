@@ -10,6 +10,7 @@
 #include "format/impl/format_layout_projection.h"
 #include "format/impl/format_layout_program.h"
 #include "format/impl/format_break_solution.h"
+#include "format/impl/format_syntax_map.h"
 
 class FormatListContinuation;
 class FormatChainContinuation;
@@ -61,7 +62,7 @@ private:
     std::unordered_map<const SyntaxNode*, int> blockIndents_;
     std::span<const PrintToken> tokens_;
     std::vector<FormatLayoutOwner> owners_;
-    std::unordered_map<const SyntaxNode*, FormatLayoutOwnerId> ownerIds_;
+    FormatSyntaxMap<FormatLayoutOwnerId> ownerIds_;
     std::unordered_map<FormatLayoutOwnerId, FormatBreakModel> completeModels_;
     std::deque<FormatLayoutRegion> regions_;
     std::vector<std::optional<int>> structuralIndents_;

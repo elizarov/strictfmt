@@ -81,7 +81,8 @@ byte-for-byte idempotence after the first pass.
   cases.
 - `tests/format/layout_test.cpp` owns focused internal layout-contract checks,
   including incremental structured/raw macro parsing, physical output state, macro indentation, comment alignment, and
-  persistent layout-owner and region lifetimes, lowering without a planner through an explicit writer context,
+  syntax identity table collisions and growth, persistent layout-owner and region lifetimes,
+  lowering without a planner through an explicit writer context,
   deterministic program replay after source-model destruction, resolved indentation across inserted boundaries,
   list and chain ownership across block boundaries, plus immutable choice-history precedence and materialization, candidate pruning, inline/heap value storage,
   and delimiter-stack recognition policies.

@@ -23,6 +23,7 @@
 #include "format/impl/format_list_continuation.h"
 #include "format/impl/format_chain_continuation.h"
 #include "format/impl/format_layout_tree.h"
+#include "format/impl/format_syntax_map.h"
 #include "format/impl/format_config.h"
 #include "format/impl/format_model_parse.h"
 #include "format/impl/format_print_token_builder.h"
@@ -409,6 +410,32 @@ void TestParseMacroConfiguration() {
     check("RIGHT", false);
 }
 
+void TestSyntaxMap() {
+    FormatSyntaxMap<size_t> values;
+    std::vector<SyntaxNode> nodes(4096);
+    SyntaxNode missing;
+    Check(values.Find(nullptr) == nullptr && values.Find(&missing) == nullptr, "empty syntax map lookup");
+    Check(values.Insert(nullptr, 17).second, "syntax map supports a null identity");
+    for (size_t i = 0; i < nodes.size(); ++i) {
+        const size_t index = i * 37 % nodes.size();
+        Check(values.Insert(&nodes[index], index * 3).second, "distinct syntax identities insert once");
+    }
+    values.Reserve(nodes.size() * 3);
+    for (size_t index = 0; index < nodes.size(); ++index) {
+        const auto* value = values.Find(&nodes[index]);
+        Check(value != nullptr && *value == index * 3, "syntax values survive collisions and growth");
+    }
+    const auto duplicate = values.Insert(&nodes[123], 99);
+    Check(!duplicate.second && *duplicate.first == 369, "duplicate insertion preserves the stored value");
+    values.InsertOrAssign(&nodes[123], 99);
+    values.InsertOrAssign(nullptr, 42);
+    Check(*values.Find(&nodes[123]) == 99 && *values.Find(nullptr) == 42 && values.Find(&missing) == nullptr,
+        "assignment preserves distinct and missing identities");
+    FormatSyntaxMap<bool> membership;
+    membership.Insert(&nodes[0], false);
+    Check(membership.Contains(&nodes[0]) && !membership.Contains(&nodes[1]), "membership is independent of value");
+}
+
 void TestPersistentLayoutOwners() {
     FormatterConfig config;
     auto syntax = ParseFormatModel("int value = left + [] { work(); return middle; }() + right;", config);
@@ -754,6 +781,7 @@ int main() {
         TestParseMacroConfiguration();
         TestIncrementalMacroParsing();
         TestPersistentLayoutOwners();
+        TestSyntaxMap();
         TestPersistentHeaderIndent();
         TestCompleteConditionalLayout();
         TestChainContinuation();

@@ -80,6 +80,7 @@ The writer records those operations as `FormatLayoutProgram` commands and resolv
 - `src/format/impl/format_chain_continuation.h|cpp` own persistent complete-chain placements, shared operator constraints, and render bases across mandatory boundaries.
 - `src/format/impl/format_list_continuation.h|cpp` own persistent list placements and lexical boundary queries across blocks and preprocessor directives.
 - `src/format/impl/format_syntax_helpers.h` owns shared direct-child lexical queries used by structural printing and continuation planning.
+- `src/format/impl/format_syntax_map.h` owns compact append-only syntax identity tables for layout ownership and token selection; growth invalidates table references, while syntax identities remain stable.
 - `src/format/impl/format_break_solver.h|cpp` own the break optimizer; see [break_solver.md].
 - `src/format/impl/format_choice_history.h|cpp` own immutable choice-history storage, lookup, concatenation, and materialization.
 - `src/format/impl/format_candidates.h|cpp` own layout-candidate value storage, overflow accounting, cost comparison, continuation-state equivalence, and dominance pruning.

@@ -2,7 +2,7 @@
 
 #include <algorithm>
 #include <array>
-#include <unordered_map>
+#include "format/impl/format_syntax_map.h"
 
 #include "format/impl/format_break_model_inline_helpers.h"
 #include "format/impl/format_chain_continuation.h"
@@ -13,8 +13,9 @@ class Projection {
 public:
     Projection(std::span<const PrintToken> tokens, const FormatLayoutRegionContext& context) : context_(context) {
         model_.nodes = std::make_unique<std::deque<FormatBreakNode>>();
+        selected_.Reserve(tokens.size());
         for (const auto& token : tokens) {
-            selected_.insert_or_assign(token.node, &token);
+            selected_.InsertOrAssign(token.node, &token);
         }
     }
 
@@ -30,7 +31,7 @@ public:
 
 private:
     const FormatLayoutRegionContext& context_;
-    std::unordered_map<const SyntaxNode*, const PrintToken*> selected_;
+    FormatSyntaxMap<const PrintToken*> selected_;
     FormatBreakModel model_;
     const FormatBreakNode* root_ = nullptr;
 
@@ -147,11 +148,11 @@ private:
         if (token.token == nullptr) {
             return {};
         }
-        const auto found = selected_.find(token.token->node);
-        return found == selected_.end() ? FormatBreakToken{} : FormatBreakToken{
-            found->second,
-            token.spaceBefore != token.token->spaceBefore || !found->second->spaceBeforeKnown ? token.spaceBefore :
-                found->second->spaceBefore,
+        const auto* found = selected_.Find(token.token->node);
+        return found == nullptr ? FormatBreakToken{} : FormatBreakToken{
+            (*found),
+            token.spaceBefore != token.token->spaceBefore || !(*found)->spaceBeforeKnown ? token.spaceBefore :
+                (*found)->spaceBefore,
             token.contextOnly,
         };
     }
@@ -205,7 +206,7 @@ private:
 
     bool Intersects(const FormatBreakNode& node) const {
         const auto selected = [&](const FormatBreakToken& token) {
-            return token.token != nullptr && selected_.contains(token.token->node);
+            return token.token != nullptr && selected_.Contains(token.token->node);
         };
         if (selected(node.token) || selected(node.leadingTrailingComment) || selected(node.sourceTrailingComma)) {
             return true;
@@ -396,7 +397,7 @@ private:
             return node.token.token == nullptr ||
                 node.token.token->node == nullptr ||
                 node.token.token->node->text.empty() ||
-                selected_.contains(node.token.token->node);
+                selected_.Contains(node.token.token->node);
         }
         for (const auto* child : node.children) {
             if (!Complete(*child)) {
@@ -412,10 +413,10 @@ private:
             if (item.node != nullptr && !Complete(*item.node)) {
                 return false;
             }
-            if (item.separator.token != nullptr && !selected_.contains(item.separator.token->node)) {
+            if (item.separator.token != nullptr && !selected_.Contains(item.separator.token->node)) {
                 return false;
             }
-            if (item.trailingComment.token != nullptr && !selected_.contains(item.trailingComment.token->node)) {
+            if (item.trailingComment.token != nullptr && !selected_.Contains(item.trailingComment.token->node)) {
                 return false;
             }
         }
