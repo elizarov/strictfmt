@@ -3252,6 +3252,52 @@ void AttributedCompoundControlBodies(int count) {
     }
 }
 
+void AttributedUnbracedControlBodies(int count) {
+    if (count < 0) [[unlikely]] {
+        Use(count);
+    } else [[likely]] {
+        Use(-count);
+    }
+    while (count > 0) [[likely]] {
+        --count;
+    }
+    for (int index = 0; index < count; ++index) [[likely]] {
+        Use(index);
+    }
+    do [[unlikely]] {
+        ++count;
+    } while (count < 0);
+    if (count) [[likely]] {}
+    if (count) {
+        [[custom::hint]] Use(count);
+    }
+    if (count) [[unlikely]] {
+        [[custom::hint]] Use(count);
+    }
+    if (count) [[unlikely]] {
+        [[custom::hint]] Use(count);
+    }
+    if (count) [[unlikely]] {
+        [[custom::hint]] Use(count);
+    }
+    if (count) [[unlikely]] {
+        [[first::hint, last::hint]] Use(count);
+    }
+    if (count) {
+        [[custom::unlikely]] Use(count);
+    }
+    if (count) {
+        [[likely(1)]] Use(count);
+    }
+    if (count) /* body comment */ [[unlikely]] {
+        Use(count);
+    }  // trailing comment
+    if (count) [[/* hint */ unlikely]] {
+        Use(count);
+    }
+#define FORMAT_UNBRACED_HINT(value) if (value) [[unlikely]] Use(value);
+}
+
 void AttributedElseIfCollapse(bool first, bool second, bool third) {
     if (first) {
         Use(first);

@@ -110,6 +110,82 @@ bool IsBracedControlBody(const SyntaxNode& node) {
     return IsStatementKindThroughAttributes(node, SyntaxNodeKind::CompoundStatement);
 }
 
+bool IsBranchLikelihoodAttribute(const SyntaxNode& node) {
+    if (node.kind != SyntaxNodeKind::Attribute) {
+        return false;
+    }
+    const auto name = NextStructuralChildIndex(node.children, 0);
+    return name &&
+        !NextStructuralChildIndex(node.children, *name + 1) &&
+        node.children[*name]->kind == SyntaxNodeKind::Identifier &&
+        (node.children[*name]->text == "likely" || node.children[*name]->text == "unlikely");
+}
+
+SyntaxNode* ExtractBranchLikelihoodAttributes(FormatModel& model, SyntaxNode*& body) {
+    if (body == nullptr || body->kind != SyntaxNodeKind::AttributedStatement) {
+        return nullptr;
+    }
+    SyntaxNode* wrapper = nullptr;
+    for (size_t index = 0; index < body->children.size();) {
+        SyntaxNode* declaration = body->children[index];
+        if (
+            declaration == nullptr ||
+            declaration->kind != SyntaxNodeKind::AttributeDeclaration ||
+            std::none_of(declaration->children.begin(), declaration->children.end(), [](const SyntaxNode* child) {
+                return child != nullptr && IsBranchLikelihoodAttribute(*child);
+            })
+        ) {
+            ++index;
+            continue;
+        }
+        if (wrapper == nullptr) {
+            wrapper = MakeSyntaxNode(model, SyntaxNodeKind::AttributedStatement);
+        }
+        const bool hasOtherAttributes =
+            std::any_of(declaration->children.begin(), declaration->children.end(), [](const SyntaxNode* child) {
+                return child != nullptr &&
+                    child->kind == SyntaxNodeKind::Attribute &&
+                    !IsBranchLikelihoodAttribute(*child);
+            });
+        if (!hasOtherAttributes) {
+            AppendSyntaxChild(*wrapper, declaration);
+            body->children.erase(body->children.begin() + static_cast<std::ptrdiff_t>(index));
+            continue;
+        }
+        for (size_t attributeIndex = 0; attributeIndex < declaration->children.size();) {
+            SyntaxNode* attribute = declaration->children[attributeIndex];
+            if (attribute == nullptr || !IsBranchLikelihoodAttribute(*attribute)) {
+                ++attributeIndex;
+                continue;
+            }
+            SyntaxNode* hint = MakeSyntaxNode(model, SyntaxNodeKind::AttributeDeclaration);
+            for (std::string_view text : {"[[", "]]"}) {
+                SyntaxNode* delimiter = MakeSyntaxNode(model, SyntaxNodeKind::LexicalToken);
+                delimiter->text = text;
+                AppendSyntaxChild(*hint, delimiter);
+                if (text == "[[") {
+                    AppendSyntaxChild(*hint, attribute);
+                }
+            }
+            AppendSyntaxChild(*wrapper, hint);
+            declaration->children.erase(declaration->children.begin() + static_cast<std::ptrdiff_t>(attributeIndex));
+            auto comma = NextStructuralChildIndex(declaration->children, attributeIndex);
+            if (!comma || declaration->children[*comma]->kind != SyntaxNodeKind::Comma) {
+                comma = PreviousStructuralChildIndex(declaration->children, attributeIndex);
+            }
+            if (comma && declaration->children[*comma]->kind == SyntaxNodeKind::Comma) {
+                declaration->children.erase(declaration->children.begin() + static_cast<std::ptrdiff_t>(*comma));
+                attributeIndex -= *comma < attributeIndex;
+            }
+        }
+        ++index;
+    }
+    if (wrapper != nullptr && body->children.size() == 1) {
+        body = body->children.front();
+    }
+    return wrapper;
+}
+
 void WrapControlBody(FormatModel& model, SyntaxNode& node, size_t childIndex) {
     if (
         childIndex >= node.children.size() ||
@@ -117,6 +193,7 @@ void WrapControlBody(FormatModel& model, SyntaxNode& node, size_t childIndex) {
     ) {
         return;
     }
+    SyntaxNode* attributes = ExtractBranchLikelihoodAttributes(model, node.children[childIndex]);
     const bool emptyStatementBody =
         node.children[childIndex] != nullptr && IsEmptyStatementNode(*node.children[childIndex]);
     size_t firstBodyIndex = childIndex;
@@ -154,7 +231,13 @@ void WrapControlBody(FormatModel& model, SyntaxNode& node, size_t childIndex) {
         node.children.begin() + static_cast<std::ptrdiff_t>(firstBodyIndex),
         node.children.begin() + static_cast<std::ptrdiff_t>(lastBodyIndex + 1)
     );
-    node.children.insert(node.children.begin() + static_cast<std::ptrdiff_t>(firstBodyIndex), compound);
+    SyntaxNode* replacement = compound;
+    if (attributes != nullptr) {
+        AppendSyntaxChild(*attributes, compound);
+        ReparentSyntaxNode(*attributes, &node);
+        replacement = attributes;
+    }
+    node.children.insert(node.children.begin() + static_cast<std::ptrdiff_t>(firstBodyIndex), replacement);
 }
 
 std::optional<size_t> FindOnlyIfInBraceBlock(const SyntaxNode& node) {

@@ -571,6 +571,8 @@ OnePerLine::OnePerLine() :
 
 Outside [macro definitions](macro.md#macro-definitions), brace every [control-statement](glossary.md#control-statement) body and collapse an `else` containing only an `if` into `else if`. An empty body ends its line before a following attachment keyword.
 
+When adding braces, keep `likely` and `unlikely` attributes on the new block; other attributes remain on their original statement.
+
 ```cpp
 void Check() {
     if (ready) [[likely]] {
