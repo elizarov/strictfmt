@@ -51,11 +51,9 @@
 #define CURRENT_SOURCE_ROOT "taxi/uservices/services/candidates"
 
 // candidates/wasm/sdk/detail.hpp
-#define CONTEXT_DETAIL(context, detail)                 \
-    do {                                                \
-        if ((context).NeedDetails()) {                  \
-            [[unlikely]] (context).AddDetail((detail)); \
-        }                                               \
+#define CONTEXT_DETAIL(context, detail)                                          \
+    do {                                                                         \
+        if ((context).NeedDetails()) [[unlikely]] (context).AddDetail((detail)); \
     } while (0)
 
 // candidates/wasm/sdk/detail.hpp
@@ -226,10 +224,7 @@
 #define CRYPTOPP_ENABLE_NAMESPACE_WEAK 1
 
 // client-notify/src/models/consents.cpp
-#define TAXI_CONSENT_TYPE_FROM_STRING(name, str) \
-    if (tag_str == str) {                        \
-        return TaxiConsentType::name;            \
-    }
+#define TAXI_CONSENT_TYPE_FROM_STRING(name, str) if (tag_str == str) return TaxiConsentType::name;
 
 // client-notify/src/models/consents.cpp
 #define TAXI_CONSENT_TYPE_TO_STRING(name, str) \
@@ -379,21 +374,17 @@
 #define COUPONS_EDIT_FIELD(name, value) value,
 
 // crm-scheduler/src/custom/service_enums.cpp
-#define MAKE_DIFINITION_ENUM_TO_STRING(BM, ENUM_NAME) \
-    std::string EnumToString(ENUM_NAME enum_value) {  \
-        if (BM.right.count(enum_value)) {             \
-            return BM.right.at(enum_value);           \
-        }                                             \
-        return "";                                    \
+#define MAKE_DIFINITION_ENUM_TO_STRING(BM, ENUM_NAME)                   \
+    std::string EnumToString(ENUM_NAME enum_value) {                    \
+        if (BM.right.count(enum_value)) return BM.right.at(enum_value); \
+        return "";                                                      \
     }
 
 // crm-scheduler/src/custom/service_enums.cpp
-#define MAKE_DIFINITION_GET_ENUM_FROM_STRING(BM, ENUM_NAME)         \
-    ENUM_NAME Get##ENUM_NAME##FromString(std::string enum_string) { \
-        if (BM.left.count(enum_string)) {                           \
-            return BM.left.at(enum_string);                         \
-        }                                                           \
-        return ENUM_NAME::kUnknown;                                 \
+#define MAKE_DIFINITION_GET_ENUM_FROM_STRING(BM, ENUM_NAME)             \
+    ENUM_NAME Get##ENUM_NAME##FromString(std::string enum_string) {     \
+        if (BM.left.count(enum_string)) return BM.left.at(enum_string); \
+        return ENUM_NAME::kUnknown;                                     \
     }
 
 // crm-scheduler/src/db/crm_scheduler_pg_types.hpp
@@ -1440,9 +1431,7 @@
         bool _algo_log_fire = ::algorithms::global::ShouldLog((level), (cfg_level)); \
         _algo_log_fire;                                                              \
         _algo_log_fire = false                                                       \
-    ) {                                                                              \
-        LOG(level)                                                                   \
-    }
+    ) LOG(level)
 
 // eats-pricing-calculator/src/algorithms/thresholds/v1/tests/basic_test.cpp
 #define THRESHOLDS_BASIC_TEST Y_CAT(Y_CAT(ThresholdsV, EPC_ALGO_VERSION), Test)
@@ -1472,10 +1461,8 @@
 #define EPC_ALGO_VERSION 24
 
 // eats-pricing-calculator/src/infra/logging/logger.hpp
-#define INFRA_LOG(logger, level)                                                                       \
-    for (bool _infra_log_fire = (logger).ShouldLog(level); _infra_log_fire; _infra_log_fire = false) { \
-        LOG(level)                                                                                     \
-    }
+#define INFRA_LOG(logger, level) \
+    for (bool _infra_log_fire = (logger).ShouldLog(level); _infra_log_fire; _infra_log_fire = false) LOG(level)
 
 // eats-report-storage/src/models/sync/sync_data_validation.cpp
 #define CHECK_POSITIVE(PROPERTY)                                                                          \
@@ -4358,10 +4345,47 @@ this line is still inside the raw string)text"); \
     } while (false)
 
 // tests/format/src/format_test_input.cpp
-#define FORMAT_MACRO_UNBRACED_DO(value) \
-    do {                                \
-        result += value;                \
-    } while (false)
+#define FORMAT_MACRO_UNBRACED_DO(value) do result += value; \
+    while (false)
+
+// Macro definitions preserve bracing at every nesting level.
+#define FORMAT_OPEN_LOG(level) for (bool once = true; once; once = false) LOG(level)
+void OpenLogUse() { FORMAT_OPEN_LOG(Info) << "hello"; }
+#define FORMAT_OBJECT_CONTROL if (ready) Run();
+#define FORMAT_UNBRACED_CONTROL(value)  \
+    if (value) Run();                   \
+    else Stop();                        \
+    while (value) Step();               \
+    for (auto item : values) Use(item); \
+    switch (value) case 1:              \
+        break;
+#define FORMAT_EMPTY_CONTROL \
+    for (;;);                \
+    while (ready);           \
+    do;                      \
+    while (ready)
+#define FORMAT_ELSE_CONTROL  \
+    if (ready) {             \
+        Run();               \
+    } else {                 \
+        if (pending) Wait(); \
+        else Stop();         \
+    }
+#define FORMAT_NESTED_CONTROL              \
+    void Generated() { if (ready) Run(); } \
+    auto callback = [] { while (ready) Run(); };
+#define FORMAT_ARGUMENT_CONTROL    \
+    APPLY(if (ready) Run(); else { \
+        if (pending) Wait();       \
+    })
+void BesideMacroDefinition() {
+#define FORMAT_LOCAL_CONTROL(value) if (value) Run();
+    if (ready) {
+        Run();
+    } else if (pending) {
+        Wait();
+    }
+}
 
 // tests/format/src/format_test_input.cpp
 #define FORMAT_MACRO_COMPLETE_DO(value) \
@@ -4908,9 +4932,7 @@ this line is still inside the raw string)text"); \
 // tests/format/src/format_userver_input.cpp
 #define FORMAT_USERVER_DO_WHILE(flag) \
     do {                              \
-        if (flag) {                   \
-            break;                    \
-        }                             \
+        if (flag) break;              \
         UseFlag(flag);                \
     } while (false)
 

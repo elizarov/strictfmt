@@ -24,9 +24,7 @@
 
 #define FORMAT_USERVER_DO_WHILE(flag) \
     do {                              \
-        if (flag) {                   \
-            break;                    \
-        }                             \
+        if (flag) break;              \
         UseFlag(flag);                \
     } while (false)
 #define USERVER_IMPL_FORCE_INLINE __attribute__((always_inline)) inline

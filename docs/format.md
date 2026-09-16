@@ -567,7 +567,7 @@ OnePerLine::OnePerLine() :
 
 ### Control flow
 
-Brace every [control-statement](glossary.md#control-statement) body. Collapse an `else` containing only an `if` into `else if`. An empty body ends its line before a following attachment keyword.
+Outside [macro definitions](macro.md#macro-definitions), brace every [control-statement](glossary.md#control-statement) body and collapse an `else` containing only an `if` into `else if`. An empty body ends its line before a following attachment keyword.
 
 ```cpp
 void Check() {

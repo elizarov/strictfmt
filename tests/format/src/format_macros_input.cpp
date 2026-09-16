@@ -4189,6 +4189,20 @@ this line is still inside the raw string)text"); Short();}
 // tests/format/src/format_test_input.cpp
 #define FORMAT_MACRO_UNBRACED_DO(value) do result+=value; while(false)
 
+// Macro definitions preserve bracing at every nesting level.
+#define FORMAT_OPEN_LOG(level) for(bool once=true;once;once=false) LOG(level)
+void OpenLogUse() { FORMAT_OPEN_LOG(Info) << "hello"; }
+#define FORMAT_OBJECT_CONTROL if(ready) Run();
+#define FORMAT_UNBRACED_CONTROL(value) if(value) Run(); else Stop(); while(value) Step(); for(auto item:values) Use(item); switch(value) case 1: break;
+#define FORMAT_EMPTY_CONTROL for(;;); while(ready); do;while(ready)
+#define FORMAT_ELSE_CONTROL if(ready) { Run(); } else { if(pending) Wait(); else Stop(); }
+#define FORMAT_NESTED_CONTROL void Generated() { if(ready) Run(); } auto callback=[] { while(ready) Run(); };
+#define FORMAT_ARGUMENT_CONTROL APPLY(if(ready) Run(); else { if(pending) Wait(); })
+void BesideMacroDefinition() {
+#define FORMAT_LOCAL_CONTROL(value) if(value) Run();
+if(ready) Run(); else { if(pending) Wait(); }
+}
+
 // tests/format/src/format_test_input.cpp
 #define FORMAT_MACRO_COMPLETE_DO(value) do { result+=value; } while(false);
 

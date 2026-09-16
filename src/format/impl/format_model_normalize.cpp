@@ -268,6 +268,19 @@ void NormalizeLastControlBody(FormatModel& model, SyntaxNode& node) {
 }
 
 void NormalizeControlBodies(FormatModel& model, SyntaxNode& node) {
+    if (
+        !SyntaxNodeHasClass(node, SyntaxNodeClass::ControlHeader) &&
+        node.kind != SyntaxNodeKind::ElseClause &&
+        node.kind != SyntaxNodeKind::DoStatement
+    ) {
+        return;
+    }
+    // A replacement may leave its control body open for tokens supplied at the use site.
+    for (const SyntaxNode* parent = node.parent; parent != nullptr; parent = parent->parent) {
+        if (SyntaxNodeHasClass(*parent, SyntaxNodeClass::MacroDefinition)) {
+            return;
+        }
+    }
     switch (node.kind) {
         case SyntaxNodeKind::IfStatement:
             NormalizeIfStatementBody(model, node);

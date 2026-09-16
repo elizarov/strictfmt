@@ -292,6 +292,8 @@ BENCHMARK_REGISTER_F(StoreFixture, Save)->Threads(4);
 
 ## Macro Definitions
 
+Do not add or remove braces anywhere inside a macro definition, including nested function and lambda bodies.
+
 ### Structured replacements
 
 A structured replacement is a macro body parsed as syntax and formatted recursively, including type specifiers and declaration fragments. The formatter owns its complete layout and adds continuation backslashes after formatting.

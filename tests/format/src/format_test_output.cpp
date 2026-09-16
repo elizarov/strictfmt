@@ -5520,10 +5520,8 @@ FORMAT_MACRO_NESTED_DECLARATORS;
     do {                       \
         result += value;       \
     } while (false)
-#define FORMAT_MACRO_UNBRACED_DO(value) \
-    do {                                \
-        result += value;                \
-    } while (false)
+#define FORMAT_MACRO_UNBRACED_DO(value) do result += value; \
+    while (false)
 #define FORMAT_MACRO_COMPLETE_DO(value) \
     do {                                \
         result += value;                \
