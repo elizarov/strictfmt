@@ -3628,6 +3628,10 @@
       "required": false,
       "types": [
         {
+          "type": "argument_list",
+          "named": true
+        },
+        {
           "type": "attribute_declaration",
           "named": true
         },
@@ -3661,6 +3665,10 @@
         },
         {
           "type": "explicit_function_specifier",
+          "named": true
+        },
+        {
+          "type": "identifier",
           "named": true
         },
         {
@@ -5457,6 +5465,10 @@
       "required": false,
       "types": [
         {
+          "type": "argument_list",
+          "named": true
+        },
+        {
           "type": "attribute_declaration",
           "named": true
         },
@@ -5486,6 +5498,10 @@
         },
         {
           "type": "function_definition",
+          "named": true
+        },
+        {
+          "type": "identifier",
           "named": true
         },
         {

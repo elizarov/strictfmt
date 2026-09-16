@@ -468,6 +468,24 @@ DEFINE_ACTION(
         GENERATE_FIELDS((int, field)(bool, enabled)) \
     }
 
+// Constructor specifiers accept preceding modifiers without configuration.
+struct ConstructorModifiers {
+    ANNOTATION constexpr explicit ConstructorModifiers(int value) noexcept :
+        value_(value) {}
+    template <class... Args>
+    ANNOTATION explicit ConstructorModifiers(Args&&... args) noexcept(
+        noexcept(Build(args...))
+    ) {}
+    template <class Value>
+    ANNOTATION(reason(Nested(value))) explicit(
+        false
+    ) ConstructorModifiers(Value value);
+    template <class Target>
+    ANNOTATION ANNOTATION constexpr explicit operator Target() const {
+        return Target{};
+    }
+};
+
 // Template headers share modifiers and attributes with their recursive declaration bodies.
 template <class T>
 API_EXPORT API_EXPORT static Result<T> ReadTemplate(T value) {

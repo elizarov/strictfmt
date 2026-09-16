@@ -8691,3 +8691,25 @@ void NestedConfiguredStatementCalls() {
     FORMAT_STATEMENT_DECLARATIONS(CHECK(FORMAT_STATEMENT_DECLARATIONS(;, Error)), Error);
     const bool result = FORMAT_STATEMENT_DECLARATIONS(Consume();, Error) && enabled;
 }
+
+// A constructor specifier anchors unknown modifiers to its header.
+struct UnconfiguredConstructorModifiers {
+    template <class... Args>
+    UNKNOWN_MODIFIER explicit UnconfiguredConstructorModifiers(Args&&... args) noexcept(noexcept(Build(args...))) {}
+    template <class Value>
+    UNKNOWN_MODIFIER(reason(Nested(value))) explicit(false) UnconfiguredConstructorModifiers(Value value);
+    template <class Target>
+    UNKNOWN_MODIFIER ANOTHER_MODIFIER constexpr explicit operator Target() const { return Target{}; }
+};
+
+template <class T>
+class InlineConstructor final {
+public:
+    UNKNOWN_MODIFIER constexpr explicit InlineConstructor(T value) noexcept : value_(value) {}
+};
+
+template <class T>
+class SplitConstructor final {
+public:
+    UNKNOWN_MODIFIER constexpr explicit SplitConstructor(T value) noexcept : value_(value) {}
+};

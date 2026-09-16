@@ -309,6 +309,9 @@ module.exports = grammar(C, {
     [$.type_specifier, $._unconfigured_modifier_identifier, $._non_pointer_declarator],
     [$.type_specifier, $._unconfigured_modifier_identifier],
     [$.type_specifier, $._call_identifier, $._unconfigured_modifier_identifier, $._non_pointer_declarator],
+    [$.type_specifier, $._call_identifier, $._unconfigured_modifier_identifier],
+    [$.type_specifier, $._unconfigured_macro_item, $._unconfigured_modifier_identifier],
+    [$._unconfigured_macro_item, $._unconfigured_modifier_identifier],
     [$.type_specifier, $._unconfigured_macro_item, $._template_argument_value_expression],
     [$.expression, $._call_identifier, $._unconfigured_macro_item, $._template_argument_value_expression],
     [$.type_specifier, $.expression, $._unconfigured_macro_item, $._template_argument_value_expression],
@@ -377,6 +380,11 @@ module.exports = grammar(C, {
     [$.abstract_reference_declarator, $.macro_argument_punctuator],
     [$.abstract_pointer_declarator, $.macro_argument_punctuator],
     [$.macro_declaration_without_semicolon],
+    [$.type_specifier, $._call_identifier, $._unconfigured_macro_item, $._unconfigured_modifier_identifier],
+    [$._unconfigured_modifier_identifier, $._non_pointer_declarator],
+    [$.template_declaration, $._constructor_specifiers],
+    [$.type_specifier, $._unconfigured_macro_item, $._unconfigured_modifier_identifier, $._non_pointer_declarator],
+    [$.type_specifier, $._call_identifier, $._unconfigured_macro_item, $._unconfigured_modifier_identifier, $._non_pointer_declarator],
     [$.binary_expression, $.macro_return_argument],
     [$.argument_sequence],
     [$.class_specifier, $._contextual_identifier],
@@ -2249,6 +2257,8 @@ module.exports = grammar(C, {
     _constructor_specifiers: $ => choice(
       $._declaration_modifiers,
       $.explicit_function_specifier,
+      // Prefer the anchored header over a separate unknown item followed by it.
+      prec.dynamic(1, seq($._unconfigured_modifier, $._constructor_specifiers)),
     ),
 
     _constructor_or_destructor_header: $ => seq(

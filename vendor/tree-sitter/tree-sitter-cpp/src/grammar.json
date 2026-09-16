@@ -23400,6 +23400,23 @@
         {
           "type": "SYMBOL",
           "name": "explicit_function_specifier"
+        },
+        {
+          "type": "PREC_DYNAMIC",
+          "value": 1,
+          "content": {
+            "type": "SEQ",
+            "members": [
+              {
+                "type": "SYMBOL",
+                "name": "_unconfigured_modifier"
+              },
+              {
+                "type": "SYMBOL",
+                "name": "_constructor_specifiers"
+              }
+            ]
+          }
         }
       ]
     },
@@ -38499,6 +38516,20 @@
     ],
     [
       "type_specifier",
+      "_call_identifier",
+      "_unconfigured_modifier_identifier"
+    ],
+    [
+      "type_specifier",
+      "_unconfigured_macro_item",
+      "_unconfigured_modifier_identifier"
+    ],
+    [
+      "_unconfigured_macro_item",
+      "_unconfigured_modifier_identifier"
+    ],
+    [
+      "type_specifier",
       "_unconfigured_macro_item",
       "_template_argument_value_expression"
     ],
@@ -38798,6 +38829,33 @@
     ],
     [
       "macro_declaration_without_semicolon"
+    ],
+    [
+      "type_specifier",
+      "_call_identifier",
+      "_unconfigured_macro_item",
+      "_unconfigured_modifier_identifier"
+    ],
+    [
+      "_unconfigured_modifier_identifier",
+      "_non_pointer_declarator"
+    ],
+    [
+      "template_declaration",
+      "_constructor_specifiers"
+    ],
+    [
+      "type_specifier",
+      "_unconfigured_macro_item",
+      "_unconfigured_modifier_identifier",
+      "_non_pointer_declarator"
+    ],
+    [
+      "type_specifier",
+      "_call_identifier",
+      "_unconfigured_macro_item",
+      "_unconfigured_modifier_identifier",
+      "_non_pointer_declarator"
     ],
     [
       "binary_expression",
