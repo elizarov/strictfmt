@@ -2981,6 +2981,7 @@ module.exports = grammar(C, {
 
     _non_case_statement: $ => choice(
       $.disabled_code_placeholder_statement,
+      alias($.macro_call_prefixed_statement, $.macro_prefixed_statement),
       $.macro_function_definition,
       $.bare_macro_statement,
       $.block_macro_call_line_item,
@@ -2998,6 +2999,17 @@ module.exports = grammar(C, {
     macro_prefixed_statement: $ => prec.right(seq(
       $.statement_prefix_macro,
       field('body', $.statement),
+    )),
+
+    // Only statement positions infer a prefix from an unconfigured call and block.
+    macro_call_prefixed_statement: $ => prec.right(PREC.CALL + 5, seq(
+      alias($._macro_call_statement_prefix, $.statement_prefix_macro),
+      field('body', $.compound_statement),
+    )),
+
+    _macro_call_statement_prefix: $ => prec(PREC.CALL + 5, seq(
+      field('name', $._call_identifier),
+      field('arguments', $.argument_list),
     )),
 
     statement_prefix_macro: $ => prec.right(PREC.CALL + 6, seq(

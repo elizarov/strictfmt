@@ -7036,6 +7036,15 @@
           "name": "disabled_code_placeholder_statement"
         },
         {
+          "type": "ALIAS",
+          "content": {
+            "type": "SYMBOL",
+            "name": "macro_call_prefixed_statement"
+          },
+          "named": true,
+          "value": "macro_prefixed_statement"
+        },
+        {
           "type": "SYMBOL",
           "name": "macro_function_definition"
         },
@@ -28680,6 +28689,57 @@
             "content": {
               "type": "SYMBOL",
               "name": "statement"
+            }
+          }
+        ]
+      }
+    },
+    "macro_call_prefixed_statement": {
+      "type": "PREC_RIGHT",
+      "value": 20,
+      "content": {
+        "type": "SEQ",
+        "members": [
+          {
+            "type": "ALIAS",
+            "content": {
+              "type": "SYMBOL",
+              "name": "_macro_call_statement_prefix"
+            },
+            "named": true,
+            "value": "statement_prefix_macro"
+          },
+          {
+            "type": "FIELD",
+            "name": "body",
+            "content": {
+              "type": "SYMBOL",
+              "name": "compound_statement"
+            }
+          }
+        ]
+      }
+    },
+    "_macro_call_statement_prefix": {
+      "type": "PREC",
+      "value": 20,
+      "content": {
+        "type": "SEQ",
+        "members": [
+          {
+            "type": "FIELD",
+            "name": "name",
+            "content": {
+              "type": "SYMBOL",
+              "name": "_call_identifier"
+            }
+          },
+          {
+            "type": "FIELD",
+            "name": "arguments",
+            "content": {
+              "type": "SYMBOL",
+              "name": "argument_list"
             }
           }
         ]

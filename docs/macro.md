@@ -162,7 +162,7 @@ class MockStore {
 
 `StatementPrefixMacros` attaches a modifier to the following complete statement or block. Several prefixes may nest. The prefix and its following statement form one control-flow body, including when braces are added to an enclosing control statement.
 
-The [unconfigured call-and-block form](#macros-without-configuration), such as `FOR_EACH(items) { Work(); }`, is parsed as a macro-generated function definition and uses function-body layout. This category selects statement-body layout and also binds unbraced statements: in `if (ready) FOR_EACH(items) Work();`, the macro and `Work()` must remain together inside the `if`.
+Configure macros that prefix unbraced statements: in `if (ready) FOR_EACH(items) Work();`, the macro and `Work()` must remain together inside the `if`. Braced calls follow the [unconfigured call-and-block rule](#macros-without-configuration).
 
 In `DISCARD_RESULT *value;`, the prefix precedes a dereference expression. Without this category, `DISCARD_RESULT` is parsed as a type and `*` attaches to it as a pointer declarator.
 
@@ -264,13 +264,17 @@ Calls also fit type-only positions, including aliases and function parameters.
 
 An isolated identifier can supply a complete namespace or class item, or a template-list fragment, when it cannot form ordinary C++ syntax. Unknown modifiers are also accepted in class, struct, union, and template declaration headers, before constructor specifiers such as `explicit`, after configured declaration modifiers, and after function declarators or alias names. Configuration may still be needed to attach an identifier to the surrounding code.
 
-Enum items may omit separating commas. Calls recognized as enum or braced initializer list fragments occupy separate lines, whether configured or not. Calls can also form statements without a trailing semicolon or introduce a `{ ... }` body without configuration, as in tests or loops:
+Enum items may omit separating commas. Calls recognized as enum or braced initializer list fragments occupy separate lines, whether configured or not. Calls can also form statements without a trailing semicolon.
+
+A macro call immediately followed by a `{ ... }` body is a statement prefix in statement positions and a function definition in declaration positions, including namespace and class scope. The body follows the corresponding statement or function layout rules. An inferred prefix and its block form one statement, including when braces are added to an enclosing control statement:
 
 ```cpp
 TEST(StoreTest, SavesValue) { SaveValue(); }
 
 void Visit(Items& items) {
-    FOR_EACH(item, items) { Consume(item); }
+    FOR_EACH(item, items) {
+        Consume(item);
+    }
 }
 ```
 

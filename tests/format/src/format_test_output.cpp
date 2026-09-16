@@ -8073,6 +8073,7 @@ REGISTER_BENCHMARK(CustomFixture)->Args({1, 2});
 GENERATED_TEST(EmptyArgument, ) { Run(); }
 
 struct Calls {
+    TEST(MemberFixture, Body) { Run(); }
     Calls(Value* value);
     Calls(const Calls& other);
 
@@ -8089,9 +8090,47 @@ struct Calls {
 
 void ControlBodies(Image& image) {
     FOR_PIXELS(image, x) {
-        FOR_PIXELS(image, y) { Consume(x, y); }
+        FOR_PIXELS(image, y) {
+            Consume(x, y);
+        }
     }
+    if (ready) {
+        FOR_PIXELS(image, x) {
+            Consume(x);
+        }
+    } else {
+        Finish();
+    }
+    while (ready) {
+        FOR_PIXELS(image, x) {
+            Consume(x);
+        }
+    }
+    FOR_PIXELS(image, x) {}
+    auto visit = [&] {
+        FOR_PIXELS(image, x) {
+            Consume(x);
+        }
+    };
+    switch (mode) {
+        case 1:
+            FOR_PIXELS(image, x) {
+                Consume(x);
+            }
+            break;
+    }
+#if ENABLE_PIXELS
+    FOR_PIXELS(image, x) {
+        Consume(x);
+    }
+#endif
 }
+#define VISIT_PIXELS(image)    \
+    do {                       \
+        FOR_PIXELS(image, x) { \
+            Consume(x);        \
+        }                      \
+    } while (false)
 void EmptyArguments() { CALL_EMPTY(, CALL_EMPTY(value, ), CALL_EMPTY(), ); }
 void TrailingCallCommas() {
     Invoke(value * factor, );
