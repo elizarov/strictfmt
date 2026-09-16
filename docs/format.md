@@ -461,6 +461,8 @@ void Paint();
 
 Functions and lambdas share body layout: keep a single-statement body on the header line when the complete construct fits. Comments or statements containing a compound block prevent this form.
 
+A sole macro invocation counts as one statement even without a semicolon.
+
 ```cpp
 int Next(int value) { return value + 1; }
 ```

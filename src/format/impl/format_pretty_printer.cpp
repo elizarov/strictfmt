@@ -961,7 +961,11 @@ private:
             previous == nullptr ||
             current.kind == PrintTokenKind::TrailingComment ||
             current.syntaxKind == SyntaxNodeKind::Comma ||
-            current.syntaxKind == SyntaxNodeKind::Semicolon ||
+            current.syntaxKind == SyntaxNodeKind::Semicolon || (
+                current.syntaxKind == SyntaxNodeKind::RightBrace &&
+                current.parentKind == SyntaxNodeKind::CompoundStatement &&
+                current.inCompactSingleStatementBody
+            ) ||
             previous->macroDefinition != current.macroDefinition
         ) {
             return;

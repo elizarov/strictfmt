@@ -1578,6 +1578,34 @@ Run();
 auto compactSingleStatementLambda=[](){return 1;};
 auto blockBearingSingleStatementLambda=[](){if(ready){Run();}};
 
+namespace CompactMacroBodies {
+#define MANY_STEPS(value) First(value); Second(value);
+void UnconfiguredCall(){MANY_STEPS(value)}
+void ConfiguredCall(){FORMAT_SEMILESS_INC(value)}
+void ConfiguredBare(){FORMAT_ITEM_RESET}
+auto callback=[]{MANY_STEPS(value)};
+auto configured_callback=[]{FORMAT_ITEM_RESET};
+struct Methods {
+ Methods(){MANY_STEPS(value)}
+ ~Methods(){FORMAT_ITEM_RESET}
+ void Run(){FORMAT_SEMILESS_INC(value)}
+};
+void LongSingleMacroBodyWithAHeaderAndArgumentThatCannotFitOnOneLine(){MANY_STEPS(argument_with_a_deliberately_long_descriptive_name)}
+void MultipleMacros(){MANY_STEPS(first) MANY_STEPS(second)}
+void CommentedMacro(){
+// Keep the comment inside the expanded body.
+MANY_STEPS(value)
+}
+void ConditionalMacro(){
+#if ENABLE_MACRO
+MANY_STEPS(value)
+#endif
+}
+void NestedLambda(){Invoke([]{MANY_STEPS(value)});}
+void LoopBody(){while(ready){FORMAT_SEMILESS_INC(value)}}
+#define GENERATED_MACRO_BODY(Name) void Name(){FORMAT_SEMILESS_INC(value)}
+}
+
 void EmptyFunction() {}
 void EmptyFunctionPairA() {} void EmptyFunctionPairB() {}
 
