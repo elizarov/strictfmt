@@ -5272,3 +5272,14 @@ FORMAT_STATEMENT_DECLARATIONS(Consume(value);, Error);
 FORMAT_STATEMENT_DECLARATIONS(First(); Second();, Error);
 }
 }
+
+namespace CastArguments {
+void Unconfigured() {
+CHECK(static_cast<void>(Convert<Record>(Make())));
+CHECK(reinterpret_cast<const Record*>(GetPointer<Value>()));
+CHECK(const_cast<Record&>(GetReference<Value>()));
+CHECK(dynamic_cast<Record*>(GetBase<Value>()));
+CHECK(static_cast<void>(Convert<Record>(static_cast<Value>(Make<Argument>()))));
+CHECK(static_cast<Wrapper<Nested<Value>>>(Make<Argument>()));
+}
+}

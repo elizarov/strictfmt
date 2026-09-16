@@ -3736,13 +3736,15 @@ module.exports = grammar(C, {
     cast_expression: ($, original) => prec(PREC.CAST, original.content),
 
     cpp_cast_expression: $ => prec(PREC.CALL, seq(
-      field('function', choice(
+      // Select the reserved cast keyword before a competing declarator can
+      // accumulate template precedence by interpreting it as an identifier.
+      field('function', prec.dynamic(3, choice(
         'static_cast',
         'reinterpret_cast',
         'const_cast',
         'dynamic_cast',
-      )),
-      '<',
+      ))),
+      $._template_argument_open,
       field('type', $.type_descriptor),
       alias($._template_argument_close, '>'),
       field('argument', $.argument_list),
