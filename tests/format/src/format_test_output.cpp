@@ -8843,3 +8843,65 @@ class Guard {
     Guard() noexcept(kNothrowValueCtor);
     Guard(Guard&& rhs) noexcept(Traits<T>::value) : value_{rhs.value_}, saved_{Move(rhs.saved_)} { rhs.Dismiss(); }
 };
+
+namespace NestedMacroIndent {
+
+void Function() {
+    if (ready) {
+#define FORMAT_LOCAL_CONTROL(value) \
+    if (value) {                    \
+        First();                    \
+        Second();                   \
+    }
+        FORMAT_LOCAL_CONTROL(ready)
+#define FORMAT_LOCAL_RAW(value) \
+    if (value) {                \
+        Begin(value);           \
+    public:
+        Continue();
+#define FORMAT_LOCAL_SHORT(value) (value)
+        Finish();
+    }
+}
+
+class Holder {
+#define FORMAT_LOCAL_METHOD(Name) \
+    void Name() {                 \
+        First();                  \
+        Second();                 \
+    }
+    FORMAT_LOCAL_METHOD(Run)
+    int field;
+};
+
+void Arguments() {
+    Invoke(
+        first,
+#define FORMAT_LOCAL_LIST(value) \
+    First(value);                \
+    Second(value);
+        second,
+        third
+    );
+    Finish();
+}
+void Cases(int value) {
+    switch (value) {
+        case 0:
+#define FORMAT_LOCAL_CASE(value) \
+    switch (value) {             \
+        case 1:                  \
+            First();             \
+            break;               \
+        default:                 \
+            Second();            \
+            break;               \
+    }
+            FORMAT_LOCAL_CASE(value)
+            break;
+        default:
+            Finish();
+    }
+}
+
+}

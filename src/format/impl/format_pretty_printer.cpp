@@ -252,6 +252,7 @@ private:
     std::vector<int> conditionalFunctionIndents_;
     std::optional<int> pendingIndentRestoreAfterFlush_;
     std::optional<int> macroContinuationResumeIndent_;
+    int macroDefinitionResumeIndent_ = 0;
     std::unordered_set<std::uint32_t> prebufferedTokenSourceIndices_;
 
     static const PrintToken* RawNextToken(const std::vector<PrintToken>& tokens, size_t index) {
@@ -899,8 +900,9 @@ private:
             }
             if (!activeCaseBodies_.empty() && activeCaseBodies_.back().macroDefinition == previous->macroDefinition) {
                 CloseCaseBodyIndentIfNeeded(previous->macroDefinition);
-                output_.SetPendingIndent(indentLevel_);
             }
+            indentLevel_ = macroDefinitionResumeIndent_;
+            output_.SetPendingIndent(indentLevel_);
             if (const std::optional<int> itemIndent = layoutTree_->Lists().PreprocessorIndent(current)) {
                 output_.SetPendingIndent(*itemIndent);
             } else if (macroContinuationResumeIndent_) {
@@ -930,6 +932,8 @@ private:
             }
             macroContinuationResumeIndent_ =
                 DirectiveContinuationIndent(layoutTree_->Lists().PreprocessorIndent(current));
+            macroDefinitionResumeIndent_ = indentLevel_;
+            indentLevel_ = 0;
             if (output_.State().lineHasText) {
                 NewLine(false);
             }
