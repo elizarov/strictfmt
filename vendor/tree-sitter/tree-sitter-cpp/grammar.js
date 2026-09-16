@@ -4733,7 +4733,9 @@ function callExpression($, callee) {
 function declarationSuffixModifier($) {
   return choice(
     $.declaration_modifier_macro,
-    $._unconfigured_modifier,
+    // Prefer a complete declaration after an unknown item over treating its
+    // declared name as an annotation on the preceding identifier.
+    prec.dynamic(-1, $._unconfigured_modifier),
   );
 }
 

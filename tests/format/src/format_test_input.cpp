@@ -5235,3 +5235,17 @@ ns::Value BracedLinkage() { return CreateValue(); }
 auto deepCalls = Wrap(Wrap(Wrap(Wrap(Wrap(Wrap(Wrap(Wrap(Wrap(Wrap(Wrap(Wrap(Wrap(Wrap(Wrap(Wrap(Wrap(Wrap(Wrap(Wrap(Wrap(Wrap(Wrap(Wrap(Wrap(Wrap(Wrap(Wrap(Wrap(Wrap(Wrap(Wrap(Wrap(Wrap(Wrap(Wrap(Wrap(Wrap(Wrap(Wrap(Wrap(Wrap(Wrap(Wrap(Wrap(Wrap(Wrap(Wrap(Wrap(Wrap(Wrap(Wrap(Wrap(Wrap(Wrap(Wrap(Wrap(Wrap(Wrap(Wrap(Wrap(Wrap(Wrap(Wrap(value))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))));
 using deepTypes = Name<Name<Name<Name<Name<Name<Name<Name<Name<Name<Name<Name<Name<Name<Name<Name<Name<Name<Name<Name<Name<Name<Name<Name<Name<Name<Name<Name<Name<Name<Name<Name<Name<Name<Name<Name<Name<Name<Name<Name<Name<Name<Name<Name<Name<Name<Name<Name<Name<Name<Name<Name<Name<Name<Name<Name<Name<Name<Name<Name<Name<Name<Name<Name<value>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>;
 auto deepConditional = (test ? (test ? (test ? (test ? (test ? (test ? (test ? (test ? (test ? (test ? (test ? (test ? (test ? (test ? (test ? (test ? (test ? (test ? (test ? (test ? (test ? (test ? (test ? (test ? (test ? (test ? (test ? (test ? (test ? (test ? (test ? (test ? value : other) : other) : other) : other) : other) : other) : other) : other) : other) : other) : other) : other) : other) : other) : other) : other) : other) : other) : other) : other) : other) : other) : other) : other) : other) : other) : other) : other) : other) : other) : other) : other);
+
+// An unknown item must not become the type of the following declaration.
+#include "prefix.hpp"
+
+UNKNOWN_NAMESPACE_BEGIN
+
+constexpr size_t itemCount=1;
+UNKNOWN_NAMESPACE_BEGIN const size_t inlineCount=2;
+UNKNOWN_NAMESPACE_BEGIN
+const CustomType customValue=MakeValue();
+struct UnknownSuffixAnnotations {
+ns::CustomType value UNKNOWN_ANNOTATION;
+void Update() UNKNOWN_ANNOTATION;
+};

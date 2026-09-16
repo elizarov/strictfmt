@@ -24899,8 +24899,12 @@
           "name": "declaration_modifier_macro"
         },
         {
-          "type": "SYMBOL",
-          "name": "_unconfigured_modifier"
+          "type": "PREC_DYNAMIC",
+          "value": -1,
+          "content": {
+            "type": "SYMBOL",
+            "name": "_unconfigured_modifier"
+          }
         }
       ]
     },
@@ -28433,8 +28437,12 @@
           "name": "declaration_modifier_macro"
         },
         {
-          "type": "SYMBOL",
-          "name": "_unconfigured_modifier"
+          "type": "PREC_DYNAMIC",
+          "value": -1,
+          "content": {
+            "type": "SYMBOL",
+            "name": "_unconfigured_modifier"
+          }
         }
       ]
     },
