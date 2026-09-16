@@ -222,3 +222,23 @@ using Deep = A::B::C::D::E::F::G::H::I::J::K::L::M::N::O::P::Value;
 // qualification collection retains global and dependent prefixes
 using Q = typename ::A::template B<T>::C::template D<U>::Value;
 auto q = ::A::B::C::f<int>();
+
+// Packed braced lists preserve the presence or absence of their trailing comma.
+auto packedComma=ABCDEFG{1,2,};
+auto packedNoComma=ABCDEFG{1,2};
+
+// Removing nested commas allows the enclosing list to fit the line limit.
+A c={B{1,},};
+A a={B{1,},2,};
+A b={B{C{1,},},};
+using T=A<B<C<int,>,>,>;
+template<class A,class B,>struct S;
+using Long=Types<First,Second,>;
+
+// A comma removed by compaction can make another layout preferable.
+F(a,b,C<DDDD>{{x,yy},});
+
+// Commas in calls and declarations survive both compact and split layouts.
+void F(int,);
+void G(First first,Second second,);
+void H(){F(1,);G(first,second,);}

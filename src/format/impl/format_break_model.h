@@ -45,6 +45,7 @@ enum class FormatBreakChainKind : std::uint8_t {
 
 enum class FormatBreakChoice {
     Compact,
+    CompactWithTrailingComma,
     Split,
     SplitPacked,
     BodyHeaderSplitAtParentIndent,
@@ -76,7 +77,6 @@ struct FormatBreakListItem {
     FormatBreakToken trailingComment;
     bool blankLineBefore = false;
     bool bracedInitializerRecord = false;
-    bool preserveSeparator = false;
 };
 
 // Projection copies this metadata directly while rebuilding child collections.
@@ -97,6 +97,7 @@ struct FormatBreakNodeData {
     bool compactRequiresUnbrokenItems : 1 = false;
     bool flatSplitIndent : 1 = false;
     bool suppressCompactDelimiterPadding : 1 = false;
+    bool singleLineCloseSpaceBefore : 1 = false;
     bool functionSignatureHasBody : 1 = false;
     bool bodyHeaderIsLambda : 1 = false;
     bool bodyHeaderSingleStatementBody : 1 = false;
@@ -110,12 +111,10 @@ struct FormatBreakNodeData {
     bool ternaryRequiresColonBreaks : 1 = false;
     bool splitTrailingBodyHeaderAtParentIndent : 1 = false;
     const SyntaxNode* bodySyntax = nullptr;
-    std::optional<size_t> splitTrailingCommaItem;
     std::optional<int> continuedBodyHeaderOwnerIndent;
     std::optional<int> requiredChainBreakBaseIndent;
     const SyntaxNode* declarationValueOwner = nullptr;
     FormatBreakToken leadingTrailingComment;
-    FormatBreakToken sourceTrailingComma;
 };
 
 struct FormatBreakNode : FormatBreakNodeData {

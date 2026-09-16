@@ -570,20 +570,18 @@ bool FormatTokenNeedsSpace(const PrintToken* previous, const PrintToken& current
         return true;
     }
 
-    if (
-        prev == SyntaxNodeKind::Comma &&
-        cur == SyntaxNodeKind::RightParen &&
-        ParentNode(current) != nullptr &&
-        (ParentNode(current)->classes & static_cast<std::uint64_t>(SyntaxNodeClass::PreserveTrailingComma)) != 0
-    ) {
+    if (prev == SyntaxNodeKind::Comma && cur == SyntaxNodeKind::RightParen) {
         return true;
     }
 
     if (previousHasClass(SyntaxNodeClass::PreprocessorDirective)) {
         return true;
     }
-    if (cur == SyntaxNodeKind::Less && IsOperatorSpellingContext(*previous) && IsTemplateAnglePrintToken(current)) {
-        return prev == SyntaxNodeKind::Less || prev == SyntaxNodeKind::LessLess;
+    if (IsOperatorSpellingContext(*previous) && IsTemplateAnglePrintToken(current)) {
+        if (cur == SyntaxNodeKind::Less) {
+            return prev == SyntaxNodeKind::Less || prev == SyntaxNodeKind::LessLess;
+        }
+        return prev == SyntaxNodeKind::Greater;
     }
     if (IsTemplateArgumentExpressionOperator(*previous) || IsTemplateArgumentExpressionOperator(current)) {
         return true;
@@ -603,6 +601,9 @@ bool FormatTokenNeedsSpace(const PrintToken* previous, const PrintToken& current
     }
     if (IsCompactSingleStatementBodyBrace(current, SyntaxNodeKind::RightBrace)) {
         return true;
+    }
+    if (cur == SyntaxNodeKind::RightBrace && current.parentKind == SyntaxNodeKind::InitializerList) {
+        return false;
     }
     if (
         cur == SyntaxNodeKind::RightParen ||

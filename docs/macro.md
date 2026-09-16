@@ -19,20 +19,13 @@ Macros may have argument lists regardless of their syntactic role.
 
 ### Macros without configuration
 
-Function and macro calls share one argument grammar, accepting expressions, types, function and template parameters, statement sequences, and empty or comment-only arguments. Parenthesized argument fragments use the same grammar recursively and can appear in adjacent sequences. Their commas follow the same [comma normalization](format.md#comma-normalization) rules:
-
-```cpp
-void Check() {
-    call(value);
-    call(value, );
-}
-```
+Function and macro calls share one argument grammar, accepting expressions, types, function and template parameters, statement sequences, and empty or comment-only arguments. Parenthesized argument fragments use the same grammar recursively and can appear in adjacent sequences.
 
 Calls also fit type-only positions, including aliases and function parameters.
 
 An isolated identifier can supply a complete namespace or class item, or a template-list fragment, when it cannot form ordinary C++ syntax. Unknown modifiers are also accepted in class, struct, union, and template declaration headers and after function declarators or alias names. Configuration may still be needed to attach an identifier to the surrounding code.
 
-Enum items may omit separating commas. Calls can supply enum or braced initializer list fragments, form statements without a trailing semicolon, or introduce a `{ ... }` body without configuration, as in tests or loops:
+Enum items may omit separating commas. Calls recognized as enum or braced initializer list fragments occupy separate lines, whether configured or not. Calls can also form statements without a trailing semicolon or introduce a `{ ... }` body without configuration, as in tests or loops:
 
 ```cpp
 TEST(StoreTest, SavesValue) { SaveValue(); }

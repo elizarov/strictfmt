@@ -52,164 +52,24 @@ std::optional<size_t> NextStructuralChildIndex(const SyntaxChildList& children, 
     return std::nullopt;
 }
 
-void RemovePreviousComma(SyntaxChildList& children, size_t before) {
-    const std::optional<size_t> previous = PreviousNonTriviaChildIndex(children, before);
-    if (previous && children[*previous]->kind == SyntaxNodeKind::Comma) {
-        children.erase(children.begin() + static_cast<std::ptrdiff_t>(*previous));
-    }
-}
-
-void RemoveTerminalConditionalListCommas(SyntaxNode& node) {
-    SyntaxChildList& children = node.children;
-    for (size_t index = children.size(); index > 0; --index) {
-        SyntaxNode* child = children[index - 1];
-        if (child != nullptr && (
-            SyntaxNodeKindHasClass(child->kind, SyntaxNodeClass::ConditionalPreprocessorTree) ||
-            SyntaxNodeKindHasClass(child->kind, SyntaxNodeClass::EndifDirective)
-        )) {
-            RemovePreviousComma(children, index - 1);
-        }
-    }
-    for (SyntaxNode* child : children) {
-        if (child != nullptr && SyntaxNodeKindHasClass(child->kind, SyntaxNodeClass::ConditionalPreprocessorTree)) {
-            RemoveTerminalConditionalListCommas(*child);
-        }
-    }
+void MarkSingleLineTrailingComma(SyntaxNode& node) {
     if (
-        SyntaxNodeKindHasClass(node.kind, SyntaxNodeClass::ConditionalPreprocessorTree) &&
-        !SyntaxNodeKindHasClass(node.kind, SyntaxNodeClass::ConditionalPreprocessorOpen)
+        node.kind != SyntaxNodeKind::InitializerList &&
+        node.kind != SyntaxNodeKind::TemplateArgumentList &&
+        node.kind != SyntaxNodeKind::TemplateParameterList
     ) {
-        RemovePreviousComma(children, children.size());
+        return;
     }
-}
-
-void InsertCommaAfter(FormatModel& model, SyntaxNode& node, size_t index) {
-    SyntaxNode* comma = MakeSyntaxNode(model, SyntaxNodeKind::Comma);
-    comma->parent = &node;
-    comma->depth = node.depth + 1;
-    node.children.insert(node.children.begin() + static_cast<std::ptrdiff_t>(index + 1), comma);
-}
-
-bool EnsureTerminalComma(FormatModel& model, SyntaxNode& node, size_t index) {
-    SyntaxChildList& children = node.children;
-    std::optional<size_t> structural = PreviousStructuralChildIndex(children, index + 1);
-    while (structural && IsNonTokenPreprocessorDirective(*children[*structural])) {
-        if (*structural == 0) {
-            return false;
-        }
-        index = *structural - 1;
-        structural = PreviousStructuralChildIndex(children, index + 1);
+    const auto close = PreviousStructuralChildIndex(node.children, node.children.size());
+    if (!close || node.children[*close] == nullptr || (
+        node.children[*close]->kind != SyntaxNodeKind::RightBrace &&
+        node.children[*close]->kind != SyntaxNodeKind::Greater
+    )) {
+        return;
     }
-    if (!structural || SyntaxNodeHasClass(*children[*structural], SyntaxNodeClass::OpeningDelimiter)) {
-        return false;
-    }
-    if (
-        children[*structural]->kind == SyntaxNodeKind::MacroExpansion ||
-        SyntaxNodeHasClass(*children[*structural], SyntaxNodeClass::IncludeDirective)
-    ) {
-        return false;
-    }
-    if (structural && children[*structural]->kind == SyntaxNodeKind::Comma) {
-        if (*structural < index) {
-            std::rotate(
-                children.begin() + static_cast<std::ptrdiff_t>(*structural),
-                children.begin() + static_cast<std::ptrdiff_t>(*structural + 1),
-                children.begin() + static_cast<std::ptrdiff_t>(index + 1)
-            );
-        }
-        return false;
-    }
-    InsertCommaAfter(model, node, index);
-    return true;
-}
-
-void AddTerminalConditionalListCommas(FormatModel& model, SyntaxNode& node) {
-    SyntaxChildList& children = node.children;
-    for (size_t index = 0; index < children.size(); ++index) {
-        SyntaxNode* child = children[index];
-        if (child == nullptr) {
-            continue;
-        }
-        if (
-            SyntaxNodeKindHasClass(child->kind, SyntaxNodeClass::ConditionalBranchSeparatorDirective) ||
-            SyntaxNodeKindHasClass(child->kind, SyntaxNodeClass::EndifDirective)
-        ) {
-            const std::optional<size_t> previous = PreviousNonTriviaChildIndex(children, index);
-            if (
-                previous &&
-                !IsConditionalPreprocessorHeaderChild(node, *previous) &&
-                children[*previous]->kind != SyntaxNodeKind::Comma &&
-                !SyntaxNodeKindHasClass(children[*previous]->kind, SyntaxNodeClass::ConditionalPreprocessorTree)
-            ) {
-                index += EnsureTerminalComma(model, node, *previous);
-            }
-        }
-        if (SyntaxNodeKindHasClass(child->kind, SyntaxNodeClass::ConditionalPreprocessorTree)) {
-            AddTerminalConditionalListCommas(model, *child);
-        }
-    }
-    if (
-        SyntaxNodeKindHasClass(node.kind, SyntaxNodeClass::ConditionalPreprocessorTree) &&
-        !SyntaxNodeKindHasClass(node.kind, SyntaxNodeClass::ConditionalPreprocessorOpen)
-    ) {
-        const std::optional<size_t> previous = PreviousNonTriviaChildIndex(children, children.size());
-        if (
-            previous &&
-            !IsConditionalPreprocessorHeaderChild(node, *previous) &&
-            children[*previous]->kind != SyntaxNodeKind::Comma &&
-            !SyntaxNodeKindHasClass(children[*previous]->kind, SyntaxNodeClass::ConditionalPreprocessorTree)
-        ) {
-            EnsureTerminalComma(model, node, *previous);
-        }
-    }
-}
-
-void NormalizeTrailingCommas(FormatModel& model, SyntaxNode& node) {
-    SyntaxChildList& children = node.children;
-    for (size_t index = 0; index < children.size(); ++index) {
-        if (children[index] == nullptr) {
-            continue;
-        }
-        if (
-            children[index]->kind != SyntaxNodeKind::RightBrace &&
-            children[index]->kind != SyntaxNodeKind::RightParen &&
-            children[index]->kind != SyntaxNodeKind::RightBracket &&
-            children[index]->kind != SyntaxNodeKind::Greater
-        ) {
-            continue;
-        }
-        const std::optional<size_t> previous = PreviousNonTriviaChildIndex(children, index);
-        if (!previous) {
-            continue;
-        }
-        const bool braceList = children[index]->kind == SyntaxNodeKind::RightBrace &&
-            SyntaxNodeHasClass(node, SyntaxNodeClass::AllowedListPreprocessorContainer);
-        if (
-            !braceList &&
-            SyntaxNodeKindHasClass(children[*previous]->kind, SyntaxNodeClass::ConditionalPreprocessorTree)
-        ) {
-            RemoveTerminalConditionalListCommas(*children[*previous]);
-        }
-        if (braceList) {
-            if (SyntaxNodeKindHasClass(children[*previous]->kind, SyntaxNodeClass::ConditionalPreprocessorTree)) {
-                AddTerminalConditionalListCommas(model, *children[*previous]);
-                continue;
-            }
-            if (
-                children[*previous]->kind != SyntaxNodeKind::Comma &&
-                children[*previous]->kind != SyntaxNodeKind::LeftBrace
-            ) {
-                index += EnsureTerminalComma(model, node, *previous);
-            }
-            continue;
-        }
-        if (
-            children[*previous]->kind == SyntaxNodeKind::Comma &&
-            !SyntaxNodeHasClass(node, SyntaxNodeClass::PreserveTrailingComma)
-        ) {
-            children.erase(children.begin() + static_cast<std::ptrdiff_t>(*previous));
-            --index;
-        }
+    const auto comma = PreviousStructuralChildIndex(node.children, *close);
+    if (comma && node.children[*comma] != nullptr && node.children[*comma]->kind == SyntaxNodeKind::Comma) {
+        node.children[*comma]->classes |= static_cast<std::uint64_t>(SyntaxNodeClass::SingleLineTrailingComma);
     }
 }
 
@@ -861,6 +721,6 @@ void NormalizeSyntaxNode(FormatModel& model, SyntaxNode& node) {
     NormalizeBlockHeaderComments(node);
     NormalizeLeadingStreamComments(node);
     NormalizeAttachedTrailingBlockComment(node);
-    NormalizeTrailingCommas(model, node);
+    MarkSingleLineTrailingComma(node);
     NormalizeMacroReplacementComments(node);
 }

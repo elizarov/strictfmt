@@ -62,7 +62,10 @@ struct FormatCompactLayout::Impl {
         for (size_t index = 0; result.valid && index < node.items.size(); ++index) {
             const FormatBreakListItem& item = node.items[index];
             AppendCompactNodeShape(result, item.node);
-            if (FormatBreakTokenKind(item.separator) == PrintTokenKind::Known) {
+            if (
+                FormatBreakTokenKind(item.separator) == PrintTokenKind::Known &&
+                !FormatBreakHasSingleLineTrailingComma(node, index)
+            ) {
                 AppendCompactTokenShape(result, item.separator, FormatTokenText(FormatBreakTokenValue(item.separator)));
             }
             if (FormatBreakHasTrailingComment(node, index)) {
@@ -114,7 +117,10 @@ struct FormatCompactLayout::Impl {
                     break;
                 }
                 AppendCompactListShape(cached, node);
-                AppendCompactNodeShape(cached, node.children[1]);
+                {
+                    const auto close = FormatBreakSingleLineCloseToken(node);
+                    AppendCompactTokenShape(cached, close, FormatTokenText(FormatBreakTokenValue(close)));
+                }
                 break;
             case FormatBreakNodeKind::PrefixList:
                 if (node.children.empty()) {

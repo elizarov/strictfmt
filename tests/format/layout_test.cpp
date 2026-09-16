@@ -239,7 +239,7 @@ void TestIndependentLayoutLowering() {
     };
     // Neither a planner nor the original syntax/models survive into replay.
     const auto list = lower("auto value=Pack{first, // first\nsecond};\n", 1, false);
-    const std::string expected = "    auto value = Pack{\n        first,  // first\n        second,\n    };\n";
+    const std::string expected = "    auto value = Pack{\n        first,  // first\n        second\n    };\n";
     Check(EmitFormatLayoutProgram(list, 4, 40) == expected,
         "independent lowering preserves trailing comments and captures structural indentation");
     Check(EmitFormatLayoutProgram(list, 4, 40) == expected,
@@ -798,7 +798,6 @@ void TestCompleteConditionalLayout() {
         const auto token = [&](const FormatBreakToken& value) { if (value.token != nullptr) retained.insert(value.token->node); };
         token(node.token);
         token(node.leadingTrailingComment);
-        token(node.sourceTrailingComma);
         for (const auto& op : node.operators) token(op);
         for (const auto& comments : node.commentsBeforeOperators) for (const auto& comment : comments) token(comment);
         for (const auto* child : node.children) self(self, *child);

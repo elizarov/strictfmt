@@ -13,4 +13,6 @@ struct FormatBreakSolution {
     std::vector<int> indentLevels;
     // Operators whose adjacent operands form a selected literal-value pair.
     std::vector<std::uint32_t> attachedChainOperators;
+    // Lists whose trailing comma was removed before selecting the final layout.
+    std::vector<int> omittedTrailingCommaNodes;
 };

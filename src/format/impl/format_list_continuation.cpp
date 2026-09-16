@@ -328,32 +328,6 @@ struct FormatListContinuation::Impl {
         return token.forcedLeadingPreprocessorListComma;
     }
 
-    bool IsFinalPreprocessorSplitListItem(size_t currentTokenIndex_) const {
-        const PrintToken& token = tokens_[currentTokenIndex_];
-
-        if (token.node == nullptr) {
-            return false;
-        }
-        const SyntaxNode* list = NearestPreprocessorSplitListAncestor(token);
-        const SyntaxNode* open = list == nullptr ? nullptr : DirectOpeningDelimiterChild(*list);
-        const SyntaxNode* close = list == nullptr ? nullptr : DirectMatchingClosingDelimiterChild(*list, open);
-        if (close == nullptr) {
-            return false;
-        }
-
-        for (size_t index = currentTokenIndex_ + 1; index < tokens_.size(); ++index) {
-            const PrintToken& candidate = tokens_[index];
-            if (IsStructuralTriviaToken(candidate)) {
-                continue;
-            }
-            if (!PrintTokenSyntaxPathContains(candidate, list)) {
-                continue;
-            }
-            return candidate.kind == PrintTokenKind::Known && candidate.node == close;
-        }
-        return false;
-    }
-
     struct Selection {
         int itemIndent;
         int closeIndent;
@@ -469,18 +443,12 @@ struct FormatListContinuation::Impl {
         }
         return std::nullopt;
     }
-    std::optional<bool> ConditionalDirectiveComma(size_t index) const {
+    bool IsConditionalList(size_t index) const {
         const PrintToken& token = tokens_[index];
         const SyntaxNode* list = token.kind == PrintTokenKind::Preprocessor &&
             PrintTokenSyntaxHasClass(token, SyntaxNodeClass::ConditionalPreprocessorOpen) ?
             NearestPreprocessorSplitListAncestor(token) : nullptr;
-        if (list == nullptr) {
-            return std::nullopt;
-        }
-        const SyntaxNode* open = DirectOpeningDelimiterChild(*list);
-        return open != nullptr &&
-            open->kind == SyntaxNodeKind::LeftBrace &&
-            SyntaxNodeHasClass(*list, SyntaxNodeClass::AllowedListPreprocessorContainer);
+        return list != nullptr;
     }
 };
 
@@ -497,12 +465,7 @@ int FormatListContinuation::ResolvePreprocessor() { return impl_->ResolvePreproc
 std::optional<int> FormatListContinuation::PreprocessorIndent(const PrintToken& token) const {
     return impl_->PreprocessorIndent(token);
 }
-std::optional<bool> FormatListContinuation::ConditionalDirectiveComma(size_t index) const {
-    return impl_->ConditionalDirectiveComma(index);
-}
-bool FormatListContinuation::IsFinalPreprocessorItem(size_t index) const {
-    return impl_->IsFinalPreprocessorSplitListItem(index);
-}
+bool FormatListContinuation::IsConditionalList(size_t index) const { return impl_->IsConditionalList(index); }
 std::optional<FormatListContinuationBreak>
     FormatListContinuation::BoundaryFor(const PrintToken& token, FormatListContinuationKind kind) const
 {

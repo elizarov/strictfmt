@@ -43,3 +43,23 @@ inline bool FormatBreakHasRealSeparators(const FormatBreakNode& node) {
         return FormatBreakTokenKind(item.separator) == PrintTokenKind::Known;
     });
 }
+
+inline bool FormatBreakHasSingleLineTrailingComma(const FormatBreakNode& node, size_t index) {
+    return index < node.items.size() &&
+        node.kind == FormatBreakNodeKind::Delimited &&
+        node.children.size() == 2 &&
+        !node.children.front()->token.contextOnly &&
+        !node.children.back()->token.contextOnly &&
+        PrintTokenIsSingleLineTrailingComma(FormatBreakTokenValue(node.items[index].separator)) &&
+        FormatBreakTokenValue(node.children.back()->token).node != nullptr &&
+        FormatBreakTokenValue(node.items[index].separator).node->parent ==
+            FormatBreakTokenValue(node.children.back()->token).node->parent;
+}
+
+inline FormatBreakToken FormatBreakSingleLineCloseToken(const FormatBreakNode& node) {
+    FormatBreakToken close = node.children.back()->token;
+    if (!node.items.empty() && FormatBreakHasSingleLineTrailingComma(node, node.items.size() - 1)) {
+        close.spaceBefore = node.singleLineCloseSpaceBefore;
+    }
+    return close;
+}

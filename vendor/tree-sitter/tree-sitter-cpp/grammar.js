@@ -760,6 +760,12 @@ module.exports = grammar(C, {
     // Delay call/declaration choice until the complete argument or parameter syntax is known.
     _call_identifier: $ => contextualIdentifier($),
 
+    linkage_specification: $ => seq(
+      'extern',
+      field('value', $.string_literal),
+      field('body', choice($.declaration_list, $._top_level_item)),
+    ),
+
     _top_level_item: ($, original) => choice(
       alias($.qualified_type_function_definition, $.function_definition),
       $.preproc_unbalanced_else_block,
@@ -1118,7 +1124,7 @@ module.exports = grammar(C, {
 
     _unconfigured_call: $ => callExpression($, $._unconfigured_call_callee),
 
-    _macro_list_fragment: $ => choice($.macro_expansion, $._unconfigured_call),
+    _macro_list_fragment: $ => choice($.macro_expansion, alias($._unconfigured_call, $.macro_expansion)),
 
     block_macro_call_line_item: $ => choice(
       prec.dynamic(10, prec.right(PREC.CALL + 8, seq(

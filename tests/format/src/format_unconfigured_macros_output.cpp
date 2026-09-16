@@ -291,7 +291,7 @@ enum class ExpandedFields {
 
 enum class AdjacentFields {
     STEP(Read)
-    STEP(Write),
+    STEP(Write)
 };
 
 auto expanded_values = {
@@ -302,7 +302,7 @@ auto expanded_values = {
 auto mixed_values = {
     1,
     STEP(Middle)
-    2,
+    2
 };
 
 auto nested_values = {
@@ -356,7 +356,7 @@ enum class PrefixedItems {
     ENUM_ITEMS
     First,
     ENUM_ITEMS
-    Last,
+    Last
 };
 
 struct EnumFragments {

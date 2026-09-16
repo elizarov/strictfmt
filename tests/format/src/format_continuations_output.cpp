@@ -393,7 +393,7 @@ constexpr int first[] = {
 #else
     2,
 #endif
-    3,
+    3
 };
 
 constexpr int second[] = {4};
@@ -410,7 +410,7 @@ auto value = Pack{
     [] {
         Third();
         Fourth();
-    },
+    }
 };
 
 auto called = Call(
@@ -436,7 +436,7 @@ auto blockComment = Pack{
     [] {
         Third();
         Fourth();
-    },
+    }
 };
 
 auto directed = Pack{
@@ -445,7 +445,7 @@ auto directed = Pack{
         Second();
     },  // item
 #define NEXT_ITEM 2
-    NEXT_ITEM,
+    NEXT_ITEM
 };
 
 auto canonical = Call(
@@ -496,7 +496,7 @@ int afterBodies;
 constexpr int values[] = {
     1,
 #define SELECTED_VALUE 2
-    SELECTED_VALUE,
+    SELECTED_VALUE
 #undef SELECTED_VALUE
 };
 

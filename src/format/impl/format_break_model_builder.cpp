@@ -268,7 +268,7 @@ class BreakModelBuilder {
 public:
     BreakModelBuilder(
         std::span<const PrintToken> tokens, FormatBreakWorkspace* workspace, std::pmr::memory_resource* resource
-    ) : model_(resource), selectedTokens_(workspace) {
+    ) : model_(resource), selectedTokens_(workspace), sourceTokens_(tokens) {
         selectedTokens_.Reserve(tokens.size());
         const PrintToken* previous = nullptr;
         bool firstToken = true;
@@ -329,6 +329,7 @@ private:
     FormatBreakModel model_;
     const SyntaxNode* root_ = nullptr;
     FormatSyntaxMap<FormatBreakToken> selectedTokens_;
+    std::span<const PrintToken> sourceTokens_;
     int nextId_ = 1;
     std::vector<size_t> itemCapacities_;
     FormatBreakCostNormalizer costNormalizer_;
@@ -472,8 +473,6 @@ private:
         }
         AppendListItem(delimited, item, blankLineBefore);
         delimited.items.back().bracedInitializerRecord = IsBracedInitializerRecord(itemChildren);
-        delimited.items.back().preserveSeparator =
-            itemChildren.size() == 1 && itemChildren.front()->kind == SyntaxNodeKind::MacroExpansion;
         itemChildren.clear();
     }
 
@@ -501,37 +500,6 @@ private:
         }
         list.items.back().separator = separator;
         return true;
-    }
-
-    static void MarkSplitTrailingComma(FormatBreakNode& list, const FormatBreakToken& open) {
-        const SyntaxNode* syntaxOpen = FormatBreakTokenValue(open).node;
-        const SyntaxNode* syntaxList = syntaxOpen == nullptr ? nullptr : syntaxOpen->parent;
-        const bool commaSeparatedList = syntaxList != nullptr && (
-            (syntaxList->classes & static_cast<std::uint64_t>(SyntaxNodeClass::AllowedListPreprocessorContainer)) !=
-                0 ||
-            SyntaxNodeKindHasClass(syntaxList->kind, SyntaxNodeClass::AllowedListPreprocessorContainer)
-        );
-        if (list.delimiterKind != FormatBreakDelimiterKind::Brace || !commaSeparatedList) {
-            return;
-        }
-        for (size_t index = list.items.size(); index > 0; --index) {
-            if (FormatBreakIsStandaloneCommentItem(list, index - 1)) {
-                continue;
-            }
-            FormatBreakListItem& item = list.items[index - 1];
-            if (item.preserveSeparator) {
-                return;
-            }
-            list.splitTrailingCommaItem = index - 1;
-            if (FormatBreakTokenSyntaxKind(item.separator) == SyntaxNodeKind::Comma) {
-                list.sourceTrailingComma = item.separator;
-                item.separator = {};
-            }
-            if (list.suppressCompactDelimiterPadding) {
-                list.children.back()->token.spaceBefore = false;
-            }
-            return;
-        }
     }
 
     static bool EndsWithBodyHeader(const FormatBreakNode& node) {
@@ -3289,7 +3257,14 @@ private:
         }
         delimited->compactRequiresUnbrokenItems =
             IsMultiItemDesignatedInitializer(*delimited, *open) || HasSiblingInitializerRecords(*delimited);
-        MarkSplitTrailingComma(*delimited, *open);
+        if (
+            !delimited->items.empty() && FormatBreakHasSingleLineTrailingComma(*delimited, delimited->items.size() - 1)
+        ) {
+            const PrintToken* comma = delimited->items.back().separator.token;
+            delimited->singleLineCloseSpaceBefore = FormatTokenNeedsSpace(
+                comma == sourceTokens_.data() ? nullptr : comma - 1, FormatBreakTokenValue(*close)
+            );
+        }
         afterDelimited = closeIndex + 1;
         return FinishDelimited(delimited);
     }

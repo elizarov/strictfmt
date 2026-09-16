@@ -26,7 +26,14 @@ bool TrailingCommentReturnsToStructuralIndent(const PrintToken& token) {
     if (token.node == nullptr || token.node->parent == nullptr) {
         return false;
     }
-    if (SyntaxNodeHasClass(*token.node->parent, SyntaxNodeClass::SourceItemScope)) {
+    const SyntaxNode* scope = token.node->parent;
+    while (
+        scope != nullptr &&
+        (scope->kind == SyntaxNodeKind::MacroCallItem || scope->kind == SyntaxNodeKind::BareMacroItem)
+    ) {
+        scope = scope->parent;
+    }
+    if (scope != nullptr && SyntaxNodeHasClass(*scope, SyntaxNodeClass::SourceItemScope)) {
         return true;
     }
     const SyntaxNode* previous = nullptr;

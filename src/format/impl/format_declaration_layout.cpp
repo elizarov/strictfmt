@@ -208,7 +208,6 @@ TokenRange SourceRange(const FormatBreakNode& node, const FormatLayoutTree& tree
     };
     token(node.token);
     token(node.leadingTrailingComment);
-    token(node.sourceTrailingComma);
     for (const auto* value : node.children) {
         child(value);
     }

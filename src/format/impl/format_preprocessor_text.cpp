@@ -10,10 +10,6 @@
 
 namespace {
 
-bool PreprocessorLineHasClass(std::string_view line, SyntaxNodeClass syntaxNodeClass) {
-    return SyntaxNodeKindHasClass(SyntaxNodeKindFromPreprocessorDirectiveLine(line), syntaxNodeClass);
-}
-
 bool IsPreprocessorDirectiveNameChar(char ch) {
     return (ch >= 'A' && ch <= 'Z') || (ch >= 'a' && ch <= 'z') || (ch >= '0' && ch <= '9') || ch == '_';
 }
@@ -72,103 +68,6 @@ std::string CanonicalizePreprocessorDirectiveLines(std::string_view text) {
     return result;
 }
 
-size_t FindLineCommentStart(std::string_view line) {
-    bool inString = false;
-    bool inChar = false;
-    for (size_t index = 0; index + 1 < line.size(); ++index) {
-        const char ch = line[index];
-        const char next = line[index + 1];
-        if (ch == '\\' && (inString || inChar)) {
-            ++index;
-            continue;
-        }
-        if (ch == '"' && !inChar) {
-            inString = !inString;
-            continue;
-        }
-        if (ch == '\'' && !inString) {
-            inChar = !inChar;
-            continue;
-        }
-        if (!inString && !inChar && ch == '/' && next == '/') {
-            return index;
-        }
-    }
-    return std::string_view::npos;
-}
-
-std::string RemoveTrailingListComma(std::string_view line) {
-    const size_t commentStart = FindLineCommentStart(line);
-    const size_t codeEnd = commentStart == std::string_view::npos ? line.size() : commentStart;
-    size_t trimmedCodeEnd = codeEnd;
-    while (trimmedCodeEnd > 0 && (line[trimmedCodeEnd - 1] == ' ' || line[trimmedCodeEnd - 1] == '\t')) {
-        --trimmedCodeEnd;
-    }
-    if (trimmedCodeEnd == 0 || line[trimmedCodeEnd - 1] != ',') {
-        return std::string(line);
-    }
-
-    std::string result;
-    result.reserve(line.size() - 1);
-    result.append(line.substr(0, trimmedCodeEnd - 1));
-    if (commentStart != std::string_view::npos) {
-        result.append("  ");
-        result.append(line.substr(commentStart));
-    }
-    return result;
-}
-
-std::string AddTrailingListComma(std::string_view line) {
-    const size_t commentStart = FindLineCommentStart(line);
-    const size_t codeEnd = commentStart == std::string_view::npos ? line.size() : commentStart;
-    size_t trimmedCodeEnd = codeEnd;
-    while (trimmedCodeEnd > 0 && (line[trimmedCodeEnd - 1] == ' ' || line[trimmedCodeEnd - 1] == '\t')) {
-        --trimmedCodeEnd;
-    }
-    if (trimmedCodeEnd == 0 || line[trimmedCodeEnd - 1] == ',') {
-        return std::string(line);
-    }
-
-    std::string result;
-    result.reserve(line.size() + 1);
-    result.append(line.substr(0, trimmedCodeEnd));
-    result.push_back(',');
-    if (commentStart != std::string_view::npos) {
-        result.append("  ");
-        result.append(line.substr(commentStart));
-    }
-    return result;
-}
-
-bool IsStandaloneCommentLine(std::string_view line) {
-    const size_t first = line.find_first_not_of(" \t");
-    if (first == std::string_view::npos) {
-        return true;
-    }
-    const std::string_view trimmed = line.substr(first);
-    return
-        trimmed.starts_with("//") || trimmed.starts_with("/*") || trimmed.starts_with("*") || trimmed.starts_with("*/");
-}
-
-void NormalizeConditionalListTerminalCommas(std::vector<std::string>& lines, bool trailingComma) {
-    for (size_t index = 0; index < lines.size(); ++index) {
-        if (
-            !PreprocessorLineHasClass(lines[index], SyntaxNodeClass::ConditionalBranchSeparatorDirective) &&
-            !PreprocessorLineHasClass(lines[index], SyntaxNodeClass::EndifDirective)
-        ) {
-            continue;
-        }
-        for (size_t previous = index; previous > 0; --previous) {
-            std::string& line = lines[previous - 1];
-            if (line.empty() || line.front() == '#' || IsStandaloneCommentLine(line)) {
-                continue;
-            }
-            line = trailingComma ? AddTrailingListComma(line) : RemoveTrailingListComma(line);
-            break;
-        }
-    }
-}
-
 std::string FormatPayloadLines(std::string_view text, const FormatPreprocessorTextPolicy& policy) {
     const std::string normalized = PreserveSourceLines(text);
     std::vector<std::string> lines;
@@ -183,10 +82,6 @@ std::string FormatPayloadLines(std::string_view text, const FormatPreprocessorTe
             break;
         }
         start = end + 1;
-    }
-
-    if (policy.terminalComma != FormatPreprocessorComma::Preserve) {
-        NormalizeConditionalListTerminalCommas(lines, policy.terminalComma == FormatPreprocessorComma::Add);
     }
 
     std::string result;

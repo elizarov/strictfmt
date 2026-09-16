@@ -1766,10 +1766,10 @@
     }
 
 // eats-restapp-places/tests/utils/sort_delivery_zones_test.cpp
-#define DELIVERY_ZONE_FEATURE(ID, NAME, ENABLED)                                                \
-    handlers::DeliveryZoneFeatureV3{                                                            \
-        .type = handlers::PropertyTypeFeature::kFeature,                                        \
-        .properties = handlers::DeliveryZoneInfoV3{.id = ID, .name = NAME, .enabled = ENABLED}, \
+#define DELIVERY_ZONE_FEATURE(ID, NAME, ENABLED)                                               \
+    handlers::DeliveryZoneFeatureV3{                                                           \
+        .type = handlers::PropertyTypeFeature::kFeature,                                       \
+        .properties = handlers::DeliveryZoneInfoV3{.id = ID, .name = NAME, .enabled = ENABLED} \
     }
 
 // eats-restapp-support-chat/src/components/eats_catalog_storage.cpp
@@ -4134,7 +4134,7 @@
 // tests/format/src/format_test_input.cpp
 #define ENUM_STRING_DECLARE(EnumType, ItemsMacro)                                                              \
     enum class EnumType {                                                                                      \
-        ItemsMacro(ENUM_STRING_DECLARE_ENUMERATOR),                                                            \
+        ItemsMacro(ENUM_STRING_DECLARE_ENUMERATOR)                                                             \
     };                                                                                                         \
     template <>                                                                                                \
     struct EnumStringTraits<EnumType> {                                                                        \
@@ -4515,20 +4515,20 @@ this line is still inside the raw string)text"); \
 // tests/format/src/format_test_input.cpp
 #define FORMAT_ANON_ENUM(name) \
     enum : bool {              \
-        name = true,           \
+        name = true            \
     };
 
 // tests/format/src/format_test_input.cpp
 #define FORMAT_ANON_ATTR_ENUM(name)    \
     enum [[maybe_unused]] : unsigned { \
-        name = 3,                      \
+        name = 3                       \
     };
 
 // tests/format/src/format_test_input.cpp
-#define FORMAT_ENUM_ATTR(Name)              \
-    enum Name {                             \
-        Old##Name [[deprecated]],           \
-        Current##Name [[maybe_unused]] = 1, \
+#define FORMAT_ENUM_ATTR(Name)             \
+    enum Name {                            \
+        Old##Name [[deprecated]],          \
+        Current##Name [[maybe_unused]] = 1 \
     };
 
 // tests/format/src/format_test_input.cpp
@@ -4677,7 +4677,7 @@ this line is still inside the raw string)text"); \
 #define FORMAT_TYPE_ENUM(name)   \
     enum class name : unsigned { \
         First,                   \
-        Second,                  \
+        Second                   \
     }
 
 // tests/format/src/format_test_input.cpp
@@ -4754,7 +4754,7 @@ this line is still inside the raw string)text"); \
 #define FORMAT_TYPE_GENERATED(name) \
     enum class name {               \
         FORMAT_ITEM_ENUM            \
-        Last,                       \
+        Last                        \
     }
 
 // tests/format/src/format_test_input.cpp

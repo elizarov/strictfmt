@@ -3,7 +3,7 @@ bool f() {
     return Check({
         first_long_value,
         second_long_value,
-        third_long_value,
+        third_long_value
     }) ||
         other;
 }
@@ -13,7 +13,7 @@ bool f() {
     return Check({
         first_long_value,
         second_long_value,
-        third_long_value,
+        third_long_value
     }) ||
         other ||
         third;
@@ -25,7 +25,7 @@ bool f() {
         Check({
             first_long_value,
             second_long_value,
-            third_long_value,
+            third_long_value
         }) ||
         third;
 }
@@ -35,7 +35,7 @@ bool f() {
     return first || other || Check({
         first_long_value,
         second_long_value,
-        third_long_value,
+        third_long_value
     });
 }
 
@@ -105,7 +105,7 @@ bool f() {
     return Check({
         first_long_value,
         second_long_value,
-        third_long_value,
+        third_long_value
     }) == other;
 }
 
@@ -166,7 +166,7 @@ void f() {
         Check({
             first_long_value,
             second_long_value,
-            third_long_value,
+            third_long_value
         }) ||
         other ||
         third
@@ -181,7 +181,7 @@ void f() {
         Check({
             first_long_value,
             second_long_value,
-            third_long_value,
+            third_long_value
         }) ||
         other
     ) {
@@ -194,7 +194,7 @@ auto f() {
     return Check({
         first_long_value,
         second_long_value,
-        third_long_value,
+        third_long_value
     }) +
         other +
         third;
@@ -232,7 +232,7 @@ bool f() {
     return !Check({
         first_long_value,
         second_long_value,
-        third_long_value,
+        third_long_value
     }) ||
         !other;
 }

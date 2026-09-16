@@ -112,6 +112,8 @@ Optional breaks within a [formatted segment](glossary.md#formatted-segment) occu
 
 Comma-separated delimiter groups use compact, packed split, or one-item-per-line layout. Both split forms break after the opener and before the closer, with items indented one level. Packed split keeps the items together on one line that fits.
 
+Single-line layouts of braced initializers and template lists omit existing trailing commas and score their resulting width. After removal, select the best layout for the remaining tokens, even if the list then expands. Preserve all other commas; never add trailing commas.
+
 <!-- .cpp-format
 ColumnLimit: 34
 -->
@@ -725,20 +727,6 @@ Without groups, retain source order and blank-separated blocks. Blank lines befo
 #include "widget.h"
 ```
 
-## Comma Normalization
-
-For every non-empty comma-separated list inside `{ ... }`, omit the trailing comma in compact and packed layouts and add it in one-item-per-line layout. Preserve all caller-written commas in function and macro call argument lists, including trailing commas. Remove trailing commas from other non-braced lists. Place the terminal comma before trailing definitions or token-free directives. Do not insert a comma after an include-supplied fragment; its separators belong to the included source. Preserve the caller-written separators of [ItemMacros](macro.md#itemmacros) that form enum or braced initializer list fragments, and place each expansion on its own line.
-
-<!-- .cpp-format
-ColumnLimit: 30
--->
-```cpp
-auto values = Values{
-    firstLongValue,
-    secondLongValue,
-};
-```
-
 ## Optional Null Declarations And Statements
 
 Remove structurally optional null declarations and statements.
@@ -774,7 +762,7 @@ const char* text =
 Only spaces and line breaks change, except for:
 
 - [Include sorting](#include-sorting).
-- [Comma normalization](#comma-normalization).
+- [Single-line list formatting](#lists).
 - [Operator/comment reordering](#comments-at-operator-boundaries).
 - [Opening-brace/header-comment reordering](#mandatory-line-breaks).
 - [Control-brace normalization](#control-flow).

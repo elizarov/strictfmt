@@ -242,7 +242,7 @@ std::vector<std::string> ConditionalBracedListItems() {
         "three",
 #endif
 #if EVEN_MORE
-        "four",
+        "four"
 #endif
     };
     return list;
@@ -253,7 +253,7 @@ std::vector<Row> ConditionalGenericBracedListItems() {
 #if USE_GENERATED_ROW
         Row{MakeKey(first + second), BuildValue(config, path)},
 #endif
-        Row{FallbackKey(), 0},
+        Row{FallbackKey(), 0}
     };
     return rows;
 }
@@ -320,9 +320,9 @@ auto PreprocessorSelectedListItem() {
         "field1",
         {},
 #if FORMAT_USERVER_PROTOBUF_GE_6033000
-        false,
+        false
 #else
-        true,
+        true
 #endif
     };
 }

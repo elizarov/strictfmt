@@ -5090,6 +5090,147 @@ extern template int value<int>;
 extern template double value<double>;
 }
 
+namespace UnconfiguredListFragments {
+enum Mixed { First, EXPAND_ENUM(MakeEntry) Last, };
+enum Adjacent { EXPAND_ENUM(FirstGroup) EXPAND_ENUM(SecondGroup) Last };
+enum Conditional {
+#if FIRST_GROUP
+EXPAND_ENUM(FirstGroup)
+#else
+EXPAND_ENUM(SecondGroup)
+#endif
+Last,
+};
+auto fragments = Values{EXPAND_VALUES(FirstGroup) EXPAND_VALUES(SecondGroup)};
+auto mixedFragments = Values{first, EXPAND_VALUES(MiddleGroup) last};
+auto nestedFragments = Values{Values{EXPAND_VALUES(FirstGroup) EXPAND_VALUES(SecondGroup)}, last};
+}
+
+namespace ListCommas {
+void Parameters(int first, int second,);
+using Arguments = Types<First, Second,>;
+using OperatorArgument = Types<&Value::operator>,>;
+template<class First, class Second,> struct Parameters;
+void ConditionalParameters(
+#if FIRST_VALUE
+int first,
+#endif
+);
+template<
+#if FIRST_VALUE
+class First,
+#endif
+>struct ConditionalTemplate;
+using ConditionalTypes = Types<
+#if FIRST_VALUE
+First,
+#else
+Second,
+#endif
+>;
+enum WithoutComma { First, Last };
+enum WithComma { First, Last, };
+auto compactWithout = Values{first, second};
+auto compactWith = Values{first, second,};
+auto nested = Values{Values{first, second,}, Values{third, fourth},};
+auto records = Rows{{1, 2,}, {3, 4},};
+auto compactComment = Values{first, second, /* value */};
+auto multilineLiteral = Values{R"(first
+second)",};
+auto nestedMultilineLiteral = Values{Values{R"(first
+second)",},};
+auto multilineComment = Values{first, /* first
+second */};
+auto expandedChild = Values{[]{ First(); Second(); },};
+auto expandedTemplateChild = Types<decltype([]{ First(); Second(); }),>{};
+auto packedWithout = Values{firstValue, secondValue, thirdValue, fourthValue, fifthValue, sixthValue, seventhValue, eighthValue};
+auto packedWith = Values{firstValue, secondValue, thirdValue, fourthValue, fifthValue, sixthValue, seventhValue, eighthValue,};
+auto commentedWithout = Values{first, second // final value
+};
+auto commentedWith = Values{first, second, // final value
+};
+auto bodiesWithout = Values{[] { First(); Second(); }, [] { Third(); Fourth(); }};
+auto bodiesWith = Values{[] { First(); Second(); }, [] { Third(); Fourth(); },};
+auto conditional = Values{
+#if FIRST_VALUE
+first,
+#else
+second
+#endif
+};
+void ConditionalArguments() {
+Consume(
+#if FIRST_VALUE
+first,
+#else
+second,
+#endif
+);
+}
+#define FORMAT_X_ITEMS(X) X(1) X(2)
+auto macroWithArguments = Values{
+#define FORMAT_X_VALUE(value) value,
+FORMAT_X_ITEMS(FORMAT_X_VALUE)
+#undef FORMAT_X_VALUE
+};
+#define FORMAT_X_BARE_ITEMS FORMAT_X_VALUE(3) FORMAT_X_VALUE(4)
+auto macroWithoutArguments = Values{
+#define FORMAT_X_VALUE(value) value,
+FORMAT_X_BARE_ITEMS
+#undef FORMAT_X_VALUE
+};
+auto definitionsAfterComma = Values{first, second,
+#define FORMAT_AFTER_COMMA 1
+#undef FORMAT_AFTER_COMMA
+};
+auto definitionsWithoutComma = Values{first, second
+#define FORMAT_NO_COMMA 2
+#undef FORMAT_NO_COMMA
+};
+}
+
+namespace ItemCommentBoundaries {
+void Configured() {
+FORMAT_ITEM_FIRST(value) // completed item
+FORMAT_ITEM_SECOND(value)
+Consume();
+FORMAT_ITEM_BARE // completed bare item
+Consume();
+FORMAT_ITEM_FIRST(
+first, // argument continues
+second
+)
+Consume();
+}
+void Unconfigured() {
+UnconfiguredFirst(value) // completed item
+UnconfiguredSecond(value)
+Consume();
+UnconfiguredFirst(
+first, // argument continues
+second
+)
+Consume();
+}
+}
+
+namespace UnbracedLinkage {
+extern "C" ns::Integer CatchException() {
+try { ThrowException(); } catch (const Error& error) { return error.Value(); }
+return 0;
+}
+extern "C++" ns::Value MakeValue() { return CreateValue(); }
+extern "C" const ns::Value* FindValue() noexcept { return nullptr; }
+extern "C" ns::Box<int> MakeBox() { return {}; }
+extern "C" ns::Value TryValue() try { return CreateValue(); } catch (...) { return {}; }
+extern "C" ns::Value ReadValue();
+extern "C" ns::Value externalValue;
+extern "C++" extern "C" ns::Value NestedLinkage() { return CreateValue(); }
+extern "C" {
+ns::Value BracedLinkage() { return CreateValue(); }
+}
+}
+
 // Deep nesting revisits the same nodes at many columns and indentation levels.
 auto deepCalls = Wrap(Wrap(Wrap(Wrap(Wrap(Wrap(Wrap(Wrap(Wrap(Wrap(Wrap(Wrap(Wrap(Wrap(Wrap(Wrap(Wrap(Wrap(Wrap(Wrap(Wrap(Wrap(Wrap(Wrap(Wrap(Wrap(Wrap(Wrap(Wrap(Wrap(Wrap(Wrap(Wrap(Wrap(Wrap(Wrap(Wrap(Wrap(Wrap(Wrap(Wrap(Wrap(Wrap(Wrap(Wrap(Wrap(Wrap(Wrap(Wrap(Wrap(Wrap(Wrap(Wrap(Wrap(Wrap(Wrap(Wrap(Wrap(Wrap(Wrap(Wrap(Wrap(Wrap(Wrap(value))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))))));
 using deepTypes = Name<Name<Name<Name<Name<Name<Name<Name<Name<Name<Name<Name<Name<Name<Name<Name<Name<Name<Name<Name<Name<Name<Name<Name<Name<Name<Name<Name<Name<Name<Name<Name<Name<Name<Name<Name<Name<Name<Name<Name<Name<Name<Name<Name<Name<Name<Name<Name<Name<Name<Name<Name<Name<Name<Name<Name<Name<Name<Name<Name<Name<Name<Name<Name<value>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>;

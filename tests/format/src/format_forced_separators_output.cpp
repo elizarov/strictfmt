@@ -413,7 +413,7 @@ enum Value {
 #define MARKER 1
         ,
     Second,
-    Third,
+    Third
 };
 
 }
@@ -476,7 +476,7 @@ auto values = {
     first
 #define MARKER 1
     , second,
-    third,
+    third
 };
 
 }

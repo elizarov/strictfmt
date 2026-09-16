@@ -112,6 +112,8 @@ std::string_view ChoiceName(FormatBreakChoice choice) {
     switch (choice) {
         case FormatBreakChoice::Compact:
             return "compact";
+        case FormatBreakChoice::CompactWithTrailingComma:
+            return "compact-with-trailing-comma";
         case FormatBreakChoice::Split:
             return "split";
         case FormatBreakChoice::SplitPacked:
@@ -218,6 +220,9 @@ void
         std::fputc('\n', output);
     }
     WriteBooleanField(output, fieldIndent, "force-split", node.forceSplit);
+    WriteBooleanField(output, fieldIndent, "trailing-comma-removed", std::binary_search(
+        solution.omittedTrailingCommaNodes.begin(), solution.omittedTrailingCommaNodes.end(), node.id
+    ));
     WriteBooleanField(output, fieldIndent, "blank-line-before-close", node.blankLineBeforeClose);
     WriteBooleanField(output, fieldIndent, "compact-requires-unbroken-items", node.compactRequiresUnbrokenItems);
     WriteBooleanField(output, fieldIndent, "flat-split-indent", node.flatSplitIndent);

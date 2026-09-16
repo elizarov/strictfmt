@@ -3718,15 +3718,11 @@
             "members": [
               {
                 "type": "SYMBOL",
-                "name": "function_definition"
-              },
-              {
-                "type": "SYMBOL",
-                "name": "declaration"
-              },
-              {
-                "type": "SYMBOL",
                 "name": "declaration_list"
+              },
+              {
+                "type": "SYMBOL",
+                "name": "_top_level_item"
               }
             ]
           }
@@ -14302,8 +14298,13 @@
           "name": "macro_expansion"
         },
         {
-          "type": "SYMBOL",
-          "name": "_unconfigured_call"
+          "type": "ALIAS",
+          "content": {
+            "type": "SYMBOL",
+            "name": "_unconfigured_call"
+          },
+          "named": true,
+          "value": "macro_expansion"
         }
       ]
     },

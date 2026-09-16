@@ -188,7 +188,7 @@ void MacroConcatenatedString() { throw Error("prefix " FORMAT_USERVER_VERSION " 
 void QualifiedTemplateCompoundLiteral(Token token, Writer& writer) {
     WriteToStream(
         fixture::chaotic::Primitive<std::string, fixture::chaotic::MinLength<128>, fixture::chaotic::MaxLength<128>>{
-            *token,
+            *token
         },
         writer
     );
@@ -424,11 +424,11 @@ using std::chrono::duration, std::chrono::nanoseconds;
 
 enum class [[nodiscard]] FormatStatus : bool {
     kNo = false,
-    kYes = true,
+    kYes = true
 };
 
 enum CurlNamespaceStatus {
-    kOptional = CURL_FORMAT_USERVER_NAMESPACE kOptionalValue,
+    kOptional = CURL_FORMAT_USERVER_NAMESPACE kOptionalValue
 };
 
 void Consumer::RunConsuming(ConsumerScope::Callback callback) {

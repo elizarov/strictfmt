@@ -63,6 +63,12 @@ private:
         return solution.choices[static_cast<size_t>(nodeId)];
     }
 
+    static bool CommaWasRemoved(const FormatBreakSolution& solution, const FormatBreakNode& node, size_t index) {
+        return FormatBreakHasSingleLineTrailingComma(node, index) && std::binary_search(
+            solution.omittedTrailingCommaNodes.begin(), solution.omittedTrailingCommaNodes.end(), node.id
+        );
+    }
+
     static bool IsAttachedChainOperator(const FormatBreakSolution& solution, const FormatBreakToken& op) {
         const std::uint32_t sourceIndex = FormatBreakTokenValue(op).sourceIndex;
         return std::binary_search(
@@ -235,7 +241,13 @@ private:
                     suppressNextBreakTokenSpace_ = true;
                 }
                 LowerBreakNode(*item.node, solution, baseIndent);
-                if (FormatBreakTokenKind(item.separator) == PrintTokenKind::Known) {
+                if (
+                    FormatBreakTokenKind(item.separator) == PrintTokenKind::Known && (
+                        choice == FormatBreakChoice::CompactWithTrailingComma ||
+                        !FormatBreakHasSingleLineTrailingComma(node, index)
+                    ) &&
+                    !CommaWasRemoved(solution, node, index)
+                ) {
                     WriteBreakToken(item.separator);
                 }
                 if (FormatBreakHasTrailingComment(node, index)) {
@@ -245,7 +257,15 @@ private:
             if (node.suppressCompactDelimiterPadding) {
                 suppressNextBreakTokenSpace_ = true;
             }
-            LowerBreakNode(*node.children[1], solution, baseIndent);
+            if (
+                !node.items.empty() &&
+                (choice == FormatBreakChoice::Compact || CommaWasRemoved(solution, node, node.items.size() - 1)) &&
+                FormatBreakHasSingleLineTrailingComma(node, node.items.size() - 1)
+            ) {
+                WriteBreakToken(FormatBreakSingleLineCloseToken(node));
+            } else {
+                LowerBreakNode(*node.children[1], solution, baseIndent);
+            }
             return;
         }
 
@@ -260,11 +280,10 @@ private:
         for (size_t index = 0; index < node.items.size(); ++index) {
             const FormatBreakListItem& item = node.items[index];
             LowerBreakNode(*item.node, solution, baseIndent + 1);
-            if (FormatBreakTokenKind(item.separator) == PrintTokenKind::Known) {
+            if (
+                FormatBreakTokenKind(item.separator) == PrintTokenKind::Known && !CommaWasRemoved(solution, node, index)
+            ) {
                 WriteBreakToken(item.separator);
-            }
-            if (choice == FormatBreakChoice::Split && node.splitTrailingCommaItem == index) {
-                Write(",");
             }
             if (FormatBreakHasTrailingComment(node, index)) {
                 WriteBreakToken(item.trailingComment);
@@ -315,7 +334,9 @@ private:
         for (size_t index = 0; index < node.items.size(); ++index) {
             const FormatBreakListItem& item = node.items[index];
             LowerBreakNode(*item.node, solution, baseIndent + 1);
-            if (FormatBreakTokenKind(item.separator) == PrintTokenKind::Known) {
+            if (
+                FormatBreakTokenKind(item.separator) == PrintTokenKind::Known && !CommaWasRemoved(solution, node, index)
+            ) {
                 WriteBreakToken(item.separator);
             }
             if (FormatBreakHasTrailingComment(node, index)) {
@@ -358,11 +379,10 @@ private:
         for (size_t index = 0; index < node.items.size(); ++index) {
             const FormatBreakListItem& item = node.items[index];
             LowerBreakNode(*item.node, solution, baseIndent + 1);
-            if (FormatBreakTokenKind(item.separator) == PrintTokenKind::Known) {
+            if (
+                FormatBreakTokenKind(item.separator) == PrintTokenKind::Known && !CommaWasRemoved(solution, node, index)
+            ) {
                 WriteBreakToken(item.separator);
-            }
-            if (node.splitTrailingCommaItem == index) {
-                Write(",");
             }
             if (FormatBreakHasTrailingComment(node, index)) {
                 WriteBreakToken(item.trailingComment);

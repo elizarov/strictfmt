@@ -248,39 +248,39 @@ P b = {
     {1},
     {
         first,
-        second,
-    },
+        second
+    }
 };
 
 P c = {
     P{1},
     P{
         first,
-        second,
-    },
+        second
+    }
 };
 
 P d = {
     {1},
     P{
         first,
-        second,
-    },
+        second
+    }
 };
 
 P e = {
     P{},
     {
         first,
-        second,
-    },
+        second
+    }
 };
 
 auto f = Call(
     {1},
     {
         first,
-        second,
+        second
     }
 );
 
@@ -288,7 +288,7 @@ auto g = Call(
     P{1},
     P{
         first,
-        second,
+        second
     }
 );
 
@@ -296,19 +296,19 @@ auto g = Call(
 P h = {
     {
         first,
-        second,
+        second
     },
-    {1},
+    {1}
 };
 
 P i = {
     {
         first,
-        second,
+        second
     }, {
         third,
-        fourth,
-    },
+        fourth
+    }
 };
 
 P j = {
@@ -316,14 +316,14 @@ P j = {
     0,
     {
         first,
-        second,
-    },
+        second
+    }
 };
 
 // ordinary trailing payloads and initializers nested inside calls are not sibling records
 P k = {0, {
     first,
-    second,
+    second
 }};
 
 P l = {{1}, F(
@@ -334,21 +334,21 @@ P l = {{1}, F(
 P m = {
     F({1}), {
         first,
-        second,
+        second
     }
 };
 
 P n = {{
     first,
-    second,
+    second
 }};
 
 P o = {
     P{1},
     P{Q{
         first,
-        second,
-    }},
+        second
+    }}
 };
 
 // direct declaration assignments do not need an initializer-declarator wrapper
@@ -794,3 +794,60 @@ auto q =
         C::f<
             int
         >();
+
+// Packed braced lists preserve the presence or absence of their trailing comma.
+auto packedComma =
+    ABCDEFG{
+        1, 2,
+    };
+
+auto packedNoComma =
+    ABCDEFG{
+        1, 2
+    };
+
+// Removing nested commas allows the enclosing list to fit the line limit.
+A c = {B{1}};
+A a =
+    {B{1}, 2};
+A b =
+    {B{C{1}}};
+
+using T = A<
+    B<C<int>>,
+>;
+
+template <
+    class A,
+    class B,
+>
+struct S;
+
+using Long =
+    Types<
+        First,
+        Second,
+    >;
+
+// A comma removed by compaction can make another layout preferable.
+F(
+    a,
+    b,
+    C<DDDD>{
+        {x, yy}
+    }
+);
+
+// Commas in calls and declarations survive both compact and split layouts.
+void F(int, );
+void G(
+    First first,
+    Second second,
+);
+void H() {
+    F(1, );
+    G(
+        first,
+        second,
+    );
+}

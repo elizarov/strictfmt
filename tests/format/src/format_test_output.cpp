@@ -60,7 +60,7 @@
     constexpr Type IdToType(FormatFixtureSize<Index>) noexcept { return FormatFixtureConstruct<Type>(); }
 #define ENUM_STRING_DECLARE(EnumType, ItemsMacro)                                                              \
     enum class EnumType {                                                                                      \
-        ItemsMacro(ENUM_STRING_DECLARE_ENUMERATOR),                                                            \
+        ItemsMacro(ENUM_STRING_DECLARE_ENUMERATOR)                                                             \
     };                                                                                                         \
     template <>                                                                                                \
     struct EnumStringTraits<EnumType> {                                                                        \
@@ -106,7 +106,7 @@ constexpr auto kFixtureSyntaxKindMappings = std::to_array<SyntaxKindMapping>({
     Tree(SyntaxNodeKind::IncludeRun, "include_run"),
     Tree(SyntaxNodeKind::MacroReplacementList, "macro_replacement_list"),
     Tree(SyntaxNodeKind::Declaration, "declaration", Bit(SyntaxNodeClass::MacroDeclarationFragment)),
-    Tree(SyntaxNodeKind::FieldDeclaration, "field_declaration", Bit(SyntaxNodeClass::MacroDeclarationFragment)),
+    Tree(SyntaxNodeKind::FieldDeclaration, "field_declaration", Bit(SyntaxNodeClass::MacroDeclarationFragment))
 });
 
 constexpr auto kFixtureCommentedSyntaxKindMappings = std::to_array<SyntaxKindMapping>({
@@ -115,7 +115,7 @@ constexpr auto kFixtureCommentedSyntaxKindMappings = std::to_array<SyntaxKindMap
     // tree nodes
 
     Tree(SyntaxNodeKind::TranslationUnit, "translation_unit"),
-    Tree(SyntaxNodeKind::IncludeRun, "include_run"),
+    Tree(SyntaxNodeKind::IncludeRun, "include_run")
 });
 
 class FormattingExample {
@@ -347,7 +347,7 @@ class DeclarationGroupingRules {
         secondDeclarationGroupingValue,
         thirdDeclarationGroupingValue,
         fourthDeclarationGroupingValue,
-        fifthDeclarationGroupingValue,
+        fifthDeclarationGroupingValue
     };
 
     int fieldFollowingIsolatedValues;
@@ -559,7 +559,7 @@ OklchColor NormalizeOklch(
 
 enum class RuntimeConfigFieldValueKind {
     HexColor,
-    Integer,
+    Integer
 };
 
 enum class ValueFormat : std::uint8_t {
@@ -585,7 +585,7 @@ enum class NestedEnumCommaValue {
 };
 
 enum RuntimeMode {
-    Default,
+    Default
 };
 
 struct RuntimeConfigFieldDescriptor {
@@ -902,7 +902,7 @@ auto DeferredListNestedLambdaBodies() {
                 [](const auto&) -> std::optional<double> { return std::nullopt; }
             );
         }),
-        .last = Call(first, second),
+        .last = Call(first, second)
     };
 }
 
@@ -930,7 +930,7 @@ void FinalBlockItemWithNestedCommaSuffix() {
 void DesignatedInitializerAssignmentBreak() {
     auto deps = Dependencies{{
         .delivery_corp_client_traits_fetcher =
-            internal::delivery_corp_client_traits::MakeDeliveryCorpClientTraitsFetcher(dependencies),
+            internal::delivery_corp_client_traits::MakeDeliveryCorpClientTraitsFetcher(dependencies)
     }};
     Use(deps);
 }
@@ -948,7 +948,7 @@ auto SplitDesignatedInitializerListAtFieldBoundaries() {
         .first = Convert(first),
         .second = ConvertLongValue(
             secondDesignatedInitializerArgument, designatedInitializerConfiguration, designatedInitializerContext
-        ),
+        )
     };
 }
 
@@ -972,7 +972,7 @@ void SiblingInitializerRecordContexts() {
         Point{
             firstInitializerRecordCoordinateWithLongName,
             secondInitializerRecordCoordinateWithLongName,
-            thirdInitializerRecordCoordinateWithLongName,
+            thirdInitializerRecordCoordinateWithLongName
         }
     );
     Use(
@@ -980,18 +980,18 @@ void SiblingInitializerRecordContexts() {
         model::Point<int>{
             firstInitializerRecordCoordinateWithLongName,
             secondInitializerRecordCoordinateWithLongName,
-            thirdInitializerRecordCoordinateWithLongName,
+            thirdInitializerRecordCoordinateWithLongName
         }
     );
     Use(context, Point{
         firstInitializerRecordCoordinateWithLongName,
         secondInitializerRecordCoordinateWithLongName,
-        thirdInitializerRecordCoordinateWithLongName,
+        thirdInitializerRecordCoordinateWithLongName
     });
     Use(MakeOptions({1, 2}), Point{
         firstInitializerRecordCoordinateWithLongName,
         secondInitializerRecordCoordinateWithLongName,
-        thirdInitializerRecordCoordinateWithLongName,
+        thirdInitializerRecordCoordinateWithLongName
     });
     Use(Options{}, [] {
         Prepare();
@@ -1000,12 +1000,12 @@ void SiblingInitializerRecordContexts() {
     Use([] { return 1; }, Point{
         firstInitializerRecordCoordinateWithLongName,
         secondInitializerRecordCoordinateWithLongName,
-        thirdInitializerRecordCoordinateWithLongName,
+        thirdInitializerRecordCoordinateWithLongName
     });
     Use(Point{1, 2}, Wrap(Point{
         firstInitializerRecordCoordinateWithLongName,
         secondInitializerRecordCoordinateWithLongName,
-        thirdInitializerRecordCoordinateWithLongName,
+        thirdInitializerRecordCoordinateWithLongName
     }));
     Use(
         Point{1, 2},
@@ -1015,7 +1015,7 @@ void SiblingInitializerRecordContexts() {
                 Prepare();
                 Finish();
             },
-            last,
+            last
         }
     );
     Use(
@@ -1023,7 +1023,7 @@ void SiblingInitializerRecordContexts() {
         Point{{
             firstInitializerRecordCoordinateWithLongName,
             secondInitializerRecordCoordinateWithLongName,
-            thirdInitializerRecordCoordinateWithLongName,
+            thirdInitializerRecordCoordinateWithLongName
         }}
     );
 }
@@ -1031,7 +1031,7 @@ void SiblingInitializerRecordContexts() {
 void InitializerRecordDefaultArguments(Point first = Point{}, Point second = Point{
     firstInitializerRecordCoordinateWithLongName,
     secondInitializerRecordCoordinateWithLongName,
-    thirdInitializerRecordCoordinateWithLongName,
+    thirdInitializerRecordCoordinateWithLongName
 });
 
 defs::internal::psp_pricer::BatchedOrderRoutePriceCorrectionRequirementNames
@@ -1179,7 +1179,7 @@ void TemplatedCallArgumentOverflow() {
         experiments3::CargoPricingBatchedOrderRoutePriceCorrectionWithSpecificExtendedExperimentConfiguration
     >({
         .requirement_names =
-            experiments3::BatchedOrderRoutePriceCorrectionRequirementParamsWithSpecificExtendedConfiguration{},
+            experiments3::BatchedOrderRoutePriceCorrectionRequirementParamsWithSpecificExtendedConfiguration{}
     });
 }
 
@@ -1191,11 +1191,11 @@ auto CommentAnnotatedAggregateItems() {
                 Second();
                 Third();
             }),
-            .b = value,
+            .b = value
         },
         /*client_tariff_prices=*/ client_tariff_prices,
         /*performer_tariff_prices=*/ performer_tariff_prices,
-        /*client_pricing_rules_exps=*/ client_pricing_rules_exps,
+        /*client_pricing_rules_exps=*/ client_pricing_rules_exps
     };
 }
 
@@ -1808,7 +1808,7 @@ HBITMAP CreateBitmap(BITMAPINFOHEADER header) {
 void AttachCalloutBubble(Callout& callout, LayoutGuideSheetExitSide side) {
     callout.bubbleAttachment = RenderPoint{
         side == LayoutGuideSheetExitSide::Left ? callout.bubbleRect.right : callout.bubbleRect.left,
-        callout.bubbleRect.Center().y,
+        callout.bubbleRect.Center().y
     };
 }
 
@@ -2004,7 +2004,7 @@ void LambdaGeneralityCases(int left, int right) {
             Prepare(value);
             return value + 1;
         },
-        secondVeryLongArgumentName,
+        secondVeryLongArgumentName
     };
     Use(twoParameterLambda, twoCaptureLambda, splitParameterSingleStatementLambda, callbacks);
 }
@@ -2256,10 +2256,10 @@ constexpr FormatTableRow kFormatRows[] = {
         "alpha.metric.row.with.extra.detail.and.column.limit.coverage",
         100,
         200,
-        kPrimaryFlag | kSecondaryFlag | kTertiaryFlag,
+        kPrimaryFlag | kSecondaryFlag | kTertiaryFlag
     },
     {"beta.metric.row.with.extra.detail", 300, 400, kPrimaryFlag | kTertiaryFlag},
-    {"gamma.metric.row", 500, 600, kSecondaryFlag},
+    {"gamma.metric.row", 500, 600, kSecondaryFlag}
 };
 
 constexpr FormatTableRow kInitializerChainRows[] = {{
@@ -2269,7 +2269,7 @@ constexpr FormatTableRow kInitializerChainRows[] = {{
     firstInitializerFlagWithVeryLongName |
         secondInitializerFlagWithVeryLongName |
         thirdInitializerFlagWithVeryLongName |
-        fourthInitializerFlagWithVeryLongName,
+        fourthInitializerFlagWithVeryLongName
 }};
 
 static constexpr OutputPath kOutputPaths[] = {
@@ -2277,15 +2277,15 @@ static constexpr OutputPath kOutputPaths[] = {
         &DiagnosticsOptions::trace,
         &DiagnosticsOptions::tracePath,
         &DiagnosticsSession::tracePath_,
-        kDefaultTraceFileName,
+        kDefaultTraceFileName
     },
     {&DiagnosticsOptions::dump, &DiagnosticsOptions::dumpPath, &DiagnosticsSession::dumpPath_, kDefaultDumpFileName},
     {
         &DiagnosticsOptions::screenshot,
         &DiagnosticsOptions::screenshotPath,
         &DiagnosticsSession::screenshotPath_,
-        kDefaultScreenshotFileName,
-    },
+        kDefaultScreenshotFileName
+    }
 };
 
 void DiagnosticsSession::ResolveOutputPathMember(const OutputPath& outputPath, const FilePath& workingDirectory) {
@@ -2297,7 +2297,7 @@ inline constexpr std::array<ColorDialogControls, 4> kColorDialogControls = {{
     {IDC_LAYOUT_EDIT_COLOR_RED_LABEL, IDC_LAYOUT_EDIT_COLOR_RED_EDIT, IDC_LAYOUT_EDIT_COLOR_RED_SLIDER, "red"},
     {IDC_LAYOUT_EDIT_COLOR_GREEN_LABEL, IDC_LAYOUT_EDIT_COLOR_GREEN_EDIT, IDC_LAYOUT_EDIT_COLOR_GREEN_SLIDER, "green"},
     {IDC_LAYOUT_EDIT_COLOR_BLUE_LABEL, IDC_LAYOUT_EDIT_COLOR_BLUE_EDIT, IDC_LAYOUT_EDIT_COLOR_BLUE_SLIDER, "blue"},
-    {IDC_LAYOUT_EDIT_COLOR_ALPHA_LABEL, IDC_LAYOUT_EDIT_COLOR_ALPHA_EDIT, IDC_LAYOUT_EDIT_COLOR_ALPHA_SLIDER, "alpha"},
+    {IDC_LAYOUT_EDIT_COLOR_ALPHA_LABEL, IDC_LAYOUT_EDIT_COLOR_ALPHA_EDIT, IDC_LAYOUT_EDIT_COLOR_ALPHA_SLIDER, "alpha"}
 }};
 
 int kAlignedAssignment = 1;
@@ -2311,8 +2311,8 @@ using AlignedTrailingCommentTypes = TypeList<  //
 >;
 
 auto kAlignedTrailingCommentRows = RowList{
-    {1, 2},      // first
-    {100, 200},  // second
+    {1, 2},     // first
+    {100, 200}  // second
 };
 
 int kSingleTrailingComment = 0;  // single
@@ -2417,7 +2417,7 @@ void BuildTitlebarTooltipControls() {
         {DashboardTitlebarTooltipControl::EditLayout, editLayoutRect},
         {DashboardTitlebarTooltipControl::Layout, layoutComboRect},
         {DashboardTitlebarTooltipControl::Theme, themeComboRect},
-        {DashboardTitlebarTooltipControl::AppMenu, appMenuRect},
+        {DashboardTitlebarTooltipControl::AppMenu, appMenuRect}
     };
 }
 
@@ -2522,7 +2522,7 @@ void SplitOperatorChainPartsLineByLine() {
         rightValueWithLongName,
         bottomValueWithLongName,
         extraValueWithLongName,
-        finalValueWithLongName,
+        finalValueWithLongName
     };
     const bool loaded = !LoadString(values, DumpKey(historyPrefix, ".series_ref"), history.seriesRef, error) ||
         !LoadDoubleArrayField(values, DumpKey(historyPrefix, ".samples"), history.samples, error) ||
@@ -2637,7 +2637,7 @@ void TrailingListExpansionCases() {
         firstInitializerFlagWithVeryLongName |
             secondInitializerFlagWithVeryLongName |
             thirdInitializerFlagWithVeryLongName |
-            fourthInitializerFlagWithVeryLongName,
+            fourthInitializerFlagWithVeryLongName
     });
     UseTrailingListExpansion(firstValue, secondValue, conditionWithLongName ? firstValueWithLongName : BuildValue(
         firstArgumentWithLongName, secondArgumentWithLongName, thirdArgumentWithLongName, fourthArgumentWithLongName
@@ -2793,14 +2793,14 @@ void BuildTrianglePoints(const RECT& rect, const Geometry& geometry) {
     POINT points[] = {
         {
             rect.left + static_cast<LONG>(std::lround(geometry.leftX)),
-            rect.top + static_cast<LONG>(std::lround(geometry.topY)),
+            rect.top + static_cast<LONG>(std::lround(geometry.topY))
         }, {
             rect.left + static_cast<LONG>(std::lround(geometry.rightX)),
-            rect.top + static_cast<LONG>(std::lround(geometry.topY)),
+            rect.top + static_cast<LONG>(std::lround(geometry.topY))
         }, {
             rect.left + static_cast<LONG>(std::lround(geometry.bottomX)),
-            rect.top + static_cast<LONG>(std::lround(geometry.bottomY)),
-        },
+            rect.top + static_cast<LONG>(std::lround(geometry.bottomY))
+        }
     };
     Use(points);
 }
@@ -2856,13 +2856,13 @@ void RegisterStaticEditAnchor(
         .key = LayoutEditAnchorKey{
             LayoutEditWidgetIdentity{widget.cardId, widget.editCardId, widget.nodePath},
             WidgetHost::LayoutEditParameter::MetricListBarHeight,
-            rowIndex,
+            rowIndex
         },
         .targetRect = barRect,
         .anchorRect = anchorRect,
         .shape = AnchorShape::Circle,
         .value = config.barHeight,
-        .drag = LayoutEditAnchorDrag::AxisDelta(AnchorDragAxis::Horizontal, RenderPoint{anchorCenterX, anchorCenterY}),
+        .drag = LayoutEditAnchorDrag::AxisDelta(AnchorDragAxis::Horizontal, RenderPoint{anchorCenterX, anchorCenterY})
     });
 }
 
@@ -3623,7 +3623,7 @@ bool AttachedOpenChainKeepsFollowingOperator(const PrintToken* previous, KnownTo
 struct BracedMacroInitializerStressEntry {};
 
 enum class BracedMacroInitializerStressKind {
-    Value,
+    Value
 };
 
 constexpr BracedMacroInitializerStressEntry BracedMacroInitializerStressValues[] = {
@@ -3644,7 +3644,7 @@ constexpr BracedMacroInitializerStressEntry BracedMacroInitializerStressValues[]
     BRACED_MACRO_INITIALIZER_STRESS("field15", BracedMacroInitializerStressKind::Value, source.path15),
     BRACED_MACRO_INITIALIZER_STRESS("field16", BracedMacroInitializerStressKind::Value, source.path16),
     BRACED_MACRO_INITIALIZER_STRESS("field17", BracedMacroInitializerStressKind::Value, source.path17),
-    BRACED_MACRO_INITIALIZER_STRESS("field18", BracedMacroInitializerStressKind::Value, source.path18),
+    BRACED_MACRO_INITIALIZER_STRESS("field18", BracedMacroInitializerStressKind::Value, source.path18)
 };
 
 int DelimiterStackThresholdGenerality(
@@ -3701,12 +3701,12 @@ void DelimiterBoundaryCoalescingGenerality() {
         {
             firstBraceElementValueForCoalescingGenerality,
             secondBraceElementValueForCoalescingGenerality,
-            thirdBraceElementValueForCoalescing,
+            thirdBraceElementValueForCoalescing
         }, {
             fourthBraceElementValueForCoalescingGenerality,
             fifthBraceElementValueForCoalescingGenerality,
-            sixthBraceElementValueForCoalescing,
-        },
+            sixthBraceElementValueForCoalescing
+        }
     };
     int parenBoundaryValues[] = {
         (
@@ -3717,7 +3717,7 @@ void DelimiterBoundaryCoalescingGenerality() {
             fourthParenElementValueForCoalescingGenerality +
             fifthParenElementValueForCoalescingGenerality +
             sixthParenElementValueForCoalescing
-        ),
+        )
     };
     OuterAngleContainerForCoalescingGenerality<
         FirstAngleElementTemplateForCoalescingGenerality<
@@ -3859,7 +3859,7 @@ void EnumDeclaratorDetached() {
     enum {
         kChar,
         kPercent,
-        kKey,
+        kKey
     } state = kChar;
     Use(state);
 }
@@ -4031,7 +4031,7 @@ auto ExpansionCostInitializerList() {
         secondLongValue,
         thirdLongValue,
         fourthLongValueWithSuffix,
-        BuildFinalValue(firstArgument, secondArgument),
+        BuildFinalValue(firstArgument, secondArgument)
     };
 }
 
@@ -4109,7 +4109,7 @@ auto SingleLambdaInitializerKeepsTemplateName() {
         [used_tariff, request, avalon_tags_fut, opt_edges_fut, deps = deps_] {
             Prepare();
             return Fetch();
-        },
+        }
     };
 }
 
@@ -4170,7 +4170,7 @@ void BraceListTrailingCommaLayout() {
     auto compact = BraceValues{first, second};
     auto fullSplit = BraceValues{
         firstValueWithAnExtremelyLongNameForBraceListTrailingComma,
-        secondValueWithAnExtremelyLongNameForBraceListTrailingComma,
+        secondValueWithAnExtremelyLongNameForBraceListTrailingComma
     };
 }
 
@@ -4215,7 +4215,7 @@ struct PureVirtualDeclarationTails {
 void QualifiedTemplateCallWrapping() {
     value = Record{.cancel_price = decimal64::Decimal<4>::FromStringPermissive(
         laundry_tariff_estimating_result.paid_cancel_in_driving.value().cancel_price
-    )};
+    ),};
     auto nested = units::Scale<2>::Ratio<3>::ConvertWithOriginalPrecision(
         source.original_value_with_unit_metadata_and_conversion_options
     );
@@ -4236,7 +4236,7 @@ void StreamLiteralBindingWithSuffixes() {
     auto values = Values{
         LOG_INFO()
             << "[DubaiLaundryOffers] Built request tariffs"
-            << ", mappings_count=" << state_to_request_tariff_mapping.size(),
+            << ", mappings_count=" << state_to_request_tariff_mapping.size()
     };
 }
 
@@ -4321,7 +4321,7 @@ void PreserveListBlankLines() {
     auto values = Values{
         first,
 
-        second,
+        second
     };
     Consume(
         [] {
@@ -4388,7 +4388,7 @@ auto VisitWithCompetingLambdaHeaders() {
             ) -> std::optional<Result> {
                 Prepare();
                 return {};
-            },
+            }
         },
         value
     );
@@ -4505,7 +4505,7 @@ void BlockCommentLineBoundaries() {
         value
     );
     auto values = Values{ /* items */
-        1,
+        1
     };
     Call(
         /* first */ value, /* more */
@@ -4947,7 +4947,7 @@ struct Holder {  // type body
 
 enum class Mode {  // enum body
     First,
-    Second,
+    Second
 };
 
 }
@@ -5256,7 +5256,7 @@ constexpr auto Conditional() {
 #else
             {Values, Values}...,
 #endif
-        },
+        }
     };
 }
 
@@ -5701,7 +5701,7 @@ struct Pair {};
 class Sort {
     enum Direction {
         Up,
-        Down,
+        Down
     };
 
     Sort(Types::List<Types::Pair<Types::View, Direction>>);
@@ -5736,7 +5736,7 @@ int value;
 }
 
 enum RequiredEnumTerminator {
-    Item,
+    Item
 };  // enum
 namespace NullItemFifth {
 
@@ -6022,38 +6022,38 @@ using Byte = unsigned char;
 }
 enum : bool {
     Bad = false,
-    Good = true,
+    Good = true
 };
 
 enum : unsigned long {
-    Limit = 255,
+    Limit = 255
 };
 
 enum : Types::Byte {
     First = 1,
-    Second = 2,
+    Second = 2
 };
 
 struct Result {
     enum : bool {
         No,
-        Yes,
+        Yes
     };
 };
 
 enum class Forward : short;
 
 enum class Forward : short {
-    Value = 1,
+    Value = 1
 };
 #define FORMAT_ANON_ENUM(name) \
     enum : bool {              \
-        name = true,           \
+        name = true            \
     };
 FORMAT_ANON_ENUM(Generated);
 #define FORMAT_ANON_ATTR_ENUM(name)    \
     enum [[maybe_unused]] : unsigned { \
-        name = 3,                      \
+        name = 3                       \
     };
 FORMAT_ANON_ATTR_ENUM(Annotated);
 
@@ -6063,26 +6063,26 @@ namespace EnumDeclarations {
 
 enum class Flag : bool {
     Off [[deprecated]] = false,
-    On = true,
+    On = true
 };
 
 enum Status : unsigned long {
     Old [[deprecated("use Current")]] = 0,
-    Current = 1,
+    Current = 1
 };
 
 enum class Character : char {
     A [[maybe_unused]] = 'a',
-    B = 'b',
+    B = 'b'
 };
 
 enum Attributes {
-    Repeated [[maybe_unused]] [[deprecated("use Current")]] = 2,
+    Repeated [[maybe_unused]] [[deprecated("use Current")]] = 2
 };
-#define FORMAT_ENUM_ATTR(Name)              \
-    enum Name {                             \
-        Old##Name [[deprecated]],           \
-        Current##Name [[maybe_unused]] = 1, \
+#define FORMAT_ENUM_ATTR(Name)             \
+    enum Name {                            \
+        Old##Name [[deprecated]],          \
+        Current##Name [[maybe_unused]] = 1 \
     };
 FORMAT_ENUM_ATTR(Generated);
 
@@ -6189,7 +6189,7 @@ Optional<Position> fallback{Position(0, 0)};
 Optional<Position> Choose(bool contractor_has_position, int latitude_with_a_long_name, int longitude_with_a_long_name) {
     const auto application_position_opt{
         contractor_has_position ? Optional<Position>{Position(latitude_with_a_long_name, longitude_with_a_long_name)} :
-            fallback,
+            fallback
     };
     return application_position_opt;
 }
@@ -6272,7 +6272,7 @@ void Guards() {
     int(*callbacks[])() = {
         +[] {
             return Visit([] { return 0; });
-        },
+        }
 
     };
     (void)callbacks;
@@ -6395,7 +6395,7 @@ namespace data {
 
 enum class Mode : unsigned {
     One = 1,
-    Two = 2,
+    Two = 2
 };
 
 }
@@ -6613,7 +6613,7 @@ namespace ContextualRoles {
 
 enum class Items {
     module,
-    import,
+    import
 };
 
 template <class module>
@@ -6829,7 +6829,7 @@ union Number {
 };
 
 enum Choice {
-    First,
+    First
 };
 
 auto ClassLambda() {
@@ -6867,7 +6867,7 @@ using InlineRecord = struct {
     int value;
 };
 using InlineChoice = enum {
-    FirstInline,
+    FirstInline
 };
 
 struct Owner {
@@ -6924,7 +6924,7 @@ struct Construct {
 
 void Iterate() {
     for (const auto& [index, name, pairs] : std::vector<std::tuple<int, int, std::vector<std::pair<int, int>>>>{
-        {1, 2, {{3, 4}}},
+        {1, 2, {{3, 4}}}
     }) {
         (void)index;
         (void)name;
@@ -6953,7 +6953,7 @@ constexpr int direct[]{
 constexpr int mixed[]{
     1,
 #include "format_initializer_values.inc"
-    3,
+    3
 };
 
 constexpr int multiple[]{
@@ -6964,11 +6964,11 @@ constexpr int multiple[]{
 constexpr int nested[][2]{
     {
 #include "format_initializer_values.inc"
-        3,
+        3
     },
     {
 #include "format_initializer_value.inc"
-    },
+    }
 };
 
 constexpr int conditional[]{
@@ -6985,7 +6985,7 @@ constexpr int guarded[]{
 #ifdef FORMAT_INCLUDE_ALTERNATIVE
 #include "format_initializer_values.inc"
 #endif
-    4,
+    4
 };
 
 constexpr int conditionalMultiple[]{
@@ -7181,7 +7181,7 @@ enum class Value {
     One = FORMAT_LIST_VALUE,
 #undef FORMAT_LIST_VALUE
 #define FORMAT_LIST_VALUE 2
-    Two = FORMAT_LIST_VALUE,
+    Two = FORMAT_LIST_VALUE
 #undef FORMAT_LIST_VALUE
 };
 
@@ -7190,7 +7190,7 @@ constexpr int kValues[] = {
     FORMAT_LIST_VALUE,
 #undef FORMAT_LIST_VALUE
 #define FORMAT_LIST_VALUE 2
-    FORMAT_LIST_VALUE,
+    FORMAT_LIST_VALUE
 #undef FORMAT_LIST_VALUE
 };
 
@@ -7212,7 +7212,7 @@ constexpr int kConditional[] = {
     FORMAT_LIST_VALUE,
 #undef FORMAT_LIST_VALUE
 #endif
-    5,
+    5
 };
 
 constexpr int kExpression = 1
@@ -7243,10 +7243,10 @@ constexpr int kNested[][2] = {
     {
 #define FORMAT_LIST_ARGUMENT 1
         FORMAT_LIST_ARGUMENT,
-        2,
+        2
 #undef FORMAT_LIST_ARGUMENT
     },
-    {3, 4},
+    {3, 4}
 };
 
 #if 0
@@ -7293,7 +7293,7 @@ namespace DirectiveBoundaries {
 #define FORMAT_TYPE_ENUM(name)   \
     enum class name : unsigned { \
         First,                   \
-        Second,                  \
+        Second                   \
     }
 FORMAT_TYPE_RECORD(Record);
 FORMAT_TYPE_CHOICE(Choice);
@@ -7348,7 +7348,7 @@ enum class Generated {
     FORMAT_SEMILESS_EMPTY(FORMAT_LIST_ENUM)
     FORMAT_SEMILESS_GENERATE(FORMAT_LIST_ENUM)
     FORMAT_SEMILESS_SINGLE(FORMAT_LIST_ENUM)
-    Last = 5,
+    Last = 5
 };
 
 constexpr int kValues[] = {
@@ -7358,7 +7358,7 @@ constexpr int kValues[] = {
     FORMAT_SEMILESS_GENERATE(FORMAT_LIST_ENTRY)
     FORMAT_SEMILESS_SINGLE(FORMAT_LIST_ENTRY)
 #undef FORMAT_LIST_ENTRY
-    5,
+    5
 };
 
 #define FORMAT_ITEM_LIST 6, 7,
@@ -7367,7 +7367,7 @@ constexpr int kBare[] = {
     0,
     FORMAT_ITEM_LIST
     FORMAT_ITEM_EMPTY
-    8,
+    8
 };
 
 constexpr int kBareFinal[] = {
@@ -7394,13 +7394,13 @@ constexpr int kConditional[] = {
 #else
     FORMAT_ITEM_LIST
 #endif
-    8,
+    8
 };
 
 #define FORMAT_ITEM_ENUM One, Two,
 enum class BareEnum {
     FORMAT_ITEM_ENUM
-    Last,
+    Last
 };
 
 enum class ConditionalEnum {
@@ -7409,17 +7409,17 @@ enum class ConditionalEnum {
 #else
     FORMAT_ITEM_ENUM
 #endif
-    Last,
+    Last
 };
 
 constexpr int kNested[][3] = {
     {
         FORMAT_ITEM_LIST
-        8,
+        8
     }, {
         FORMAT_ITEM_LIST
-        9,
-    },
+        9
+    }
 };
 
 constexpr int kNegative[] = {FORMAT_ITEM_LIST - 1};
@@ -7428,7 +7428,7 @@ constexpr const char* kText[] = {FORMAT_SEMILESS_TEXT() "y"};
 #define FORMAT_TYPE_GENERATED(name) \
     enum class name {               \
         FORMAT_ITEM_ENUM            \
-        Last,                       \
+        Last                        \
     }
 FORMAT_TYPE_GENERATED(MacroEnum);
 
@@ -8171,13 +8171,13 @@ void Emit() {
 enum Items {
     FORMAT_ITEM_VALUES
     FORMAT_ITEM_VALUES(tag)
-    Last,
+    Last
 };
 
 auto values = {
     FORMAT_ITEM_VALUES
     FORMAT_ITEM_VALUES(tag)
-    1,
+    1
 };
 
 Pack<FORMAT_ITEM_TYPES int, FORMAT_ITEM_TYPES(tag) Value> types;
@@ -8288,6 +8288,268 @@ template int value<int>;
 template double value<double>;
 extern template int value<int>;
 extern template double value<double>;
+
+}
+
+namespace UnconfiguredListFragments {
+
+enum Mixed {
+    First,
+    EXPAND_ENUM(MakeEntry)
+    Last,
+};
+
+enum Adjacent {
+    EXPAND_ENUM(FirstGroup)
+    EXPAND_ENUM(SecondGroup)
+    Last
+};
+
+enum Conditional {
+#if FIRST_GROUP
+    EXPAND_ENUM(FirstGroup)
+#else
+    EXPAND_ENUM(SecondGroup)
+#endif
+    Last,
+};
+
+auto fragments = Values{
+    EXPAND_VALUES(FirstGroup)
+    EXPAND_VALUES(SecondGroup)
+};
+
+auto mixedFragments = Values{
+    first,
+    EXPAND_VALUES(MiddleGroup)
+    last
+};
+
+auto nestedFragments = Values{
+    Values{
+        EXPAND_VALUES(FirstGroup)
+        EXPAND_VALUES(SecondGroup)
+    },
+    last
+};
+
+}
+
+namespace ListCommas {
+
+void Parameters(int first, int second, );
+
+using Arguments = Types<First, Second>;
+using OperatorArgument = Types<&Value::operator> >;
+
+template <class First, class Second>
+struct Parameters;
+
+void ConditionalParameters(
+#if FIRST_VALUE
+    int first,
+#endif
+);
+
+template <
+#if FIRST_VALUE
+    class First,
+#endif
+>
+struct ConditionalTemplate;
+
+using ConditionalTypes = Types<
+#if FIRST_VALUE
+    First,
+#else
+    Second,
+#endif
+>;
+
+enum WithoutComma {
+    First,
+    Last
+};
+
+enum WithComma {
+    First,
+    Last,
+};
+
+auto compactWithout = Values{first, second};
+auto compactWith = Values{first, second};
+auto nested = Values{Values{first, second}, Values{third, fourth}};
+auto records = Rows{{1, 2}, {3, 4}};
+auto compactComment = Values{first, second /* value */};
+auto multilineLiteral = Values{R"(first
+second)",};
+auto nestedMultilineLiteral = Values{Values{R"(first
+second)",},};
+
+auto multilineComment = Values{
+    first,
+    /* first
+second */
+};
+
+auto expandedChild = Values{
+    [] {
+        First();
+        Second();
+    },
+};
+
+auto expandedTemplateChild = Types<
+    decltype([] {
+        First();
+        Second();
+    }),
+>{};
+
+auto packedWithout =
+    Values{firstValue, secondValue, thirdValue, fourthValue, fifthValue, sixthValue, seventhValue, eighthValue};
+auto packedWith =
+    Values{firstValue, secondValue, thirdValue, fourthValue, fifthValue, sixthValue, seventhValue, eighthValue};
+
+auto commentedWithout = Values{
+    first,
+    second  // final value
+};
+
+auto commentedWith = Values{
+    first,
+    second,  // final value
+};
+
+auto bodiesWithout = Values{
+    [] {
+        First();
+        Second();
+    },
+    [] {
+        Third();
+        Fourth();
+    }
+};
+
+auto bodiesWith = Values{
+    [] {
+        First();
+        Second();
+    },
+    [] {
+        Third();
+        Fourth();
+    },
+};
+
+auto conditional = Values{
+#if FIRST_VALUE
+    first,
+#else
+    second
+#endif
+};
+
+void ConditionalArguments() {
+    Consume(
+#if FIRST_VALUE
+        first,
+#else
+        second,
+#endif
+    );
+}
+
+#define FORMAT_X_ITEMS(X) \
+    X(1)                  \
+    X(2)
+auto macroWithArguments = Values{
+#define FORMAT_X_VALUE(value) value,
+    FORMAT_X_ITEMS(FORMAT_X_VALUE)
+#undef FORMAT_X_VALUE
+};
+
+#define FORMAT_X_BARE_ITEMS \
+    FORMAT_X_VALUE(3)       \
+    FORMAT_X_VALUE(4)
+auto macroWithoutArguments = Values{
+#define FORMAT_X_VALUE(value) value,
+    FORMAT_X_BARE_ITEMS
+#undef FORMAT_X_VALUE
+};
+
+auto definitionsAfterComma = Values{
+    first,
+    second,
+#define FORMAT_AFTER_COMMA 1
+#undef FORMAT_AFTER_COMMA
+};
+
+auto definitionsWithoutComma = Values{
+    first,
+    second
+#define FORMAT_NO_COMMA 2
+#undef FORMAT_NO_COMMA
+};
+
+}
+
+namespace ItemCommentBoundaries {
+
+void Configured() {
+    FORMAT_ITEM_FIRST(value)  // completed item
+    FORMAT_ITEM_SECOND(value)
+    Consume();
+    FORMAT_ITEM_BARE  // completed bare item
+    Consume();
+    FORMAT_ITEM_FIRST(
+        first,  // argument continues
+        second
+    )
+    Consume();
+}
+void Unconfigured() {
+    UnconfiguredFirst(value)  // completed item
+    UnconfiguredSecond(value)
+    Consume();
+    UnconfiguredFirst(
+        first,  // argument continues
+        second
+    )
+    Consume();
+}
+
+}
+
+namespace UnbracedLinkage {
+
+extern "C" ns::Integer CatchException() {
+    try {
+        ThrowException();
+    } catch (const Error& error) {
+        return error.Value();
+    }
+    return 0;
+}
+extern "C++" ns::Value MakeValue() { return CreateValue(); }
+extern "C" const ns::Value* FindValue() noexcept { return nullptr; }
+extern "C" ns::Box<int> MakeBox() { return {}; }
+extern "C" ns::Value TryValue() try {
+    return CreateValue();
+} catch (...) {
+    return {};
+}
+extern "C" ns::Value ReadValue();
+
+extern "C" ns::Value externalValue;
+
+extern "C++" extern "C" ns::Value NestedLinkage() { return CreateValue(); }
+extern "C" {
+
+ns::Value BracedLinkage() { return CreateValue(); }
+
+}
 
 }
 

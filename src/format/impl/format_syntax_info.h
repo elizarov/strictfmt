@@ -335,7 +335,7 @@ enum class SyntaxNodeClass : std::uint64_t {
     CheckedPreprocessorDirective = 1ull << 43,
     EndifDirective = 1ull << 44,
     SupportedPreprocessorPlacement = 1ull << 45,
-    PreserveTrailingComma = 1ull << 46,
+    SingleLineTrailingComma = 1ull << 46,
     ConditionalFunctionHeader = 1ull << 47,
     LeadingStreamOperatorChain = 1ull << 48,
     ConditionalStreamOperatorChain = 1ull << 49,

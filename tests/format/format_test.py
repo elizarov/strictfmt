@@ -1337,7 +1337,7 @@ class FormatCommandTests(unittest.TestCase):
         self.assertIn("- kind: PreprocessorDirectiveElse\n", result.stdout)
         self.assertIn("- kind: PreprocessorDirectiveEndif\n", result.stdout)
 
-    def test_trailing_comma_normalization_follows_brace_list_layout(self) -> None:
+    def test_trailing_commas_are_removed_only_in_single_line_initializers(self) -> None:
         result = native_format(
             "--stdin",
             input_text=(
@@ -1354,7 +1354,7 @@ class FormatCommandTests(unittest.TestCase):
         self.assertEqual(
             "enum E {\n"
             "    A,\n"
-            "    B,\n"
+            "    B\n"
             "};\n"
             "\n"
             "enum F {\n"
@@ -1368,7 +1368,7 @@ class FormatCommandTests(unittest.TestCase):
             "\n"
             "auto long_values = Values{\n"
             "    firstValueWithAnExtremelyLongNameForTrailingCommaNormalization,\n"
-            "    secondValueWithAnExtremelyLongNameForTrailingCommaNormalization,\n"
+            "    secondValueWithAnExtremelyLongNameForTrailingCommaNormalization\n"
             "};\n",
             result.stdout,
         )
@@ -1402,7 +1402,7 @@ class FormatCommandTests(unittest.TestCase):
                 self.assertIn(", );", outputs[1])
                 self.assertEqual(outputs[0], outputs[1].replace(", );", ");"))
 
-    def test_enum_macro_call_final_item_keeps_trailing_comma(self) -> None:
+    def test_enum_macro_call_final_item_does_not_gain_a_comma(self) -> None:
         result = native_format(
             "--stdin",
             input_text=(
@@ -1415,7 +1415,7 @@ class FormatCommandTests(unittest.TestCase):
         self.assertEqual(
             "#define DECLARE_ENUM(ItemsMacro) \\\n"
             "    enum G {                     \\\n"
-            "        ItemsMacro(EMIT),        \\\n"
+            "        ItemsMacro(EMIT)         \\\n"
             "    };\n",
             result.stdout,
         )

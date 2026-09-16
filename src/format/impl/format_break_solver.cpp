@@ -646,18 +646,13 @@ private:
         Merge(result, tokenResult);
     }
 
-    static void AppendTrailingComma(NodeResult& result) {
-        ++result.endColumn;
-        result.endLineHasText = true;
-    }
-
     NodeResult AddToken(NodeResult result, const FormatBreakToken& token) {
         AppendToken(result, token);
         return result;
     }
 
     NodeResults SolveListItemWithSuffixAlternatives(
-        const FormatBreakListItem& listItem, int column, int indentLevel, bool lineHasText, bool trailingComma = false
+        const FormatBreakListItem& listItem, int column, int indentLevel, bool lineHasText
     ) {
         if (listItem.node == nullptr) {
             return {};
@@ -670,9 +665,6 @@ private:
             if (FormatBreakTokenKind(listItem.separator) == PrintTokenKind::Known) {
                 AppendToken(item, listItem.separator);
             }
-            if (trailingComma) {
-                AppendTrailingComma(item);
-            }
             if (IsCommentToken(FormatBreakTokenKind(listItem.trailingComment))) {
                 AppendToken(item, listItem.trailingComment);
             }
@@ -682,18 +674,15 @@ private:
         return alternatives;
     }
 
-    NodeResult SolveListItemWithSuffix(
-        const FormatBreakListItem& listItem, int column, int indentLevel, bool lineHasText, bool trailingComma = false
-    ) {
+    NodeResult
+        SolveListItemWithSuffix(const FormatBreakListItem& listItem, int column, int indentLevel, bool lineHasText)
+    {
         if (listItem.node != nullptr) {
             std::optional<NodeResult> compact =
                 SolveCompactPhysicalLine(*listItem.node, column, indentLevel, lineHasText, true);
             if (compact) {
                 if (FormatBreakTokenKind(listItem.separator) == PrintTokenKind::Known) {
                     AppendToken(*compact, listItem.separator);
-                }
-                if (trailingComma) {
-                    AppendTrailingComma(*compact);
                 }
                 if (IsCommentToken(FormatBreakTokenKind(listItem.trailingComment))) {
                     AppendToken(*compact, listItem.trailingComment);
@@ -706,9 +695,7 @@ private:
             }
         }
         NodeResult best;
-        for (const NodeResult& item : SolveListItemWithSuffixAlternatives(
-            listItem, column, indentLevel, lineHasText, trailingComma
-        )) {
+        for (const NodeResult& item : SolveListItemWithSuffixAlternatives(listItem, column, indentLevel, lineHasText)) {
             if (Better(item, best)) {
                 best = item;
             }
@@ -855,6 +842,7 @@ private:
             }
             if (
                 FormatBreakTokenKind(item.separator) == PrintTokenKind::Known &&
+                !FormatBreakHasSingleLineTrailingComma(node, index) &&
                 !AddCompactToken(result, item.separator, requireFit)
             ) {
                 return false;
@@ -913,7 +901,23 @@ private:
             DelimitedInlinePrefixRequiresOverflowOrBreak(node, prefix);
     }
 
-    NodeResults SolveDelimitedInlineItems(const FormatBreakNode& node, const NodeResult& result) {
+    void AppendDelimitedItemSuffix(NodeResult& result, const FormatBreakNode& node, size_t index, bool singleLineList) {
+        const auto& item = node.items[index];
+        const bool omitComma = singleLineList &&
+            result.extraLines == 0 &&
+            !FormatBreakHasTrailingComment(node, index) &&
+            FormatBreakHasSingleLineTrailingComma(node, index);
+        if (FormatBreakTokenKind(item.separator) == PrintTokenKind::Known && !omitComma) {
+            AppendToken(result, item.separator);
+        }
+        if (FormatBreakHasTrailingComment(node, index)) {
+            AppendToken(result, item.trailingComment);
+        }
+    }
+
+    NodeResults
+        SolveDelimitedInlineItems(const FormatBreakNode& node, const NodeResult& result, bool singleLineList = false)
+    {
         NodeResults current{result};
         for (size_t index = 0; index < node.items.size(); ++index) {
             const FormatBreakListItem& listItem = node.items[index];
@@ -928,12 +932,7 @@ private:
                         next,
                         SolveToken(listItem.node->token, prefix.endColumn, prefix.endIndentLevel, prefix.endLineHasText)
                     );
-                    if (FormatBreakTokenKind(listItem.separator) == PrintTokenKind::Known) {
-                        AppendToken(next, listItem.separator);
-                    }
-                    if (FormatBreakHasTrailingComment(node, index)) {
-                        AppendToken(next, listItem.trailingComment);
-                    }
+                    AppendDelimitedItemSuffix(next, node, index, singleLineList);
                     AddPrunedResult(nextByState, std::move(next));
                     continue;
                 }
@@ -946,12 +945,7 @@ private:
                         // is the only candidate that can satisfy the caller's single-line requirement.
                         NodeResult next = prefix;
                         Merge(next, *item);
-                        if (FormatBreakTokenKind(listItem.separator) == PrintTokenKind::Known) {
-                            AppendToken(next, listItem.separator);
-                        }
-                        if (FormatBreakHasTrailingComment(node, index)) {
-                            AppendToken(next, listItem.trailingComment);
-                        }
+                        AppendDelimitedItemSuffix(next, node, index, singleLineList);
                         AddPrunedResult(nextByState, std::move(next));
                         continue;
                     }
@@ -970,12 +964,7 @@ private:
                     }
                     NodeResult next = prefix;
                     Merge(next, item);
-                    if (FormatBreakTokenKind(listItem.separator) == PrintTokenKind::Known) {
-                        AppendToken(next, listItem.separator);
-                    }
-                    if (FormatBreakHasTrailingComment(node, index)) {
-                        AppendToken(next, listItem.trailingComment);
-                    }
+                    AppendDelimitedItemSuffix(next, node, index, singleLineList);
                     AddPrunedResult(nextByState, std::move(next));
                 }
             }
@@ -990,15 +979,29 @@ private:
     {
         NodeResult
             result{.valid = true, .endColumn = column, .endIndentLevel = indentLevel, .endLineHasText = lineHasText};
-        AddChoice(result, node.id, FormatBreakChoice::Compact, indentLevel);
         AppendToken(result, node.children[0]->token);
         if (FormatBreakHasLeadingTrailingComment(node)) {
             AppendToken(result, node.leadingTrailingComment);
         }
 
         NodeResults alternatives;
-        for (const NodeResult& candidate : SolveDelimitedInlineItems(node, result)) {
-            AddPrunedResult(alternatives, AddToken(candidate, node.children[1]->token));
+        for (NodeResult candidate : SolveDelimitedInlineItems(node, result, true)) {
+            AppendToken(
+                candidate, candidate.extraLines == 0 ? FormatBreakSingleLineCloseToken(node) : node.children[1]->token
+            );
+            bool keepComma = false;
+            if (candidate.extraLines > 0) {
+                for (size_t index = 0; index < node.items.size(); ++index) {
+                    keepComma = keepComma || FormatBreakHasSingleLineTrailingComma(node, index);
+                }
+            }
+            AddChoice(
+                candidate,
+                node.id,
+                keepComma ? FormatBreakChoice::CompactWithTrailingComma : FormatBreakChoice::Compact,
+                indentLevel
+            );
+            AddPrunedResult(alternatives, std::move(candidate));
         }
         SortPrunedResults(alternatives);
         return alternatives;
@@ -1082,13 +1085,8 @@ private:
         );
         for (size_t index = 0; index < node.items.size(); ++index) {
             const FormatBreakListItem& listItem = node.items[index];
-            NodeResult item = SolveListItemWithSuffix(
-                listItem,
-                result.endColumn,
-                result.endIndentLevel,
-                result.endLineHasText,
-                node.splitTrailingCommaItem == index
-            );
+            NodeResult item =
+                SolveListItemWithSuffix(listItem, result.endColumn, result.endIndentLevel, result.endLineHasText);
             Merge(result, item);
             const bool hasNextItem = index + 1 < node.items.size();
             AppendListBreakAfterOptionalComment(
@@ -1618,7 +1616,8 @@ private:
 
     FormatBreakChoice ChoiceFor(const NodeResult& result, const FormatBreakNode& node) {
         const std::optional<FormatBreakChoice> choice = choiceHistory_.Find(result.choices, node.id);
-        return choice.value_or(FormatBreakChoice::Compact);
+        return choice == FormatBreakChoice::CompactWithTrailingComma ? FormatBreakChoice::Compact :
+            choice.value_or(FormatBreakChoice::Compact);
     }
 
     static bool IsBreakingChoice(FormatBreakChoice choice) { return choice != FormatBreakChoice::Compact; }
@@ -2704,9 +2703,6 @@ private:
             if (FormatBreakTokenKind(listItem.separator) == PrintTokenKind::Known) {
                 AppendToken(result, listItem.separator);
             }
-            if (node.splitTrailingCommaItem == index) {
-                AppendTrailingComma(result);
-            }
             if (FormatBreakHasTrailingComment(node, index)) {
                 AppendToken(result, listItem.trailingComment);
             }
@@ -3308,6 +3304,89 @@ private:
     }
 };
 
+std::vector<const FormatBreakNode*> ReachableLayoutNodes(const FormatBreakModel& model) {
+    std::vector<const FormatBreakNode*> result{model.root};
+    std::vector<bool> visited(model.NodeIdCount() + 1);
+    visited[model.root->id] = true;
+    const auto include = [&](const FormatBreakNode* node) {
+        if (node != nullptr && !visited[node->id]) {
+            visited[node->id] = true;
+            result.push_back(node);
+        }
+    };
+    for (size_t index = 0; index < result.size(); ++index) {
+        const auto& node = *result[index];
+        for (const auto* child : node.children) {
+            include(child);
+        }
+        for (const auto* operand : node.operands) {
+            include(operand);
+        }
+        for (const auto& item : node.items) {
+            include(item.node);
+        }
+    }
+    return result;
+}
+
+// Copy only mutable layout collections. Syntax, source tokens and string spellings remain immutable and shared.
+FormatBreakModel
+    CopyCommaLayoutModel(const FormatBreakModel& source, std::span<const FormatBreakNode* const> sourceNodes)
+{
+    FormatBreakModel result(nullptr);
+    result.nodeIdCount = source.NodeIdCount();
+    result.hasLayoutChoice = source.hasLayoutChoice;
+    std::vector<FormatBreakNode*> nodes(result.nodeIdCount + 1);
+    for (const auto* node : sourceNodes) {
+        result.nodes->push_back(*node);
+        nodes[node->id] = &result.nodes->back();
+    }
+    for (auto& node : *result.nodes) {
+        const auto copyChildren = [&](std::span<FormatBreakNode*> children) {
+            auto copied = result.nodePointers.Append(children);
+            for (auto*& child : copied) {
+                if (child != nullptr) {
+                    child = nodes[child->id];
+                }
+            }
+            return copied;
+        };
+        node.children = copyChildren(node.children);
+        node.operands = copyChildren(node.operands);
+        node.items = result.listItems.Append(node.items);
+        for (auto& item : node.items) {
+            if (item.node != nullptr) {
+                item.node = nodes[item.node->id];
+            }
+        }
+    }
+    result.root = nodes[source.root->id];
+    return result;
+}
+
+bool RemoveSelectedTrailingCommas(
+    FormatBreakModel& model, const FormatBreakSolution& solution, std::vector<int>& omittedNodes
+) {
+    bool changed = false;
+    for (auto& node : *model.nodes) {
+        if (solution.choices[node.id] != FormatBreakChoice::Compact) {
+            continue;
+        }
+        for (size_t index = 0; index < node.items.size(); ++index) {
+            if (!FormatBreakHasSingleLineTrailingComma(node, index)) {
+                continue;
+            }
+            if (index + 1 == node.items.size()) {
+                node.children.back()->token.spaceBefore = node.singleLineCloseSpaceBefore;
+            }
+            node.items[index].separator = {};
+            omittedNodes.push_back(node.id);
+            changed = true;
+        }
+    }
+    return changed;
+}
+
 }  // namespace
 
 FormatBreakSolution SolveFormatBreaks(
@@ -3322,11 +3401,45 @@ FormatBreakSolution SolveFormatBreaks(
     if (!model.root) {
         return solution;
     }
-    Solver solver(config, model, indentWidth, breakLineSuffixWidth);
-    NodeResult result = solver.Solve(*model.root, startColumn, indentLevel, startColumn > indentLevel * indentWidth);
-    if (!result.valid) {
-        return solution;
-    }
     const size_t choiceCount = model.NodeIdCount() + 1;
-    return FormatChoiceHistory::Materialize(result.choices, choiceCount);
+    std::optional<FormatBreakModel> commaModel;
+    std::vector<int> omittedNodes;
+    for (;;) {
+        const FormatBreakModel& current = commaModel ? *commaModel : model;
+        Solver solver(config, current, indentWidth, breakLineSuffixWidth);
+        NodeResult result =
+            solver.Solve(*current.root, startColumn, indentLevel, startColumn > indentLevel * indentWidth);
+        if (!result.valid) {
+            return {};
+        }
+        solution = FormatChoiceHistory::Materialize(result.choices, choiceCount);
+        // A fitting flat result already minimizes overflow, expansion cost and line count.
+        if (result.extraLines == 0 && !FormatCandidateOrder(config.columnLimit).HasOverflow(result)) {
+            break;
+        }
+        if (!commaModel) {
+            const auto nodes = ReachableLayoutNodes(model);
+            bool removesComma = false;
+            for (const auto* node : nodes) {
+                if (solution.choices[node->id] != FormatBreakChoice::Compact) {
+                    continue;
+                }
+                for (size_t index = 0; index < node->items.size(); ++index) {
+                    removesComma = removesComma || FormatBreakHasSingleLineTrailingComma(*node, index);
+                }
+            }
+            if (!removesComma) {
+                break;
+            }
+            commaModel = CopyCommaLayoutModel(model, nodes);
+        }
+        // Removing a comma can make a competing expanded layout cheaper. Settle that choice before lowering.
+        // Each further solve permanently removes at least one source comma; no parsing or recursive retry occurs.
+        if (!RemoveSelectedTrailingCommas(*commaModel, solution, omittedNodes)) {
+            break;
+        }
+    }
+    std::sort(omittedNodes.begin(), omittedNodes.end());
+    solution.omittedTrailingCommaNodes = std::move(omittedNodes);
+    return solution;
 }

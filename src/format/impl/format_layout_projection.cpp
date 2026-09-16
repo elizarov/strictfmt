@@ -235,7 +235,7 @@ private:
         const auto selected = [&](const FormatBreakToken& token) {
             return token.token != nullptr && selected_.Contains(token.token->node);
         };
-        if (selected(node.token) || selected(node.leadingTrailingComment) || selected(node.sourceTrailingComma)) {
+        if (selected(node.token) || selected(node.leadingTrailingComment)) {
             return true;
         }
         for (const auto& op : node.operators) {
@@ -374,9 +374,6 @@ private:
             const auto& item = source.items[index];
             auto* value = item.node == nullptr ? nullptr : Project(*item.node);
             auto separator = Token(item.separator);
-            if (source.splitTrailingCommaItem == index && (!closeSelected || !openSelected)) {
-                separator = Token(source.sourceTrailingComma);
-            }
             auto comment = Token(item.trailingComment);
             if (value == nullptr && separator.token == nullptr && comment.token == nullptr) {
                 continue;
@@ -398,7 +395,6 @@ private:
                 !closeSelected ||
                 (delimiters.size() > 1 && delimiters[1]->token.contextOnly)
             ) {
-                node->splitTrailingCommaItem.reset();
                 node->blankLineBeforeClose = false;
             }
             model_.hasLayoutChoice = true;

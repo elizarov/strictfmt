@@ -64,6 +64,10 @@ inline bool PrintTokenSyntaxHasClass(const PrintToken& token, SyntaxNodeClass sy
     return (token.syntaxClasses & static_cast<std::uint64_t>(syntaxNodeClass)) != 0;
 }
 
+inline bool PrintTokenIsSingleLineTrailingComma(const PrintToken& token) {
+    return token.node != nullptr && SyntaxNodeHasClass(*token.node, SyntaxNodeClass::SingleLineTrailingComma);
+}
+
 inline bool PrintTokenSyntaxPathContains(const PrintToken& token, const SyntaxNode* node) {
     for (const SyntaxNode* cursor = token.node; cursor != nullptr; cursor = cursor->parent) {
         if (cursor == node) {

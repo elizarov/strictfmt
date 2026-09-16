@@ -152,34 +152,6 @@ bool HasSeparatedListAncestor(const SyntaxNode* node) {
     return false;
 }
 
-const SyntaxNode* BraceListTerminalCommaOpen(const PrintToken& token) {
-    if (
-        token.kind != PrintTokenKind::Known ||
-        token.syntaxKind != SyntaxNodeKind::Comma ||
-        token.node == nullptr ||
-        token.node->parent == nullptr ||
-        !SyntaxNodeHasClass(*token.node->parent, SyntaxNodeClass::AllowedListPreprocessorContainer)
-    ) {
-        return nullptr;
-    }
-    const SyntaxNode* open = nullptr;
-    bool afterComma = false;
-    for (const SyntaxNode* child : token.node->parent->children) {
-        if (child != nullptr && child->kind == SyntaxNodeKind::LeftBrace) {
-            open = child;
-        }
-        if (child == token.node) {
-            afterComma = true;
-            continue;
-        }
-        if (!afterComma || child == nullptr || SyntaxNodeHasClass(*child, SyntaxNodeClass::Trivia)) {
-            continue;
-        }
-        return child->kind == SyntaxNodeKind::RightBrace ? open : nullptr;
-    }
-    return nullptr;
-}
-
 bool IsFormatterOwnedValue(const SyntaxNode& node) {
     if (
         node.kind == SyntaxNodeKind::ConditionalExpression ||
@@ -573,7 +545,6 @@ private:
         bool previousStringLike = false;
         bool hasTemplateHeader = false;
         bool hasTemplateDeclaredEntity = false;
-        bool omittedTerminalComma = false;
         const int availableWidth = config_.columnLimit - CurrentColumn();
         for (const PrintToken& token : pendingTokens_) {
             if (
@@ -586,6 +557,9 @@ private:
                 return false;
             }
             if (token.containsSourceLineBreak) {
+                return false;
+            }
+            if (PrintTokenIsSingleLineTrailingComma(token)) {
                 return false;
             }
             if (token.inMacroValue || token.macroDefinition != nullptr) {
@@ -607,16 +581,7 @@ private:
             if (token.stringLike && previousStringLike) {
                 return false;
             }
-            const SyntaxNode* terminalCommaOpen = BraceListTerminalCommaOpen(token);
-            const bool ownsBraceList = terminalCommaOpen != nullptr &&
-                std::any_of(pendingTokens_.begin(), pendingTokens_.end(), [&](const PrintToken& candidate) {
-                    return candidate.node == terminalCommaOpen;
-                });
-            if (ownsBraceList) {
-                omittedTerminalComma = true;
-                continue;
-            }
-            if (token.spaceBefore && hasText && !omittedTerminalComma) {
+            if (token.spaceBefore && hasText) {
                 ++width;
             }
             const int tokenWidth = FormatTokenWidth(token);
@@ -627,7 +592,6 @@ private:
             }
             hasText = hasText || tokenWidth > 0;
             previousStringLike = token.stringLike;
-            omittedTerminalComma = false;
         }
         if (hasTemplateHeader && (
             pendingTokens_.empty() ||
@@ -640,23 +604,12 @@ private:
     }
 
     void FlushPendingTokensCompact() {
-        bool omittedTerminalComma = false;
         for (const PrintToken& token : pendingTokens_) {
-            const SyntaxNode* terminalCommaOpen = BraceListTerminalCommaOpen(token);
-            const bool ownsBraceList = terminalCommaOpen != nullptr &&
-                std::any_of(pendingTokens_.begin(), pendingTokens_.end(), [&](const PrintToken& candidate) {
-                    return candidate.node == terminalCommaOpen;
-                });
-            if (ownsBraceList) {
-                omittedTerminalComma = true;
-                continue;
-            }
-            if (token.spaceBefore && !output_.State().atLineStart && !omittedTerminalComma) {
+            if (token.spaceBefore && !output_.State().atLineStart) {
                 Space();
             }
             auto tokenScope = output_.TokenScope(token, layoutTree_->FindOwner(token.node));
             Write(FormatTokenText(token));
-            omittedTerminalComma = false;
         }
         pendingTokens_.clear();
     }
@@ -1300,9 +1253,7 @@ private:
         const SyntaxNodeKind lineDirectiveKind = SyntaxNodeKindFromPreprocessorDirectiveLine(line);
         const bool isInclude = PrintTokenSyntaxHasClass(token, SyntaxNodeClass::IncludeDirective) ||
             SyntaxNodeKindHasClass(lineDirectiveKind, SyntaxNodeClass::IncludeDirective);
-        const std::optional<bool> conditionalComma = layoutTree_->Lists().ConditionalDirectiveComma(currentTokenIndex_);
-        const bool listConditional = conditionalComma.has_value();
-        const bool trailingListComma = conditionalComma.value_or(false);
+        const bool listConditional = layoutTree_->Lists().IsConditionalList(currentTokenIndex_);
         const bool closesConditionalFunctionHeader = (
             (token.node != nullptr && SyntaxNodeKindHasClass(token.node->kind, SyntaxNodeClass::EndifDirective)) ||
             token.syntaxKind == SyntaxNodeKind::PreprocessorDirectiveEndif ||
@@ -1360,14 +1311,8 @@ private:
         if (output_.State().lineHasText) {
             NewLine();
         }
-        const std::string outputLine =
-            listConditional && !token.structuredPreprocessor && listItemIndent ? FormatPreprocessorText(token.text, {
-                .payloadIndent = *listItemIndent,
-                .indentWidth = indentWidth_,
-                .terminalComma = !layoutTree_->Lists().IsFinalPreprocessorItem(currentTokenIndex_) ?
-                    FormatPreprocessorComma::Preserve :
-                    (trailingListComma ? FormatPreprocessorComma::Add : FormatPreprocessorComma::Remove),
-            }) : line;
+        const std::string outputLine = listConditional && !token.structuredPreprocessor && listItemIndent ?
+            FormatPreprocessorText(token.text, {.payloadIndent = *listItemIndent, .indentWidth = indentWidth_}) : line;
         output_.WriteVerbatim(outputLine);
         NewLine();
         if (closesConditionalFunctionHeader) {
@@ -1470,7 +1415,9 @@ private:
                 if (TryPrintPreprocessorListClose(token)) {
                     return;
                 }
-                BufferToken(token);
+                if (!TryPrintListBoundary(token, FormatListContinuationKind::Block)) {
+                    BufferToken(token);
+                }
                 if (
                     token.parentKind == SyntaxNodeKind::TemplateParameterList &&
                     token.grandParentKind == SyntaxNodeKind::TemplateDeclaration &&

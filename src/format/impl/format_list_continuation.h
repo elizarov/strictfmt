@@ -36,8 +36,7 @@ public:
         PlanPreprocessor(size_t index, std::span<const PrintToken> pending, int itemIndent);
     int ResolvePreprocessor();
     std::optional<int> PreprocessorIndent(const PrintToken& token) const;
-    std::optional<bool> ConditionalDirectiveComma(size_t index) const;
-    bool IsFinalPreprocessorItem(size_t index) const;
+    bool IsConditionalList(size_t index) const;
 
     std::optional<FormatListContinuationBreak>
         BoundaryFor(const PrintToken& token, FormatListContinuationKind kind) const;
