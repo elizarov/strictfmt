@@ -121,6 +121,7 @@ constexpr auto kSyntaxKindMappings = std::to_array<SyntaxKindMapping>({
     ),
     Kind(SyntaxNodeKind::IncludeRun, Bit(SyntaxNodeClass::Tree)),
     Tree(SyntaxNodeKind::MacroReplacementList, "macro_replacement_list"),
+    Tree(SyntaxNodeKind::MacroExpressionList, "macro_expression_item"),
     Tree(
         SyntaxNodeKind::Declaration,
         "declaration",
@@ -1084,6 +1085,8 @@ std::string_view SyntaxNodeKindName(SyntaxNodeKind kind) {
             return "IncludeRun";
         case SyntaxNodeKind::MacroReplacementList:
             return "MacroReplacementList";
+        case SyntaxNodeKind::MacroExpressionList:
+            return "MacroExpressionList";
         case SyntaxNodeKind::Declaration:
             return "Declaration";
         case SyntaxNodeKind::FieldDeclaration:

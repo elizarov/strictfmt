@@ -4746,3 +4746,17 @@ end
         value \
     ) + \
     Second(value)
+
+// Comma-separated replacement fragments expose element boundaries to the solver.
+#define FORMAT_FRAGMENT_COMPACT first, second
+#define FORMAT_FRAGMENT_TYPES namespace_name::String,namespace_name::Optional<namespace_name::Integer>,namespace_name::Optional<namespace_name::Boolean>,namespace_name::String
+#define FORMAT_FRAGMENT_NAMES "first_parameter_with_a_descriptive_name","second_parameter_with_a_descriptive_name","third_parameter_with_a_descriptive_name","fourth_parameter_with_a_descriptive_name"
+#define FORMAT_FRAGMENT_TRAILING FirstValueWithADeliberatelyLongName,SecondValueWithADeliberatelyLongName,ThirdValueWithADeliberatelyLongName,
+#define FORMAT_FRAGMENT_COMMENT first, /* first item */ \
+    second, \
+    /* next item */ \
+    third
+#define FORMAT_FRAGMENT_BLANK first, \
+    \
+    second
+#define FORMAT_FRAGMENT_NESTED Call(first,second),Type<First,Second>{first,second},(first,second)

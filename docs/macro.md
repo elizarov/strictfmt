@@ -304,6 +304,8 @@ A structured macro definition has two header-level forms. If the complete defini
 
 A replacement parsed as two or more top-level macro call units is a statement-like item sequence even when the calls have no separating commas or semicolons.
 
+Comma-separated replacement fragments use compact form when they fit, otherwise one item per line at the replacement indentation.
+
 ```cpp
 #define FORMAT_FIXTURE_ITEMS(X) \
     X(Alpha, "alpha")           \

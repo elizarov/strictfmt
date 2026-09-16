@@ -1228,6 +1228,16 @@ private:
                 return list;
             }
         }
+        if (
+            node.kind == SyntaxNodeKind::MacroExpressionList &&
+            std::any_of(node.children.begin(), node.children.end(), [](const SyntaxNode* child) {
+                return child != nullptr && child->kind == SyntaxNodeKind::Comma;
+            })
+        ) {
+            if (auto list = BuildCommaList(node, depth, 0, nullptr)) {
+                return list;
+            }
+        }
         if (node.kind == SyntaxNodeKind::MacroStatementSequence) {
             if (auto sequence = BuildStatementSequence(node, depth)) {
                 return sequence;
@@ -2996,13 +3006,21 @@ private:
             return nullptr;
         }
 
-        auto list = MakeNode(FormatBreakNodeKind::PrefixList, depth);
+        return BuildCommaList(node, depth, *prefixIndex + 1, BuildToken(*prefix, depth + 1));
+    }
+
+    FormatBreakNode* BuildCommaList(const SyntaxNode& node, int depth, size_t begin, FormatBreakNode* prefix) {
+        auto list = MakeNode(
+            prefix == nullptr ? FormatBreakNodeKind::StatementSequence : FormatBreakNodeKind::PrefixList, depth
+        );
         list->forceSplit = SyntaxNodeHasClass(node, SyntaxNodeClass::ContainsListPreprocessor);
-        list->children = StoreNodePointers({BuildToken(*prefix, depth + 1)});
+        if (prefix != nullptr) {
+            list->children = StoreNodePointers({prefix});
+        }
 
         ConstSyntaxChildList itemChildren;
         bool pendingBlankLine = false;
-        for (size_t index = *prefixIndex + 1; index < node.children.size(); ++index) {
+        for (size_t index = begin; index < node.children.size(); ++index) {
             const SyntaxNode* child = node.children[index];
             if (child == nullptr) {
                 continue;

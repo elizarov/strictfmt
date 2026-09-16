@@ -23,6 +23,7 @@ enum class SyntaxNodeKind : std::uint16_t {
     TranslationUnit,
     IncludeRun,
     MacroReplacementList,
+    MacroExpressionList,
     Declaration,
     FieldDeclaration,
     AliasDeclaration,

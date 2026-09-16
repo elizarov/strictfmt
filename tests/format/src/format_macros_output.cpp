@@ -1124,10 +1124,13 @@
     }
 
 // eats-layout-constructor/src/agl_execution/functions/lc_localize.cpp
-#define T_LC_LOCALIZE_SIGNATURE                                                                          \
-    asig::StringType, asig::Optional<asig::IntType>, asig::Optional<asig::ObjectType<>>, asig::Optional< \
-        asig::BooleanType                                                                                \
-    >, asig::Optional<asig::StringType>, asig::Optional<asig::StringType>
+#define T_LC_LOCALIZE_SIGNATURE         \
+    asig::StringType,                   \
+    asig::Optional<asig::IntType>,      \
+    asig::Optional<asig::ObjectType<>>, \
+    asig::Optional<asig::BooleanType>,  \
+    asig::Optional<asig::StringType>,   \
+    asig::Optional<asig::StringType>
 
 // eats-layout-constructor/src/utils/json/postgres.hpp
 #define CODEGEN_TO_PG_JSONB(codegen_type)                                                         \
@@ -2849,7 +2852,21 @@
 
 // market-link-fixer/src/lib/constants.hpp
 #define PERFORMACE_PARAMS_RAW \
-    "utm_source_service", "clid", "src_pof", "icookie", "baobab_event_id", "wprid", "ysclid", "vsclid", "utm_source", "utm_medium", "utm_campaign", "utm_content", "utm_term", "yclid", "ybaip"
+    "utm_source_service",     \
+    "clid",                   \
+    "src_pof",                \
+    "icookie",                \
+    "baobab_event_id",        \
+    "wprid",                  \
+    "ysclid",                 \
+    "vsclid",                 \
+    "utm_source",             \
+    "utm_medium",             \
+    "utm_campaign",           \
+    "utm_content",            \
+    "utm_term",               \
+    "yclid",                  \
+    "ybaip"
 
 // market-link-fixer/src/lib/helpers.hpp
 #define RETURN_IF_HAS_VALUE(optional) \
@@ -3788,9 +3805,11 @@
 #define KCR_CERT_STATUS_UNKNOWN KCR_BASE + 0x00000402
 
 // stq-agent/src/models/stq_shard.cpp
-#define ETA_UPDATE_WITH_DUP(val)                                                                  \
-    ::stq_agent::common::names::mongo::stq::kEta, (val), ::stq_agent::common::names::mongo::stq:: \
-        kInfoWithEta, (GetEtaWithInfo(val))
+#define ETA_UPDATE_WITH_DUP(val)                          \
+    ::stq_agent::common::names::mongo::stq::kEta,         \
+    (val),                                                \
+    ::stq_agent::common::names::mongo::stq::kInfoWithEta, \
+    (GetEtaWithInfo(val))
 
 // subvention-schedule/src/helpers/exceptions.cpp
 #define RETHROW_IF_NEEDED(do_rethrow) \
@@ -5092,3 +5111,28 @@ Name {                                \
         Second            \
     }
 #define FORMAT_CONTINUED_EXPRESSION(value) First(value) + Second(value)
+
+// Comma-separated replacement fragments expose element boundaries to the solver.
+#define FORMAT_FRAGMENT_COMPACT first, second
+#define FORMAT_FRAGMENT_TYPES                          \
+    namespace_name::String,                            \
+    namespace_name::Optional<namespace_name::Integer>, \
+    namespace_name::Optional<namespace_name::Boolean>, \
+    namespace_name::String
+#define FORMAT_FRAGMENT_NAMES                   \
+    "first_parameter_with_a_descriptive_name",  \
+    "second_parameter_with_a_descriptive_name", \
+    "third_parameter_with_a_descriptive_name",  \
+    "fourth_parameter_with_a_descriptive_name"
+#define FORMAT_FRAGMENT_TRAILING \
+    FirstValueWithADeliberatelyLongName, SecondValueWithADeliberatelyLongName, ThirdValueWithADeliberatelyLongName,
+#define FORMAT_FRAGMENT_COMMENT \
+    first, /* first item */     \
+    second,                     \
+    /* next item */             \
+    third
+#define FORMAT_FRAGMENT_BLANK \
+    first,                    \
+                              \
+    second
+#define FORMAT_FRAGMENT_NESTED Call(first, second), Type<First, Second>{first, second}, (first, second)
