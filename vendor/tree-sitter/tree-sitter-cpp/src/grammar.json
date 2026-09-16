@@ -24857,42 +24857,50 @@
         "type": "CHOICE",
         "members": [
           {
-            "type": "SEQ",
-            "members": [
-              {
-                "type": "REPEAT1",
-                "content": {
-                  "type": "SYMBOL",
-                  "name": "attribute_specifier"
+            "type": "PREC_DYNAMIC",
+            "value": 1,
+            "content": {
+              "type": "SEQ",
+              "members": [
+                {
+                  "type": "REPEAT1",
+                  "content": {
+                    "type": "SYMBOL",
+                    "name": "attribute_specifier"
+                  }
+                },
+                {
+                  "type": "REPEAT",
+                  "content": {
+                    "type": "SYMBOL",
+                    "name": "type_qualifier"
+                  }
                 }
-              },
-              {
-                "type": "REPEAT",
-                "content": {
-                  "type": "SYMBOL",
-                  "name": "type_qualifier"
-                }
-              }
-            ]
+              ]
+            }
           },
           {
-            "type": "SEQ",
-            "members": [
-              {
-                "type": "REPEAT",
-                "content": {
-                  "type": "SYMBOL",
-                  "name": "attribute_specifier"
+            "type": "PREC_DYNAMIC",
+            "value": 1,
+            "content": {
+              "type": "SEQ",
+              "members": [
+                {
+                  "type": "REPEAT",
+                  "content": {
+                    "type": "SYMBOL",
+                    "name": "attribute_specifier"
+                  }
+                },
+                {
+                  "type": "REPEAT1",
+                  "content": {
+                    "type": "SYMBOL",
+                    "name": "type_qualifier"
+                  }
                 }
-              },
-              {
-                "type": "REPEAT1",
-                "content": {
-                  "type": "SYMBOL",
-                  "name": "type_qualifier"
-                }
-              }
-            ]
+              ]
+            }
           },
           {
             "type": "SEQ",
@@ -24917,17 +24925,21 @@
       }
     },
     "_function_exception_specification": {
-      "type": "CHOICE",
-      "members": [
-        {
-          "type": "SYMBOL",
-          "name": "noexcept"
-        },
-        {
-          "type": "SYMBOL",
-          "name": "throw_specifier"
-        }
-      ]
+      "type": "PREC_DYNAMIC",
+      "value": 1,
+      "content": {
+        "type": "CHOICE",
+        "members": [
+          {
+            "type": "SYMBOL",
+            "name": "noexcept"
+          },
+          {
+            "type": "SYMBOL",
+            "name": "throw_specifier"
+          }
+        ]
+      }
     },
     "_function_attributes_end": {
       "type": "PREC_RIGHT",

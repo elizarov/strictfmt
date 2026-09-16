@@ -2478,16 +2478,18 @@ module.exports = grammar(C, {
       optional($._function_attributes_end),
     ),
 
+    // Known function qualifiers anchor a following unknown annotation to the
+    // declarator rather than splitting the header into unrelated class items.
     _function_attributes_start: $ => prec(1, choice(
-      seq(repeat1($.attribute_specifier), repeat($.type_qualifier)),
-      seq(repeat($.attribute_specifier), repeat1($.type_qualifier)),
+      prec.dynamic(1, seq(repeat1($.attribute_specifier), repeat($.type_qualifier))),
+      prec.dynamic(1, seq(repeat($.attribute_specifier), repeat1($.type_qualifier))),
       seq(repeat($.attribute_specifier), repeat1($.function_suffix_macro)),
     )),
 
-    _function_exception_specification: $ => choice(
+    _function_exception_specification: $ => prec.dynamic(1, choice(
       $.noexcept,
       $.throw_specifier,
-    ),
+    )),
 
     _function_attributes_end: $ => prec.right(seq(
       optional($.gnu_asm_expression),

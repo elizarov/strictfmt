@@ -5325,3 +5325,48 @@ FORMAT_DECLARATOR_MODIFIER UNKNOWN_MODIFIER(tag) ns::String Declare(int value);
 FORMAT_DECLARATOR_MODIFIER UNKNOWN_MODIFIER [[nodiscard]] ns::String Annotated(int value);
 };
 }
+
+// Recognized function qualifiers anchor unknown suffix annotations.
+struct QualifiedAnnotatedMethods {
+Value Get() const UNKNOWN_ANNOTATION;
+Value Get() volatile UNKNOWN_ANNOTATION;
+Value Get() const noexcept UNKNOWN_ANNOTATION;
+Value Get() const & UNKNOWN_ANNOTATION;
+Value Get() const & noexcept UNKNOWN_ANNOTATION;
+Value Get() const && noexcept(flag) UNKNOWN_ANNOTATION(reason(Nested(value)));
+Value Get() const throw(Error) UNKNOWN_ANNOTATION;
+Value Get() const [[nodiscard]] UNKNOWN_ANNOTATION;
+};
+
+struct SplitQualifiedAnnotatedMethods {
+Value
+Get() const
+UNKNOWN_ANNOTATION;
+Value
+Get() volatile
+UNKNOWN_ANNOTATION;
+Value
+Get() const noexcept
+UNKNOWN_ANNOTATION;
+Value
+Get() const &
+UNKNOWN_ANNOTATION;
+Value
+Get() const & noexcept
+UNKNOWN_ANNOTATION;
+Value
+Get() const && noexcept(flag)
+UNKNOWN_ANNOTATION(reason(Nested(value)));
+Value
+Get() const throw(Error)
+UNKNOWN_ANNOTATION;
+Value
+Get() const [[nodiscard]]
+UNKNOWN_ANNOTATION;
+};
+
+// Exception specifications also keep ordinary constructor declarators intact.
+template<class T> class Guard {
+Guard() noexcept(kNothrowValueCtor);
+Guard(Guard&& rhs) noexcept(Traits<T>::value) : value_{rhs.value_}, saved_{Move(rhs.saved_)} {rhs.Dismiss();}
+};

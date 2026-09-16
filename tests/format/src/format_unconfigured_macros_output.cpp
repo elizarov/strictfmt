@@ -520,3 +520,15 @@ struct MixedModifiers {
     }
     API_EXPORT UNKNOWN_MODIFIER(tag) ns::String MethodDeclaration(int value);
 };
+
+// Suffix annotations preserve complete qualified method declarations.
+struct Borrower {
+    Value Get() const ANNOTATION;
+    Value Get() volatile ANNOTATION;
+    Value Get() const noexcept ANNOTATION;
+    Value Get() const & ANNOTATION;
+    Value Get() const & noexcept ANNOTATION;
+    Value Get() const && noexcept(flag) ANNOTATION(reason(Nested(value)));
+    Value Get() const throw (Error) ANNOTATION;
+    Value Get() const [[nodiscard]] ANNOTATION;
+};
