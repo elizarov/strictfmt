@@ -104,3 +104,18 @@ auto sum = (firstCondition + secondCondition /* sum */);
 (void)sum;
 }
 }
+
+// A parenthesized callee starts its chain before the first applied argument list.
+DEFINE_FIELDS(Record,(Integer,first_field)(String,second_field)(Integer,third_field)(String,fourth_field));
+DEFINE_FIELDS(Record,(Vector<Pair<int,Value>>,items)(bool,valid)(String,name));
+void ParenthesizedCallReceivers(){
+Consume((one)(two)(three));
+Consume((first_value_with_long_name)(second_value_with_long_name));
+Consume((first_value)(second_value)(third_value)(fourth_value));
+(callable)(first_argument)(second_argument)(third_argument);
+((callable))(first_argument)(second_argument);
+(Choose(first_option,second_option))(third_argument)(fourth_argument);
+(FirstFactory()(first_argument))(second_argument)(third_argument);
+(Choose([]{First();Second();}))(first_argument)(second_argument);
+callable(first_argument)(second_argument)(third_argument);
+}

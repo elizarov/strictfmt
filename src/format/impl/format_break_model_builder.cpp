@@ -767,17 +767,25 @@ private:
             while (end < children.size() && IsArgumentList(children[end])) {
                 ++end;
             }
-            if (end - begin < 2) {
+            FormatBreakNode* receiver = children[begin - 1];
+            const bool parenthesizedReceiver = receiver != nullptr &&
+                receiver->kind == FormatBreakNodeKind::Delimited &&
+                receiver->delimiterKind == FormatBreakDelimiterKind::Paren;
+            if (!parenthesizedReceiver && end - begin < 2) {
                 begin = end;
                 continue;
             }
 
-            auto receiver = MakeNode(FormatBreakNodeKind::Sequence, depth + 1);
-            receiver->children = StoreNodePointers({children[begin - 1], children[begin]});
+            size_t firstArgument = begin;
+            if (!parenthesizedReceiver) {
+                receiver = MakeNode(FormatBreakNodeKind::Sequence, depth + 1);
+                receiver->children = StoreNodePointers({children[begin - 1], children[begin]});
+                ++firstArgument;
+            }
 
-            auto operands = model_.nodePointers.Allocate(end - begin);
+            auto operands = model_.nodePointers.Allocate(end - firstArgument + 1);
             operands.front() = receiver;
-            std::copy(children.begin() + begin + 1, children.begin() + end, operands.begin() + 1);
+            std::copy(children.begin() + firstArgument, children.begin() + end, operands.begin() + 1);
 
             auto chain = MakeNode(FormatBreakNodeKind::Chain, depth);
             chain->chainKind = FormatBreakChainKind::CallApplication;

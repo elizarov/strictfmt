@@ -532,3 +532,16 @@ struct Borrower {
     Value Get() const throw (Error) ANNOTATION;
     Value Get() const [[nodiscard]] ANNOTATION;
 };
+
+// Tuple sequences use ordinary call-chain layout without preprocessing-token arguments.
+GENERATED_MEMBERS(
+    Record,
+    (Integer, first_field)
+        (String, second_field)(Vector<Pair<int, Value>>, items)(bool, valid)
+)
+DECLARE_METRICS(
+    Counters,
+    counters,
+    "counts",
+    (read, "Records read")(written, "Records written")(failed, "Failed records")
+)

@@ -328,7 +328,7 @@ auto result = Build(source)
 
 ### Repeated call applications
 
-Repeated call applications use the [member-call layouts](#member-calls), breaking before argument-list openers. The first complete call is the receiver; each following argument list is one chain item.
+Repeated call applications use the [member-call layouts](#member-calls), breaking before argument-list openers. The receiver is the parenthesized callee, if present, or the first complete call; each following argument list is one chain item.
 
 <!-- .cpp-format
 ColumnLimit: 32
@@ -358,6 +358,19 @@ void Configure() {
         (nextValue)
         (moreValue);
 }
+```
+
+<!-- .cpp-format
+ColumnLimit: 40
+-->
+```cpp
+DEFINE_FIELDS(
+    Record,
+    (Integer, first_field)
+        (String, second_field)
+        (Integer, third_field)
+        (String, fourth_field)
+);
 ```
 
 ### Ternaries
