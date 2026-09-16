@@ -950,7 +950,7 @@ private:
         std::vector<ConstSyntaxChildList> itemChildren;
         size_t callCount = 0;
         for (const SyntaxNode* child : replacement.children) {
-            if (child == nullptr || !ContainsSelected(*child)) {
+            if (child == nullptr || (!ContainsSelected(*child) && child->kind != SyntaxNodeKind::BlankLine)) {
                 continue;
             }
             if (child->kind == SyntaxNodeKind::MacroCallItem) {
@@ -979,8 +979,15 @@ private:
 
         auto sequence = MakeNode(FormatBreakNodeKind::StatementSequence, depth);
         sequence->forceSplit = true;
+        bool pendingBlankLine = false;
         for (const ConstSyntaxChildList& item : itemChildren) {
-            AppendListItem(*sequence, BuildSequenceFromPointers(item, depth + 1), false);
+            if (item.front()->kind == SyntaxNodeKind::BlankLine) {
+                pendingBlankLine = true;
+                continue;
+            }
+            const bool blankLineBefore = ShouldPreservePendingBlankLine(*sequence, pendingBlankLine, false);
+            AppendListItem(*sequence, BuildSequenceFromPointers(item, depth + 1), blankLineBefore);
+            pendingBlankLine = false;
         }
         return sequence;
     }

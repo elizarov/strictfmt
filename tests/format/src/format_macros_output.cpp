@@ -25,6 +25,7 @@
                                                                                                   \
     template <>                                                                                   \
     struct CppToSystemPg<converter::UserType> : CppToSystemPg<converter::PostgresType> {};        \
+                                                                                                  \
     namespace traits {                                                                            \
                                                                                                   \
     template <>                                                                                   \
@@ -176,6 +177,7 @@
 // cargo-pricing/src/internal/transform/transform_and_location.hpp
 #define CARGO_PRICING_TRANSFORM_AND_LOCATION(transform_name)                                               \
     Output transform_name(Output output, const Input& input);                                              \
+                                                                                                           \
     inline cargo_pricing::internal::transform::PathToTransformSourceFile Get##transform_name##Location() { \
         return cargo_pricing::internal::transform::BuildPathToTransformSouceFile(__FILE__);                \
     }
@@ -206,11 +208,13 @@
     const auto& cluster = deps.pg_cargo_sf->GetCluster();                                                            \
     const auto& amo_secdist = deps.extra.amo_secdist;                                                                \
     const auto& auth_url = cargo_sf::utils::GetAmoAuthUrl(deps);                                                     \
+                                                                                                                     \
     const auto& amo_domain_url = cargo_sf::utils::GetAmoCompanyDomainUrl(deps, domain);                              \
     const auto& amocrm_cargo_client = deps.extra.amocrm_cargo_component.GetClientFor(amo_domain_url.url);            \
     if (should_set_auth_at_start) {                                                                                  \
         request.authorization = cargo_sf::utils::GetAmoAuthTokenFromDb(cluster, amo_secdist, domain);                \
     }                                                                                                                \
+                                                                                                                     \
     try {                                                                                                            \
         return amocrm_cargo_client.HANDLER(request);                                                                 \
     } catch (const NAMESPACE::Response401&) {                                                                        \
@@ -514,12 +518,14 @@
     const auto& cluster = deps.pg_delivery_bpm->GetCluster();                                             \
     const auto& amo_secdist = deps.extra.amo_secdist;                                                     \
     const auto& auth_url = delivery_bpm::utils::GetAmoAuthUrl(deps);                                      \
+                                                                                                          \
     const auto& amo_domain_url =                                                                          \
         delivery_bpm::utils::GetAmoCompanyDomainUrl(deps.config[taxi_config::AMOCRM_CARGO_URL], domain);  \
     const auto& amocrm_cargo_client = deps.extra.amocrm_cargo_component.GetClientFor(amo_domain_url.url); \
     if (should_set_auth_at_start) {                                                                       \
         request.authorization = delivery_bpm::utils::GetAmoAuthTokenFromDb(cluster, amo_secdist, domain); \
     }                                                                                                     \
+                                                                                                          \
     try {                                                                                                 \
         return amocrm_cargo_client.HANDLER(request);                                                      \
     } catch (const NAMESPACE::Response401&) {                                                             \
@@ -1006,8 +1012,10 @@
 #define EXTRA_VALUE(name, type)                                              \
     template <>                                                              \
     std::optional<type> ExtraValues::Get() const { return Get<type>(name); } \
+                                                                             \
     template <>                                                              \
     void ExtraValues::Set(const type& data) const { Set<type>(name, data); } \
+                                                                             \
     template <>                                                              \
     void ExtraValues::Delete(ExtraValues::Type<type>) const { DeleteValue(name); }
 
@@ -1378,6 +1386,7 @@
     class UPSERTER_NAME : public IUpserter {                                                                       \
     public:                                                                                                        \
         std::string GetMetricLabel() const override;                                                               \
+                                                                                                                   \
         bool Upsert(                                                                                               \
             storages::postgres::Transaction& trx, handlers::libraries::eats_place_info::PlaceLogbrokerData&& place \
         ) const override;                                                                                          \
@@ -1670,8 +1679,10 @@
         auto Introspect() { return std::tie(ATTRIBUTES_LIST(attributes)); }                                         \
         name() : fill_ops_({ATTRIBUTES_TO_FUNC_MAP(attributes)}) {}                                                 \
     };                                                                                                              \
+                                                                                                                    \
     inline name Parse(eats_report_storage::types::sync::Row&& row, ::formats::parse::To<name>) {                    \
         name result;                                                                                                \
+                                                                                                                    \
         auto fill_ops = result.GetFillOps();                                                                        \
         for (auto& [field, fill_op] : fill_ops) {                                                                   \
             if (row.HasMember(field)) {                                                                             \
@@ -2604,6 +2615,7 @@
 // market-buybox/src/common/log_helpers/declare_log_helpers.hpp
 #define DECLARE_LOG_HELPERS(type)            \
     std::string ToString(const type& value); \
+                                             \
     ::logging::LogHelper& operator<<(::logging::LogHelper& lh, const type& value);
 
 // market-buybox/src/common/log_helpers/declare_log_helpers.hpp
@@ -2613,6 +2625,7 @@
         WriteToStream(value, builder);        \
         return builder.GetString();           \
     }                                         \
+                                              \
     ::logging::LogHelper& operator<<(::logging::LogHelper& lh, const type& value) { return lh << ToString(value); }
 
 // market-category-storage/src/util/logger.hpp
@@ -2661,10 +2674,13 @@
     struct p_module {                                                                                    \
         I_MDA_METRICS_DEFINE_FIELDS(p_seq)                                                               \
     };                                                                                                   \
+                                                                                                         \
     [[maybe_unused]] inline void DumpMetric(::utils::statistics::Writer& writer, const p_module& stat) { \
         I_MDA_METRICS_GENERATE_DUMPING(p_seq)                                                            \
     }                                                                                                    \
+                                                                                                         \
     [[maybe_unused]] inline void ResetMetric(p_module& stat) { I_MDA_METRICS_GENERATE_RESETTING(p_seq) } \
+                                                                                                         \
     inline const ::utils::statistics::MetricTag<p_module> p_variable{mda::metrics::CreateMetricPath(p_tag)};
 
 // market-delivery-actualizer/src/utils/metrics.hpp
@@ -2672,23 +2688,29 @@
     struct p_module {                                                                                    \
         I_MDA_METRICS_DEFINE_FIELDS(p_seq)                                                               \
     };                                                                                                   \
+                                                                                                         \
     [[maybe_unused]] inline void                                                                         \
         p_module##_DumpMetricImpl(::utils::statistics::Writer& writer, const p_module& stat)             \
     {                                                                                                    \
         I_MDA_METRICS_GENERATE_DUMPING(p_seq)                                                            \
     }                                                                                                    \
+                                                                                                         \
     [[maybe_unused]] inline void p_module##_ResetMetricImpl(p_module& stat) { I_MDA_METRICS_GENERATE_RESETTING(p_seq) } \
+                                                                                                         \
     [[maybe_unused]] inline void DumpMetric(::utils::statistics::Writer& writer, const p_module& stat) { \
         p_module##_DumpMetricImpl(writer, stat);                                                         \
     }                                                                                                    \
+                                                                                                         \
     [[maybe_unused]] inline void ResetMetric(p_module& stat) { p_module##_ResetMetricImpl(stat); }
 
 // market-delivery-actualizer/src/utils/metrics.hpp
 #define I_MDA_CREATE_INHERITED_METRIC_STRUCT(p_base_module, p_module)                                    \
     struct p_module : public p_base_module {};                                                           \
+                                                                                                         \
     [[maybe_unused]] inline void DumpMetric(::utils::statistics::Writer& writer, const p_module& stat) { \
         p_base_module##_DumpMetricImpl(writer, stat);                                                    \
     }                                                                                                    \
+                                                                                                         \
     [[maybe_unused]] inline void ResetMetric(p_module& stat) { p_base_module##_ResetMetricImpl(stat); }
 
 // market-delivery-actualizer/src/utils/metrics.hpp
@@ -2784,10 +2806,13 @@
     struct p_module {                                                                                       \
         I_DYN2YT_METRICS_DEFINE_FIELDS(p_seq)                                                               \
     };                                                                                                      \
+                                                                                                            \
     [[maybe_unused]] inline void DumpMetric(::utils::statistics::Writer& writer, const p_module& stat) {    \
         I_DYN2YT_METRICS_GENERATE_DUMPING(p_tag, p_seq)                                                     \
     }                                                                                                       \
+                                                                                                            \
     [[maybe_unused]] inline void ResetMetric(p_module& stat) { I_DYN2YT_METRICS_GENERATE_RESETTING(p_seq) } \
+                                                                                                            \
     inline const ::utils::statistics::MetricTag<p_module> p_variable{dyn2yt::metrics::CreateMetricPath(p_tag)};
 
 // market-hide-offers-dyn2yt/src/utils/metrics.hpp
@@ -5042,3 +5067,28 @@ Name {                                \
         default:                      \
             break;                    \
     }
+
+// Blank continuation separators retain the ordinary source-item rules.
+#define FORMAT_BLANK_STEPS(x) \
+    First(x);                 \
+                              \
+    Second(x);
+#define FORMAT_BLANK_DECLARATIONS \
+    namespace generated {         \
+                                  \
+    struct First {};              \
+                                  \
+    struct Second {};             \
+                                  \
+    }
+#define FORMAT_BLANK_CALLS(X) \
+    X(First)                  \
+                              \
+    X(Second)
+#define FORMAT_BLANK_LIST \
+    {                     \
+        First,            \
+                          \
+        Second            \
+    }
+#define FORMAT_CONTINUED_EXPRESSION(value) First(value) + Second(value)

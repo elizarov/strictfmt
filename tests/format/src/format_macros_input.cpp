@@ -4719,3 +4719,30 @@ end
 
 // Outdented case-body braces retain the macro continuation indentation.
 #define FORMAT_MACRO_CASE_BODY(value) switch(value){case 0:{InitializeStep();UpdateStep();break;}default:break;}
+
+// Blank continuation separators retain the ordinary source-item rules.
+#define FORMAT_BLANK_STEPS(x) \
+    First(x); \
+    \
+    \
+    Second(x);
+#define FORMAT_BLANK_DECLARATIONS \
+    namespace generated { \
+        struct First {}; \
+        \
+        struct Second {}; \
+        \
+    }
+#define FORMAT_BLANK_CALLS(X) \
+    X(First) \
+    \
+    X(Second)
+#define FORMAT_BLANK_LIST \
+    {First, \
+     \
+     Second}
+#define FORMAT_CONTINUED_EXPRESSION(value) \
+    First( \
+        value \
+    ) + \
+    Second(value)

@@ -36,6 +36,9 @@ bool ContainsBlankLine(std::string_view source, uint32_t firstEnd, uint32_t seco
     bool sawNonWhitespace = false;
     for (size_t index = firstEnd; index < secondStart; ++index) {
         const char ch = source[index];
+        if (ch == '\\' && index + 1 < secondStart && (source[index + 1] == '\r' || source[index + 1] == '\n')) {
+            continue;
+        }
         if (ch == '\r' || ch == '\n') {
             ++lineBreaks;
             if (ch == '\r' && index + 1 < secondStart && source[index + 1] == '\n') {
