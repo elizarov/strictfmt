@@ -8681,3 +8681,13 @@ void Unconfigured() {
 }
 
 }
+
+void NestedConfiguredStatementCalls() {
+    CHECK(FORMAT_STATEMENT_DECLARATIONS(;, Error), "failure");
+    CHECK(FORMAT_STATEMENT_DECLARATIONS(return;, Error), "failure");
+    CHECK(FORMAT_STATEMENT_DECLARATIONS(auto value = Build(), Error), "failure");
+    CHECK(FORMAT_STATEMENT_DECLARATIONS(Throw();, Error) << message, "failure");
+    CHECK(WRAP(FORMAT_STATEMENT_DECLARATIONS(Consume();, Error)), "failure");
+    FORMAT_STATEMENT_DECLARATIONS(CHECK(FORMAT_STATEMENT_DECLARATIONS(;, Error)), Error);
+    const bool result = FORMAT_STATEMENT_DECLARATIONS(Consume();, Error) && enabled;
+}

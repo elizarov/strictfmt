@@ -185,7 +185,6 @@ function macroStatementSequence($, declarations = []) {
         ...C.grammar.rules._non_case_statement.members.filter(member => member.name !== 'expression_statement'),
         $.macro_empty_statement_argument,
         seq(alias($.macro_expression_without_semicolon, $.expression_statement), ';'),
-        alias($.macro_statement_argument_expression_statement, $.expression_statement),
       )),
     )),
     optional($.macro_call_statement_item),
@@ -737,8 +736,6 @@ module.exports = grammar(C, {
     [$._declarator, $.type_specifier, $.class_macro_call],
     [$.storage_class_specifier, $.preproc_declaration_modifier],
     [$.type_specifier, $.preproc_declaration_modifier],
-    [$.expression_statement, $.macro_statement_argument_expression_statement],
-    [$.call_expression, $.macro_statement_argument_call],
     [$._block_item, $.preproc_selected_else_if_body_item],
     [$.statement, $.preproc_selected_else_if_body_item],
     [$._block_item, $.statement, $.preproc_selected_else_if_body_item],
@@ -2960,7 +2957,6 @@ module.exports = grammar(C, {
       $.disabled_code_placeholder_statement,
       $.macro_function_definition,
       $.bare_macro_statement,
-      alias($.macro_statement_argument_expression_statement, $.expression_statement),
       $.block_macro_call_line_item,
       $.block_macro_call_statement_item,
       $.preproc_case_label_fragment,
@@ -3588,17 +3584,11 @@ module.exports = grammar(C, {
       optional(field('statement', choice(
         $.structured_statement_macro_argument,
         $.macro_call_statement_argument,
-        $._macro_statement_argument_expression,
         expressionArgument($),
       ))),
       optional(seq(',', optional($.argument_sequence))),
       ')',
     ),
-
-    macro_statement_argument_call: $ => prec.dynamic(10, prec.right(PREC.CALL + 8, seq(
-      field('function', $.statement_argument_macro_identifier),
-      field('arguments', $.macro_statement_argument_list),
-    ))),
 
     structured_statement_macro_argument: $ => prec.right(PREC.CALL + 10, seq(
       repeat1(choice($.declaration, $.expression_statement)),
@@ -3608,25 +3598,6 @@ module.exports = grammar(C, {
         $.assignment_expression,
         $.conditional_expression,
       )),
-    )),
-
-    macro_statement_argument_expression_statement: $ => prec.dynamic(20, prec(PREC.CALL + 10, seq(
-      $._macro_statement_argument_expression,
-      ';',
-    ))),
-
-    _macro_statement_argument_expression: $ => choice(
-      $.macro_statement_argument_call,
-      alias($.macro_statement_argument_stream_expression, $.binary_expression),
-    ),
-
-    macro_statement_argument_stream_expression: $ => prec.left(PREC.SHIFT, seq(
-      field('left', choice(
-        $.macro_statement_argument_call,
-        alias($.macro_statement_argument_stream_expression, $.binary_expression),
-      )),
-      field('operator', '<<'),
-      field('right', $.expression),
     )),
 
     macro_call_statement_argument: $ => choice(
@@ -3646,7 +3617,6 @@ module.exports = grammar(C, {
       $.macro_empty_statement_argument,
       alias($.macro_initialized_declaration_fragment, $.declaration),
       alias($.macro_declaration_without_semicolon, $.declaration),
-      alias($._macro_statement_argument_expression, $.expression_statement),
       alias($.macro_expression_without_semicolon, $.expression_statement),
       $.compound_statement,
       $.if_statement,
@@ -3794,6 +3764,7 @@ module.exports = grammar(C, {
     )),
 
     call_expression: $ => choice(
+      prec.dynamic(10, prec.right(PREC.CALL + 8, statementArgumentCall($))),
       prec.dynamic(1, callExpression($, $.expression)),
       prec(PREC.CALL, itemMacro($, true)),
       prec(PREC.CALL, seq(
@@ -4718,10 +4689,14 @@ function itemCall($) {
       field('function', $.preprocessor_argument_macro_identifier),
       field('arguments', $.preprocessing_token_argument_list),
     ),
-    seq(
-      field('function', $.statement_argument_macro_identifier),
-      field('arguments', $.macro_statement_argument_list),
-    ),
+    statementArgumentCall($),
+  );
+}
+
+function statementArgumentCall($) {
+  return seq(
+    field('function', $.statement_argument_macro_identifier),
+    field('arguments', $.macro_statement_argument_list),
   );
 }
 

@@ -1565,10 +1565,6 @@
             "named": true
           },
           {
-            "type": "macro_statement_argument_call",
-            "named": true
-          },
-          {
             "type": "preproc_defined",
             "named": true
           },
@@ -2071,6 +2067,10 @@
             "named": true
           },
           {
+            "type": "macro_statement_argument_list",
+            "named": true
+          },
+          {
             "type": "preprocessing_token_argument_list",
             "named": true
           }
@@ -2102,6 +2102,10 @@
           },
           {
             "type": "primitive_type",
+            "named": true
+          },
+          {
+            "type": "statement_argument_macro_identifier",
             "named": true
           }
         ]
@@ -4422,10 +4426,6 @@
         },
         {
           "type": "expression",
-          "named": true
-        },
-        {
-          "type": "macro_statement_argument_call",
           "named": true
         },
         {
@@ -7887,32 +7887,6 @@
     }
   },
   {
-    "type": "macro_statement_argument_call",
-    "named": true,
-    "fields": {
-      "arguments": {
-        "multiple": false,
-        "required": true,
-        "types": [
-          {
-            "type": "macro_statement_argument_list",
-            "named": true
-          }
-        ]
-      },
-      "function": {
-        "multiple": false,
-        "required": true,
-        "types": [
-          {
-            "type": "statement_argument_macro_identifier",
-            "named": true
-          }
-        ]
-      }
-    }
-  },
-  {
     "type": "macro_statement_argument_list",
     "named": true,
     "fields": {
@@ -7934,10 +7908,6 @@
           },
           {
             "type": "macro_call_statement_argument",
-            "named": true
-          },
-          {
-            "type": "macro_statement_argument_call",
             "named": true
           },
           {
@@ -18213,11 +18183,11 @@
   },
   {
     "type": "true",
-    "named": false
+    "named": true
   },
   {
     "type": "true",
-    "named": true
+    "named": false
   },
   {
     "type": "try",

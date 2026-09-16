@@ -7044,15 +7044,6 @@
           "name": "bare_macro_statement"
         },
         {
-          "type": "ALIAS",
-          "content": {
-            "type": "SYMBOL",
-            "name": "macro_statement_argument_expression_statement"
-          },
-          "named": true,
-          "value": "expression_statement"
-        },
-        {
           "type": "SYMBOL",
           "name": "block_macro_call_line_item"
         },
@@ -10185,6 +10176,35 @@
     "call_expression": {
       "type": "CHOICE",
       "members": [
+        {
+          "type": "PREC_DYNAMIC",
+          "value": 10,
+          "content": {
+            "type": "PREC_RIGHT",
+            "value": 23,
+            "content": {
+              "type": "SEQ",
+              "members": [
+                {
+                  "type": "FIELD",
+                  "name": "function",
+                  "content": {
+                    "type": "SYMBOL",
+                    "name": "statement_argument_macro_identifier"
+                  }
+                },
+                {
+                  "type": "FIELD",
+                  "name": "arguments",
+                  "content": {
+                    "type": "SYMBOL",
+                    "name": "macro_statement_argument_list"
+                  }
+                }
+              ]
+            }
+          }
+        },
         {
           "type": "PREC_DYNAMIC",
           "value": 1,
@@ -32171,10 +32191,6 @@
                     "name": "macro_call_statement_argument"
                   },
                   {
-                    "type": "SYMBOL",
-                    "name": "_macro_statement_argument_expression"
-                  },
-                  {
                     "type": "CHOICE",
                     "members": [
                       {
@@ -32242,35 +32258,6 @@
         }
       ]
     },
-    "macro_statement_argument_call": {
-      "type": "PREC_DYNAMIC",
-      "value": 10,
-      "content": {
-        "type": "PREC_RIGHT",
-        "value": 23,
-        "content": {
-          "type": "SEQ",
-          "members": [
-            {
-              "type": "FIELD",
-              "name": "function",
-              "content": {
-                "type": "SYMBOL",
-                "name": "statement_argument_macro_identifier"
-              }
-            },
-            {
-              "type": "FIELD",
-              "name": "arguments",
-              "content": {
-                "type": "SYMBOL",
-                "name": "macro_statement_argument_list"
-              }
-            }
-          ]
-        }
-      }
-    },
     "structured_statement_macro_argument": {
       "type": "PREC_RIGHT",
       "value": 25,
@@ -32316,92 +32303,6 @@
                   "name": "conditional_expression"
                 }
               ]
-            }
-          }
-        ]
-      }
-    },
-    "macro_statement_argument_expression_statement": {
-      "type": "PREC_DYNAMIC",
-      "value": 20,
-      "content": {
-        "type": "PREC",
-        "value": 25,
-        "content": {
-          "type": "SEQ",
-          "members": [
-            {
-              "type": "SYMBOL",
-              "name": "_macro_statement_argument_expression"
-            },
-            {
-              "type": "STRING",
-              "value": ";"
-            }
-          ]
-        }
-      }
-    },
-    "_macro_statement_argument_expression": {
-      "type": "CHOICE",
-      "members": [
-        {
-          "type": "SYMBOL",
-          "name": "macro_statement_argument_call"
-        },
-        {
-          "type": "ALIAS",
-          "content": {
-            "type": "SYMBOL",
-            "name": "macro_statement_argument_stream_expression"
-          },
-          "named": true,
-          "value": "binary_expression"
-        }
-      ]
-    },
-    "macro_statement_argument_stream_expression": {
-      "type": "PREC_LEFT",
-      "value": 9,
-      "content": {
-        "type": "SEQ",
-        "members": [
-          {
-            "type": "FIELD",
-            "name": "left",
-            "content": {
-              "type": "CHOICE",
-              "members": [
-                {
-                  "type": "SYMBOL",
-                  "name": "macro_statement_argument_call"
-                },
-                {
-                  "type": "ALIAS",
-                  "content": {
-                    "type": "SYMBOL",
-                    "name": "macro_statement_argument_stream_expression"
-                  },
-                  "named": true,
-                  "value": "binary_expression"
-                }
-              ]
-            }
-          },
-          {
-            "type": "FIELD",
-            "name": "operator",
-            "content": {
-              "type": "STRING",
-              "value": "<<"
-            }
-          },
-          {
-            "type": "FIELD",
-            "name": "right",
-            "content": {
-              "type": "SYMBOL",
-              "name": "expression"
             }
           }
         ]
@@ -32519,15 +32420,6 @@
                               "value": ";"
                             }
                           ]
-                        },
-                        {
-                          "type": "ALIAS",
-                          "content": {
-                            "type": "SYMBOL",
-                            "name": "macro_statement_argument_expression_statement"
-                          },
-                          "named": true,
-                          "value": "expression_statement"
                         }
                       ]
                     },
@@ -32709,15 +32601,6 @@
                               "value": ";"
                             }
                           ]
-                        },
-                        {
-                          "type": "ALIAS",
-                          "content": {
-                            "type": "SYMBOL",
-                            "name": "macro_statement_argument_expression_statement"
-                          },
-                          "named": true,
-                          "value": "expression_statement"
                         }
                       ]
                     },
@@ -32789,15 +32672,6 @@
           },
           "named": true,
           "value": "declaration"
-        },
-        {
-          "type": "ALIAS",
-          "content": {
-            "type": "SYMBOL",
-            "name": "_macro_statement_argument_expression"
-          },
-          "named": true,
-          "value": "expression_statement"
         },
         {
           "type": "ALIAS",
@@ -40415,14 +40289,6 @@
     [
       "type_specifier",
       "preproc_declaration_modifier"
-    ],
-    [
-      "expression_statement",
-      "macro_statement_argument_expression_statement"
-    ],
-    [
-      "call_expression",
-      "macro_statement_argument_call"
     ],
     [
       "_block_item",
