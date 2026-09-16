@@ -300,3 +300,11 @@ template<class T> struct TemplateContainer {
 template<class U> API_EXPORT Pair<T,U> Convert(U value){return Build(value);}
 };
 #define TEMPLATE_ACCESSOR(Name) template<class T> API_EXPORT Result<T> Name(T value){return Build(value);}
+
+// Known declaration prefixes can anchor additional unconfigured modifiers.
+API_EXPORT UNKNOWN_MODIFIER ns::String MixedDefinition(int value){return Convert(value);}
+API_EXPORT UNKNOWN_MODIFIER(tag) ns::String MixedDeclaration(int value);
+struct MixedModifiers {
+API_EXPORT UNKNOWN_MODIFIER inline ns::String Method(int value){return Convert(value);}
+API_EXPORT UNKNOWN_MODIFIER(tag) ns::String MethodDeclaration(int value);
+};

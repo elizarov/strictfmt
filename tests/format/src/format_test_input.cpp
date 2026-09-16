@@ -5313,3 +5313,15 @@ public:
 UNKNOWN_MODIFIER
 constexpr explicit SplitConstructor(T value) noexcept : value_(value) {}
 };
+
+// A configured declaration modifier anchors other unknown modifiers.
+namespace MixedDeclarationModifiers {
+FORMAT_DECLARATOR_MODIFIER UNKNOWN_MODIFIER ns::String Build(int value) {return Convert(value);}
+FORMAT_DECLARATOR_MODIFIER UNKNOWN_MODIFIER(tag) ns::String Declare(int value);
+FORMAT_DECLARATOR_MODIFIER(tag) UNKNOWN_MODIFIER ANOTHER_MODIFIER inline ns::String Inline(int value) {return Convert(value);}
+struct Container {
+FORMAT_DECLARATOR_MODIFIER UNKNOWN_MODIFIER ns::String Build(int value) {return Convert(value);}
+FORMAT_DECLARATOR_MODIFIER UNKNOWN_MODIFIER(tag) ns::String Declare(int value);
+FORMAT_DECLARATOR_MODIFIER UNKNOWN_MODIFIER [[nodiscard]] ns::String Annotated(int value);
+};
+}

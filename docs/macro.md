@@ -23,7 +23,7 @@ Function and macro calls share one argument grammar, accepting expressions, type
 
 Calls also fit type-only positions, including aliases and function parameters.
 
-An isolated identifier can supply a complete namespace or class item, or a template-list fragment, when it cannot form ordinary C++ syntax. Unknown modifiers are also accepted in class, struct, union, and template declaration headers, before constructor specifiers such as `explicit`, and after function declarators or alias names. Configuration may still be needed to attach an identifier to the surrounding code.
+An isolated identifier can supply a complete namespace or class item, or a template-list fragment, when it cannot form ordinary C++ syntax. Unknown modifiers are also accepted in class, struct, union, and template declaration headers, before constructor specifiers such as `explicit`, after configured declaration modifiers, and after function declarators or alias names. Configuration may still be needed to attach an identifier to the surrounding code.
 
 Enum items may omit separating commas. Calls recognized as enum or braced initializer list fragments occupy separate lines, whether configured or not. Calls can also form statements without a trailing semicolon or introduce a `{ ... }` body without configuration, as in tests or loops:
 

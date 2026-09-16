@@ -14956,8 +14956,29 @@
         "type": "SEQ",
         "members": [
           {
-            "type": "SYMBOL",
-            "name": "declaration_modifier_macro"
+            "type": "SEQ",
+            "members": [
+              {
+                "type": "SYMBOL",
+                "name": "declaration_modifier_macro"
+              },
+              {
+                "type": "REPEAT",
+                "content": {
+                  "type": "CHOICE",
+                  "members": [
+                    {
+                      "type": "SYMBOL",
+                      "name": "_unconfigured_modifier"
+                    },
+                    {
+                      "type": "SYMBOL",
+                      "name": "_declaration_modifiers"
+                    }
+                  ]
+                }
+              }
+            ]
           },
           {
             "type": "CHOICE",
@@ -15009,8 +15030,29 @@
         "type": "SEQ",
         "members": [
           {
-            "type": "SYMBOL",
-            "name": "declaration_modifier_macro"
+            "type": "SEQ",
+            "members": [
+              {
+                "type": "SYMBOL",
+                "name": "declaration_modifier_macro"
+              },
+              {
+                "type": "REPEAT",
+                "content": {
+                  "type": "CHOICE",
+                  "members": [
+                    {
+                      "type": "SYMBOL",
+                      "name": "_unconfigured_modifier"
+                    },
+                    {
+                      "type": "SYMBOL",
+                      "name": "_declaration_modifiers"
+                    }
+                  ]
+                }
+              }
+            ]
           },
           {
             "type": "CHOICE",
@@ -15112,8 +15154,29 @@
         "type": "SEQ",
         "members": [
           {
-            "type": "SYMBOL",
-            "name": "declaration_modifier_macro"
+            "type": "SEQ",
+            "members": [
+              {
+                "type": "SYMBOL",
+                "name": "declaration_modifier_macro"
+              },
+              {
+                "type": "REPEAT",
+                "content": {
+                  "type": "CHOICE",
+                  "members": [
+                    {
+                      "type": "SYMBOL",
+                      "name": "_unconfigured_modifier"
+                    },
+                    {
+                      "type": "SYMBOL",
+                      "name": "_declaration_modifiers"
+                    }
+                  ]
+                }
+              }
+            ]
           },
           {
             "type": "CHOICE",
@@ -15123,6 +15186,15 @@
                 "content": {
                   "type": "SYMBOL",
                   "name": "inline_method_definition"
+                },
+                "named": true,
+                "value": "function_definition"
+              },
+              {
+                "type": "ALIAS",
+                "content": {
+                  "type": "SYMBOL",
+                  "name": "qualified_type_function_definition"
                 },
                 "named": true,
                 "value": "function_definition"
@@ -38829,6 +38901,39 @@
     ],
     [
       "macro_declaration_without_semicolon"
+    ],
+    [
+      "_declaration_specifiers",
+      "macro_prefixed_field_declaration_item",
+      "_conditional_function_return_type_specifiers",
+      "_constructor_specifiers"
+    ],
+    [
+      "macro_prefixed_field_declaration_item",
+      "_constructor_specifiers"
+    ],
+    [
+      "_declaration_specifiers",
+      "macro_prefixed_field_declaration_item",
+      "_conditional_function_return_type_specifiers"
+    ],
+    [
+      "_declaration_specifiers",
+      "macro_prefixed_function_definition",
+      "macro_prefixed_declaration",
+      "_conditional_function_return_type_specifiers",
+      "_constructor_specifiers"
+    ],
+    [
+      "macro_prefixed_function_definition",
+      "macro_prefixed_declaration",
+      "_constructor_specifiers"
+    ],
+    [
+      "_declaration_specifiers",
+      "macro_prefixed_function_definition",
+      "macro_prefixed_declaration",
+      "_conditional_function_return_type_specifiers"
     ],
     [
       "type_specifier",

@@ -191,6 +191,13 @@ function macroStatementSequence($, declarations = []) {
   ));
 }
 
+function declarationMacroPrefix($) {
+  return seq(
+    $.declaration_modifier_macro,
+    repeat(choice($._unconfigured_modifier, $._declaration_modifiers)),
+  );
+}
+
 function declarationSpecifiers($) {
   return [
     repeat($._declaration_modifiers),
@@ -380,6 +387,12 @@ module.exports = grammar(C, {
     [$.abstract_reference_declarator, $.macro_argument_punctuator],
     [$.abstract_pointer_declarator, $.macro_argument_punctuator],
     [$.macro_declaration_without_semicolon],
+    [$._declaration_specifiers, $.macro_prefixed_field_declaration_item, $._conditional_function_return_type_specifiers, $._constructor_specifiers],
+    [$.macro_prefixed_field_declaration_item, $._constructor_specifiers],
+    [$._declaration_specifiers, $.macro_prefixed_field_declaration_item, $._conditional_function_return_type_specifiers],
+    [$._declaration_specifiers, $.macro_prefixed_function_definition, $.macro_prefixed_declaration, $._conditional_function_return_type_specifiers, $._constructor_specifiers],
+    [$.macro_prefixed_function_definition, $.macro_prefixed_declaration, $._constructor_specifiers],
+    [$._declaration_specifiers, $.macro_prefixed_function_definition, $.macro_prefixed_declaration, $._conditional_function_return_type_specifiers],
     [$.type_specifier, $._call_identifier, $._unconfigured_macro_item, $._unconfigured_modifier_identifier],
     [$._unconfigured_modifier_identifier, $._non_pointer_declarator],
     [$.template_declaration, $._constructor_specifiers],
@@ -1177,7 +1190,7 @@ module.exports = grammar(C, {
     ),
 
     macro_prefixed_function_definition: $ => prec(PREC.CALL + 6, seq(
-      $.declaration_modifier_macro,
+      declarationMacroPrefix($),
       choice(
         $.function_definition,
         alias($.qualified_type_function_definition, $.function_definition),
@@ -1188,7 +1201,7 @@ module.exports = grammar(C, {
     )),
 
     macro_prefixed_declaration: $ => prec(PREC.CALL + 6, seq(
-      $.declaration_modifier_macro,
+      declarationMacroPrefix($),
       choice(
         $.declaration,
         alias($.constructor_or_destructor_declaration, $.declaration),
@@ -1210,9 +1223,10 @@ module.exports = grammar(C, {
     ),
 
     macro_prefixed_field_declaration_item: $ => prec(PREC.CALL + 6, seq(
-      $.declaration_modifier_macro,
+      declarationMacroPrefix($),
       choice(
         alias($.inline_method_definition, $.function_definition),
+        alias($.qualified_type_function_definition, $.function_definition),
         $.field_declaration,
         alias($.constructor_or_destructor_definition, $.function_definition),
         alias($.constructor_or_destructor_declaration, $.declaration),
