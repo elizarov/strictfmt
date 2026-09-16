@@ -1012,7 +1012,7 @@ private:
             nullItem = nullItem->parent;
         }
         const SyntaxNode* level = nullItem->parent;
-        if (level == nullptr) {
+        if (level == nullptr || level->kind == SyntaxNodeKind::MacroStatementSequence) {
             return false;
         }
         const bool sourceItem = SyntaxNodeHasClass(*level, SyntaxNodeClass::SourceItemScope);

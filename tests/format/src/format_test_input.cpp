@@ -5249,3 +5249,26 @@ struct UnknownSuffixAnnotations {
 ns::CustomType value UNKNOWN_ANNOTATION;
 void Update() UNKNOWN_ANNOTATION;
 };
+
+namespace SingleStatementArguments {
+void Unconfigured() {
+CHECK(;, Error);
+CHECK(return;, Error);
+CHECK(return MakeValue();, Error);
+CHECK(Consume(value);, Error);
+CHECK(CHECK(;, Error), Error);
+CHECK(first, Consume(value);, last);
+CHECK(First(); Second();, Error);
+CHECK(; ;, Error);
+CHECK(return; /* completed statement */, Error);
+CHECK(Consume(value); // completed statement
+, Error);
+}
+void Configured() {
+FORMAT_STATEMENT_DECLARATIONS(;, Error);
+FORMAT_STATEMENT_DECLARATIONS(return;, Error);
+FORMAT_STATEMENT_DECLARATIONS(return MakeValue();, Error);
+FORMAT_STATEMENT_DECLARATIONS(Consume(value);, Error);
+FORMAT_STATEMENT_DECLARATIONS(First(); Second();, Error);
+}
+}

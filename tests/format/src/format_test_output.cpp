@@ -155,12 +155,7 @@ class MacroStatementArgumentHost {
 };
 
 class MacroSemicolonStatementArgumentHost {
-    FORMAT_FIXTURE_STATEMENT_ARGUMENT(
-        SetSingle,
-        int,
-        value,
-        value_ = value;
-    );
+    FORMAT_FIXTURE_STATEMENT_ARGUMENT(SetSingle, int, value, value_ = value;);
     FORMAT_FIXTURE_STATEMENT_ARGUMENT(
         SetPair,
         int,
@@ -168,12 +163,7 @@ class MacroSemicolonStatementArgumentHost {
         first_ = value;
         second_ = value;
     );
-    FORMAT_FIXTURE_STATEMENT_ARGUMENT(
-        SetMiddle,
-        value_ = value;,
-        int,
-        value
-    );
+    FORMAT_FIXTURE_STATEMENT_ARGUMENT(SetMiddle, value_ = value;, int, value);
     FORMAT_FIXTURE_STATEMENT_ARGUMENT(
         SetAfterControl,
         int,
@@ -7039,32 +7029,20 @@ struct Pair {};
 
 Value MakeValue() { return {1}; }
 void Check() {
-    FORMAT_STATEMENT_DECLARATIONS(
-        const auto value = MakeValue();,
-        int
-    );
-    FORMAT_STATEMENT_DECLARATIONS(
-        [[maybe_unused]] const auto value = MakeValue();,
-        int
-    );
+    FORMAT_STATEMENT_DECLARATIONS(const auto value = MakeValue();, int);
+    FORMAT_STATEMENT_DECLARATIONS([[maybe_unused]] const auto value = MakeValue();, int);
     FORMAT_STATEMENT_DECLARATIONS(
         int first = 1;
         [[maybe_unused]] int second = first + 1;,
         int
     );
-    FORMAT_STATEMENT_DECLARATIONS(
-        [[maybe_unused]] Value value{1};,
-        int
-    );
+    FORMAT_STATEMENT_DECLARATIONS([[maybe_unused]] Value value{1};, int);
     FORMAT_STATEMENT_DECLARATIONS(
         Value value = MakeValue();
         [[maybe_unused]] auto& reference = value;,
         int
     );
-    FORMAT_STATEMENT_DECLARATIONS(
-        [[maybe_unused]] auto [value] = MakeValue();,
-        int
-    );
+    FORMAT_STATEMENT_DECLARATIONS([[maybe_unused]] auto [value] = MakeValue();, int);
     FORMAT_STATEMENT_DECLARATIONS(
         int value;
         value = 1;,
@@ -7075,10 +7053,7 @@ void Check() {
         value.value = 2;,
         int
     );
-    FORMAT_STATEMENT_DECLARATIONS(
-        Value value{1};,
-        int
-    );
+    FORMAT_STATEMENT_DECLARATIONS(Value value{1};, int);
     FORMAT_TYPE_WORDS(alpha beta gamma);
     FORMAT_TYPE_ALIAS(ReferenceResult, Value(const int&));
     FORMAT_TYPE_ALIAS(QualifiedResult, detail::Result(int, bool));
@@ -8654,3 +8629,42 @@ struct UnknownSuffixAnnotations {
 
     void Update() UNKNOWN_ANNOTATION;
 };
+
+namespace SingleStatementArguments {
+
+void Unconfigured() {
+    CHECK(;, Error);
+    CHECK(return;, Error);
+    CHECK(return MakeValue();, Error);
+    CHECK(Consume(value);, Error);
+    CHECK(CHECK(;, Error), Error);
+    CHECK(first, Consume(value);, last);
+    CHECK(
+        First();
+        Second();,
+        Error
+    );
+    CHECK(
+        ;
+        ;,
+        Error
+    );
+    CHECK(return; /* completed statement */, Error);
+    CHECK(
+        Consume(value);,  // completed statement
+        Error
+    );
+}
+void Configured() {
+    FORMAT_STATEMENT_DECLARATIONS(;, Error);
+    FORMAT_STATEMENT_DECLARATIONS(return;, Error);
+    FORMAT_STATEMENT_DECLARATIONS(return MakeValue();, Error);
+    FORMAT_STATEMENT_DECLARATIONS(Consume(value);, Error);
+    FORMAT_STATEMENT_DECLARATIONS(
+        First();
+        Second();,
+        Error
+    );
+}
+
+}

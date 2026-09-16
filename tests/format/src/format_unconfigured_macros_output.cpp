@@ -102,15 +102,8 @@ void StatementArguments() {
     );
 }
 void StatementArgumentBoundaries() {
-    Inspect(
-        first,
-        second,
-        Consume(value);
-    );
-    Inspect(
-        return;,
-        value,
-    );
+    Inspect(first, second, Consume(value););
+    Inspect(return;, value, );
 }
 template <class... Values>
 void FoldArguments(Values... values) { (Consume(values), ...); }
@@ -453,10 +446,7 @@ DEFINE_ACTION(
 )
 struct ItemArguments {
     GENERATE_FIELDS((int, value)(Value, data))
-    DEFINE_ACTION(
-        Work();,
-        OnEvent
-    )
+    DEFINE_ACTION(Work();, OnEvent)
     void Method();
 };
 

@@ -456,6 +456,9 @@ private:
         const bool parameter = FormatBreakTokenValue(open).parentKind == SyntaxNodeKind::ParameterList;
         FormatBreakNode* item = BuildListItem(itemChildren, depth + 1, parameter);
         FormatBreakNode* chain = UnwrapTriviaSequence(item);
+        if (chain && chain->kind == FormatBreakNodeKind::StatementSequence && chain->forceSplit) {
+            delimited.forceSplit = true;
+        }
         const bool untypedDelimiter = FormatBreakTokenValue(open).parentKind == SyntaxNodeKind::Unknown;
         if (
             delimited.delimiterKind == FormatBreakDelimiterKind::Paren &&
@@ -3048,22 +3051,23 @@ private:
 
     FormatBreakNode* BuildStatementSequence(const SyntaxNode& node, int depth) {
         auto sequence = MakeNode(FormatBreakNodeKind::StatementSequence, depth);
-        sequence->forceSplit = true;
 
-        const auto childEndsWithSemicolon = [](const SyntaxNode& child) {
-            for (auto iterator = child.children.rbegin(); iterator != child.children.rend(); ++iterator) {
-                const SyntaxNode* tail = *iterator;
-                if (
-                    tail == nullptr ||
-                    tail->kind == SyntaxNodeKind::Comment ||
-                    tail->kind == SyntaxNodeKind::TrailingComment ||
-                    tail->kind == SyntaxNodeKind::BlankLine
-                ) {
-                    continue;
+        const auto childEndsStatement = [](const SyntaxNode& child) {
+            const SyntaxNode* tail = &child;
+            while (!tail->children.empty()) {
+                if (tail->kind == SyntaxNodeKind::CompoundStatement) {
+                    return true;
                 }
-                return tail->kind == SyntaxNodeKind::Semicolon;
+                const auto end =
+                    std::find_if(tail->children.rbegin(), tail->children.rend(), [](const SyntaxNode* item) {
+                        return !IsSyntaxTriviaNode(item);
+                    });
+                if (end == tail->children.rend()) {
+                    return false;
+                }
+                tail = *end;
             }
-            return false;
+            return tail->kind == SyntaxNodeKind::Semicolon;
         };
 
         ConstSyntaxChildList itemChildren;
@@ -3085,7 +3089,7 @@ private:
                 continue;
             }
             itemChildren.push_back(child);
-            if (childEndsWithSemicolon(*child)) {
+            if (childEndsStatement(*child)) {
                 AppendListItem(*sequence, BuildSequenceFromPointers(itemChildren, depth + 1), false);
                 itemChildren.clear();
             }
@@ -3093,6 +3097,7 @@ private:
         if (!itemChildren.empty()) {
             AppendListItem(*sequence, BuildSequenceFromPointers(itemChildren, depth + 1), false);
         }
+        sequence->forceSplit = sequence->items.size() > 1;
         return sequence->items.empty() ? nullptr : sequence;
     }
 
@@ -3222,14 +3227,6 @@ private:
             ) {
                 AppendDelimitedItem(*delimited, itemChildren, *open, depth, blankLineBeforeCurrentItem);
                 blankLineBeforeCurrentItem = false;
-                delimited->forceSplit = true;
-            }
-            if (
-                child->kind == SyntaxNodeKind::MacroStatementSequence &&
-                std::any_of(child->children.begin(), child->children.end(), [](const SyntaxNode* statementChild) {
-                    return statementChild != nullptr && statementChild->kind == SyntaxNodeKind::Semicolon;
-                })
-            ) {
                 delimited->forceSplit = true;
             }
             if (
