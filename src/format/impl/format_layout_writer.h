@@ -5,12 +5,12 @@
 #include <string_view>
 
 #include "format/impl/format_output.h"
+#include "format/impl/format_print_token.h"
 
 class FormatLayoutProgramBuilder;
 class FormatLayoutTree;
 struct FormatBreakNode;
 struct FormatBreakToken;
-struct PrintToken;
 
 struct FormatLayoutWriteContext {
     std::span<const PrintToken> sourceTokens;
