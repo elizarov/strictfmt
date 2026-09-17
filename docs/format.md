@@ -77,7 +77,7 @@ void Check(bool a, bool b, bool c) {
 
 Mandatory line breaks are structural boundaries. The break is always taken before optional wrapping is considered.
 
-- Break between complete statements and declarations, except inside a single-line function or lambda body.
+- Break between complete statements and declarations, except in eligible compact bodies described under [Declaration And Control Headers](#declaration-and-control-headers).
 - Put block-opening braces at the end of the introducing line, then break. Move intervening trailing header comments after the opening brace, preserving comment order.
 - For a non-empty block, if a multiline header ends at body indentation, put `{` on its own line at the block owner's indentation.
 - Keep an empty code block as `{}` without a body break.
@@ -459,9 +459,7 @@ void Paint();
 
 ## Declaration And Control Headers
 
-Functions and lambdas share body layout: keep a single-statement body on the header line when the complete construct fits. Comments or statements containing a compound block prevent this form.
-
-A sole macro invocation counts as one statement even without a semicolon.
+Functions, lambdas, and statement arguments share compact-body eligibility: one statement, with no comments, directives, or nested compound blocks. A sole macro invocation counts as one statement with or without a semicolon. Keep an eligible body compact when it fits, including explicit argument blocks; a function or lambda must fit together with its header.
 
 ```cpp
 int Next(int value) { return value + 1; }

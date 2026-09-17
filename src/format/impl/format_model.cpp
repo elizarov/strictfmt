@@ -2,7 +2,7 @@
 
 namespace {
 
-bool CallableBodyHasDisqualifier(
+bool BodyHasDisqualifier(
     const SyntaxNode& node,
     const SyntaxNode& body,
     const SyntaxNode* statement,
@@ -19,7 +19,7 @@ bool CallableBodyHasDisqualifier(
         return true;
     }
     for (const SyntaxNode* child : node.children) {
-        if (child != nullptr && CallableBodyHasDisqualifier(*child, body, statement, inBody, inStatement)) {
+        if (child != nullptr && BodyHasDisqualifier(*child, body, statement, inBody, inStatement)) {
             return true;
         }
     }
@@ -53,29 +53,45 @@ const SyntaxNode* OnlyContentChild(const SyntaxNode& node) {
     return contentChild;
 }
 
+bool IsArgumentBody(const SyntaxNode& node) {
+    const SyntaxNode* item = &node;
+    while (item->parent != nullptr) {
+        const SyntaxNode& parent = *item->parent;
+        if (parent.kind == SyntaxNodeKind::ArgumentList) {
+            return true;
+        }
+        if (
+            (parent.kind != SyntaxNodeKind::Tree && parent.kind != SyntaxNodeKind::MacroStatementSequence) ||
+            OnlyContentChild(parent) != item
+        ) {
+            return false;
+        }
+        item = &parent;
+    }
+    return false;
+}
+
 }  // namespace
 
 SyntaxNode::SyntaxNode(std::pmr::memory_resource* childResource) : children(childResource) {}
 
 FormatModel::FormatModel() : childStorage(std::make_unique<std::pmr::monotonic_buffer_resource>()) {}
 
-bool CallableBodyAllowsCompactSingleStatementForm(const SyntaxNode& node, SyntaxNodeKind parentKind) {
+bool BodyAllowsCompactSingleStatementForm(const SyntaxNode& node) {
+    const SyntaxNodeKind parentKind = node.parent == nullptr ? SyntaxNodeKind::Unknown : node.parent->kind;
     const bool callableOwner =
         parentKind == SyntaxNodeKind::FunctionDefinition || parentKind == SyntaxNodeKind::LambdaExpression;
-    if (node.kind != SyntaxNodeKind::CompoundStatement || !callableOwner) {
+    if (node.kind != SyntaxNodeKind::CompoundStatement || (!callableOwner && !IsArgumentBody(node))) {
         return false;
     }
-    if (node.compactCallableBodyCache != 0) {
-        return node.compactCallableBodyCache == 2;
+    if (node.compactBodyCache != 0) {
+        return node.compactBodyCache == 2;
     }
     const SyntaxNode* statement = OnlyContentChild(node);
-    // Compact callable spacing and body-header choices must agree. A lone statement that owns a
-    // compound block, such as if/switch/compound, needs normal block indentation for that subtree.
-    // These are the same three existential queries as the former separate recursive walks: comments are searched
-    // under the body, preprocessing under the callable parent, and compound blocks under the lone statement.
-    const SyntaxNode& searchRoot = node.parent == nullptr ? node : *node.parent;
-    const bool result = statement != nullptr && !CallableBodyHasDisqualifier(searchRoot, node, statement);
-    node.compactCallableBodyCache = result ? 2 : 1;
+    // Spacing and break choices share eligibility. Callable headers also participate in the directive check.
+    const SyntaxNode& searchRoot = callableOwner ? *node.parent : node;
+    const bool result = statement != nullptr && !BodyHasDisqualifier(searchRoot, node, statement);
+    node.compactBodyCache = result ? 2 : 1;
     return result;
 }
 

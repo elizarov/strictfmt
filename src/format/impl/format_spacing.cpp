@@ -245,10 +245,7 @@ bool IsCompactEmptyBraceToken(const PrintToken& token) {
 bool IsCompactSingleStatementBodyBrace(const PrintToken& token, SyntaxNodeKind kind) {
     return token.syntaxKind == kind &&
         token.inCompactSingleStatementBody &&
-        token.parentKind == SyntaxNodeKind::CompoundStatement && (
-            token.grandParentKind == SyntaxNodeKind::FunctionDefinition ||
-            token.grandParentKind == SyntaxNodeKind::LambdaExpression
-        );
+        token.parentKind == SyntaxNodeKind::CompoundStatement;
 }
 
 bool IsAttributeCloseToken(const PrintToken& token) {

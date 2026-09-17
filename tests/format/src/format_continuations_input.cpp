@@ -214,3 +214,17 @@ using Plain = int;
 using Target = Wrapper<FirstLongArgument, SecondLongArgument, ThirdLongArgument>;
 using Next = int;
 }
+void CompactArgumentBodies() {
+CHECK({Work();}, Error);
+CHECK(first, {Work();}, last);
+CHECK(tag, {Work();});
+CHECK({Consume(firstArgument, secondArgument);}, Error);
+CHECK(tag, {Consume(firstArgument, secondArgument);});
+CHECK({ReallyLongFunctionNameThatCannotFitInsideTheInlineBlock();}, Error);
+CHECK(tag, {ReallyLongFunctionNameThatCannotFitInsideTheInlineBlock();});
+CHECK(veryLongFirstArgument, {Work();}, veryLongLastArgument);
+CHECK({First(); Second();}, Error);
+CHECK(tag, {if (ready) Work();});
+CHECK(tag, {Work(); // trailing comment
+});
+}

@@ -165,8 +165,7 @@ struct TokenContext {
         inTemplateDeclaration |= kind == SyntaxNodeKind::TemplateDeclaration;
         inRequiresClause |= kind == SyntaxNodeKind::RequiresClause;
         inCompilerCallModifier |= kind == SyntaxNodeKind::MsCallModifier || kind == SyntaxNodeKind::MsDeclspecModifier;
-        inCompactSingleStatementBody =
-            inCompactSingleStatementBody || CallableBodyAllowsCompactSingleStatementForm(node, parentKind);
+        inCompactSingleStatementBody = inCompactSingleStatementBody || BodyAllowsCompactSingleStatementForm(node);
         if (macroDefinition == nullptr && SyntaxNodeKindHasClass(kind, SyntaxNodeClass::MacroDefinition)) {
             macroDefinition = &node;
         }

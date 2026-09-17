@@ -225,6 +225,7 @@ void
     ));
     WriteBooleanField(output, fieldIndent, "blank-line-before-close", node.blankLineBeforeClose);
     WriteBooleanField(output, fieldIndent, "compact-requires-unbroken-items", node.compactRequiresUnbrokenItems);
+    WriteBooleanField(output, fieldIndent, "compact-requires-fit", node.compactRequiresFit);
     WriteBooleanField(output, fieldIndent, "flat-split-indent", node.flatSplitIndent);
     WriteBooleanField(output, fieldIndent, "ternary-requires-question-break", node.ternaryRequiresQuestionBreak);
     WriteBooleanField(output, fieldIndent, "ternary-requires-colon-breaks", node.ternaryRequiresColonBreaks);

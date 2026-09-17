@@ -56,6 +56,7 @@ struct FormatCompactLayout::Impl {
         result.widthWithLeadingText += childShape.widthWithLeadingText;
         result.producesText = result.producesText || childShape.producesText;
         result.hasContextOnlyTokens = result.hasContextOnlyTokens || childShape.hasContextOnlyTokens;
+        result.requiresFit = result.requiresFit || childShape.requiresFit;
     }
 
     void AppendCompactListShape(FormatCompactLine& result, const FormatBreakNode& node) const {
@@ -82,6 +83,7 @@ struct FormatCompactLayout::Impl {
         // Break nodes and token spacing are immutable during a solve. This summary performs the same legality and
         // width calculation as recursively appending the compact form, with line-start text as its only input.
         cached.computed = true;
+        cached.requiresFit = node.compactRequiresFit || node.bodyHeaderSingleStatementBody;
         cached.valid = !node.forceSplit && !node.ternaryRequiresQuestionBreak && !node.ternaryRequiresColonBreaks;
         if (!cached.valid) {
             return cached;

@@ -11,6 +11,7 @@ struct FormatCompactLine {
     bool hasContextOnlyTokens = false;
     bool valid = false;
     bool producesText = false;
+    bool requiresFit = false;
     int widthWithoutLeadingText = 0;
     int widthWithLeadingText = 0;
 };

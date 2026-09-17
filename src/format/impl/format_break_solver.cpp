@@ -861,7 +861,8 @@ private:
         }
         result.endColumn += result.endLineHasText ? shape.widthWithLeadingText : shape.widthWithoutLeadingText;
         result.endLineHasText = result.endLineHasText || shape.producesText;
-        return !requireFit || !result.endLineHasText || result.endColumn <= config_.columnLimit;
+        // A fitting enclosing line proves every nested compact body fits; otherwise enumerate its layouts.
+        return (!requireFit && !shape.requiresFit) || !result.endLineHasText || result.endColumn <= config_.columnLimit;
     }
 
     bool DelimitedInlinePrefixRequiresOverflowOrBreak(const FormatBreakNode& node, NodeResult prefix) const {
@@ -989,6 +990,9 @@ private:
             AppendToken(
                 candidate, candidate.extraLines == 0 ? FormatBreakSingleLineCloseToken(node) : node.children[1]->token
             );
+            if (node.compactRequiresFit && HasOverflow(candidate)) {
+                continue;
+            }
             bool keepComma = false;
             if (candidate.extraLines > 0) {
                 for (size_t index = 0; index < node.items.size(); ++index) {

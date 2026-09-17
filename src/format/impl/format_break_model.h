@@ -95,6 +95,7 @@ struct FormatBreakNodeData {
     bool hasIndependentBodyItems : 1 = false;
     bool blankLineBeforeClose : 1 = false;
     bool compactRequiresUnbrokenItems : 1 = false;
+    bool compactRequiresFit : 1 = false;
     bool flatSplitIndent : 1 = false;
     bool suppressCompactDelimiterPadding : 1 = false;
     bool singleLineCloseSpaceBefore : 1 = false;

@@ -93,7 +93,7 @@ BraceRole RoleForBrace(const PrintToken& token) {
     if (
         token.inCompactSingleStatementBody &&
         token.parentKind == SyntaxNodeKind::CompoundStatement &&
-        token.grandParentKind == SyntaxNodeKind::LambdaExpression
+        token.grandParentKind != SyntaxNodeKind::FunctionDefinition
     ) {
         return BraceRole::Compact;
     }

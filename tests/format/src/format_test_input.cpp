@@ -5328,6 +5328,29 @@ FORMAT_STATEMENT_DECLARATIONS(return MakeValue();, Error);
 FORMAT_STATEMENT_DECLARATIONS(Consume(value);, Error);
 FORMAT_STATEMENT_DECLARATIONS(First(); Second();, Error);
 }
+void ExplicitBlocks() {
+CHECK({Work();}, Error);
+CHECK(first, {Work();}, last);
+CHECK(tag, {Work();});
+CHECK({return MakeValue();}, Error);
+CHECK({FORMAT_ITEM_RESET}, Error);
+CHECK({First(); Second();}, Error);
+CHECK(tag, {First(); Second();});
+CHECK({/* body comment */ Work();}, Error);
+CHECK({Work(); // trailing comment
+}, Error);
+CHECK({if (ready) Work();}, Error);
+CHECK({{Work();}}, Error);
+FORMAT_STATEMENT_DECLARATIONS({Work();}, Error);
+FORMAT_STATEMENT_DECLARATIONS({FORMAT_ITEM_RESET}, Error);
+FORMAT_STATEMENT_DECLARATIONS({First(); Second();}, Error);
+FORMAT_STATEMENT_DECLARATIONS({if (ready) Work();}, Error);
+CHECK({
+#if FEATURE
+Work();
+#endif
+}, Error);
+}
 }
 
 namespace CastArguments {

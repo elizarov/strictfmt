@@ -122,7 +122,7 @@ Allowed speedups include:
 
 - Memoization by solver state.
 - Reusing an already built and solved declaration model when the buffered token span, incoming print state, suffix width, and every model context input are identical.
-- Caching an exact compact physical-line shape by immutable break node. The shape records compact legality, text production, and widths with and without preceding line text; applying it is equivalent to recursively appending every compact token.
+- Caching an exact compact physical-line shape by immutable break node. The shape records compact legality, fit requirements, text production, and widths with and without preceding line text; applying it is equivalent to recursively appending every compact token.
 - Caching exact recursive predicates by immutable break or syntax node when the cache key includes every predicate input.
 - Materializing an exact descendant predicate on its owning immutable syntax node during normalization when all later queries use that same root and predicate.
 - Recording monotonic builder summaries, such as whether a model contains any layout choice or final-lambda discount target, while visiting the nodes that determine them.
@@ -154,7 +154,7 @@ For compact and packed-split lists, every non-final item must remain on the body
 
 The final item is excluded from the probe because eligible non-angle layout may give it a multiline tail; angle lists reject that candidate later. These probes change search work, not candidate ordering or tie-breaking.
 
-A compact uniform-chain candidate may solve a non-final operand with the all-compact physical-line walker when the chain legality check requires that operand to occupy one physical line. A successful walk is the unique unbroken candidate, including when it overflows. If comments or intrinsic newlines make the walk inapplicable, normal alternative enumeration and physical-line filtering remain in use.
+A compact uniform-chain candidate may solve a non-final operand with the all-compact physical-line walker when the chain legality check requires that operand to occupy one physical line. A successful walk is the unique unbroken candidate, including when it overflows unless a nested compact body requires a fit. If the walk is inapplicable, normal alternative enumeration and physical-line filtering remain in use.
 
 ## Delimiter Stacks
 

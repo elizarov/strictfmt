@@ -1092,7 +1092,7 @@ private:
             &node != root_ &&
             SyntaxNodeHasClass(node, SyntaxNodeClass::CompoundBlock) &&
             SyntaxNodeHasClass(node, SyntaxNodeClass::SourceItemScope) &&
-            !CallableBodyAllowsCompactSingleStatementForm(node, ParentKind(node))
+            !BodyAllowsCompactSingleStatementForm(node)
         ) {
             // An expanded body owns independent cost regions. Its enclosing
             // model needs the braces and boundary trivia, not the body items.
@@ -1654,8 +1654,7 @@ private:
 
         FormatBreakNode* result = BuildCodeBlockBodyHeader(*node.children[*bodyIndex], header, body, depth);
         result->bodyHeaderIsLambda = true;
-        result->bodyHeaderSingleStatementBody =
-            CallableBodyAllowsCompactSingleStatementForm(*node.children[*bodyIndex], node.kind);
+        result->bodyHeaderSingleStatementBody = BodyAllowsCompactSingleStatementForm(*node.children[*bodyIndex]);
         return result;
     }
 
@@ -1681,8 +1680,7 @@ private:
         }
 
         FormatBreakNode* result = BuildCodeBlockBodyHeader(*node.children[*bodyIndex], header, body, depth);
-        result->bodyHeaderSingleStatementBody =
-            CallableBodyAllowsCompactSingleStatementForm(*node.children[*bodyIndex], node.kind);
+        result->bodyHeaderSingleStatementBody = BodyAllowsCompactSingleStatementForm(*node.children[*bodyIndex]);
         return result;
     }
 
@@ -1733,8 +1731,7 @@ private:
         }
 
         FormatBreakNode* result = BuildCodeBlockBodyHeader(*node.children[*bodyIndex], header, body, depth);
-        result->bodyHeaderSingleStatementBody =
-            CallableBodyAllowsCompactSingleStatementForm(*node.children[*bodyIndex], node.kind);
+        result->bodyHeaderSingleStatementBody = BodyAllowsCompactSingleStatementForm(*node.children[*bodyIndex]);
         return result;
     }
 
@@ -3285,8 +3282,10 @@ private:
         ) {
             AppendEmptyDelimitedItem(*delimited, depth);
         }
-        delimited->compactRequiresUnbrokenItems =
-            IsMultiItemDesignatedInitializer(*delimited, *open) || HasSiblingInitializerRecords(*delimited);
+        delimited->compactRequiresFit = FormatBreakTokenValue(*open).parentKind == SyntaxNodeKind::CompoundStatement;
+        delimited->compactRequiresUnbrokenItems = delimited->compactRequiresFit ||
+            IsMultiItemDesignatedInitializer(*delimited, *open) ||
+            HasSiblingInitializerRecords(*delimited);
         if (
             !delimited->items.empty() && FormatBreakHasSingleLineTrailingComma(*delimited, delimited->items.size() - 1)
         ) {

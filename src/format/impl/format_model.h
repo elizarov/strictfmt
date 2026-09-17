@@ -20,7 +20,7 @@ struct SyntaxNode;
 
 using SyntaxChildList = std::pmr::vector<SyntaxNode*>;
 
-bool CallableBodyAllowsCompactSingleStatementForm(const SyntaxNode& node, SyntaxNodeKind parentKind);
+bool BodyAllowsCompactSingleStatementForm(const SyntaxNode& node);
 
 struct SyntaxNode {
     explicit SyntaxNode(std::pmr::memory_resource* childResource = std::pmr::get_default_resource());
@@ -37,7 +37,7 @@ struct SyntaxNode {
     size_t depth = 0;
     SyntaxChildList children;
 
-    mutable std::uint8_t compactCallableBodyCache = 0;
+    mutable std::uint8_t compactBodyCache = 0;
 };
 
 // Owns normalized nodes, child storage, and source text. Reserve node capacity
