@@ -104,3 +104,40 @@ Result BuildValue(
     return Convert(input, settings);
 }
 ```
+
+## Nested sequences use staircase indentation (SEQUENCE_STAIRCASE)
+
+Current behavior: Within a list item, a broken sequence indents its continuations beyond its first element. This distinguishes the item from neighboring comma-separated items, but obscures peer alignment in sums, string fragments, and repeated parenthesized macro tuples.
+
+Open question: When a sequence occupies a complete list item and starts on its own line, should all its elements share the item's indentation? This would improve regularity and save width, while relying more on commas to distinguish neighboring items.
+
+Current formatting (40-column limit):
+
+<!-- .cpp-format
+ColumnLimit: 40
+-->
+```cpp
+void Example() {
+    Use(
+        mode,
+        first_component +
+            second_component +
+            third_component,
+        flags
+    );
+}
+```
+
+Alternative formatting (not yet decided):
+
+```text
+void Example() {
+    Use(
+        mode,
+        first_component +
+        second_component +
+        third_component,
+        flags
+    );
+}
+```
