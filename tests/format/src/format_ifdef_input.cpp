@@ -511,3 +511,98 @@ second_namespace::LongTemplate<ThirdArgumentWithLongName,FourthArgumentWithLongN
 #endif
 >>(value);
 }
+
+void GuardedElseBranches(bool first, bool second) {
+if(first){Run();}
+#ifdef FEATURE
+else {Fallback();}
+#endif
+if(first) Run();
+#ifndef FEATURE
+else Fallback();
+#endif
+if(first){Run();}
+#if FIRST_MODE
+else if(second){Second();}else{Fallback();}
+#elif SECOND_MODE
+else if(second) Second();
+#else
+else Fallback();
+#endif
+if(first){Run();}
+#ifdef OUTER
+#ifndef INNER
+else {Fallback();}
+#endif
+#endif
+}
+
+void GuardedEmptyElse(bool condition) {
+if(condition){}
+#ifdef FEATURE
+else{}
+#endif
+}
+
+void GuardedElseInNestedControl(bool outer, bool inner) {
+if(outer){
+if(inner) Run();
+#ifdef FEATURE // guarded alternative belongs to the inner if
+else Fallback();
+#endif
+}else Other();
+}
+
+bool ConditionalStatementAfterIf(bool condition) {
+if(condition){return false;}
+#ifdef FEATURE
+return true;
+#else
+return false;
+#endif
+}
+
+void NearestElseBinding(bool outer, bool inner) {
+if(outer) if(inner) Run(); else Fallback();
+}
+
+void NearestGuardedElseBinding(bool outer, bool inner) {
+if(outer) if(inner) Run();
+#ifdef FEATURE
+else Fallback();
+#endif
+}
+
+void GuardedElseThroughLoops(bool outer, bool inner, bool ready) {
+if(outer) while(inner) if(ready) Run();
+#ifdef FEATURE
+else Fallback();
+#endif
+if(outer) for(auto item:items) if(ready) Run(); else Other();
+#ifdef FEATURE
+else Fallback();
+#endif
+if(outer) [[likely]] label: if(inner) Run();
+#ifdef FEATURE
+else Fallback();
+#endif
+}
+
+void GuardedElseWithSelectedHeader(bool first, bool second) {
+#if FIRST_MODE
+if(first)
+#else
+if(second)
+#endif
+if(second) Run(); else Other();
+if(first)
+#if FIRST_MODE
+if(second)
+#else
+if(first)
+#endif
+Run(); else Other();
+#ifdef FEATURE
+else Fallback();
+#endif
+}

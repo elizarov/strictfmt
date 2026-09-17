@@ -308,6 +308,14 @@ module.exports = grammar(C, {
   ],
 
   conflicts: $ => [
+    [$.preproc_ended_consequence_statement, $._closed_statement_leaf],
+    [$.preproc_selected_else_if_body_item, $._closed_statement_leaf],
+    [$._block_item, $._closed_statement_leaf],
+    // A directive after an if may guard its else or start a following source item.
+    [$.statement, $._closed_statement],
+    [$.labeled_statement, $._closed_labeled_statement],
+    [$.attributed_statement, $._closed_attributed_statement],
+    [$.preproc_selected_if_statement],
     [$._declaration_modifiers, $.qualified_type_function_definition, $._declaration_declarator_list],
     [$._declaration_modifiers, $.template_declaration],
     [$.type_specifier, $._type_constraint, $._unconfigured_modifier_identifier],
@@ -2980,12 +2988,7 @@ module.exports = grammar(C, {
     ),
 
     _non_case_statement: $ => choice(
-      $.disabled_code_placeholder_statement,
-      alias($.macro_call_prefixed_statement, $.macro_prefixed_statement),
-      $.macro_function_definition,
-      $.bare_macro_statement,
-      $.block_macro_call_line_item,
-      $.block_macro_call_statement_item,
+      $._closed_statement_leaf,
       $.preproc_case_label_fragment,
       $.preproc_selected_else_if_statement,
       $.preproc_selected_braced_if_else_statement,
@@ -2993,7 +2996,14 @@ module.exports = grammar(C, {
       $.preproc_selected_if_statement,
       $.preproc_if,
       $.preproc_ifdef,
-      cppStatements($),
+      $.if_statement,
+      $.while_statement,
+      $.for_statement,
+      $.for_range_loop,
+      $.for_each_statement,
+      $.attributed_statement,
+      $.labeled_statement,
+      $.macro_prefixed_statement,
     ),
 
     macro_prefixed_statement: $ => prec.right(seq(
@@ -3056,11 +3066,9 @@ module.exports = grammar(C, {
       field('right', $.preproc_semicolon_initializer),
     )),
 
-    preproc_selected_if_statement: $ => prec.right(seq(
-      field('condition', $.preproc_selected_if_header),
-      field('consequence', $.statement),
-      optional(field('alternative', $.else_clause)),
-    )),
+    preproc_selected_if_statement: $ => ifStatement(
+      $, field('condition', $.preproc_selected_if_header),
+    ),
 
     preproc_selected_if_header: $ => seq(
       $._preproc_opening_condition,
@@ -3092,10 +3100,12 @@ module.exports = grammar(C, {
       $.compound_statement,
     )),
 
-    selected_if_header: $ => seq(
+    selected_if_header: $ => $._if_header,
+
+    _if_header: $ => seq(
       'if',
       optional('constexpr'),
-      $.condition_clause,
+      field('condition', $.condition_clause),
     ),
 
     preproc_ended_consequence_statement: $ => prec.right(seq(
@@ -3111,9 +3121,7 @@ module.exports = grammar(C, {
     )),
 
     preproc_selected_else_if_statement: $ => prec.right(2, seq(
-      'if',
-      optional('constexpr'),
-      field('condition', $.condition_clause),
+      $._if_header,
       '{',
       repeat($.preproc_selected_else_if_body_item),
       $.preproc_selected_else_if_clause,
@@ -3145,9 +3153,10 @@ module.exports = grammar(C, {
       '}',
     )),
 
+    _while_header: $ => seq('while', field('condition', $.condition_clause)),
+
     while_statement: $ => seq(
-      'while',
-      field('condition', $.condition_clause),
+      $._while_header,
       field('body', $.statement),
     ),
 
@@ -3155,23 +3164,129 @@ module.exports = grammar(C, {
 
     disabled_code_placeholder_field: _ => prec.right(seq('...', optional(';'))),
 
-    if_statement: $ => prec.right(seq(
-      'if',
-      optional('constexpr'),
-      field('condition', $.condition_clause),
-      field('consequence', $.statement),
-      optional(field('alternative', $.else_clause)),
+    else_clause: ($, original) => choice(
+      original,
+      alias($.preproc_guarded_else_clause, $.preproc_if),
+    ),
+
+    preproc_guarded_else_clause: $ => prec.right(seq(
+      $._preproc_opening_condition,
+      $._preproc_directive_end,
+      $.else_clause,
+      optional($._preproc_else_clause_alternative),
+      preprocessor('endif'),
+    )),
+
+    _preproc_else_clause_alternative: $ => choice(
+      alias($.preproc_else_in_else_clause, $.preproc_else),
+      alias($.preproc_elif_in_else_clause, $.preproc_elif),
+    ),
+
+    preproc_else_in_else_clause: $ => seq(
+      preprocessor('else'),
+      $._preproc_directive_end,
+      $.else_clause,
+    ),
+
+    preproc_elif_in_else_clause: $ => seq(
+      preprocessor('elif'),
+      field('condition', $._preproc_expression),
+      $._preproc_directive_end,
+      $.else_clause,
+      optional($._preproc_else_clause_alternative),
+    ),
+
+    if_statement: $ => ifStatement($, $._if_header),
+
+    // An else can follow only a body with no unmatched trailing if. This
+    // remains true when a directive delays the else beyond parser lookahead.
+    _closed_statement_leaf: $ => choice(
+      $.compound_statement,
+      $.expression_statement,
+      $.return_statement,
+      $.co_return_statement,
+      $.co_yield_statement,
+      $.break_statement,
+      $.continue_statement,
+      $.goto_statement,
+      $.do_statement,
+      $.switch_statement,
+      $.try_statement,
+      $.seh_try_statement,
+      $.seh_leave_statement,
+      $.disabled_code_placeholder_statement,
+      $.bare_macro_statement,
+      $.block_macro_call_line_item,
+      $.block_macro_call_statement_item,
+      $.macro_function_definition,
+      alias($.macro_call_prefixed_statement, $.macro_prefixed_statement),
+    ),
+
+    _closed_statement: $ => choice(
+      $._closed_statement_leaf,
+      alias($._closed_if_statement, $.if_statement),
+      alias($._closed_selected_if_statement, $.preproc_selected_if_statement),
+      alias($._closed_while_statement, $.while_statement),
+      alias($._closed_for_statement, $.for_statement),
+      alias($._closed_for_range_loop, $.for_range_loop),
+      alias($._closed_for_each_statement, $.for_each_statement),
+      alias($._closed_attributed_statement, $.attributed_statement),
+      alias($._closed_labeled_statement, $.labeled_statement),
+      alias($._closed_macro_prefixed_statement, $.macro_prefixed_statement),
+    ),
+
+    _closed_if_statement: $ => seq(
+      $._if_header,
+      field('consequence', $._closed_statement),
+      field('alternative', alias($._closed_else_clause, $.else_clause)),
+    ),
+
+    _closed_selected_if_statement: $ => seq(
+      field('condition', $.preproc_selected_if_header),
+      field('consequence', $._closed_statement),
+      field('alternative', alias($._closed_else_clause, $.else_clause)),
+    ),
+
+    _closed_else_clause: $ => seq('else', $._closed_statement),
+
+    _closed_while_statement: $ => seq(
+      $._while_header,
+      field('body', $._closed_statement),
+    ),
+
+    _closed_for_statement: $ => seq(
+      $._for_header, field('body', $._closed_statement),
+    ),
+
+    _closed_for_range_loop: $ => seq(
+      $._for_range_header, field('body', $._closed_statement),
+    ),
+
+    _closed_for_each_statement: $ => seq($._for_each_header, field('body', $._closed_statement)),
+
+    _closed_attributed_statement: $ => seq(
+      repeat1($.attribute_declaration), $._closed_statement,
+    ),
+
+    _closed_labeled_statement: $ => seq(
+      field('label', $._statement_identifier), ':', choice($.declaration, $._closed_statement),
+    ),
+
+    _closed_macro_prefixed_statement: $ => prec.right(seq(
+      $.statement_prefix_macro, field('body', $._closed_statement),
     )),
 
     // Using prec(1) instead of prec.dynamic(1) causes issues with the
     // range loop's declaration specifiers if `int` is passed in, it'll
     // always prefer the standard for loop and give us a parse error.
     _for_statement_body: ($, original) => prec.dynamic(1, original),
+    _for_header: $ => seq('for', '(', $._for_statement_body, ')'),
+    _for_range_header: $ => seq('for', '(', $._for_range_loop_body, ')'),
+
+    for_statement: $ => seq($._for_header, field('body', $.statement)),
+
     for_range_loop: $ => seq(
-      'for',
-      '(',
-      $._for_range_loop_body,
-      ')',
+      $._for_range_header,
       field('body', $.statement),
     ),
     _for_range_loop_body: $ => seq(
@@ -3210,7 +3325,7 @@ module.exports = grammar(C, {
       )),
     )),
 
-    for_each_statement: $ => seq(
+    _for_each_header: $ => seq(
       'for',
       'each',
       '(',
@@ -3219,8 +3334,9 @@ module.exports = grammar(C, {
       'in',
       field('right', $.expression),
       ')',
-      field('body', $.statement),
     ),
+
+    for_each_statement: $ => seq($._for_each_header, field('body', $.statement)),
 
     init_statement: $ => initStatement($, $.declaration),
 
@@ -4861,11 +4977,7 @@ function preprocListItem($, suffix, forms = PREPROC_ALL_BRANCH_FORMS) {
 }
 
 function selectedIfHeader($) {
-  return seq(
-    'if',
-    optional('constexpr'),
-    $.condition_clause,
-  );
+  return $._if_header;
 }
 
 function preprocOpeningCondition($) {
@@ -5006,4 +5118,15 @@ function preprocessor(command) {
 
 function preprocessorInclude() {
   return alias(token(prec(1, /#[ \t]*include[ \t]+/)), '#include');
+}
+
+function ifStatement($, header) {
+  return choice(
+    seq(header, field('consequence', $.statement)),
+    seq(
+      header,
+      field('consequence', $._closed_statement),
+      field('alternative', $.else_clause),
+    ),
+  );
 }
