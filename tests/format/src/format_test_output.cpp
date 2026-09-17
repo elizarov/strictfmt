@@ -5359,12 +5359,12 @@ struct Argument {
     constexpr Argument operator+=(int n) const { return {value + n}; }
 };
 
-constexpr Argument operator "" _arg(const char*, decltype(sizeof(0))) { return {}; }
-constexpr Argument operator "" _arg(const wchar_t*, decltype(sizeof(0))) { return {}; }
-constexpr Argument operator "" _arg(const char16_t*, decltype(sizeof(0))) { return {}; }
-constexpr Argument operator "" _arg(const char32_t*, decltype(sizeof(0))) { return {}; }
-constexpr Argument operator "" _arg(unsigned long long value) { return {static_cast<int>(value)}; }
-constexpr Argument operator "" _arg(char value) { return {value}; }
+constexpr Argument operator""_arg(const char*, decltype(sizeof(0))) { return {}; }
+constexpr Argument operator""_arg(const wchar_t*, decltype(sizeof(0))) { return {}; }
+constexpr Argument operator""_arg(const char16_t*, decltype(sizeof(0))) { return {}; }
+constexpr Argument operator""_arg(const char32_t*, decltype(sizeof(0))) { return {}; }
+constexpr Argument operator""_arg(unsigned long long value) { return {static_cast<int>(value)}; }
+constexpr Argument operator""_arg(char value) { return {value}; }
 constexpr int Get(Argument arg) { return arg.value; }
 void AssignLiterals() {
     Get("field"_arg = 3);
@@ -7331,9 +7331,9 @@ constexpr const char* kRawText = R"tag(
 #define UNEXPANDED 3
 #undef UNEXPANDED
 )tag"
-constexpr unsigned long long operator "" _quantity(unsigned long long value) { return value; }
-constexpr int operator "" _code(char value) { return value; }
-constexpr decltype(sizeof(0)) operator "" _length(const char*, decltype(sizeof(0)) size) { return size; }
+constexpr unsigned long long operator""_quantity(unsigned long long value) { return value; }
+constexpr int operator""_code(char value) { return value; }
+constexpr decltype(sizeof(0)) operator""_length(const char*, decltype(sizeof(0)) size) { return size; }
 
 constexpr auto quantity = 1_quantity;
 constexpr auto code = 'a'_code;
@@ -9019,6 +9019,35 @@ void Cases(int value) {
         default:
             Finish();
     }
+}
+
+}
+
+namespace LiteralOperatorNames {
+
+namespace literals {
+
+constexpr unsigned long long operator""_value(unsigned long long value) { return value; }
+constexpr auto operator""_size(const char*, decltype(sizeof(0)) size) { return size; }
+constexpr char operator""_letter(char value) { return value; }
+template <char... Digits>
+constexpr auto operator""_digits() { return sizeof...(Digits); }
+
+}
+using literals::operator""_value;
+using literals::operator""_size;
+using literals::operator""_letter;
+using literals::operator""_digits;
+constexpr auto value = 12_value;
+constexpr auto length = "text"_size;
+constexpr auto letter = 'a'_letter;
+constexpr auto digits = 123_digits;
+constexpr auto explicitCall = literals::operator""_value(12);
+constexpr auto address = &literals::operator""_value;
+
+void Local() {
+    using ::LiteralOperatorNames::literals::operator""_value;
+    auto value = 1_value;
 }
 
 }

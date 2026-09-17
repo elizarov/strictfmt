@@ -208,6 +208,15 @@ bool IsUserDefinedLiteralSuffix(const PrintToken& previous, const PrintToken& cu
         );
 }
 
+bool IsLiteralOperatorNameBoundary(const PrintToken& previous, const PrintToken& current) {
+    return previous.parentKind == SyntaxNodeKind::OperatorName &&
+        current.parentKind == SyntaxNodeKind::OperatorName &&
+        previous.node != nullptr &&
+        current.node != nullptr &&
+        previous.node->parent == current.node->parent &&
+        (previous.text == "\"\"" || current.text == "\"\"");
+}
+
 bool IsWordBoundaryChar(char ch) {
     return (ch >= 'A' && ch <= 'Z') ||
         (ch >= 'a' && ch <= 'z') ||
@@ -492,7 +501,7 @@ bool FormatTokenNeedsSpace(const PrintToken* previous, const PrintToken& current
     if ((IsStringLike(*previous) && IsStringLike(current)) || EndsConcatenatedStringFragment(*previous, current)) {
         return true;
     }
-    if (IsUserDefinedLiteralSuffix(*previous, current)) {
+    if (IsUserDefinedLiteralSuffix(*previous, current) || IsLiteralOperatorNameBoundary(*previous, current)) {
         return false;
     }
     if (current.kind == PrintTokenKind::Text && !current.text.empty() && current.text.front() == '=') {

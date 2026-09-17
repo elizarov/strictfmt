@@ -5490,3 +5490,23 @@ void Cases(int value) {
     }
 }
 }
+
+namespace LiteralOperatorNames {
+namespace literals {
+constexpr unsigned long long operator "" _value(unsigned long long value) { return value; }
+constexpr auto operator""_size(const char*,decltype(sizeof(0)) size) { return size; }
+constexpr char operator""_letter(char value) { return value; }
+template<char... Digits> constexpr auto operator "" _digits() { return sizeof...(Digits); }
+}
+using literals::operator "" _value;
+using literals::operator""_size;
+using literals::operator""_letter;
+using literals::operator "" _digits;
+constexpr auto value=12_value;
+constexpr auto length="text"_size;
+constexpr auto letter='a'_letter;
+constexpr auto digits=123_digits;
+constexpr auto explicitCall=literals::operator "" _value(12);
+constexpr auto address=&literals::operator""_value;
+void Local() { using ::LiteralOperatorNames::literals::operator""_value; auto value=1_value; }
+}
