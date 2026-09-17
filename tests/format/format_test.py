@@ -713,6 +713,29 @@ class FormatCommandTests(unittest.TestCase):
                     self.assertEqual(0, result.returncode, msg=f"stdout:\n{result.stdout}\n\nstderr:\n{result.stderr}")
                     self.assertEqual(expected, result.stdout)
 
+    def test_stdin_filename_preserves_dependent_include_order(self) -> None:
+        with tempfile.TemporaryDirectory(prefix="format_stdin_filename_", dir=TEST_TEMP_ROOT) as temp_dir:
+            root = Path(temp_dir)
+            nested = root / "nested"
+            nested.mkdir()
+            (nested / ".cpp-format").write_text(
+                "IncludeCategories:\n  - Regex: '^<.*>$'\n    Priority: 1\n"
+                "  - Regex: '^\".*\"$'\n    Priority: 2\n", encoding="utf-8"
+            )
+            source = nested / "widget.cpp"
+            text = read_fixture(Path("src") / "format_stdin_main_include_input.cpp")
+            expected = read_fixture(Path("src") / "format_stdin_main_include_output.cpp")
+            for filename in (str(source), "nested/widget.cpp"):
+                result = native_format("--stdin", "--stdin-filename", filename, cwd=root, input_text=text)
+                self.assertEqual(0, result.returncode, msg=result.stderr)
+                self.assertEqual(expected, result.stdout)
+                second = native_format("-n", "--stdin", "--stdin-filename", filename, cwd=root, input_text=result.stdout)
+                self.assertEqual(0, second.returncode, msg=second.stderr)
+                self.assertFalse(source.exists())
+            failure = native_format("--stdin", "--stdin-filename", str(source), cwd=root, input_text="int broken( {")
+            self.assertEqual(1, failure.returncode)
+            self.assertIn(str(source), failure.stderr)
+
     def test_main_include_detection_matches_source_filename(self) -> None:
         TEST_TEMP_ROOT.mkdir(exist_ok=True)
         with tempfile.TemporaryDirectory(prefix="format_main_include_", dir=TEST_TEMP_ROOT) as temp_dir:
@@ -736,6 +759,9 @@ class FormatCommandTests(unittest.TestCase):
                 result = native_format(str(source), cwd=root)
                 self.assertEqual(0, result.returncode, msg=result.stderr)
                 self.assertEqual(expected, result.stdout)
+                via_stdin = native_format("--stdin", "--stdin-filename", filename, cwd=root, input_text=text)
+                self.assertEqual(0, via_stdin.returncode, msg=via_stdin.stderr)
+                self.assertEqual(expected, via_stdin.stdout)
                 source.write_text(result.stdout, encoding="utf-8")
                 second = native_format("-n", str(source), cwd=root)
                 self.assertEqual(0, second.returncode, msg=f"{second.stdout}\n{second.stderr}")
@@ -2633,6 +2659,9 @@ class FormatCommandTests(unittest.TestCase):
             ("--concurrency", "0"),
             ("--concurrency", "nope"),
             ("--stdin", "-i"),
+            ("--stdin-filename",),
+            ("--stdin", "--stdin-filename", ""),
+            ("--stdin-filename", "widget.cpp"),
             ("--stdin", str(TEST_ROOT / OUTPUT_FIXTURE)),
             ("--unknown",),
         ]

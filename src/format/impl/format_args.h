@@ -33,6 +33,7 @@ struct FormatOptions {
     size_t concurrency = 0;
     std::optional<std::string> dumpFile;
     std::optional<std::string> explicitStylePath;
+    std::optional<std::string> stdinFilename;
     std::vector<std::string> files;
     std::vector<std::string> recursiveRoots;
 };

@@ -24,6 +24,7 @@ code `0`.
 
 - `file...` formats the listed source files. In default mode, formatted source is written to stdout. Multiple file outputs are concatenated in input order with no extra separator.
 - `--stdin` reads one source file from stdin. In default mode it writes formatted text to stdout; with `--diff` or a dump mode it writes that mode's output to stdout. It cannot be combined with direct file arguments, `--files`, `-r`, or `--recursive`. It is also incompatible with `-i`.
+- `--stdin-filename <path>` supplies the source filename for stdin configuration discovery, main-header sorting, and formatting diagnostics/diffs. It requires `--stdin`; the named file need not exist and is never read or modified. Relative paths are resolved from the working directory.
 - `--files <path>` reads input file paths from a newline-delimited file list. Each list line is trimmed, and blank lines are ignored. The listed files are appended to the explicit input list in list order.
 - `-r <path>` and `--recursive <path>` recursively discover supported source files under a directory. The root must exist. Recursive input can be combined with direct file arguments and `--files`.
 
@@ -54,7 +55,7 @@ Dump modes help inspect parsing and layout decisions. A syntax-tree dump include
 ## Configuration
 
 - `--style <config-file>` uses the specified formatter configuration file for every input. The path is resolved to an absolute path. The special values `file` and `file:<path>` are rejected; pass the formatter configuration path directly instead.
-- When `--style` is omitted, file inputs and file dump modes search upward from the source file for `.cpp-format`; `--stdin`, including stdin dump modes, searches upward from the current working directory.
+- When `--style` is omitted, file inputs and file dump modes search upward from the source file for `.cpp-format`; `--stdin`, including stdin dump modes, searches upward from `--stdin-filename` when provided, otherwise from the current working directory.
 
 Formatter configuration syntax, inheritance, and `.cpp-format-ignore` behavior
 are specified in [config.md](config.md).

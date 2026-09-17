@@ -95,6 +95,12 @@ std::optional<FormatOptions> ParseFormatArgs(int argc, char** argv, std::string&
             options.verbose = true;
         } else if (arg == "--stdin") {
             options.readStdin = true;
+        } else if (arg == "--stdin-filename") {
+            if (index + 1 >= argc || argv[index + 1][0] == '\0') {
+                error = "--stdin-filename requires a path";
+                return std::nullopt;
+            }
+            options.stdinFilename = argv[++index];
         } else if (arg == "--validate") {
             options.validate = true;
         } else if (arg == "--dump-syntax-tree" || arg == "--dump-break-tree") {
@@ -176,6 +182,10 @@ std::optional<FormatOptions> ParseFormatArgs(int argc, char** argv, std::string&
             return std::nullopt;
         }
     }
+    if (options.stdinFilename.has_value() && !options.readStdin) {
+        error = "--stdin-filename requires --stdin";
+        return std::nullopt;
+    }
     if (options.readStdin && (options.fileListProvided || options.recursiveInputProvided || !options.files.empty())) {
         error = "--stdin cannot be combined with file inputs";
         return std::nullopt;
@@ -204,6 +214,7 @@ void PrintFormatUsage(FILE* out) {
     std::fprintf(out, "  <file>...               Format the listed source files and write formatted text to stdout.\n");
     std::fprintf(out, "  -r, --recursive <path>  Recursively format supported C/C++ files under a directory.\n");
     std::fprintf(out, "  --stdin                 Read one source file from stdin.\n");
+    std::fprintf(out, "  --stdin-filename <path> Source path for stdin config discovery and main-header sorting.\n");
     std::fprintf(out, "  --files <path>          Read input file paths from a newline-delimited file list.\n");
     std::fprintf(out, "\n");
     std::fprintf(out, "Modes:\n");

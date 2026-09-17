@@ -262,7 +262,9 @@ int RunFormat(int argc, char** argv) {
 
     if (options.readStdin) {
         std::string error;
-        const FormatterConfig* config = styleCache.ConfigForPath(currentDirectory, error);
+        const std::string sourcePath = options.stdinFilename.value_or("<stdin>");
+        const std::string configPath = options.stdinFilename.has_value() ? AbsolutePath(sourcePath) : currentDirectory;
+        const FormatterConfig* config = styleCache.ConfigForPath(configPath, error);
         if (config == nullptr) {
             std::fprintf(stderr, "%s\n", error.c_str());
             return 2;
@@ -274,18 +276,18 @@ int RunFormat(int argc, char** argv) {
         }
         if (options.dumpKind == FormatDumpKind::BreakTree) {
             return
-                DumpFormatBreakTreeText(stdinText, *config, "<stdin>", stdout, stderr, "strictfmt --dump-break-tree");
+                DumpFormatBreakTreeText(stdinText, *config, sourcePath, stdout, stderr, "strictfmt --dump-break-tree");
         }
-        SourceFormatResult result = FormatSourceText(stdinText, *config, "<stdin>", options.validate);
+        SourceFormatResult result = FormatSourceText(stdinText, *config, sourcePath, options.validate);
         if (!result.ok) {
-            PrintSourceError(stderr, "<stdin>", result.error);
+            PrintSourceError(stderr, sourcePath, result.error);
             return 1;
         }
-        PrintSourceWarnings(stderr, "<stdin>", result.warnings);
+        PrintSourceWarnings(stderr, sourcePath, result.warnings);
         const FormatDiffResult diff = ComputeFormatDiff(
             stdinText,
             result.formatted,
-            options.mode == FormatMode::Diff ? std::optional<std::string_view>{"<stdin>"} : std::nullopt
+            options.mode == FormatMode::Diff ? std::optional<std::string_view>{sourcePath} : std::nullopt
         );
         if (options.mode == FormatMode::Stdout) {
             SetBinaryMode(stdout);

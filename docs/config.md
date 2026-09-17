@@ -6,7 +6,7 @@ Formatter configuration is intentionally narrow and does not expose style policy
 
 ## Discovery and inheritance
 
-When `--style` is omitted, `strictfmt` searches upward from each formatted file for `.cpp-format`. For a file dump mode, discovery starts at the dumped source file. For `--stdin`, including stdin dump modes, discovery starts at the current working directory. `--style <path>` uses the provided formatter configuration path for every input. Formatting file paths are still checked against the nearest ignore file found by walking upward from each formatted file.
+When `--style` is omitted, `strictfmt` searches upward from each formatted file for `.cpp-format`. For a file dump mode, discovery starts at the dumped source file. For `--stdin`, including stdin dump modes, discovery starts at `--stdin-filename` when provided, otherwise at the current working directory. `--style <path>` uses the provided formatter configuration path for every input. Formatting file paths are still checked against the nearest ignore file found by walking upward from each formatted file.
 
 `Inherit: Parent` makes a `.cpp-format` file inherit from the next `.cpp-format` found by searching upward from the formatter configuration file's parent directory. Explicit `--style <path>` formatter configuration files use the same parent search rooted at the explicit file. If no parent `.cpp-format` exists, inheritance starts from built-in defaults. Local scalar keys override inherited scalar keys. Lists of names always merge with inherited entries, retaining exact duplicates once; this applies to every `MacroCategories` category and `StreamShift.ConfigurationMethods`. `IncludeCategories` replaces the inherited list. Nested maps inherit categories that are not specified locally.
 

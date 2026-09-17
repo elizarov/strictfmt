@@ -123,6 +123,7 @@ and exist only to exercise one command or configuration edge.
   `tests/format/src/format_main_include_output.cpp`: main-header sorting with
   source filenames supplied by the test harness. Filename, suffix, and header
   eligibility cases also verify idempotence under those same filenames.
+- `tests/format/src/format_stdin_main_include_input.cpp` -> `tests/format/src/format_stdin_main_include_output.cpp`: stdin filename discovery and preservation of the main header before a dependent header.
 - `tests/format/src/format_optimization_input.cpp` ->
   `tests/format/src/format_optimization_output.cpp`: reduced-width corner cases
   for profiles, delimiter partitions, and suffix-sensitive pruning.
