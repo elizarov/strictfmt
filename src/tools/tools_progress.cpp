@@ -2,6 +2,8 @@
 
 #include <cmath>
 
+#include "tools/tools_common.h"
+
 #ifdef _WIN32
 #include <io.h>
 #else
@@ -46,8 +48,8 @@ void ToolFileProgress::Update(size_t completedFiles) {
         return;
     }
     const std::string progress = label_ +
-        " completed " + std::to_string(completedFiles) +
-        "/" + std::to_string(totalFiles_) +
+        " completed " + FormatCount(static_cast<int>(completedFiles)) +
+        "/" + FormatCount(static_cast<int>(totalFiles_)) +
         " files in " + FormatToolElapsed(std::chrono::steady_clock::now() - started_);
     const std::string padding(previousLength_ > progress.size() ? previousLength_ - progress.size() : 0, ' ');
     std::fprintf(output_, "\r%s%s", progress.c_str(), padding.c_str());

@@ -68,8 +68,13 @@ are specified in [config.md](config.md).
 
 For file inputs, when the summary stream is a terminal, `strictfmt` updates an
 in-place progress line with completed file count and elapsed time. Final
-summaries report completed files, `changed/total LOC changed`, elapsed time,
-ignored files, files needing formatting, and formatting errors when applicable.
+summaries use comma-separated counts: `Formatting is required for changed/total
+files. changed/total LOC will change. Done in time.` in dry-run and diff modes
+when changes are needed, and `Formatted changed/total files. changed/total LOC
+changed. Done in time.` after formatting. Clean checks report `Checked total
+files. 0/total LOC will change. Done in time.` Ignored files and errors are
+reported when applicable; failed runs report completed files and LOC needing
+formatting. Progress file counts also use comma separators.
 The total is the number of input lines read; changed lines sum the larger of
 removed and added line counts in each contiguous change block, so replacements
 count once and insertions can make the count exceed the input total. Counts use

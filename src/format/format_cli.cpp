@@ -106,9 +106,9 @@ void PrintVerboseFileProgress(
     std::lock_guard<std::mutex> lock(outputMutex);
     std::fprintf(
         output,
-        "[%zu/%zu] %.*s %.*s",
-        fileIndex + 1,
-        totalFiles,
+        "[%s/%s] %.*s %.*s",
+        FormatCount(static_cast<int>(fileIndex + 1)).c_str(),
+        FormatCount(static_cast<int>(totalFiles)).c_str(),
         static_cast<int>(action.size()),
         action.data(),
         static_cast<int>(file.size()),
@@ -121,10 +121,10 @@ void PrintVerboseFileProgress(
     std::fflush(output);
 }
 
-std::string CompletedFileText(int completedCount, size_t totalCount) {
-    std::string text = std::to_string(completedCount);
-    if (completedCount != static_cast<int>(totalCount)) {
-        text += "/" + std::to_string(totalCount);
+std::string FileCountText(int count, size_t totalCount, bool showTotal) {
+    std::string text = FormatCount(count);
+    if (showTotal || count != static_cast<int>(totalCount)) {
+        text += "/" + FormatCount(static_cast<int>(totalCount));
     }
     text += totalCount == 1 ? " file" : " files";
     return text;
@@ -171,49 +171,45 @@ private:
     FormatStyleCache& styleCache_;
 };
 
-void PrintFormatTotals(
-    FILE* output,
-    const char* verb,
-    std::string_view subject,
-    int changedLineCount,
-    int lineCount,
-    std::chrono::steady_clock::time_point start
-) {
-    std::fprintf(
-        output,
-        "%s %.*s, %s/%s LOC changed in %s.",
-        verb,
-        static_cast<int>(subject.size()),
-        subject.data(),
-        FormatCount(changedLineCount).c_str(),
-        FormatCount(lineCount).c_str(),
-        FormatToolElapsed(std::chrono::steady_clock::now() - start).c_str()
-    );
+const char* SummaryAction(bool checkMode, bool changed) {
+    return checkMode ? (changed ? "Formatting is required for" : "Checked") : "Formatted";
 }
 
 void PrintFormatSummary(
     FILE* output,
     const char* verb,
-    int processedCount,
-    size_t totalCount,
-    int changedCount,
-    int ignoredCount,
-    int formatErrorCount,
+    std::string_view subject,
+    const char* changeVerb,
     int changedLineCount,
     int lineCount,
+    int ignoredCount,
+    int formatErrorCount,
     std::chrono::steady_clock::time_point start
 ) {
-    PrintFormatTotals(output, verb, CompletedFileText(processedCount, totalCount), changedLineCount, lineCount, start);
-    if (changedCount > 0) {
-        std::fprintf(output, " %d file%s require formatting.", changedCount, changedCount == 1 ? "" : "s");
-    }
+    std::fprintf(
+        output,
+        "%s %.*s. %s/%s LOC %s.",
+        verb,
+        static_cast<int>(subject.size()),
+        subject.data(),
+        FormatCount(changedLineCount).c_str(),
+        FormatCount(lineCount).c_str(),
+        changeVerb
+    );
     if (ignoredCount > 0) {
-        std::fprintf(output, " Skipped %d ignored file%s.", ignoredCount, ignoredCount == 1 ? "" : "s");
+        std::fprintf(
+            output, " Skipped %s ignored file%s.", FormatCount(ignoredCount).c_str(), ignoredCount == 1 ? "" : "s"
+        );
     }
     if (formatErrorCount > 0) {
-        std::fprintf(output, " %d file%s failed formatting.", formatErrorCount, formatErrorCount == 1 ? "" : "s");
+        std::fprintf(
+            output,
+            " %s file%s failed formatting.",
+            FormatCount(formatErrorCount).c_str(),
+            formatErrorCount == 1 ? "" : "s"
+        );
     }
-    std::fprintf(output, "\n");
+    std::fprintf(output, " Done in %s.\n", FormatToolElapsed(std::chrono::steady_clock::now() - start).c_str());
 }
 
 }  // namespace
@@ -285,9 +281,6 @@ int RunFormat(int argc, char** argv) {
             result.formatted,
             options.mode == FormatMode::Diff ? std::optional<std::string_view>{"<stdin>"} : std::nullopt
         );
-        if (IsCheckMode(options) && result.changed) {
-            std::fprintf(summary, "Formatting is required for stdin. ");
-        }
         if (options.mode == FormatMode::Stdout) {
             SetBinaryMode(stdout);
             std::fwrite(result.formatted.data(), 1, result.formatted.size(), stdout);
@@ -295,15 +288,17 @@ int RunFormat(int argc, char** argv) {
             SetBinaryMode(stdout);
             std::fwrite(diff.diff.data(), 1, diff.diff.size(), stdout);
         }
-        PrintFormatTotals(
+        PrintFormatSummary(
             summary,
-            IsCheckMode(options) ? "Checked" : "Formatted",
+            SummaryAction(IsCheckMode(options), result.changed),
             "stdin",
+            IsCheckMode(options) ? "will change" : "changed",
             static_cast<int>(diff.changedLineCount),
             CountSourceLines(stdinText),
+            0,
+            0,
             start
         );
-        std::fprintf(summary, "\n");
         return IsCheckMode(options) && result.changed ? 1 : 0;
     }
 
@@ -421,9 +416,6 @@ int RunFormat(int argc, char** argv) {
         PrintSourceWarnings(stderr, file, result.warnings);
         if (result.changed) {
             ++changedCount;
-            if (IsCheckMode(options)) {
-                failed = true;
-            }
         }
         pendingResults.push_back(std::move(completedFormat.pending));
     }
@@ -443,37 +435,18 @@ int RunFormat(int argc, char** argv) {
             }
         }
     }
-    if (failed) {
-        if (options.mode == FormatMode::InPlace || formatErrorCount > 0) {
-            std::fprintf(summary, "Formatting failed");
-        } else {
-            std::fprintf(summary, "Formatting is required for %d file%s", changedCount, changedCount == 1 ? "" : "s");
-        }
-        if (formatErrorCount > 0) {
-            std::fprintf(summary, " (%d file%s failed formatting)", formatErrorCount, formatErrorCount == 1 ? "" : "s");
-        }
-        if (ignoredCount > 0) {
-            std::fprintf(summary, ". Skipped %d ignored file%s", ignoredCount, ignoredCount == 1 ? "" : "s");
-        }
-        std::fprintf(summary, ". ");
-        PrintFormatTotals(
-            summary, "Checked", CompletedFileText(processedCount, work.size()), changedLineCount, lineCount, start
-        );
-        std::fprintf(summary, "\n");
-        return 1;
-    }
-    const char* verb = IsCheckMode(options) ? "Checked" : "Formatted";
+    const bool checkMode = IsCheckMode(options);
+    const bool showChangedFiles = !failed && (!checkMode || changedCount > 0);
     PrintFormatSummary(
         summary,
-        verb,
-        processedCount,
-        work.size(),
-        IsCheckMode(options) ? changedCount : 0,
-        ignoredCount,
-        formatErrorCount,
+        failed ? "Formatting failed. Checked" : SummaryAction(checkMode, changedCount > 0),
+        FileCountText(showChangedFiles ? changedCount : processedCount, work.size(), showChangedFiles),
+        failed ? "need formatting" : checkMode ? "will change" : "changed",
         changedLineCount,
         lineCount,
+        ignoredCount,
+        formatErrorCount,
         start
     );
-    return 0;
+    return failed || (checkMode && changedCount > 0) ? 1 : 0;
 }
