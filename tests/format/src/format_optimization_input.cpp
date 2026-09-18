@@ -88,7 +88,7 @@ a::B Object[20];
 a::LongType A,B;
 void f24(a::LongType a[2]);
 
-// initializer-record siblings: compact, bare, typed, mixed, and empty records
+// initializer elements and call arguments: compact, bare, typed, mixed, and empty records
 P a={{1},{2}};
 P b={{1},{first,second}};
 P c={P{1},P{first,second}};
@@ -97,12 +97,12 @@ P e={P{}, {first,second}};
 auto f=Call({1},{first,second});
 auto g=Call(P{1},P{first,second});
 
-// split/compact stays separate; split/split keeps its bridge; siblings need not be adjacent
+// initializer elements stay separate when either element expands
 P h={{first,second},{1}};
 P i={{first,second},{third,fourth}};
 P j={{1},0,{first,second}};
 
-// ordinary trailing payloads and initializers nested inside calls are not sibling records
+// initializer policy applies to every element shape; singleton wrappers retain trailing expansion
 P k={0,{first,second}};
 P l={{1},F(first,second)};
 P m={F({1}),{first,second}};

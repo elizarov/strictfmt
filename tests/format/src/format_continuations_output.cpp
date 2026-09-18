@@ -754,3 +754,104 @@ struct ModifierMembers {
     ) static LongReturnType
         Modified(int value);
 };
+
+// The enclosing list owns trailing expansion, independently of element syntax.
+void ListRoleLayouts() {
+    Call(Point{1}, Point{
+        first_coordinate,
+        second_coordinate
+    });
+    Call((Point{1}), Point{
+        first_coordinate,
+        second_coordinate
+    });
+    Rows rows{
+        Point{1},
+        Point{
+            first_coordinate,
+            second_coordinate
+        }
+    };
+    Rows wrapped{
+        (Point{1}),
+        Point{
+            first_coordinate,
+            second_coordinate
+        }
+    };
+    Config direct(mode, MakeSettings(
+        first_option,
+        second_option,
+        third_option
+    ));
+    Config aggregate{
+        mode,
+        MakeSettings(
+            first_option,
+            second_option,
+            third_option
+        )
+    };
+    Config nested{
+        mode,
+        Wrapper{MakeSettings(
+            first_option,
+            second_option,
+            third_option
+        )}
+    };
+    Config single{MakeSettings(
+        first_option,
+        second_option,
+        third_option
+    )};
+    Config designated{
+        .mode = mode,
+        .settings = MakeSettings(
+            first_option,
+            second_option,
+            third_option
+        )
+    };
+    ForEach(xs, [](auto x) {
+        Process(x);
+        Record(x);
+    });
+    Config callbacks{
+        mode,
+        [] {
+            Prepare();
+            Finish();
+        }
+    };
+    Config nestedCallbacks{
+        mode,
+        Wrap([] {
+            Prepare();
+            Finish();
+        })
+    };
+    Config empty{mode, [] {}};
+    Config singleton{[] {
+        Prepare();
+        Finish();
+    }};
+    Use("prefix", R"text(
+line
+)text");
+    TextPair text{
+        "prefix",
+        R"text(
+line
+)text"
+    };
+    TextPair firstText{
+        R"text(
+line
+)text",
+        "suffix"
+    };
+    Text singleText{R"text(
+line
+)text"};
+}

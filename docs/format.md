@@ -130,7 +130,7 @@ void Example() {
 }
 ```
 
-Compact and packed lists may expand only the final item into multiple lines. In angle lists and multi-item designated initializers, multiline items require one-item-per-line layout. Nested delimiters follow [Indent Economy](#indent-economy).
+Compact and packed lists may expand only the final item into multiple lines. In angle lists and multi-item initializer lists, multiline items require one-item-per-line layout. Nested delimiters follow [Indent Economy](#indent-economy).
 
 <!-- .cpp-format
 ColumnLimit: 35
@@ -140,8 +140,6 @@ auto result = call(first, Point{
     leftCoordinate, topCoordinate
 });
 ```
-
-If the final item is a braced initializer and an earlier item is also one, expanding it requires one-item-per-line layout. This includes bare and explicitly typed initializers, but not initializers nested inside other expressions.
 
 <!-- .cpp-format
 ColumnLimit: 40

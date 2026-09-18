@@ -922,16 +922,21 @@ private:
         for (size_t index = 0; index < node.items.size(); ++index) {
             const FormatBreakListItem& listItem = node.items[index];
             NodeResults nextByState;
-            const bool canKeepMultilineItem = node.items.size() == 1 ||
-                (index + 1 == node.items.size() && node.delimiterKind != FormatBreakDelimiterKind::Angle);
+            const bool canKeepMultilineItem = !node.compactRequiresUnbrokenItems && (
+                node.items.size() == 1 ||
+                (index + 1 == node.items.size() && node.delimiterKind != FormatBreakDelimiterKind::Angle)
+            );
             for (const NodeResult& prefix : current) {
                 if (listItem.node->kind == FormatBreakNodeKind::Token) {
                     // A token has exactly one layout, so memoized alternative enumeration cannot add a candidate.
-                    NodeResult next = prefix;
-                    Merge(
-                        next,
-                        SolveToken(listItem.node->token, prefix.endColumn, prefix.endIndentLevel, prefix.endLineHasText)
+                    const NodeResult item = SolveToken(
+                        listItem.node->token, prefix.endColumn, prefix.endIndentLevel, prefix.endLineHasText
                     );
+                    if (!canKeepMultilineItem && item.extraLines > 0) {
+                        continue;
+                    }
+                    NodeResult next = prefix;
+                    Merge(next, item);
                     AppendDelimitedItemSuffix(next, node, index, singleLineList);
                     AddPrunedResult(nextByState, std::move(next));
                     continue;

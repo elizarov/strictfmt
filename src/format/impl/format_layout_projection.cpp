@@ -363,7 +363,9 @@ private:
                     if (open != nullptr && open->token != nullptr && boundary.owner == open->token->node->parent) {
                         child = Copy(*source.children[index]);
                         child->token.contextOnly = true;
-                        node->forceSplit |= boundary.forceSplit;
+                        // The item crosses a mandatory physical break outside this cost region.
+                        // Lists requiring flat items cannot retain compact or packed layouts across it.
+                        node->forceSplit |= boundary.forceSplit || node->compactRequiresUnbrokenItems;
                         closeSelected = true;
                     }
                 }

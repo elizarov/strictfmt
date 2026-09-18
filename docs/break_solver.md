@@ -100,7 +100,7 @@ deferred closers consume that choice and its selected base indentation. Chain co
 recorded from the selected chain layout before a mandatory block. Mandatory item separators exclude packed split.
 Function-signature parameter-list expansion considers both split forms.
 
-The builder classifies list items by their outer syntax and marks sibling initializer-record lists with the shared unbroken-item requirement used by compact and packed candidates.
+The builder marks multi-item initializer lists with the shared unbroken-item requirement used by compact and packed candidates. This constraint depends on the enclosing list, independently of its elements' syntax, and includes physical newlines inside tokens. Projection also carries it across mandatory item boundaries whose bodies lie outside the current cost region.
 
 Single-line list candidates price eligible trailing commas as omitted. When an attached list contains a multiline item, `CompactWithTrailingComma` records that its separator must remain. A selected omission may make a competing expanded layout cheaper. Unless the result is entirely flat and fits the column limit, the solver copies the segment model, removes selected commas, and selects its layout again until no further commas disappear. Each iteration removes at least one source comma, so convergence is bounded by the number of eligible commas; this does not reparse or recursively format output. A fitting flat result already minimizes overflow, expansion cost, and line count. `FormatBreakSolution` records committed omissions for lowering, including any list that expands after removal.
 

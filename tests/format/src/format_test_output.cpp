@@ -927,9 +927,12 @@ void DesignatedInitializerAssignmentBreak() {
 auto CompactDesignatedInitializerList() { return DesignatedPair{.first = Convert(first), .second = Convert(second)}; }
 
 auto DesignatedInitializerMultilineLiteral() {
-    return TextPair{.first = "prefix", .second = R"q7(
+    return TextPair{
+        .first = "prefix",
+        .second = R"q7(
 line
-)q7"};
+)q7"
+    };
 }
 
 auto SplitDesignatedInitializerListAtFieldBoundaries() {
@@ -950,28 +953,25 @@ auto SingleDesignatedInitializerTailExpansion() {
 }
 
 auto PositionalInitializerTailExpansion() {
-    return PositionalPair{Convert(first), ConvertLongValue(
-        firstPositionalInitializerArgument, secondPositionalInitializerArgument, thirdPositionalInitializerArgument
-    )};
+    return PositionalPair{
+        Convert(first),
+        ConvertLongValue(
+            firstPositionalInitializerArgument, secondPositionalInitializerArgument, thirdPositionalInitializerArgument
+        )
+    };
 }
 
 void SiblingInitializerRecordContexts() {
-    Use(
-        Point{1, 2},
-        Point{
-            firstInitializerRecordCoordinateWithLongName,
-            secondInitializerRecordCoordinateWithLongName,
-            thirdInitializerRecordCoordinateWithLongName
-        }
-    );
-    Use(
-        model::Point<int>{1, 2},
-        model::Point<int>{
-            firstInitializerRecordCoordinateWithLongName,
-            secondInitializerRecordCoordinateWithLongName,
-            thirdInitializerRecordCoordinateWithLongName
-        }
-    );
+    Use(Point{1, 2}, Point{
+        firstInitializerRecordCoordinateWithLongName,
+        secondInitializerRecordCoordinateWithLongName,
+        thirdInitializerRecordCoordinateWithLongName
+    });
+    Use(model::Point<int>{1, 2}, model::Point<int>{
+        firstInitializerRecordCoordinateWithLongName,
+        secondInitializerRecordCoordinateWithLongName,
+        thirdInitializerRecordCoordinateWithLongName
+    });
     Use(context, Point{
         firstInitializerRecordCoordinateWithLongName,
         secondInitializerRecordCoordinateWithLongName,
@@ -996,25 +996,19 @@ void SiblingInitializerRecordContexts() {
         secondInitializerRecordCoordinateWithLongName,
         thirdInitializerRecordCoordinateWithLongName
     }));
-    Use(
-        Point{1, 2},
-        Point{
-            first,
-            [] {
-                Prepare();
-                Finish();
-            },
-            last
-        }
-    );
-    Use(
-        Point{1, 2},
-        Point{{
-            firstInitializerRecordCoordinateWithLongName,
-            secondInitializerRecordCoordinateWithLongName,
-            thirdInitializerRecordCoordinateWithLongName
-        }}
-    );
+    Use(Point{1, 2}, Point{
+        first,
+        [] {
+            Prepare();
+            Finish();
+        },
+        last
+    });
+    Use(Point{1, 2}, Point{{
+        firstInitializerRecordCoordinateWithLongName,
+        secondInitializerRecordCoordinateWithLongName,
+        thirdInitializerRecordCoordinateWithLongName
+    }});
 }
 
 void InitializerRecordDefaultArguments(Point first = Point{}, Point second = Point{
@@ -4221,9 +4215,10 @@ void FinalLambdaDiscountExamples() {
         [&](const auto& cargo_options) { builder[fields::kCargoOptions] = json::Serialize(cargo_options); },
         request.cargo_options()
     );
-    CallbackConfig config{request.cargo_options(), [&](const auto& cargo_options) {
-        builder[fields::kCargoOptions] = json::Serialize(cargo_options);
-    }};
+    CallbackConfig config{
+        request.cargo_options(),
+        [&](const auto& cargo_options) { builder[fields::kCargoOptions] = json::Serialize(cargo_options); }
+    };
     CallbackConfig commented{
         request.cargo_options(),
         [&](const auto& cargo_options) { builder[fields::kCargoOptions] = json::Serialize(cargo_options); },

@@ -76,7 +76,6 @@ struct FormatBreakListItem {
     FormatBreakToken separator;
     FormatBreakToken trailingComment;
     bool blankLineBefore = false;
-    bool bracedInitializerRecord = false;
 };
 
 // Projection copies this metadata directly while rebuilding child collections.

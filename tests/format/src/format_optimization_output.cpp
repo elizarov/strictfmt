@@ -242,7 +242,7 @@ void f24(
         a[2]
 );
 
-// initializer-record siblings: compact, bare, typed, mixed, and empty records
+// initializer elements and call arguments: compact, bare, typed, mixed, and empty records
 P a =
     {{1}, {2}};
 
@@ -278,23 +278,20 @@ P e = {
     }
 };
 
-auto f = Call(
-    {1},
-    {
+auto f =
+    Call({1}, {
         first,
         second
-    }
-);
+    });
 
 auto g = Call(
-    P{1},
-    P{
+    P{1}, P{
         first,
         second
     }
 );
 
-// split/compact stays separate; split/split keeps its bridge; siblings need not be adjacent
+// initializer elements stay separate when either element expands
 P h = {
     {
         first,
@@ -322,19 +319,26 @@ P j = {
     }
 };
 
-// ordinary trailing payloads and initializers nested inside calls are not sibling records
-P k = {0, {
-    first,
-    second
-}};
+// initializer policy applies to every element shape; singleton wrappers retain trailing expansion
+P k = {
+    0,
+    {
+        first,
+        second
+    }
+};
 
-P l = {{1}, F(
-    first,
-    second
-)};
+P l = {
+    {1},
+    F(
+        first,
+        second
+    )
+};
 
 P m = {
-    F({1}), {
+    F({1}),
+    {
         first,
         second
     }

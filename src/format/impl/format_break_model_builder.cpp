@@ -125,41 +125,6 @@ bool IsForHeaderDelimiter(const FormatBreakToken& open) {
     );
 }
 
-bool IsMultiItemDesignatedInitializer(const FormatBreakNode& delimited, const FormatBreakToken& open) {
-    const PrintToken& printToken = FormatBreakTokenValue(open);
-    const SyntaxNode* initializer = printToken.node == nullptr ? nullptr : printToken.node->parent;
-    return delimited.items.size() > 1 &&
-        printToken.parentKind == SyntaxNodeKind::InitializerList &&
-        initializer != nullptr &&
-        std::any_of(initializer->children.begin(), initializer->children.end(), [](const SyntaxNode* child) {
-            return child != nullptr && child->kind == SyntaxNodeKind::FieldDesignator;
-        });
-}
-
-bool IsBracedInitializerRecord(std::span<const SyntaxNode* const> children) {
-    const SyntaxNode* last = nullptr;
-    for (const SyntaxNode* child : children) {
-        if (child == nullptr || SyntaxNodeHasLocalClass(*child, SyntaxNodeClass::Trivia)) {
-            continue;
-        }
-        if (SyntaxNodeKindHasClass(child->kind, SyntaxNodeClass::AssignmentOperator)) {
-            return false;
-        }
-        last = child;
-    }
-    // Typed initializer expressions are flattened to their type prefix and initializer list.
-    // Do not descend into calls, lambdas, or other expressions that merely contain an initializer.
-    return last != nullptr && last->kind == SyntaxNodeKind::InitializerList;
-}
-
-bool HasSiblingInitializerRecords(const FormatBreakNode& list) {
-    return list.items.size() > 1 &&
-        list.items.back().bracedInitializerRecord &&
-        std::any_of(list.items.begin(), list.items.end() - 1, [](const FormatBreakListItem& item) {
-            return item.bracedInitializerRecord;
-        });
-}
-
 bool IsChainOperatorToken(const FormatBreakToken& token) {
     return FormatBreakTokenKind(token) == PrintTokenKind::Known &&
         SyntaxNodeKindHasClass(FormatBreakTokenSyntaxKind(token), SyntaxNodeClass::ChainOperator);
@@ -469,7 +434,6 @@ private:
             chain->flatSplitIndent = true;
         }
         AppendListItem(delimited, item, blankLineBefore);
-        delimited.items.back().bracedInitializerRecord = IsBracedInitializerRecord(itemChildren);
         itemChildren.clear();
     }
 
@@ -3185,8 +3149,7 @@ private:
         }
         delimited->compactRequiresFit = FormatBreakTokenValue(*open).parentKind == SyntaxNodeKind::CompoundStatement;
         delimited->compactRequiresUnbrokenItems = delimited->compactRequiresFit ||
-            IsMultiItemDesignatedInitializer(*delimited, *open) ||
-            HasSiblingInitializerRecords(*delimited);
+            (FormatBreakTokenValue(*open).parentKind == SyntaxNodeKind::InitializerList && delimited->items.size() > 1);
         if (
             !delimited->items.empty() && FormatBreakHasSingleLineTrailingComma(*delimited, delimited->items.size() - 1)
         ) {
