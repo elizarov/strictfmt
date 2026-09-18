@@ -614,3 +614,72 @@ void DirectInitializedLocals() {
     ns::LongTypeName&
         long_reference_name(original);
 }
+
+// Alias grouping measures targets independently of their declaration spelling.
+namespace AliasTargets {
+
+using Before = int;
+
+using A = LongTemplate<
+    FirstLongArgument,
+    SecondLongArgument,
+    ThirdLongArgument
+>;
+
+using After = int;
+typedef int BeforeTypedef;
+
+typedef LongTemplate<
+    FirstLongArgument,
+    SecondLongArgument,
+    ThirdLongArgument
+> B;
+
+typedef int AfterTypedef;
+
+typedef LongTemplate<
+    FirstLongArgument,
+    SecondLongArgument,
+    ThirdLongArgument
+>* Pointer;
+
+typedef int AfterPointer;
+
+typedef int Array[
+    first_extent +
+        second_extent +
+        third_extent
+];
+
+typedef int AfterArray;
+
+typedef int (*Function)(
+    FirstLongArgument first,
+    SecondLongArgument second,
+    ThirdLongArgument third
+);
+
+typedef int AfterFunction;
+
+typedef int (&Reference)(
+    FirstLongArgument first,
+    SecondLongArgument second,
+    ThirdLongArgument third
+);
+
+typedef int AfterReference;
+typedef Pair<First, Second>
+    ALongAliasNameThatNeedsItsOwnLine;
+typedef int AfterLongName;
+
+struct Nested {
+    typedef LongTemplate<
+        FirstLongArgument,
+        SecondLongArgument,
+        ThirdLongArgument
+    > B;
+
+    typedef int AfterNested;
+};
+
+}

@@ -232,6 +232,55 @@ TokenRange SourceRange(const FormatBreakNode& node, const FormatLayoutTree& tree
     return range;
 }
 
+TokenRange SyntaxRange(const SyntaxNode& node, const FormatLayoutTree& tree) {
+    const auto& owner = tree.Owner(tree.FindOwner(&node));
+    return {owner.begin, owner.end};
+}
+
+void AddRange(TokenRange& range, TokenRange part) {
+    if (part.begin < part.end) {
+        range.Add(part.begin);
+        range.Add(part.end - 1);
+    }
+}
+
+// A named declarator contributes its type constructors, but not the alias name.
+// Follow declarator fields and transparent reference/parenthesis wrappers; lists
+// inside the declarator retain their complete types and expressions.
+TokenRange DeclaratorTypeRange(const SyntaxNode& node, const FormatLayoutTree& tree) {
+    if (node.kind == SyntaxNodeKind::Identifier) {
+        return {};
+    }
+    TokenRange range;
+    const bool wrapper = SyntaxNodeHasClass(node, SyntaxNodeClass::DeclaratorReferenceParent) ||
+        SyntaxNodeHasClass(node, SyntaxNodeClass::ParenthesizedDeclarator);
+    for (const auto* child : node.children) {
+        if (child == nullptr || SyntaxNodeHasClass(*child, SyntaxNodeClass::Trivia)) {
+            continue;
+        }
+        const bool target = child->isDeclarator || (wrapper && !SyntaxNodeHasClass(*child, SyntaxNodeClass::Known));
+        AddRange(range, target ? DeclaratorTypeRange(*child, tree) : SyntaxRange(*child, tree));
+    }
+    return range;
+}
+
+TokenRange AliasTargetRange(const SyntaxNode& node, const FormatLayoutTree& tree) {
+    TokenRange range;
+    bool target = false;
+    for (const auto* child : node.children) {
+        if (child == nullptr || SyntaxNodeHasClass(*child, SyntaxNodeClass::Trivia)) {
+            continue;
+        }
+        target = target || child->isType;
+        if (target && child->kind != SyntaxNodeKind::Semicolon) {
+            AddRange(range, child->isDeclarator ? DeclaratorTypeRange(*child, tree) : SyntaxRange(*child, tree));
+        } else if (SyntaxNodeHasClass(*child, SyntaxNodeClass::DeclarationGroupAlias)) {
+            AddRange(range, AliasTargetRange(*child, tree));
+        }
+    }
+    return range;
+}
+
 bool IsMeasured(const FormatLayoutTokenLines& lines) { return lines.first != std::numeric_limits<size_t>::max(); }
 
 bool MayHaveLargeValue(const SyntaxNode* item, const FormatLayoutTree& tree, const FormatLayoutProgram& program) {
@@ -255,12 +304,7 @@ bool MayHaveLargeValue(const SyntaxNode* item, const FormatLayoutTree& tree, con
 // Counts the selected value's physical continuation lines while treating every
 // nested compound body as opaque. Source ranges retain bodies omitted from cost
 // regions; interval union prevents nested scopes from being subtracted twice.
-bool LargeValue(const FormatBreakNode& node, const FormatLayoutTree& tree, const FormatLayoutProgram& program) {
-    if (node.operands.size() < 2) {
-        return false;
-    }
-    const auto prefix = SourceRange(*node.operands[node.operands.size() - 2], tree);
-    const auto value = SourceRange(*node.operands.back(), tree);
+bool LargeValue(TokenRange prefix, TokenRange value, const FormatLayoutTree& tree, const FormatLayoutProgram& program) {
     if (prefix.begin >= prefix.end || value.begin >= value.end) {
         return false;
     }
@@ -325,8 +369,12 @@ void CollectLargeValues(
 ) {
     if (node.declarationValueOwner != nullptr && examined.insert(node.declarationValueOwner).second) {
         const auto* item = DeclarationScopeItem(node.declarationValueOwner);
-        if (CanIsolateLargeValue(item) && !isolated.contains(item) && LargeValue(node, tree, program)) {
-            isolated.insert(item);
+        if (CanIsolateLargeValue(item) && !isolated.contains(item) && node.operands.size() >= 2) {
+            const auto prefix = SourceRange(*node.operands[node.operands.size() - 2], tree);
+            const auto value = SourceRange(*node.operands.back(), tree);
+            if (LargeValue(prefix, value, tree, program)) {
+                isolated.insert(item);
+            }
         }
     }
     for (const auto* child : node.children) {
@@ -369,6 +417,14 @@ void FormatDeclarationLayout::Resolve(FormatLayoutTree& tree, FormatLayoutProgra
                 !declarations.insert(item).second ||
                 !MayHaveLargeValue(item, tree, program)
             ) {
+                continue;
+            }
+            if (SyntaxNodeHasClass(*item, SyntaxNodeClass::DeclarationGroupAlias)) {
+                const auto target = AliasTargetRange(*item, tree);
+                const TokenRange prefix{SyntaxRange(*item, tree).begin, target.begin};
+                if (LargeValue(prefix, target, tree, program)) {
+                    isolated.insert(item);
+                }
                 continue;
             }
             const auto& model = tree.CompleteModel(tree.FindOwner(item));

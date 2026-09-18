@@ -221,9 +221,11 @@ typedef a::B
     (C::*M)();
 typedef a::B
     C::* M;
+
 typedef a::B A,
     B[2],
     * P;
+
 typedef a::T<B>
     Name;
 typedef a::B

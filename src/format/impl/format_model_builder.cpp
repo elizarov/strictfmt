@@ -363,7 +363,8 @@ void AppendTsChildren(
         );
         const char* fieldName = ts_tree_cursor_current_field_name(&cursor);
         const bool isDeclarator = fieldName != nullptr && std::string_view(fieldName) == "declarator";
-        const bool isType = fieldName != nullptr && std::string_view(fieldName) == "type";
+        const bool isType = fieldName != nullptr &&
+            (std::string_view(fieldName) == "type" || std::string_view(fieldName) == "return_type");
         const bool isCondition = fieldName != nullptr && std::string_view(fieldName) == "condition";
         const bool isName = fieldName != nullptr && std::string_view(fieldName) == "name";
         if (isDeclarator || isType || isCondition || isName) {

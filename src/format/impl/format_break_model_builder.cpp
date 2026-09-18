@@ -852,7 +852,6 @@ private:
         signature->children = StoreNodePointers({returnType, declarator});
 
         auto chain = MakeNode(FormatBreakNodeKind::Chain, depth);
-        chain->declarationValueOwner = &node;
         chain->operands = StoreNodePointers({left, signature});
         chain->operators = StoreTokens({*op});
         return chain;
@@ -2699,8 +2698,6 @@ private:
         if (
             node.kind == SyntaxNodeKind::Declaration ||
             node.kind == SyntaxNodeKind::FieldDeclaration ||
-            node.kind == SyntaxNodeKind::AliasDeclaration ||
-            node.kind == SyntaxNodeKind::FunctionPointerAliasDeclaration ||
             node.kind == SyntaxNodeKind::InitDeclarator
         ) {
             chain->declarationValueOwner = &node;
