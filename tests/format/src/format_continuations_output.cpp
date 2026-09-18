@@ -592,3 +592,25 @@ Result<FirstType, SecondType>***
     Prepare();
     return value;
 }
+
+// Initializer spelling preserves the type-side ownership of declarator symbols.
+ns::LongTypeName* long_variable_name =
+    nullptr;
+ns::LongTypeName* long_variable_name{};
+ns::LongTypeName**
+    long_variable_name{nullptr};
+ns::LongTypeName&
+    long_variable_name{original};
+ns::LongTypeName&&
+    long_variable_name{Create()};
+ns::LongTypeName* const
+    long_variable_name{};
+ns::LongTypeName* first_variable_name{},
+    * second_variable_name{};
+
+void DirectInitializedLocals() {
+    ns::LongTypeName*
+        long_variable_name(nullptr);
+    ns::LongTypeName&
+        long_reference_name(original);
+}

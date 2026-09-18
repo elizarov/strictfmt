@@ -1827,11 +1827,12 @@ private:
             node.kind != SyntaxNodeKind::MemberPointerDeclarator;
     }
 
-    bool SplitDeclaratorReference(
+    bool SplitDeclaratorType(
         const SyntaxNode& node, ConstSyntaxChildList& typeChildren, ConstSyntaxChildList& declaratorChildren
     ) const {
-        if (!IsSplittableDeclaratorReference(node)) {
-            return false;
+        if (!IsSplittableDeclaratorReference(node) && node.kind != SyntaxNodeKind::InitDeclarator) {
+            declaratorChildren.push_back(&node);
+            return true;
         }
         std::optional<size_t> targetIndex;
         for (size_t index = node.children.size(); index > 0; --index) {
@@ -1839,7 +1840,8 @@ private:
             if (
                 child != nullptr &&
                 ContainsSelected(*child) &&
-                !SyntaxNodeKindHasClass(child->kind, SyntaxNodeClass::Trivia)
+                !SyntaxNodeKindHasClass(child->kind, SyntaxNodeClass::Trivia) &&
+                (node.kind != SyntaxNodeKind::InitDeclarator || child->isDeclarator)
             ) {
                 targetIndex = index - 1;
                 break;
@@ -1857,12 +1859,8 @@ private:
                 typeChildren.push_back(node.children[index]);
             }
         }
-        if (IsSplittableDeclaratorReference(*target)) {
-            if (!SplitDeclaratorReference(*target, typeChildren, declaratorChildren)) {
-                return false;
-            }
-        } else {
-            declaratorChildren.push_back(target);
+        if (!SplitDeclaratorType(*target, typeChildren, declaratorChildren)) {
+            return false;
         }
         for (size_t index = *targetIndex + 1; index < node.children.size(); ++index) {
             if (node.children[index] != nullptr && ContainsSelected(*node.children[index])) {
@@ -1879,7 +1877,6 @@ private:
             return nullptr;
         }
         std::optional<size_t> declaratorIndex;
-        bool wrappedDeclarator = false;
         for (size_t index = 0; index < children.size(); ++index) {
             const SyntaxNode* child = children[index];
             if (child == nullptr || !ContainsSelected(*child)) {
@@ -1887,7 +1884,6 @@ private:
             }
             if (IsSplittableDeclaratorReference(*child)) {
                 declaratorIndex = index;
-                wrappedDeclarator = true;
                 break;
             }
             if (allowDirectDeclarator && child->isDeclarator) {
@@ -1911,12 +1907,8 @@ private:
         })) {
             return nullptr;
         }
-        if (wrappedDeclarator) {
-            if (!SplitDeclaratorReference(*children[*declaratorIndex], typeChildren, declaratorChildren)) {
-                return nullptr;
-            }
-        } else {
-            declaratorChildren.push_back(children[*declaratorIndex]);
+        if (!SplitDeclaratorType(*children[*declaratorIndex], typeChildren, declaratorChildren)) {
+            return nullptr;
         }
         for (size_t index = *declaratorIndex + 1; index < children.size(); ++index) {
             if (children[index] != nullptr && ContainsSelected(*children[index])) {
@@ -2025,21 +2017,19 @@ private:
             return nullptr;
         }
 
-        auto chain = MakeNode(FormatBreakNodeKind::Chain, depth);
-        chain->declarationValueOwner = &node;
-        FormatBreakNode* left = BuildSequenceFromChildren(node.children, 0, *declaratorIndex, depth + 1);
-        FormatBreakNode* right =
-            BuildSequenceFromChildren(node.children, *declaratorIndex, node.children.size(), depth + 1);
-        if (right != nullptr) {
-            MarkForceSplitAdjacentStringsFlat(*right);
-            if (EndsWithBodyHeader(*right)) {
-                chain->splitTrailingBodyHeaderAtParentIndent = true;
-                MarkBodyHeaderSplitAtParentIndentWhenLineStarts(*right);
-            }
+        ConstSyntaxChildList children(node.children.begin(), node.children.end());
+        FormatBreakNode* declaration = BuildTypedDeclarator(children, depth, true);
+        if (declaration == nullptr) {
+            return nullptr;
         }
-        chain->operands = StoreNodePointers({left, right});
-        chain->operators = StoreTokens({{}});
-        return chain;
+        declaration->declarationValueOwner = &node;
+        FormatBreakNode* value = declaration->operands.back();
+        MarkForceSplitAdjacentStringsFlat(*value);
+        if (EndsWithBodyHeader(*value)) {
+            declaration->splitTrailingBodyHeaderAtParentIndent = true;
+            MarkBodyHeaderSplitAtParentIndentWhenLineStarts(*value);
+        }
+        return declaration;
     }
 
     FormatBreakNode* BuildAssignedDeclaration(const SyntaxNode& node, int depth) {
