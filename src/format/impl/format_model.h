@@ -29,6 +29,7 @@ struct SyntaxNode {
     SyntaxNodeKind kind = SyntaxNodeKind::Unknown;
     // Grammar field roles survive flattened wrappers.
     bool isDeclarator = false;
+    bool isType = false;
     bool isCondition = false;
     bool isName = false;
     std::uint64_t classes = 0;

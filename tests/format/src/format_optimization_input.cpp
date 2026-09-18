@@ -247,3 +247,13 @@ void H(){F(1,);G(first,second,);}
 auto x=source==f(v,c);
 auto y=source+f(v,c);
 auto z=source-f(v,c);
+
+// Type/declarator boundaries do not depend on qualification or declarator shape.
+ns::Type value_name;
+LongType value_name;
+LongType* pointer_name;
+LongType& reference_name;
+LongType array_name[2];
+LongType first_name,second_name;
+void Typed(LongType parameter_name);
+void Unnamed(const LongType&,LongType* const,LongType**);

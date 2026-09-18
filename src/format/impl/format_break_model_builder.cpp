@@ -570,37 +570,6 @@ private:
         return node;
     }
 
-    static bool IsQualificationChain(const FormatBreakNode& node) {
-        return node.kind == FormatBreakNodeKind::Chain &&
-            node.chainKind == FormatBreakChainKind::AfterOperator &&
-            !node.operators.empty() &&
-            std::all_of(node.operators.begin(), node.operators.end(), [](const FormatBreakToken& token) {
-                return FormatBreakTokenSyntaxKind(token) == SyntaxNodeKind::ColonColon;
-            });
-    }
-
-    static bool ContainsQualificationBreak(const FormatBreakNode& node) {
-        if (IsQualificationChain(node)) {
-            return true;
-        }
-        for (const FormatBreakNode* child : node.children) {
-            if (child != nullptr && ContainsQualificationBreak(*child)) {
-                return true;
-            }
-        }
-        for (const FormatBreakListItem& item : node.items) {
-            if (item.node != nullptr && ContainsQualificationBreak(*item.node)) {
-                return true;
-            }
-        }
-        for (const FormatBreakNode* operand : node.operands) {
-            if (operand != nullptr && ContainsQualificationBreak(*operand)) {
-                return true;
-            }
-        }
-        return false;
-    }
-
     static void MarkBodyHeaderSplitAtParentIndentWhenLineStarts(FormatBreakNode& node) {
         if (node.kind == FormatBreakNodeKind::BodyHeader) {
             node.bodyHeaderSplitAtParentIndentWhenLineStarts = true;
@@ -1927,14 +1896,14 @@ private:
         if (!targetIndex) {
             return false;
         }
+        const SyntaxNode* target = node.children[*targetIndex];
+        if (target == nullptr || SyntaxNodeKindHasClass(target->kind, SyntaxNodeClass::Known)) {
+            return false;
+        }
         for (size_t index = 0; index < *targetIndex; ++index) {
             if (node.children[index] != nullptr && ContainsSelected(*node.children[index])) {
                 typeChildren.push_back(node.children[index]);
             }
-        }
-        const SyntaxNode* target = node.children[*targetIndex];
-        if (target == nullptr) {
-            return false;
         }
         if (IsSplittableDeclaratorReference(*target)) {
             if (!SplitDeclaratorReference(*target, typeChildren, declaratorChildren)) {
@@ -1985,6 +1954,11 @@ private:
                 typeChildren.push_back(children[index]);
             }
         }
+        if (std::none_of(typeChildren.begin(), typeChildren.end(), [](const SyntaxNode* child) {
+            return child->isType;
+        })) {
+            return nullptr;
+        }
         if (wrappedDeclarator) {
             if (!SplitDeclaratorReference(*children[*declaratorIndex], typeChildren, declaratorChildren)) {
                 return nullptr;
@@ -2004,9 +1978,6 @@ private:
             declarator = BuildSequenceFromPointers(declaratorChildren, depth + 1);
         }
         if (type == nullptr || declarator == nullptr) {
-            return nullptr;
-        }
-        if (!ContainsQualificationBreak(*type)) {
             return nullptr;
         }
         auto typedDeclarator = MakeNode(FormatBreakNodeKind::Chain, depth);

@@ -799,12 +799,14 @@ auto q =
         >();
 
 // Packed braced lists preserve the presence or absence of their trailing comma.
-auto packedComma =
+auto
+    packedComma =
     ABCDEFG{
         1, 2,
     };
 
-auto packedNoComma =
+auto
+    packedNoComma =
     ABCDEFG{
         1, 2
     };
@@ -844,8 +846,10 @@ F(
 // Commas in calls and declarations survive both compact and split layouts.
 void F(int, );
 void G(
-    First first,
-    Second second,
+    First
+        first,
+    Second
+        second,
 );
 void H() {
     F(1, );
@@ -872,3 +876,30 @@ auto z =
     source - f(
         v, c
     );
+
+// Type/declarator boundaries do not depend on qualification or declarator shape.
+ns::Type
+    value_name;
+LongType
+    value_name;
+LongType*
+    pointer_name;
+LongType&
+    reference_name;
+LongType
+    array_name[
+        2
+    ];
+LongType
+    first_name,
+        second_name;
+
+void Typed(
+    LongType
+        parameter_name
+);
+void Unnamed(
+    const LongType&,
+    LongType* const,
+    LongType**
+);

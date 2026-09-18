@@ -103,7 +103,7 @@ Optional breaks within a [formatted segment](glossary.md#formatted-segment) occu
 - After delimiter-group openers and before their matching closers.
 - After a list's introducing `:`.
 - After commas in any [list](glossary.md#list).
-- Between a declaration type and its direct-initialized declarator value.
+- Between a declaration type and its declarator.
 - After semicolons inside control-statement headers.
 - At callable-structure boundaries and between adjacent string literals.
 - After a [value-owning keyword](glossary.md#value-owning-keyword).
@@ -465,7 +465,7 @@ Functions, lambdas, and statement arguments share compact-body eligibility: one 
 int Next(int value) { return value + 1; }
 ```
 
-When a qualified type and its declarator need separation, first break after the complete type and indent the declarator one level. This boundary is preferred to every break inside the type.
+When a type and its declarator need separation, first break after the complete type and indent the declarator one level. This boundary is preferred to every break inside the type.
 
 <!-- .cpp-format
 ColumnLimit: 80

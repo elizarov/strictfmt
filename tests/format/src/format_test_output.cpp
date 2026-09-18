@@ -643,13 +643,12 @@ void SaveBoardSectionDifferences(
 ) {
     DynamicSectionSaveContext<UpdateKeyFn> context{&board, compareBoard, &updateKey};
     updateKey(board, compareBoard, sectionName);
-    const auto saveBoardKey = [&](
-        const std::string& key, const std::string& currentValue, const std::string& compareValue
-    ) {
-        if (compareBoard == nullptr || currentValue != compareValue) {
-            updateKey(sectionName, key, currentValue);
-        }
-    };
+    const auto
+        saveBoardKey = [&](const std::string& key, const std::string& currentValue, const std::string& compareValue) {
+            if (compareBoard == nullptr || currentValue != compareValue) {
+                updateKey(sectionName, key, currentValue);
+            }
+        };
 }
 
 template <
@@ -1059,7 +1058,8 @@ using GlobalSingleQualifiedName = ::NamespaceWithAnIntentionallyLongNameForSingl
     TypeWithAnIntentionallyLongNameForSingleQualificationCoverage;
 
 void UseLeadingGlobalScope(
-    const ::GlobalTypeWithAnIntentionallyLongNameToVerifyThatLeadingScopeResolutionNeverCreatesAnIndependentBreakOpportunity& value
+    const ::GlobalTypeWithAnIntentionallyLongNameToVerifyThatLeadingScopeResolutionNeverCreatesAnIndependentBreakOpportunity&
+        value
 );
 void UseSingleQualifiedCall() {
     NamespaceWithAnIntentionallyLongNameForSingleQualificationCoverage::
@@ -1285,16 +1285,8 @@ StringColumn::StringColumn(ColumnRef column) :
     ClickhouseColumn{impl::GetTypedColumn<StringColumn, NativeTyp>(column)} {}
 
 struct OverflowDeclaration {
-    FunctionPtr destroy,
-        writev,
-        readv,
-        setsockopt,
-        get_base_stream,
-        check_closed,
-        poll,
-        failed,
-        timed_out,
-        should_retry;
+    FunctionPtr
+        destroy, writev, readv, setsockopt, get_base_stream, check_closed, poll, failed, timed_out, should_retry;
 };
 
 void FormatOverflowStream() {
@@ -1961,14 +1953,13 @@ const auto ensureSectionAfter = [&lines, &findSectionIndex, shape](
     return afterIndex;
 };
 
-const auto guideSheetLookup = [&config, activeTheme, &colorsSection](
-    std::string_view name
-) -> std::optional<ColorConfig> {
-    if (std::optional<ColorConfig> themeColor = FindThemeToken(*activeTheme, name); themeColor.has_value()) {
-        return themeColor;
-    }
-    return FindColorFieldByKey(RuntimeConfigFields(colorsSection), &config.layout.colors, name);
-};
+const auto
+    guideSheetLookup = [&config, activeTheme, &colorsSection](std::string_view name) -> std::optional<ColorConfig> {
+        if (std::optional<ColorConfig> themeColor = FindThemeToken(*activeTheme, name); themeColor.has_value()) {
+            return themeColor;
+        }
+        return FindColorFieldByKey(RuntimeConfigFields(colorsSection), &config.layout.colors, name);
+    };
 
 void LambdaGeneralityCases(int left, int right) {
     auto twoParameterLambda = [](int left, int right) { return left + right; };
@@ -2931,7 +2922,8 @@ void PlaceEmptyLambdaCallout() {
 
 void AssignedSingleStatementLambdaContext() {
     const auto shortAssignedLambda = [](int value) { return value + 1; };
-    const auto extremelyLongAssignedLambdaNameThatConsumesEnoughColumnsToForceTheAssignmentPrefixAwayFromTheLambdaHeaderBeforeTheSingleStatementBody =
+    const auto
+        extremelyLongAssignedLambdaNameThatConsumesEnoughColumnsToForceTheAssignmentPrefixAwayFromTheLambdaHeaderBeforeTheSingleStatementBody =
         [](int value) { return value + 1; };
 }
 

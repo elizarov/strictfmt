@@ -64,7 +64,7 @@ declarators and namespace names.
 
 Name-prefix normalization includes template argument lists. For a list in a qualified name's right operand, it adjusts the qualification decision and its left prefix without shifting the attached list.
 
-A qualified declaration type and its declarator form an independent outer break node. Its type subtree is structurally deeper, so the boundary is cheaper than every break inside the type without a surcharge. Pointer and reference wrappers are partitioned with the type, assignment tails remain outside this grouping, and callable declarations retain the ordinary function-signature model and its prefix surcharge.
+A declaration type and its declarator form an independent outer break node. Grammar type roles distinguish types from declaration modifiers. Its type subtree is structurally deeper, so the boundary is cheaper than every break inside the type without a surcharge. Pointer and reference wrappers are partitioned with the type, assignment tails remain outside this grouping, and callable declarations retain the ordinary function-signature model and its prefix surcharge.
 
 An adjacent-string node stores the exact safely joined spellings of its compact ordinary-literal runs. Compact solving
 prices those spellings rather than the original separated tokens, and compact one-line probes use the same widths.

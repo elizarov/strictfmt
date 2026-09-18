@@ -363,13 +363,15 @@ void AppendTsChildren(
         );
         const char* fieldName = ts_tree_cursor_current_field_name(&cursor);
         const bool isDeclarator = fieldName != nullptr && std::string_view(fieldName) == "declarator";
+        const bool isType = fieldName != nullptr && std::string_view(fieldName) == "type";
         const bool isCondition = fieldName != nullptr && std::string_view(fieldName) == "condition";
         const bool isName = fieldName != nullptr && std::string_view(fieldName) == "name";
-        if (isDeclarator || isCondition || isName) {
+        if (isDeclarator || isType || isCondition || isName) {
             for (size_t childIndex = childBegin; childIndex < parent.children.size(); ++childIndex) {
                 SyntaxNode* childNode = parent.children[childIndex];
                 if (childNode != nullptr && !SyntaxNodeHasClass(*childNode, SyntaxNodeClass::Trivia)) {
                     childNode->isDeclarator = childNode->isDeclarator || isDeclarator;
+                    childNode->isType = childNode->isType || isType;
                     childNode->isCondition = childNode->isCondition || isCondition;
                     childNode->isName = childNode->isName || isName;
                 }
