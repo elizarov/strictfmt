@@ -407,7 +407,7 @@ class FormatCommandTests(unittest.TestCase):
         self.assertEqual(0, result.returncode, msg=f"stdout:\n{result.stdout}\n\nstderr:\n{result.stderr}")
         self.assertEqual(read_fixture(OUTPUT_FIXTURE), result.stdout)
         self.assert_no_unsupported_placement_warnings(result)
-        self.assertRegex(result.stderr, r"Formatted stdin in (?:\d+ms|\d+\.\d{3}s)\.\s*$")
+        self.assertRegex(result.stderr, r"Formatted stdin, [\d,]+/[\d,]+ LOC changed in (?:\d+ms|\d+\.\d{3}s)\.\s*$")
 
     def test_preprocessor_eof_formats_to_expected_output(self) -> None:
         result = native_format("--stdin", cwd=TEST_ROOT, input_text=read_fixture(PREPROCESSOR_EOF_INPUT_FIXTURE))
@@ -541,7 +541,7 @@ class FormatCommandTests(unittest.TestCase):
         self.assertEqual(0, result.returncode, msg=f"stdout:\n{result.stdout}\n\nstderr:\n{result.stderr}")
         self.assertEqual(read_fixture(USERVER_OUTPUT_FIXTURE), result.stdout)
         self.assert_no_unsupported_placement_warnings(result)
-        self.assertRegex(result.stderr, r"Formatted stdin in (?:\d+ms|\d+\.\d{3}s)\.\s*$")
+        self.assertRegex(result.stderr, r"Formatted stdin, [\d,]+/[\d,]+ LOC changed in (?:\d+ms|\d+\.\d{3}s)\.\s*$")
 
     def test_userver_golden_input_parses_without_errors(self) -> None:
         with copied_fixtures(USERVER_INPUT_FIXTURE) as fixtures:
@@ -563,7 +563,7 @@ class FormatCommandTests(unittest.TestCase):
         self.assertEqual(0, result.returncode, msg=f"stdout:\n{result.stdout}\n\nstderr:\n{result.stderr}")
         self.assertEqual(read_fixture(IFDEF_OUTPUT_FIXTURE), result.stdout)
         self.assert_no_unsupported_placement_warnings(result)
-        self.assertRegex(result.stderr, r"Formatted stdin in (?:\d+ms|\d+\.\d{3}s)\.\s*$")
+        self.assertRegex(result.stderr, r"Formatted stdin, [\d,]+/[\d,]+ LOC changed in (?:\d+ms|\d+\.\d{3}s)\.\s*$")
 
     def test_ifdef_golden_input_parses_without_errors(self) -> None:
         with copied_fixtures(IFDEF_INPUT_FIXTURE) as fixtures:
@@ -587,7 +587,7 @@ class FormatCommandTests(unittest.TestCase):
         self.assertRegex(
             result.stderr,
             re.escape(read_fixture(UNSUPPORTED_WARNINGS_FIXTURE)) +
-            r"Formatted stdin in (?:\d+ms|\d+\.\d{3}s)\.\s*$",
+            r"Formatted stdin, [\d,]+/[\d,]+ LOC changed in (?:\d+ms|\d+\.\d{3}s)\.\s*$",
         )
 
     def test_error_stdin_reports_expected_parse_errors(self) -> None:
@@ -815,7 +815,7 @@ class FormatCommandTests(unittest.TestCase):
         self.assertEqual(read_fixture(OUTPUT_FIXTURE), result.stdout)
         self.assertRegex(
             result.stderr,
-            rf"Formatted 1 file, {fixture_loc(OUTPUT_FIXTURE)} LOC in (?:\d+ms|\d+\.\d{{3}}s)\.\s*$",
+            rf"Formatted 1 file, 0/{fixture_loc(OUTPUT_FIXTURE)} LOC changed in (?:\d+ms|\d+\.\d{{3}}s)\.\s*$",
         )
 
     def test_dry_run_accepts_idempotent_file_and_rejects_unformatted_file(self) -> None:
@@ -825,7 +825,7 @@ class FormatCommandTests(unittest.TestCase):
             self.assertEqual(0, ok_result.returncode, msg=f"stdout:\n{ok_result.stdout}\n\nstderr:\n{ok_result.stderr}")
             self.assertRegex(
                 ok_result.stdout,
-                rf"Checked 1 file, {fixture_loc(OUTPUT_FIXTURE)} LOC in (?:\d+ms|\d+\.\d{{3}}s)\.\s*$",
+                rf"Checked 1 file, 0/{fixture_loc(OUTPUT_FIXTURE)} LOC changed in (?:\d+ms|\d+\.\d{{3}}s)\.\s*$",
             )
 
             bad_result = native_format("--dry-run", str(fixtures[INPUT_FIXTURE]))
@@ -834,7 +834,7 @@ class FormatCommandTests(unittest.TestCase):
             self.assertIn("Formatting is required for 1 file", bad_result.stdout)
             self.assertRegex(
                 bad_result.stdout,
-                rf"Checked 1 file, {fixture_loc(INPUT_FIXTURE)} LOC in (?:\d+ms|\d+\.\d{{3}}s)\.\s*$",
+                rf"Checked 1 file, [\d,]+/{fixture_loc(INPUT_FIXTURE)} LOC changed in (?:\d+ms|\d+\.\d{{3}}s)\.\s*$",
             )
 
     def test_diff_outputs_unified_diff_and_uses_dry_run_exit_codes(self) -> None:
@@ -867,7 +867,57 @@ class FormatCommandTests(unittest.TestCase):
 
             self.assertEqual(0, clean.returncode, msg=f"stdout:\n{clean.stdout}\n\nstderr:\n{clean.stderr}")
             self.assertEqual("", clean.stdout)
-            self.assertRegex(clean.stderr, r"Checked 1 file, 1 LOC in (?:\d+ms|\d+\.\d{3}s)\.\s*$")
+            self.assertRegex(clean.stderr, r"Checked 1 file, 0/1 LOC changed in (?:\d+ms|\d+\.\d{3}s)\.\s*$")
+
+    def test_changed_line_summary_across_file_modes(self) -> None:
+        TEST_TEMP_ROOT.mkdir(exist_ok=True)
+        with tempfile.TemporaryDirectory(prefix="format_summary_", dir=TEST_TEMP_ROOT) as temp_dir:
+            root = Path(temp_dir)
+            copy_default_config(root)
+            write_empty_ignore(root)
+            source = root / "changed.cpp"
+            clean = root / "clean.cpp"
+            clean.write_text("int clean = 0;\n", encoding="utf-8")
+            original = "int keep = 0;\nint change=1;\nint last = 2;\n"
+            formatted = original.replace("change=1", "change = 1")
+            for mode in ((), ("-i",), ("-n",), ("--dry-run",), ("--diff",)):
+                with self.subTest(mode=mode):
+                    source.write_text(original, encoding="utf-8")
+                    result = native_format(*mode, "--concurrency", "2", str(source), str(clean), cwd=root)
+                    checking = mode in (("-n",), ("--dry-run",), ("--diff",))
+                    summary = result.stderr if mode in ((), ("--diff",)) else result.stdout
+                    self.assertEqual(int(checking), result.returncode, msg=result.stderr)
+                    self.assertIn("2 files, 1/4 LOC changed in ", summary)
+                    self.assertEqual(
+                        formatted if mode == ("-i",) else original, source.read_text(encoding="utf-8")
+                    )
+                    if not mode:
+                        self.assertEqual(formatted + "int clean = 0;\n", result.stdout)
+
+    def test_changed_line_summary_counts_replacements_additions_and_removals(self) -> None:
+        cases = (
+            ("empty", "", 0),
+            ("unchanged", "int keep = 0;\n", 0),
+            ("final newline", "int keep = 0;", 1),
+            ("expansion", "void Test(){First();Second();}\n", 4),
+            ("contraction", "int Test() {\n    return 1;\n}\n", 3),
+            ("blank removal", "int first = 0;\n\n\nint last = 1;\n", 1),
+            ("distant synchronization", "\n" * 80 + "int keep = 0;\n", 80),
+            ("trailing removals", "int keep = 0;\n" + "\n" * 80, 80),
+            ("consecutive replacements", "".join(f"int value{index}=0;\n" for index in range(80)), 80),
+            (
+                "separate blocks",
+                "int One() {\n    return 1;\n}\n\nint keep = 0;\n\nvoid Test(){First();Second();}\n",
+                7,
+            ),
+        )
+        for name, source, changed in cases:
+            for mode in ((), ("-n",), ("--diff",)):
+                with self.subTest(name=name, mode=mode):
+                    result = native_format(*mode, "--stdin", input_text=source)
+                    summary = result.stdout if mode == ("-n",) else result.stderr
+                    self.assertEqual(int(bool(mode) and changed > 0), result.returncode, msg=result.stderr)
+                    self.assertIn(f"stdin, {changed}/{len(source.splitlines())} LOC changed in ", summary)
 
     def test_diff_supports_stdin_and_marks_a_missing_final_newline(self) -> None:
         result = native_format("--diff", "--stdin", input_text="int value=1;")
@@ -926,7 +976,7 @@ class FormatCommandTests(unittest.TestCase):
             self.assertEqual(0, result.returncode, msg=f"stdout:\n{result.stdout}\n\nstderr:\n{result.stderr}")
             self.assertRegex(
                 result.stdout,
-                rf"Checked 1 file, {fixture_loc(OUTPUT_FIXTURE)} LOC in (?:\d+ms|\d+\.\d{{3}}s)\.\s*$",
+                rf"Checked 1 file, 0/{fixture_loc(OUTPUT_FIXTURE)} LOC changed in (?:\d+ms|\d+\.\d{{3}}s)\.\s*$",
             )
 
     def test_recursive_option_discovers_cpp_and_headers(self) -> None:
@@ -964,7 +1014,7 @@ class FormatCommandTests(unittest.TestCase):
             result = native_format("--dry-run", "-r", ".", cwd=root)
 
             self.assertEqual(0, result.returncode, msg=f"stdout:\n{result.stdout}\n\nstderr:\n{result.stderr}")
-            self.assertRegex(result.stdout, r"Checked 13 files, 13 LOC in (?:\d+ms|\d+\.\d{3}s)\.\s*$")
+            self.assertRegex(result.stdout, r"Checked 13 files, 0/13 LOC changed in (?:\d+ms|\d+\.\d{3}s)\.\s*$")
 
     def test_userver_submodule(self) -> None:
         self.assert_external_project_sources_parse_without_warnings_and_format_idempotently("userver")
@@ -1001,7 +1051,7 @@ class FormatCommandTests(unittest.TestCase):
                 "int first() { return 1; }\n",
                 result.stdout,
             )
-            self.assertRegex(result.stderr, r"Formatted 2 files, 2 LOC in (?:\d+ms|\d+\.\d{3}s)\.\s*$")
+            self.assertRegex(result.stderr, r"Formatted 2 files, 2/2 LOC changed in (?:\d+ms|\d+\.\d{3}s)\.\s*$")
 
     def test_verbose_reports_each_file_start_and_completion(self) -> None:
         build_dir = TEST_TEMP_ROOT
@@ -1027,7 +1077,7 @@ class FormatCommandTests(unittest.TestCase):
                 rf"\[1/2\] Finished {escaped_first} in (?:\d+ms|\d+\.\d{{3}}s)\n"
                 rf"\[2/2\] Formatting {escaped_second}\n"
                 rf"\[2/2\] Finished {escaped_second} in (?:\d+ms|\d+\.\d{{3}}s)\n"
-                rf"Formatted 2 files, 2 LOC in (?:\d+ms|\d+\.\d{{3}}s)\.\s*$",
+                rf"Formatted 2 files, 2/2 LOC changed in (?:\d+ms|\d+\.\d{{3}}s)\.\s*$",
             )
 
     def test_in_place_formats_file(self) -> None:
@@ -1045,7 +1095,7 @@ class FormatCommandTests(unittest.TestCase):
 
             self.assertEqual(0, result.returncode, msg=f"stdout:\n{result.stdout}\n\nstderr:\n{result.stderr}")
             self.assertEqual("int main() { return 1; }\n", source.read_text(encoding="utf-8").replace("\r\n", "\n"))
-            self.assertIn("Formatted 1 file, 1 LOC", result.stdout)
+            self.assertIn("Formatted 1 file, 1/1 LOC changed", result.stdout)
 
     def test_in_place_preserves_unambiguous_line_endings(self) -> None:
         build_dir = TEST_TEMP_ROOT
@@ -1071,6 +1121,7 @@ class FormatCommandTests(unittest.TestCase):
 
                     self.assertEqual(0, result.returncode, msg=f"stdout:\n{result.stdout!r}\n\nstderr:\n{result.stderr!r}")
                     self.assertEqual(join_lines(expected_lines, line_ending), source.read_bytes())
+                    self.assertIn(b"3/3 LOC changed", result.stdout)
 
     def test_in_place_normalizes_mixed_line_endings_to_platform_default(self) -> None:
         build_dir = TEST_TEMP_ROOT
@@ -2488,7 +2539,7 @@ class FormatCommandTests(unittest.TestCase):
             result = native_format("--dry-run", str(source), cwd=root)
 
             self.assertEqual(0, result.returncode, msg=f"stdout:\n{result.stdout}\n\nstderr:\n{result.stderr}")
-            self.assertIn("Checked 0 files, 0 LOC", result.stdout)
+            self.assertIn("Checked 0 files, 0/0 LOC changed", result.stdout)
             self.assertIn("Skipped 1 ignored file", result.stdout)
 
     def test_no_input_prints_help_instead_of_reading_stdin(self) -> None:

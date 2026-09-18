@@ -68,8 +68,13 @@ are specified in [config.md](config.md).
 
 For file inputs, when the summary stream is a terminal, `strictfmt` updates an
 in-place progress line with completed file count and elapsed time. Final
-summaries report completed files, lines of code, elapsed time, ignored files,
-files needing formatting, and formatting errors when applicable.
+summaries report completed files, `changed/total LOC changed`, elapsed time,
+ignored files, files needing formatting, and formatting errors when applicable.
+The total is the number of input lines read; changed lines sum the larger of
+removed and added line counts in each contiguous change block, so replacements
+count once and insertions can make the count exceed the input total. Counts use
+the same line matching as `--diff`, including line endings. Stdin summaries also
+include these line counts.
 
 ## Unknown arguments
 

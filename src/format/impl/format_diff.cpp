@@ -115,40 +115,51 @@ std::optional<std::pair<size_t, size_t>> FindNearbySynchronization(
     return std::nullopt;
 }
 
-void AppendRemovals(std::vector<DiffEdit>& edits, const std::vector<DiffLine>& lines, size_t& index, size_t count) {
-    for (size_t end = index + count; index < end; ++index) {
-        edits.push_back({DiffEditKind::Remove, lines[index]});
+void AppendEdits(
+    std::vector<DiffEdit>* edits, DiffEditKind kind, const std::vector<DiffLine>& lines, size_t index, size_t count
+) {
+    if (edits != nullptr) {
+        for (size_t end = index + count; index < end; ++index) {
+            edits->push_back({kind, lines[index]});
+        }
     }
 }
 
-void AppendAdditions(std::vector<DiffEdit>& edits, const std::vector<DiffLine>& lines, size_t& index, size_t count) {
-    for (size_t end = index + count; index < end; ++index) {
-        edits.push_back({DiffEditKind::Add, lines[index]});
+size_t CompareLines(
+    const std::vector<DiffLine>& source, const std::vector<DiffLine>& formatted, std::vector<DiffEdit>* edits
+) {
+    std::optional<DiffLinePositions> sourcePositions;
+    std::optional<DiffLinePositions> formattedPositions;
+    if (edits != nullptr) {
+        edits->reserve(source.size() + formatted.size());
     }
-}
-
-std::vector<DiffEdit> BuildGreedyEdits(const std::vector<DiffLine>& source, const std::vector<DiffLine>& formatted) {
-    const DiffLinePositions sourcePositions = IndexLinePositions(source);
-    const DiffLinePositions formattedPositions = IndexLinePositions(formatted);
-    std::vector<DiffEdit> edits;
-    edits.reserve(source.size() + formatted.size());
+    size_t changedLineCount = 0;
+    size_t sourceChangeStart = 0;
+    size_t formattedChangeStart = 0;
     size_t sourceIndex = 0;
     size_t formattedIndex = 0;
     while (sourceIndex < source.size() && formattedIndex < formatted.size()) {
         if (source[sourceIndex] == formatted[formattedIndex]) {
-            edits.push_back({DiffEditKind::Equal, source[sourceIndex]});
+            changedLineCount += std::max(sourceIndex - sourceChangeStart, formattedIndex - formattedChangeStart);
+            AppendEdits(edits, DiffEditKind::Equal, source, sourceIndex, 1);
             ++sourceIndex;
             ++formattedIndex;
+            sourceChangeStart = sourceIndex;
+            formattedChangeStart = formattedIndex;
             continue;
         }
 
         std::optional<std::pair<size_t, size_t>> synchronization =
             FindNearbySynchronization(source, sourceIndex, formatted, formattedIndex);
         if (!synchronization) {
+            if (!sourcePositions) {
+                sourcePositions = IndexLinePositions(source);
+                formattedPositions = IndexLinePositions(formatted);
+            }
             const std::optional<size_t> nextFormatted =
-                FindPosition(formattedPositions, source[sourceIndex], formattedIndex + 1);
+                FindPosition(*formattedPositions, source[sourceIndex], formattedIndex + 1);
             const std::optional<size_t> nextSource =
-                FindPosition(sourcePositions, formatted[formattedIndex], sourceIndex + 1);
+                FindPosition(*sourcePositions, formatted[formattedIndex], sourceIndex + 1);
             if (nextFormatted && (!nextSource || *nextFormatted - formattedIndex <= *nextSource - sourceIndex)) {
                 synchronization = std::pair{size_t{0}, *nextFormatted - formattedIndex};
             } else if (nextSource) {
@@ -158,12 +169,14 @@ std::vector<DiffEdit> BuildGreedyEdits(const std::vector<DiffLine>& source, cons
         if (!synchronization) {
             synchronization = std::pair{size_t{1}, size_t{1}};
         }
-        AppendRemovals(edits, source, sourceIndex, synchronization->first);
-        AppendAdditions(edits, formatted, formattedIndex, synchronization->second);
+        AppendEdits(edits, DiffEditKind::Remove, source, sourceIndex, synchronization->first);
+        AppendEdits(edits, DiffEditKind::Add, formatted, formattedIndex, synchronization->second);
+        sourceIndex += synchronization->first;
+        formattedIndex += synchronization->second;
     }
-    AppendRemovals(edits, source, sourceIndex, source.size() - sourceIndex);
-    AppendAdditions(edits, formatted, formattedIndex, formatted.size() - formattedIndex);
-    return edits;
+    AppendEdits(edits, DiffEditKind::Remove, source, sourceIndex, source.size() - sourceIndex);
+    AppendEdits(edits, DiffEditKind::Add, formatted, formattedIndex, formatted.size() - formattedIndex);
+    return changedLineCount + std::max(source.size() - sourceChangeStart, formatted.size() - formattedChangeStart);
 }
 
 void AppendDiffLine(std::string& output, char prefix, const DiffLine& line) {
@@ -230,13 +243,18 @@ void AppendHunk(
 
 }  // namespace
 
-std::string BuildUnifiedFormatDiff(
-    std::string_view source, std::string_view formatted, std::string_view path, size_t contextLines
+FormatDiffResult ComputeFormatDiff(
+    std::string_view source, std::string_view formatted, std::optional<std::string_view> path, size_t contextLines
 ) {
     if (source == formatted) {
         return {};
     }
-    const std::vector<DiffEdit> edits = BuildGreedyEdits(SplitDiffLines(source), SplitDiffLines(formatted));
+    FormatDiffResult result;
+    std::vector<DiffEdit> edits;
+    result.changedLineCount = CompareLines(SplitDiffLines(source), SplitDiffLines(formatted), path ? &edits : nullptr);
+    if (!path) {
+        return result;
+    }
     std::vector<size_t> sourceLineBefore(edits.size() + 1, 1);
     std::vector<size_t> formattedLineBefore(edits.size() + 1, 1);
     std::vector<size_t> changes;
@@ -249,14 +267,14 @@ std::string BuildUnifiedFormatDiff(
         }
     }
     if (changes.empty()) {
-        return {};
+        return result;
     }
 
-    std::string output;
+    std::string& output = result.diff;
     output.append("--- ");
-    output.append(path);
+    output.append(*path);
     output.append("\n+++ ");
-    output.append(path);
+    output.append(*path);
     output.push_back('\n');
 
     size_t firstChange = changes.front();
@@ -277,5 +295,5 @@ std::string BuildUnifiedFormatDiff(
             lastChange = nextChange;
         }
     }
-    return output;
+    return result;
 }

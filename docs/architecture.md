@@ -64,7 +64,7 @@ The writer records those operations as `FormatLayoutProgram` commands and resolv
 - `src/format/format.h|cpp` own source text formatting, line ending preservation, and optional output validation.
 - `src/format/format_cli.cpp` owns the end-user formatter command orchestration: input collection, configuration lookup, ignore filtering, parallel file formatting, output routing, summaries, and exit codes.
 - `src/format/impl/format_args.h|cpp` own command-line option parsing and usage text.
-- `src/format/impl/format_diff.h|cpp` own greedy line synchronization and unified-diff emission for `--diff`.
+- `src/format/impl/format_diff.h|cpp` own greedy line synchronization, changed-line counting, and unified-diff emission for `--diff`. Counting alone skips edit storage and diff rendering; line-position indexes are built only when nearby synchronization fails.
 - `src/format/impl/format_break_cost.h|cpp` own structural prefix-depth adjustments and final break-cost subtree discounts, including the no-discount traversal shortcut.
 - `src/format/impl/format_layout_lowerer.h|cpp` own recursive lowering of selected region layouts and recording list, chain, and block placements on persistent owners.
 - `src/format/impl/format_layout_writer.h|cpp` own translation of selected token writes and boundaries into program commands, including syntax-based comment placement and macro continuation handling from an explicit region context.
