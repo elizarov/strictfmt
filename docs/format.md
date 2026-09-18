@@ -547,8 +547,7 @@ concept Sized = requires(T value) {
 Comma-separated lists introduced by `:`, such as constructor initializers and base classes, use compact, packed split, or one-item-per-line layout.
 
 Both split forms indent items one level. Keep `:` attached to the preceding syntax. A comment between the preceding
-syntax and `:` moves after the attached colon and before the first item. In constructors, keep `explicit` attached to
-the declarator.
+syntax and `:` moves after the attached colon and before the first item.
 
 <!-- .cpp-format
 ColumnLimit: 48

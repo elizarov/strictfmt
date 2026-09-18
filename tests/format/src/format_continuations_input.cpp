@@ -273,3 +273,18 @@ typedef LongTemplate<FirstLongArgument,SecondLongArgument,ThirdLongArgument> B;
 typedef int AfterNested;
 };
 }
+
+// Callable prefixes are separated only when they contain a return type.
+struct VeryLongClassName {
+explicit VeryLongClassName(int value);
+constexpr VeryLongClassName(double value);
+consteval VeryLongClassName(long value);
+explicit constexpr VeryLongClassName(short value);
+constexpr VeryLongClassName(char value){Prepare();Initialize(value);}
+consteval VeryLongClassName(bool value):field(value){}
+virtual ~VeryLongClassName() noexcept;
+explicit operator LongConversionTarget() const;
+constexpr operator LongConversionTarget() const;
+template<typename T> constexpr VeryLongClassName(T value);
+static constexpr LongReturnType Create(int value);
+};

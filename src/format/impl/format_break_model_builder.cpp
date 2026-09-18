@@ -1750,13 +1750,10 @@ private:
         if (!declaratorIndex || *declaratorIndex == 0 || !ContainsSelected(*functionDeclarator)) {
             return nullptr;
         }
-        for (size_t index = 0; index < *declaratorIndex; ++index) {
-            if (
-                node.children[index] != nullptr &&
-                ContainsSyntaxKind(*node.children[index], SyntaxNodeKind::KeywordExplicit)
-            ) {
-                return nullptr;
-            }
+        if (std::none_of(node.children.begin(), node.children.begin() + *declaratorIndex, [](const SyntaxNode* child) {
+            return child != nullptr && child->isType;
+        })) {
+            return nullptr;
         }
         returnTypeChildren
             .insert(returnTypeChildren.begin(), node.children.begin(), node.children.begin() + *declaratorIndex);
