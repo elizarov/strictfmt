@@ -61,9 +61,9 @@
 #define CONTEXT_DETAIL_FMT(context, ...) CONTEXT_DETAIL((context), std::format(__VA_ARGS__))
 
 // candidates/wasm/sdk/logging/log.hpp
-#define LOG(level)                                    \
-    level < candidates::sdk::logging::GetLogLevel() ? \
-        candidates::sdk::logging::Noop{} : candidates::sdk::logging::LogHelper(level).AsLvalue()
+#define LOG(level)                                                                       \
+    level < candidates::sdk::logging::GetLogLevel() ? candidates::sdk::logging::Noop{} : \
+        candidates::sdk::logging::LogHelper(level).AsLvalue()
 
 // candidates/wasm/sdk/logging/log.hpp
 #define LOG_ERROR() LOG(userver::logging::Level::kError)

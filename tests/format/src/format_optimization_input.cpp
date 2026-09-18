@@ -242,3 +242,8 @@ F(a,b,C<DDDD>{{x,yy},});
 void F(int,);
 void G(First first,Second second,);
 void H(){F(1,);G(first,second,);}
+
+// Split chains retain their final operand layouts until enclosing suffixes are scored.
+auto x=source==f(v,c);
+auto y=source+f(v,c);
+auto z=source-f(v,c);

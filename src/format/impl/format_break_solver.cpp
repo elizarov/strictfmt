@@ -703,10 +703,10 @@ private:
         return best;
     }
 
-    NodeResult SolveNodeWithSuffix(
+    NodeResults SolveNodeWithSuffixAlternatives(
         const FormatBreakNode& node, const FormatBreakToken* suffix, int column, int indentLevel, bool lineHasText
     ) {
-        NodeResult best;
+        NodeResults alternatives;
         for (NodeResult candidate : SolveAlternatives(node, column, indentLevel, lineHasText)) {
             if (!candidate.valid) {
                 continue;
@@ -714,11 +714,10 @@ private:
             if (suffix != nullptr && FormatBreakTokenKind(*suffix) == PrintTokenKind::Known) {
                 AppendToken(candidate, *suffix);
             }
-            if (Better(candidate, best)) {
-                best = candidate;
-            }
+            AddPrunedResult(alternatives, std::move(candidate));
         }
-        return best;
+        SortPrunedResults(alternatives);
+        return alternatives;
     }
 
     NodeResult SolveNodeWithoutBreaks(const FormatBreakNode& node, int column, int indentLevel, bool lineHasText) {
@@ -2445,25 +2444,6 @@ private:
         return alternatives;
     }
 
-    NodeResult SolveBodyHeaderSplitWithChoice(
-        const FormatBreakNode& node,
-        int column,
-        int indentLevel,
-        bool lineHasText,
-        FormatBreakChoice choice,
-        int bodyIndentLevel
-    ) {
-        NodeResult best;
-        for (const NodeResult& candidate : SolveBodyHeaderSplitWithChoiceAlternatives(
-            node, column, indentLevel, lineHasText, choice, bodyIndentLevel
-        )) {
-            if (Better(candidate, best)) {
-                best = candidate;
-            }
-        }
-        return best;
-    }
-
     NodeResult SolveBodyHeaderSplitBody(const FormatBreakNode& node, int column, int indentLevel, bool lineHasText) {
         if (node.kind == FormatBreakNodeKind::Delimited) {
             return SolveDelimitedSplit(node, column, indentLevel, lineHasText);
@@ -2471,24 +2451,18 @@ private:
         return Solve(node, column, indentLevel, lineHasText);
     }
 
-    NodeResult
-        SolveBodyHeaderSplitAtParentIndent(const FormatBreakNode& node, int column, int indentLevel, bool lineHasText)
-    {
-        return SolveBodyHeaderSplitWithChoice(
-            node,
-            column,
-            indentLevel,
-            lineHasText,
-            FormatBreakChoice::BodyHeaderSplitAtParentIndent,
-            std::max(0, indentLevel - 1)
-        );
-    }
-
-    NodeResult SolveTrailingBodyHeaderSplitAtParentIndent(
+    NodeResults SolveTrailingBodyHeaderSplitAtParentIndentAlternatives(
         const FormatBreakNode& node, int column, int indentLevel, bool lineHasText
     ) {
         if (node.kind == FormatBreakNodeKind::BodyHeader) {
-            return SolveBodyHeaderSplitAtParentIndent(node, column, indentLevel, lineHasText);
+            return SolveBodyHeaderSplitWithChoiceAlternatives(
+                node,
+                column,
+                indentLevel,
+                lineHasText,
+                FormatBreakChoice::BodyHeaderSplitAtParentIndent,
+                std::max(0, indentLevel - 1)
+            );
         }
         if (node.kind != FormatBreakNodeKind::Sequence) {
             return {};
@@ -2509,9 +2483,9 @@ private:
                 NodeResults trailingResults;
                 std::span<const NodeResult> childResults;
                 if (last) {
-                    trailingResults.push_back(SolveTrailingBodyHeaderSplitAtParentIndent(
+                    trailingResults = SolveTrailingBodyHeaderSplitAtParentIndentAlternatives(
                         *sequenceChildren[index], prefix.endColumn, prefix.endIndentLevel, prefix.endLineHasText
-                    ));
+                    );
                     childResults = {trailingResults.begin(), trailingResults.size()};
                 } else {
                     childResults = SolveAlternatives(
@@ -2531,13 +2505,7 @@ private:
             current = std::move(next);
         }
 
-        NodeResult best;
-        for (const NodeResult& candidate : current) {
-            if (Better(candidate, best)) {
-                best = candidate;
-            }
-        }
-        return best;
+        return current;
     }
 
     NodeResult SolveBodyHeader(const FormatBreakNode& node, int column, int indentLevel, bool lineHasText) {
@@ -2702,14 +2670,9 @@ private:
         );
         for (size_t index = 0; index < node.items.size(); ++index) {
             const FormatBreakListItem& listItem = node.items[index];
-            NodeResult item = Solve(*listItem.node, result.endColumn, result.endIndentLevel, result.endLineHasText);
+            NodeResult item =
+                SolveListItemWithSuffix(listItem, result.endColumn, result.endIndentLevel, result.endLineHasText);
             Merge(result, item);
-            if (FormatBreakTokenKind(listItem.separator) == PrintTokenKind::Known) {
-                AppendToken(result, listItem.separator);
-            }
-            if (FormatBreakHasTrailingComment(node, index)) {
-                AppendToken(result, listItem.trailingComment);
-            }
             const bool hasNextItem = index + 1 < node.items.size();
             AppendListBreakAfterOptionalComment(
                 result,
@@ -2745,56 +2708,66 @@ private:
             return {result};
         }
         const FormatBreakToken* firstSuffix = node.operators.empty() ? nullptr : &node.operators.front();
-        NodeResult first = SolveNodeWithSuffix(
+        NodeResults current;
+        for (const NodeResult& first : SolveNodeWithSuffixAlternatives(
             *node.operands.front(), firstSuffix, result.endColumn, result.endIndentLevel, result.endLineHasText
-        );
-        if (!first.valid) {
-            return {};
+        )) {
+            NodeResult candidate = result;
+            Merge(candidate, first);
+            AddPrunedResult(current, std::move(candidate));
         }
-        Merge(result, first);
-        NodeResults current{result};
+        SortPrunedResults(current);
         for (size_t index = 0; index < node.operators.size(); ++index) {
             NodeResults next;
             for (const NodeResult& prefix : current) {
-                NodeResult normal = AddBreak(prefix, continuationIndent, node.breakCost);
+                const NodeResult normal = AddBreak(prefix, continuationIndent, node.breakCost);
                 const bool splitTrailingBodyHeaderAtParentIndent =
                     node.splitTrailingBodyHeaderAtParentIndent && index + 1 == node.operands.size() - 1;
                 const FormatBreakToken* nextSuffix =
                     index + 1 < node.operators.size() ? &node.operators[index + 1] : nullptr;
-                NodeResult operand = SolveNodeWithSuffix(
+                NodeResults parentIndentOperands;
+                if (splitTrailingBodyHeaderAtParentIndent) {
+                    parentIndentOperands = SolveTrailingBodyHeaderSplitAtParentIndentAlternatives(
+                        *node.operands[index + 1], normal.endColumn, normal.endIndentLevel, normal.endLineHasText
+                    );
+                    for (NodeResult& operand : parentIndentOperands) {
+                        if (nextSuffix != nullptr) {
+                            AppendToken(operand, *nextSuffix);
+                        }
+                    }
+                }
+                for (const NodeResult& operand : SolveNodeWithSuffixAlternatives(
                     *node.operands[index + 1],
                     nextSuffix,
                     normal.endColumn,
                     normal.endIndentLevel,
                     normal.endLineHasText
-                );
-                if (splitTrailingBodyHeaderAtParentIndent) {
-                    NodeResult parentIndentOperand = SolveTrailingBodyHeaderSplitAtParentIndent(
-                        *node.operands[index + 1], normal.endColumn, normal.endIndentLevel, normal.endLineHasText
-                    );
-                    if (nextSuffix != nullptr && parentIndentOperand.valid) {
-                        AppendToken(parentIndentOperand, *nextSuffix);
-                    }
+                )) {
                     if (
+                        !parentIndentOperands.empty() &&
                         !TrailingBodyHeaderHeaderHasSelectedBreak(*node.operands[index + 1], operand) &&
-                        (operand.extraLines > 0 || ContainsNonSingleStatementBodyHeader(*node.operands[index + 1])) &&
-                        parentIndentOperand.valid
+                        (operand.extraLines > 0 || ContainsNonSingleStatementBodyHeader(*node.operands[index + 1]))
                     ) {
-                        operand = parentIndentOperand;
-                    } else {
-                        operand = Better(parentIndentOperand, operand) ? parentIndentOperand : operand;
+                        continue;
                     }
+                    NodeResult candidate = normal;
+                    Merge(candidate, operand);
+                    AddPrunedResult(next, std::move(candidate));
                 }
-                Merge(normal, operand);
+                for (const NodeResult& operand : parentIndentOperands) {
+                    NodeResult candidate = normal;
+                    Merge(candidate, operand);
+                    AddPrunedResult(next, std::move(candidate));
+                }
 
-                NodeResult attached;
                 if (CanAttachSplitOpenAfterOperator(node.operators[index], *node.operands[index + 1])) {
-                    attached = SolveDelimitedSplitAttachedOpen(*node.operands[index + 1], prefix, continuationIndent);
+                    NodeResult attached =
+                        SolveDelimitedSplitAttachedOpen(*node.operands[index + 1], prefix, continuationIndent);
                     if (nextSuffix != nullptr && attached.valid) {
                         AppendToken(attached, *nextSuffix);
                     }
+                    AddPrunedResult(next, std::move(attached));
                 }
-                AddPrunedResult(next, Better(attached, normal) ? std::move(attached) : std::move(normal));
                 if (CompactLiteralFollowerFits(node, index, prefix)) {
                     NodeResult paired = prefix;
                     NodeResult follower = SolveNodeWithoutBreaks(

@@ -488,7 +488,9 @@ auto f() -> R*;
 auto f() ->
     Box<A>;
 auto f() ->
-    decltype(x);
+    decltype(
+        x
+    );
 auto f(
     int x
 ) -> ns::R;
@@ -561,7 +563,8 @@ Box(int) ->
 
 // comments remain attached to their original side of the arrow
 auto f() ->
-    /*r*/ ns::R;
+    /*r*/ ns::
+        R;
 auto
     f() /*r*/ ->
         ns::R;
@@ -790,8 +793,8 @@ using Q =
         Value;
 
 auto q =
-    ::A::B::
-        C::f<
+    ::A::B::C::
+        f<
             int
         >();
 
@@ -851,3 +854,21 @@ void H() {
         second,
     );
 }
+
+// Split chains retain their final operand layouts until enclosing suffixes are scored.
+auto x =
+    source ==
+        f(
+            v,
+            c
+        );
+
+auto y =
+    source + f(
+        v, c
+    );
+
+auto z =
+    source - f(
+        v, c
+    );
