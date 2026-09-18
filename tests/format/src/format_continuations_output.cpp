@@ -568,3 +568,27 @@ void CompactArgumentBodies() {
         Work();  // trailing comment
     });
 }
+
+// Function signatures survive recursive pointer and reference wrappers.
+LongReturnType*
+    longer_function_name(int value);
+LongReturnType**
+    longe_function_name(int value);
+LongReturnType***
+    long_function_name(int value);
+LongReturnType**&
+    long_function_name(int value);
+Result<FirstType, SecondType>*
+    LoadFirst(int first, int second);
+Result<FirstType, SecondType>**
+    LoadNext(int first, int second);
+Result<FirstType, SecondType>***
+    LoadMore(int first, int second);
+Result<FirstType, SecondType>* const*
+    LoadConst(int first, int second);
+Result<FirstType, SecondType>***
+    LoadBody(int first, int second)
+{
+    Prepare();
+    return value;
+}

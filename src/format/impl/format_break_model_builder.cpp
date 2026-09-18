@@ -1704,50 +1704,68 @@ private:
         return result;
     }
 
-    static std::optional<size_t> DirectFunctionDeclaratorChildIndex(const SyntaxNode& node) {
-        for (size_t index = 0; index < node.children.size(); ++index) {
-            if (node.children[index] != nullptr && node.children[index]->kind == SyntaxNodeKind::FunctionDeclarator) {
-                return index;
-            }
-        }
-        return std::nullopt;
-    }
-
     static bool CanWrapFunctionDeclarator(SyntaxNodeKind kind) {
         return SyntaxNodeKindHasClass(kind, SyntaxNodeClass::DeclaratorReferenceParent) ||
             SyntaxNodeKindHasClass(kind, SyntaxNodeClass::ParenthesizedDeclarator);
     }
 
-    FormatBreakNode* BuildNestedFunctionSignature(
-        const SyntaxNode& node, size_t declaratorIndex, size_t functionDeclaratorIndex, int depth, size_t end
-    ) {
-        const SyntaxNode* wrapper = node.children[declaratorIndex];
-        if (wrapper == nullptr || !ContainsSelected(*wrapper->children[functionDeclaratorIndex])) {
+    static const SyntaxNode*
+        PartitionFunctionDeclarator(const SyntaxNode& node, ConstSyntaxChildList& prefix, ConstSyntaxChildList& suffix)
+    {
+        if (node.kind == SyntaxNodeKind::FunctionDeclarator) {
+            return &node;
+        }
+        if (!CanWrapFunctionDeclarator(node.kind)) {
             return nullptr;
         }
+        for (size_t index = 0; index < node.children.size(); ++index) {
+            const SyntaxNode* child = node.children[index];
+            if (child == nullptr) {
+                continue;
+            }
+            if (const SyntaxNode* declarator = PartitionFunctionDeclarator(*child, prefix, suffix)) {
+                prefix.insert(prefix.begin(), node.children.begin(), node.children.begin() + index);
+                suffix.insert(suffix.end(), node.children.begin() + index + 1, node.children.end());
+                return declarator;
+            }
+        }
+        return nullptr;
+    }
 
+    FormatBreakNode* BuildFunctionSignature(const SyntaxNode& node, int depth, size_t end) {
+        std::optional<size_t> declaratorIndex;
+        const SyntaxNode* functionDeclarator = nullptr;
         ConstSyntaxChildList returnTypeChildren;
-        returnTypeChildren.reserve(declaratorIndex + functionDeclaratorIndex);
-        for (size_t index = 0; index < declaratorIndex; ++index) {
-            returnTypeChildren.push_back(node.children[index]);
-        }
-        for (size_t index = 0; index < functionDeclaratorIndex; ++index) {
-            returnTypeChildren.push_back(wrapper->children[index]);
-        }
-
         ConstSyntaxChildList tailChildren;
-        tailChildren.reserve(wrapper->children.size() - functionDeclaratorIndex - 1 + end);
-        for (size_t index = functionDeclaratorIndex + 1; index < wrapper->children.size(); ++index) {
-            tailChildren.push_back(wrapper->children[index]);
+        for (size_t index = 0; index < end; ++index) {
+            const SyntaxNode* child = node.children[index];
+            if (child == nullptr) {
+                continue;
+            }
+            functionDeclarator = PartitionFunctionDeclarator(*child, returnTypeChildren, tailChildren);
+            if (functionDeclarator != nullptr) {
+                declaratorIndex = index;
+                break;
+            }
         }
-        for (size_t index = declaratorIndex + 1; index < end; ++index) {
-            tailChildren.push_back(node.children[index]);
+        if (!declaratorIndex || *declaratorIndex == 0 || !ContainsSelected(*functionDeclarator)) {
+            return nullptr;
         }
+        for (size_t index = 0; index < *declaratorIndex; ++index) {
+            if (
+                node.children[index] != nullptr &&
+                ContainsSyntaxKind(*node.children[index], SyntaxNodeKind::KeywordExplicit)
+            ) {
+                return nullptr;
+            }
+        }
+        returnTypeChildren
+            .insert(returnTypeChildren.begin(), node.children.begin(), node.children.begin() + *declaratorIndex);
+        tailChildren
+            .insert(tailChildren.end(), node.children.begin() + *declaratorIndex + 1, node.children.begin() + end);
 
         FormatBreakNode* returnType = BuildSequenceFromPointers(returnTypeChildren, depth + 1);
-        FormatBreakNode* declarator = BuildSequenceFromChildren(
-            wrapper->children, functionDeclaratorIndex, functionDeclaratorIndex + 1, depth + 1
-        );
+        FormatBreakNode* declarator = BuildSequenceFromPointers({functionDeclarator}, depth + 1);
         if (!returnType || !declarator) {
             return nullptr;
         }
@@ -1760,72 +1778,6 @@ private:
         size_t signatureChildCount = 2;
         if (!tailChildren.empty()) {
             FormatBreakNode* tail = BuildSequenceFromPointers(tailChildren, depth + 1);
-            if (tail) {
-                signatureChildren[signatureChildCount++] = tail;
-            }
-        }
-        signature->children =
-            StoreNodePointers(std::span<FormatBreakNode* const>{signatureChildren.data(), signatureChildCount});
-        return signature;
-    }
-
-    FormatBreakNode* BuildFunctionSignature(const SyntaxNode& node, int depth, size_t end) {
-        std::optional<size_t> declaratorIndex;
-        std::optional<size_t> nestedFunctionDeclaratorIndex;
-        for (size_t index = 0; index < end; ++index) {
-            const SyntaxNode* child = node.children[index];
-            if (child == nullptr) {
-                continue;
-            }
-            if (child->kind == SyntaxNodeKind::FunctionDeclarator) {
-                declaratorIndex = index;
-                break;
-            }
-            if (CanWrapFunctionDeclarator(child->kind)) {
-                if (std::optional<size_t> nested = DirectFunctionDeclaratorChildIndex(*child)) {
-                    declaratorIndex = index;
-                    nestedFunctionDeclaratorIndex = nested;
-                    break;
-                }
-            }
-        }
-        if (!declaratorIndex || *declaratorIndex == 0) {
-            return nullptr;
-        }
-        for (size_t index = 0; index < *declaratorIndex; ++index) {
-            if (
-                node.children[index] != nullptr &&
-                ContainsSyntaxKind(*node.children[index], SyntaxNodeKind::KeywordExplicit)
-            ) {
-                return nullptr;
-            }
-        }
-        if (nestedFunctionDeclaratorIndex) {
-            return BuildNestedFunctionSignature(node, *declaratorIndex, *nestedFunctionDeclaratorIndex, depth, end);
-        }
-        if (!ContainsSelected(*node.children[*declaratorIndex]) || std::none_of(
-            node.children.begin(), node.children.begin() + *declaratorIndex, [this](const SyntaxNode* child) {
-                return child != nullptr && ContainsSelected(*child);
-            }
-        )) {
-            return nullptr;
-        }
-
-        FormatBreakNode* returnType = BuildSequenceFromChildren(node.children, 0, *declaratorIndex, depth + 1);
-        FormatBreakNode* declarator =
-            BuildSequenceFromChildren(node.children, *declaratorIndex, *declaratorIndex + 1, depth + 1);
-        if (!returnType || !declarator) {
-            return nullptr;
-        }
-
-        auto signature = MakeNode(FormatBreakNodeKind::FunctionSignature, depth);
-        signature->functionSignatureHasBody =
-            node.kind == SyntaxNodeKind::FunctionDefinition && end == node.children.size();
-        FormatBreakCostNormalizer::NormalizeCallablePrefix(*returnType, *declarator);
-        std::array<FormatBreakNode*, 3> signatureChildren{returnType, declarator, nullptr};
-        size_t signatureChildCount = 2;
-        if (*declaratorIndex + 1 < end) {
-            FormatBreakNode* tail = BuildSequenceFromChildren(node.children, *declaratorIndex + 1, end, depth + 1);
             if (tail) {
                 signatureChildren[signatureChildCount++] = tail;
             }
