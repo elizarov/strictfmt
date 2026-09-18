@@ -1,6 +1,9 @@
 #include <algorithm>
+#include <atomic>
 #include <chrono>
 #include <cstdio>
+#include <exception>
+#include <memory>
 #include <mutex>
 #include <optional>
 #include <string>
@@ -40,6 +43,7 @@ struct ResolvedFileFormat {
 
 struct CompletedFileFormat {
     PendingFileFormat pending;
+    std::string sortKey;
     int lineCount = 0;
     int changedLineCount = 0;
     bool hasPending = false;
@@ -99,6 +103,7 @@ void PrintVerboseFileProgress(
     std::mutex& outputMutex,
     size_t fileIndex,
     size_t totalFiles,
+    bool scanning,
     std::string_view action,
     std::string_view file,
     std::optional<std::chrono::steady_clock::duration> elapsed = std::nullopt
@@ -106,9 +111,10 @@ void PrintVerboseFileProgress(
     std::lock_guard<std::mutex> lock(outputMutex);
     std::fprintf(
         output,
-        "[%s/%s] %.*s %.*s",
+        "[%s/%s%s] %.*s %.*s",
         FormatCount(static_cast<int>(fileIndex + 1)).c_str(),
         FormatCount(static_cast<int>(totalFiles)).c_str(),
+        scanning ? "+" : "",
         static_cast<int>(action.size()),
         action.data(),
         static_cast<int>(file.size()),
@@ -310,54 +316,25 @@ int RunFormat(int argc, char** argv) {
     int lineCount = 0;
     int changedLineCount = 0;
     std::vector<PendingFileFormat> pendingResults;
-    std::vector<ResolvedFileFormat> work;
-    std::vector<std::string> files = options.files;
-
-    if (!options.recursiveRoots.empty()) {
-        FormatRecursiveFileFilter filter(styleCache);
-        std::string error;
-        std::optional<ToolFileDiscoveryResult> recursiveFiles =
-            DiscoverRecursiveToolFiles(options.recursiveRoots, filter, error);
-        if (!recursiveFiles.has_value()) {
-            std::fprintf(stderr, "%s\n", error.c_str());
-            return 2;
-        }
-        files.insert(files.end(), recursiveFiles->files.begin(), recursiveFiles->files.end());
-    }
-
-    work.reserve(files.size());
-
-    for (int index = 0; index < static_cast<int>(files.size()); ++index) {
-        const std::string file = AbsolutePath(files[static_cast<size_t>(index)]);
-        std::string error;
-        if (styleCache.IsIgnored(file, error)) {
-            ++ignoredCount;
-            continue;
-        }
-        if (!error.empty()) {
-            std::fprintf(stderr, "%s\n", error.c_str());
-            return 2;
-        }
-
-        const FormatterConfig* config = styleCache.ConfigForPath(file, error);
-        if (config == nullptr) {
-            std::fprintf(stderr, "%s\n", error.c_str());
-            return 2;
-        }
-        work.push_back({file, RelativePath(file, currentDirectory), config});
-    }
-
-    std::vector<CompletedFileFormat> completed(work.size());
+    std::vector<std::unique_ptr<CompletedFileFormat>> completed;
+    std::atomic<size_t> listedCount = 0;
+    std::atomic<bool> scanning = true;
+    size_t recursiveStart = 0;
+    std::string discoveryError;
+    bool discoveryOk = false;
     std::mutex verboseOutputMutex;
-    ToolFileProgress progress(summary, "format", work.size(), start, !options.verbose);
-    RunToolParallelFor(work.size(), options.concurrency, &progress, [&](size_t index) {
-        const ResolvedFileFormat& item = work[index];
+    ToolFileProgress progress(summary, "format", start, !options.verbose);
+    const auto formatFile = [&](const ResolvedFileFormat& item, size_t index, CompletedFileFormat& result) {
+        const auto printProgress = [&](std::string_view action, auto elapsed) {
+            const bool stillScanning = scanning.load();
+            PrintVerboseFileProgress(
+                summary, verboseOutputMutex, index, listedCount.load(), stillScanning, action, item.file, elapsed
+            );
+        };
         if (options.verbose) {
-            PrintVerboseFileProgress(summary, verboseOutputMutex, index, work.size(), "Formatting", item.file);
+            printProgress("Formatting", std::nullopt);
         }
         const auto fileStart = std::chrono::steady_clock::now();
-        CompletedFileFormat result;
-        result.pending.file = item.file;
         std::optional<std::string> text = ReadFileBinary(item.file);
         if (!text) {
             result.readFailed = true;
@@ -374,26 +351,78 @@ int RunFormat(int argc, char** argv) {
                 );
                 result.changedLineCount = static_cast<int>(diff.changedLineCount);
                 result.pending.diff = std::move(diff.diff);
-                if (options.mode == FormatMode::Diff) {
-                    std::string{}.swap(result.pending.result.formatted);
-                }
+            }
+            if (IsCheckMode(options)) {
+                std::string{}.swap(result.pending.result.formatted);
             }
         }
-        completed[index] = std::move(result);
         if (options.verbose) {
-            PrintVerboseFileProgress(
-                summary,
-                verboseOutputMutex,
-                index,
-                work.size(),
-                "Finished",
-                item.file,
-                std::chrono::steady_clock::now() - fileStart
-            );
+            printProgress("Finished", std::chrono::steady_clock::now() - fileStart);
         }
+    };
+    try {
+        RunToolParallel(options.concurrency, &progress, [&](const ToolWorkSubmit& submit) {
+            const auto queueFile = [&](std::string_view path, bool recursive) {
+                const std::string file = AbsolutePath(path);
+                if (!recursive && styleCache.IsIgnored(file, discoveryError)) {
+                    ++ignoredCount;
+                    return true;
+                }
+                if (!discoveryError.empty()) {
+                    return false;
+                }
+                const FormatterConfig* config = styleCache.ConfigForPath(file, discoveryError);
+                if (config == nullptr) {
+                    return false;
+                }
+                auto result = std::make_unique<CompletedFileFormat>();
+                result->pending.file = file;
+                if (recursive) {
+                    result->sortKey = NormalizePathKey(file);
+                }
+                CompletedFileFormat* destination = result.get();
+                const size_t index = completed.size();
+                completed.push_back(std::move(result));
+                listedCount.store(completed.size());
+                ResolvedFileFormat item{
+                    file,
+                    options.mode == FormatMode::Diff ? RelativePath(file, currentDirectory) : std::string{},
+                    config
+                };
+                submit([&, item = std::move(item), index, destination]() { formatFile(item, index, *destination); });
+                return true;
+            };
+            discoveryOk = [&]() {
+                for (const std::string& file : options.files) {
+                    if (!queueFile(file, false)) {
+                        return false;
+                    }
+                }
+                recursiveStart = completed.size();
+                FormatRecursiveFileFilter filter(styleCache);
+                return DiscoverRecursiveToolFiles(
+                    options.recursiveRoots,
+                    filter,
+                    [&](std::string_view file) { return queueFile(file, true); },
+                    discoveryError
+                );
+            }();
+            scanning.store(false);
+        });
+    } catch (const std::exception& error) {
+        std::fprintf(stderr, "Failed to process files: %s\n", error.what());
+        return 1;
+    }
+    if (!discoveryOk) {
+        std::fprintf(stderr, "%s\n", discoveryError.c_str());
+        return 2;
+    }
+    std::stable_sort(completed.begin() + recursiveStart, completed.end(), [](const auto& left, const auto& right) {
+        return left->sortKey < right->sortKey;
     });
 
-    for (CompletedFileFormat& completedFormat : completed) {
+    for (const auto& entry : completed) {
+        CompletedFileFormat& completedFormat = *entry;
         const std::string& file = completedFormat.pending.file;
         if (completedFormat.readFailed) {
             std::fprintf(stderr, "Failed to read %s\n", file.c_str());
@@ -440,7 +469,7 @@ int RunFormat(int argc, char** argv) {
     PrintFormatSummary(
         summary,
         failed ? "Formatting failed. Checked" : SummaryAction(checkMode, changedCount > 0),
-        FileCountText(showChangedFiles ? changedCount : processedCount, work.size(), showChangedFiles),
+        FileCountText(showChangedFiles ? changedCount : processedCount, completed.size(), showChangedFiles),
         failed ? "need formatting" : checkMode ? "will change" : "changed",
         changedLineCount,
         lineCount,

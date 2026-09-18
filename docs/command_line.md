@@ -32,8 +32,9 @@ Recursive discovery includes files with these case-insensitive extensions:
 `.ipp`, `.inl`, and `.tpp`.
 
 Direct file arguments and `--files` entries keep their specified order.
-Recursively discovered files are sorted by normalized path and appended after
-the explicit input list.
+Recursive files begin formatting as they are discovered, while directory scanning
+continues. Their output is sorted by normalized path and appended after the
+explicit input list.
 
 File inputs are checked against `.cpp-format-ignore`; ignored files are skipped.
 Recursive discovery also skips ignored directories. The ignore-file syntax is
@@ -62,12 +63,15 @@ are specified in [config.md](config.md).
 
 - `--validate` enables slower output validation in any formatting mode: reparse the formatted text and format it again to check idempotence. A failed check reports an error and exits with code `1`; the affected output is neither emitted nor written. Without this option, formatting performs one pass. Input parse errors always fail. This follows the [no-silent-failure constraint](architecture.md#no-silent-failure).
 - `--concurrency <n>` limits worker threads for file formatting. The value must be a positive integer. When omitted, `strictfmt` uses hardware concurrency, falling back to `4` workers when the platform does not report a value. The effective worker count is capped by the number of files.
-- `-v` and `--verbose` print one line before and after each file is formatted. Each line includes the file's index in the input list and its absolute path; the completion line also includes that file's elapsed formatting time. Verbose progress uses the summary stream and replaces the terminal's in-place aggregate progress line. With multiple workers, lines reflect actual worker start and completion order. Final summaries are printed regardless of this flag. The summary stream is stderr in default and diff modes, and stdout otherwise.
+- `-v` and `--verbose` print one line before and after each file is formatted. Each line includes the file's discovery index, the current discovered file count, and its absolute path; the completion line also includes that file's elapsed formatting time. A `+` after the count means discovery is still running. Verbose progress uses the summary stream and replaces the terminal's in-place aggregate progress line. With multiple workers, lines reflect actual worker start and completion order. Final summaries are printed regardless of this flag. The summary stream is stderr in default and diff modes, and stdout otherwise.
 - `--version` prints `strictfmt <version>` to stdout and exits with code `0` without loading configuration or formatting inputs. Release executables print the release tag version without its leading `v`.
 - `-h` and `--help` print usage help to stdout and exit with code `0`.
 
 For file inputs, when the summary stream is a terminal, `strictfmt` updates an
-in-place progress line with completed file count and elapsed time. Final
+in-place progress line from the start of discovery, showing completed/discovered
+file counts and elapsed time. While discovery continues, the total grows and is
+marked with `+` and `(scanning)`; after discovery finishes, the total is fixed.
+Progress refreshes while scanning or formatting is waiting on file I/O. Final
 summaries use comma-separated counts: `Formatting is required for changed/total
 files. changed/total LOC will change. Done in time.` in dry-run and diff modes
 when changes are needed, and `Formatted changed/total files. changed/total LOC

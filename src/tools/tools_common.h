@@ -1,6 +1,7 @@
 #pragma once
 
 #include <cstdint>
+#include <functional>
 #include <optional>
 #include <string>
 #include <string_view>
@@ -14,11 +15,6 @@ public:
     virtual bool ShouldIncludeFile(std::string_view path, std::string& error) = 0;
 };
 
-struct ToolFileDiscoveryResult {
-    std::vector<std::string> files;
-    int skippedFiles = 0;
-};
-
 std::string AbsolutePath(std::string_view path);
 std::string RelativePath(std::string_view path, std::string_view root);
 std::string NormalizeSeparators(std::string value);
@@ -30,8 +26,11 @@ bool EnsureParentDirectory(std::string_view path);
 std::optional<std::uint64_t> LastWriteTime(std::string_view path);
 std::vector<std::string> RecursiveFiles(std::string_view root);
 std::optional<std::vector<std::string>> ReadToolFileList(std::string_view path, std::string& error);
-std::optional<ToolFileDiscoveryResult> DiscoverRecursiveToolFiles(
-    const std::vector<std::string>& roots, ToolFileDiscoveryFilter& filter, std::string& error
+bool DiscoverRecursiveToolFiles(
+    const std::vector<std::string>& roots,
+    ToolFileDiscoveryFilter& filter,
+    const std::function<bool(std::string_view)>& visit,
+    std::string& error
 );
 
 bool StartsWith(std::string_view value, std::string_view prefix);

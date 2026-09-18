@@ -52,7 +52,10 @@ void RecursiveFilesInto(std::string_view root, std::vector<std::string>& files) 
 }
 
 bool DiscoverRecursiveToolFilesInto(
-    std::string_view root, ToolFileDiscoveryFilter& filter, ToolFileDiscoveryResult& result, std::string& error
+    std::string_view root,
+    ToolFileDiscoveryFilter& filter,
+    const std::function<bool(std::string_view)>& visit,
+    std::string& error
 ) {
     std::error_code entryError;
     fs::directory_iterator iterator(NativePath(root), fs::directory_options::skip_permission_denied, entryError);
@@ -69,16 +72,15 @@ bool DiscoverRecursiveToolFilesInto(
                 }
                 continue;
             }
-            if (!DiscoverRecursiveToolFilesInto(path, filter, result, error)) {
+            if (!DiscoverRecursiveToolFilesInto(path, filter, visit, error)) {
                 return false;
             }
         } else if (!typeError && filter.ShouldIncludeFile(path, error)) {
-            result.files.push_back(path);
-        } else {
-            if (!error.empty()) {
+            if (!visit(path)) {
                 return false;
             }
-            ++result.skippedFiles;
+        } else if (!error.empty()) {
+            return false;
         }
     }
     return true;
@@ -191,30 +193,29 @@ std::optional<std::vector<std::string>> ReadToolFileList(std::string_view path, 
     return files;
 }
 
-std::optional<ToolFileDiscoveryResult> DiscoverRecursiveToolFiles(
-    const std::vector<std::string>& roots, ToolFileDiscoveryFilter& filter, std::string& error
+bool DiscoverRecursiveToolFiles(
+    const std::vector<std::string>& roots,
+    ToolFileDiscoveryFilter& filter,
+    const std::function<bool(std::string_view)>& visit,
+    std::string& error
 ) {
-    ToolFileDiscoveryResult result;
     for (const std::string& root : roots) {
         const std::string absoluteRoot = AbsolutePath(root);
         if (!DirectoryExists(absoluteRoot)) {
             error = "recursive root does not exist: " + root;
-            return std::nullopt;
+            return false;
         }
         if (!filter.ShouldVisitDirectory(absoluteRoot, error)) {
             if (!error.empty()) {
-                return std::nullopt;
+                return false;
             }
             continue;
         }
-        if (!DiscoverRecursiveToolFilesInto(absoluteRoot, filter, result, error)) {
-            return std::nullopt;
+        if (!DiscoverRecursiveToolFilesInto(absoluteRoot, filter, visit, error)) {
+            return false;
         }
     }
-    std::sort(result.files.begin(), result.files.end(), [](const std::string& left, const std::string& right) {
-        return NormalizePathKey(left) < NormalizePathKey(right);
-    });
-    return result;
+    return true;
 }
 
 bool StartsWith(std::string_view value, std::string_view prefix) {

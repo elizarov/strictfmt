@@ -33,34 +33,27 @@ bool IsToolOutputTerminal(FILE* output) {
 }
 
 ToolFileProgress::ToolFileProgress(
-    FILE* output, std::string_view label, size_t totalFiles, std::chrono::steady_clock::time_point started, bool enabled
-) :
-    output_(output),
-    label_(label),
-    totalFiles_(totalFiles),
-    started_(started),
-    enabled_(enabled && IsToolOutputTerminal(output)) {}
+    FILE* output, std::string_view label, std::chrono::steady_clock::time_point started, bool enabled
+) : output_(output), label_(label), started_(started), enabled_(enabled && IsToolOutputTerminal(output)) {}
 
 ToolFileProgress::~ToolFileProgress() { Clear(); }
 
-void ToolFileProgress::Update(size_t completedFiles) {
+void ToolFileProgress::Update(size_t completedFiles, size_t totalFiles, bool scanning) {
     if (!enabled_) {
         return;
     }
     const std::string progress = label_ +
         " completed " + FormatCount(static_cast<int>(completedFiles)) +
-        "/" + FormatCount(static_cast<int>(totalFiles_)) +
-        " files in " + FormatToolElapsed(std::chrono::steady_clock::now() - started_);
+        "/" + FormatCount(static_cast<int>(totalFiles)) +
+        (scanning ? "+ files (scanning) in " : " files in ") +
+        FormatToolElapsed(std::chrono::steady_clock::now() - started_);
     const std::string padding(previousLength_ > progress.size() ? previousLength_ - progress.size() : 0, ' ');
     std::fprintf(output_, "\r%s%s", progress.c_str(), padding.c_str());
     std::fflush(output_);
     previousLength_ = progress.size();
 }
 
-void ToolFileProgress::Finish(size_t completedFiles) {
-    Update(completedFiles);
-    Clear();
-}
+void ToolFileProgress::Finish() { Clear(); }
 
 void ToolFileProgress::Clear() {
     if (!enabled_ || previousLength_ == 0) {

@@ -46,6 +46,7 @@ configure_file(
 )
 
 find_package(Python3 COMPONENTS Interpreter)
+find_package(Threads REQUIRED)
 enable_testing()
 
 option(STRICTFMT_BUILD_STANDALONE "Build the standalone strictfmt executable." ON)
@@ -116,6 +117,7 @@ target_include_directories(strictfmt_util PUBLIC
     "${CMAKE_CURRENT_SOURCE_DIR}/src"
     PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/vendor/unicode"
 )
+target_link_libraries(strictfmt_util PUBLIC Threads::Threads)
 strictfmt_apply_common_options(strictfmt_util)
 
 add_library(strictfmt_tree_sitter_cpp_grammar STATIC
@@ -250,16 +252,22 @@ if(Python3_FOUND)
     target_link_libraries(strictfmt_layout_tests PRIVATE strictfmt_core)
     strictfmt_apply_common_options(strictfmt_layout_tests)
     add_test(NAME StrictfmtLayoutTests COMMAND strictfmt_layout_tests)
+    add_executable(strictfmt_parallel_tests EXCLUDE_FROM_ALL tests/tools/parallel_test.cpp)
+    target_link_libraries(strictfmt_parallel_tests PRIVATE strictfmt_util)
+    strictfmt_apply_common_options(strictfmt_parallel_tests)
+    add_test(NAME StrictfmtParallelTests COMMAND strictfmt_parallel_tests)
+    set_tests_properties(StrictfmtParallelTests PROPERTIES TIMEOUT 30)
     add_custom_target(strictfmt_tests
         COMMAND strictfmt_utf8_tests "${CMAKE_CURRENT_SOURCE_DIR}/vendor/unicode/GraphemeBreakTest.txt"
         COMMAND strictfmt_layout_tests
+        COMMAND strictfmt_parallel_tests
         COMMAND
             ${CMAKE_COMMAND} -E env ${strictfmt_format_test_env}
             "${Python3_EXECUTABLE}"
             "${CMAKE_CURRENT_SOURCE_DIR}/tests/format/format_test.py"
         VERBATIM
     )
-    add_dependencies(strictfmt_tests strictfmt_utf8_tests strictfmt_layout_tests)
+    add_dependencies(strictfmt_tests strictfmt_utf8_tests strictfmt_layout_tests strictfmt_parallel_tests)
     if(strictfmt_format_test_depends)
         add_dependencies(strictfmt_tests ${strictfmt_format_test_depends})
     endif()

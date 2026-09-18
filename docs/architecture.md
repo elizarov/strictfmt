@@ -62,7 +62,7 @@ The writer records those operations as `FormatLayoutProgram` commands and resolv
 - `src/strictfmt_main.cpp` owns the standalone executable `main` entry point.
 - `src/format/strictfmt_cli.h|cpp` own the embeddable `RunStrictfmtCli(argc, argv)` entry point.
 - `src/format/format.h|cpp` own source text formatting, line ending preservation, and optional output validation.
-- `src/format/format_cli.cpp` owns the end-user formatter command orchestration: input collection, configuration lookup, ignore filtering, parallel file formatting, output routing, summaries, and exit codes.
+- `src/format/format_cli.cpp` owns the end-user formatter command orchestration: streaming input discovery, configuration lookup, ignore filtering, parallel file formatting, output routing, summaries, and exit codes. The discovery thread owns the style cache and publishes immutable configurations to workers. Completed results retain input output order independently of discovery and worker completion order; output and writes wait for discovery and formatting checks to finish.
 - `src/format/impl/format_args.h|cpp` own command-line option parsing and usage text.
 - `src/format/impl/format_diff.h|cpp` own greedy line synchronization, changed-line counting, and unified-diff emission for `--diff`. Counting alone skips edit storage and diff rendering; line-position indexes are built only when nearby synchronization fails.
 - `src/format/impl/format_break_cost.h|cpp` own structural prefix-depth adjustments and final break-cost subtree discounts, including the no-discount traversal shortcut.
@@ -107,7 +107,7 @@ The writer records those operations as `FormatLayoutProgram` commands and resolv
 - `src/format/impl/format_string_literals.h|cpp` own safe adjacent-string spelling joins and escaped-newline split requirements.
 - `src/format/impl/format_spacing.h|cpp` own print token text/width accessors, classification, and spacing rules.
 - `src/tools/tools_common.h|cpp` own shared tool helpers for paths, recursive discovery, file lists, source lines, include text, counts, and lightweight string operations.
-- `src/tools/tools_parallel.h|cpp` own tool concurrency parsing, default worker selection, and indexed parallel execution.
+- `src/tools/tools_parallel.h|cpp` own tool concurrency parsing, default worker selection, and a bounded streaming work queue. Discovery runs alongside lazily started workers, while the caller refreshes progress independently of file I/O; completion joins every thread and propagates thread failures.
 - `src/tools/tools_progress.h|cpp` own elapsed-time formatting and terminal progress rendering.
 - `src/util/file_path.h|cpp` own portable path wrappers and binary file I/O.
 - `src/util/strings.h|cpp` own general string normalization, splitting, matching, joining, and sorting helpers.
@@ -126,6 +126,7 @@ The writer records those operations as `FormatLayoutProgram` commands and resolv
 - `StrictfmtFormatTests` owns the CTest entry for the formatter test suite when Python is available.
 - `strictfmt_utf8_tests` and `StrictfmtUtf8Tests` own the Unicode utility test executable and its CTest entry.
 - `strictfmt_layout_tests` and `StrictfmtLayoutTests` own the internal layout-contract test executable and its CTest entry.
+- `strictfmt_parallel_tests` and `StrictfmtParallelTests` own streaming work-queue tests and their CTest entry.
 
 ## Upstream Tree-Sitter Runtime
 

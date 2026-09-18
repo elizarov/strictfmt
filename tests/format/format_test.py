@@ -1034,6 +1034,58 @@ class FormatCommandTests(unittest.TestCase):
     def test_pfr_submodule(self) -> None:
         self.assert_external_project_sources_parse_without_warnings_and_format_idempotently("pfr")
 
+    def test_streamed_recursive_results_keep_input_output_order(self) -> None:
+        TEST_TEMP_ROOT.mkdir(exist_ok=True)
+        with tempfile.TemporaryDirectory(prefix="format_discovery_order_", dir=TEST_TEMP_ROOT) as temp_dir:
+            root = Path(temp_dir)
+            copy_default_config(root)
+            write_empty_ignore(root)
+            contents = {
+                "second.cpp": "int second=2;\n",
+                "first.cpp": "int first=1;\n",
+                "z/last.cpp": "int last=4;\n",
+                "a/early.cpp": "int early=3;\n",
+            }
+            for path, source in contents.items():
+                file = root / path
+                file.parent.mkdir(exist_ok=True)
+                file.write_text(source, encoding="utf-8")
+            args = ("--concurrency", "2", "second.cpp", "first.cpp", "-r", "z", "-r", "a")
+            formatted = native_format(*args, cwd=root)
+            self.assertEqual(0, formatted.returncode, msg=formatted.stderr)
+            self.assertEqual(
+                "int second = 2;\nint first = 1;\nint early = 3;\nint last = 4;\n", formatted.stdout
+            )
+            diff = native_format("--diff", *args, cwd=root)
+            self.assertEqual(1, diff.returncode, msg=diff.stderr)
+            self.assertEqual(
+                ["second.cpp", "first.cpp", "a/early.cpp", "z/last.cpp"],
+                re.findall(r"^--- (.+)$", diff.stdout, re.MULTILINE),
+            )
+
+    def test_late_discovery_error_prevents_output_and_in_place_writes(self) -> None:
+        TEST_TEMP_ROOT.mkdir(exist_ok=True)
+        with tempfile.TemporaryDirectory(prefix="format_discovery_error_", dir=TEST_TEMP_ROOT) as temp_dir:
+            root = Path(temp_dir)
+            copy_default_config(root)
+            write_empty_ignore(root)
+            valid = root / "valid"
+            invalid = root / "invalid"
+            valid.mkdir()
+            invalid.mkdir()
+            original = "int value=1;\n"
+            source = valid / "value.cpp"
+            source.write_text(original, encoding="utf-8")
+            (invalid / "value.cpp").write_text(original, encoding="utf-8")
+            (invalid / ".cpp-format").write_text("ColumnLimit: invalid\n", encoding="utf-8")
+            for mode in ((), ("-i",), ("--diff",)):
+                for second_root in ("invalid", "missing"):
+                    with self.subTest(mode=mode, second_root=second_root):
+                        result = native_format(*mode, "-r", "valid", "-r", second_root, cwd=root)
+                        self.assertEqual(2, result.returncode, msg=result.stderr)
+                        self.assertEqual("", result.stdout)
+                        self.assertEqual(original, source.read_text(encoding="utf-8"))
+
     def test_concurrency_one_preserves_file_list_output_order(self) -> None:
         build_dir = TEST_TEMP_ROOT
         build_dir.mkdir(exist_ok=True)
@@ -1079,10 +1131,10 @@ class FormatCommandTests(unittest.TestCase):
             escaped_second = re.escape(str(second.resolve()))
             self.assertRegex(
                 result.stderr,
-                rf"^\[1/2\] Formatting {escaped_first}\n"
-                rf"\[1/2\] Finished {escaped_first} in (?:\d+ms|\d+\.\d{{3}}s)\n"
-                rf"\[2/2\] Formatting {escaped_second}\n"
-                rf"\[2/2\] Finished {escaped_second} in (?:\d+ms|\d+\.\d{{3}}s)\n"
+                rf"^\[1/[12]\+?\] Formatting {escaped_first}\n"
+                rf"\[1/[12]\+?\] Finished {escaped_first} in (?:\d+ms|\d+\.\d{{3}}s)\n"
+                rf"\[2/2\+?\] Formatting {escaped_second}\n"
+                rf"\[2/2\+?\] Finished {escaped_second} in (?:\d+ms|\d+\.\d{{3}}s)\n"
                 rf"Formatted 2/2 files\. 2/2 LOC changed\. Done in (?:\d+ms|\d+\.\d{{3}}s)\.\s*$",
             )
 
