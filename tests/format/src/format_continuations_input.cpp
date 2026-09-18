@@ -288,3 +288,15 @@ constexpr operator LongConversionTarget() const;
 template<typename T> constexpr VeryLongClassName(T value);
 static constexpr LongReturnType Create(int value);
 };
+
+// Modifier contents use the ordinary recursive delimiter and expression rules.
+alignas(first_alignment+second_alignment) int standard_alignment;
+__declspec(align(first_alignment+second_alignment)) int compiler_alignment;
+alignas(ComputeAlignment(first_alignment,second_alignment)) int nested_standard;
+__declspec(align(ComputeAlignment(first_alignment,second_alignment))) int nested_compiler;
+__declspec(align(Select<FirstLongType,SecondLongType>())) int template_alignment;
+__declspec(noinline,safebuffers,deprecated("Use the replacement API")) void Legacy(int first,int second);
+struct ModifierMembers {
+__declspec(align(first_alignment+second_alignment)) int member;
+__declspec(noinline) static LongReturnType Modified(int value);
+};

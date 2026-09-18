@@ -54,12 +54,6 @@ FormatBreakDelimiterKind OpeningDelimiter(const FormatBreakToken& token) {
         default:
             break;
     }
-    if (delimiter == FormatBreakDelimiterKind::None) {
-        return FormatBreakDelimiterKind::None;
-    }
-    if (printToken.inCompilerCallModifier) {
-        return FormatBreakDelimiterKind::None;
-    }
     return delimiter;
 }
 

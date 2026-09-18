@@ -2,7 +2,7 @@
 
 This document owns shared terminology used across the `strictfmt` documentation.
 
-- **atomic group**: A formatter unit with no internal break opportunities: an empty delimiter pair, function-pointer declarator group, parenthesized callee, compiler declaration prefix, `__declspec` group, operator function name, or angle-bracket token that is not a template argument list.
+- **atomic group**: A formatter unit with no internal break opportunities: an empty delimiter pair, function-pointer declarator group, parenthesized callee, operator function name, or angle-bracket token that is not a template argument list.
 - **break choice**: A compact or split layout decision selected by the break optimizer for one break model node.
 - **break model**: The formatter-owned tree of possible compact and split layouts for one formatted segment. In code this is `FormatBreakModel`.
 - **break optimizer**: The dynamic-programming solver that chooses break choices for a break model under the configured column limit. In code this is `SolveFormatBreaks`.

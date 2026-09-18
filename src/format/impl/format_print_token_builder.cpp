@@ -151,7 +151,6 @@ struct TokenContext {
     SyntaxNodeKind grandParentKind = SyntaxNodeKind::Unknown;
     bool inTemplateDeclaration = false;
     bool inRequiresClause = false;
-    bool inCompilerCallModifier = false;
     bool inCompactSingleStatementBody = false;
     const SyntaxNode* macroDefinition = nullptr;
     bool inMacroValue = false;
@@ -164,7 +163,6 @@ struct TokenContext {
         const SyntaxNodeKind kind = node.kind;
         inTemplateDeclaration |= kind == SyntaxNodeKind::TemplateDeclaration;
         inRequiresClause |= kind == SyntaxNodeKind::RequiresClause;
-        inCompilerCallModifier |= kind == SyntaxNodeKind::MsCallModifier || kind == SyntaxNodeKind::MsDeclspecModifier;
         inCompactSingleStatementBody = inCompactSingleStatementBody || BodyAllowsCompactSingleStatementForm(node);
         if (macroDefinition == nullptr && SyntaxNodeKindHasClass(kind, SyntaxNodeClass::MacroDefinition)) {
             macroDefinition = &node;
@@ -239,7 +237,6 @@ PrintToken
         token.grandParentKind = context.grandParentKind;
         token.inTemplateDeclaration = context.inTemplateDeclaration;
         token.inRequiresClause = context.inRequiresClause;
-        token.inCompilerCallModifier = context.inCompilerCallModifier;
         token.inCompactSingleStatementBody = context.inCompactSingleStatementBody;
     }
     return token;

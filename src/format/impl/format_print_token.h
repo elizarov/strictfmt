@@ -27,7 +27,6 @@ struct PrintToken {
     std::uint32_t sourceIndex = static_cast<std::uint32_t>(-1);
     bool inTemplateDeclaration : 1;
     bool inRequiresClause : 1;
-    bool inCompilerCallModifier : 1;
     bool inCompactSingleStatementBody : 1;
     bool structuredPreprocessor : 1;
     bool inMacroValue : 1;
