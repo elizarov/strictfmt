@@ -28591,20 +28591,29 @@
         ]
       }
     },
-    "macro_call_prefixed_statement": {
+    "macro_block_prefixed_statement": {
       "type": "PREC_RIGHT",
       "value": 20,
       "content": {
         "type": "SEQ",
         "members": [
           {
-            "type": "ALIAS",
-            "content": {
-              "type": "SYMBOL",
-              "name": "_macro_call_statement_prefix"
-            },
-            "named": true,
-            "value": "statement_prefix_macro"
+            "type": "CHOICE",
+            "members": [
+              {
+                "type": "SYMBOL",
+                "name": "statement_prefix_macro"
+              },
+              {
+                "type": "ALIAS",
+                "content": {
+                  "type": "SYMBOL",
+                  "name": "_macro_call_statement_prefix"
+                },
+                "named": true,
+                "value": "statement_prefix_macro"
+              }
+            ]
           },
           {
             "type": "FIELD",
@@ -28613,6 +28622,18 @@
               "type": "SYMBOL",
               "name": "compound_statement"
             }
+          },
+          {
+            "type": "CHOICE",
+            "members": [
+              {
+                "type": "STRING",
+                "value": ";"
+              },
+              {
+                "type": "BLANK"
+              }
+            ]
           }
         ]
       }
@@ -29664,7 +29685,7 @@
           "type": "ALIAS",
           "content": {
             "type": "SYMBOL",
-            "name": "macro_call_prefixed_statement"
+            "name": "macro_block_prefixed_statement"
           },
           "named": true,
           "value": "macro_prefixed_statement"

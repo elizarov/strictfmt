@@ -9040,3 +9040,81 @@ void Local() {
 }
 
 }
+
+namespace MacroBlockTerminators {
+
+#define FORMAT_STATEMENT_PREFIX_DEFER auto cleanup = [&]()
+#define FORMAT_STATEMENT_PREFIX_NAMED(name) auto name = [&]()
+#define FORMAT_INFERRED_DEFER(name) auto name = [&]()
+#define FORMAT_STATEMENT_PREFIX_WRAPPER
+void Configured() {
+    FORMAT_STATEMENT_PREFIX_DEFER {
+        (void)0;
+    };
+    FORMAT_STATEMENT_PREFIX_NAMED(other) {
+        (void)0;
+    };  // declaration terminator
+    FORMAT_STATEMENT_PREFIX_NAMED(empty) {};
+    FORMAT_STATEMENT_PREFIX_WRAPPER FORMAT_STATEMENT_PREFIX_NAMED(nested) {
+        (void)0;
+    };
+}
+void Inferred() {
+    FORMAT_INFERRED_DEFER(first) {
+        (void)0;
+    };
+    FORMAT_INFERRED_DEFER(empty) {};
+    FORMAT_INFERRED_DEFER(commented) {
+        (void)0;
+    } /* before terminator */;  // after terminator
+}
+void ControlBodies(bool ready) {
+    if (ready) {
+        FORMAT_STATEMENT_PREFIX_DEFER {
+            (void)0;
+        };
+    } else {
+        (void)0;
+    }
+    if (ready) {
+        FORMAT_INFERRED_DEFER(cleanup) {};
+    } else {
+        (void)0;
+    }
+    while (ready) {
+        FORMAT_STATEMENT_PREFIX_WRAPPER FORMAT_STATEMENT_PREFIX_DEFER {};
+    }
+    for (int i = 0; i < 2; ++i) {
+        FORMAT_STATEMENT_PREFIX_DEFER {};
+    }
+    do {
+        FORMAT_INFERRED_DEFER(cleanup) {};
+    } while (ready);
+    if (ready) {
+        while (ready) {
+            FORMAT_STATEMENT_PREFIX_DEFER {};
+        }
+    } else {
+        (void)0;
+    }
+}
+void Nested() {
+    FORMAT_STATEMENT_PREFIX_DEFER {
+        FORMAT_INFERRED_DEFER(inner) {};
+    };
+}
+#define FORMAT_DEFERRED_ACTION()    \
+    FORMAT_STATEMENT_PREFIX_DEFER { \
+        (void)0;                    \
+    };
+void Replacement() { FORMAT_DEFERRED_ACTION() }
+void Boundaries() {
+    [[maybe_unused]] FORMAT_STATEMENT_PREFIX_NAMED(attributed) {};
+#if defined(FIRST_DEFER)
+    FORMAT_STATEMENT_PREFIX_DEFER {};
+#else
+    FORMAT_INFERRED_DEFER(cleanup) {};
+#endif
+}
+
+}

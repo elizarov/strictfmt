@@ -160,7 +160,7 @@ class MockStore {
 
 ### StatementPrefixMacros
 
-`StatementPrefixMacros` attaches a modifier to the following complete statement or block. Several prefixes may nest. The prefix and its following statement form one control-flow body, including when braces are added to an enclosing control statement.
+`StatementPrefixMacros` attaches a modifier to the following complete statement or block. Several prefixes may nest. The prefix and its following statement form one control-flow body, including when braces are added to an enclosing control statement. Preserve a semicolon after a macro-prefixed block as part of that statement, whether the prefix is configured or inferred: the macro may expand to a declaration or expression.
 
 Configure macros that prefix unbraced statements: in `if (ready) FOR_EACH(items) Work();`, the macro and `Work()` must remain together inside the `if`. Braced calls follow the [unconfigured call-and-block rule](#macros-without-configuration).
 
@@ -192,7 +192,7 @@ void Fail() { RAISE Error() << "failure"; }
 void Use() {
     DEFER {
         Cleanup();
-    }
+    };
 }
 ```
 

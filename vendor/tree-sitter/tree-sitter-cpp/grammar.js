@@ -3011,10 +3011,16 @@ module.exports = grammar(C, {
       field('body', $.statement),
     )),
 
-    // Only statement positions infer a prefix from an unconfigured call and block.
-    macro_call_prefixed_statement: $ => prec.right(PREC.CALL + 5, seq(
-      alias($._macro_call_statement_prefix, $.statement_prefix_macro),
+    // A macro-prefixed block may expand to a declaration or expression. Keep
+    // its terminator in the statement, including when it is a control-flow body.
+    // Only statement positions infer a prefix from an unconfigured call.
+    macro_block_prefixed_statement: $ => prec.right(PREC.CALL + 5, seq(
+      choice(
+        $.statement_prefix_macro,
+        alias($._macro_call_statement_prefix, $.statement_prefix_macro),
+      ),
       field('body', $.compound_statement),
+      optional(';'),
     )),
 
     _macro_call_statement_prefix: $ => prec(PREC.CALL + 5, seq(
@@ -3219,7 +3225,7 @@ module.exports = grammar(C, {
       $.block_macro_call_line_item,
       $.block_macro_call_statement_item,
       $.macro_function_definition,
-      alias($.macro_call_prefixed_statement, $.macro_prefixed_statement),
+      alias($.macro_block_prefixed_statement, $.macro_prefixed_statement),
     ),
 
     _closed_statement: $ => choice(
