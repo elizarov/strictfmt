@@ -2517,6 +2517,16 @@ module.exports = grammar(C, {
     attributed_field_declarator: $ => attributedDeclarator($, $._field_declarator),
     attributed_type_declarator: $ => attributedDeclarator($, $._type_declarator),
 
+    // All declarator roles share the bracketed bound and its size field.
+    _array_declarator_suffix: $ => prec(1, seq(
+      '[',
+      repeat(choice($.type_qualifier, 'static')),
+      field('size', optional(choice($.expression, '*'))),
+      ']',
+    )),
+
+    abstract_array_declarator: $ => arrayDeclarator($, optional($._abstract_declarator)),
+
     array_declarator: $ => arrayDeclarator($, $._non_pointer_declarator),
     array_field_declarator: $ => arrayDeclarator($, $._field_declarator),
     array_type_declarator: $ => arrayDeclarator($, $._type_declarator),
@@ -4862,13 +4872,7 @@ function attributedDeclarator($, declarator) {
 }
 
 function arrayDeclarator($, declarator) {
-  return prec(1, seq(
-    field('declarator', declarator),
-    '[',
-    repeat(choice($.type_qualifier, 'static')),
-    field('size', optional(choice($.expression, '*'))),
-    ']',
-  ));
+  return prec(1, seq(field('declarator', declarator), $._array_declarator_suffix));
 }
 
 function declarationDeclaratorList($, declarator) {
