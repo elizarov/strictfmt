@@ -1269,11 +1269,14 @@ module.exports = grammar(C, {
       $._preproc_opening_condition,
       $._preproc_directive_end,
       repeat($._block_item),
-      preprocessor('endif'),
-      $._preproc_directive_end,
+      $._preproc_endif_line,
       'else',
       $.compound_statement,
     ),
+
+    // Share directive boundaries while each placement keeps its own branch syntax.
+    _preproc_else_line: $ => seq(preprocessor('else'), $._preproc_directive_end),
+    _preproc_endif_line: $ => seq(preprocessor('endif'), $._preproc_directive_end),
 
     _preproc_opening_condition: $ => choice(
       seq(
@@ -1404,16 +1407,14 @@ module.exports = grammar(C, {
       'extern',
       field('language', $.string_literal),
       '{',
-      preprocessor('endif'),
-      $._preproc_directive_end,
+      $._preproc_endif_line,
     ),
 
     conditional_extern_c_close: $ => seq(
       $._preproc_opening_condition,
       $._preproc_directive_end,
       '}',
-      preprocessor('endif'),
-      $._preproc_directive_end,
+      $._preproc_endif_line,
     ),
 
     preproc_arg: $ => repeat1(choice($._preprocessing_token, ',')),
@@ -1522,8 +1523,7 @@ module.exports = grammar(C, {
     ),
 
     preproc_else_in_function_return_type: $ => seq(
-      preprocessor('else'),
-      $._preproc_directive_end,
+      $._preproc_else_line,
       $._declaration_specifiers,
     ),
 
@@ -1569,8 +1569,7 @@ module.exports = grammar(C, {
     ),
 
     preproc_else_in_function_definition_prefix: $ => seq(
-      preprocessor('else'),
-      $._preproc_directive_end,
+      $._preproc_else_line,
       $._function_definition_prefix_branch,
     ),
 
@@ -1603,8 +1602,7 @@ module.exports = grammar(C, {
       $.preproc_else_in_macro_function_definition_prefix,
 
     preproc_else_in_macro_function_definition_prefix: $ => prec(PREC.CALL + 7, seq(
-      preprocessor('else'),
-      $._preproc_directive_end,
+      $._preproc_else_line,
       $._macro_function_definition_prefix,
     )),
 
@@ -2011,8 +2009,7 @@ module.exports = grammar(C, {
       $._preproc_directive_end,
       field('consequence', $.preproc_semicolon_value),
       repeat(field('alternative', $.preproc_semicolon_alternative)),
-      preprocessor('endif'),
-      $._preproc_directive_end,
+      $._preproc_endif_line,
     ),
 
     preproc_semicolon_value: $ => seq(
@@ -2119,8 +2116,7 @@ module.exports = grammar(C, {
         $._preproc_directive_end,
         $.preproc_declaration_modifier,
       )),
-      preprocessor('endif'),
-      $._preproc_directive_end,
+      $._preproc_endif_line,
     ))),
 
     preproc_declaration_modifier: $ => choice(
@@ -2141,12 +2137,10 @@ module.exports = grammar(C, {
       $._preproc_directive_end,
       repeat1($.attribute_declaration),
       optional(seq(
-        preprocessor('else'),
-        $._preproc_directive_end,
+        $._preproc_else_line,
         repeat1($.attribute_declaration),
       )),
-      preprocessor('endif'),
-      $._preproc_directive_end,
+      $._preproc_endif_line,
     ),
 
     attributed_friend_declaration: $ => seq(
@@ -2667,12 +2661,10 @@ module.exports = grammar(C, {
       $._preproc_directive_end,
       repeat1(seq($._template_argument_list_item, optional(','))),
       optional(seq(
-        preprocessor('else'),
-        $._preproc_directive_end,
+        $._preproc_else_line,
         repeat1(seq($._template_argument_list_item, optional(','))),
       )),
-      preprocessor('endif'),
-      $._preproc_directive_end,
+      $._preproc_endif_line,
     ),
 
     _template_argument_list_fragment: $ => choice(
@@ -3057,8 +3049,7 @@ module.exports = grammar(C, {
         $._preproc_directive_end,
         repeat1($.preproc_case_label),
       )),
-      preprocessor('endif'),
-      $._preproc_directive_end,
+      $._preproc_endif_line,
     ),
 
     preproc_case_label: $ => choice(
@@ -3081,12 +3072,10 @@ module.exports = grammar(C, {
       $._preproc_directive_end,
       $.selected_if_header,
       optional(seq(
-        preprocessor('else'),
-        $._preproc_directive_end,
+        $._preproc_else_line,
         $.selected_if_header,
       )),
-      preprocessor('endif'),
-      $._preproc_directive_end,
+      $._preproc_endif_line,
     ),
 
     preproc_selected_braced_if_else_statement: $ => prec.right(seq(
@@ -3094,12 +3083,10 @@ module.exports = grammar(C, {
       $._preproc_directive_end,
       selectedIfHeader($),
       '{',
-      preprocessor('else'),
-      $._preproc_directive_end,
+      $._preproc_else_line,
       selectedIfHeader($),
       '{',
-      preprocessor('endif'),
-      $._preproc_directive_end,
+      $._preproc_endif_line,
       repeat($._block_item),
       '}',
       'else',
@@ -3121,8 +3108,7 @@ module.exports = grammar(C, {
       field('consequence', $.compound_statement),
       'else',
       selectedIfHeader($),
-      preprocessor('endif'),
-      $._preproc_directive_end,
+      $._preproc_endif_line,
       field('alternative_consequence', $.statement),
     )),
 
@@ -3149,8 +3135,7 @@ module.exports = grammar(C, {
       $.selected_if_header,
       '{',
       repeat($.preproc_selected_else_if_body_item),
-      preprocessor('endif'),
-      $._preproc_directive_end,
+      $._preproc_endif_line,
       '}',
       'else',
       $.selected_if_header,
@@ -3189,8 +3174,7 @@ module.exports = grammar(C, {
     ),
 
     preproc_else_in_else_clause: $ => seq(
-      preprocessor('else'),
-      $._preproc_directive_end,
+      $._preproc_else_line,
       $.else_clause,
     ),
 
@@ -3377,16 +3361,14 @@ module.exports = grammar(C, {
     ),
 
     preproc_condition_expression: $ => seq(
-      preprocOpeningCondition($),
+      $._preproc_opening_condition,
       $._preproc_directive_end,
       field('consequence', $.expression),
       optional(seq(
-        preprocessor('else'),
-        $._preproc_directive_end,
+        $._preproc_else_line,
         field('alternative', $.expression),
       )),
-      preprocessor('endif'),
-      $._preproc_directive_end,
+      $._preproc_endif_line,
     ),
 
     condition_declaration: $ => prec.dynamic(-1, seq(
@@ -4349,25 +4331,22 @@ module.exports = grammar(C, {
     },
 
     preproc_logical_expression_fragment: $ => seq(
-      preprocOpeningCondition($),
+      $._preproc_opening_condition,
       $._preproc_directive_end,
       field('operator', choice('||', '&&')),
       field('right', $.expression),
-      preprocessor('endif'),
-      $._preproc_directive_end,
+      $._preproc_endif_line,
     ),
 
     preproc_logical_tail_expression_fragment: $ => seq(
-      preprocOpeningCondition($),
+      $._preproc_opening_condition,
       $._preproc_directive_end,
       field('consequence', $.expression),
       optional(seq(
-        preprocessor('else'),
-        $._preproc_directive_end,
+        $._preproc_else_line,
         field('alternative', $.expression),
       )),
-      preprocessor('endif'),
-      $._preproc_directive_end,
+      $._preproc_endif_line,
     ),
 
     // Calls share one recursive argument grammar, including empty arguments.
@@ -4631,7 +4610,7 @@ module.exports = grammar(C, {
     )),
 
     preproc_string_literal_fragment: $ => seq(
-      preprocOpeningCondition($),
+      $._preproc_opening_condition,
       $._preproc_directive_end,
       repeat1($._string),
       repeat(seq(
@@ -4649,12 +4628,10 @@ module.exports = grammar(C, {
         repeat1($._string),
       )),
       optional(seq(
-        preprocessor('else'),
-        $._preproc_directive_end,
+        $._preproc_else_line,
         repeat1($._string),
       )),
-      preprocessor('endif'),
-      $._preproc_directive_end,
+      $._preproc_endif_line,
     ),
 
     string_literal: _ => token(seq(
@@ -5066,8 +5043,7 @@ function preprocIf(suffix, content, precedence = 0, forms = PREPROC_ALL_BRANCH_F
 
   if (forms & PREPROC_ELSE) {
     rules['preproc_else' + suffix] = $ => prec(precedence, seq(
-      preprocessor('else'),
-      $._preproc_directive_end,
+      $._preproc_else_line,
       branchContent($),
     ));
   }
@@ -5101,12 +5077,10 @@ function preprocArgumentFragment($, opening) {
     $._preproc_directive_end,
     field('consequence', $.preproc_trailing_argument_expression),
     optional(seq(
-      preprocessor('else'),
-      $._preproc_directive_end,
+      $._preproc_else_line,
       field('alternative', $.preproc_trailing_argument_expression),
     )),
-    preprocessor('endif'),
-    $._preproc_directive_end,
+    $._preproc_endif_line,
   )));
 }
 
