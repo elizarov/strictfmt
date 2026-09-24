@@ -48,6 +48,8 @@ SOURCE_SUFFIXES = {
 }
 INPUT_FIXTURE = Path("src") / "format_test_input.cpp"
 OUTPUT_FIXTURE = Path("src") / "format_test_output.cpp"
+NESTED_TEMPLATE_CALLS_INPUT_FIXTURE = Path("src") / "format_nested_template_calls_input.cpp"
+NESTED_TEMPLATE_CALLS_OUTPUT_FIXTURE = Path("src") / "format_nested_template_calls_output.cpp"
 PREPROCESSOR_EOF_INPUT_FIXTURE = Path("src") / "format_preprocessor_eof_input.cpp"
 PREPROCESSOR_EOF_OUTPUT_FIXTURE = Path("src") / "format_preprocessor_eof_output.cpp"
 MACROS_INPUT_FIXTURE = Path("src") / "format_macros_input.cpp"
@@ -88,6 +90,7 @@ CONTINUATIONS_FORMAT_CONFIG = TEST_ROOT / ".cpp-format-continuations"
 NON_ASCII_FORMAT_CONFIG = TEST_ROOT / ".cpp-format-non-ascii"
 FORMATTED_GOLDEN_OUTPUTS = (
     ("default", OUTPUT_FIXTURE, None),
+    ("nested-template-calls", NESTED_TEMPLATE_CALLS_OUTPUT_FIXTURE, None),
     ("macros", MACROS_OUTPUT_FIXTURE, None),
     ("macro-roles", UNCONFIGURED_MACROS_OUTPUT_FIXTURE, MACRO_ROLES_FORMAT_CONFIG),
     ("preprocessor-eof", PREPROCESSOR_EOF_OUTPUT_FIXTURE, None),
@@ -513,6 +516,15 @@ class FormatCommandTests(unittest.TestCase):
                 self.assertEqual(0, result.returncode, msg=result.stderr)
                 self.assertEqual(expected.replace(b"\n", ending), result.stdout)
                 self.assertNotIn(b": warning at ", result.stderr)
+
+    def test_nested_template_calls_format_as_calls(self) -> None:
+        result = native_format(
+            "--stdin", cwd=TEST_ROOT, input_text=read_fixture(NESTED_TEMPLATE_CALLS_INPUT_FIXTURE)
+        )
+
+        self.assertEqual(0, result.returncode, msg=result.stderr)
+        self.assertEqual(read_fixture(NESTED_TEMPLATE_CALLS_OUTPUT_FIXTURE), result.stdout)
+        self.assert_no_unsupported_placement_warnings(result)
 
     def test_golden_outputs_reparse_and_format_idempotently(self) -> None:
         for name, fixture, style in FORMATTED_GOLDEN_OUTPUTS:

@@ -10359,62 +10359,13 @@
       ]
     },
     "gnu_asm_input_operand": {
-      "type": "SEQ",
-      "members": [
-        {
-          "type": "CHOICE",
-          "members": [
-            {
-              "type": "SEQ",
-              "members": [
-                {
-                  "type": "STRING",
-                  "value": "["
-                },
-                {
-                  "type": "FIELD",
-                  "name": "symbol",
-                  "content": {
-                    "type": "SYMBOL",
-                    "name": "identifier"
-                  }
-                },
-                {
-                  "type": "STRING",
-                  "value": "]"
-                }
-              ]
-            },
-            {
-              "type": "BLANK"
-            }
-          ]
-        },
-        {
-          "type": "FIELD",
-          "name": "constraint",
-          "content": {
-            "type": "SYMBOL",
-            "name": "string_literal"
-          }
-        },
-        {
-          "type": "STRING",
-          "value": "("
-        },
-        {
-          "type": "FIELD",
-          "name": "value",
-          "content": {
-            "type": "SYMBOL",
-            "name": "expression"
-          }
-        },
-        {
-          "type": "STRING",
-          "value": ")"
-        }
-      ]
+      "type": "ALIAS",
+      "content": {
+        "type": "SYMBOL",
+        "name": "gnu_asm_output_operand"
+      },
+      "named": true,
+      "value": "gnu_asm_input_operand"
     },
     "gnu_asm_clobber_list": {
       "type": "SEQ",
@@ -27194,24 +27145,13 @@
       ]
     },
     "namespace_declaration_list": {
-      "type": "SEQ",
-      "members": [
-        {
-          "type": "STRING",
-          "value": "{"
-        },
-        {
-          "type": "REPEAT",
-          "content": {
-            "type": "SYMBOL",
-            "name": "_top_level_item"
-          }
-        },
-        {
-          "type": "STRING",
-          "value": "}"
-        }
-      ]
+      "type": "ALIAS",
+      "content": {
+        "type": "SYMBOL",
+        "name": "declaration_list"
+      },
+      "named": true,
+      "value": "namespace_declaration_list"
     },
     "namespace_alias_definition": {
       "type": "SEQ",
@@ -31433,29 +31373,13 @@
       }
     },
     "macro_parenthesized_argument": {
-      "type": "SEQ",
-      "members": [
-        {
-          "type": "STRING",
-          "value": "("
-        },
-        {
-          "type": "CHOICE",
-          "members": [
-            {
-              "type": "SYMBOL",
-              "name": "argument_sequence"
-            },
-            {
-              "type": "BLANK"
-            }
-          ]
-        },
-        {
-          "type": "STRING",
-          "value": ")"
-        }
-      ]
+      "type": "ALIAS",
+      "content": {
+        "type": "SYMBOL",
+        "name": "argument_list"
+      },
+      "named": true,
+      "value": "macro_parenthesized_argument"
     },
     "_conditional_alternative": {
       "type": "PREC_RIGHT",
@@ -35889,54 +35813,13 @@
       ]
     },
     "preproc_logical_tail_expression_fragment": {
-      "type": "SEQ",
-      "members": [
-        {
-          "type": "SYMBOL",
-          "name": "_preproc_opening_condition"
-        },
-        {
-          "type": "SYMBOL",
-          "name": "_preproc_directive_end"
-        },
-        {
-          "type": "FIELD",
-          "name": "consequence",
-          "content": {
-            "type": "SYMBOL",
-            "name": "expression"
-          }
-        },
-        {
-          "type": "CHOICE",
-          "members": [
-            {
-              "type": "SEQ",
-              "members": [
-                {
-                  "type": "SYMBOL",
-                  "name": "_preproc_else_line"
-                },
-                {
-                  "type": "FIELD",
-                  "name": "alternative",
-                  "content": {
-                    "type": "SYMBOL",
-                    "name": "expression"
-                  }
-                }
-              ]
-            },
-            {
-              "type": "BLANK"
-            }
-          ]
-        },
-        {
-          "type": "SYMBOL",
-          "name": "_preproc_endif_line"
-        }
-      ]
+      "type": "ALIAS",
+      "content": {
+        "type": "SYMBOL",
+        "name": "preproc_condition_expression"
+      },
+      "named": true,
+      "value": "preproc_logical_tail_expression_fragment"
     },
     "argument_sequence": {
       "type": "CHOICE",
@@ -38092,19 +37975,18 @@
     ],
     [
       "parameter_list",
-      "macro_parenthesized_argument"
+      "argument_list"
     ],
     [
       "preprocessing_parenthesized_tokens",
-      "macro_parenthesized_argument"
+      "argument_list"
     ],
     [
-      "argument_list",
-      "macro_parenthesized_argument"
+      "argument_list"
     ],
     [
       "preprocessing_token_argument_list",
-      "macro_parenthesized_argument"
+      "argument_list"
     ],
     [
       "expression",
@@ -38236,7 +38118,7 @@
     [
       "parameter_list",
       "macro_parameter_list",
-      "macro_parenthesized_argument"
+      "argument_list"
     ],
     [
       "_parameter_list_item",
@@ -38246,7 +38128,7 @@
     [
       "macro_parameter_list",
       "preprocessing_parenthesized_tokens",
-      "macro_parenthesized_argument"
+      "argument_list"
     ],
     [
       "preprocessing_parenthesized_tokens",
@@ -38278,7 +38160,7 @@
     ],
     [
       "macro_parameter_list",
-      "macro_parenthesized_argument"
+      "argument_list"
     ],
     [
       "concatenated_string",
@@ -40034,7 +39916,11 @@
     "_statement_identifier",
     "_non_case_statement",
     "_expression_not_binary",
-    "_namespace_identifier"
+    "_namespace_identifier",
+    "preproc_logical_tail_expression_fragment",
+    "macro_parenthesized_argument",
+    "namespace_declaration_list",
+    "gnu_asm_input_operand"
   ],
   "supertypes": [
     "expression",

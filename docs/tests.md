@@ -116,6 +116,7 @@ and exist only to exercise one command or configuration edge.
 - `tests/format/src/format_test_input.cpp` ->
   `tests/format/src/format_test_output.cpp`: broad default-configuration
   formatting coverage for ordinary C++ layout core as documented in [format.md].
+- `tests/format/src/format_nested_template_calls_input.cpp` -> `tests/format/src/format_nested_template_calls_output.cpp`: nested template calls remain call expressions when formatting introduces statement line breaks.
 - `tests/format/src/format_macros_input.cpp` -> `tests/format/src/format_macros_output.cpp`: a deduplicated corpus of service macro definitions and existing golden macro cases for fast structured/raw fallback, formatting, and idempotence checks. Definitions embedded in other fixtures remain there when their placement provides additional syntax coverage.
 - `tests/format/src/format_unconfigured_macros_input.cpp` -> `tests/format/src/format_unconfigured_macros_output.cpp`: macro uses checked for parsing alone with an empty configuration and with each category removed independently, and for canonical formatting and idempotence with `.cpp-format-macro-roles`. Unconfigured formatting is intentionally not asserted because ambiguous roles may require configuration.
 - `tests/format/src/format_preprocessor_eof_input.cpp` -> `tests/format/src/format_preprocessor_eof_output.cpp`: a structured macro whose final line splice reaches end of input; this boundary has its own fixture so later additions cannot move it away from EOF.

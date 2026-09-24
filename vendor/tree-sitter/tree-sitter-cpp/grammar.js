@@ -339,10 +339,10 @@ module.exports = grammar(C, {
     [$.expression, $._macro_list_fragment, $.macro_expression_continuation],
     [$._macro_list_fragment, $.block_macro_call_line_item],
     [$.expression, $._macro_list_fragment],
-    [$.parameter_list, $.macro_parenthesized_argument],
-    [$.preprocessing_parenthesized_tokens, $.macro_parenthesized_argument],
-    [$.argument_list, $.macro_parenthesized_argument],
-    [$.preprocessing_token_argument_list, $.macro_parenthesized_argument],
+    [$.parameter_list, $.argument_list],
+    [$.preprocessing_parenthesized_tokens, $.argument_list],
+    [$.argument_list],
+    [$.preprocessing_token_argument_list, $.argument_list],
     [$.expression, $.macro_preprocessing_token_sequence_argument],
     [$.call_expression, $._unconfigured_call_callee],
     [$._unconfigured_modifier_identifier, $.declaration_suffix_preproc_ifdef],
@@ -372,16 +372,16 @@ module.exports = grammar(C, {
     [$._type_constraint, $._unconfigured_macro_item],
     [$.sized_type_specifier, $._unconfigured_macro_item],
     [$.type_specifier, $._unconfigured_macro_item],
-    [$.parameter_list, $.macro_parameter_list, $.macro_parenthesized_argument],
+    [$.parameter_list, $.macro_parameter_list, $.argument_list],
     [$._parameter_list_item, $.macro_argument_punctuator, $._unary_left_fold],
-    [$.macro_parameter_list, $.preprocessing_parenthesized_tokens, $.macro_parenthesized_argument],
+    [$.macro_parameter_list, $.preprocessing_parenthesized_tokens, $.argument_list],
     [$.preprocessing_parenthesized_tokens, $.argument_sequence],
     [$.preprocessing_punctuator, $.macro_argument_punctuator, $._unary_left_fold],
     [$.macro_parameter_list, $._macro_parenthesized_parameter_declaration],
     [$.parenthesized_expression, $._argument_list_item],
     [$.comma_expression, $._unary_right_fold, $._binary_fold, $._argument_list_item],
     [$.parenthesized_expression, $.macro_statement_sequence_argument, $._argument_list_item],
-    [$.macro_parameter_list, $.macro_parenthesized_argument],
+    [$.macro_parameter_list, $.argument_list],
     [$.concatenated_string, $.macro_preprocessing_token_sequence_argument],
     [$.macro_expansion, $.identifier_call],
     [$.call_expression, $.identifier_call],
@@ -773,6 +773,11 @@ module.exports = grammar(C, {
   // Share field-name and assignment-left reductions instead of duplicating their alternatives.
   inline: ($, original) => original.filter(rule => !['_field_identifier', '_assignment_left_expression'].includes(rule.name)).concat([
     $._namespace_identifier,
+    // Inline aliases share reductions while retaining the public syntax-node names.
+    $.preproc_logical_tail_expression_fragment,
+    $.macro_parenthesized_argument,
+    $.namespace_declaration_list,
+    $.gnu_asm_input_operand,
   ]),
 
   precedences: $ => [
@@ -2803,11 +2808,7 @@ module.exports = grammar(C, {
       '}',
     ),
 
-    namespace_declaration_list: $ => seq(
-      '{',
-      repeat($._top_level_item),
-      '}',
-    ),
+    namespace_declaration_list: $ => alias($.declaration_list, $.namespace_declaration_list),
 
     namespace_alias_definition: $ => seq(
       'namespace',
@@ -3645,11 +3646,9 @@ module.exports = grammar(C, {
       )),
     )),
 
-    macro_parenthesized_argument: $ => seq(
-      '(',
-      optional($.argument_sequence),
-      ')',
-    ),
+    macro_parenthesized_argument: $ => alias($.argument_list, $.macro_parenthesized_argument),
+
+    gnu_asm_input_operand: $ => alias($.gnu_asm_output_operand, $.gnu_asm_input_operand),
 
     attribute_declaration: $ => seq('[[', commaSep1(optional($.attribute)), ']]'),
 
@@ -4352,16 +4351,7 @@ module.exports = grammar(C, {
       $._preproc_endif_line,
     ),
 
-    preproc_logical_tail_expression_fragment: $ => seq(
-      $._preproc_opening_condition,
-      $._preproc_directive_end,
-      field('consequence', $.expression),
-      optional(seq(
-        $._preproc_else_line,
-        field('alternative', $.expression),
-      )),
-      $._preproc_endif_line,
-    ),
+    preproc_logical_tail_expression_fragment: $ => alias($.preproc_condition_expression, $.preproc_logical_tail_expression_fragment),
 
     // Calls share one recursive argument grammar, including empty arguments.
     argument_list: $ => seq('(', optional($.argument_sequence), ')'),
