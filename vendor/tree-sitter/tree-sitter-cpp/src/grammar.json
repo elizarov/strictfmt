@@ -428,8 +428,17 @@
           "value": "#define"
         },
         {
-          "type": "SYMBOL",
-          "name": "_object_macro_definition_body"
+          "type": "CHOICE",
+          "members": [
+            {
+              "type": "SYMBOL",
+              "name": "_object_macro_definition_body"
+            },
+            {
+              "type": "SYMBOL",
+              "name": "_function_macro_definition_body"
+            }
+          ]
         }
       ]
     },
@@ -37934,10 +37943,6 @@
     {
       "type": "SYMBOL",
       "name": "preproc_def"
-    },
-    {
-      "type": "SYMBOL",
-      "name": "preproc_function_def"
     },
     {
       "type": "SYMBOL",

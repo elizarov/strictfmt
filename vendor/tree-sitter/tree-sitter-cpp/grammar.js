@@ -303,7 +303,6 @@ module.exports = grammar(C, {
     $.comment,
     // Definitions and token-free directives may occur between C++ tokens.
     $.preproc_def,
-    $.preproc_function_def,
     $.preproc_nonconditional,
   ],
 
@@ -968,8 +967,13 @@ module.exports = grammar(C, {
       field('parameters', $.preproc_params),
     ),
 
-    preproc_def: $ => seq(alias($.macro_definition_start, '#define'), $._object_macro_definition_body),
+    // Both definition forms share one extra; their headers retain the lexical boundary.
+    preproc_def: $ => seq(
+      alias($.macro_definition_start, '#define'),
+      choice($._object_macro_definition_body, $._function_macro_definition_body),
+    ),
 
+    // Keep the inherited rule structured; definition extras use the shared rule above.
     preproc_function_def: $ => seq(alias($.macro_definition_start, '#define'), $._function_macro_definition_body),
 
     _object_macro_definition_body: $ => macroDefinitionBody(

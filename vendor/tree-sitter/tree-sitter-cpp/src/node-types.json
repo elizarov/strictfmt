@@ -10066,6 +10066,16 @@
           }
         ]
       },
+      "parameters": {
+        "multiple": false,
+        "required": false,
+        "types": [
+          {
+            "type": "preproc_params",
+            "named": true
+          }
+        ]
+      },
       "value": {
         "multiple": false,
         "required": false,
@@ -10953,50 +10963,6 @@
         "types": [
           {
             "type": "identifier",
-            "named": true
-          }
-        ]
-      }
-    }
-  },
-  {
-    "type": "preproc_function_def",
-    "named": true,
-    "fields": {
-      "name": {
-        "multiple": false,
-        "required": true,
-        "types": [
-          {
-            "type": "identifier",
-            "named": true
-          }
-        ]
-      },
-      "parameters": {
-        "multiple": false,
-        "required": true,
-        "types": [
-          {
-            "type": "preproc_params",
-            "named": true
-          }
-        ]
-      },
-      "value": {
-        "multiple": false,
-        "required": false,
-        "types": [
-          {
-            "type": "macro_attribute_replacement_list",
-            "named": true
-          },
-          {
-            "type": "macro_replacement_list",
-            "named": true
-          },
-          {
-            "type": "raw_macro_replacement",
             "named": true
           }
         ]
@@ -18281,11 +18247,11 @@
   },
   {
     "type": "true",
-    "named": false
+    "named": true
   },
   {
     "type": "true",
-    "named": true
+    "named": false
   },
   {
     "type": "try",
