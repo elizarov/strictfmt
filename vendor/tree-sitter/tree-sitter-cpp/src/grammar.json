@@ -4788,7 +4788,7 @@
     },
     "attributed_declarator": {
       "type": "PREC_RIGHT",
-      "value": 0,
+      "value": 1,
       "content": {
         "type": "SEQ",
         "members": [
@@ -4807,6 +4807,10 @@
                 },
                 {
                   "type": "SYMBOL",
+                  "name": "attribute_specifier"
+                },
+                {
+                  "type": "SYMBOL",
                   "name": "function_suffix_macro"
                 }
               ]
@@ -4817,7 +4821,7 @@
     },
     "attributed_field_declarator": {
       "type": "PREC_RIGHT",
-      "value": 0,
+      "value": 1,
       "content": {
         "type": "SEQ",
         "members": [
@@ -4836,6 +4840,10 @@
                 },
                 {
                   "type": "SYMBOL",
+                  "name": "attribute_specifier"
+                },
+                {
+                  "type": "SYMBOL",
                   "name": "function_suffix_macro"
                 }
               ]
@@ -4846,7 +4854,7 @@
     },
     "attributed_type_declarator": {
       "type": "PREC_RIGHT",
-      "value": 0,
+      "value": 1,
       "content": {
         "type": "SEQ",
         "members": [
@@ -4862,6 +4870,10 @@
                 {
                   "type": "SYMBOL",
                   "name": "attribute_declaration"
+                },
+                {
+                  "type": "SYMBOL",
+                  "name": "attribute_specifier"
                 },
                 {
                   "type": "SYMBOL",
@@ -5422,47 +5434,6 @@
               "content": {
                 "type": "SYMBOL",
                 "name": "_declarator"
-              }
-            },
-            {
-              "type": "STRING",
-              "value": "="
-            },
-            {
-              "type": "FIELD",
-              "name": "value",
-              "content": {
-                "type": "CHOICE",
-                "members": [
-                  {
-                    "type": "SYMBOL",
-                    "name": "initializer_list"
-                  },
-                  {
-                    "type": "SYMBOL",
-                    "name": "expression"
-                  }
-                ]
-              }
-            }
-          ]
-        },
-        {
-          "type": "SEQ",
-          "members": [
-            {
-              "type": "FIELD",
-              "name": "declarator",
-              "content": {
-                "type": "SYMBOL",
-                "name": "_declarator"
-              }
-            },
-            {
-              "type": "REPEAT1",
-              "content": {
-                "type": "SYMBOL",
-                "name": "attribute_specifier"
               }
             },
             {
@@ -21981,7 +21952,7 @@
     },
     "variadic_attributed_declarator": {
       "type": "PREC_RIGHT",
-      "value": 0,
+      "value": 1,
       "content": {
         "type": "SEQ",
         "members": [
@@ -21997,6 +21968,10 @@
                 {
                   "type": "SYMBOL",
                   "name": "attribute_declaration"
+                },
+                {
+                  "type": "SYMBOL",
+                  "name": "attribute_specifier"
                 },
                 {
                   "type": "SYMBOL",
@@ -25655,7 +25630,7 @@
     },
     "function_definition_attributed_name": {
       "type": "PREC_RIGHT",
-      "value": 0,
+      "value": 1,
       "content": {
         "type": "SEQ",
         "members": [
@@ -25671,6 +25646,10 @@
                 {
                   "type": "SYMBOL",
                   "name": "attribute_declaration"
+                },
+                {
+                  "type": "SYMBOL",
+                  "name": "attribute_specifier"
                 },
                 {
                   "type": "SYMBOL",
@@ -25998,7 +25977,7 @@
     },
     "function_definition_attributed_declarator": {
       "type": "PREC_RIGHT",
-      "value": 0,
+      "value": 1,
       "content": {
         "type": "SEQ",
         "members": [
@@ -26014,6 +25993,10 @@
                 {
                   "type": "SYMBOL",
                   "name": "attribute_declaration"
+                },
+                {
+                  "type": "SYMBOL",
+                  "name": "attribute_specifier"
                 },
                 {
                   "type": "SYMBOL",

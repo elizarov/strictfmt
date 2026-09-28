@@ -1449,6 +1449,10 @@
           "named": true
         },
         {
+          "type": "attribute_specifier",
+          "named": true
+        },
+        {
           "type": "destructor_name",
           "named": true
         },
@@ -6341,16 +6345,6 @@
           }
         ]
       }
-    },
-    "children": {
-      "multiple": true,
-      "required": false,
-      "types": [
-        {
-          "type": "attribute_specifier",
-          "named": true
-        }
-      ]
     }
   },
   {

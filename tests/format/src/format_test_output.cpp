@@ -9208,3 +9208,11 @@ void UseConversion() { Invoke<&ConversionReferences::operator bool>(); }
 // Declaration annotations also apply to out-of-class conversion functions.
 FORMAT_ATTRIBUTE_INLINE ConversionReferences::operator bool() const { return true; }
 FORMAT_ATTRIBUTE_INLINE ConversionReferences::operator Value() const;
+
+// GNU attributes may follow variable and member declarators.
+extern const std::ptrdiff_t rseqOffset __attribute__((weak));
+int alignedBuffer[16] __attribute__((aligned(64))) = {0};
+
+struct AnnotatedFields {
+    int value __attribute__((aligned(16)));
+};

@@ -2047,12 +2047,6 @@ module.exports = grammar(C, {
       original,
       seq(
         field('declarator', $._declarator),
-        repeat1($.attribute_specifier),
-        '=',
-        field('value', choice($.initializer_list, $.expression)),
-      ),
-      seq(
-        field('declarator', $._declarator),
         field('value', choice(
           $.argument_list,
           $.initializer_list,
@@ -4954,7 +4948,7 @@ function parenthesizedDeclarator($, declarator, preference = PREC.PAREN_DECLARAT
 }
 
 function attributedDeclarator($, declarator) {
-  return prec.right(seq(declarator, repeat1(choice($.attribute_declaration, $.function_suffix_macro))));
+  return prec.right(1, seq(declarator, repeat1(choice($.attribute_declaration, $.attribute_specifier, $.function_suffix_macro))));
 }
 
 function arrayDeclarator($, declarator) {
