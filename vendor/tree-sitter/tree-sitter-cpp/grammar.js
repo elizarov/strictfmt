@@ -1230,6 +1230,7 @@ module.exports = grammar(C, {
         $.function_definition,
         alias($.qualified_type_function_definition, $.function_definition),
         alias($.constructor_or_destructor_definition, $.function_definition),
+        alias($.operator_cast_definition, $.function_definition),
         $.macro_function_definition,
         alias($.preproc_selected_macro_function_definition, $.function_definition),
       ),
@@ -1240,6 +1241,7 @@ module.exports = grammar(C, {
       choice(
         $.declaration,
         alias($.constructor_or_destructor_declaration, $.declaration),
+        alias($.operator_cast_declaration, $.declaration),
         alias($.macro_prefixed_call_declaration, $.declaration),
       ),
     )),

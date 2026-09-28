@@ -14940,6 +14940,15 @@
                 "value": "function_definition"
               },
               {
+                "type": "ALIAS",
+                "content": {
+                  "type": "SYMBOL",
+                  "name": "operator_cast_definition"
+                },
+                "named": true,
+                "value": "function_definition"
+              },
+              {
                 "type": "SYMBOL",
                 "name": "macro_function_definition"
               },
@@ -15000,6 +15009,15 @@
                 "content": {
                   "type": "SYMBOL",
                   "name": "constructor_or_destructor_declaration"
+                },
+                "named": true,
+                "value": "declaration"
+              },
+              {
+                "type": "ALIAS",
+                "content": {
+                  "type": "SYMBOL",
+                  "name": "operator_cast_declaration"
                 },
                 "named": true,
                 "value": "declaration"

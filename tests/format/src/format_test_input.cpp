@@ -5619,3 +5619,7 @@ using Base::operator Value;
 };
 auto conversion = &ConversionReferences::operator bool;
 void UseConversion() {Invoke<&ConversionReferences::operator bool>();}
+
+// Declaration annotations also apply to out-of-class conversion functions.
+FORMAT_ATTRIBUTE_INLINE ConversionReferences::operator bool() const {return true;}
+FORMAT_ATTRIBUTE_INLINE ConversionReferences::operator Value() const;
