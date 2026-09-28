@@ -4370,7 +4370,7 @@
         ]
       },
       "value": {
-        "multiple": false,
+        "multiple": true,
         "required": false,
         "types": [
           {
@@ -4417,10 +4417,6 @@
         },
         {
           "type": "preproc_if",
-          "named": true
-        },
-        {
-          "type": "preproc_ifdef",
           "named": true
         }
       ]
@@ -7294,6 +7290,10 @@
       "multiple": false,
       "required": false,
       "types": [
+        {
+          "type": "identifier",
+          "named": true
+        },
         {
           "type": "item_macro_identifier",
           "named": true
@@ -12133,10 +12133,6 @@
           "named": true
         },
         {
-          "type": "enumerator",
-          "named": true
-        },
-        {
           "type": "expression",
           "named": true
         },
@@ -12174,10 +12170,6 @@
         },
         {
           "type": "linkage_specification",
-          "named": true
-        },
-        {
-          "type": "macro_call_item",
           "named": true
         },
         {

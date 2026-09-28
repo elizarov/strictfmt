@@ -631,8 +631,6 @@ module.exports = grammar(C, {
     [$._preproc_opening_condition, $.preproc_ifdef_in_stream_operator_chain],
     [$._preproc_opening_condition, $.preproc_if_in_initializer_list, $.preproc_if_in_stream_operator_chain],
     [$._preproc_opening_condition, $.preproc_ifdef_in_initializer_list, $.preproc_ifdef_in_stream_operator_chain],
-    [$._preproc_opening_condition, $.preproc_if_in_enumerator_list],
-    [$._preproc_opening_condition, $.preproc_ifdef_in_enumerator_list],
     [$._preproc_opening_condition, $.preproc_if_in_field_declaration_list],
     [$._preproc_opening_condition, $.preproc_ifdef_in_field_declaration_list],
     [$._preproc_opening_condition, $.preproc_if_in_function_definition_prefix],
@@ -787,6 +785,8 @@ module.exports = grammar(C, {
 
   // Share field-name and assignment-left reductions instead of duplicating their alternatives.
   inline: ($, original) => original.filter(rule => !['_field_identifier', '_assignment_left_expression'].includes(rule.name)).concat([
+    $._enumerator_list_final_item,
+    $._enumerator_list_content,
     $._namespace_identifier,
     // Inline aliases share reductions while retaining the public syntax-node names.
     $.preproc_logical_tail_expression_fragment,
@@ -1323,12 +1323,17 @@ module.exports = grammar(C, {
     ...preprocIf('', $ => $._block_item),
     ...preprocIf('_in_top_level', $ => $._top_level_item),
     ...preprocIf('_in_field_declaration_list', $ => $._field_declaration_list_item, 2),
-    ...preprocIf(
-      '_in_enumerator_list',
-      $ => $._enumerator_list_item,
-      0,
-      PREPROC_IFDEF | PREPROC_ELSE,
-      false,
+    preproc_enum_entries: $ => seq(
+      $._preproc_opening_condition,
+      $._preproc_directive_end,
+      optional($._enumerator_list_content),
+      optional(alias($.preproc_enum_else, $.preproc_else)),
+      $._preproc_endif_line,
+    ),
+
+    preproc_enum_else: $ => seq(
+      $._preproc_else_line,
+      optional($._enumerator_list_content),
     ),
     ...preprocIf('_in_parameter_list', $ => {
       return seq($._parameter_list_item, optional(','));
@@ -1764,33 +1769,32 @@ module.exports = grammar(C, {
 
     enum_specifier: $ => enumSpecifier($, $.enumerator_list),
 
-    enumerator: $ => seq(
+    enumerator: $ => prec(1, seq(
       field('name', identifierWithPaste($)),
       repeat($.attribute_declaration),
-      optional(seq('=', field('value', $.expression))),
-    ),
+      optional(seq('=', field('value', seq(repeat($._unconfigured_macro_item), $.expression)))),
+    )),
 
     _enumerator_list_item: $ => choice(
       seq(choice($.enumerator, $.macro_call_item), ','),
       seq($._macro_list_fragment, optional(',')),
-      prec.dynamic(-10, $.enumerator),
+      alias($._unconfigured_macro_item, $.macro_expansion),
     ),
 
-    enumerator_list: $ => seq(
-      '{',
-      repeat(choice(
-        $._enumerator_list_item,
-        alias($.preproc_if_in_enumerator_list, $.preproc_if),
-        alias($.preproc_ifdef_in_enumerator_list, $.preproc_ifdef),
-        seq($.preproc_call, ','),
-      )),
-      optional(choice(
-        $.enumerator,
-        $.macro_call_item,
-        $.preproc_call,
-      )),
-      '}',
+    _enumerator_list_entry: $ => choice(
+      $._enumerator_list_item,
+      alias($.preproc_enum_entries, $.preproc_if),
+      seq($.preproc_call, ','),
     ),
+
+    _enumerator_list_content: $ => choice(
+      seq(repeat1($._enumerator_list_entry), optional($._enumerator_list_final_item)),
+      $._enumerator_list_final_item,
+    ),
+
+    _enumerator_list_final_item: $ => choice($.enumerator, $.macro_call_item, $.preproc_call),
+
+    enumerator_list: $ => seq('{', optional($._enumerator_list_content), '}'),
 
     _enum_base_clause: $ => prec.left(seq(
       ':',

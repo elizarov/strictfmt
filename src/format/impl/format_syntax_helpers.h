@@ -6,14 +6,19 @@ inline bool IsNonTokenPreprocessorDirective(const SyntaxNode& node) {
     return node.kind == SyntaxNodeKind::MacroDefinition || node.kind == SyntaxNodeKind::PreprocCall;
 }
 
-inline const SyntaxNode* MacroExpansionList(const SyntaxNode& node) {
-    if (node.kind != SyntaxNodeKind::MacroExpansion) {
-        return nullptr;
-    }
+inline const SyntaxNode* ParentOutsideConditionalPreprocessor(const SyntaxNode& node) {
     const SyntaxNode* parent = node.parent;
     while (parent != nullptr && SyntaxNodeHasClass(*parent, SyntaxNodeClass::ConditionalPreprocessorTree)) {
         parent = parent->parent;
     }
+    return parent;
+}
+
+inline const SyntaxNode* MacroExpansionList(const SyntaxNode& node) {
+    if (node.kind != SyntaxNodeKind::MacroExpansion) {
+        return nullptr;
+    }
+    const SyntaxNode* parent = ParentOutsideConditionalPreprocessor(node);
     return parent != nullptr &&
         (parent->kind == SyntaxNodeKind::InitializerList || parent->kind == SyntaxNodeKind::EnumeratorList) ? parent :
         nullptr;

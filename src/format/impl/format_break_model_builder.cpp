@@ -1,5 +1,6 @@
 #include "format/impl/format_break_model_builder.h"
 #include "format/impl/format_syntax_map.h"
+#include "format/impl/format_syntax_helpers.h"
 #include "format/impl/format_string_literals.h"
 
 #include <algorithm>
@@ -967,10 +968,7 @@ private:
             if (FormatBreakTokenValue(*token).structuredPreprocessor) {
                 auto* result = MakeNode(FormatBreakNodeKind::Sequence, depth);
                 std::vector<FormatBreakNode*> children{BuildToken(*token, depth + 1)};
-                const SyntaxNode* list = node.parent;
-                while (list != nullptr && SyntaxNodeHasClass(*list, SyntaxNodeClass::ConditionalPreprocessorTree)) {
-                    list = list->parent;
-                }
+                const SyntaxNode* list = ParentOutsideConditionalPreprocessor(node);
                 const bool listBranch =
                     list != nullptr && SyntaxNodeHasClass(*list, SyntaxNodeClass::PreprocessorSplitList);
                 ConstSyntaxChildList item;

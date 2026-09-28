@@ -1492,7 +1492,9 @@ private:
                 }
                 BufferToken(token);
                 if (
-                    token.parentKind == SyntaxNodeKind::EnumeratorList &&
+                    token.node != nullptr &&
+                    ParentOutsideConditionalPreprocessor(*token.node) != nullptr &&
+                    ParentOutsideConditionalPreprocessor(*token.node)->kind == SyntaxNodeKind::EnumeratorList &&
                     !(rawNext != nullptr && rawNext->kind == PrintTokenKind::TrailingComment)
                 ) {
                     FlushPendingTokens();

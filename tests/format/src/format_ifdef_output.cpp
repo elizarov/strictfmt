@@ -705,6 +705,7 @@ if(first)
 extern "C" {
 #endif
 int ConditionalLinkage();
+
 #if defined(__cplusplus)
 }  // extern C
 #endif
@@ -718,3 +719,19 @@ int alternativeOperators;
 #elif (compl MASK bitor 8 xor 3) == 4
 int otherOperators;
 #endif
+
+// Enum branches may contain multiple entries, nested alternatives, and a final entry without a comma.
+enum class InstructionSet {
+    Reference = 0,
+#ifdef USE_SIMD
+    First = 1,
+#if USE_ADVANCED
+    Second = 2,
+    Third = 3
+#else
+    Fallback = 4
+#endif
+#else
+    Basic = 5
+#endif
+};
