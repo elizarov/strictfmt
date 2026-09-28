@@ -6345,6 +6345,16 @@
           }
         ]
       }
+    },
+    "children": {
+      "multiple": false,
+      "required": false,
+      "types": [
+        {
+          "type": "gnu_asm_expression",
+          "named": true
+        }
+      ]
     }
   },
   {

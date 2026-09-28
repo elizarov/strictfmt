@@ -5633,3 +5633,6 @@ struct AnnotatedFields {int value __attribute__((aligned(16)));};
 using AnnotatedVector = FORMAT_ATTRIBUTE_VECTOR double;
 using AlignedPair = volatile unsigned __int128 __attribute__((aligned(16)));
 auto annotatedSize = sizeof(FORMAT_ATTRIBUTE_VECTOR double);
+
+// GNU assembly labels are valid on initialized variables.
+void RegisterVariables() {register ui64 x0 __asm("x0") = value; register ui64 x1 asm("x1") = other;}

@@ -2034,7 +2034,7 @@ module.exports = grammar(C, {
       $._function_declarator_seq,
     ),
 
-    init_declarator: ($, original) => choice(
+    init_declarator: $ => choice(
       prec.dynamic(10, seq(
         field('declarator', $._declarator),
         '=',
@@ -2045,7 +2045,12 @@ module.exports = grammar(C, {
         '=',
         field('value', alias($.preproc_conditional_string_initializer, $.concatenated_string)),
       )),
-      original,
+      seq(
+        field('declarator', $._declarator),
+        optional($.gnu_asm_expression),
+        '=',
+        field('value', choice($.initializer_list, $.expression)),
+      ),
       seq(
         field('declarator', $._declarator),
         field('value', choice(
