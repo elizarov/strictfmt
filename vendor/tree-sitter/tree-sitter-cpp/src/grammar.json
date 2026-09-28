@@ -25025,7 +25025,7 @@
     },
     "_function_exception_specification": {
       "type": "PREC_DYNAMIC",
-      "value": 1,
+      "value": 10,
       "content": {
         "type": "CHOICE",
         "members": [

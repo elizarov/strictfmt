@@ -9168,3 +9168,13 @@ void SizeofOperators() {
     auto postfix = sizeof Read(values)[0];
     auto nestedSize = sizeof sizeof(Type);
 }
+
+// A trait in noexcept does not begin a separate declaration after the constructor.
+template <typename T>
+class alignas(T) NoexceptConstructor {
+public:
+    NoexceptConstructor() noexcept(std::is_nothrow_default_constructible_v<T>) { new(storage) T; }
+    NoexceptConstructor(const NoexceptConstructor& other) noexcept(Traits<Nested<T>>::copy) {
+        new(storage) T(other.Value());
+    }
+};

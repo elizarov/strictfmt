@@ -2569,7 +2569,9 @@ module.exports = grammar(C, {
       seq(repeat($.attribute_specifier), repeat1($.function_suffix_macro)),
     )),
 
-    _function_exception_specification: $ => prec.dynamic(1, choice(
+    // A reserved exception-specification keyword belongs to the preceding header,
+    // even when its operand also resembles a new function's parameter type.
+    _function_exception_specification: $ => prec.dynamic(10, choice(
       $.noexcept,
       $.throw_specifier,
     )),
