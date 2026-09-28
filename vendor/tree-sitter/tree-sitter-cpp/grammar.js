@@ -320,6 +320,7 @@ module.exports = grammar(C, {
   ],
 
   conflicts: $ => [
+    [$.macro_conditional_statement, $.preproc_selected_else_if_body_item],
     [$._declaration_declarator_list, $.macro_uninitialized_declaration_fragment],
     [$.type_specifier, $.block_macro_call_line_item],
     [$.type_specifier, $.expression, $.block_macro_call_line_item],
@@ -3210,7 +3211,15 @@ module.exports = grammar(C, {
       $.attributed_statement,
       $.labeled_statement,
       $.macro_prefixed_statement,
+      $.macro_conditional_statement,
     ),
+
+    // A following else establishes that the call supplies an if and its body.
+    macro_conditional_statement: $ => prec.right(seq(
+      field('consequence', $.macro_call_item),
+      optional(';'),
+      field('alternative', $.else_clause),
+    )),
 
     macro_prefixed_statement: $ => prec.right(seq(
       $.statement_prefix_macro,
@@ -3451,6 +3460,13 @@ module.exports = grammar(C, {
       alias($._closed_attributed_statement, $.attributed_statement),
       alias($._closed_labeled_statement, $.labeled_statement),
       alias($._closed_macro_prefixed_statement, $.macro_prefixed_statement),
+      alias($._closed_macro_conditional_statement, $.macro_conditional_statement),
+    ),
+
+    _closed_macro_conditional_statement: $ => seq(
+      field('consequence', $.macro_call_item),
+      optional(';'),
+      field('alternative', alias($._closed_else_clause, $.else_clause)),
     ),
 
     _closed_if_statement: $ => seq(

@@ -5745,3 +5745,11 @@ FORMAT_STATEMENT_DECLARATIONS(return);
 CALL(throw);
 FORMAT_STATEMENT_DECLARATIONS(return,Error);
 }
+
+void CompleteMacroConditions(){
+TRY_SET(first) else TRY_SET(second) else {Fail();}
+if(ready){Start();}else TRY_SET(first) else if(fallback){Recover();}else{Fail();}
+while(ready) TRY_SET(first) else {Advance();}
+if(ready) TRY_SET(first) else {Recover();} else {Fail();}
+TRY_CONSUME(first); else {Fallback();}
+}

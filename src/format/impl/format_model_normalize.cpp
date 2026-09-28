@@ -128,21 +128,23 @@ void NormalizeCommentedNullStatements(SyntaxNode& node) {
     }
 }
 
-bool IsStatementKindThroughAttributes(const SyntaxNode& node, SyntaxNodeKind kind) {
-    if (node.kind == kind) {
-        return true;
-    }
+const SyntaxNode* StatementThroughAttributes(const SyntaxNode& node) {
     if (node.kind != SyntaxNodeKind::AttributedStatement) {
-        return false;
+        return &node;
     }
     const std::optional<size_t> statementIndex = PreviousNonTriviaChildIndex(node.children, node.children.size());
-    return statementIndex &&
-        node.children[*statementIndex] != nullptr &&
-        IsStatementKindThroughAttributes(*node.children[*statementIndex], kind);
+    return statementIndex && node.children[*statementIndex] != nullptr ?
+        StatementThroughAttributes(*node.children[*statementIndex]) : nullptr;
 }
 
 bool IsBracedControlBody(const SyntaxNode& node) {
-    return IsStatementKindThroughAttributes(node, SyntaxNodeKind::CompoundStatement);
+    const SyntaxNode* statement = StatementThroughAttributes(node);
+    return statement != nullptr && statement->kind == SyntaxNodeKind::CompoundStatement;
+}
+
+bool IsIfControlBody(const SyntaxNode& node) {
+    const SyntaxNode* statement = StatementThroughAttributes(node);
+    return statement != nullptr && SyntaxNodeHasClass(*statement, SyntaxNodeClass::IfStatement);
 }
 
 bool IsBranchLikelihoodAttribute(const SyntaxNode& node) {
@@ -292,7 +294,7 @@ std::optional<size_t> FindOnlyIfInBraceBlock(const SyntaxNode& node) {
         ) {
             continue;
         }
-        if (IsStatementKindThroughAttributes(*child, SyntaxNodeKind::IfStatement) && !ifIndex) {
+        if (IsIfControlBody(*child) && !ifIndex) {
             ifIndex = index;
             continue;
         }
@@ -333,10 +335,7 @@ void NormalizeElseClauseBody(FormatModel& model, SyntaxNode& node) {
         if (!bodyIndex) {
             return;
         }
-        if (
-            node.children[*bodyIndex] != nullptr &&
-            IsStatementKindThroughAttributes(*node.children[*bodyIndex], SyntaxNodeKind::IfStatement)
-        ) {
+        if (node.children[*bodyIndex] != nullptr && IsIfControlBody(*node.children[*bodyIndex])) {
             return;
         }
         if (

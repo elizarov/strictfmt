@@ -7125,6 +7125,10 @@
         {
           "type": "SYMBOL",
           "name": "macro_prefixed_statement"
+        },
+        {
+          "type": "SYMBOL",
+          "name": "macro_conditional_statement"
         }
       ]
     },
@@ -31415,6 +31419,43 @@
         }
       ]
     },
+    "macro_conditional_statement": {
+      "type": "PREC_RIGHT",
+      "value": 0,
+      "content": {
+        "type": "SEQ",
+        "members": [
+          {
+            "type": "FIELD",
+            "name": "consequence",
+            "content": {
+              "type": "SYMBOL",
+              "name": "macro_call_item"
+            }
+          },
+          {
+            "type": "CHOICE",
+            "members": [
+              {
+                "type": "STRING",
+                "value": ";"
+              },
+              {
+                "type": "BLANK"
+              }
+            ]
+          },
+          {
+            "type": "FIELD",
+            "name": "alternative",
+            "content": {
+              "type": "SYMBOL",
+              "name": "else_clause"
+            }
+          }
+        ]
+      }
+    },
     "macro_prefixed_statement": {
       "type": "PREC_RIGHT",
       "value": 0,
@@ -32821,6 +32862,53 @@
           },
           "named": true,
           "value": "macro_prefixed_statement"
+        },
+        {
+          "type": "ALIAS",
+          "content": {
+            "type": "SYMBOL",
+            "name": "_closed_macro_conditional_statement"
+          },
+          "named": true,
+          "value": "macro_conditional_statement"
+        }
+      ]
+    },
+    "_closed_macro_conditional_statement": {
+      "type": "SEQ",
+      "members": [
+        {
+          "type": "FIELD",
+          "name": "consequence",
+          "content": {
+            "type": "SYMBOL",
+            "name": "macro_call_item"
+          }
+        },
+        {
+          "type": "CHOICE",
+          "members": [
+            {
+              "type": "STRING",
+              "value": ";"
+            },
+            {
+              "type": "BLANK"
+            }
+          ]
+        },
+        {
+          "type": "FIELD",
+          "name": "alternative",
+          "content": {
+            "type": "ALIAS",
+            "content": {
+              "type": "SYMBOL",
+              "name": "_closed_else_clause"
+            },
+            "named": true,
+            "value": "else_clause"
+          }
         }
       ]
     },
@@ -42070,6 +42158,10 @@
     }
   ],
   "conflicts": [
+    [
+      "macro_conditional_statement",
+      "preproc_selected_else_if_body_item"
+    ],
     [
       "_declaration_declarator_list",
       "macro_uninitialized_declaration_fragment"

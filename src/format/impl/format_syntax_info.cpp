@@ -250,7 +250,9 @@ constexpr auto kSyntaxKindMappings = std::to_array<SyntaxKindMapping>({
     Tree(
         SyntaxNodeKind::IfStatement,
         "if_statement",
-        Bit(SyntaxNodeClass::ControlHeader) | Bit(SyntaxNodeClass::FlatLogicalHeader)
+        Bit(SyntaxNodeClass::ControlHeader) |
+            Bit(SyntaxNodeClass::FlatLogicalHeader) |
+            Bit(SyntaxNodeClass::IfStatement)
     ),
     Tree(SyntaxNodeKind::ElseClause, "else_clause"),
     Tree(SyntaxNodeKind::ForStatement, "for_statement", Bit(SyntaxNodeClass::ControlHeader)),
@@ -551,6 +553,7 @@ constexpr auto kSyntaxKindMappings = std::to_array<SyntaxKindMapping>({
     Tree(SyntaxNodeKind::Attribute, "attribute"),
     Tree(SyntaxNodeKind::AttributedStatement, "attributed_statement"),
     Tree(SyntaxNodeKind::MacroPrefixedStatement, "macro_prefixed_statement"),
+    Tree(SyntaxNodeKind::MacroConditionalStatement, "macro_conditional_statement", Bit(SyntaxNodeClass::IfStatement)),
     Tree(SyntaxNodeKind::MacroModifier, "statement_prefix_macro"),
     Tree(SyntaxNodeKind::MacroModifier, "declaration_modifier_macro"),
     Tree(SyntaxNodeKind::Tree, "preproc_declaration_modifier", Bit(SyntaxNodeClass::DeclarationModifierPreprocessor)),
@@ -1293,6 +1296,8 @@ std::string_view SyntaxNodeKindName(SyntaxNodeKind kind) {
             return "AttributedStatement";
         case SyntaxNodeKind::MacroPrefixedStatement:
             return "MacroPrefixedStatement";
+        case SyntaxNodeKind::MacroConditionalStatement:
+            return "MacroConditionalStatement";
         case SyntaxNodeKind::MacroModifier:
             return "MacroModifier";
         case SyntaxNodeKind::MacroCallItem:

@@ -116,6 +116,7 @@ enum class SyntaxNodeKind : std::uint16_t {
     Attribute,
     AttributedStatement,
     MacroPrefixedStatement,
+    MacroConditionalStatement,
     MacroModifier,
     MacroCallItem,
     MacroExpansion,
@@ -357,6 +358,7 @@ enum class SyntaxNodeClass : std::uint64_t {
     DeclarationGroupBodylessType = 1ull << 60,
     NamedList = 1ull << 61,
     ContainsListPreprocessor = 1ull << 62,
+    IfStatement = 1ull << 63,
 };
 
 enum class SyntaxWrapperRole : std::uint8_t {

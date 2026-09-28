@@ -414,6 +414,7 @@ private:
             case SyntaxNodeKind::FieldDeclarationList:
             case SyntaxNodeKind::CompoundStatement:
             case SyntaxNodeKind::CaseStatement:
+            case SyntaxNodeKind::MacroConditionalStatement:
             case SyntaxNodeKind::PreprocIf:
             case SyntaxNodeKind::PreprocIfdef:
             case SyntaxNodeKind::PreprocElse:
