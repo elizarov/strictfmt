@@ -1405,16 +1405,16 @@ module.exports = grammar(C, {
 
     ...preprocIf(
       '_in_field_initializer_list',
-      $ => seq($.field_initializer, optional(',')),
+      $ => seq(commaSep1($.field_initializer), optional(',')),
       2,
       PREPROC_IFDEF | PREPROC_ELSE,
       false,
     ),
     ...preprocIf(
       '_in_field_initializer_list_leading_comma',
-      $ => seq(',', $.field_initializer, optional(',')),
+      $ => seq(',', commaSep1($.field_initializer), optional(',')),
       3,
-      0,
+      PREPROC_IFDEF,
       false,
     ),
     macro_template_declaration: $ => seq(
@@ -2103,7 +2103,7 @@ module.exports = grammar(C, {
 
     field_initializer_list: $ => {
       const preprocItem = preprocListItem($, '_in_field_initializer_list', PREPROC_IFDEF);
-      const leadingPreprocItem = preprocListItem($, '_in_field_initializer_list_leading_comma', 0);
+      const leadingPreprocItem = preprocListItem($, '_in_field_initializer_list_leading_comma', PREPROC_IFDEF);
       const tailItem = choice(
         seq(',', $.field_initializer),
         seq(preprocItem, optional($.field_initializer)),

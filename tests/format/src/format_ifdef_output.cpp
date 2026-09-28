@@ -735,3 +735,18 @@ enum class InstructionSet {
     Basic = 5
 #endif
 };
+
+// Constructor initializer groups retain their leading commas under each conditional opener.
+struct ConditionalInitializers {
+    ConditionalInitializers(int value) :
+        first_(value)
+#ifndef NDEBUG
+        , debug_(value),
+        trace_(value)
+#endif
+        , second_(value)
+#ifdef TRACKING
+        , tracker_(value)
+#endif
+        , last_(value) {}
+};
