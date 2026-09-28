@@ -16932,6 +16932,10 @@
       "required": false,
       "types": [
         {
+          "type": "attribute_specifier",
+          "named": true
+        },
+        {
           "type": "declaration_modifier_macro",
           "named": true
         },

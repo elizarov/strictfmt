@@ -9719,8 +9719,21 @@
           {
             "type": "REPEAT",
             "content": {
-              "type": "SYMBOL",
-              "name": "type_qualifier"
+              "type": "CHOICE",
+              "members": [
+                {
+                  "type": "SYMBOL",
+                  "name": "type_qualifier"
+                },
+                {
+                  "type": "SYMBOL",
+                  "name": "declaration_modifier_macro"
+                },
+                {
+                  "type": "SYMBOL",
+                  "name": "attribute_specifier"
+                }
+              ]
             }
           },
           {
@@ -9734,15 +9747,21 @@
           {
             "type": "REPEAT",
             "content": {
-              "type": "SYMBOL",
-              "name": "type_qualifier"
-            }
-          },
-          {
-            "type": "REPEAT",
-            "content": {
-              "type": "SYMBOL",
-              "name": "declaration_modifier_macro"
+              "type": "CHOICE",
+              "members": [
+                {
+                  "type": "SYMBOL",
+                  "name": "type_qualifier"
+                },
+                {
+                  "type": "SYMBOL",
+                  "name": "declaration_modifier_macro"
+                },
+                {
+                  "type": "SYMBOL",
+                  "name": "attribute_specifier"
+                }
+              ]
             }
           },
           {
@@ -18445,8 +18464,21 @@
           {
             "type": "REPEAT",
             "content": {
-              "type": "SYMBOL",
-              "name": "type_qualifier"
+              "type": "CHOICE",
+              "members": [
+                {
+                  "type": "SYMBOL",
+                  "name": "type_qualifier"
+                },
+                {
+                  "type": "SYMBOL",
+                  "name": "declaration_modifier_macro"
+                },
+                {
+                  "type": "SYMBOL",
+                  "name": "attribute_specifier"
+                }
+              ]
             }
           },
           {
@@ -18460,15 +18492,21 @@
           {
             "type": "REPEAT",
             "content": {
-              "type": "SYMBOL",
-              "name": "type_qualifier"
-            }
-          },
-          {
-            "type": "REPEAT",
-            "content": {
-              "type": "SYMBOL",
-              "name": "declaration_modifier_macro"
+              "type": "CHOICE",
+              "members": [
+                {
+                  "type": "SYMBOL",
+                  "name": "type_qualifier"
+                },
+                {
+                  "type": "SYMBOL",
+                  "name": "declaration_modifier_macro"
+                },
+                {
+                  "type": "SYMBOL",
+                  "name": "attribute_specifier"
+                }
+              ]
             }
           },
           {
@@ -38810,6 +38848,15 @@
     }
   ],
   "conflicts": [
+    [
+      "_declaration_modifiers",
+      "type_descriptor",
+      "_macro_parameter_declaration"
+    ],
+    [
+      "type_descriptor",
+      "member_pointer_alias_declaration"
+    ],
     [
       "type_specifier",
       "operator_cast_field_identifier",

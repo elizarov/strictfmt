@@ -208,10 +208,9 @@ function declarationSpecifiers($) {
 
 function typeDescriptor($, type) {
   return prec.right(seq(
-    repeat($.type_qualifier),
+    repeat(choice($.type_qualifier, $.declaration_modifier_macro, $.attribute_specifier)),
     field('type', type),
-    repeat($.type_qualifier),
-    repeat($.declaration_modifier_macro),
+    repeat(choice($.type_qualifier, $.declaration_modifier_macro, $.attribute_specifier)),
     field('declarator', optional($._abstract_declarator)),
   ));
 }
@@ -308,6 +307,8 @@ module.exports = grammar(C, {
   ],
 
   conflicts: $ => [
+    [$._declaration_modifiers, $.type_descriptor, $._macro_parameter_declaration],
+    [$.type_descriptor, $.member_pointer_alias_declaration],
     [$.type_specifier, $.operator_cast_field_identifier, $._scope_name],
     [$.type_specifier, $._call_identifier, $._type_constraint],
     [$._declarator, $._macro_argument_parameter_declaration],

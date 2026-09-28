@@ -9216,3 +9216,9 @@ int alignedBuffer[16] __attribute__((aligned(64))) = {0};
 struct AnnotatedFields {
     int value __attribute__((aligned(16)));
 };
+
+// Annotations can surround a type in aliases and other type descriptors.
+using AnnotatedVector = FORMAT_ATTRIBUTE_VECTOR double;
+using AlignedPair = volatile unsigned __int128 __attribute__((aligned(16)));
+
+auto annotatedSize = sizeof(FORMAT_ATTRIBUTE_VECTOR double);
