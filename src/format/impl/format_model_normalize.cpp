@@ -93,6 +93,41 @@ bool IsEmptyStatementNode(const SyntaxNode& node) {
     return content != nullptr && content->kind == SyntaxNodeKind::Semicolon;
 }
 
+void NormalizeCommentedNullStatements(SyntaxNode& node) {
+    if (!SyntaxNodeHasClass(node, SyntaxNodeClass::SourceItemScope)) {
+        return;
+    }
+    for (size_t index = 2; index < node.children.size(); ++index) {
+        SyntaxNode* comment = node.children[index];
+        if (comment == nullptr || comment->kind != SyntaxNodeKind::TrailingComment) {
+            continue;
+        }
+        size_t begin = index;
+        while (begin > 0 && node.children[begin - 1] != nullptr && IsEmptyStatementNode(*node.children[begin - 1])) {
+            --begin;
+        }
+        if (begin == index || begin == 0) {
+            continue;
+        }
+        SyntaxNode* previous = node.children[begin - 1];
+        if (
+            previous == nullptr ||
+            previous->children.empty() ||
+            previous->children.back() == nullptr ||
+            previous->children.back()->kind != SyntaxNodeKind::Semicolon
+        ) {
+            continue;
+        }
+        // The intervening null terminators disappear. Include the attached comment
+        // in the preceding statement's layout before choosing its line breaks.
+        node.children.erase(
+            node.children.begin() + static_cast<std::ptrdiff_t>(begin),
+            node.children.begin() + static_cast<std::ptrdiff_t>(index)
+        );
+        index = begin;
+    }
+}
+
 bool IsStatementKindThroughAttributes(const SyntaxNode& node, SyntaxNodeKind kind) {
     if (node.kind == kind) {
         return true;
@@ -817,6 +852,7 @@ void NormalizeSyntaxNode(FormatModel& model, SyntaxNode& node) {
     ClassifyDeclarationGroup(node);
     NormalizeControlBodies(model, node);
     NormalizeEmptyCompoundBlock(node);
+    NormalizeCommentedNullStatements(node);
     NormalizeColonPrefixedListComments(node);
     NormalizeBlockHeaderComments(node);
     NormalizeLeadingStreamComments(node);

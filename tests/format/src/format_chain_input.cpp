@@ -119,3 +119,11 @@ Consume((first_value)(second_value)(third_value)(fourth_value));
 (Choose([]{First();Second();}))(first_argument)(second_argument);
 callable(first_argument)(second_argument)(third_argument);
 }
+
+// A comment after a redundant null statement participates in its surviving statement's layout.
+void NullStatementComment() {
+    destination = Read(first, second);
+    ; // Some description
+    target[index] = Read(first);
+    ;; // Another description
+}

@@ -426,3 +426,13 @@ void ParenthesizedCallReceivers() {
         (second_argument)
         (third_argument);
 }
+
+// A comment after a redundant null statement participates in its surviving statement's layout.
+void NullStatementComment() {
+    destination = Read(
+        first, second
+    );  // Some description
+    target[index] = Read(
+        first
+    );  // Another description
+}
