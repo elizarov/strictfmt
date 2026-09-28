@@ -615,3 +615,13 @@ int ConditionalLinkage();
 #if defined(__cplusplus)
 } // extern C
 #endif
+
+// C++ alternative operator spellings also apply in preprocessor conditions.
+#if defined(__cpp_lib_concepts) and (__cpp_lib_concepts >= 202002L)
+static_assert(FeatureEnabled);
+#endif
+#if not defined(DISABLE_FEATURE) or (MASK bitand 3) not_eq 0
+int alternativeOperators;
+#elif (compl MASK bitor 8 xor 3) == 4
+int otherOperators;
+#endif

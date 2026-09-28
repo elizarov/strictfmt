@@ -1458,6 +1458,30 @@ module.exports = grammar(C, {
       $.system_lib_string,
     ),
 
+    preproc_unary_expression: ($, original) => choice(
+      original,
+      prec.left(C.PREC.UNARY, seq(
+        field('operator', choice('not', 'compl')),
+        field('argument', $._preproc_expression),
+      )),
+    ),
+
+    preproc_binary_expression: ($, original) => choice(
+      original,
+      ...[
+        ['or', C.PREC.LOGICAL_OR],
+        ['and', C.PREC.LOGICAL_AND],
+        ['bitor', C.PREC.INCLUSIVE_OR],
+        ['xor', C.PREC.EXCLUSIVE_OR],
+        ['bitand', C.PREC.BITWISE_AND],
+        ['not_eq', C.PREC.EQUAL],
+      ].map(([operator, precedence]) => prec.left(precedence, seq(
+        field('left', $._preproc_expression),
+        field('operator', operator),
+        field('right', $._preproc_expression),
+      ))),
+    ),
+
     preproc_scoped_identifier: $ => seq(
       $.identifier,
       repeat1(seq('::', $.identifier)),
