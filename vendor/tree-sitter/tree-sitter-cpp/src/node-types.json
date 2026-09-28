@@ -16840,6 +16840,10 @@
         {
           "type": "finally_clause",
           "named": true
+        },
+        {
+          "type": "macro_call_item",
+          "named": true
         }
       ]
     }

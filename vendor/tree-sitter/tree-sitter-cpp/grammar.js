@@ -2394,7 +2394,7 @@ module.exports = grammar(C, {
       'try',
       optional($.field_initializer_list),
       field('body', $.compound_statement),
-      repeat1($.catch_clause),
+      $._catch_handlers,
     ),
 
     constructor_or_destructor_definition: $ => prec.dynamic(2, prec(PREC.CALL + 2, seq(
@@ -3500,10 +3500,15 @@ module.exports = grammar(C, {
       'try',
       field('body', $.compound_statement),
       choice(
-        repeat1($.catch_clause),
+        $._catch_handlers,
         seq(repeat($.catch_clause), $.finally_clause),
       ),
     )),
+
+    _catch_handlers: $ => choice(
+      repeat1($.catch_clause),
+      prec.right(seq($.macro_call_item, optional(';'))),
+    ),
 
     finally_clause: $ => seq(
       'finally',

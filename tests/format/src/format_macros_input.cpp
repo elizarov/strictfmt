@@ -4822,3 +4822,16 @@ DEFINE_FUNCTION(ParseValue, TOptional<TValue>)
 try {return Parse();}
 catch(const Error& error) {Report(error);return {};}
 catch(...) {return {};}
+
+// A macro can provide the handlers required immediately after a try body.
+void MacroHandlers() {
+try {Read();} CATCH_AND_REPORT("read failed");
+Continue();
+if(ready) try {Save();} CATCH_AND_REPORT("save failed");
+Finish();
+try {Read();} catch(...) {Report();}
+OrdinaryCallAfterCatch();
+}
+struct GuardedConstruction {
+GuardedConstruction() try : value_(Read()) {} CATCH_AND_REPORT("construction failed");
+};

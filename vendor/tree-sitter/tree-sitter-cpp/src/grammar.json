@@ -24029,11 +24029,8 @@
           }
         },
         {
-          "type": "REPEAT1",
-          "content": {
-            "type": "SYMBOL",
-            "name": "catch_clause"
-          }
+          "type": "SYMBOL",
+          "name": "_catch_handlers"
         }
       ]
     },
@@ -30933,11 +30930,8 @@
             "type": "CHOICE",
             "members": [
               {
-                "type": "REPEAT1",
-                "content": {
-                  "type": "SYMBOL",
-                  "name": "catch_clause"
-                }
+                "type": "SYMBOL",
+                "name": "_catch_handlers"
               },
               {
                 "type": "SEQ",
@@ -30959,6 +30953,43 @@
           }
         ]
       }
+    },
+    "_catch_handlers": {
+      "type": "CHOICE",
+      "members": [
+        {
+          "type": "REPEAT1",
+          "content": {
+            "type": "SYMBOL",
+            "name": "catch_clause"
+          }
+        },
+        {
+          "type": "PREC_RIGHT",
+          "value": 0,
+          "content": {
+            "type": "SEQ",
+            "members": [
+              {
+                "type": "SYMBOL",
+                "name": "macro_call_item"
+              },
+              {
+                "type": "CHOICE",
+                "members": [
+                  {
+                    "type": "STRING",
+                    "value": ";"
+                  },
+                  {
+                    "type": "BLANK"
+                  }
+                ]
+              }
+            ]
+          }
+        }
+      ]
     },
     "finally_clause": {
       "type": "SEQ",
