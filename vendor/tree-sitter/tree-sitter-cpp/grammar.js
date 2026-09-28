@@ -308,6 +308,10 @@ module.exports = grammar(C, {
   ],
 
   conflicts: $ => [
+    [$._declarator, $._macro_argument_parameter_declaration],
+    [$.macro_parameter_list, $._macro_parenthesized_parameter_declaration, $._argument_list_item],
+    [$.macro_parameter_list, $._argument_list_item],
+    [$._macro_argument_parameter_declaration, $._non_pointer_declarator],
     [$._declaration_modifiers, $.macro_template_declaration],
     [$._declaration_specifiers, $._conditional_function_return_type_specifiers, $._macro_qualified_declaration_specifiers, $._constructor_specifiers],
     [$._modifier_prefixed_macro_declaration, $._unconfigured_type_call_identifier],
@@ -2227,6 +2231,21 @@ module.exports = grammar(C, {
     _macro_parameter_declaration: $ => seq(
       ...declarationSpecifiers($),
       optional(field('declarator', choice($._declarator, $._abstract_declarator))),
+      repeat($.attribute_specifier),
+    ),
+
+    // A bare parameter argument names any declarator without parentheses;
+    // parenthesized declarators use the explicit parameter-list argument form.
+    _macro_argument_parameter_declaration: $ => seq(
+      ...declarationSpecifiers($),
+      field('declarator', choice(
+        identifierWithPaste($),
+        $.pointer_declarator,
+        $.reference_declarator,
+        $.handle_declarator,
+        $.member_pointer_declarator,
+        $.structured_binding_declarator,
+      )),
       repeat($.attribute_specifier),
     ),
 
@@ -4406,11 +4425,12 @@ module.exports = grammar(C, {
       prec.dynamic(-5, choice(
         $.macro_parenthesized_argument,
         alias($.macro_parameter_list, $.parameter_list),
+        alias($._macro_argument_parameter_declaration, $.parameter_declaration),
         $.macro_preprocessing_token_sequence_argument,
         $.function_pointer_type_descriptor,
         $.macro_dependent_type_argument,
         $.type_descriptor,
-        $.type_qualifier,
+        $._declaration_modifiers,
         $.noexcept,
         $.type_parameter_declaration,
         $.template_template_parameter_declaration,

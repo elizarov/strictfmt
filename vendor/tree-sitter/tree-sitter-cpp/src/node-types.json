@@ -1084,11 +1084,23 @@
       "required": false,
       "types": [
         {
+          "type": "attribute_declaration",
+          "named": true
+        },
+        {
+          "type": "attribute_specifier",
+          "named": true
+        },
+        {
           "type": "comment",
           "named": true
         },
         {
           "type": "compound_statement",
+          "named": true
+        },
+        {
+          "type": "declaration_modifier_macro",
           "named": true
         },
         {
@@ -1128,11 +1140,19 @@
           "named": true
         },
         {
+          "type": "ms_declspec_modifier",
+          "named": true
+        },
+        {
           "type": "noexcept",
           "named": true
         },
         {
           "type": "optional_type_parameter_declaration",
+          "named": true
+        },
+        {
+          "type": "parameter_declaration",
           "named": true
         },
         {
@@ -1149,6 +1169,10 @@
         },
         {
           "type": "primitive_braced_argument",
+          "named": true
+        },
+        {
+          "type": "storage_class_specifier",
           "named": true
         },
         {

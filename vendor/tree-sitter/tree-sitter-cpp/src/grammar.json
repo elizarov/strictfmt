@@ -22399,6 +22399,96 @@
         }
       ]
     },
+    "_macro_argument_parameter_declaration": {
+      "type": "SEQ",
+      "members": [
+        {
+          "type": "REPEAT",
+          "content": {
+            "type": "SYMBOL",
+            "name": "_declaration_modifiers"
+          }
+        },
+        {
+          "type": "FIELD",
+          "name": "type",
+          "content": {
+            "type": "SYMBOL",
+            "name": "type_specifier"
+          }
+        },
+        {
+          "type": "REPEAT",
+          "content": {
+            "type": "SYMBOL",
+            "name": "_declaration_modifiers"
+          }
+        },
+        {
+          "type": "FIELD",
+          "name": "declarator",
+          "content": {
+            "type": "CHOICE",
+            "members": [
+              {
+                "type": "CHOICE",
+                "members": [
+                  {
+                    "type": "CHOICE",
+                    "members": [
+                      {
+                        "type": "SYMBOL",
+                        "name": "identifier"
+                      },
+                      {
+                        "type": "ALIAS",
+                        "content": {
+                          "type": "SYMBOL",
+                          "name": "_contextual_identifier"
+                        },
+                        "named": true,
+                        "value": "identifier"
+                      }
+                    ]
+                  },
+                  {
+                    "type": "SYMBOL",
+                    "name": "macro_token_paste_expression"
+                  }
+                ]
+              },
+              {
+                "type": "SYMBOL",
+                "name": "pointer_declarator"
+              },
+              {
+                "type": "SYMBOL",
+                "name": "reference_declarator"
+              },
+              {
+                "type": "SYMBOL",
+                "name": "handle_declarator"
+              },
+              {
+                "type": "SYMBOL",
+                "name": "member_pointer_declarator"
+              },
+              {
+                "type": "SYMBOL",
+                "name": "structured_binding_declarator"
+              }
+            ]
+          }
+        },
+        {
+          "type": "REPEAT",
+          "content": {
+            "type": "SYMBOL",
+            "name": "attribute_specifier"
+          }
+        }
+      ]
+    },
     "_macro_parenthesized_parameter_declaration": {
       "type": "PREC_RIGHT",
       "value": 0,
@@ -36411,6 +36501,15 @@
                 "value": "parameter_list"
               },
               {
+                "type": "ALIAS",
+                "content": {
+                  "type": "SYMBOL",
+                  "name": "_macro_argument_parameter_declaration"
+                },
+                "named": true,
+                "value": "parameter_declaration"
+              },
+              {
                 "type": "SYMBOL",
                 "name": "macro_preprocessing_token_sequence_argument"
               },
@@ -36428,7 +36527,7 @@
               },
               {
                 "type": "SYMBOL",
-                "name": "type_qualifier"
+                "name": "_declaration_modifiers"
               },
               {
                 "type": "SYMBOL",
@@ -38011,6 +38110,23 @@
     }
   ],
   "conflicts": [
+    [
+      "_declarator",
+      "_macro_argument_parameter_declaration"
+    ],
+    [
+      "macro_parameter_list",
+      "_macro_parenthesized_parameter_declaration",
+      "_argument_list_item"
+    ],
+    [
+      "macro_parameter_list",
+      "_argument_list_item"
+    ],
+    [
+      "_macro_argument_parameter_declaration",
+      "_non_pointer_declarator"
+    ],
     [
       "_declaration_modifiers",
       "macro_template_declaration"

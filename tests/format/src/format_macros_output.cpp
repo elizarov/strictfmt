@@ -5153,3 +5153,8 @@ void WithTrailingMacroComment() {
     // marker
     LOCAL_MACRO_COMMENT();
 }
+
+// Macro arguments may contain declaration fragments and bare modifiers.
+DEFINE_BINARY_PROTO_FUZZER(const TPackUnpackCase& value) { Exercise(value); }
+Y_DECLARE_OUT_SPEC(inline, NType::TValue, stream, value) { stream << value; }
+void MacroDeclarationArguments() { ASSIGN_OR_RAISE(auto result, Compute()); }
