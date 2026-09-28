@@ -240,7 +240,8 @@ std::string ReindentRawMacroBody(std::string_view text, int bodyIndentLevel, int
         const std::string_view line =
             lineEnd == std::string_view::npos ? text.substr(lineStart) : text.substr(lineStart, lineEnd - lineStart);
         const SourceIndent indent = MeasureSourceIndent(line, tabWidth);
-        if (indent.length < line.size()) {
+        const bool emptyContinuation = lineEnd != std::string_view::npos && line.substr(indent.length) == "\\";
+        if (indent.length < line.size() && !emptyContinuation) {
             commonIndent = std::min(commonIndent, indent.columns);
         }
         if (lineEnd == std::string_view::npos) {

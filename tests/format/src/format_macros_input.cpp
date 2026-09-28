@@ -4802,3 +4802,11 @@ DEFINE_IDENTIFIER(Chunk)
 #define TRAILING_EXPRESSION_COMMENT(value) \
     (value + 1)                            \
     // expression marker
+
+// Empty spliced lines do not determine a raw replacement's common indentation.
+#define RAW_BODY(suffix) \
+    TEST(Body##suffix) { \
+        ns::Value##suffix value; \
+\
+        Use(value); \
+    }
