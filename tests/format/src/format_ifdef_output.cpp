@@ -770,3 +770,21 @@ void ConditionalCallNames() {
         GetInvoker<State>()
     };
 }
+
+// Comments at branch endings are not incomplete expression operators.
+struct OptionalParameter {
+    OptionalParameter(
+#ifdef FEATURE
+        Location /*location*/
+#endif
+    ) {}
+};
+
+auto commentedEntries = {
+#if FEATURE
+    first, /*entry*/
+#else
+    second,  // +
+#endif
+    last
+};

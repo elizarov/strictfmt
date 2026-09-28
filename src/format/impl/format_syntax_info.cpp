@@ -393,7 +393,7 @@ constexpr auto kSyntaxKindMappings = std::to_array<SyntaxKindMapping>({
     Tree(SyntaxNodeKind::PreprocIf, "preproc_template_argument_fragment", kAtomicPreprocessorClasses),
     Tree(SyntaxNodeKind::PreprocIfdef, "preproc_argument_fragment", kAtomicPreprocessorClasses),
     Tree(SyntaxNodeKind::PreprocIf, "preproc_if_argument_fragment", kAtomicPreprocessorClasses),
-    Tree(SyntaxNodeKind::Tree, "preproc_trailing_argument_expression"),
+    Tree(SyntaxNodeKind::IncompleteConditionalExpression, "preproc_trailing_argument_expression"),
     Tree(
         SyntaxNodeKind::PreprocIf,
         "preproc_string_literal_fragment",
@@ -1174,6 +1174,8 @@ std::string_view SyntaxNodeKindName(SyntaxNodeKind kind) {
             return "PreprocParams";
         case SyntaxNodeKind::PreprocArg:
             return "PreprocArg";
+        case SyntaxNodeKind::IncompleteConditionalExpression:
+            return "IncompleteConditionalExpression";
         case SyntaxNodeKind::RawMacroReplacement:
             return "RawMacroReplacement";
         case SyntaxNodeKind::BinaryExpression:

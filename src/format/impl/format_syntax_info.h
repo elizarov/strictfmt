@@ -67,6 +67,7 @@ enum class SyntaxNodeKind : std::uint16_t {
     PreprocUsing,
     PreprocParams,
     PreprocArg,
+    IncompleteConditionalExpression,
     RawMacroReplacement,
     BinaryExpression,
     UnaryExpression,

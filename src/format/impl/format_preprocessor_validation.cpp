@@ -35,70 +35,13 @@ bool HasStructuredPreprocessorChildren(const SyntaxNode& node) {
     });
 }
 
-bool IsDirectiveLine(std::string_view line) {
-    while (!line.empty() && (line.front() == ' ' || line.front() == '\t')) {
-        line.remove_prefix(1);
+bool HasIncompleteConditionalExpression(const SyntaxNode& node) {
+    if (node.kind == SyntaxNodeKind::IncompleteConditionalExpression) {
+        return true;
     }
-    return line.starts_with("#elif") || line.starts_with("#else") || line.starts_with("#endif");
-}
-
-bool IsIncompleteBranchTail(char ch) {
-    switch (ch) {
-        case '|':
-        case '&':
-        case '+':
-        case '-':
-        case '*':
-        case '/':
-        case '%':
-        case '^':
-        case '=':
-        case '<':
-        case '!':
-        case '?':
-            return true;
-        default:
-            return false;
-    }
-}
-
-bool BranchBeforeDirectiveHasIncompleteTail(std::string_view text) {
-    size_t branchStart = 0;
-    size_t lineStart = 0;
-    while (lineStart <= text.size()) {
-        size_t lineEnd = text.find_first_of("\r\n", lineStart);
-        if (lineEnd == std::string_view::npos) {
-            lineEnd = text.size();
-        }
-        std::string_view line = text.substr(lineStart, lineEnd - lineStart);
-        if (IsDirectiveLine(line)) {
-            std::string_view currentBranch = text.substr(branchStart, lineStart - branchStart);
-            while (!currentBranch.empty() && (
-                currentBranch.back() == ' ' ||
-                currentBranch.back() == '\t' ||
-                currentBranch.back() == '\r' ||
-                currentBranch.back() == '\n'
-            )) {
-                currentBranch.remove_suffix(1);
-            }
-            if (!currentBranch.empty() && IsIncompleteBranchTail(currentBranch.back())) {
-                return true;
-            }
-            branchStart = lineEnd;
-        }
-
-        if (lineEnd == text.size()) {
-            break;
-        }
-        lineStart = lineEnd + 1;
-        if (lineStart < text.size() && text[lineEnd] == '\r' && text[lineStart] == '\n') {
-            ++lineStart;
-        }
-        if (branchStart == lineEnd) {
-            branchStart = lineStart;
-        }
-    }
-    return false;
+    return std::any_of(node.children.begin(), node.children.end(), [](const SyntaxNode* child) {
+        return child != nullptr && HasIncompleteConditionalExpression(*child);
+    });
 }
 
 const SyntaxNode* EffectiveParent(const SyntaxNode& node) {
@@ -126,7 +69,7 @@ bool IsSupportedIncludePlacement(const SyntaxNode& node) {
 bool IsSupportedConditionalPlacement(const SyntaxNode& node) {
     if (HasClass(node, SyntaxNodeClass::SupportedPreprocessorPlacement)) {
         return !HasAncestorWithClass(node, SyntaxNodeClass::AllowedListPreprocessorContainer) ||
-            !BranchBeforeDirectiveHasIncompleteTail(node.text);
+            !HasIncompleteConditionalExpression(node);
     }
 
     if (
@@ -143,7 +86,7 @@ bool IsSupportedConditionalPlacement(const SyntaxNode& node) {
     }
 
     if (HasClass(*parent, SyntaxNodeClass::AllowedListPreprocessorContainer)) {
-        return !BranchBeforeDirectiveHasIncompleteTail(node.text);
+        return !HasIncompleteConditionalExpression(node);
     }
 
     if (HasClass(*parent, SyntaxNodeClass::AllowedPreprocessorContainer)) {
