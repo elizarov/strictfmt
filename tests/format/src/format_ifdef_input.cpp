@@ -1305,3 +1305,33 @@ Consume(Read().Value()+1
 #endif
 ,Last());
 }
+
+int GuardedElse(int value){int result=0;
+#if FIRST
+if(value==1){result=1;}else
+#endif
+{result+=10;}
+return result;}
+int GuardedElseChain(int value){int result=0;
+#if FIRST
+const int selected=value;
+if(selected==1){result=1;}else if(selected==2){result=2;}else
+#elif SECOND
+if(value==3){result=3;}else
+#else
+#ifdef THIRD
+if(value==4){result=4;}else
+#else
+if(value==5){result=5;}else
+#endif
+#endif
+result+=10;
+return result;}
+int NestedGuardedElse(int value){int result=0;
+if(value>=0)
+#if FIRST
+if(value==1)result=1;else
+#endif
+if(value==2){result=2;}else{result=3;}
+else result=4;
+return result;}

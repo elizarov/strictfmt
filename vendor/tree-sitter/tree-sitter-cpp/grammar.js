@@ -72,6 +72,7 @@ const CPP_KEYWORDS = [
 const PREPROC_IFDEF = 1 << 0;
 const PREPROC_ELSE = 1 << 1;
 const PREPROC_ELIF = 1 << 2;
+const PREPROC_SHARED_OPENER = 1 << 3;
 const PREPROC_ALL_BRANCH_FORMS = PREPROC_IFDEF | PREPROC_ELSE | PREPROC_ELIF;
 
 function cppStatements($, base = C.grammar.rules._non_case_statement) {
@@ -326,6 +327,7 @@ module.exports = grammar(C, {
   ],
 
   conflicts: $ => [
+    [$.if_statement, $._if_consequence_prefix],
     [$.stream_operator_chain_suffix, $.macro_argument_punctuator],
     [$.preproc_ifdef_in_expression, $._argument_list_item],
     [$.preproc_if_in_expression, $._argument_list_item],
@@ -2818,10 +2820,10 @@ module.exports = grammar(C, {
     _function_exception_specification: $ => prec.dynamic(10, choice(
       $.noexcept,
       $.throw_specifier,
-      preprocListItem($, '_in_exception_specification'),
+      preprocListItem($, '_in_exception_specification', PREPROC_ALL_BRANCH_FORMS | PREPROC_SHARED_OPENER),
     )),
 
-    ...preprocIf('_in_exception_specification', $ => $._function_exception_specification, 0, PREPROC_ALL_BRANCH_FORMS, false),
+    ...preprocIf('_in_exception_specification', $ => $._function_exception_specification, 0, PREPROC_ALL_BRANCH_FORMS | PREPROC_SHARED_OPENER, false),
 
     _function_attributes_end: $ => prec.right(seq(
       optional($.gnu_asm_expression),
@@ -3322,6 +3324,7 @@ module.exports = grammar(C, {
       $.preproc_selected_braced_if_statement,
       $.preproc_ended_consequence_statement,
       $.preproc_selected_if_statement,
+      $.preproc_selected_else_statement,
       $.preproc_if,
       $.preproc_ifdef,
       $.if_statement,
@@ -3446,7 +3449,7 @@ module.exports = grammar(C, {
 
     selected_if_prefix: $ => seq($._if_header, '{'),
 
-    ...selectedBlockPrefix('if', $ => $.selected_if_prefix),
+    ...selectedStatementPrefix('if', $ => $.selected_if_prefix),
 
     preproc_selected_for_statement: $ => seq(
       field('body', alias($.preproc_selected_for_body, $.compound_statement)),
@@ -3460,7 +3463,30 @@ module.exports = grammar(C, {
 
     selected_for_prefix: $ => seq(choice($._for_header, $._for_range_header, $._for_each_header), '{'),
 
-    ...selectedBlockPrefix('for', $ => $.selected_for_prefix),
+    ...selectedStatementPrefix('for', $ => $.selected_for_prefix),
+
+    preproc_selected_else_statement: $ => seq(
+      $.preproc_else_prefix,
+      field('consequence', $.statement),
+    ),
+
+    _closed_selected_else_statement: $ => seq(
+      $.preproc_else_prefix,
+      field('consequence', $._closed_statement),
+    ),
+
+    selected_else_prefix: $ => seq(
+      alias($._if_consequence_prefix, $.if_statement),
+      'else',
+      optional($.selected_else_prefix),
+    ),
+
+    _if_consequence_prefix: $ => seq(
+      $._if_header,
+      field('consequence', $._closed_statement),
+    ),
+
+    ...selectedStatementPrefix('else', $ => $.selected_else_prefix),
 
     selected_if_header: $ => $._if_header,
 
@@ -3608,6 +3634,7 @@ module.exports = grammar(C, {
       $._closed_statement_leaf,
       alias($._closed_if_statement, $.if_statement),
       alias($._closed_selected_if_statement, $.preproc_selected_if_statement),
+      alias($._closed_selected_else_statement, $.preproc_selected_else_statement),
       alias($._closed_selected_braced_if_statement, $.preproc_selected_braced_if_statement),
       alias($._closed_while_statement, $.while_statement),
       alias($._closed_for_statement, $.for_statement),
@@ -5442,7 +5469,7 @@ function commaSep1WithRequiredPreproc($, rule, suffix, forms) {
 
 function preprocListItem($, suffix, forms = PREPROC_ALL_BRANCH_FORMS) {
   const items = [alias($['preproc_if' + suffix], $.preproc_if)];
-  if (forms & PREPROC_IFDEF) {
+  if ((forms & PREPROC_IFDEF) && !(forms & PREPROC_SHARED_OPENER)) {
     items.push(alias($['preproc_ifdef' + suffix], $.preproc_ifdef));
   }
   return items.length === 1 ? items[0] : choice(...items);
@@ -5452,7 +5479,7 @@ function selectedIfHeader($) {
   return $._if_header;
 }
 
-function selectedBlockPrefix(kind, prefix) {
+function selectedStatementPrefix(kind, prefix) {
   const group = 'preproc_' + kind + '_prefix';
   const branch = '_selected_' + kind + '_prefix_branch';
   const alternative = '_preproc_' + kind + '_prefix_alternative';
@@ -5531,8 +5558,9 @@ function preprocIf(suffix, content, precedence = 0, forms = PREPROC_ALL_BRANCH_F
   const rules = {
     ['preproc_if' + suffix]: $ => {
       const ordinary = prec(precedence, seq(
-        preprocessor('if'),
-        field('condition', $._preproc_expression),
+        forms & PREPROC_SHARED_OPENER ? $._preproc_opening_condition : seq(
+          preprocessor('if'), field('condition', $._preproc_expression),
+        ),
         $._preproc_directive_end,
         branchContent($),
         ...alternativeField($),
@@ -5545,7 +5573,7 @@ function preprocIf(suffix, content, precedence = 0, forms = PREPROC_ALL_BRANCH_F
     },
   };
 
-  if (forms & PREPROC_IFDEF) {
+  if ((forms & PREPROC_IFDEF) && !(forms & PREPROC_SHARED_OPENER)) {
     rules['preproc_ifdef' + suffix] = $ => {
       const ordinary = prec(precedence, seq(
         choice(preprocessor('ifdef'), preprocessor('ifndef')),
