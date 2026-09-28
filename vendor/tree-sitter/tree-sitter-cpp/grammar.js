@@ -178,7 +178,7 @@ function templateDeclarationItem($, qualifiedFunction = $.qualified_type_functio
   );
 }
 
-function macroStatementSequence($, declarations = []) {
+function macroStatementSequence($, declarations = [], finalItems = []) {
   return prec.right(seq(
     repeat1(choice(
       ...declarations,
@@ -189,7 +189,7 @@ function macroStatementSequence($, declarations = []) {
         seq(alias($.macro_expression_without_semicolon, $.expression_statement), ';'),
       )),
     )),
-    optional($.macro_call_statement_item),
+    optional(choice($.macro_call_statement_item, ...finalItems)),
   ));
 }
 
@@ -320,6 +320,7 @@ module.exports = grammar(C, {
   ],
 
   conflicts: $ => [
+    [$._declaration_declarator_list, $.macro_uninitialized_declaration_fragment],
     [$.type_specifier, $.block_macro_call_line_item],
     [$.type_specifier, $.expression, $.block_macro_call_line_item],
     [$.expression, $.block_macro_call_line_item],
@@ -4005,6 +4006,8 @@ module.exports = grammar(C, {
       $.declaration,
       seq(alias($.macro_initialized_declaration_fragment, $.declaration), ';'),
       seq(alias($.macro_declaration_without_semicolon, $.declaration), ';'),
+    ], [
+      alias($.macro_uninitialized_declaration_fragment, $.declaration),
     ]),
 
     macro_call_statement_item: $ => choice(
@@ -4026,6 +4029,7 @@ module.exports = grammar(C, {
     macro_single_statement_argument: $ => prec.dynamic(1, choice(
       $.macro_unterminated_control_statement,
       $.macro_empty_statement_argument,
+      alias($.macro_uninitialized_declaration_fragment, $.declaration),
       alias($.macro_initialized_declaration_fragment, $.declaration),
       alias($.macro_declaration_without_semicolon, $.declaration),
       $.compound_statement,
@@ -4075,6 +4079,11 @@ module.exports = grammar(C, {
     macro_unterminated_while_statement: $ => seq(
       $._while_header, field('body', $._macro_unterminated_body),
     ),
+
+    macro_uninitialized_declaration_fragment: $ => prec.dynamic(20, seq(
+      $._declaration_specifiers,
+      field('declarator', $._declarator),
+    )),
 
     macro_initialized_declaration_fragment: $ => prec.dynamic(20, prec(PREC.CALL + 10, seq(
       $._declaration_specifiers,

@@ -35919,8 +35919,13 @@
             "type": "CHOICE",
             "members": [
               {
-                "type": "SYMBOL",
-                "name": "macro_call_statement_item"
+                "type": "CHOICE",
+                "members": [
+                  {
+                    "type": "SYMBOL",
+                    "name": "macro_call_statement_item"
+                  }
+                ]
               },
               {
                 "type": "BLANK"
@@ -36397,8 +36402,22 @@
             "type": "CHOICE",
             "members": [
               {
-                "type": "SYMBOL",
-                "name": "macro_call_statement_item"
+                "type": "CHOICE",
+                "members": [
+                  {
+                    "type": "SYMBOL",
+                    "name": "macro_call_statement_item"
+                  },
+                  {
+                    "type": "ALIAS",
+                    "content": {
+                      "type": "SYMBOL",
+                      "name": "macro_uninitialized_declaration_fragment"
+                    },
+                    "named": true,
+                    "value": "declaration"
+                  }
+                ]
               },
               {
                 "type": "BLANK"
@@ -36493,6 +36512,15 @@
           {
             "type": "SYMBOL",
             "name": "macro_empty_statement_argument"
+          },
+          {
+            "type": "ALIAS",
+            "content": {
+              "type": "SYMBOL",
+              "name": "macro_uninitialized_declaration_fragment"
+            },
+            "named": true,
+            "value": "declaration"
           },
           {
             "type": "ALIAS",
@@ -36733,6 +36761,27 @@
           }
         }
       ]
+    },
+    "macro_uninitialized_declaration_fragment": {
+      "type": "PREC_DYNAMIC",
+      "value": 20,
+      "content": {
+        "type": "SEQ",
+        "members": [
+          {
+            "type": "SYMBOL",
+            "name": "_declaration_specifiers"
+          },
+          {
+            "type": "FIELD",
+            "name": "declarator",
+            "content": {
+              "type": "SYMBOL",
+              "name": "_declarator"
+            }
+          }
+        ]
+      }
     },
     "macro_initialized_declaration_fragment": {
       "type": "PREC_DYNAMIC",
@@ -42021,6 +42070,10 @@
     }
   ],
   "conflicts": [
+    [
+      "_declaration_declarator_list",
+      "macro_uninitialized_declaration_fragment"
+    ],
     [
       "type_specifier",
       "block_macro_call_line_item"

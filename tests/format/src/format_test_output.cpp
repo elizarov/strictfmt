@@ -9385,3 +9385,15 @@ void IncompleteMacroControls() {
         Consume(value);
     });
 }
+
+void UninitializedMacroDeclarations() {
+    FORMAT_STATEMENT_DECLARATIONS(Value local);
+    FORMAT_STATEMENT_DECLARATIONS(const ns::Value* local);
+    FORMAT_STATEMENT_DECLARATIONS(int local);
+    FORMAT_STATEMENT_DECLARATIONS(
+        Prepare();
+        Value local
+    );
+    FORMAT_STATEMENT_DECLARATIONS(Value local, Error);
+    FORMAT_STATEMENT_DECLARATIONS(Value& local, Error);
+}
