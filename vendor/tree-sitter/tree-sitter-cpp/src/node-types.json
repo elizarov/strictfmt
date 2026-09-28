@@ -10488,6 +10488,16 @@
             "named": true
           }
         ]
+      },
+      "value": {
+        "multiple": false,
+        "required": false,
+        "types": [
+          {
+            "type": "string_literal",
+            "named": true
+          }
+        ]
       }
     },
     "children": {
@@ -10504,6 +10514,10 @@
         },
         {
           "type": "alias_declaration",
+          "named": true
+        },
+        {
+          "type": "argument_list",
           "named": true
         },
         {
@@ -10892,6 +10906,16 @@
             "named": true
           }
         ]
+      },
+      "value": {
+        "multiple": false,
+        "required": false,
+        "types": [
+          {
+            "type": "string_literal",
+            "named": true
+          }
+        ]
       }
     },
     "children": {
@@ -10908,6 +10932,10 @@
         },
         {
           "type": "alias_declaration",
+          "named": true
+        },
+        {
+          "type": "argument_list",
           "named": true
         },
         {
@@ -11192,12 +11220,26 @@
             "named": true
           }
         ]
+      },
+      "value": {
+        "multiple": false,
+        "required": false,
+        "types": [
+          {
+            "type": "string_literal",
+            "named": true
+          }
+        ]
       }
     },
     "children": {
       "multiple": true,
       "required": false,
       "types": [
+        {
+          "type": "argument_list",
+          "named": true
+        },
         {
           "type": "attribute_declaration",
           "named": true
@@ -11208,6 +11250,10 @@
         },
         {
           "type": "declaration_modifier_macro",
+          "named": true
+        },
+        {
+          "type": "identifier",
           "named": true
         },
         {
@@ -12176,12 +12222,26 @@
             "named": true
           }
         ]
+      },
+      "value": {
+        "multiple": false,
+        "required": false,
+        "types": [
+          {
+            "type": "string_literal",
+            "named": true
+          }
+        ]
       }
     },
     "children": {
       "multiple": true,
       "required": false,
       "types": [
+        {
+          "type": "argument_list",
+          "named": true
+        },
         {
           "type": "attribute_declaration",
           "named": true
@@ -12192,6 +12252,10 @@
         },
         {
           "type": "declaration_modifier_macro",
+          "named": true
+        },
+        {
+          "type": "identifier",
           "named": true
         },
         {
@@ -12348,12 +12412,26 @@
             "named": true
           }
         ]
+      },
+      "value": {
+        "multiple": false,
+        "required": false,
+        "types": [
+          {
+            "type": "string_literal",
+            "named": true
+          }
+        ]
       }
     },
     "children": {
       "multiple": true,
       "required": false,
       "types": [
+        {
+          "type": "argument_list",
+          "named": true
+        },
         {
           "type": "attribute_declaration",
           "named": true
@@ -12364,6 +12442,10 @@
         },
         {
           "type": "declaration_modifier_macro",
+          "named": true
+        },
+        {
+          "type": "identifier",
           "named": true
         },
         {
@@ -12856,12 +12938,26 @@
             "named": true
           }
         ]
+      },
+      "value": {
+        "multiple": false,
+        "required": false,
+        "types": [
+          {
+            "type": "string_literal",
+            "named": true
+          }
+        ]
       }
     },
     "children": {
       "multiple": true,
       "required": false,
       "types": [
+        {
+          "type": "argument_list",
+          "named": true
+        },
         {
           "type": "attribute_declaration",
           "named": true
@@ -12872,6 +12968,10 @@
         },
         {
           "type": "declaration_modifier_macro",
+          "named": true
+        },
+        {
+          "type": "identifier",
           "named": true
         },
         {
@@ -12980,12 +13080,26 @@
             "named": true
           }
         ]
+      },
+      "value": {
+        "multiple": false,
+        "required": false,
+        "types": [
+          {
+            "type": "string_literal",
+            "named": true
+          }
+        ]
       }
     },
     "children": {
       "multiple": true,
       "required": false,
       "types": [
+        {
+          "type": "argument_list",
+          "named": true
+        },
         {
           "type": "attribute_declaration",
           "named": true
@@ -12996,6 +13110,10 @@
         },
         {
           "type": "declaration_modifier_macro",
+          "named": true
+        },
+        {
+          "type": "identifier",
           "named": true
         },
         {

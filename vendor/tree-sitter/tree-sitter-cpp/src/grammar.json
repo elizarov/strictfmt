@@ -19241,6 +19241,18 @@
                 "members": [
                   {
                     "type": "SYMBOL",
+                    "name": "_linkage_specification_prefix"
+                  },
+                  {
+                    "type": "BLANK"
+                  }
+                ]
+              },
+              {
+                "type": "CHOICE",
+                "members": [
+                  {
+                    "type": "SYMBOL",
                     "name": "ms_call_modifier"
                   },
                   {
@@ -19391,6 +19403,18 @@
                 "members": [
                   {
                     "type": "SYMBOL",
+                    "name": "_linkage_specification_prefix"
+                  },
+                  {
+                    "type": "BLANK"
+                  }
+                ]
+              },
+              {
+                "type": "CHOICE",
+                "members": [
+                  {
+                    "type": "SYMBOL",
                     "name": "ms_call_modifier"
                   },
                   {
@@ -19496,6 +19520,18 @@
                 "members": [
                   {
                     "type": "SYMBOL",
+                    "name": "_linkage_specification_prefix"
+                  },
+                  {
+                    "type": "BLANK"
+                  }
+                ]
+              },
+              {
+                "type": "CHOICE",
+                "members": [
+                  {
+                    "type": "SYMBOL",
                     "name": "ms_call_modifier"
                   },
                   {
@@ -19569,6 +19605,18 @@
           {
             "type": "SEQ",
             "members": [
+              {
+                "type": "CHOICE",
+                "members": [
+                  {
+                    "type": "SYMBOL",
+                    "name": "_linkage_specification_prefix"
+                  },
+                  {
+                    "type": "BLANK"
+                  }
+                ]
+              },
               {
                 "type": "CHOICE",
                 "members": [
@@ -19871,6 +19919,18 @@
                 "members": [
                   {
                     "type": "SYMBOL",
+                    "name": "_linkage_specification_prefix"
+                  },
+                  {
+                    "type": "BLANK"
+                  }
+                ]
+              },
+              {
+                "type": "CHOICE",
+                "members": [
+                  {
+                    "type": "SYMBOL",
                     "name": "ms_call_modifier"
                   },
                   {
@@ -19911,6 +19971,18 @@
           {
             "type": "SEQ",
             "members": [
+              {
+                "type": "CHOICE",
+                "members": [
+                  {
+                    "type": "SYMBOL",
+                    "name": "_linkage_specification_prefix"
+                  },
+                  {
+                    "type": "BLANK"
+                  }
+                ]
+              },
               {
                 "type": "CHOICE",
                 "members": [

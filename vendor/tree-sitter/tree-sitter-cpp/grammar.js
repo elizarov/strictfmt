@@ -1608,7 +1608,7 @@ module.exports = grammar(C, {
       )]),
     ))),
 
-    ...preprocIf('_in_function_header', $ => seq(...functionDefinitionHeader($)), 0, PREPROC_ALL_BRANCH_FORMS, false),
+    ...preprocIf('_in_function_header', $ => seq(optional($._linkage_specification_prefix), ...functionDefinitionHeader($)), 0, PREPROC_ALL_BRANCH_FORMS, false),
 
     _conditional_function_return_type_specifiers: $ => prec.right(seq(
       repeat($._declaration_modifiers),
@@ -1643,8 +1643,8 @@ module.exports = grammar(C, {
     ),
 
     _function_definition_prefix: $ => prec(1, choice(
-      functionDefinitionPrefixWithHeader(functionDefinitionHeader($)),
-      functionDefinitionPrefixWithHeader(conditionalFunctionDefinitionHeader($)),
+      functionDefinitionPrefixWithHeader($, functionDefinitionHeader($)),
+      functionDefinitionPrefixWithHeader($, conditionalFunctionDefinitionHeader($)),
     )),
 
     preproc_selected_function_definition: $ => prec(1, seq(
@@ -5132,8 +5132,8 @@ function functionDefinitionWithHeader($, header) {
   );
 }
 
-function functionDefinitionPrefixWithHeader(header) {
-  return seq(...header, '{');
+function functionDefinitionPrefixWithHeader($, header) {
+  return seq(optional($._linkage_specification_prefix), ...header, '{');
 }
 
 function inlineMethodDefinitionWithSpecifiers($, specifiers) {

@@ -1043,3 +1043,19 @@ void Owner::SelectedHeader(double value)
 {
     Use(value);
 }
+
+#if WRAP_ALLOCATOR
+static inline void* SelectedReallocate(void* old, size_t size) {
+#else
+extern "C" void* SelectedReallocate(void* old, size_t size) {
+#endif
+    return Resize(old, size);
+}
+#ifdef EXPORT_FUNCTION
+extern "C" int SelectedLinkage(int value)
+#else
+static int SelectedLinkage(int value)
+#endif
+{
+    return value;
+}
