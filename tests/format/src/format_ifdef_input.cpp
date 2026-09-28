@@ -751,3 +751,22 @@ Select(left) ? left : right, Build(1),
 Fallback(), {1,2},
 #endif
 last);}
+
+// Conditional initializer groups may own the separator before their first item.
+auto leadingInitializers = {first
+#if FEATURE
+,second,third
+#else
+,fallback
+#endif
+,last};
+auto designatedInitializers = Record{.first = 1
+#ifndef MINIMAL
+,.second = 2, .third = 3
+#endif
+};
+auto conditionalFieldValue = Record{.ready = first
+#if FEATURE
+&& second
+#endif
+};

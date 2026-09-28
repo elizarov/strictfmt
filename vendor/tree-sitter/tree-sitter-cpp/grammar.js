@@ -307,6 +307,8 @@ module.exports = grammar(C, {
   ],
 
   conflicts: $ => [
+    [$.initializer_pair, $.binary_expression],
+    [$._initializer_list_entry],
     [$.comma_expression, $._initializer_list_entry],
     [$._block_item, $._initializer_list_entry],
     [$._declaration_modifiers, $.type_descriptor, $._macro_parameter_declaration],
@@ -1356,6 +1358,13 @@ module.exports = grammar(C, {
     }, -1, PREPROC_IFDEF, false),
 
     ...preprocIf('_in_initializer_list', $ => $._initializer_list_content, 0, PREPROC_IFDEF | PREPROC_ELSE, false),
+    ...preprocIf(
+      '_in_initializer_list_leading_comma',
+      $ => seq(',', $._initializer_list_content),
+      1,
+      PREPROC_IFDEF | PREPROC_ELSE,
+      false,
+    ),
 
     ...preprocIf(
       '_in_stream_operator_chain',
@@ -3771,6 +3780,11 @@ module.exports = grammar(C, {
     ),
 
     _initializer_list_entry: $ => choice(
+      seq(
+        initializerClause($),
+        repeat1(preprocListItem($, '_in_initializer_list_leading_comma', PREPROC_IFDEF)),
+        optional(','),
+      ),
       seq(initializerClause($), ','),
       seq($._macro_initializer_list_fragment, optional(',')),
       $.preproc_include,
@@ -3789,13 +3803,13 @@ module.exports = grammar(C, {
       '...',
     ),
 
-    initializer_pair: ($, original) => choice(
+    initializer_pair: ($, original) => prec(PREC.LOGICAL_OR, choice(
       original,
       seq(
         field('designator', $.field_designator),
         field('value', $.initializer_list),
       ),
-    ),
+    )),
 
     _macro_initializer_list_fragment: $ => prec.dynamic(-1, $._macro_list_fragment),
 
