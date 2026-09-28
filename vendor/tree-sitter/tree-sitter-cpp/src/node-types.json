@@ -10633,6 +10633,10 @@
           "named": true
         },
         {
+          "type": "field_initializer_list",
+          "named": true
+        },
+        {
           "type": "friend_declaration",
           "named": true
         },
@@ -11056,6 +11060,10 @@
         },
         {
           "type": "field_initializer",
+          "named": true
+        },
+        {
+          "type": "field_initializer_list",
           "named": true
         },
         {
@@ -11870,6 +11878,10 @@
         },
         {
           "type": "field_initializer",
+          "named": true
+        },
+        {
+          "type": "field_initializer_list",
           "named": true
         },
         {
@@ -12822,6 +12834,10 @@
         },
         {
           "type": "field_initializer",
+          "named": true
+        },
+        {
+          "type": "field_initializer_list",
           "named": true
         },
         {

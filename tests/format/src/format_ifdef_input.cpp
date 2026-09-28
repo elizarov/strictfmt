@@ -949,3 +949,20 @@ bool ConditionalWholeCondition(int error_code) {
     }
     return false;
 }
+
+struct SelectedInitializers{
+SelectedInitializers(int first,int last) noexcept
+#if MODERN
+:View(first,last),Size(last-first)
+#elif LEGACY
+:View(first,Distance(first,last)),Size(Distance(first,last))
+#else
+:View(),Size(0)
+#endif
+{}
+SelectedInitializers()
+#ifndef INLINE_STORAGE
+:Storage(MakeStorage())
+#endif
+{}
+};

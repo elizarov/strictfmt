@@ -2234,15 +2234,20 @@ module.exports = grammar(C, {
           optional($.field_initializer),
         ),
       );
-      return seq(
-        ':',
-        choice(
-          $.field_initializer,
-          seq(preprocItem, optional($.field_initializer)),
+      return choice(
+        seq(
+          ':',
+          choice(
+            $.field_initializer,
+            seq(preprocItem, optional($.field_initializer)),
+          ),
+          repeat(tailItem),
         ),
-        repeat(tailItem),
+        preprocListItem($, '_in_field_initializer_clause', PREPROC_IFDEF),
       );
     },
+
+    ...preprocIf('_in_field_initializer_clause', $ => $.field_initializer_list, 1, PREPROC_ALL_BRANCH_FORMS, false),
 
     field_initializer: $ => prec(1, seq(
       repeat($.field_initializer_prefix_macro),
