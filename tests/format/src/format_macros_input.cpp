@@ -4816,3 +4816,9 @@ void RegisterTokens() {
 FORMAT_TOKEN_REGISTER(1, values, .template Serializer<TMapSerializer<TTupleSerializer<TCookieAndPool, 2>, TDefaultSerializer, TUnsortedTag > >());
 FORMAT_TOKEN_REGISTER(1, values, .template Serializer<TMapSerializer<TTupleSerializer<TCookieAndPool, 2>, TDefaultSerializer, TUnsortedTag>>());
 }
+
+// A generated function header can have an ordinary function try block.
+DEFINE_FUNCTION(ParseValue, TOptional<TValue>)
+try {return Parse();}
+catch(const Error& error) {Report(error);return {};}
+catch(...) {return {};}

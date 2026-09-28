@@ -1272,7 +1272,7 @@ module.exports = grammar(C, {
       field('name', $._call_identifier),
       field('arguments', $.argument_list),
       optional(field('declarator', $.parameter_list)),
-      field('body', $.compound_statement),
+      field('body', choice($.compound_statement, $.try_statement)),
       optional(';'),
     )),
 

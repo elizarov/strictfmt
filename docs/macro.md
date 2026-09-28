@@ -285,7 +285,7 @@ An isolated identifier can supply a complete namespace or class item, or a templ
 
 Enum items may omit separating commas. Calls recognized as enum or braced initializer list fragments occupy separate lines, whether configured or not. Calls can also form statements without a trailing semicolon.
 
-A macro call immediately followed by a `{ ... }` body is a statement prefix in statement positions and a function definition in declaration positions, including namespace and class scope. The body follows the corresponding statement or function layout rules. An inferred prefix and its block form one statement, including when braces are added to an enclosing control statement:
+A macro call immediately followed by a `{ ... }` body is a statement prefix in statement positions and a function definition in declaration positions, including namespace and class scope. A generated function header may also precede a function try block. The body follows the corresponding statement or function layout rules. An inferred prefix and its block form one statement, including when braces are added to an enclosing control statement:
 
 ```cpp
 TEST(StoreTest, SavesValue) { SaveValue(); }

@@ -5203,3 +5203,13 @@ void RegisterTokens() {
         TUnsortedTag >> ()
     );
 }
+
+// A generated function header can have an ordinary function try block.
+DEFINE_FUNCTION(ParseValue, TOptional<TValue>) try {
+    return Parse();
+} catch (const Error& error) {
+    Report(error);
+    return {};
+} catch (...) {
+    return {};
+}

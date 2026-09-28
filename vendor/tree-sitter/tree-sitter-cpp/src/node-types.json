@@ -7371,6 +7371,10 @@
           {
             "type": "compound_statement",
             "named": true
+          },
+          {
+            "type": "try_statement",
+            "named": true
           }
         ]
       },
