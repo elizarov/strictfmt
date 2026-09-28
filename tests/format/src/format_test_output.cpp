@@ -9272,3 +9272,21 @@ void ReadBatches() {
         Use(value);
     }
 }
+
+void CaseTypes(int kind) {
+    switch (kind) {
+        case 1:
+            struct Tag {};
+            Run<Tag>();
+            break;
+        case 2:
+            enum class Mode {
+                First,
+                Second
+            };
+            Run<Mode>();
+            break;
+        default:
+            break;
+    }
+}

@@ -3143,6 +3143,17 @@ module.exports = grammar(C, {
 
     bare_macro_statement: $ => prec(1, $.item_macro_identifier),
 
+    case_statement: $ => prec.right(seq(
+      choice(seq('case', field('value', $.expression)), 'default'),
+      ':',
+      repeat(choice(
+        $._non_case_statement,
+        $.declaration,
+        $.type_definition,
+        C.grammar.rules._empty_declaration,
+      )),
+    )),
+
     switch_statement: $ => seq(
       'switch',
       field('condition', $.condition_clause),

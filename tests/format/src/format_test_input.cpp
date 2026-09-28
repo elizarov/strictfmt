@@ -5656,3 +5656,5 @@ for(bool first=true; auto batch=Read(); first=false){Consume(batch,first);}
 for(; int value=Next();){Use(value);}
 for(auto value:items){Use(value);}
 }
+
+void CaseTypes(int kind){switch(kind){case 1:struct Tag{};Run<Tag>();break;case 2:enum class Mode{First,Second};Run<Mode>();break;default:break;}}

@@ -7495,6 +7495,19 @@
                 {
                   "type": "SYMBOL",
                   "name": "type_definition"
+                },
+                {
+                  "type": "SEQ",
+                  "members": [
+                    {
+                      "type": "SYMBOL",
+                      "name": "type_specifier"
+                    },
+                    {
+                      "type": "STRING",
+                      "value": ";"
+                    }
+                  ]
                 }
               ]
             }
