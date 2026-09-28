@@ -9234,3 +9234,10 @@ void PauseProcessor() {
     __asm __volatile("pause");
     __asm __volatile("yield" : : : "memory");
 }
+
+// Configured list fragments compose with ordinary call entries.
+auto configuredCallEntries = {
+    FORMAT_ITEM_HEADER(Type, 0)
+    FIELD(name, "value"),
+    FIELD(end, nullptr)
+};

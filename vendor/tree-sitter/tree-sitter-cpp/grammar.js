@@ -307,6 +307,8 @@ module.exports = grammar(C, {
   ],
 
   conflicts: $ => [
+    [$.comma_expression, $._initializer_list_entry],
+    [$._block_item, $._initializer_list_entry],
     [$._declaration_modifiers, $.type_descriptor, $._macro_parameter_declaration],
     [$.type_descriptor, $.member_pointer_alias_declaration],
     [$.type_specifier, $.operator_cast_field_identifier, $._scope_name],
@@ -479,7 +481,7 @@ module.exports = grammar(C, {
     [$._structured_macro_parameters, $._raw_macro_parameters],
     [$.expression, $._macro_initializer_list_fragment],
     [$.macro_expression_continuation],
-    [$.macro_expression_continuation, $._initializer_list_with_preproc],
+    [$.macro_expression_continuation, $._initializer_list_content],
     [$.expression, $.concatenated_string, $._conditional_alternative],
     [$.type_specifier, $.expression, $.concatenated_string, $._template_argument_value_expression],
     [$.expression, $.concatenated_string, $._template_argument_value_expression],
@@ -516,7 +518,7 @@ module.exports = grammar(C, {
     [$.template_type, $.template_function, $.template_argument_value_identifier, $.qualified_identifier],
     [$.expression],
     [$.enumerator_list, $.expression],
-    [$.expression, $._initializer_list_with_preproc],
+    [$.expression, $._initializer_list_content],
     [$.macro_expansion, $._callable_template_callee],
     [$.call_expression, $.macro_expansion],
     [$.operator_cast_field_identifier, $._scope_name],
@@ -527,8 +529,8 @@ module.exports = grammar(C, {
     [$.macro_source_item_sequence_argument, $.macro_single_statement_argument],
     [$.macro_source_item_sequence_argument, $.macro_single_statement_argument, $._argument_list_item],
     [$.structured_statement_macro_argument, $.macro_source_item_sequence_argument],
-    [$.comma_expression, $.preproc_ifdef_in_initializer_list, $._initializer_list_with_preproc],
-    [$.comma_expression, $.preproc_if_in_initializer_list, $._initializer_list_with_preproc],
+    [$.comma_expression, $.preproc_ifdef_in_initializer_list, $._initializer_list_content],
+    [$.comma_expression, $.preproc_if_in_initializer_list, $._initializer_list_content],
     [$._block_item, $.preproc_ifdef_in_initializer_list],
     [$._block_item, $.preproc_if_in_initializer_list],
     [$._assignment_left_expression, $._conditional_alternative],
@@ -750,8 +752,8 @@ module.exports = grammar(C, {
     [$.macro_statement_sequence_argument, $.macro_single_statement_argument, $._argument_list_item],
     [$.macro_statement_sequence_argument, $.macro_single_statement_argument],
     [$.initializer_pair, $.comma_expression],
-    [$.initializer_list, $._initializer_list_with_preproc],
-    [$.comma_expression, $.initializer_list, $._initializer_list_with_preproc],
+    [$.initializer_list, $._initializer_list_content],
+    [$.comma_expression, $.initializer_list, $._initializer_list_content],
     [$.expression_statement, $._for_statement_body],
     [$.init_statement, $._for_statement_body],
     [$.field_expression, $.template_method, $.template_type],
@@ -788,6 +790,8 @@ module.exports = grammar(C, {
 
   // Share field-name and assignment-left reductions instead of duplicating their alternatives.
   inline: ($, original) => original.filter(rule => !['_field_identifier', '_assignment_left_expression'].includes(rule.name)).concat([
+    $._initializer_list_content,
+    $._initializer_list_final_item,
     $._enumerator_list_final_item,
     $._enumerator_list_content,
     $._namespace_identifier,
@@ -1351,13 +1355,7 @@ module.exports = grammar(C, {
       return seq(optional(','), $._preproc_template_parameter_list_item, optional(','));
     }, -1, PREPROC_IFDEF, false),
 
-    ...preprocIf('_in_initializer_list', $ => {
-      const item = choice($.initializer_pair, $.expression, $._braced_initializer_clause);
-      return choice(
-        $._initializer_list_with_preproc,
-        prec.right(1, seq(repeat(seq(item, ',')), item, optional(','))),
-      );
-    }, 0, PREPROC_IFDEF | PREPROC_ELSE, false),
+    ...preprocIf('_in_initializer_list', $ => $._initializer_list_content, 0, PREPROC_IFDEF | PREPROC_ELSE, false),
 
     ...preprocIf(
       '_in_stream_operator_chain',
@@ -3765,18 +3763,21 @@ module.exports = grammar(C, {
 
     bitfield_clause: $ => seq(':', $._constant_expression),
 
-    initializer_list: $ => {
-      const item = initializerClause($);
-      return seq(
-        '{',
-        choice(
-          commaSep(item),
-          $._initializer_list_with_preproc,
-        ),
-        optional(','),
-        '}',
-      );
-    },
+    initializer_list: $ => seq('{', optional($._initializer_list_content), '}'),
+
+    _initializer_list_content: $ => choice(
+      seq(repeat1($._initializer_list_entry), optional($._initializer_list_final_item)),
+      $._initializer_list_final_item,
+    ),
+
+    _initializer_list_entry: $ => choice(
+      seq(initializerClause($), ','),
+      seq($._macro_initializer_list_fragment, optional(',')),
+      $.preproc_include,
+      preprocListItem($, '_in_initializer_list', PREPROC_IFDEF | PREPROC_ELSE),
+    ),
+
+    _initializer_list_final_item: $ => initializerClause($),
 
     _braced_initializer_clause: $ => choice(
       $.initializer_list,
@@ -3795,26 +3796,6 @@ module.exports = grammar(C, {
         field('value', $.initializer_list),
       ),
     ),
-
-    _initializer_list_with_preproc: $ => {
-      const item = initializerClause($);
-      const preprocItem = choice(
-        // Prefer a complete C++ expression over an expansion followed by another expression.
-        seq($._macro_initializer_list_fragment, optional(',')),
-        $.preproc_include,
-        preprocListItem($, '_in_initializer_list', PREPROC_IFDEF | PREPROC_ELSE),
-      );
-      return prec.right(-1, seq(
-        repeat(seq(item, ',')),
-        preprocItem,
-        repeat(choice(
-          preprocItem,
-          seq(item, ','),
-          seq(item, optional(','), preprocItem),
-        )),
-        optional(item),
-      ));
-    },
 
     _macro_initializer_list_fragment: $ => prec.dynamic(-1, $._macro_list_fragment),
 

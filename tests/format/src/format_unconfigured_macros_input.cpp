@@ -324,3 +324,11 @@ Value Get() const [[nodiscard]] ANNOTATION;
 // Tuple sequences use ordinary call-chain layout without preprocessing-token arguments.
 GENERATED_MEMBERS(Record,(Integer,first_field)(String,second_field)(Vector<Pair<int,Value>>,items)(bool,valid))
 DECLARE_METRICS(Counters,counters,"counts",(read,"Records read")(written,"Records written")(failed,"Failed records"))
+
+// A macro list fragment may precede comma-separated function-call entries.
+auto callEntries = {HEAD(values) FIRST(value), SECOND(value), 0};
+auto selectedCallEntries = {HEAD(values) FIRST(value),
+#if FEATURE
+SECOND(value),
+#endif
+LAST(value)};

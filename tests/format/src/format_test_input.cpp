@@ -5639,3 +5639,6 @@ void RegisterVariables() {register ui64 x0 __asm("x0") = value; register ui64 x1
 
 // GNU assembly accepts the alternate volatile spelling.
 void PauseProcessor() {__asm __volatile("pause"); __asm __volatile("yield" ::: "memory");}
+
+// Configured list fragments compose with ordinary call entries.
+auto configuredCallEntries = {FORMAT_ITEM_HEADER(Type, 0) FIELD(name, "value"), FIELD(end, nullptr)};
