@@ -5650,3 +5650,9 @@ CALL(ns::Value value(input); Consume(value););
 CALL(int first=1,second=2;);
 CALL(Result(function)(Argument););
 }
+
+void ReadBatches(){
+for(bool first=true; auto batch=Read(); first=false){Consume(batch,first);}
+for(; int value=Next();){Use(value);}
+for(auto value:items){Use(value);}
+}
