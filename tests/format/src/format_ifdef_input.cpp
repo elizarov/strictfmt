@@ -1127,3 +1127,32 @@ noexcept
 #endif
 {return value;}
 };
+
+template<class T> inline T
+#if MODIFIERS
+constexpr
+#endif
+Ceil(T x,T y) noexcept{return x/y+(x%y!=0);}
+void Modifiers(){int
+#ifdef MODIFIERS
+#if NESTED
+const
+#else
+constexpr
+#endif
+#elif FALLBACK
+const
+#endif
+value=3;(void)value;}
+int ParameterModifier(int
+#if MODIFIERS
+const
+#endif
+value){return value;}
+struct MemberModifiers { int
+#if MODIFIERS
+static constexpr
+#else
+const
+#endif
+value=3; };

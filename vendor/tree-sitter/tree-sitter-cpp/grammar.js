@@ -216,17 +216,18 @@ function declarationSpecifiers($) {
   return [
     repeat($._declaration_modifiers),
     field('type', $.type_specifier),
-    repeat($._declaration_modifiers),
+    repeat($._post_type_declaration_modifier),
   ];
 }
 
 function typeDescriptor($, type) {
-  return prec.right(seq(
-    repeat(choice($.type_qualifier, $.declaration_modifier_macro, $.attribute_specifier)),
-    field('type', type),
-    repeat(choice($.type_qualifier, $.declaration_modifier_macro, $.attribute_specifier)),
-    field('declarator', optional($._abstract_declarator)),
-  ));
+  const modifier = choice($.type_qualifier, $.declaration_modifier_macro, $.attribute_specifier);
+  const prefix = [repeat(modifier), field('type', type)];
+  return choice(
+    prec.right(seq(...prefix, repeat(modifier), field('declarator', $._abstract_declarator))),
+    prec.right(seq(...prefix, repeat1(modifier))),
+    seq(...prefix),
+  );
 }
 
 function enumSpecifier($, body) {
@@ -325,6 +326,10 @@ module.exports = grammar(C, {
   ],
 
   conflicts: $ => [
+    [$.elaborated_type_descriptor],
+    [$.type_descriptor],
+    [$._declaration_specifiers, $.type_descriptor, $._macro_parameter_declaration, $._macro_argument_parameter_declaration, $.macro_argument_declaration],
+    [$._declaration_specifiers, $.type_descriptor, $._macro_argument_parameter_declaration, $.macro_argument_declaration],
     [$._function_declarator_suffix_0],
     [$.preproc_else_in_field_declaration_list, $._field_declaration_list_item],
     [$.preproc_else_in_field_declaration_list, $._declaration_modifiers, $.attributed_friend_declaration],
@@ -881,6 +886,7 @@ module.exports = grammar(C, {
 
   // Share field-name and assignment-left reductions instead of duplicating their alternatives.
   inline: ($, original) => original.filter(rule => !['_field_identifier', '_assignment_left_expression'].includes(rule.name)).concat([
+    $._post_type_declaration_modifier,
     $._base_class_list_content,
     $._initializer_list_content,
     $._initializer_list_final_item,
@@ -1870,6 +1876,14 @@ module.exports = grammar(C, {
       $.ms_call_modifier,
       'virtual',
     ),
+
+    _post_type_declaration_modifier: $ => choice(
+      $._declaration_modifiers,
+      $.preproc_if_in_declaration_modifiers,
+      $.preproc_ifdef_in_declaration_modifiers,
+    ),
+
+    ...preprocIf('_in_declaration_modifiers', $ => $._post_type_declaration_modifier),
 
     declaration_modifier_macro: $ => prec.right(PREC.CALL + 6, seq(
       $.declaration_modifier_macro_identifier,
