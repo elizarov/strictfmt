@@ -2727,7 +2727,10 @@ module.exports = grammar(C, {
     _function_exception_specification: $ => prec.dynamic(10, choice(
       $.noexcept,
       $.throw_specifier,
+      preprocListItem($, '_in_exception_specification'),
     )),
+
+    ...preprocIf('_in_exception_specification', $ => $._function_exception_specification, 0, PREPROC_ALL_BRANCH_FORMS, false),
 
     _function_attributes_end: $ => prec.right(seq(
       optional($.gnu_asm_expression),

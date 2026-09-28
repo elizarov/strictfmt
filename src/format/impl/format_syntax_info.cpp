@@ -500,8 +500,10 @@ constexpr auto kSyntaxKindMappings = std::to_array<SyntaxKindMapping>({
         "abstract_member_pointer_declarator",
         Bit(SyntaxNodeClass::DeclaratorReferenceParent) | Bit(SyntaxNodeClass::QualifiedName)
     ),
-    Tree(SyntaxNodeKind::FunctionDeclarator, "function_declarator"),
-    Tree(SyntaxNodeKind::AbstractFunctionDeclarator, "abstract_function_declarator"),
+    Tree(SyntaxNodeKind::FunctionDeclarator, "function_declarator", kAllowedPreprocessorContainerClasses),
+    Tree(
+        SyntaxNodeKind::AbstractFunctionDeclarator, "abstract_function_declarator", kAllowedPreprocessorContainerClasses
+    ),
     Tree(
         SyntaxNodeKind::ParenthesizedDeclarator,
         "parenthesized_declarator",

@@ -731,6 +731,14 @@
           "named": true
         },
         {
+          "type": "preproc_if",
+          "named": true
+        },
+        {
+          "type": "preproc_ifdef",
+          "named": true
+        },
+        {
           "type": "ref_qualifier",
           "named": true
         },
@@ -4147,6 +4155,14 @@
           "named": true
         },
         {
+          "type": "preproc_if",
+          "named": true
+        },
+        {
+          "type": "preproc_ifdef",
+          "named": true
+        },
+        {
           "type": "ref_qualifier",
           "named": true
         },
@@ -5675,6 +5691,14 @@
           "named": true
         },
         {
+          "type": "preproc_if",
+          "named": true
+        },
+        {
+          "type": "preproc_ifdef",
+          "named": true
+        },
+        {
           "type": "ref_qualifier",
           "named": true
         },
@@ -5941,6 +5965,14 @@
           "named": true
         },
         {
+          "type": "preproc_if",
+          "named": true
+        },
+        {
+          "type": "preproc_ifdef",
+          "named": true
+        },
+        {
           "type": "ref_qualifier",
           "named": true
         },
@@ -6113,6 +6145,14 @@
         },
         {
           "type": "noexcept",
+          "named": true
+        },
+        {
+          "type": "preproc_if",
+          "named": true
+        },
+        {
+          "type": "preproc_ifdef",
           "named": true
         },
         {
@@ -11014,6 +11054,10 @@
           "named": true
         },
         {
+          "type": "noexcept",
+          "named": true
+        },
+        {
           "type": "preproc_call",
           "named": true
         },
@@ -11075,6 +11119,10 @@
         },
         {
           "type": "template_instantiation",
+          "named": true
+        },
+        {
+          "type": "throw_specifier",
           "named": true
         },
         {
@@ -11448,6 +11496,10 @@
           "named": true
         },
         {
+          "type": "noexcept",
+          "named": true
+        },
+        {
           "type": "preproc_call",
           "named": true
         },
@@ -11505,6 +11557,10 @@
         },
         {
           "type": "template_instantiation",
+          "named": true
+        },
+        {
+          "type": "throw_specifier",
           "named": true
         },
         {
@@ -12266,6 +12322,10 @@
           "named": true
         },
         {
+          "type": "noexcept",
+          "named": true
+        },
+        {
           "type": "optional_parameter_declaration",
           "named": true
         },
@@ -12355,6 +12415,10 @@
         },
         {
           "type": "template_template_parameter_declaration",
+          "named": true
+        },
+        {
+          "type": "throw_specifier",
           "named": true
         },
         {
@@ -13222,6 +13286,10 @@
           "named": true
         },
         {
+          "type": "noexcept",
+          "named": true
+        },
+        {
           "type": "optional_parameter_declaration",
           "named": true
         },
@@ -13303,6 +13371,10 @@
         },
         {
           "type": "template_template_parameter_declaration",
+          "named": true
+        },
+        {
+          "type": "throw_specifier",
           "named": true
         },
         {

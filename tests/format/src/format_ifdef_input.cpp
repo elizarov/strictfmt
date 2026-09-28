@@ -966,3 +966,22 @@ SelectedInitializers()
 #endif
 {}
 };
+
+using GuardedCallback = void(*)(Value*)
+#if FEATURE
+noexcept
+#endif
+;
+struct GuardedExceptions {
+void Execute()
+#ifdef SAFE
+#if EXPRESSIONS
+noexcept(Check<Value>())
+#else
+noexcept
+#endif
+#elif LEGACY
+throw(Error)
+#endif
+;
+};
