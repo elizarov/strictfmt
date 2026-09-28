@@ -390,6 +390,16 @@ constexpr auto kSyntaxKindMappings = std::to_array<SyntaxKindMapping>({
         kAtomicPreprocessorClasses | kSupportedPreprocessorPlacementClasses
     ),
     Tree(SyntaxNodeKind::PreprocIf, "preproc_semicolon_initializer", kConditionalRhsPreprocessorClasses),
+    Tree(
+        SyntaxNodeKind::PreprocExpression,
+        "preproc_if_in_expression",
+        kConditionalPreprocessorOpenClasses | Bit(SyntaxNodeClass::Expression)
+    ),
+    Tree(
+        SyntaxNodeKind::PreprocExpression,
+        "preproc_ifdef_in_expression",
+        kConditionalPreprocessorOpenClasses | Bit(SyntaxNodeClass::Expression)
+    ),
     Tree(SyntaxNodeKind::PreprocIf, "preproc_template_argument_fragment", kAtomicPreprocessorClasses),
     Tree(SyntaxNodeKind::PreprocIfdef, "preproc_argument_fragment", kAtomicPreprocessorClasses),
     Tree(SyntaxNodeKind::PreprocIf, "preproc_if_argument_fragment", kAtomicPreprocessorClasses),
@@ -1174,6 +1184,8 @@ std::string_view SyntaxNodeKindName(SyntaxNodeKind kind) {
             return "PreprocIf";
         case SyntaxNodeKind::PreprocIfdef:
             return "PreprocIfdef";
+        case SyntaxNodeKind::PreprocExpression:
+            return "PreprocExpression";
         case SyntaxNodeKind::PreprocElse:
             return "PreprocElse";
         case SyntaxNodeKind::PreprocElif:

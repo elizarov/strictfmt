@@ -43,19 +43,6 @@ status.append("Secondary UNAVAILABLE");
 }
 }
 
-bool ConditionalWholeCondition(int error_code) {
-    if (
-#if FORMAT_USERVER_USE_WOULD_BLOCK
-        error_code == kWouldBlock
-#else
-        error_code == kAgain
-#endif
-    ) {
-        return true;
-    }
-    return false;
-}
-
 void ConditionalArgumentExpressionFragment() {
     Open(
 #ifdef FORMAT_USERVER_FLAG_A

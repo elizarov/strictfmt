@@ -62,6 +62,7 @@ enum class SyntaxNodeKind : std::uint16_t {
     PreprocInclude,
     PreprocIf,
     PreprocIfdef,
+    PreprocExpression,
     PreprocElse,
     PreprocElif,
     PreprocUsing,

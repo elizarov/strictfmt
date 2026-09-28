@@ -154,6 +154,7 @@ struct TokenContext {
     bool inRequiresClause = false;
     bool inCompactSingleStatementBody = false;
     const SyntaxNode* macroDefinition = nullptr;
+    const SyntaxNode* conditionalExpression = nullptr;
     bool inMacroValue = false;
     std::uint16_t ancestryFlags = 0;
     const SyntaxNode* declarationScopeItem = nullptr;
@@ -162,6 +163,15 @@ struct TokenContext {
 
     void Enter(const SyntaxNode& node) {
         const SyntaxNodeKind kind = node.kind;
+        if (
+            SyntaxNodeKindHasClass(kind, SyntaxNodeClass::SemanticDelimitedParent) ||
+            SyntaxNodeKindHasClass(kind, SyntaxNodeClass::CompoundBlock)
+        ) {
+            conditionalExpression = nullptr;
+        }
+        if (kind == SyntaxNodeKind::PreprocExpression) {
+            conditionalExpression = &node;
+        }
         inTemplateDeclaration |= kind == SyntaxNodeKind::TemplateDeclaration;
         inRequiresClause |= kind == SyntaxNodeKind::RequiresClause;
         inCompactSingleStatementBody = inCompactSingleStatementBody || BodyAllowsCompactSingleStatementForm(node);
@@ -230,6 +240,7 @@ PrintToken
     token.inTemplateDeclarationBlock = context.inTemplateDeclarationBlock;
     token.inTemplateDeclarationHeader = context.inTemplateDeclarationHeader;
     token.declarationScopeItem = context.declarationScopeItem;
+    token.conditionalExpression = context.conditionalExpression;
     // Blank lines inherit scope/macro facts, but carry no lexical syntax context.
     if (kind != PrintTokenKind::BlankLine) {
         token.syntaxKind = node.kind;

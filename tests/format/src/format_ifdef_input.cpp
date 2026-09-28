@@ -893,3 +893,59 @@ extern "C" int SelectedLinkage(int value)
 static int SelectedLinkage(int value)
 #endif
 {return value;}
+
+constexpr auto platform =
+#if TARGET_X
+Mode::X
+#elif TARGET_Y
+Mode::Y
+#else
+Mode::Default
+#endif
+;
+void SelectValue(){
+auto builder =
+#ifdef SANITIZED
+false
+#else
+options.UseFork
+#endif
+? MakeForked() : MakeThreaded();
+result =
+#if TARGET_X
+1
+#else
+2
+#endif
+;
+}
+
+auto selectedValues =
+#ifdef EXTENDED_VALUES
+{Build( first,second ),third}
+#else
+{fallback}
+#endif
+;
+
+void ConditionalMemberContinuation() {
+#if FORMAT_USERVER_HAS_STATUS_FACTORY
+MakeStatus()
+#else
+MakeFallbackStatus()
+#endif
+    .WithMessage("failed");
+}
+
+bool ConditionalWholeCondition(int error_code) {
+    if (
+#if FORMAT_USERVER_USE_WOULD_BLOCK
+        error_code == kWouldBlock
+#else
+        error_code == kAgain
+#endif
+    ) {
+        return true;
+    }
+    return false;
+}

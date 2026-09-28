@@ -884,6 +884,14 @@ private:
                 }
                 break;
             }
+            if (!listIndent && currentTokenIndex_ < activeTokens_->size()) {
+                if (
+                    const auto continuation =
+                        layoutTree_->Chains().ContinuationIndent((*activeTokens_)[currentTokenIndex_])
+                ) {
+                    return continuation;
+                }
+            }
         }
         return listIndent ? listIndent : output_.State().pendingIndentLevel;
     }

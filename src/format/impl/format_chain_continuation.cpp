@@ -121,8 +121,24 @@ struct FormatChainContinuation::Impl {
             parent.node != nullptr;
             parent = index.parents.at(parent.node)
         ) {
+            if (
+                directive &&
+                block.conditionalExpression != nullptr &&
+                parent.node->kind == FormatBreakNodeKind::Delimited
+            ) {
+                break;
+            }
             if (parent.operand) {
                 RequireChainBreaks(*parent.node, *parent.operand, directive);
+                if (
+                    directive &&
+                    block.conditionalExpression != nullptr &&
+                    parent.node->kind == FormatBreakNodeKind::Chain &&
+                    !parent.node->operators.empty()
+                ) {
+                    const SyntaxNode* group = FormatBreakTokenValue(parent.node->operators.front()).node;
+                    requiredChainBreakGroups_.insert_or_assign(block.node, group);
+                }
             }
         }
     }
@@ -177,7 +193,7 @@ struct FormatChainContinuation::Impl {
             return;
         }
         const PrintToken& token = tokens_[currentTokenIndex_];
-        if (directive && (
+        if (directive && token.conditionalExpression == nullptr && (
             PrintTokenSyntaxHasClass(token, SyntaxNodeClass::ConditionalPreprocessorTree) ||
             PrintTokenSyntaxHasClass(token, SyntaxNodeClass::ConditionalPreprocessorDirective)
         )) {
@@ -223,7 +239,10 @@ struct FormatChainContinuation::Impl {
         };
     }
     std::optional<int> ContinuationIndent(const PrintToken& token) const {
-        const auto layout = Lookup(token.node);
+        auto layout = Lookup(token.node);
+        if (!layout && token.conditionalExpression != nullptr) {
+            layout = Lookup(token.conditionalExpression);
+        }
         if (!layout || !layout->baseIndent) {
             return std::nullopt;
         }
