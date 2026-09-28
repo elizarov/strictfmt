@@ -9139,3 +9139,22 @@ void ElseWithBlankLines() {
         C();
     }
 }
+
+// Generated tables interleave many macro directives with initializer entries.
+const int generatedValues[] = {
+#undef GENERATED_FIRST
+#define GENERATED_FIRST (generatedValues + 0)
+    0x41,
+    0x300,
+    0,
+#undef GENERATED_SECOND
+#define GENERATED_SECOND (generatedValues + 3)
+    0x41,
+    0x301,
+    0,
+#undef GENERATED_THIRD
+#define GENERATED_THIRD (generatedValues + 6)
+    0x41,
+    0x302,
+    0,
+};
