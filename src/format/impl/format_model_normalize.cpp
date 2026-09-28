@@ -250,7 +250,11 @@ std::optional<size_t> FindOnlyIfInBraceBlock(const SyntaxNode& node) {
         if (child == nullptr) {
             return std::nullopt;
         }
-        if (child->kind == SyntaxNodeKind::LeftBrace || child->kind == SyntaxNodeKind::RightBrace) {
+        if (
+            child->kind == SyntaxNodeKind::LeftBrace ||
+            child->kind == SyntaxNodeKind::RightBrace ||
+            child->kind == SyntaxNodeKind::BlankLine
+        ) {
             continue;
         }
         if (IsStatementKindThroughAttributes(*child, SyntaxNodeKind::IfStatement) && !ifIndex) {

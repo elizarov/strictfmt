@@ -9128,3 +9128,14 @@ struct MacroDefinedMembers {
 };
 
 void MacroDefinedLocals() { static DEFINE_GLOBAL(Pair<Key, Value>, Cached); }
+
+// Empty lines do not obstruct collapsing an else block containing only an if.
+void ElseWithBlankLines() {
+    if (first) {
+        A();
+    } else if (second) {
+        B();
+    } else {
+        C();
+    }
+}
