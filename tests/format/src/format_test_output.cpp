@@ -9290,3 +9290,14 @@ void CaseTypes(int kind) {
             break;
     }
 }
+
+struct AnnotatedPointerReferences {
+    Value* FORMAT_DECLARATOR_MODIFIER Ptr();
+    Value& FORMAT_DECLARATOR_MODIFIER Ref();
+    Value&& FORMAT_DECLARATOR_MODIFIER(tag) Move();
+    Value& FORMAT_DECLARATOR_MODIFIER operator+=(const Value& rhs) { return *this; }
+    void Take(Value* FORMAT_DECLARATOR_MODIFIER arg);
+
+    using Pointer = Value* FORMAT_DECLARATOR_MODIFIER;
+    using Reference = Value& FORMAT_DECLARATOR_MODIFIER;
+};

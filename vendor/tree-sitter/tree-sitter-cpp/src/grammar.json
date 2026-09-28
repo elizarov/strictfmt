@@ -4926,6 +4926,10 @@
                   {
                     "type": "SYMBOL",
                     "name": "ms_call_modifier"
+                  },
+                  {
+                    "type": "SYMBOL",
+                    "name": "declaration_modifier_macro"
                   }
                 ]
               }
@@ -4983,6 +4987,10 @@
                   {
                     "type": "SYMBOL",
                     "name": "ms_call_modifier"
+                  },
+                  {
+                    "type": "SYMBOL",
+                    "name": "declaration_modifier_macro"
                   }
                 ]
               }
@@ -5040,6 +5048,10 @@
                   {
                     "type": "SYMBOL",
                     "name": "ms_call_modifier"
+                  },
+                  {
+                    "type": "SYMBOL",
+                    "name": "declaration_modifier_macro"
                   }
                 ]
               }
@@ -5085,6 +5097,10 @@
                   {
                     "type": "SYMBOL",
                     "name": "ms_call_modifier"
+                  },
+                  {
+                    "type": "SYMBOL",
+                    "name": "declaration_modifier_macro"
                   }
                 ]
               }
@@ -22172,6 +22188,10 @@
                   {
                     "type": "SYMBOL",
                     "name": "ms_call_modifier"
+                  },
+                  {
+                    "type": "SYMBOL",
+                    "name": "declaration_modifier_macro"
                   }
                 ]
               }
@@ -22213,6 +22233,13 @@
                   "value": "%"
                 }
               ]
+            },
+            {
+              "type": "REPEAT",
+              "content": {
+                "type": "SYMBOL",
+                "name": "declaration_modifier_macro"
+              }
             },
             {
               "type": "SYMBOL",
@@ -22280,6 +22307,10 @@
                   {
                     "type": "SYMBOL",
                     "name": "ms_call_modifier"
+                  },
+                  {
+                    "type": "SYMBOL",
+                    "name": "declaration_modifier_macro"
                   }
                 ]
               }
@@ -24867,6 +24898,13 @@
               ]
             },
             {
+              "type": "REPEAT",
+              "content": {
+                "type": "SYMBOL",
+                "name": "declaration_modifier_macro"
+              }
+            },
+            {
               "type": "SYMBOL",
               "name": "_declarator"
             }
@@ -24899,6 +24937,13 @@
                   "value": "%"
                 }
               ]
+            },
+            {
+              "type": "REPEAT",
+              "content": {
+                "type": "SYMBOL",
+                "name": "declaration_modifier_macro"
+              }
             },
             {
               "type": "SYMBOL",
@@ -24935,6 +24980,13 @@
               ]
             },
             {
+              "type": "REPEAT",
+              "content": {
+                "type": "SYMBOL",
+                "name": "declaration_modifier_macro"
+              }
+            },
+            {
               "type": "SYMBOL",
               "name": "_type_declarator"
             }
@@ -24943,41 +24995,52 @@
       }
     },
     "abstract_reference_declarator": {
-      "type": "PREC_RIGHT",
+      "type": "PREC_DYNAMIC",
       "value": 0,
       "content": {
-        "type": "SEQ",
-        "members": [
-          {
-            "type": "CHOICE",
-            "members": [
-              {
-                "type": "STRING",
-                "value": "&"
-              },
-              {
-                "type": "STRING",
-                "value": "&&"
-              },
-              {
-                "type": "STRING",
-                "value": "%"
-              }
-            ]
-          },
-          {
-            "type": "CHOICE",
-            "members": [
-              {
+        "type": "PREC_RIGHT",
+        "value": 0,
+        "content": {
+          "type": "SEQ",
+          "members": [
+            {
+              "type": "CHOICE",
+              "members": [
+                {
+                  "type": "STRING",
+                  "value": "&"
+                },
+                {
+                  "type": "STRING",
+                  "value": "&&"
+                },
+                {
+                  "type": "STRING",
+                  "value": "%"
+                }
+              ]
+            },
+            {
+              "type": "REPEAT",
+              "content": {
                 "type": "SYMBOL",
-                "name": "_abstract_declarator"
-              },
-              {
-                "type": "BLANK"
+                "name": "declaration_modifier_macro"
               }
-            ]
-          }
-        ]
+            },
+            {
+              "type": "CHOICE",
+              "members": [
+                {
+                  "type": "SYMBOL",
+                  "name": "_abstract_declarator"
+                },
+                {
+                  "type": "BLANK"
+                }
+              ]
+            }
+          ]
+        }
       }
     },
     "handle_declarator": {
@@ -25105,6 +25168,10 @@
                   {
                     "type": "SYMBOL",
                     "name": "ms_call_modifier"
+                  },
+                  {
+                    "type": "SYMBOL",
+                    "name": "declaration_modifier_macro"
                   }
                 ]
               }
@@ -25207,6 +25274,10 @@
                   {
                     "type": "SYMBOL",
                     "name": "ms_call_modifier"
+                  },
+                  {
+                    "type": "SYMBOL",
+                    "name": "declaration_modifier_macro"
                   }
                 ]
               }
@@ -25260,6 +25331,10 @@
                   {
                     "type": "SYMBOL",
                     "name": "ms_call_modifier"
+                  },
+                  {
+                    "type": "SYMBOL",
+                    "name": "declaration_modifier_macro"
                   }
                 ]
               }
@@ -25313,6 +25388,10 @@
                   {
                     "type": "SYMBOL",
                     "name": "ms_call_modifier"
+                  },
+                  {
+                    "type": "SYMBOL",
+                    "name": "declaration_modifier_macro"
                   }
                 ]
               }
@@ -26197,6 +26276,10 @@
                   {
                     "type": "SYMBOL",
                     "name": "ms_call_modifier"
+                  },
+                  {
+                    "type": "SYMBOL",
+                    "name": "declaration_modifier_macro"
                   }
                 ]
               }
@@ -26238,6 +26321,13 @@
                   "value": "%"
                 }
               ]
+            },
+            {
+              "type": "REPEAT",
+              "content": {
+                "type": "SYMBOL",
+                "name": "declaration_modifier_macro"
+              }
             },
             {
               "type": "SYMBOL",
@@ -26305,6 +26395,10 @@
                   {
                     "type": "SYMBOL",
                     "name": "ms_call_modifier"
+                  },
+                  {
+                    "type": "SYMBOL",
+                    "name": "declaration_modifier_macro"
                   }
                 ]
               }

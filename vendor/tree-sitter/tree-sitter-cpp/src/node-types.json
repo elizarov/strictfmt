@@ -806,6 +806,10 @@
       "required": false,
       "types": [
         {
+          "type": "declaration_modifier_macro",
+          "named": true
+        },
+        {
           "type": "ms_call_modifier",
           "named": true
         },
@@ -863,6 +867,10 @@
       "required": false,
       "types": [
         {
+          "type": "declaration_modifier_macro",
+          "named": true
+        },
+        {
           "type": "ms_call_modifier",
           "named": true
         },
@@ -882,11 +890,15 @@
     "named": true,
     "fields": {},
     "children": {
-      "multiple": false,
+      "multiple": true,
       "required": false,
       "types": [
         {
           "type": "_abstract_declarator",
+          "named": true
+        },
+        {
+          "type": "declaration_modifier_macro",
           "named": true
         }
       ]
@@ -8501,6 +8513,10 @@
       "required": false,
       "types": [
         {
+          "type": "declaration_modifier_macro",
+          "named": true
+        },
+        {
           "type": "ms_call_modifier",
           "named": true
         },
@@ -9647,6 +9663,10 @@
       "required": false,
       "types": [
         {
+          "type": "declaration_modifier_macro",
+          "named": true
+        },
+        {
           "type": "ms_based_modifier",
           "named": true
         },
@@ -9714,6 +9734,10 @@
       "multiple": true,
       "required": false,
       "types": [
+        {
+          "type": "declaration_modifier_macro",
+          "named": true
+        },
         {
           "type": "ms_based_modifier",
           "named": true
@@ -14705,7 +14729,7 @@
     "named": true,
     "fields": {},
     "children": {
-      "multiple": false,
+      "multiple": true,
       "required": true,
       "types": [
         {
@@ -14718,6 +14742,10 @@
         },
         {
           "type": "_type_declarator",
+          "named": true
+        },
+        {
+          "type": "declaration_modifier_macro",
           "named": true
         },
         {

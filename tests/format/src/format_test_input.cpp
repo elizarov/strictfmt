@@ -5658,3 +5658,13 @@ for(auto value:items){Use(value);}
 }
 
 void CaseTypes(int kind){switch(kind){case 1:struct Tag{};Run<Tag>();break;case 2:enum class Mode{First,Second};Run<Mode>();break;default:break;}}
+
+struct AnnotatedPointerReferences{
+Value* FORMAT_DECLARATOR_MODIFIER Ptr();
+Value& FORMAT_DECLARATOR_MODIFIER Ref();
+Value&& FORMAT_DECLARATOR_MODIFIER(tag) Move();
+Value& FORMAT_DECLARATOR_MODIFIER operator+=(const Value& rhs){return *this;}
+void Take(Value* FORMAT_DECLARATOR_MODIFIER arg);
+using Pointer=Value* FORMAT_DECLARATOR_MODIFIER;
+using Reference=Value& FORMAT_DECLARATOR_MODIFIER;
+};

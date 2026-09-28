@@ -2537,7 +2537,7 @@ module.exports = grammar(C, {
     reference_declarator: $ => referenceDeclarator($, $._declarator),
     reference_field_declarator: $ => referenceDeclarator($, $._field_declarator),
     reference_type_declarator: $ => referenceDeclarator($, $._type_declarator),
-    abstract_reference_declarator: $ => prec.right(seq(choice('&', '&&', '%'), optional($._abstract_declarator))),
+    abstract_reference_declarator: $ => referenceDeclarator($, optional($._abstract_declarator), 0),
 
     pointer_declarator: $ => pointerDeclarator($, $._declarator),
     pointer_field_declarator: $ => pointerDeclarator($, $._field_declarator),
@@ -4950,7 +4950,7 @@ function qualifiedIdentifier($, nested, ...extraNames) {
 }
 
 function pointerQualifiers($) {
-  return repeat(choice($.ms_pointer_modifier, $.type_qualifier, $.ms_call_modifier));
+  return repeat(choice($.ms_pointer_modifier, $.type_qualifier, $.ms_call_modifier, $.declaration_modifier_macro));
 }
 
 function pointerDeclarator($, declarator) {
@@ -4962,8 +4962,12 @@ function pointerDeclarator($, declarator) {
   )));
 }
 
-function referenceDeclarator($, declarator) {
-  return prec.dynamic(1, prec.right(seq(choice('&', '&&', '%'), declarator)));
+function referenceDeclarator($, declarator, preference = 1) {
+  return prec.dynamic(preference, prec.right(seq(
+    choice('&', '&&', '%'),
+    repeat($.declaration_modifier_macro),
+    declarator,
+  )));
 }
 
 function handleDeclarator($, declarator) {
