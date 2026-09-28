@@ -324,6 +324,12 @@ module.exports = grammar(C, {
   ],
 
   conflicts: $ => [
+    [$._preproc_opening_condition, $.preproc_ifdef_in_top_level, $.preproc_ifdef_in_function_header, $.preproc_ifdef_in_function_return_type, $.preproc_ifdef_in_function_definition_prefix, $.preproc_ifdef_in_qualified_constructor_header, $.preproc_guarded_namespace_definition],
+    [$._preproc_opening_condition, $.preproc_if_in_top_level, $.preproc_if_in_function_header, $.preproc_if_in_function_return_type, $.preproc_if_in_function_definition_prefix, $.preproc_if_in_qualified_constructor_header, $.preproc_guarded_namespace_definition],
+    [$._call_identifier, $._non_pointer_declarator],
+    [$._call_identifier, $._unconfigured_modifier_identifier, $._non_pointer_declarator],
+    [$._preproc_opening_condition, $.preproc_ifdef_in_function_header, $.preproc_ifdef_in_function_return_type, $.preproc_ifdef_in_constructor_header],
+    [$._preproc_opening_condition, $.preproc_if_in_function_header, $.preproc_if_in_function_return_type, $.preproc_if_in_constructor_header],
     [$.call_expression, $.macro_expansion, $.macro_expression_prefix, $.identifier_call],
     [$.call_expression, $.macro_expression_prefix, $.identifier_call],
     [$.macro_expansion, $.macro_expression_prefix, $.identifier_call],
@@ -2511,14 +2517,20 @@ module.exports = grammar(C, {
       prec.dynamic(1, seq($._unconfigured_modifier, $._constructor_specifiers)),
     ),
 
-    _constructor_or_destructor_header: $ => seq(
-      repeat($._constructor_specifiers),
-      field('declarator', choice(
-        alias($.qualified_constructor_or_destructor_declarator, $.function_declarator),
-        alias($.qualified_function_declarator, $.function_declarator),
-        $.function_declarator,
-      )),
+    _constructor_or_destructor_header: $ => choice(
+      seq(
+        repeat($._constructor_specifiers),
+        field('declarator', choice(
+          alias($.qualified_constructor_or_destructor_declarator, $.function_declarator),
+          alias($.qualified_function_declarator, $.function_declarator),
+          $.function_declarator,
+        )),
+      ),
+      $.preproc_if_in_constructor_header,
+      $.preproc_ifdef_in_constructor_header,
     ),
+
+    ...preprocIf('_in_constructor_header', $ => $._constructor_or_destructor_header, 0, PREPROC_ALL_BRANCH_FORMS, false),
 
     operator_cast_definition: $ => seq(
       repeat($._constructor_specifiers),
@@ -2555,9 +2567,19 @@ module.exports = grammar(C, {
       constructorOrDestructorBody($),
     ))),
 
+    _qualified_constructor_or_destructor_header: $ => choice(
+      seq(
+        repeat($._constructor_specifiers),
+        field('declarator', alias($.qualified_constructor_or_destructor_declarator, $.function_declarator)),
+      ),
+      alias($.preproc_if_in_qualified_constructor_header, $.preproc_if_in_constructor_header),
+      alias($.preproc_ifdef_in_qualified_constructor_header, $.preproc_ifdef_in_constructor_header),
+    ),
+
+    ...preprocIf('_in_qualified_constructor_header', $ => $._qualified_constructor_or_destructor_header, 0, PREPROC_ALL_BRANCH_FORMS, false),
+
     qualified_constructor_or_destructor_definition: $ => prec.dynamic(2, prec(PREC.CALL + 2, seq(
-      repeat($._constructor_specifiers),
-      field('declarator', alias($.qualified_constructor_or_destructor_declarator, $.function_declarator)),
+      $._qualified_constructor_or_destructor_header,
       constructorOrDestructorBody($),
     ))),
 

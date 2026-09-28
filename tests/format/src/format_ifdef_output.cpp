@@ -1156,3 +1156,62 @@ struct GuardedExceptions {
 #endif
     ;
 };
+
+struct SelectedConstructorHeaders {
+#if DECLARATION_WIDE
+    SelectedConstructorHeaders(long first, long second)
+#else
+    SelectedConstructorHeaders(int first, int second)
+#endif
+    ;
+#if WIDE
+    explicit SelectedConstructorHeaders(long value)
+#else
+    SelectedConstructorHeaders(int value)
+#endif
+    : value_(value) {}
+#ifdef CUSTOM
+#if CHECKED
+    ~SelectedConstructorHeaders() noexcept(Check())
+#else
+    ~SelectedConstructorHeaders() noexcept
+#endif
+#elif DEFAULTED
+    ~SelectedConstructorHeaders()
+#endif
+    {
+        Release(value_);
+    }
+};
+
+#if WIDE
+SelectedConstructorHeaders::SelectedConstructorHeaders(long value)
+#else
+SelectedConstructorHeaders::SelectedConstructorHeaders(int value)
+#endif
+try : value_(value) {
+    Initialize();
+} catch (...) {
+    Recover();
+}
+
+#ifdef DEDUCE_WRAPPERS
+Wrapper(Value<First>) -> Wrapper<First>;
+Wrapper(Value<Second>) -> Wrapper<Second>;
+#endif
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+typedef struct OpaqueString {
+    const char* data;
+} OpaqueString;
+
+typedef Result (*WriteCallback)(Size* length);
+
+Result WriteString(Writer * writer, const char* data, Size length);
+Result WriteInteger(Writer * writer, Integer value);
+Result WriteUnsigned(Writer * writer, Unsigned value);
+#ifdef __cplusplus
+}
+#endif
