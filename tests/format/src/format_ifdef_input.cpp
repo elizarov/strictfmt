@@ -1033,3 +1033,19 @@ Result WriteUnsigned(Writer* writer,Unsigned value);
 #ifdef __cplusplus
 }
 #endif
+
+#ifdef CLANG
+__attribute__((optnone))
+#endif
+void GuardedGNUAttribute(int value){Consume(value);}
+struct GuardedAttributes {
+#if GNU
+__attribute__((noinline,unused))
+#ifdef OPTIMIZE
+__attribute__((optimize("O1")))
+#endif
+#else
+[[nodiscard]]
+#endif
+int Read(){return 1;}
+};

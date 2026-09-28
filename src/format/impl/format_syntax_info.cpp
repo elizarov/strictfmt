@@ -369,7 +369,11 @@ constexpr auto kSyntaxKindMappings = std::to_array<SyntaxKindMapping>({
         kAtomicPreprocessorClasses | kSupportedPreprocessorPlacementClasses
     ),
     Tree(SyntaxNodeKind::PreprocIf, "standalone_qualifier_preproc_if", kDeclarationModifierPreprocessorClasses),
-    Tree(SyntaxNodeKind::PreprocIf, "standalone_attribute_preproc_if", kDeclarationModifierPreprocessorClasses),
+    Tree(
+        SyntaxNodeKind::PreprocIf,
+        "standalone_attribute_preproc_if",
+        kAllowedPreprocessorContainerClasses | kSupportedPreprocessorPlacementClasses
+    ),
     Tree(
         SyntaxNodeKind::PreprocIfdef,
         "declaration_suffix_preproc_ifdef",

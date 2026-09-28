@@ -324,6 +324,15 @@ module.exports = grammar(C, {
   ],
 
   conflicts: $ => [
+    [$.preproc_else_in_field_declaration_list, $._field_declaration_list_item],
+    [$.preproc_else_in_field_declaration_list, $._declaration_modifiers, $.attributed_friend_declaration],
+    [$.preproc_else_in_field_declaration_list, $._declaration_modifiers],
+    [$.preproc_if_in_field_declaration_list, $._field_declaration_list_item],
+    [$.preproc_if_in_field_declaration_list, $._declaration_modifiers, $.attributed_friend_declaration],
+    [$.preproc_if_in_field_declaration_list, $._declaration_modifiers],
+    [$._block_item, $.standalone_attribute_preproc_if],
+    [$.attributed_statement, $.standalone_attribute_preproc_if],
+    [$._declaration_modifiers, $.standalone_attribute_preproc_if],
     [$._preproc_opening_condition, $.preproc_ifdef_in_top_level, $.preproc_ifdef_in_function_header, $.preproc_ifdef_in_function_return_type, $.preproc_ifdef_in_function_definition_prefix, $.preproc_ifdef_in_qualified_constructor_header, $.preproc_guarded_namespace_definition],
     [$._preproc_opening_condition, $.preproc_if_in_top_level, $.preproc_if_in_function_header, $.preproc_if_in_function_return_type, $.preproc_if_in_function_definition_prefix, $.preproc_if_in_qualified_constructor_header, $.preproc_guarded_namespace_definition],
     [$._call_identifier, $._non_pointer_declarator],
@@ -2367,13 +2376,19 @@ module.exports = grammar(C, {
     standalone_attribute_preproc_if: $ => seq(
       $._preproc_opening_condition,
       $._preproc_directive_end,
-      repeat1($.attribute_declaration),
+      $._standalone_attribute_sequence,
       optional(seq(
         $._preproc_else_line,
-        repeat1($.attribute_declaration),
+        $._standalone_attribute_sequence,
       )),
       $._preproc_endif_line,
     ),
+
+    _standalone_attribute_sequence: $ => repeat1(choice(
+      $.attribute_declaration,
+      $.attribute_specifier,
+      $.standalone_attribute_preproc_if,
+    )),
 
     attributed_friend_declaration: $ => seq(
       repeat1($.attribute_declaration),
@@ -5345,6 +5360,7 @@ function preprocIf(suffix, content, precedence = 0, forms = PREPROC_ALL_BRANCH_F
       return choice(
         ordinaryContent,
         prec.dynamic(10, $.preproc_declaration_modifier),
+        prec.dynamic(10, $._standalone_attribute_sequence),
       );
     }
     return ordinaryContent;

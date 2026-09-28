@@ -16804,6 +16804,14 @@
         {
           "type": "attribute_declaration",
           "named": true
+        },
+        {
+          "type": "attribute_specifier",
+          "named": true
+        },
+        {
+          "type": "standalone_attribute_preproc_if",
+          "named": true
         }
       ]
     }
