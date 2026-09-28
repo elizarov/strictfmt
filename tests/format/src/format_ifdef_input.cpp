@@ -1066,3 +1066,22 @@ requires Basic<T>
 requires (sizeof(T)>1)
 #endif
 struct GuardedConstraint{T value;};
+
+void GuardedIfConstexpr(){
+if
+#if CONSTEXPR
+constexpr
+#endif
+/* keep condition */ (true){First();}else{Second();}
+if
+#ifdef CONSTEXPR
+#if NESTED
+constexpr
+#else
+constexpr
+#endif
+#elif FALLBACK
+constexpr
+#endif
+(false)First();else if(true)Second();
+}

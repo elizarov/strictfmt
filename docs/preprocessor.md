@@ -25,6 +25,7 @@ This is the closed list of placements that are explicitly supported.
 - **Selected expression operands**: conditionals may select complete expressions or braced initializers, with optional `#else` or `#elif` alternatives. Shared operators and the terminating semicolon may follow `#endif`.
 - **Conditional right-hand sides after `=`**: conditionals may select branch bodies for variable declarations, assignment statements, alias declarations, and concept definitions. Each branch body must supply its own terminating semicolon.
 - **Selected `if` statements**: a single conditional-opener block with an optional `#else` branch may select complete unbraced `if` headers when the following statement starts after the `#endif`.
+- **Conditional `if constexpr`**: conditionals may guard `constexpr` between `if` and its condition, including nested groups and `#else` or `#elif` alternatives.
 - **Conditional `else` clauses**: a conditional-opener block may select a complete `else` clause, including an `else if` chain. Braced and unbraced bodies, nested conditional groups, and `#else`/`#elif` alternatives are supported.
 - **Conditional `else if` branches**: conditionals may select complete `else if` branches inside an `if`/`else if` chain.
 - **Logical chain links**: a conditional-opener block may select a leading `&&` or `||` link in a shared logical expression, or the complete right operand after a shared `&&`. Operand selection may have an `#else`; `#elif` is unsupported.

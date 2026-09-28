@@ -6625,6 +6625,14 @@
         {
           "type": "macro_if_header",
           "named": true
+        },
+        {
+          "type": "preproc_if_in_if_constexpr",
+          "named": true
+        },
+        {
+          "type": "preproc_ifdef_in_if_constexpr",
+          "named": true
         }
       ]
     }
@@ -11138,11 +11146,19 @@
           "named": true
         },
         {
+          "type": "preproc_if_in_if_constexpr",
+          "named": true
+        },
+        {
           "type": "preproc_if_in_template_requires_clause",
           "named": true
         },
         {
           "type": "preproc_ifdef_in_constructor_header",
+          "named": true
+        },
+        {
+          "type": "preproc_ifdef_in_if_constexpr",
           "named": true
         },
         {
@@ -11592,11 +11608,19 @@
           "named": true
         },
         {
+          "type": "preproc_if_in_if_constexpr",
+          "named": true
+        },
+        {
           "type": "preproc_if_in_template_requires_clause",
           "named": true
         },
         {
           "type": "preproc_ifdef_in_constructor_header",
+          "named": true
+        },
+        {
+          "type": "preproc_ifdef_in_if_constexpr",
           "named": true
         },
         {
@@ -11933,6 +11957,14 @@
       "types": [
         {
           "type": "macro_if_header",
+          "named": true
+        },
+        {
+          "type": "preproc_if_in_if_constexpr",
+          "named": true
+        },
+        {
+          "type": "preproc_ifdef_in_if_constexpr",
           "named": true
         }
       ]
@@ -13245,6 +13277,98 @@
     }
   },
   {
+    "type": "preproc_if_in_if_constexpr",
+    "named": true,
+    "fields": {
+      "alternative": {
+        "multiple": false,
+        "required": false,
+        "types": [
+          {
+            "type": "preproc_elif",
+            "named": true
+          },
+          {
+            "type": "preproc_else",
+            "named": true
+          }
+        ]
+      },
+      "condition": {
+        "multiple": false,
+        "required": true,
+        "types": [
+          {
+            "type": "binary_expression",
+            "named": true
+          },
+          {
+            "type": "call_expression",
+            "named": true
+          },
+          {
+            "type": "char_literal",
+            "named": true
+          },
+          {
+            "type": "conditional_expression",
+            "named": true
+          },
+          {
+            "type": "identifier",
+            "named": true
+          },
+          {
+            "type": "number_literal",
+            "named": true
+          },
+          {
+            "type": "parenthesized_expression",
+            "named": true
+          },
+          {
+            "type": "preproc_defined",
+            "named": true
+          },
+          {
+            "type": "preproc_scoped_identifier",
+            "named": true
+          },
+          {
+            "type": "raw_string_literal",
+            "named": true
+          },
+          {
+            "type": "string_literal",
+            "named": true
+          },
+          {
+            "type": "system_lib_string",
+            "named": true
+          },
+          {
+            "type": "unary_expression",
+            "named": true
+          }
+        ]
+      }
+    },
+    "children": {
+      "multiple": false,
+      "required": false,
+      "types": [
+        {
+          "type": "preproc_if_in_if_constexpr",
+          "named": true
+        },
+        {
+          "type": "preproc_ifdef_in_if_constexpr",
+          "named": true
+        }
+      ]
+    }
+  },
+  {
     "type": "preproc_if_in_macro_function_definition_prefix",
     "named": true,
     "fields": {
@@ -14163,6 +14287,50 @@
     }
   },
   {
+    "type": "preproc_ifdef_in_if_constexpr",
+    "named": true,
+    "fields": {
+      "alternative": {
+        "multiple": false,
+        "required": false,
+        "types": [
+          {
+            "type": "preproc_elif",
+            "named": true
+          },
+          {
+            "type": "preproc_else",
+            "named": true
+          }
+        ]
+      },
+      "name": {
+        "multiple": false,
+        "required": true,
+        "types": [
+          {
+            "type": "identifier",
+            "named": true
+          }
+        ]
+      }
+    },
+    "children": {
+      "multiple": false,
+      "required": false,
+      "types": [
+        {
+          "type": "preproc_if_in_if_constexpr",
+          "named": true
+        },
+        {
+          "type": "preproc_ifdef_in_if_constexpr",
+          "named": true
+        }
+      ]
+    }
+  },
+  {
     "type": "preproc_ifdef_in_template_requires_clause",
     "named": true,
     "fields": {
@@ -14619,6 +14787,14 @@
           "named": true
         },
         {
+          "type": "preproc_if_in_if_constexpr",
+          "named": true
+        },
+        {
+          "type": "preproc_ifdef_in_if_constexpr",
+          "named": true
+        },
+        {
           "type": "preproc_include",
           "named": true
         },
@@ -14805,6 +14981,14 @@
       "types": [
         {
           "type": "macro_if_header",
+          "named": true
+        },
+        {
+          "type": "preproc_if_in_if_constexpr",
+          "named": true
+        },
+        {
+          "type": "preproc_ifdef_in_if_constexpr",
           "named": true
         },
         {
@@ -16836,6 +17020,14 @@
       "types": [
         {
           "type": "macro_if_header",
+          "named": true
+        },
+        {
+          "type": "preproc_if_in_if_constexpr",
+          "named": true
+        },
+        {
+          "type": "preproc_ifdef_in_if_constexpr",
           "named": true
         }
       ]

@@ -3408,11 +3408,19 @@ module.exports = grammar(C, {
     _if_header: $ => choice(
       seq(
         'if',
-        optional('constexpr'),
+        optional($._if_constexpr),
         field('condition', $.condition_clause),
       ),
       $.macro_if_header,
     ),
+
+    _if_constexpr: $ => choice(
+      'constexpr',
+      $.preproc_if_in_if_constexpr,
+      $.preproc_ifdef_in_if_constexpr,
+    ),
+
+    ...preprocIf('_in_if_constexpr', $ => $._if_constexpr, 0, PREPROC_ALL_BRANCH_FORMS, false),
 
     macro_if_header: $ => prec.right(PREC.CALL + 6, seq(
       $.if_header_macro_identifier,
