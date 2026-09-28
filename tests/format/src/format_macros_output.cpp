@@ -5167,3 +5167,11 @@ int Before() { return 1; }
 DEFINE_IDENTIFIER(Chunk)
 
 }
+
+// A final standalone comment must keep the preceding expression in the macro.
+#define FOREACH_DESTINATION_TYPE(MACRO, ...) \
+    MACRO(__VA_ARGS__, OT_VARIABLE)          \
+    /**/
+#define TRAILING_EXPRESSION_COMMENT(value) \
+    (value + 1)                            \
+    // expression marker

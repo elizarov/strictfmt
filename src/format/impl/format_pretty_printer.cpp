@@ -1224,7 +1224,7 @@ private:
             return;
         }
         if (output_.State().lineHasText) {
-            NewLine(PrintTokenContinuesMacroLine(token, next));
+            NewLine(token.inMacroValue && previous != nullptr && previous->macroDefinition == token.macroDefinition);
         }
         if (token.commentContinuation) {
             writer.WriteComment(token, token.text, FormatOutputComment::Continuation);
