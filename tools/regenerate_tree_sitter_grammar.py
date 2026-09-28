@@ -327,6 +327,28 @@ def validate_generated_parser_indexes(generated: str) -> None:
         )
 
 
+def compact_numeric_table_lines(table: str) -> str:
+    result = []
+    packed = ""
+    numeric_line = re.compile(r"(?:\[[0-9]+\]=)?(?:[0-9]+,)+")
+    for line in table.splitlines(keepends=True):
+        if numeric_line.fullmatch(line.rstrip("\n")):
+            for entry in line.rstrip("\n").split(",")[:-1]:
+                entry += ","
+                if packed and len(packed) + len(entry) > 120:
+                    result.append(packed + "\n")
+                    packed = ""
+                packed += entry
+        else:
+            if packed:
+                result.append(packed + "\n")
+                packed = ""
+            result.append(line)
+    if packed:
+        result.append(packed + "\n")
+    return "".join(result)
+
+
 def compact_generated_parser(cpp_grammar_dir: Path) -> None:
     parser_path = cpp_grammar_dir / "src" / "parser.c"
     parser_header_path = cpp_grammar_dir / "src" / "tree_sitter" / "parser.h"
@@ -362,6 +384,7 @@ def compact_generated_parser(cpp_grammar_dir: Path) -> None:
     table = IDENTITY_TABLE_ENTRY_RE.sub(r"\1", table)
     table = LEADING_INDENT_RE.sub("", table)
     table = table.replace(" = ", "=").replace(", ", ",")
+    table = compact_numeric_table_lines(table)
     compacted = generated[:table_start] + table + generated[table_end:]
     parser_path.write_bytes(compacted.encode("utf-8"))
 
