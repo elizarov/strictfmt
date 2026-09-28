@@ -1156,3 +1156,31 @@ static constexpr
 const
 #endif
 value=3; };
+
+int ConditionalElseContinuation(int mode){
+if(mode==0){return 0;}
+#ifdef MORE
+else if(mode==1){return 1;}
+#endif
+else if(mode==2){return 2;}
+#if EXTRA
+#if NESTED
+else if(mode==3){return 3;}
+#elif FALLBACK
+else if(mode==4){return 4;}
+#endif
+#else
+else if(mode==5){return 5;}
+#endif
+else{return -1;}
+}
+
+int NestedConditionalElse(bool outer,bool first,bool second) {
+if(outer)
+if(first)return 1;
+#ifdef MORE
+else if(second)return 2;
+#endif
+else return 3;
+else return 4;
+}

@@ -7431,13 +7431,34 @@
           ]
         },
         {
-          "type": "ALIAS",
+          "type": "PREC_RIGHT",
+          "value": 0,
           "content": {
-            "type": "SYMBOL",
-            "name": "preproc_guarded_else_clause"
-          },
-          "named": true,
-          "value": "preproc_if"
+            "type": "SEQ",
+            "members": [
+              {
+                "type": "ALIAS",
+                "content": {
+                  "type": "SYMBOL",
+                  "name": "preproc_guarded_else_clause"
+                },
+                "named": true,
+                "value": "preproc_if"
+              },
+              {
+                "type": "CHOICE",
+                "members": [
+                  {
+                    "type": "SYMBOL",
+                    "name": "else_clause"
+                  },
+                  {
+                    "type": "BLANK"
+                  }
+                ]
+              }
+            ]
+          }
         }
       ]
     },
@@ -35453,15 +35474,43 @@
       ]
     },
     "_closed_else_clause": {
-      "type": "SEQ",
+      "type": "CHOICE",
       "members": [
         {
-          "type": "STRING",
-          "value": "else"
+          "type": "SEQ",
+          "members": [
+            {
+              "type": "STRING",
+              "value": "else"
+            },
+            {
+              "type": "SYMBOL",
+              "name": "_closed_statement"
+            }
+          ]
         },
         {
-          "type": "SYMBOL",
-          "name": "_closed_statement"
+          "type": "SEQ",
+          "members": [
+            {
+              "type": "ALIAS",
+              "content": {
+                "type": "SYMBOL",
+                "name": "preproc_guarded_else_clause"
+              },
+              "named": true,
+              "value": "preproc_if"
+            },
+            {
+              "type": "ALIAS",
+              "content": {
+                "type": "SYMBOL",
+                "name": "_closed_else_clause"
+              },
+              "named": true,
+              "value": "else_clause"
+            }
+          ]
         }
       ]
     },

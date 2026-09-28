@@ -4419,9 +4419,13 @@
     "named": true,
     "fields": {},
     "children": {
-      "multiple": false,
+      "multiple": true,
       "required": true,
       "types": [
+        {
+          "type": "else_clause",
+          "named": true
+        },
         {
           "type": "macro_return_argument",
           "named": true

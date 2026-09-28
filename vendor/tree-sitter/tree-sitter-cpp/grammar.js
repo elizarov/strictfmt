@@ -3525,7 +3525,10 @@ module.exports = grammar(C, {
 
     else_clause: ($, original) => choice(
       original,
-      alias($.preproc_guarded_else_clause, $.preproc_if),
+      prec.right(seq(
+        alias($.preproc_guarded_else_clause, $.preproc_if),
+        optional($.else_clause),
+      )),
     ),
 
     preproc_guarded_else_clause: $ => prec.right(seq(
@@ -3615,7 +3618,13 @@ module.exports = grammar(C, {
       field('alternative', alias($._closed_else_clause, $.else_clause)),
     ),
 
-    _closed_else_clause: $ => seq('else', $._closed_statement),
+    _closed_else_clause: $ => choice(
+      seq('else', $._closed_statement),
+      seq(
+        alias($.preproc_guarded_else_clause, $.preproc_if),
+        alias($._closed_else_clause, $.else_clause),
+      ),
+    ),
 
     _closed_while_statement: $ => seq(
       $._while_header,
