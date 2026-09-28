@@ -34630,7 +34630,7 @@
       ]
     },
     "operator_cast_field_identifier": {
-      "type": "PREC",
+      "type": "PREC_RIGHT",
       "value": 1,
       "content": {
         "type": "SEQ",
@@ -37971,6 +37971,15 @@
               {
                 "type": "SYMBOL",
                 "name": "pointer_type_declarator"
+              },
+              {
+                "type": "ALIAS",
+                "content": {
+                  "type": "SYMBOL",
+                  "name": "operator_cast_field_identifier"
+                },
+                "named": true,
+                "value": "operator_cast"
               }
             ]
           }
@@ -38800,6 +38809,16 @@
     }
   ],
   "conflicts": [
+    [
+      "type_specifier",
+      "operator_cast_field_identifier",
+      "_scope_name"
+    ],
+    [
+      "type_specifier",
+      "_call_identifier",
+      "_type_constraint"
+    ],
     [
       "_declarator",
       "_macro_argument_parameter_declaration"

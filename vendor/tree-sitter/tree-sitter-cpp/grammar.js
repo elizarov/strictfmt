@@ -308,6 +308,8 @@ module.exports = grammar(C, {
   ],
 
   conflicts: $ => [
+    [$.type_specifier, $.operator_cast_field_identifier, $._scope_name],
+    [$.type_specifier, $._call_identifier, $._type_constraint],
     [$._declarator, $._macro_argument_parameter_declaration],
     [$.macro_parameter_list, $._macro_parenthesized_parameter_declaration, $._argument_list_item],
     [$.macro_parameter_list, $._argument_list_item],
@@ -4119,7 +4121,7 @@ module.exports = grammar(C, {
       )),
     ),
 
-    operator_cast_field_identifier: $ => prec(1, seq(
+    operator_cast_field_identifier: $ => prec.right(1, seq(
       'operator',
       choice($.primitive_type, $.sized_type_specifier, $._type_constraint, $.dependent_type, $.decltype),
     )),
@@ -4571,7 +4573,10 @@ module.exports = grammar(C, {
       )),
     ),
 
-    qualified_identifier: $ => qualifiedIdentifier($, $.qualified_identifier, $.pointer_type_declarator),
+    qualified_identifier: $ => qualifiedIdentifier(
+      $, $.qualified_identifier, $.pointer_type_declarator,
+      alias($.operator_cast_field_identifier, $.operator_cast),
+    ),
 
     qualified_type_identifier: $ => seq(
       $._scope_resolution,

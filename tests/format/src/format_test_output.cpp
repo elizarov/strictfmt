@@ -9195,3 +9195,12 @@ REGISTER_TYPE(const struct Record*, Category::Pointer)
 void FollowUp();
 
 }
+
+// Conversion-function names can be inherited and referenced without their parameter lists.
+struct ConversionReferences : Base {
+    using Base::operator bool;
+    using Base::operator Value;
+};
+
+auto conversion = &ConversionReferences::operator bool;
+void UseConversion() { Invoke<&ConversionReferences::operator bool>(); }
