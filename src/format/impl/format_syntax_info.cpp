@@ -381,8 +381,8 @@ constexpr auto kSyntaxKindMappings = std::to_array<SyntaxKindMapping>({
         "conditional_extern_c_close",
         kAtomicPreprocessorClasses | kSupportedPreprocessorPlacementClasses
     ),
-    Tree(SyntaxNodeKind::PreprocIf, "preproc_logical_expression_fragment", kAtomicPreprocessorClasses),
-    Tree(SyntaxNodeKind::PreprocIf, "preproc_logical_tail_expression_fragment", kAtomicPreprocessorClasses),
+    Tree(SyntaxNodeKind::PreprocIf, "preproc_logical_expression_fragment", kSupportedPreprocessorPlacementClasses),
+    Tree(SyntaxNodeKind::PreprocIf, "preproc_logical_tail_expression_fragment", kSupportedPreprocessorPlacementClasses),
     Tree(SyntaxNodeKind::PreprocIf, "preproc_condition_expression", kAtomicPreprocessorClasses),
     Tree(
         SyntaxNodeKind::PreprocIf,

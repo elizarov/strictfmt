@@ -15,45 +15,11 @@ void ExpressionFragment() {
         ARES_OPT_LOOKUPS;
 }
 
-template <typename T>
-concept FormatUserverConvertible =
-    requires(T& value) { FormatUserverConvert(value); } &&
-#if FORMAT_USERVER_OLD_LIB
-    // Old libraries reject long double here.
-    !std::same_as<T, long double>
-#else
-    true
-#endif
-    ;
-
 extern int* ConditionalDeclarationSuffix(void)
 #ifdef FORMAT_USERVER_THROW
     FORMAT_USERVER_THROW
 #endif
     ;
-
-bool ConditionalLogicalFragment(int error_code) {
-    if (error_code == kWouldBlock
-#if FORMAT_USERVER_HAS_DUPLICATE_WOULD_BLOCK
-        || error_code == kAgain
-#endif
-    ) {
-        return true;
-    }
-    return false;
-}
-
-bool ConditionalMultiLineLogicalFragment(Connection* conn) {
-    if (conn->xactStatus != kInTransaction
-#if FORMAT_USERVER_PIPELINE_STATUS
-        && (conn->pipelineStatus == kPipelineOff ||
-            conn->asyncStatus == kAsyncIdle)
-#endif
-    ) {
-        return true;
-    }
-    return false;
-}
 
 void PreprocessorSelectedIfHeader(Connection* conn) {
 #if FORMAT_USERVER_PIPELINE_STATUS

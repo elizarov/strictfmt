@@ -41,7 +41,8 @@ enum PrintTokenAncestryFlag : std::uint16_t {
 };
 
 bool IsStandalonePreprocessorBranchToken(const SyntaxNode& node, SyntaxNodeKind parentKind) {
-    return parentKind == SyntaxNodeKind::PreprocElse && node.kind == SyntaxNodeKind::PreprocessorDirectiveElse;
+    return SyntaxNodeKindHasClass(parentKind, SyntaxNodeClass::ConditionalPreprocessorTree) &&
+        node.kind == SyntaxNodeKind::PreprocessorDirectiveElse;
 }
 
 bool IsStructuredConditionalPreprocessorNode(const SyntaxNode& node) {
@@ -256,7 +257,12 @@ void AppendTokens(const SyntaxNode& node, TokenContext context, std::vector<Prin
         return;
     }
     if (IsStandalonePreprocessorBranchToken(node, context.parentKind)) {
-        tokens.push_back(MakePrintToken(node, PrintTokenKind::Preprocessor, context, node.text));
+        tokens.push_back(MakePrintToken(
+            node,
+            PrintTokenKind::Preprocessor,
+            context,
+            node.text.empty() ? SyntaxNodeKindTokenText(nodeKind) : node.text
+        ));
         return;
     }
     if (IsStructuredConditionalPreprocessorNode(node)) {

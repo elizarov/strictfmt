@@ -788,3 +788,68 @@ auto commentedEntries = {
 #endif
     last
 };
+
+// Conditional logical links have complete operands.
+bool ConditionalLogicalLinks() {
+    return first && second
+#ifndef WINDOWS
+    && Matches(value) && CheckZone(zone)
+#endif
+    ;
+}
+bool ConditionalLogicalOperand() {
+    return first &&
+#if FEATURE
+    Matches(value)
+#else
+    Fallback(value)
+#endif
+    ;
+}
+void ConditionalLogicalCondition() {
+    if (
+        ready
+#ifdef FEATURE
+        || (enabled && active)
+#endif
+    ) {
+        Work();
+    }
+}
+
+// Conditional logical operands in concepts and control conditions.
+template <typename T>
+concept FormatUserverConvertible = requires(T& value) {
+    FormatUserverConvert(value);
+} &&
+#if FORMAT_USERVER_OLD_LIB
+    // Old libraries reject long double here.
+!std::same_as<T, long double>
+#else
+true
+#endif
+;
+
+bool ConditionalLogicalFragment(int error_code) {
+    if (
+        error_code == kWouldBlock
+#if FORMAT_USERVER_HAS_DUPLICATE_WOULD_BLOCK
+        || error_code == kAgain
+#endif
+    ) {
+        return true;
+    }
+    return false;
+}
+
+bool ConditionalMultiLineLogicalFragment(Connection* conn) {
+    if (
+        conn->xactStatus != kInTransaction
+#if FORMAT_USERVER_PIPELINE_STATUS
+        && (conn->pipelineStatus == kPipelineOff || conn->asyncStatus == kAsyncIdle)
+#endif
+    ) {
+        return true;
+    }
+    return false;
+}
