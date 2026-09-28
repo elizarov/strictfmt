@@ -1415,7 +1415,7 @@ module.exports = grammar(C, {
 
     ...preprocIf(
       '_in_expression_list',
-      $ => seq(commaSep1(choice($.expression, $.initializer_list)), optional(',')),
+      $ => seq(optional(','), commaSep1(choice($.expression, $.initializer_list)), optional(',')),
       2,
       PREPROC_IFDEF | PREPROC_ELSE,
       false,

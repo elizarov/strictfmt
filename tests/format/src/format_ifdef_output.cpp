@@ -961,3 +961,19 @@ void ConditionalBodyAfterDeclarations() {
         result = zeros;
     }
 }
+
+void ConditionalLeadingArguments() {
+    if (Load(
+        state,
+        reader,
+        name
+#if VERSION>501
+        , nullptr,
+        Options{}
+#else
+        , Legacy()
+#endif
+    )) {
+        Fail();
+    }
+}

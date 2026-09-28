@@ -815,3 +815,13 @@ result=Shift(zeros,(Bytes)a,16-imm);
 #endif
 else result=zeros;
 }
+
+void ConditionalLeadingArguments(){
+if(Load(state,reader,name
+#if VERSION>501
+,nullptr,Options{}
+#else
+,Legacy()
+#endif
+)){Fail();}
+}
