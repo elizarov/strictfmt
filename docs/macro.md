@@ -6,6 +6,7 @@ A macro's syntactic role cannot always be inferred without expansion, so arbitra
 
 - [DeclarationModifierMacros](#declarationmodifiermacros): annotations within declarations, as in `API_EXPORT int value;`.
 - [StatementArgumentMacros](#statementargumentmacros): a statement or declaration in the first argument, as in `EXPECT_THROW(auto x = Read(), Error)`.
+- [NamespaceMacros](#namespacemacros): a namespace header followed by a declaration body, as in `TEST_SUITE(Name) { ... }`.
 - [ItemMacros](#itemmacros): separate declarations, statements, or list fragments, as in `BEGIN_NAMESPACE`.
 - [MethodDeclarationMacros](#methoddeclarationmacros): method-signature arguments, as in `MOCK_METHOD(void, Save, (T* value))`.
 - [StatementPrefixMacros](#statementprefixmacros): a prefix attached to the next statement, as in `DISCARD_RESULT message.Parse();`.
@@ -89,6 +90,24 @@ void Check() {
     EXPECT_THROW(auto value = Read(), Error);
     EXPECT_THROW(ns::Value value(input), Error);
 }
+```
+
+### NamespaceMacros
+
+`NamespaceMacros` identifies namespace headers, with optional arguments, whose following braced body contains declarations. Configure namespace wrappers when the unconfigured call-and-block rule would interpret their body as statements. Nested namespaces, templates, and helper functions use ordinary declaration syntax and namespace layout.
+
+<!-- .cpp-format
+MacroCategories:
+  NamespaceMacros:
+    - TEST_SUITE
+-->
+```cpp
+TEST_SUITE(Store) {
+
+int Helper() { return 1; }
+TEST(Store, ReadsValue) { Check(Helper()); }
+
+}  // TEST_SUITE(Store)
 ```
 
 ### ItemMacros

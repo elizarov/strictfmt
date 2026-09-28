@@ -8747,10 +8747,24 @@
     "type": "namespace_definition",
     "named": true,
     "fields": {
+      "arguments": {
+        "multiple": false,
+        "required": false,
+        "types": [
+          {
+            "type": "argument_list",
+            "named": true
+          }
+        ]
+      },
       "body": {
         "multiple": false,
         "required": true,
         "types": [
+          {
+            "type": "declaration_list",
+            "named": true
+          },
           {
             "type": "namespace_declaration_list",
             "named": true
@@ -8767,6 +8781,10 @@
           },
           {
             "type": "namespace_identifier",
+            "named": true
+          },
+          {
+            "type": "namespace_macro_identifier",
             "named": true
           },
           {
@@ -18044,6 +18062,10 @@
   {
     "type": "namespace",
     "named": false
+  },
+  {
+    "type": "namespace_macro_identifier",
+    "named": true
   },
   {
     "type": "new",

@@ -40,6 +40,7 @@ The scanner owns these identifier tokens:
 - `expression_continuation_macro_identifier`
 - `declaration_modifier_macro_identifier`
 - `statement_prefix_macro_identifier`
+- `namespace_macro_identifier`
 - `method_declaration_macro_identifier`
 - `item_macro_identifier`
 - `item_call_macro_identifier`

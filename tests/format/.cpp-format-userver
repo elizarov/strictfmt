@@ -11,6 +11,8 @@ MainIncludeChar: Quote
 IncludeIsMainRegex: '(Test)?$'
 
 MacroCategories:
+  NamespaceMacros:
+    - FORMAT_TEST_SUITE*
   ExpressionContinuationMacros:
     - BENCHMARK_THREAD_ARGS*
   DeclarationModifierMacros:

@@ -32,6 +32,7 @@ constexpr std::array MACRO_CATEGORY_CONFIGS = {
     MacroCategoryConfig{"StatementPrefixMacros", &FormatterConfig::statementPrefixMacros},
     MacroCategoryConfig{"MethodDeclarationMacros", &FormatterConfig::methodDeclarationMacros},
     MacroCategoryConfig{"ItemMacros", &FormatterConfig::itemMacros},
+    MacroCategoryConfig{"NamespaceMacros", &FormatterConfig::namespaceMacros},
     MacroCategoryConfig{"StatementArgumentMacros", &FormatterConfig::statementArgumentMacros},
     MacroCategoryConfig{"TypeSpecifierMacros", &FormatterConfig::typeSpecifierMacros},
     MacroCategoryConfig{"PreprocessorArgumentMacros", &FormatterConfig::preprocessorArgumentMacros},

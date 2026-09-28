@@ -128,6 +128,15 @@
           "name": "namespace_definition"
         },
         {
+          "type": "ALIAS",
+          "content": {
+            "type": "SYMBOL",
+            "name": "macro_namespace_definition"
+          },
+          "named": true,
+          "value": "namespace_definition"
+        },
+        {
           "type": "SYMBOL",
           "name": "concept_definition"
         },
@@ -14942,6 +14951,43 @@
           }
         ]
       }
+    },
+    "macro_namespace_definition": {
+      "type": "SEQ",
+      "members": [
+        {
+          "type": "FIELD",
+          "name": "name",
+          "content": {
+            "type": "SYMBOL",
+            "name": "namespace_macro_identifier"
+          }
+        },
+        {
+          "type": "CHOICE",
+          "members": [
+            {
+              "type": "FIELD",
+              "name": "arguments",
+              "content": {
+                "type": "SYMBOL",
+                "name": "argument_list"
+              }
+            },
+            {
+              "type": "BLANK"
+            }
+          ]
+        },
+        {
+          "type": "FIELD",
+          "name": "body",
+          "content": {
+            "type": "SYMBOL",
+            "name": "declaration_list"
+          }
+        }
+      ]
     },
     "macro_enum_declaration": {
       "type": "SEQ",
@@ -39877,6 +39923,10 @@
     {
       "type": "SYMBOL",
       "name": "statement_prefix_macro_identifier"
+    },
+    {
+      "type": "SYMBOL",
+      "name": "namespace_macro_identifier"
     },
     {
       "type": "SYMBOL",

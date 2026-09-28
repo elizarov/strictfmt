@@ -563,6 +563,7 @@ constexpr auto kSyntaxKindMappings = std::to_array<SyntaxKindMapping>({
     Tree(SyntaxNodeKind::Identifier, "preprocessor_continuation_macro_identifier"),
     Tree(SyntaxNodeKind::Identifier, "statement_argument_macro_identifier"),
     Tree(SyntaxNodeKind::Identifier, "type_specifier_macro_identifier"),
+    Tree(SyntaxNodeKind::Identifier, "namespace_macro_identifier"),
     Tree(SyntaxNodeKind::Identifier, "preprocessor_argument_macro_identifier"),
     Tree(SyntaxNodeKind::Identifier, "field_identifier"),
     Tree(SyntaxNodeKind::Identifier, "namespace_identifier"),

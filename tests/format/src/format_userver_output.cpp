@@ -546,3 +546,20 @@ constexpr int MixedMacroTerminators() {
     }
     return count;
 }
+
+// Namespace macros contain declarations recursively, including test helpers.
+FORMAT_TEST_SUITE(Outer) {
+
+template <class T>
+T Identity(T value) { return value; }
+FORMAT_TEST_SUITE_NESTED(Inner) {
+
+int Helper() { return 1; }
+TEST(Example, CallsHelper) {
+    auto value = Helper();
+    Check(value);
+}
+
+}
+
+}

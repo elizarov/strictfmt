@@ -287,6 +287,7 @@ module.exports = grammar(C, {
     $.item_macro_identifier,
     $.item_call_macro_identifier,
     $.statement_prefix_macro_identifier,
+    $.namespace_macro_identifier,
     $.preprocessor_item_macro_identifier,
     $.preprocessor_continuation_macro_identifier,
     $._preproc_directive_end,
@@ -819,6 +820,7 @@ module.exports = grammar(C, {
       $.standalone_attribute_preproc_if,
       $.standalone_qualifier_preproc_if,
       $.namespace_definition,
+      alias($.macro_namespace_definition, $.namespace_definition),
       $.concept_definition,
       $.module_declaration,
       $.module_import_declaration,
@@ -1259,6 +1261,12 @@ module.exports = grammar(C, {
       field('body', $.compound_statement),
       optional(';'),
     )),
+
+    macro_namespace_definition: $ => seq(
+      field('name', $.namespace_macro_identifier),
+      optional(field('arguments', $.argument_list)),
+      field('body', $.declaration_list),
+    ),
 
     macro_enum_declaration: $ => seq(
       alias($.macro_enum_specifier, $.enum_specifier),
