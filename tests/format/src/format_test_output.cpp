@@ -9241,3 +9241,22 @@ auto configuredCallEntries = {
     FIELD(name, "value"),
     FIELD(end, nullptr)
 };
+
+void DeclarationsInMacroArguments() {
+    CALL(
+        first,
+        mutable ns::Counter count;
+        mutable ns::Probe probe;,
+        last
+    );
+    CALL(
+        int value = Read();
+        Consume(value);
+    );
+    CALL(
+        ns::Value value(input);
+        Consume(value);
+    );
+    CALL(int first = 1, second = 2;);
+    CALL(Result(function)(Argument););
+}

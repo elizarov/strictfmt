@@ -277,7 +277,7 @@ void Declare() { TYPE_OF(T)* value; }
 
 ## Macros without configuration
 
-Function and macro calls share one argument grammar, accepting expressions, types, function and template parameters, statement blocks or sequences, and empty or comment-only arguments. Parenthesized argument fragments use the same grammar recursively and can appear in adjacent sequences.
+Function and macro calls share one argument grammar, accepting expressions, types, function and template parameters, statement blocks or sequences (including named, semicolon-terminated declarations), and empty or comment-only arguments. Parenthesized argument fragments use the same grammar recursively and can appear in adjacent sequences.
 
 Calls also fit type-only positions, including aliases and function parameters.
 

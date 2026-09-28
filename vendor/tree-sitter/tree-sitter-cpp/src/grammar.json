@@ -33662,6 +33662,19 @@
               "type": "CHOICE",
               "members": [
                 {
+                  "type": "PREC_DYNAMIC",
+                  "value": -1,
+                  "content": {
+                    "type": "ALIAS",
+                    "content": {
+                      "type": "SYMBOL",
+                      "name": "macro_argument_declaration"
+                    },
+                    "named": true,
+                    "value": "declaration"
+                  }
+                },
+                {
                   "type": "CHOICE",
                   "members": [
                     {
@@ -33790,6 +33803,303 @@
           }
         ]
       }
+    },
+    "macro_argument_declaration": {
+      "type": "SEQ",
+      "members": [
+        {
+          "type": "REPEAT",
+          "content": {
+            "type": "SYMBOL",
+            "name": "_declaration_modifiers"
+          }
+        },
+        {
+          "type": "FIELD",
+          "name": "type",
+          "content": {
+            "type": "SYMBOL",
+            "name": "type_specifier"
+          }
+        },
+        {
+          "type": "REPEAT",
+          "content": {
+            "type": "SYMBOL",
+            "name": "_declaration_modifiers"
+          }
+        },
+        {
+          "type": "SEQ",
+          "members": [
+            {
+              "type": "FIELD",
+              "name": "declarator",
+              "content": {
+                "type": "CHOICE",
+                "members": [
+                  {
+                    "type": "CHOICE",
+                    "members": [
+                      {
+                        "type": "CHOICE",
+                        "members": [
+                          {
+                            "type": "CHOICE",
+                            "members": [
+                              {
+                                "type": "SYMBOL",
+                                "name": "identifier"
+                              },
+                              {
+                                "type": "ALIAS",
+                                "content": {
+                                  "type": "SYMBOL",
+                                  "name": "_contextual_identifier"
+                                },
+                                "named": true,
+                                "value": "identifier"
+                              }
+                            ]
+                          },
+                          {
+                            "type": "SYMBOL",
+                            "name": "macro_token_paste_expression"
+                          }
+                        ]
+                      },
+                      {
+                        "type": "SYMBOL",
+                        "name": "pointer_declarator"
+                      },
+                      {
+                        "type": "SYMBOL",
+                        "name": "reference_declarator"
+                      },
+                      {
+                        "type": "SYMBOL",
+                        "name": "handle_declarator"
+                      },
+                      {
+                        "type": "SYMBOL",
+                        "name": "member_pointer_declarator"
+                      },
+                      {
+                        "type": "SYMBOL",
+                        "name": "structured_binding_declarator"
+                      }
+                    ]
+                  },
+                  {
+                    "type": "ALIAS",
+                    "content": {
+                      "type": "SYMBOL",
+                      "name": "macro_argument_init_declarator"
+                    },
+                    "named": true,
+                    "value": "init_declarator"
+                  }
+                ]
+              }
+            },
+            {
+              "type": "REPEAT",
+              "content": {
+                "type": "SEQ",
+                "members": [
+                  {
+                    "type": "STRING",
+                    "value": ","
+                  },
+                  {
+                    "type": "FIELD",
+                    "name": "declarator",
+                    "content": {
+                      "type": "CHOICE",
+                      "members": [
+                        {
+                          "type": "CHOICE",
+                          "members": [
+                            {
+                              "type": "CHOICE",
+                              "members": [
+                                {
+                                  "type": "CHOICE",
+                                  "members": [
+                                    {
+                                      "type": "SYMBOL",
+                                      "name": "identifier"
+                                    },
+                                    {
+                                      "type": "ALIAS",
+                                      "content": {
+                                        "type": "SYMBOL",
+                                        "name": "_contextual_identifier"
+                                      },
+                                      "named": true,
+                                      "value": "identifier"
+                                    }
+                                  ]
+                                },
+                                {
+                                  "type": "SYMBOL",
+                                  "name": "macro_token_paste_expression"
+                                }
+                              ]
+                            },
+                            {
+                              "type": "SYMBOL",
+                              "name": "pointer_declarator"
+                            },
+                            {
+                              "type": "SYMBOL",
+                              "name": "reference_declarator"
+                            },
+                            {
+                              "type": "SYMBOL",
+                              "name": "handle_declarator"
+                            },
+                            {
+                              "type": "SYMBOL",
+                              "name": "member_pointer_declarator"
+                            },
+                            {
+                              "type": "SYMBOL",
+                              "name": "structured_binding_declarator"
+                            }
+                          ]
+                        },
+                        {
+                          "type": "ALIAS",
+                          "content": {
+                            "type": "SYMBOL",
+                            "name": "macro_argument_init_declarator"
+                          },
+                          "named": true,
+                          "value": "init_declarator"
+                        }
+                      ]
+                    }
+                  }
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "type": "STRING",
+          "value": ";"
+        }
+      ]
+    },
+    "macro_argument_init_declarator": {
+      "type": "SEQ",
+      "members": [
+        {
+          "type": "FIELD",
+          "name": "declarator",
+          "content": {
+            "type": "CHOICE",
+            "members": [
+              {
+                "type": "CHOICE",
+                "members": [
+                  {
+                    "type": "CHOICE",
+                    "members": [
+                      {
+                        "type": "SYMBOL",
+                        "name": "identifier"
+                      },
+                      {
+                        "type": "ALIAS",
+                        "content": {
+                          "type": "SYMBOL",
+                          "name": "_contextual_identifier"
+                        },
+                        "named": true,
+                        "value": "identifier"
+                      }
+                    ]
+                  },
+                  {
+                    "type": "SYMBOL",
+                    "name": "macro_token_paste_expression"
+                  }
+                ]
+              },
+              {
+                "type": "SYMBOL",
+                "name": "pointer_declarator"
+              },
+              {
+                "type": "SYMBOL",
+                "name": "reference_declarator"
+              },
+              {
+                "type": "SYMBOL",
+                "name": "handle_declarator"
+              },
+              {
+                "type": "SYMBOL",
+                "name": "member_pointer_declarator"
+              },
+              {
+                "type": "SYMBOL",
+                "name": "structured_binding_declarator"
+              }
+            ]
+          }
+        },
+        {
+          "type": "CHOICE",
+          "members": [
+            {
+              "type": "SEQ",
+              "members": [
+                {
+                  "type": "STRING",
+                  "value": "="
+                },
+                {
+                  "type": "FIELD",
+                  "name": "value",
+                  "content": {
+                    "type": "CHOICE",
+                    "members": [
+                      {
+                        "type": "SYMBOL",
+                        "name": "expression"
+                      },
+                      {
+                        "type": "SYMBOL",
+                        "name": "initializer_list"
+                      }
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "type": "FIELD",
+              "name": "value",
+              "content": {
+                "type": "CHOICE",
+                "members": [
+                  {
+                    "type": "SYMBOL",
+                    "name": "argument_list"
+                  },
+                  {
+                    "type": "SYMBOL",
+                    "name": "initializer_list"
+                  }
+                ]
+              }
+            }
+          ]
+        }
+      ]
     },
     "macro_source_item_sequence_argument": {
       "type": "PREC_RIGHT",
@@ -39377,6 +39687,24 @@
     }
   ],
   "conflicts": [
+    [
+      "_declarator",
+      "_macro_argument_parameter_declaration",
+      "macro_argument_declaration"
+    ],
+    [
+      "_non_pointer_declarator",
+      "macro_argument_init_declarator"
+    ],
+    [
+      "_macro_argument_parameter_declaration",
+      "_non_pointer_declarator",
+      "macro_argument_declaration"
+    ],
+    [
+      "_macro_argument_parameter_declaration",
+      "macro_argument_declaration"
+    ],
     [
       "_declaration_modifiers",
       "_closed_attributed_statement"

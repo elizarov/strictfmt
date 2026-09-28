@@ -198,6 +198,17 @@ function declarationMacroPrefix($) {
   );
 }
 
+function macroArgumentDeclarator($) {
+  return choice(
+    identifierWithPaste($),
+    $.pointer_declarator,
+    $.reference_declarator,
+    $.handle_declarator,
+    $.member_pointer_declarator,
+    $.structured_binding_declarator,
+  );
+}
+
 function declarationSpecifiers($) {
   return [
     repeat($._declaration_modifiers),
@@ -307,6 +318,10 @@ module.exports = grammar(C, {
   ],
 
   conflicts: $ => [
+    [$._declarator, $._macro_argument_parameter_declaration, $.macro_argument_declaration],
+    [$._non_pointer_declarator, $.macro_argument_init_declarator],
+    [$._macro_argument_parameter_declaration, $._non_pointer_declarator, $.macro_argument_declaration],
+    [$._macro_argument_parameter_declaration, $.macro_argument_declaration],
     [$._declaration_modifiers, $._closed_attributed_statement],
     [$._closed_attributed_statement],
     [$._preproc_opening_condition, $.preproc_if_in_closed_statement],
@@ -2285,14 +2300,7 @@ module.exports = grammar(C, {
     // parenthesized declarators use the explicit parameter-list argument form.
     _macro_argument_parameter_declaration: $ => seq(
       ...declarationSpecifiers($),
-      field('declarator', choice(
-        identifierWithPaste($),
-        $.pointer_declarator,
-        $.reference_declarator,
-        $.handle_declarator,
-        $.member_pointer_declarator,
-        $.structured_binding_declarator,
-      )),
+      field('declarator', macroArgumentDeclarator($)),
       repeat($.attribute_specifier),
     ),
 
@@ -3849,7 +3857,27 @@ module.exports = grammar(C, {
       alias($.macro_source_item_sequence_argument, $.macro_statement_sequence_argument),
     ),
 
-    macro_statement_sequence_argument: $ => macroStatementSequence($),
+    macro_statement_sequence_argument: $ => macroStatementSequence($, [
+      // Keep expression-shaped declarations as expressions unless configured.
+      prec.dynamic(-1, alias($.macro_argument_declaration, $.declaration)),
+    ]),
+
+    macro_argument_declaration: $ => seq(
+      ...declarationSpecifiers($),
+      commaSep1(field('declarator', choice(
+        macroArgumentDeclarator($),
+        alias($.macro_argument_init_declarator, $.init_declarator),
+      ))),
+      ';',
+    ),
+
+    macro_argument_init_declarator: $ => seq(
+      field('declarator', macroArgumentDeclarator($)),
+      choice(
+        seq('=', field('value', choice($.expression, $.initializer_list))),
+        field('value', choice($.argument_list, $.initializer_list)),
+      ),
+    ),
 
     macro_source_item_sequence_argument: $ => macroStatementSequence($, [
       $.declaration,
