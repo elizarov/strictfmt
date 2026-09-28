@@ -1049,3 +1049,20 @@ __attribute__((optimize("O1")))
 #endif
 int Read(){return 1;}
 };
+
+template<class T>
+#if CONSTRAINTS
+requires requires(T value){value.Method();typename T::value_type;}
+#endif
+void GuardedRequirement(T value){value.Method();}
+template<class T>
+#ifdef CONSTRAINTS
+#if STRICT
+requires Strong<T>
+#else
+requires Basic<T>
+#endif
+#elif FALLBACK
+requires (sizeof(T)>1)
+#endif
+struct GuardedConstraint{T value;};

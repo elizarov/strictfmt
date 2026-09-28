@@ -1545,7 +1545,7 @@ module.exports = grammar(C, {
     macro_template_declaration: $ => seq(
       'template',
       field('parameters', $.template_parameter_list),
-      optional($.requires_clause),
+      optional($._template_requires_clause),
       choice(
         templateDeclarationItem(
           $, $.macro_qualified_type_function_definition, alias($.macro_declaration, $.declaration),
@@ -1981,12 +1981,20 @@ module.exports = grammar(C, {
     template_declaration: $ => seq(
       'template',
       field('parameters', $.template_parameter_list),
-      optional($.requires_clause),
+      optional($._template_requires_clause),
       choice(
         prec.dynamic(10, alias($.constructor_or_destructor_definition, $.function_definition)),
         templateDeclarationItem($),
       ),
     ),
+
+    _template_requires_clause: $ => choice(
+      $.requires_clause,
+      $.preproc_if_in_template_requires_clause,
+      $.preproc_ifdef_in_template_requires_clause,
+    ),
+
+    ...preprocIf('_in_template_requires_clause', $ => $._template_requires_clause, 0, PREPROC_ALL_BRANCH_FORMS, false),
 
     _template_declaration_item: $ => choice(
       prec.dynamic(10, alias($.constructor_or_destructor_definition, $.function_definition)),
@@ -4195,7 +4203,7 @@ module.exports = grammar(C, {
     macro_template_declaration_header_fragment: $ => seq(
       'template',
       field('parameters', $.template_parameter_list),
-      optional($.requires_clause),
+      optional($._template_requires_clause),
       $.macro_declaration_header_fragment,
     ),
 
