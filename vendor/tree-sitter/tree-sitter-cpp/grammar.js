@@ -4561,6 +4561,7 @@ module.exports = grammar(C, {
         alias($.qualified_field_identifier, $.qualified_identifier),
         $.template_method,
         $.operator_name,
+        $.destructor_name,
         prec.dynamic(1, $._field_identifier),
       )),
     ),

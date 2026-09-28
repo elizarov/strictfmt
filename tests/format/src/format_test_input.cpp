@@ -5597,3 +5597,10 @@ NoexceptConstructor() noexcept(std::is_nothrow_default_constructible_v<T>)
 NoexceptConstructor(const NoexceptConstructor& other) noexcept(Traits<Nested<T>>::copy)
 { new (storage) T(other.Value()); }
 };
+
+// Explicit destruction may qualify the destructor with its dependent type.
+template<class T> void DestroyDependent(T* pointer) {
+pointer->T::~T();
+values[index].T::~T();
+pointer->Outer<T>::Inner::~Inner();
+}

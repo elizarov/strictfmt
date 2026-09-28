@@ -37612,6 +37612,10 @@
                 "name": "operator_name"
               },
               {
+                "type": "SYMBOL",
+                "name": "destructor_name"
+              },
+              {
                 "type": "PREC_DYNAMIC",
                 "value": 1,
                 "content": {
