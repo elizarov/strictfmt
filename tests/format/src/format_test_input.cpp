@@ -5680,3 +5680,6 @@ static GENERATE_GLOBAL(Value,Global,Args())
 bool AfterGeneratedGlobal(){return true;}
 static TYPE_FACTORY(int) ReadGeneratedType(){return 1;}
 static int OrdinaryAfterGenerated(int value){return value;}
+
+FORMAT_DECLARATOR_MODIFIER("memory") extern "C" void* ExternalAddress(Control* control){return control;}
+FORMAT_DECLARATOR_MODIFIER extern "C" void ExternalCall();

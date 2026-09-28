@@ -318,6 +318,10 @@ module.exports = grammar(C, {
   ],
 
   conflicts: $ => [
+    [$._declaration_modifiers, $._linkage_specification_prefix],
+    [$._declaration_specifiers, $._linkage_specification_prefix, $.macro_prefixed_function_definition, $.macro_prefixed_declaration, $._conditional_function_return_type_specifiers, $._modifier_prefixed_macro_declaration, $._constructor_specifiers],
+    [$._linkage_specification_prefix, $.macro_prefixed_function_definition, $.macro_prefixed_declaration, $._constructor_specifiers],
+    [$._declaration_specifiers, $._linkage_specification_prefix, $.macro_prefixed_function_definition, $.macro_prefixed_declaration, $._conditional_function_return_type_specifiers, $._modifier_prefixed_macro_declaration],
     [$._preproc_opening_condition, $.preproc_if_in_function_header, $.preproc_if_in_function_return_type],
     [$._preproc_opening_condition, $.preproc_ifdef_in_function_header, $.preproc_ifdef_in_function_return_type],
     [$._preproc_opening_condition, $.preproc_if_in_top_level, $.preproc_if_in_function_header, $.preproc_if_in_function_return_type, $.preproc_if_in_function_definition_prefix, $.preproc_guarded_namespace_definition],
@@ -843,9 +847,14 @@ module.exports = grammar(C, {
     _call_identifier: $ => contextualIdentifier($),
 
     linkage_specification: $ => seq(
+      $._linkage_specification_prefix,
+      field('body', choice($.declaration_list, $._top_level_item)),
+    ),
+
+    _linkage_specification_prefix: $ => seq(
+      optional(declarationMacroPrefix($)),
       'extern',
       field('value', $.string_literal),
-      field('body', choice($.declaration_list, $._top_level_item)),
     ),
 
     _top_level_item: ($, original) => choice(
