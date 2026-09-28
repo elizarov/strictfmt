@@ -127,3 +127,10 @@ void NullStatementComment() {
     target[index] = Read(first);
     ;; // Another description
 }
+
+// Endif comments stay with the directive inside an expression chain.
+bool ConditionalChainComment() {return first
+#ifndef FEATURE
+&& second
+#endif // FEATURE
+&& true;}

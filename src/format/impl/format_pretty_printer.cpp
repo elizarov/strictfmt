@@ -1163,7 +1163,7 @@ private:
             return;
         }
         if (IsCommentToken(token.kind)) {
-            if (KeepsStructuralCommentInBreakModel(token)) {
+            if (KeepsStructuralCommentInBreakModel(token) && !CanAttachToPreviousPreprocessorLine(token, rawPrevious)) {
                 BufferToken(token, rawPrevious);
                 return;
             }
