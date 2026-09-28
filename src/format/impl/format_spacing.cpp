@@ -565,10 +565,6 @@ bool FormatTokenNeedsSpace(const PrintToken* previous, const PrintToken& current
         return (currentClasses & static_cast<std::uint64_t>(category)) != 0;
     };
 
-    if (IsKeywordOwnedValueToken(*previous) && cur != SyntaxNodeKind::Semicolon) {
-        return true;
-    }
-
     if (
         cur == SyntaxNodeKind::LeftBrace &&
         NodeOrAncestorHasClass(current.node, SyntaxNodeClass::ConditionalFunctionHeader)
@@ -653,6 +649,9 @@ bool FormatTokenNeedsSpace(const PrintToken* previous, const PrintToken& current
             return true;
         }
         return false;
+    }
+    if (IsKeywordOwnedValueToken(*previous)) {
+        return true;
     }
     if (previous->parentKind == SyntaxNodeKind::RefQualifier) {
         return true;

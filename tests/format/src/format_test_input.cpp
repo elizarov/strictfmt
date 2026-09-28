@@ -5739,3 +5739,9 @@ FORMAT_STATEMENT_DECLARATIONS(Prepare(); Value local);
 FORMAT_STATEMENT_DECLARATIONS(Value local,Error);
 FORMAT_STATEMENT_DECLARATIONS(Value& local,Error);
 }
+
+void EmptyMacroReturnArguments(){
+FORMAT_STATEMENT_DECLARATIONS(return);
+CALL(throw);
+FORMAT_STATEMENT_DECLARATIONS(return,Error);
+}

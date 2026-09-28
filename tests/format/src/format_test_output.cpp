@@ -9377,7 +9377,7 @@ void IncompleteMacroControls() {
     FORMAT_STATEMENT_DECLARATIONS(for (int i = 0; i < count; ++i) Consume(i));
     FORMAT_STATEMENT_DECLARATIONS(for (auto value : values) Consume(value));
     FORMAT_STATEMENT_DECLARATIONS(while (ready) Consume(value));
-    FORMAT_STATEMENT_DECLARATIONS(if (ready) return );
+    FORMAT_STATEMENT_DECLARATIONS(if (ready) return);
     FORMAT_STATEMENT_DECLARATIONS(if (ready) {
         return;
     });
@@ -9396,4 +9396,10 @@ void UninitializedMacroDeclarations() {
     );
     FORMAT_STATEMENT_DECLARATIONS(Value local, Error);
     FORMAT_STATEMENT_DECLARATIONS(Value& local, Error);
+}
+
+void EmptyMacroReturnArguments() {
+    FORMAT_STATEMENT_DECLARATIONS(return);
+    CALL(throw);
+    FORMAT_STATEMENT_DECLARATIONS(return, Error);
 }
