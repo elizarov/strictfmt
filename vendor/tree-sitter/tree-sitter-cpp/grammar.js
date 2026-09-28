@@ -4311,6 +4311,10 @@ module.exports = grammar(C, {
     ),
 
     sizeof_expression: ($, original) => choice(
+      // End a parenthesized type before an adjacent unary-looking binary operator.
+      prec.left(PREC.SIZEOF + 1, seq(
+        'sizeof', '(', field('type', $.type_descriptor), ')',
+      )),
       prec(PREC.CALL + 3, seq(
         'sizeof',
         '(',

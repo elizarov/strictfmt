@@ -5578,3 +5578,13 @@ const int generatedValues[] = {
 #define GENERATED_THIRD (generatedValues + 6)
 0x41, 0x302, 0,
 };
+
+// sizeof accepts a unary operand; a following sign cannot turn its type into a cast.
+void SizeofOperators() {
+    auto weight = first * sizeof(ui32) + second * sizeof(ui64);
+    auto previous = sizeof(Type) - 1;
+    auto nestedCast = sizeof((Type) +value);
+    auto dereference = sizeof *(Type*)pointer;
+    auto postfix = sizeof Read(values)[0];
+    auto nestedSize = sizeof sizeof(Type);
+}
