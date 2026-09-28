@@ -1112,3 +1112,18 @@ second
 #endif
 ](){Run();};
 }
+
+class AnnotatedConditionalConstructor {
+int value=0;
+public:
+AnnotatedConditionalConstructor() ANNOTATION
+#ifdef FEATURE
+:value()
+#endif
+{}
+int Read() ANNOTATION
+#if FEATURE
+noexcept
+#endif
+{return value;}
+};

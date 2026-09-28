@@ -325,6 +325,7 @@ module.exports = grammar(C, {
   ],
 
   conflicts: $ => [
+    [$._function_declarator_suffix_0],
     [$.preproc_else_in_field_declaration_list, $._field_declaration_list_item],
     [$.preproc_else_in_field_declaration_list, $._declaration_modifiers, $.attributed_friend_declaration],
     [$.preproc_else_in_field_declaration_list, $._declaration_modifiers],
@@ -2749,16 +2750,43 @@ module.exports = grammar(C, {
 
     ref_qualifier: _ => choice('&', '&&'),
 
+    // Factor ordered optional suffixes instead of enumerating every combination.
+    // Keep the first stage open: a following conditional can select an exception
+    // specification or a constructor initializer. Later stages bind greedily.
     _function_declarator_seq: $ => seq(
       field('parameters', $.parameter_list),
-      optional($._function_attributes_start),
-      optional($.ref_qualifier),
-      optional($._function_exception_specification),
-      optional($._function_attributes_end),
-      optional($.trailing_return_type),
-      optional($._function_postfix),
-      optional($._function_attributes_end),
+      optional($._function_declarator_suffix_0),
     ),
+
+    _function_declarator_suffix_0: $ => choice(
+      seq($._function_attributes_start, optional($._function_declarator_suffix_1)),
+      $._function_declarator_suffix_1,
+    ),
+
+    _function_declarator_suffix_1: $ => prec.right(choice(
+      seq($.ref_qualifier, optional($._function_declarator_suffix_2)),
+      $._function_declarator_suffix_2,
+    )),
+
+    _function_declarator_suffix_2: $ => prec.right(choice(
+      seq($._function_exception_specification, optional($._function_declarator_suffix_3)),
+      $._function_declarator_suffix_3,
+    )),
+
+    _function_declarator_suffix_3: $ => prec.right(1, choice(
+      seq($._function_attributes_end, optional($._function_declarator_suffix_4)),
+      $._function_declarator_suffix_4,
+    )),
+
+    _function_declarator_suffix_4: $ => prec.right(choice(
+      seq($.trailing_return_type, optional($._function_declarator_suffix_5)),
+      $._function_declarator_suffix_5,
+    )),
+
+    _function_declarator_suffix_5: $ => prec.right(choice(
+      seq($._function_postfix, optional($._function_attributes_end)),
+      $._function_attributes_end,
+    )),
 
     // Known function qualifiers anchor a following unknown annotation to the
     // declarator rather than splitting the header into unrelated class items.
