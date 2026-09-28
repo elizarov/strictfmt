@@ -306,6 +306,7 @@ module.exports = grammar(C, {
     $.expression_prefix_macro_identifier,
     $.expression_prefix_item_macro_identifier,
     $.expression_prefix_item_call_macro_identifier,
+    $.if_header_macro_identifier,
     $._preproc_directive_end,
     $._line_break_whitespace,
     $.macro_definition_start,
@@ -3396,11 +3397,19 @@ module.exports = grammar(C, {
 
     selected_if_header: $ => $._if_header,
 
-    _if_header: $ => seq(
-      'if',
-      optional('constexpr'),
-      field('condition', $.condition_clause),
+    _if_header: $ => choice(
+      seq(
+        'if',
+        optional('constexpr'),
+        field('condition', $.condition_clause),
+      ),
+      $.macro_if_header,
     ),
+
+    macro_if_header: $ => prec.right(PREC.CALL + 6, seq(
+      $.if_header_macro_identifier,
+      optional(field('arguments', $.argument_list)),
+    )),
 
     preproc_ended_consequence_statement: $ => prec.right(seq(
       $._preproc_opening_condition,

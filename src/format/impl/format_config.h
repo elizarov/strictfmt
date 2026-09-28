@@ -23,6 +23,7 @@ struct FormatterConfig {
     std::vector<std::string> expressionPrefixMacros;
     std::vector<std::string> declarationModifierMacros;
     std::vector<std::string> statementPrefixMacros;
+    std::vector<std::string> ifHeaderMacros;
     std::vector<std::string> methodDeclarationMacros;
     std::vector<std::string> itemMacros;
     std::vector<std::string> namespaceMacros;

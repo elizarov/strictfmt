@@ -9460,3 +9460,69 @@ bool DirectiveExpressionPrefixes() {
 #undef PREFIX_FIELD
     true;
 }
+
+void IfHeaderMacroConditions(bool outer, bool ready, bool nested) {
+    if (outer) {
+        FORMAT_IF_HEADER_IF(ready) {
+            Run();
+        } else {
+            Fail();
+        }
+    }
+    FORMAT_IF_HEADER_IF(ready) {
+        Run();
+    } else {
+        Fail();
+    }
+    FORMAT_IF_HEADER_IF(ready) {
+        Run();
+    } else {
+        Fail();
+    }
+    if (outer) {
+        FORMAT_IF_HEADER_IF(ready) {
+            Run();
+        } else {
+            Fail();
+        }
+    } else {
+        Other();
+    }
+    if (outer) {
+        Other();
+    } else FORMAT_IF_HEADER_IF(ready) {
+        Run();
+    } else {
+        Fail();
+    }
+    FORMAT_IF_HEADER_IF(ready) {
+        if (nested) {
+            Run();
+        } else {
+            Other();
+        }
+    } else {
+        Fail();
+    }
+    FORMAT_IF_HEADER_IF(outer) {
+        FORMAT_IF_HEADER_IF(ready) {
+            Run();
+        } else {
+            Fail();
+        }
+    }
+    FORMAT_IF_HEADER_IF(outer) {
+        FORMAT_IF_HEADER_IF(ready) {
+            Run();
+        } else {
+            Fail();
+        }
+    } else {
+        Other();
+    }
+    FORMAT_IF_HEADER_ALWAYS {
+        Run();
+    } else {
+        Fail();
+    }
+}

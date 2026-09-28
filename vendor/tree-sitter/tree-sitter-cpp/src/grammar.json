@@ -33141,33 +33141,71 @@
       "name": "_if_header"
     },
     "_if_header": {
-      "type": "SEQ",
+      "type": "CHOICE",
       "members": [
         {
-          "type": "STRING",
-          "value": "if"
-        },
-        {
-          "type": "CHOICE",
+          "type": "SEQ",
           "members": [
             {
               "type": "STRING",
-              "value": "constexpr"
+              "value": "if"
             },
             {
-              "type": "BLANK"
+              "type": "CHOICE",
+              "members": [
+                {
+                  "type": "STRING",
+                  "value": "constexpr"
+                },
+                {
+                  "type": "BLANK"
+                }
+              ]
+            },
+            {
+              "type": "FIELD",
+              "name": "condition",
+              "content": {
+                "type": "SYMBOL",
+                "name": "condition_clause"
+              }
             }
           ]
         },
         {
-          "type": "FIELD",
-          "name": "condition",
-          "content": {
-            "type": "SYMBOL",
-            "name": "condition_clause"
-          }
+          "type": "SYMBOL",
+          "name": "macro_if_header"
         }
       ]
+    },
+    "macro_if_header": {
+      "type": "PREC_RIGHT",
+      "value": 21,
+      "content": {
+        "type": "SEQ",
+        "members": [
+          {
+            "type": "SYMBOL",
+            "name": "if_header_macro_identifier"
+          },
+          {
+            "type": "CHOICE",
+            "members": [
+              {
+                "type": "FIELD",
+                "name": "arguments",
+                "content": {
+                  "type": "SYMBOL",
+                  "name": "argument_list"
+                }
+              },
+              {
+                "type": "BLANK"
+              }
+            ]
+          }
+        ]
+      }
     },
     "preproc_ended_consequence_statement": {
       "type": "PREC_RIGHT",
@@ -45861,6 +45899,10 @@
     {
       "type": "SYMBOL",
       "name": "expression_prefix_item_call_macro_identifier"
+    },
+    {
+      "type": "SYMBOL",
+      "name": "if_header_macro_identifier"
     },
     {
       "type": "SYMBOL",

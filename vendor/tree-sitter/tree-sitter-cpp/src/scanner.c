@@ -30,6 +30,7 @@ enum TokenType {
     EXPRESSION_PREFIX_MACRO_IDENTIFIER,
     EXPRESSION_PREFIX_ITEM_MACRO_IDENTIFIER,
     EXPRESSION_PREFIX_ITEM_CALL_MACRO_IDENTIFIER,
+    IF_HEADER_MACRO_IDENTIFIER,
     PREPROC_DIRECTIVE_END,
     LINE_BREAK_WHITESPACE,
     MACRO_DEFINITION_START,
@@ -49,6 +50,7 @@ enum MacroCategory {
     MACRO_CATEGORY_STATEMENT_PREFIX = 7,
     MACRO_CATEGORY_NAMESPACE = 8,
     MACRO_CATEGORY_EXPRESSION_PREFIX = 9,
+    MACRO_CATEGORY_IF_HEADER = 10,
 };
 
 /// The spec limits raw-string delimiters to 16 chars.
@@ -249,7 +251,8 @@ static bool classify_macro_identifier_token(
     bool allow_preprocessor_continuation,
     bool allow_expression_prefix,
     bool allow_expression_prefix_item,
-    bool allow_expression_prefix_item_call
+    bool allow_expression_prefix_item_call,
+    bool allow_if_header
 ) {
     const bool method_declaration_match =
         allow_method_declaration &&
@@ -277,6 +280,12 @@ static bool classify_macro_identifier_token(
     if (allow_namespace &&
         strictfmt_tree_sitter_cpp_macro_category_matches(MACRO_CATEGORY_NAMESPACE, name, length)) {
         lexer->result_symbol = NAMESPACE_MACRO_IDENTIFIER;
+        return true;
+    }
+
+    if (allow_if_header &&
+        strictfmt_tree_sitter_cpp_macro_category_matches(MACRO_CATEGORY_IF_HEADER, name, length)) {
+        lexer->result_symbol = IF_HEADER_MACRO_IDENTIFIER;
         return true;
     }
 
@@ -394,7 +403,8 @@ static bool has_valid_macro_identifier(TSLexer *lexer, const bool *valid_symbols
         valid_symbols[PREPROCESSOR_CONTINUATION_MACRO_IDENTIFIER],
         valid_symbols[EXPRESSION_PREFIX_MACRO_IDENTIFIER],
         valid_symbols[EXPRESSION_PREFIX_ITEM_MACRO_IDENTIFIER],
-        valid_symbols[EXPRESSION_PREFIX_ITEM_CALL_MACRO_IDENTIFIER]
+        valid_symbols[EXPRESSION_PREFIX_ITEM_CALL_MACRO_IDENTIFIER],
+        valid_symbols[IF_HEADER_MACRO_IDENTIFIER]
     );
 }
 
@@ -421,7 +431,8 @@ static bool scan_macro_identifier_token(
     bool allow_preprocessor_continuation,
     bool allow_expression_prefix,
     bool allow_expression_prefix_item,
-    bool allow_expression_prefix_item_call
+    bool allow_expression_prefix_item_call,
+    bool allow_if_header
 ) {
     char name[MAX_MACRO_NAME_LENGTH];
     unsigned length = 0;
@@ -453,7 +464,8 @@ static bool scan_macro_identifier_token(
         allow_preprocessor_continuation,
         allow_expression_prefix,
         allow_expression_prefix_item,
-        allow_expression_prefix_item_call
+        allow_expression_prefix_item_call,
+        allow_if_header
     );
 }
 
@@ -888,7 +900,8 @@ bool tree_sitter_cpp_external_scanner_scan(void *payload, TSLexer *lexer, const 
         valid_symbols[PREPROCESSOR_CONTINUATION_MACRO_IDENTIFIER] ||
         valid_symbols[EXPRESSION_PREFIX_MACRO_IDENTIFIER] ||
         valid_symbols[EXPRESSION_PREFIX_ITEM_MACRO_IDENTIFIER] ||
-        valid_symbols[EXPRESSION_PREFIX_ITEM_CALL_MACRO_IDENTIFIER]) {
+        valid_symbols[EXPRESSION_PREFIX_ITEM_CALL_MACRO_IDENTIFIER] ||
+        valid_symbols[IF_HEADER_MACRO_IDENTIFIER]) {
         skip_external_whitespace(lexer);
     }
 
@@ -915,7 +928,8 @@ bool tree_sitter_cpp_external_scanner_scan(void *payload, TSLexer *lexer, const 
          valid_symbols[PREPROCESSOR_CONTINUATION_MACRO_IDENTIFIER] ||
          valid_symbols[EXPRESSION_PREFIX_MACRO_IDENTIFIER] ||
          valid_symbols[EXPRESSION_PREFIX_ITEM_MACRO_IDENTIFIER] ||
-         valid_symbols[EXPRESSION_PREFIX_ITEM_CALL_MACRO_IDENTIFIER]) &&
+         valid_symbols[EXPRESSION_PREFIX_ITEM_CALL_MACRO_IDENTIFIER] ||
+         valid_symbols[IF_HEADER_MACRO_IDENTIFIER]) &&
         is_identifier_start(lexer->lookahead)) {
         return scan_macro_identifier_token(
             lexer,
@@ -934,7 +948,8 @@ bool tree_sitter_cpp_external_scanner_scan(void *payload, TSLexer *lexer, const 
             valid_symbols[PREPROCESSOR_CONTINUATION_MACRO_IDENTIFIER],
             valid_symbols[EXPRESSION_PREFIX_MACRO_IDENTIFIER],
             valid_symbols[EXPRESSION_PREFIX_ITEM_MACRO_IDENTIFIER],
-            valid_symbols[EXPRESSION_PREFIX_ITEM_CALL_MACRO_IDENTIFIER]
+            valid_symbols[EXPRESSION_PREFIX_ITEM_CALL_MACRO_IDENTIFIER],
+            valid_symbols[IF_HEADER_MACRO_IDENTIFIER]
         );
     }
 

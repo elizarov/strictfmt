@@ -41,6 +41,8 @@ MacroCategories:
     - FORMAT_PARAMETER_SUFFIX
     - FORMAT_PARAMETER_SUFFIX_CALL
     - WINAPI
+  IfHeaderMacros:
+    - FORMAT_IF_HEADER_*
   StatementPrefixMacros:
     - FORMAT_STATEMENT_PREFIX_*
   ItemMacros:

@@ -69,6 +69,7 @@ LEXICAL_EXTERNAL_TOKENS = frozenset({
     "preprocessor_item_macro_identifier",
     "preprocessor_continuation_macro_identifier",
     "statement_prefix_macro_identifier",
+    "if_header_macro_identifier",
     "statement_argument_macro_identifier",
     "type_specifier_macro_identifier",
     "namespace_macro_identifier",

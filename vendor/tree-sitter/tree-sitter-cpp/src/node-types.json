@@ -6591,7 +6591,7 @@
       },
       "condition": {
         "multiple": false,
-        "required": true,
+        "required": false,
         "types": [
           {
             "type": "condition_clause",
@@ -6617,6 +6617,16 @@
           }
         ]
       }
+    },
+    "children": {
+      "multiple": false,
+      "required": false,
+      "types": [
+        {
+          "type": "macro_if_header",
+          "named": true
+        }
+      ]
     }
   },
   {
@@ -7846,6 +7856,32 @@
           }
         ]
       }
+    }
+  },
+  {
+    "type": "macro_if_header",
+    "named": true,
+    "fields": {
+      "arguments": {
+        "multiple": false,
+        "required": false,
+        "types": [
+          {
+            "type": "argument_list",
+            "named": true
+          }
+        ]
+      }
+    },
+    "children": {
+      "multiple": false,
+      "required": true,
+      "types": [
+        {
+          "type": "if_header_macro_identifier",
+          "named": true
+        }
+      ]
     }
   },
   {
@@ -11794,7 +11830,7 @@
       },
       "condition": {
         "multiple": true,
-        "required": true,
+        "required": false,
         "types": [
           {
             "type": "binary_expression",
@@ -11874,6 +11910,16 @@
           }
         ]
       }
+    },
+    "children": {
+      "multiple": true,
+      "required": false,
+      "types": [
+        {
+          "type": "macro_if_header",
+          "named": true
+        }
+      ]
     }
   },
   {
@@ -14305,7 +14351,7 @@
     "fields": {
       "condition": {
         "multiple": true,
-        "required": true,
+        "required": false,
         "types": [
           {
             "type": "binary_expression",
@@ -14394,6 +14440,10 @@
         },
         {
           "type": "function_type_alias_declaration",
+          "named": true
+        },
+        {
+          "type": "macro_if_header",
           "named": true
         },
         {
@@ -14580,7 +14630,7 @@
     "fields": {
       "condition": {
         "multiple": false,
-        "required": true,
+        "required": false,
         "types": [
           {
             "type": "condition_clause",
@@ -14593,6 +14643,10 @@
       "multiple": true,
       "required": true,
       "types": [
+        {
+          "type": "macro_if_header",
+          "named": true
+        },
         {
           "type": "preproc_selected_else_if_body_item",
           "named": true
@@ -16607,7 +16661,7 @@
     "fields": {
       "condition": {
         "multiple": false,
-        "required": true,
+        "required": false,
         "types": [
           {
             "type": "condition_clause",
@@ -16615,6 +16669,16 @@
           }
         ]
       }
+    },
+    "children": {
+      "multiple": false,
+      "required": false,
+      "types": [
+        {
+          "type": "macro_if_header",
+          "named": true
+        }
+      ]
     }
   },
   {
@@ -19793,6 +19857,10 @@
     "named": false
   },
   {
+    "type": "if_header_macro_identifier",
+    "named": true
+  },
+  {
     "type": "import",
     "named": false
   },
@@ -20058,11 +20126,11 @@
   },
   {
     "type": "true",
-    "named": true
+    "named": false
   },
   {
     "type": "true",
-    "named": false
+    "named": true
   },
   {
     "type": "try",

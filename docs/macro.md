@@ -9,6 +9,7 @@ A macro's syntactic role cannot always be inferred without expansion, so arbitra
 - [NamespaceMacros](#namespacemacros): a namespace header followed by a declaration body, as in `TEST_SUITE(Name) { ... }`.
 - [ItemMacros](#itemmacros): separate declarations, statements, or list fragments, as in `BEGIN_NAMESPACE`.
 - [MethodDeclarationMacros](#methoddeclarationmacros): method-signature arguments, as in `MOCK_METHOD(void, Save, (T* value))`.
+- [IfHeaderMacros](#ifheadermacros): an `if` header supplied by a macro, as in `IF_READY(condition) Work();`.
 - [StatementPrefixMacros](#statementprefixmacros): a prefix attached to the next statement, as in `DISCARD_RESULT message.Parse();`.
 - [ExpressionPrefixMacros](#expressionprefixmacros): a fragment attached to the following expression, as in `RAISE Error()` or `FIELDS(CHECK) true`.
 - [ExpressionContinuationMacros](#expressioncontinuationmacros): a fragment attached to the preceding expression, as in `Register() OPTIONS`.
@@ -176,6 +177,27 @@ MacroCategories:
 class MockStore {
     MOCK_METHOD(void, Save, (Context* context), (ref(&), override));
 };
+```
+
+### IfHeaderMacros
+
+`IfHeaderMacros` names bare macros or invocations that supply an `if` header, including macros that select between `if` and `if constexpr`. Their bodies and `else` clauses follow ordinary C++ control-flow rules, including brace insertion and binding each `else` to the nearest unmatched `if`.
+
+<!-- .cpp-format
+MacroCategories:
+  IfHeaderMacros:
+    - IF_READY
+-->
+```cpp
+void Run(bool outer, bool ready) {
+    if (outer) {
+        IF_READY(ready) {
+            Work();
+        } else {
+            Fallback();
+        }
+    }
+}
 ```
 
 ### StatementPrefixMacros
