@@ -1485,3 +1485,49 @@ void PreprocessorSelectedBracedIf(Connection* conn, std::string& status) {
         status.append("Secondary UNAVAILABLE");
     }
 }
+
+int SelectedForPrefix(int limit) {
+    int total = 0;
+#if FIRST
+    if (limit < 0) {
+        return -1;
+    }
+    for (int index = 0; index < limit; ++index) {
+#elif SECOND
+    for (int index : {1, 2, 3}) {
+#else
+#if NESTED
+    for (int index = limit; index > 0; --index) {
+#else
+    for (int index = 0; index < 2; ++index) {
+#endif
+#endif
+        total += index;
+    }
+    return total;
+}
+int NestedSelectedFor(bool ready) {
+    int total = 0;
+    if (ready) {
+#ifdef FIRST
+        for (int index = 0; index < 2; ++index) {
+#else
+        for (int index : {2, 3}) {
+#endif
+            total += index;
+        }
+    } else {
+        return -1;
+    }
+    return total;
+}
+
+void SelectedForEach(Items items) {
+#if MANAGED
+    for each (auto item in items) {
+#else
+    for (auto item : items) {
+#endif
+        Save(item);
+    }
+}

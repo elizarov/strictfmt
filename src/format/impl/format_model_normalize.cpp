@@ -389,6 +389,10 @@ void NormalizeLastControlBody(FormatModel& model, SyntaxNode& node) {
 }
 
 void NormalizeControlBodies(FormatModel& model, SyntaxNode& node) {
+    // A selected header's body is shared after the enclosing conditional.
+    if (SyntaxNodeHasClass(node, SyntaxNodeClass::ConditionalBlockHeader)) {
+        return;
+    }
     if (
         !SyntaxNodeHasClass(node, SyntaxNodeClass::ControlHeader) &&
         node.kind != SyntaxNodeKind::ElseClause &&

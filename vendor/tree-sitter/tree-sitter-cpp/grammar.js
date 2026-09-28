@@ -3441,38 +3441,23 @@ module.exports = grammar(C, {
       '}',
     ),
 
-    _selected_if_prefix_branch: $ => seq(
-      repeat($._block_item),
-      choice($.selected_if_prefix, $.preproc_if_prefix),
-    ),
-
     selected_if_prefix: $ => seq($._if_header, '{'),
 
-    preproc_if_prefix: $ => seq(
-      $._preproc_opening_condition,
-      $._preproc_directive_end,
-      $._selected_if_prefix_branch,
-      optional($._preproc_if_prefix_alternative),
-      preprocessor('endif'),
+    ...selectedBlockPrefix('if', $ => $.selected_if_prefix),
+
+    preproc_selected_for_statement: $ => seq(
+      field('body', alias($.preproc_selected_for_body, $.compound_statement)),
     ),
 
-    _preproc_if_prefix_alternative: $ => choice(
-      alias($.preproc_else_if_prefix, $.preproc_else),
-      alias($.preproc_elif_if_prefix, $.preproc_elif),
+    preproc_selected_for_body: $ => seq(
+      $.preproc_for_prefix,
+      repeat($._block_item),
+      '}',
     ),
 
-    preproc_else_if_prefix: $ => seq(
-      $._preproc_else_line,
-      $._selected_if_prefix_branch,
-    ),
+    selected_for_prefix: $ => seq(choice($._for_header, $._for_range_header, $._for_each_header), '{'),
 
-    preproc_elif_if_prefix: $ => seq(
-      preprocessor('elif'),
-      field('condition', $._preproc_expression),
-      $._preproc_directive_end,
-      $._selected_if_prefix_branch,
-      optional($._preproc_if_prefix_alternative),
-    ),
+    ...selectedBlockPrefix('for', $ => $.selected_for_prefix),
 
     selected_if_header: $ => $._if_header,
 
@@ -3591,6 +3576,7 @@ module.exports = grammar(C, {
     // An else can follow only a body with no unmatched trailing if. This
     // remains true when a directive delays the else beyond parser lookahead.
     _closed_statement_leaf: $ => choice(
+      $.preproc_selected_for_statement,
       $.compound_statement,
       $.expression_statement,
       $.return_statement,
@@ -5462,6 +5448,36 @@ function preprocListItem($, suffix, forms = PREPROC_ALL_BRANCH_FORMS) {
 
 function selectedIfHeader($) {
   return $._if_header;
+}
+
+function selectedBlockPrefix(kind, prefix) {
+  const group = 'preproc_' + kind + '_prefix';
+  const branch = '_selected_' + kind + '_prefix_branch';
+  const alternative = '_preproc_' + kind + '_prefix_alternative';
+  const elseBranch = 'preproc_else_' + kind + '_prefix';
+  const elifBranch = 'preproc_elif_' + kind + '_prefix';
+  return {
+    [branch]: $ => seq(repeat($._block_item), choice(prefix($), $[group])),
+    [group]: $ => seq(
+      $._preproc_opening_condition,
+      $._preproc_directive_end,
+      $[branch],
+      optional($[alternative]),
+      preprocessor('endif'),
+    ),
+    [alternative]: $ => choice(
+      alias($[elseBranch], $.preproc_else),
+      alias($[elifBranch], $.preproc_elif),
+    ),
+    [elseBranch]: $ => seq($._preproc_else_line, $[branch]),
+    [elifBranch]: $ => seq(
+      preprocessor('elif'),
+      field('condition', $._preproc_expression),
+      $._preproc_directive_end,
+      $[branch],
+      optional($[alternative]),
+    ),
+  };
 }
 
 function preprocOpeningCondition($) {
