@@ -9335,3 +9335,11 @@ void CallsThroughMacroTypes() {
 }
 
 using MacroScopeValue = FORMAT_TYPE_SCOPE(Traits)::value_type;
+
+extern "C" __stdcall unsigned short CaptureFrames(unsigned long count, void** trace);
+__cdecl int ConventionalDeclaration(int value);
+__fastcall int ConventionalDefinition(int value) { return value; }
+
+struct ConventionalMethods {
+    __stdcall int Read(int value);
+};

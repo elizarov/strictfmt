@@ -320,6 +320,7 @@ module.exports = grammar(C, {
   ],
 
   conflicts: $ => [
+    [$._declaration_modifiers, $._declaration_declarator_list],
     [$._declaration_specifiers, $._conditional_function_return_type_specifiers, $._macro_qualified_declaration_specifiers, $._constructor_specifiers, $.friend_declaration],
     [$._declaration_modifiers],
     [$._declaration_specifiers, $._conditional_function_return_type_specifiers, $._modifier_prefixed_macro_declaration, $._constructor_specifiers, $.friend_declaration],
@@ -1815,6 +1816,7 @@ module.exports = grammar(C, {
     _declaration_modifiers: ($, original) => choice(
       original,
       $.declaration_modifier_macro,
+      $.ms_call_modifier,
       'virtual',
     ),
 
@@ -2444,7 +2446,6 @@ module.exports = grammar(C, {
       )),
       seq(
         $._declaration_specifiers,
-        optional($.ms_call_modifier),
         optional($._field_declaration_declarator_list),
         optional($.attribute_specifier),
         ';',
@@ -5145,18 +5146,14 @@ function initStatement($, declaration) {
 
 function functionDefinitionHeader($) {
   return [
-    optional($.ms_call_modifier),
     $._declaration_specifiers,
-    optional($.ms_call_modifier),
     field('declarator', $._function_definition_declarator),
   ];
 }
 
 function conditionalFunctionDefinitionHeader($) {
   return [
-    optional($.ms_call_modifier),
     $._conditional_function_return_type_specifiers,
-    optional($.ms_call_modifier),
     field('declarator', $._function_definition_declarator),
   ];
 }
@@ -5173,7 +5170,7 @@ function functionDefinitionPrefixWithHeader($, header) {
 }
 
 function inlineMethodDefinitionWithSpecifiers($, specifiers) {
-  const prefix = [specifiers, optional($.ms_call_modifier)];
+  const prefix = [specifiers];
   return choice(
     prec.dynamic(1, seq(
       ...prefix,

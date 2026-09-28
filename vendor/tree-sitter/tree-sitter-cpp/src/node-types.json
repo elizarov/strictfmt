@@ -1168,6 +1168,10 @@
           "named": true
         },
         {
+          "type": "ms_call_modifier",
+          "named": true
+        },
+        {
           "type": "ms_declspec_modifier",
           "named": true
         },
@@ -3780,6 +3784,10 @@
           "named": true
         },
         {
+          "type": "ms_call_modifier",
+          "named": true
+        },
+        {
           "type": "ms_declspec_modifier",
           "named": true
         },
@@ -5260,6 +5268,10 @@
           "named": true
         },
         {
+          "type": "ms_call_modifier",
+          "named": true
+        },
+        {
           "type": "ms_declspec_modifier",
           "named": true
         },
@@ -5347,6 +5359,10 @@
         },
         {
           "type": "declaration_modifier_macro",
+          "named": true
+        },
+        {
+          "type": "ms_call_modifier",
           "named": true
         },
         {
@@ -5460,6 +5476,10 @@
         },
         {
           "type": "macro_token_paste_expression",
+          "named": true
+        },
+        {
+          "type": "ms_call_modifier",
           "named": true
         },
         {
@@ -5892,6 +5912,10 @@
         },
         {
           "type": "declaration_modifier_macro",
+          "named": true
+        },
+        {
+          "type": "ms_call_modifier",
           "named": true
         },
         {
@@ -6957,6 +6981,10 @@
           "named": true
         },
         {
+          "type": "ms_call_modifier",
+          "named": true
+        },
+        {
           "type": "ms_declspec_modifier",
           "named": true
         },
@@ -7307,6 +7335,10 @@
           "named": true
         },
         {
+          "type": "ms_call_modifier",
+          "named": true
+        },
+        {
           "type": "ms_declspec_modifier",
           "named": true
         },
@@ -7364,6 +7396,10 @@
         },
         {
           "type": "declaration_modifier_macro",
+          "named": true
+        },
+        {
+          "type": "ms_call_modifier",
           "named": true
         },
         {
@@ -7702,6 +7738,10 @@
           "named": true
         },
         {
+          "type": "ms_call_modifier",
+          "named": true
+        },
+        {
           "type": "ms_declspec_modifier",
           "named": true
         },
@@ -7803,6 +7843,10 @@
         },
         {
           "type": "identifier",
+          "named": true
+        },
+        {
+          "type": "ms_call_modifier",
           "named": true
         },
         {
@@ -9273,6 +9317,10 @@
           "named": true
         },
         {
+          "type": "ms_call_modifier",
+          "named": true
+        },
+        {
           "type": "ms_declspec_modifier",
           "named": true
         },
@@ -9395,6 +9443,10 @@
           "named": true
         },
         {
+          "type": "ms_call_modifier",
+          "named": true
+        },
+        {
           "type": "ms_declspec_modifier",
           "named": true
         },
@@ -9504,6 +9556,10 @@
           "named": true
         },
         {
+          "type": "ms_call_modifier",
+          "named": true
+        },
+        {
           "type": "ms_declspec_modifier",
           "named": true
         },
@@ -9603,6 +9659,10 @@
         },
         {
           "type": "macro_parenthesized_parameter_declaration",
+          "named": true
+        },
+        {
+          "type": "ms_call_modifier",
           "named": true
         },
         {
@@ -11953,6 +12013,10 @@
           "named": true
         },
         {
+          "type": "ms_call_modifier",
+          "named": true
+        },
+        {
           "type": "ms_declspec_modifier",
           "named": true
         },
@@ -12902,6 +12966,10 @@
         },
         {
           "type": "module_import_declaration",
+          "named": true
+        },
+        {
+          "type": "ms_call_modifier",
           "named": true
         },
         {
@@ -15182,6 +15250,10 @@
           "named": true
         },
         {
+          "type": "ms_call_modifier",
+          "named": true
+        },
+        {
           "type": "ms_declspec_modifier",
           "named": true
         },
@@ -17280,6 +17352,10 @@
           "named": true
         },
         {
+          "type": "ms_call_modifier",
+          "named": true
+        },
+        {
           "type": "ms_declspec_modifier",
           "named": true
         },
@@ -17858,6 +17934,10 @@
           "named": true
         },
         {
+          "type": "ms_call_modifier",
+          "named": true
+        },
+        {
           "type": "ms_declspec_modifier",
           "named": true
         },
@@ -18336,6 +18416,10 @@
         },
         {
           "type": "declaration_modifier_macro",
+          "named": true
+        },
+        {
+          "type": "ms_call_modifier",
           "named": true
         },
         {

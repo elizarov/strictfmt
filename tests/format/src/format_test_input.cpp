@@ -5697,3 +5697,8 @@ auto value=FORMAT_TYPE_SCOPE(Traits)::Nested::Build(1,2);
 FORMAT_TOKEN_TYPE(namespace)::Visit(value);
 }
 using MacroScopeValue=FORMAT_TYPE_SCOPE(Traits)::value_type;
+
+extern "C" __stdcall unsigned short CaptureFrames(unsigned long count,void** trace);
+__cdecl int ConventionalDeclaration(int value);
+__fastcall int ConventionalDefinition(int value){return value;}
+struct ConventionalMethods{__stdcall int Read(int value);};
