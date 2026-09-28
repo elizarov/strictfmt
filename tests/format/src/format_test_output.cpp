@@ -9363,3 +9363,25 @@ void TokenStatementItems() {
         Consume(value);
     }
 }
+
+// Statement arguments may leave the final control body semicolon to the invocation.
+void IncompleteMacroControls() {
+    FORMAT_STATEMENT_DECLARATIONS(if (ready) count++);
+    FORMAT_STATEMENT_DECLARATIONS(if (ready) Consume(value));
+    FORMAT_STATEMENT_DECLARATIONS(
+        Prepare();
+        if (ready) Consume(value)
+    );
+    FORMAT_STATEMENT_DECLARATIONS(if (ready) Consume(value); else Recover(value));
+    FORMAT_STATEMENT_DECLARATIONS(if (outer) if (inner) Consume(value));
+    FORMAT_STATEMENT_DECLARATIONS(for (int i = 0; i < count; ++i) Consume(i));
+    FORMAT_STATEMENT_DECLARATIONS(for (auto value : values) Consume(value));
+    FORMAT_STATEMENT_DECLARATIONS(while (ready) Consume(value));
+    FORMAT_STATEMENT_DECLARATIONS(if (ready) return );
+    FORMAT_STATEMENT_DECLARATIONS(if (ready) {
+        return;
+    });
+    FORMAT_STATEMENT_DECLARATIONS(if (ready) {
+        Consume(value);
+    });
+}

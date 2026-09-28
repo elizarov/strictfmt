@@ -518,6 +518,7 @@ constexpr auto kSyntaxKindMappings = std::to_array<SyntaxKindMapping>({
     Tree(SyntaxNodeKind::ArgumentList, "macro_parenthesized_argument", kPreprocessorSplitListClasses),
     Tree(SyntaxNodeKind::ArgumentList, "macro_statement_argument_list", kPreprocessorSplitListClasses),
     Tree(SyntaxNodeKind::MacroStatementSequence, "macro_statement_sequence_argument"),
+    Tree(SyntaxNodeKind::MacroUnterminatedControlStatement, "macro_unterminated_control_statement"),
     Tree(SyntaxNodeKind::MacroStatementSequence, "structured_statement_macro_argument"),
     Tree(SyntaxNodeKind::SubscriptArgumentList, "subscript_argument_list", kPreprocessorSplitListClasses),
     Tree(SyntaxNodeKind::TemplateParameterList, "template_parameter_list", kPreprocessorSplitListClasses),
@@ -1302,6 +1303,8 @@ std::string_view SyntaxNodeKindName(SyntaxNodeKind kind) {
             return "BareMacroItem";
         case SyntaxNodeKind::MacroStatementSequence:
             return "MacroStatementSequence";
+        case SyntaxNodeKind::MacroUnterminatedControlStatement:
+            return "MacroUnterminatedControlStatement";
         case SyntaxNodeKind::MsCallModifier:
             return "MsCallModifier";
         case SyntaxNodeKind::MsDeclspecModifier:

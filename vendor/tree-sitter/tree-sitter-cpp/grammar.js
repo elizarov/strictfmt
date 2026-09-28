@@ -4008,6 +4008,7 @@ module.exports = grammar(C, {
     ]),
 
     macro_call_statement_item: $ => choice(
+      $.macro_unterminated_control_statement,
       $.macro_empty_statement_argument,
       alias($.macro_initialized_declaration_fragment, $.declaration),
       alias($.macro_declaration_without_semicolon, $.declaration),
@@ -4023,6 +4024,7 @@ module.exports = grammar(C, {
     ),
 
     macro_single_statement_argument: $ => prec.dynamic(1, choice(
+      $.macro_unterminated_control_statement,
       $.macro_empty_statement_argument,
       alias($.macro_initialized_declaration_fragment, $.declaration),
       alias($.macro_declaration_without_semicolon, $.declaration),
@@ -4035,6 +4037,44 @@ module.exports = grammar(C, {
       $.macro_return_statement_argument,
       $.macro_return_argument,
     )),
+
+    // The invocation or its expansion can supply the final statement's semicolon.
+    // Preserve the open body instead of treating a call as a complete macro item.
+    macro_unterminated_control_statement: $ => prec.dynamic(20, choice(
+      alias($.macro_unterminated_if_statement, $.if_statement),
+      alias($.macro_unterminated_for_statement, $.for_statement),
+      alias($.macro_unterminated_for_range_loop, $.for_range_loop),
+      alias($.macro_unterminated_while_statement, $.while_statement),
+    )),
+
+    _macro_unterminated_body: $ => choice(
+      alias($.macro_expression_without_semicolon, $.expression_statement),
+      $.macro_return_argument,
+      $.macro_unterminated_control_statement,
+    ),
+
+    macro_unterminated_if_statement: $ => prec.right(choice(
+      seq($._if_header, field('consequence', $._macro_unterminated_body)),
+      seq(
+        $._if_header,
+        field('consequence', $._closed_statement),
+        field('alternative', alias($.macro_unterminated_else_clause, $.else_clause)),
+      ),
+    )),
+
+    macro_unterminated_else_clause: $ => seq('else', $._macro_unterminated_body),
+
+    macro_unterminated_for_statement: $ => seq(
+      $._for_header, field('body', $._macro_unterminated_body),
+    ),
+
+    macro_unterminated_for_range_loop: $ => seq(
+      $._for_range_header, field('body', $._macro_unterminated_body),
+    ),
+
+    macro_unterminated_while_statement: $ => seq(
+      $._while_header, field('body', $._macro_unterminated_body),
+    ),
 
     macro_initialized_declaration_fragment: $ => prec.dynamic(20, prec(PREC.CALL + 10, seq(
       $._declaration_specifiers,

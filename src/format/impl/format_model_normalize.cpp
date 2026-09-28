@@ -397,9 +397,12 @@ void NormalizeControlBodies(FormatModel& model, SyntaxNode& node) {
     ) {
         return;
     }
-    // A replacement may leave its control body open for tokens supplied at the use site.
+    // A replacement or statement argument may leave its body open for tokens supplied at the use site.
     for (const SyntaxNode* parent = node.parent; parent != nullptr; parent = parent->parent) {
-        if (SyntaxNodeHasClass(*parent, SyntaxNodeClass::MacroDefinition)) {
+        if (
+            SyntaxNodeHasClass(*parent, SyntaxNodeClass::MacroDefinition) ||
+            parent->kind == SyntaxNodeKind::MacroUnterminatedControlStatement
+        ) {
             return;
         }
     }
