@@ -2062,6 +2062,16 @@ module.exports = grammar(C, {
       $._function_declarator_seq,
     ),
 
+    gnu_asm_expression: ($, original) => prec(PREC.CALL, seq(
+      ...original.content.members.map(member => member.name === 'assembly_code'
+        ? field('assembly_code', choice(
+          $._string,
+          alias($.conditional_concatenated_string, $.concatenated_string),
+          alias($.preproc_conditional_string_initializer, $.concatenated_string),
+        ))
+        : member),
+    )),
+
     gnu_asm_qualifier: ($, original) => choice(original, '__volatile'),
 
     init_declarator: $ => choice(

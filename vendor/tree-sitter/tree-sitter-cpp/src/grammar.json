@@ -10409,8 +10409,31 @@
             "type": "FIELD",
             "name": "assembly_code",
             "content": {
-              "type": "SYMBOL",
-              "name": "_string"
+              "type": "CHOICE",
+              "members": [
+                {
+                  "type": "SYMBOL",
+                  "name": "_string"
+                },
+                {
+                  "type": "ALIAS",
+                  "content": {
+                    "type": "SYMBOL",
+                    "name": "conditional_concatenated_string"
+                  },
+                  "named": true,
+                  "value": "concatenated_string"
+                },
+                {
+                  "type": "ALIAS",
+                  "content": {
+                    "type": "SYMBOL",
+                    "name": "preproc_conditional_string_initializer"
+                  },
+                  "named": true,
+                  "value": "concatenated_string"
+                }
+              ]
             }
           },
           {

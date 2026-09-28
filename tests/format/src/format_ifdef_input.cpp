@@ -825,3 +825,18 @@ if(Load(state,reader,name
 #endif
 )){Fail();}
 }
+
+void ConditionalAssembly(){
+asm volatile(
+#if FEATURE
+"prefix"
+#endif
+"body": "+r"(out): "r"(in): "memory");
+asm("first"
+#if FEATURE
+"middle"
+#else
+"alternate"
+#endif
+"last":::"cc");
+}
