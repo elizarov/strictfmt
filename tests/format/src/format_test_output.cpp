@@ -9301,3 +9301,10 @@ struct AnnotatedPointerReferences {
     using Pointer = Value* FORMAT_DECLARATOR_MODIFIER;
     using Reference = Value& FORMAT_DECLARATOR_MODIFIER;
 };
+
+enum MacroNamedFlags {
+    FLAG_NAME(First) = 1,
+    FLAG_NAME(Second) = FLAG_NAME(First),
+    FLAG_NAME(Third) = BuildValue(3),
+    Ordinary = 4
+};

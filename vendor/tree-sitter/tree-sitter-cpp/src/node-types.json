@@ -4384,6 +4384,10 @@
             "named": true
           },
           {
+            "type": "identifier_call",
+            "named": true
+          },
+          {
             "type": "macro_token_paste_expression",
             "named": true
           }
@@ -6288,6 +6292,44 @@
     "type": "identifier",
     "named": true,
     "fields": {}
+  },
+  {
+    "type": "identifier_call",
+    "named": true,
+    "fields": {
+      "arguments": {
+        "multiple": false,
+        "required": true,
+        "types": [
+          {
+            "type": "argument_list",
+            "named": true
+          },
+          {
+            "type": "preprocessing_token_argument_list",
+            "named": true
+          }
+        ]
+      },
+      "function": {
+        "multiple": false,
+        "required": true,
+        "types": [
+          {
+            "type": "identifier",
+            "named": true
+          },
+          {
+            "type": "item_call_macro_identifier",
+            "named": true
+          },
+          {
+            "type": "preprocessor_item_macro_identifier",
+            "named": true
+          }
+        ]
+      }
+    }
   },
   {
     "type": "if_statement",
@@ -18425,11 +18467,11 @@
   },
   {
     "type": "true",
-    "named": true
+    "named": false
   },
   {
     "type": "true",
-    "named": false
+    "named": true
   },
   {
     "type": "try",

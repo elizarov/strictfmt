@@ -1803,7 +1803,7 @@ module.exports = grammar(C, {
     enum_specifier: $ => enumSpecifier($, $.enumerator_list),
 
     enumerator: $ => prec(1, seq(
-      field('name', identifierWithPaste($)),
+      field('name', choice(identifierWithPaste($), $.identifier_call)),
       repeat($.attribute_declaration),
       optional(seq('=', field('value', seq(repeat($._unconfigured_macro_item), $.expression)))),
     )),

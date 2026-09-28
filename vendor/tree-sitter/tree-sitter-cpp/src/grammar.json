@@ -6671,23 +6671,32 @@
                   "type": "CHOICE",
                   "members": [
                     {
-                      "type": "SYMBOL",
-                      "name": "identifier"
+                      "type": "CHOICE",
+                      "members": [
+                        {
+                          "type": "SYMBOL",
+                          "name": "identifier"
+                        },
+                        {
+                          "type": "ALIAS",
+                          "content": {
+                            "type": "SYMBOL",
+                            "name": "_contextual_identifier"
+                          },
+                          "named": true,
+                          "value": "identifier"
+                        }
+                      ]
                     },
                     {
-                      "type": "ALIAS",
-                      "content": {
-                        "type": "SYMBOL",
-                        "name": "_contextual_identifier"
-                      },
-                      "named": true,
-                      "value": "identifier"
+                      "type": "SYMBOL",
+                      "name": "macro_token_paste_expression"
                     }
                   ]
                 },
                 {
                   "type": "SYMBOL",
-                  "name": "macro_token_paste_expression"
+                  "name": "identifier_call"
                 }
               ]
             }
