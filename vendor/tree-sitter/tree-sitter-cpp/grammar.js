@@ -308,6 +308,14 @@ module.exports = grammar(C, {
   ],
 
   conflicts: $ => [
+    [$._declaration_modifiers, $.macro_template_declaration],
+    [$._declaration_specifiers, $._conditional_function_return_type_specifiers, $._macro_qualified_declaration_specifiers, $._constructor_specifiers],
+    [$._modifier_prefixed_macro_declaration, $._unconfigured_type_call_identifier],
+    [$._declaration_specifiers, $.macro_prefixed_field_declaration_item, $._conditional_function_return_type_specifiers, $._modifier_prefixed_macro_declaration, $._constructor_specifiers],
+    [$._declaration_specifiers, $.macro_prefixed_field_declaration_item, $._conditional_function_return_type_specifiers, $._modifier_prefixed_macro_declaration],
+    [$._declaration_specifiers, $.macro_prefixed_function_definition, $.macro_prefixed_declaration, $._conditional_function_return_type_specifiers, $._modifier_prefixed_macro_declaration, $._constructor_specifiers],
+    [$._declaration_specifiers, $.macro_prefixed_function_definition, $.macro_prefixed_declaration, $._conditional_function_return_type_specifiers, $._modifier_prefixed_macro_declaration],
+    [$._declaration_specifiers, $._conditional_function_return_type_specifiers, $._modifier_prefixed_macro_declaration, $._constructor_specifiers],
     [$.preproc_ended_consequence_statement, $._closed_statement_leaf],
     [$.preproc_selected_else_if_body_item, $._closed_statement_leaf],
     [$._block_item, $._closed_statement_leaf],
@@ -1656,9 +1664,16 @@ module.exports = grammar(C, {
     _qualified_type_function_declarator: $ => $._function_definition_declarator,
 
     declaration: $ => choice(
+      $._modifier_prefixed_macro_declaration,
       declarationWithSpecifiers($, field('type', $._qualified_declaration_type)),
       declarationWithSpecifiers($, $._declaration_specifiers),
     ),
+
+    _modifier_prefixed_macro_declaration: $ => prec.dynamic(-1, seq(
+      repeat1($._declaration_modifiers),
+      choice(itemCall($), itemMacro($)),
+      ';',
+    )),
 
     _qualified_declaration_type: $ => prec(1, choice(
       alias($.qualified_type_identifier, $.qualified_identifier),
@@ -2254,6 +2269,7 @@ module.exports = grammar(C, {
     )),
 
     field_declaration: $ => choice(
+      $._modifier_prefixed_macro_declaration,
       prec(PREC.CALL + 2, seq(
         field('type', $._qualified_declaration_type),
         optional($.ms_call_modifier),

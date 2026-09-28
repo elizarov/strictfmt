@@ -3405,6 +3405,10 @@
       "type": "CHOICE",
       "members": [
         {
+          "type": "SYMBOL",
+          "name": "_modifier_prefixed_macro_declaration"
+        },
+        {
           "type": "SEQ",
           "members": [
             {
@@ -6234,6 +6238,10 @@
     "field_declaration": {
       "type": "CHOICE",
       "members": [
+        {
+          "type": "SYMBOL",
+          "name": "_modifier_prefixed_macro_declaration"
+        },
         {
           "type": "PREC",
           "value": 17,
@@ -19176,6 +19184,150 @@
     "_qualified_type_function_declarator": {
       "type": "SYMBOL",
       "name": "_function_definition_declarator"
+    },
+    "_modifier_prefixed_macro_declaration": {
+      "type": "PREC_DYNAMIC",
+      "value": -1,
+      "content": {
+        "type": "SEQ",
+        "members": [
+          {
+            "type": "REPEAT1",
+            "content": {
+              "type": "SYMBOL",
+              "name": "_declaration_modifiers"
+            }
+          },
+          {
+            "type": "CHOICE",
+            "members": [
+              {
+                "type": "CHOICE",
+                "members": [
+                  {
+                    "type": "SEQ",
+                    "members": [
+                      {
+                        "type": "FIELD",
+                        "name": "function",
+                        "content": {
+                          "type": "SYMBOL",
+                          "name": "_call_identifier"
+                        }
+                      },
+                      {
+                        "type": "FIELD",
+                        "name": "arguments",
+                        "content": {
+                          "type": "SYMBOL",
+                          "name": "argument_list"
+                        }
+                      }
+                    ]
+                  },
+                  {
+                    "type": "SEQ",
+                    "members": [
+                      {
+                        "type": "FIELD",
+                        "name": "function",
+                        "content": {
+                          "type": "SYMBOL",
+                          "name": "preprocessor_argument_macro_identifier"
+                        }
+                      },
+                      {
+                        "type": "FIELD",
+                        "name": "arguments",
+                        "content": {
+                          "type": "SYMBOL",
+                          "name": "preprocessing_token_argument_list"
+                        }
+                      }
+                    ]
+                  },
+                  {
+                    "type": "SEQ",
+                    "members": [
+                      {
+                        "type": "FIELD",
+                        "name": "function",
+                        "content": {
+                          "type": "SYMBOL",
+                          "name": "statement_argument_macro_identifier"
+                        }
+                      },
+                      {
+                        "type": "FIELD",
+                        "name": "arguments",
+                        "content": {
+                          "type": "SYMBOL",
+                          "name": "macro_statement_argument_list"
+                        }
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "type": "CHOICE",
+                "members": [
+                  {
+                    "type": "SYMBOL",
+                    "name": "item_macro_identifier"
+                  },
+                  {
+                    "type": "SEQ",
+                    "members": [
+                      {
+                        "type": "FIELD",
+                        "name": "function",
+                        "content": {
+                          "type": "SYMBOL",
+                          "name": "item_call_macro_identifier"
+                        }
+                      },
+                      {
+                        "type": "FIELD",
+                        "name": "arguments",
+                        "content": {
+                          "type": "SYMBOL",
+                          "name": "argument_list"
+                        }
+                      }
+                    ]
+                  },
+                  {
+                    "type": "SEQ",
+                    "members": [
+                      {
+                        "type": "FIELD",
+                        "name": "function",
+                        "content": {
+                          "type": "SYMBOL",
+                          "name": "preprocessor_item_macro_identifier"
+                        }
+                      },
+                      {
+                        "type": "FIELD",
+                        "name": "arguments",
+                        "content": {
+                          "type": "SYMBOL",
+                          "name": "preprocessing_token_argument_list"
+                        }
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "type": "STRING",
+            "value": ";"
+          }
+        ]
+      }
     },
     "_qualified_declaration_type": {
       "type": "PREC",
@@ -37859,6 +38011,54 @@
     }
   ],
   "conflicts": [
+    [
+      "_declaration_modifiers",
+      "macro_template_declaration"
+    ],
+    [
+      "_declaration_specifiers",
+      "_conditional_function_return_type_specifiers",
+      "_macro_qualified_declaration_specifiers",
+      "_constructor_specifiers"
+    ],
+    [
+      "_modifier_prefixed_macro_declaration",
+      "_unconfigured_type_call_identifier"
+    ],
+    [
+      "_declaration_specifiers",
+      "macro_prefixed_field_declaration_item",
+      "_conditional_function_return_type_specifiers",
+      "_modifier_prefixed_macro_declaration",
+      "_constructor_specifiers"
+    ],
+    [
+      "_declaration_specifiers",
+      "macro_prefixed_field_declaration_item",
+      "_conditional_function_return_type_specifiers",
+      "_modifier_prefixed_macro_declaration"
+    ],
+    [
+      "_declaration_specifiers",
+      "macro_prefixed_function_definition",
+      "macro_prefixed_declaration",
+      "_conditional_function_return_type_specifiers",
+      "_modifier_prefixed_macro_declaration",
+      "_constructor_specifiers"
+    ],
+    [
+      "_declaration_specifiers",
+      "macro_prefixed_function_definition",
+      "macro_prefixed_declaration",
+      "_conditional_function_return_type_specifiers",
+      "_modifier_prefixed_macro_declaration"
+    ],
+    [
+      "_declaration_specifiers",
+      "_conditional_function_return_type_specifiers",
+      "_modifier_prefixed_macro_declaration",
+      "_constructor_specifiers"
+    ],
     [
       "preproc_ended_consequence_statement",
       "_closed_statement_leaf"

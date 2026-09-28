@@ -9118,3 +9118,13 @@ void Boundaries() {
 }
 
 }
+
+// Declaration modifiers can prefix a macro-generated declaration.
+static DEFINE_GLOBAL(const ns::Logger, Logger, "service");
+inline constexpr DEFINE_VALUE(Pair<Key, Value>, Value, (Key{}, Value{}));
+
+struct MacroDefinedMembers {
+    static DECLARE_LOCK(ns::SpinLock, Lock);
+};
+
+void MacroDefinedLocals() { static DEFINE_GLOBAL(Pair<Key, Value>, Cached); }
