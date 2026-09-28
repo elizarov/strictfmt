@@ -606,3 +606,12 @@ Run(); else Other();
 else Fallback();
 #endif
 }
+
+// Conditional linkage wrappers accept expression guards as well as ifdef guards.
+#if defined(__cplusplus)
+extern "C" {
+#endif
+int ConditionalLinkage();
+#if defined(__cplusplus)
+} // extern C
+#endif

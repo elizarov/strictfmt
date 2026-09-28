@@ -18761,28 +18761,8 @@
         "type": "SEQ",
         "members": [
           {
-            "type": "ALIAS",
-            "content": {
-              "type": "TOKEN",
-              "content": {
-                "type": "PREC",
-                "value": 1,
-                "content": {
-                  "type": "PATTERN",
-                  "value": "#[ \\t]*if[ \\t]+"
-                }
-              }
-            },
-            "named": false,
-            "value": "#if"
-          },
-          {
-            "type": "FIELD",
-            "name": "condition",
-            "content": {
-              "type": "SYMBOL",
-              "name": "_preproc_expression"
-            }
+            "type": "SYMBOL",
+            "name": "_preproc_opening_condition"
           },
           {
             "type": "SYMBOL",
@@ -38596,6 +38576,13 @@
       "preproc_guarded_namespace_definition"
     ],
     [
+      "_preproc_opening_condition",
+      "preproc_if_in_top_level",
+      "preproc_if_in_function_return_type",
+      "preproc_if_in_function_definition_prefix",
+      "preproc_guarded_namespace_definition"
+    ],
+    [
       "qualified_type_function_definition",
       "_macro_qualified_declaration_specifiers",
       "_declaration_declarator_list"
@@ -39151,6 +39138,11 @@
     [
       "macro_function_definition",
       "top_level_call_statement"
+    ],
+    [
+      "macro_function_definition",
+      "_macro_function_definition_prefix",
+      "_macro_call_statement_prefix"
     ],
     [
       "preproc_if",

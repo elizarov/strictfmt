@@ -470,6 +470,7 @@ module.exports = grammar(C, {
     [$.expression, $.concatenated_string, $._template_argument_value_expression],
     [$.expression, $.concatenated_string, $.macro_call_replacement_item],
     [$._preproc_opening_condition, $.preproc_ifdef_in_top_level, $.preproc_ifdef_in_function_return_type, $.preproc_ifdef_in_function_definition_prefix, $.preproc_guarded_namespace_definition],
+    [$._preproc_opening_condition, $.preproc_if_in_top_level, $.preproc_if_in_function_return_type, $.preproc_if_in_function_definition_prefix, $.preproc_guarded_namespace_definition],
     [$.qualified_type_function_definition, $._macro_qualified_declaration_specifiers, $._declaration_declarator_list],
     [$.declaration, $.qualified_type_function_definition, $._macro_qualified_declaration_specifiers],
     [$.class_macro_call_item, $.macro_function_definition],
@@ -603,6 +604,7 @@ module.exports = grammar(C, {
     [$._block_item, $.preproc_elifdef],
     [$.statement, $.macro_function_definition],
     [$.macro_function_definition, $.top_level_call_statement],
+    [$.macro_function_definition, $._macro_function_definition_prefix, $._macro_call_statement_prefix],
     [$.preproc_if, $.preproc_if_in_top_level],
     [$.preproc_if, $._preproc_opening_condition],
     [$._preproc_opening_condition, $.preproc_string_literal_fragment],
@@ -1607,8 +1609,7 @@ module.exports = grammar(C, {
     ),
 
     preproc_if_in_macro_function_definition_prefix: $ => prec(PREC.CALL + 7, seq(
-      preprocessor('if'),
-      field('condition', $._preproc_expression),
+      $._preproc_opening_condition,
       $._preproc_directive_end,
       $._macro_function_definition_prefix,
       field('alternative', optional($.preproc_macro_function_definition_prefix_alternative)),
