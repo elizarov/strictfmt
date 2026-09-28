@@ -5636,3 +5636,6 @@ auto annotatedSize = sizeof(FORMAT_ATTRIBUTE_VECTOR double);
 
 // GNU assembly labels are valid on initialized variables.
 void RegisterVariables() {register ui64 x0 __asm("x0") = value; register ui64 x1 asm("x1") = other;}
+
+// GNU assembly accepts the alternate volatile spelling.
+void PauseProcessor() {__asm __volatile("pause"); __asm __volatile("yield" ::: "memory");}

@@ -2034,6 +2034,8 @@ module.exports = grammar(C, {
       $._function_declarator_seq,
     ),
 
+    gnu_asm_qualifier: ($, original) => choice(original, '__volatile'),
+
     init_declarator: $ => choice(
       prec.dynamic(10, seq(
         field('declarator', $._declarator),

@@ -10481,20 +10481,29 @@
       "type": "CHOICE",
       "members": [
         {
-          "type": "STRING",
-          "value": "volatile"
+          "type": "CHOICE",
+          "members": [
+            {
+              "type": "STRING",
+              "value": "volatile"
+            },
+            {
+              "type": "STRING",
+              "value": "__volatile__"
+            },
+            {
+              "type": "STRING",
+              "value": "inline"
+            },
+            {
+              "type": "STRING",
+              "value": "goto"
+            }
+          ]
         },
         {
           "type": "STRING",
-          "value": "__volatile__"
-        },
-        {
-          "type": "STRING",
-          "value": "inline"
-        },
-        {
-          "type": "STRING",
-          "value": "goto"
+          "value": "__volatile"
         }
       ]
     },

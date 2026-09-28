@@ -17860,6 +17860,10 @@
     "named": false
   },
   {
+    "type": "__volatile",
+    "named": false
+  },
+  {
     "type": "__volatile__",
     "named": false
   },
