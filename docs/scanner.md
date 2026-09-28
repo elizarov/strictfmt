@@ -19,7 +19,7 @@ The scanner uses four inputs:
 - Small scanner payload state for raw string delimiters, directive boundaries, and split right angles.
 - Formatter macro category configuration, exposed through `strictfmt_tree_sitter_cpp_macro_category_matches`.
 
-`src/format/impl/format_model_parse.cpp` owns the callback bridge from parser to formatter configuration. `ParseFormatModel` installs a thread-local `FormatterConfig` for the parse, and the scanner calls back into that config when it needs to know whether an identifier belongs to `ExpressionContinuationMacros`, `DeclarationModifierMacros`, `StatementPrefixMacros`, `MethodDeclarationMacros`, `ItemMacros`, `StatementArgumentMacros`, `TypeSpecifierMacros`, or `PreprocessorArgumentMacros`.
+`src/format/impl/format_model_parse.cpp` owns the callback bridge from parser to formatter configuration. `ParseFormatModel` installs a thread-local `FormatterConfig` for the parse, and the scanner calls back into that config to recognize the [macro categories](macro.md#macro-categories).
 
 The parse scope builds a first-byte category mask to reject impossible macro matches cheaply. Every possible match still uses the exact-name or prefix matcher; the mask has the same configuration lifetime and thread isolation as the callback bridge.
 
@@ -38,6 +38,9 @@ A generated token rule cannot express "remember this delimiter and later stop on
 The scanner owns these identifier tokens:
 
 - `expression_continuation_macro_identifier`
+- `expression_prefix_macro_identifier`
+- `expression_prefix_item_macro_identifier`
+- `expression_prefix_item_call_macro_identifier`
 - `declaration_modifier_macro_identifier`
 - `statement_prefix_macro_identifier`
 - `namespace_macro_identifier`
@@ -52,7 +55,7 @@ The scanner owns these identifier tokens:
 
 The scanner reads a normal C/C++ identifier and then asks the formatter configuration whether the identifier belongs to the relevant macro category. This keeps macro categories runtime-configurable while the generated parser stays static.
 
-The two item tokens distinguish a bare use from an invocation with arguments. Both use `ItemMacros`; argument-list lookahead prevents an invocation from ending before its opening parenthesis.
+The item tokens distinguish a bare use from an invocation with arguments. Both use `ItemMacros`; argument-list lookahead prevents an invocation from ending before its opening parenthesis. Combined expression-prefix item tokens retain both roles so the grammar can choose a standalone item or a prefix from the following syntax.
 
 ### Macro Replacement Boundaries
 

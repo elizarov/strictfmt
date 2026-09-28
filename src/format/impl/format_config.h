@@ -20,6 +20,7 @@ struct FormatterConfig {
     std::string mainIncludeRegex = "(Test)?$";
     bool mainIncludeQuote = true;
     std::vector<std::string> expressionContinuationMacros;
+    std::vector<std::string> expressionPrefixMacros;
     std::vector<std::string> declarationModifierMacros;
     std::vector<std::string> statementPrefixMacros;
     std::vector<std::string> methodDeclarationMacros;

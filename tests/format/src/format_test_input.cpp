@@ -5753,3 +5753,26 @@ while(ready) TRY_SET(first) else {Advance();}
 if(ready) TRY_SET(first) else {Recover();} else {Fail();}
 TRY_CONSUME(first); else {Fallback();}
 }
+
+void MacroExpressionPrefixes(){
+auto value=ready?Read():FORMAT_EXPRESSION_PREFIX_THROW Error()<<"failed";
+FORMAT_EXPRESSION_PREFIX_THROW (*error).With("key",value);
+auto sum=FORMAT_EXPRESSION_PREFIX_VALUE (first)+second;
+auto combined=FORMAT_EXPRESSION_PREFIX_ITEMS(XX) true;
+auto bare=FORMAT_EXPRESSION_PREFIX_BARE_ITEMS false;
+auto nested=!(FORMAT_EXPRESSION_PREFIX_ITEMS(XX) false);
+auto count=FORMAT_EXPRESSION_PREFIX_CALL(XX,first,second) 0;
+auto single=FORMAT_EXPRESSION_PREFIX_CALL(XX) true;
+Build().Start() FORMAT_EXPRESSION_PREFIX_ITEMS(XX).End();
+FORMAT_EXPRESSION_PREFIX_ITEMS(XX)
+FORMAT_EXPRESSION_PREFIX_BARE_ITEMS
+Consume(value);
+}
+
+bool DirectiveExpressionPrefixes(){
+return
+#define PREFIX_FIELD(name) Check(name)&&
+FORMAT_EXPRESSION_PREFIX_ITEMS(PREFIX_FIELD)
+#undef PREFIX_FIELD
+true;
+}

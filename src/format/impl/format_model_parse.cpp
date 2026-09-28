@@ -24,6 +24,7 @@ constexpr std::array kMacroCategoryMembers = {
     &FormatterConfig::itemMacros,
     &FormatterConfig::statementPrefixMacros,
     &FormatterConfig::namespaceMacros,
+    &FormatterConfig::expressionPrefixMacros,
 };
 
 static_assert(kMacroCategoryMembers.size() <= 16);

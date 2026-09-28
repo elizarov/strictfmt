@@ -28,6 +28,7 @@ struct MacroCategoryConfig {
 
 constexpr std::array MACRO_CATEGORY_CONFIGS = {
     MacroCategoryConfig{"ExpressionContinuationMacros", &FormatterConfig::expressionContinuationMacros},
+    MacroCategoryConfig{"ExpressionPrefixMacros", &FormatterConfig::expressionPrefixMacros},
     MacroCategoryConfig{"DeclarationModifierMacros", &FormatterConfig::declarationModifierMacros},
     MacroCategoryConfig{"StatementPrefixMacros", &FormatterConfig::statementPrefixMacros},
     MacroCategoryConfig{"MethodDeclarationMacros", &FormatterConfig::methodDeclarationMacros},

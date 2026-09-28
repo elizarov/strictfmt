@@ -10,6 +10,7 @@ A macro's syntactic role cannot always be inferred without expansion, so arbitra
 - [ItemMacros](#itemmacros): separate declarations, statements, or list fragments, as in `BEGIN_NAMESPACE`.
 - [MethodDeclarationMacros](#methoddeclarationmacros): method-signature arguments, as in `MOCK_METHOD(void, Save, (T* value))`.
 - [StatementPrefixMacros](#statementprefixmacros): a prefix attached to the next statement, as in `DISCARD_RESULT message.Parse();`.
+- [ExpressionPrefixMacros](#expressionprefixmacros): a fragment attached to the following expression, as in `RAISE Error()` or `FIELDS(CHECK) true`.
 - [ExpressionContinuationMacros](#expressioncontinuationmacros): a fragment attached to the preceding expression, as in `Register() OPTIONS`.
 - [PreprocessorArgumentMacros](#preprocessorargumentmacros): arguments whose token spelling matters, as in `STRINGIZE(a*b)`.
 - [TypeSpecifierMacros](#typespecifiermacros): a call supplying a type, as in `TYPE_OF(T)* value;`.
@@ -213,6 +214,21 @@ void Use() {
         Cleanup();
     };
 }
+```
+
+### ExpressionPrefixMacros
+
+`ExpressionPrefixMacros` attaches a bare macro or macro invocation to the following expression, including inside conditional expressions and other operands. The following expression remains structured, including member calls and operators. Use this for macros that supply `throw` or emit an expression fragment ending in an operator. A macro that also supplies complete standalone items can belong to both this category and `ItemMacros`.
+
+<!-- .cpp-format
+MacroCategories:
+  ExpressionPrefixMacros:
+    - RAISE
+    - FIELDS
+-->
+```cpp
+auto value = ready ? Read() : RAISE Error();
+bool valid = FIELDS(CHECK) true;
 ```
 
 ### ExpressionContinuationMacros

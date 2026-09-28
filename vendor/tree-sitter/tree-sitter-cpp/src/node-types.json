@@ -300,6 +300,10 @@
         "named": true
       },
       {
+        "type": "macro_prefixed_expression",
+        "named": true
+      },
+      {
         "type": "macro_token_paste_expression",
         "named": true
       },
@@ -1919,6 +1923,10 @@
           "named": true
         },
         {
+          "type": "macro_prefixed_expression",
+          "named": true
+        },
+        {
           "type": "macro_token_paste_expression",
           "named": true
         },
@@ -2064,6 +2072,10 @@
             "named": true
           },
           {
+            "type": "expression_prefix_item_call_macro_identifier",
+            "named": true
+          },
+          {
             "type": "item_call_macro_identifier",
             "named": true
           },
@@ -2078,6 +2090,10 @@
       "multiple": false,
       "required": false,
       "types": [
+        {
+          "type": "expression_prefix_item_macro_identifier",
+          "named": true
+        },
         {
           "type": "item_macro_identifier",
           "named": true
@@ -2112,6 +2128,10 @@
         "required": false,
         "types": [
           {
+            "type": "expression_prefix_item_call_macro_identifier",
+            "named": true
+          },
+          {
             "type": "item_call_macro_identifier",
             "named": true
           },
@@ -2126,6 +2146,10 @@
       "multiple": false,
       "required": false,
       "types": [
+        {
+          "type": "expression_prefix_item_macro_identifier",
+          "named": true
+        },
         {
           "type": "item_macro_identifier",
           "named": true
@@ -2174,6 +2198,10 @@
           },
           {
             "type": "expression",
+            "named": true
+          },
+          {
+            "type": "expression_prefix_item_call_macro_identifier",
             "named": true
           },
           {
@@ -3048,6 +3076,10 @@
             "named": true
           },
           {
+            "type": "macro_prefixed_expression",
+            "named": true
+          },
+          {
             "type": "macro_token_paste_expression",
             "named": true
           },
@@ -3701,6 +3733,10 @@
         "required": false,
         "types": [
           {
+            "type": "expression_prefix_item_call_macro_identifier",
+            "named": true
+          },
+          {
             "type": "identifier",
             "named": true
           },
@@ -3785,6 +3821,10 @@
         },
         {
           "type": "explicit_function_specifier",
+          "named": true
+        },
+        {
+          "type": "expression_prefix_item_macro_identifier",
           "named": true
         },
         {
@@ -4653,6 +4693,10 @@
         "required": false,
         "types": [
           {
+            "type": "expression_prefix_item_call_macro_identifier",
+            "named": true
+          },
+          {
             "type": "identifier",
             "named": true
           },
@@ -4713,6 +4757,10 @@
         },
         {
           "type": "declaration_modifier_macro",
+          "named": true
+        },
+        {
+          "type": "expression_prefix_item_macro_identifier",
           "named": true
         },
         {
@@ -6452,6 +6500,10 @@
         "required": true,
         "types": [
           {
+            "type": "expression_prefix_item_call_macro_identifier",
+            "named": true
+          },
+          {
             "type": "identifier",
             "named": true
           },
@@ -7177,6 +7229,10 @@
         "required": false,
         "types": [
           {
+            "type": "expression_prefix_item_call_macro_identifier",
+            "named": true
+          },
+          {
             "type": "identifier",
             "named": true
           },
@@ -7199,6 +7255,10 @@
       "multiple": false,
       "required": false,
       "types": [
+        {
+          "type": "expression_prefix_item_macro_identifier",
+          "named": true
+        },
         {
           "type": "item_macro_identifier",
           "named": true
@@ -7566,6 +7626,10 @@
             "named": true
           },
           {
+            "type": "expression_prefix_item_call_macro_identifier",
+            "named": true
+          },
+          {
             "type": "item_call_macro_identifier",
             "named": true
           },
@@ -7580,6 +7644,10 @@
       "multiple": false,
       "required": false,
       "types": [
+        {
+          "type": "expression_prefix_item_macro_identifier",
+          "named": true
+        },
         {
           "type": "identifier",
           "named": true
@@ -7635,6 +7703,40 @@
         },
         {
           "type": "initializer_pair",
+          "named": true
+        }
+      ]
+    }
+  },
+  {
+    "type": "macro_expression_prefix",
+    "named": true,
+    "fields": {
+      "arguments": {
+        "multiple": false,
+        "required": false,
+        "types": [
+          {
+            "type": "argument_list",
+            "named": true
+          }
+        ]
+      }
+    },
+    "children": {
+      "multiple": false,
+      "required": true,
+      "types": [
+        {
+          "type": "expression_prefix_item_call_macro_identifier",
+          "named": true
+        },
+        {
+          "type": "expression_prefix_item_macro_identifier",
+          "named": true
+        },
+        {
+          "type": "expression_prefix_macro_identifier",
           "named": true
         }
       ]
@@ -7878,6 +7980,32 @@
         },
         {
           "type": "parameter_declaration",
+          "named": true
+        }
+      ]
+    }
+  },
+  {
+    "type": "macro_prefixed_expression",
+    "named": true,
+    "fields": {
+      "argument": {
+        "multiple": false,
+        "required": true,
+        "types": [
+          {
+            "type": "expression",
+            "named": true
+          }
+        ]
+      }
+    },
+    "children": {
+      "multiple": false,
+      "required": true,
+      "types": [
+        {
+          "type": "macro_expression_prefix",
           "named": true
         }
       ]
@@ -14712,6 +14840,10 @@
           "named": true
         },
         {
+          "type": "macro_prefixed_expression",
+          "named": true
+        },
+        {
           "type": "macro_token_paste_expression",
           "named": true
         },
@@ -14955,6 +15087,10 @@
           },
           {
             "type": "macro_expression_continuation",
+            "named": true
+          },
+          {
+            "type": "macro_prefixed_expression",
             "named": true
           },
           {
@@ -16737,6 +16873,10 @@
             "named": true
           },
           {
+            "type": "macro_prefixed_expression",
+            "named": true
+          },
+          {
             "type": "macro_token_paste_expression",
             "named": true
           },
@@ -17150,6 +17290,10 @@
         },
         {
           "type": "macro_expression_continuation",
+          "named": true
+        },
+        {
+          "type": "macro_prefixed_expression",
           "named": true
         },
         {
@@ -17767,6 +17911,10 @@
         "required": false,
         "types": [
           {
+            "type": "expression_prefix_item_call_macro_identifier",
+            "named": true
+          },
+          {
             "type": "item_call_macro_identifier",
             "named": true
           },
@@ -17781,6 +17929,10 @@
       "multiple": false,
       "required": false,
       "types": [
+        {
+          "type": "expression_prefix_item_macro_identifier",
+          "named": true
+        },
         {
           "type": "item_macro_identifier",
           "named": true
@@ -19229,6 +19381,18 @@
     "named": true
   },
   {
+    "type": "expression_prefix_item_call_macro_identifier",
+    "named": true
+  },
+  {
+    "type": "expression_prefix_item_macro_identifier",
+    "named": true
+  },
+  {
+    "type": "expression_prefix_macro_identifier",
+    "named": true
+  },
+  {
     "type": "extern",
     "named": false
   },
@@ -19538,11 +19702,11 @@
   },
   {
     "type": "true",
-    "named": true
+    "named": false
   },
   {
     "type": "true",
-    "named": false
+    "named": true
   },
   {
     "type": "try",

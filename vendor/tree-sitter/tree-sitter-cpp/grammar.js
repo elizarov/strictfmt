@@ -93,6 +93,7 @@ function cppNonBinaryExpressions($, base) {
     alias($.delete_array_expression, $.delete_expression),
     $.macro_expansion,
     $.macro_expression_continuation,
+    $.macro_prefixed_expression,
     $.preproc_if_in_expression,
     $.preproc_ifdef_in_expression,
     base,
@@ -132,9 +133,9 @@ function macroExpressionContinuation($, expression) {
 
 function itemMacro($, requireArguments = false) {
   return choice(
-    ...(requireArguments ? [] : [$.item_macro_identifier]),
+    ...(requireArguments ? [] : [$.item_macro_identifier, $.expression_prefix_item_macro_identifier]),
     seq(
-      field('function', $.item_call_macro_identifier),
+      field('function', choice($.item_call_macro_identifier, $.expression_prefix_item_call_macro_identifier)),
       field('arguments', $.argument_list),
     ),
     seq(
@@ -302,6 +303,9 @@ module.exports = grammar(C, {
     $.namespace_macro_identifier,
     $.preprocessor_item_macro_identifier,
     $.preprocessor_continuation_macro_identifier,
+    $.expression_prefix_macro_identifier,
+    $.expression_prefix_item_macro_identifier,
+    $.expression_prefix_item_call_macro_identifier,
     $._preproc_directive_end,
     $._line_break_whitespace,
     $.macro_definition_start,
@@ -320,6 +324,11 @@ module.exports = grammar(C, {
   ],
 
   conflicts: $ => [
+    [$.call_expression, $.macro_expansion, $.macro_expression_prefix, $.identifier_call],
+    [$.call_expression, $.macro_expression_prefix, $.identifier_call],
+    [$.macro_expansion, $.macro_expression_prefix, $.identifier_call],
+    [$.call_expression, $.macro_expansion, $.macro_expression_prefix],
+    [$.macro_expression_prefix],
     [$.macro_conditional_statement, $.preproc_selected_else_if_body_item],
     [$._declaration_declarator_list, $.macro_uninitialized_declaration_fragment],
     [$.type_specifier, $.block_macro_call_line_item],
@@ -1294,6 +1303,24 @@ module.exports = grammar(C, {
     )),
 
     macro_expression_continuation: $ => macroExpressionContinuation($, $.expression),
+
+    macro_prefixed_expression: $ => prec.right(PREC.UNARY, seq(
+      $.macro_expression_prefix,
+      field('argument', $.expression),
+    )),
+
+    macro_expression_prefix: $ => choice(
+      prec.dynamic(1, $.expression_prefix_macro_identifier),
+      $.expression_prefix_item_macro_identifier,
+      prec.dynamic(2, seq(
+        $.expression_prefix_macro_identifier,
+        field('arguments', $.argument_list),
+      )),
+      seq(
+        $.expression_prefix_item_call_macro_identifier,
+        field('arguments', $.argument_list),
+      ),
+    ),
 
     macro_call_identifier: $ => choice(
       $._call_identifier,
