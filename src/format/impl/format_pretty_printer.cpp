@@ -1187,7 +1187,7 @@ private:
             if (CanAttachToPreviousPreprocessorLine(token, rawPrevious)) {
                 ReopenLastOutputLine();
             }
-            PrintComment(token, rawPrevious, next);
+            PrintComment(token, rawPrevious, rawNext);
             return;
         }
         if (token.kind == PrintTokenKind::Preprocessor) {
@@ -1375,7 +1375,7 @@ private:
                     token.grandParentKind == SyntaxNodeKind::TemplateDeclaration
                 ) {
                     FlushPendingTokens();
-                    NewLine(PrintTokenContinuesMacroLine(token, next));
+                    NewLine(PrintTokenContinuesMacroLine(token, rawNext));
                 }
                 return;
             case SyntaxNodeKind::LeftBracket:
@@ -1437,7 +1437,7 @@ private:
                     )
                 ) {
                     FlushPendingTokens();
-                    NewLine(PrintTokenContinuesMacroLine(token, next));
+                    NewLine(PrintTokenContinuesMacroLine(token, rawNext));
                 }
                 return;
             case SyntaxNodeKind::LeftBrace:
@@ -1466,7 +1466,7 @@ private:
                         }
                     } else if (!token.inCompactSingleStatementBody && HasBufferedLineText()) {
                         FlushPendingTokens();
-                        NewLine(PrintTokenContinuesMacroLine(token, next));
+                        NewLine(PrintTokenContinuesMacroLine(token, rawNext));
                     }
                     return;
                 }
@@ -1477,7 +1477,7 @@ private:
                     !(rawNext != nullptr && rawNext->kind == PrintTokenKind::TrailingComment)
                 ) {
                     FlushPendingTokens();
-                    NewLine(PrintTokenContinuesMacroLine(token, next));
+                    NewLine(PrintTokenContinuesMacroLine(token, rawNext));
                 }
                 return;
             case SyntaxNodeKind::Comma:
@@ -1496,7 +1496,7 @@ private:
                     !(rawNext != nullptr && rawNext->kind == PrintTokenKind::TrailingComment)
                 ) {
                     FlushPendingTokens();
-                    NewLine(PrintTokenContinuesMacroLine(token, next));
+                    NewLine(PrintTokenContinuesMacroLine(token, rawNext));
                 }
                 return;
             case SyntaxNodeKind::Colon:
@@ -1515,7 +1515,7 @@ private:
                     if (rawNext != nullptr && rawNext->kind == PrintTokenKind::TrailingComment) {
                         return;
                     }
-                    NewLine(PrintTokenContinuesMacroLine(token, next));
+                    NewLine(PrintTokenContinuesMacroLine(token, rawNext));
                     return;
                 }
                 if (previous != nullptr && previous->kind == PrintTokenKind::Known && (
@@ -1524,7 +1524,7 @@ private:
                 )) {
                     FlushPendingTokens();
                     if (rawNext == nullptr || rawNext->kind != PrintTokenKind::TrailingComment) {
-                        NewLine(PrintTokenContinuesMacroLine(token, next));
+                        NewLine(PrintTokenContinuesMacroLine(token, rawNext));
                     }
                 }
                 return;
@@ -1651,7 +1651,7 @@ private:
             }
             FlushPendingTokens();
             if (rawNext == nullptr || rawNext->kind != PrintTokenKind::TrailingComment) {
-                NewLine(PrintTokenContinuesMacroLine(token, next));
+                NewLine(PrintTokenContinuesMacroLine(token, rawNext));
             }
             return;
         }
@@ -1674,14 +1674,14 @@ private:
             if (rawNext != nullptr && rawNext->kind == PrintTokenKind::TrailingComment) {
                 return;
             }
-            NewLine(PrintTokenContinuesMacroLine(token, next));
+            NewLine(PrintTokenContinuesMacroLine(token, rawNext));
             return;
         }
         if (IsCompactSingleStatementFunctionBodyBrace(token)) {
             BufferToken(token);
             FlushPendingTokens();
             if (rawNext == nullptr || rawNext->kind != PrintTokenKind::TrailingComment) {
-                NewLine(PrintTokenContinuesMacroLine(token, next));
+                NewLine(PrintTokenContinuesMacroLine(token, rawNext));
             }
             return;
         }
@@ -1712,7 +1712,7 @@ private:
             if (rawNext != nullptr && rawNext->kind == PrintTokenKind::TrailingComment) {
                 return;
             }
-            NewLine(PrintTokenContinuesMacroLine(token, next));
+            NewLine(PrintTokenContinuesMacroLine(token, rawNext));
             return;
         }
         if (role == BraceRole::CaseBlock) {
@@ -1721,7 +1721,7 @@ private:
             }
             WriteWithIndentOffset("}", -1);
             if (rawNext == nullptr || rawNext->kind != PrintTokenKind::TrailingComment) {
-                NewLine(PrintTokenContinuesMacroLine(token, next));
+                NewLine(PrintTokenContinuesMacroLine(token, rawNext));
             }
             return;
         }
@@ -1748,7 +1748,7 @@ private:
             }
             FlushPendingTokens();
             if (rawNext == nullptr || rawNext->kind != PrintTokenKind::TrailingComment) {
-                NewLine(PrintTokenContinuesMacroLine(token, next));
+                NewLine(PrintTokenContinuesMacroLine(token, rawNext));
                 output_.SetPendingIndent(splitListContinuationIndent);
             }
             return;

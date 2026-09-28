@@ -5136,3 +5136,20 @@ Name {                                \
                               \
     second
 #define FORMAT_FRAGMENT_NESTED Call(first, second), Type<First, Second>{first, second}, (first, second)
+
+// Trailing standalone comments remain in their structured macro replacement.
+#define TRAILING_MACRO_COMMENT() \
+    Call();                      \
+    /**/
+#define TRAILING_MACRO_BLOCK_COMMENT() \
+    if (ready) {                       \
+        Call();                        \
+    }                                  \
+    /* first */                        \
+    /* second */
+void WithTrailingMacroComment() {
+#define LOCAL_MACRO_COMMENT() \
+    Call();                   \
+    // marker
+    LOCAL_MACRO_COMMENT();
+}
