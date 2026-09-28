@@ -4782,3 +4782,15 @@ Y_DECLARE_OUT_SPEC(inline, NType::TValue, stream, value) { stream << value; }
 void MacroDeclarationArguments() {
     ASSIGN_OR_RAISE(auto result, Compute());
 }
+
+// A definition following a completed function keeps its structured replacement.
+namespace GeneratedIdentifiers {
+int Before() { return 1; }
+#define DEFINE_IDENTIFIER(object)\
+TGuid Generate##object##Id() \
+{ \
+ return GenerateId(EObjectType::object); \
+} \
+
+DEFINE_IDENTIFIER(Chunk)
+}
