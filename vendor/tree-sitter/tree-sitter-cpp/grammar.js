@@ -3669,11 +3669,13 @@ module.exports = grammar(C, {
 
     type_specifier_macro_call: $ => choice(
       callExpression($, $._unconfigured_type_call_identifier),
-      prec(PREC.CALL + 8, seq(
-        field('function', $.type_specifier_macro_identifier),
-        field('arguments', $.argument_list),
-      )),
+      $._configured_type_specifier_macro_call,
     ),
+
+    _configured_type_specifier_macro_call: $ => prec(PREC.CALL + 8, seq(
+      field('function', $.type_specifier_macro_identifier),
+      field('arguments', $.argument_list),
+    )),
 
     preprocessing_token_macro_call: $ => prec(PREC.CALL + 8, seq(
       field('function', $.preprocessor_argument_macro_identifier),
@@ -4703,6 +4705,8 @@ module.exports = grammar(C, {
 
     _scope_name: $ => prec(1, choice(
       $._namespace_identifier,
+      alias($._configured_type_specifier_macro_call, $.type_specifier_macro_call),
+      $.preprocessing_token_macro_call,
       // A template-id used as a scope owns both angle delimiters. Prefer it
       // over the two relational operators in Name<argument>::member at each
       // recursive scope, including scopes with non-type template arguments.

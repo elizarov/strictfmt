@@ -5690,3 +5690,10 @@ constexpr inline friend int ReadFriend(const ModifiedFriends& item){return item.
 FORMAT_DECLARATOR_MODIFIER friend void VisitFriend(ModifiedFriends& item);
 int value;
 };
+
+void CallsThroughMacroTypes(){
+CHECK(FORMAT_TYPE_SCOPE(Traits)::Accept('/'),true);
+auto value=FORMAT_TYPE_SCOPE(Traits)::Nested::Build(1,2);
+FORMAT_TOKEN_TYPE(namespace)::Visit(value);
+}
+using MacroScopeValue=FORMAT_TYPE_SCOPE(Traits)::value_type;

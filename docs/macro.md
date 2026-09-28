@@ -262,7 +262,7 @@ The outer argument list can still split across lines, but each argument remains 
 
 ### TypeSpecifierMacros
 
-`TypeSpecifierMacros` selects the type interpretation of a macro call where a declaration and an expression are both possible.
+`TypeSpecifierMacros` selects the type interpretation of a macro call where a declaration and an expression are both possible. Configured calls can also supply scope names before `::`, as in `TYPE_OF(Traits)::Check()`.
 
 A macro call followed by `*` may declare a pointer or multiply expressions. Configuration makes `TYPE_OF(T)` the declared type below; without it, the formatter treats `*` as multiplication and puts spaces on both sides.
 

@@ -19,6 +19,8 @@ MainIncludeChar: Quote
 IncludeIsMainRegex: '(Test)?$'
 
 MacroCategories:
+  TypeSpecifierMacros:
+    - FORMAT_TYPE_SCOPE
   ExpressionContinuationMacros:
     - FORMAT_TOKEN_COMPARE
     - FORMAT_CONTINUATION_*

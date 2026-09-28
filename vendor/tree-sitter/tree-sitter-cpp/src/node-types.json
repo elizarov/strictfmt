@@ -803,7 +803,15 @@
             "named": true
           },
           {
+            "type": "preprocessing_token_macro_call",
+            "named": true
+          },
+          {
             "type": "template_type",
+            "named": true
+          },
+          {
+            "type": "type_specifier_macro_call",
             "named": true
           }
         ]
@@ -8646,7 +8654,15 @@
             "named": true
           },
           {
+            "type": "preprocessing_token_macro_call",
+            "named": true
+          },
+          {
             "type": "template_type",
+            "named": true
+          },
+          {
+            "type": "type_specifier_macro_call",
             "named": true
           }
         ]
@@ -15467,7 +15483,15 @@
             "named": true
           },
           {
+            "type": "preprocessing_token_macro_call",
+            "named": true
+          },
+          {
             "type": "template_type",
+            "named": true
+          },
+          {
+            "type": "type_specifier_macro_call",
             "named": true
           }
         ]
@@ -15529,7 +15553,15 @@
             "named": true
           },
           {
+            "type": "preprocessing_token_macro_call",
+            "named": true
+          },
+          {
             "type": "template_type",
+            "named": true
+          },
+          {
+            "type": "type_specifier_macro_call",
             "named": true
           }
         ]
@@ -15640,6 +15672,10 @@
             "named": true
           },
           {
+            "type": "preprocessing_token_macro_call",
+            "named": true
+          },
+          {
             "type": "primitive_type",
             "named": true
           },
@@ -15649,6 +15685,10 @@
           },
           {
             "type": "template_type",
+            "named": true
+          },
+          {
+            "type": "type_specifier_macro_call",
             "named": true
           }
         ]
@@ -15688,7 +15728,15 @@
             "named": true
           },
           {
+            "type": "preprocessing_token_macro_call",
+            "named": true
+          },
+          {
             "type": "template_type",
+            "named": true
+          },
+          {
+            "type": "type_specifier_macro_call",
             "named": true
           }
         ]

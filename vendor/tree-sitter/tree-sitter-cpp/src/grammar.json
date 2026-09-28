@@ -34139,31 +34139,35 @@
           }
         },
         {
-          "type": "PREC",
-          "value": 23,
-          "content": {
-            "type": "SEQ",
-            "members": [
-              {
-                "type": "FIELD",
-                "name": "function",
-                "content": {
-                  "type": "SYMBOL",
-                  "name": "type_specifier_macro_identifier"
-                }
-              },
-              {
-                "type": "FIELD",
-                "name": "arguments",
-                "content": {
-                  "type": "SYMBOL",
-                  "name": "argument_list"
-                }
-              }
-            ]
-          }
+          "type": "SYMBOL",
+          "name": "_configured_type_specifier_macro_call"
         }
       ]
+    },
+    "_configured_type_specifier_macro_call": {
+      "type": "PREC",
+      "value": 23,
+      "content": {
+        "type": "SEQ",
+        "members": [
+          {
+            "type": "FIELD",
+            "name": "function",
+            "content": {
+              "type": "SYMBOL",
+              "name": "type_specifier_macro_identifier"
+            }
+          },
+          {
+            "type": "FIELD",
+            "name": "arguments",
+            "content": {
+              "type": "SYMBOL",
+              "name": "argument_list"
+            }
+          }
+        ]
+      }
     },
     "preprocessing_token_macro_call": {
       "type": "PREC",
@@ -41091,6 +41095,19 @@
           {
             "type": "SYMBOL",
             "name": "_namespace_identifier"
+          },
+          {
+            "type": "ALIAS",
+            "content": {
+              "type": "SYMBOL",
+              "name": "_configured_type_specifier_macro_call"
+            },
+            "named": true,
+            "value": "type_specifier_macro_call"
+          },
+          {
+            "type": "SYMBOL",
+            "name": "preprocessing_token_macro_call"
           },
           {
             "type": "PREC_DYNAMIC",
