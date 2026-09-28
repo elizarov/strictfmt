@@ -788,3 +788,30 @@ auto selectedExtraInitializers = {first
 ,third,fourth
 #endif
 };
+
+// An else remains attached when a directive selects the complete if body.
+void ConditionalCompleteBody() {if (ready)
+#ifdef FEATURE
+value = First();
+#elif OTHER
+value = Second();
+#endif
+else value = Fallback();}
+void ConditionalNestedBody() {if (ready)
+#if FEATURE
+if (inner) First(); else Second();
+#else
+Fallback();
+#endif
+else Finish();}
+
+void ConditionalBodyAfterDeclarations(){
+Value result;const Value zeros={0,0};
+if(imm<16)
+#ifdef LITTLE_ENDIAN
+result=Shift((Bytes)a,zeros,imm);
+#elif BIG_ENDIAN
+result=Shift(zeros,(Bytes)a,16-imm);
+#endif
+else result=zeros;
+}

@@ -307,6 +307,12 @@ module.exports = grammar(C, {
   ],
 
   conflicts: $ => [
+    [$._declaration_modifiers, $._closed_attributed_statement],
+    [$._closed_attributed_statement],
+    [$._preproc_opening_condition, $.preproc_if_in_closed_statement],
+    [$._preproc_opening_condition, $.preproc_ifdef_in_closed_statement],
+    [$.preproc_if, $._preproc_opening_condition, $.preproc_if_in_closed_statement],
+    [$.preproc_ifdef, $._preproc_opening_condition, $.preproc_ifdef_in_closed_statement],
     [$.initializer_pair, $.binary_expression],
     [$._initializer_list_entry],
     [$.comma_expression, $._initializer_list_entry],
@@ -3314,7 +3320,10 @@ module.exports = grammar(C, {
       alias($.macro_block_prefixed_statement, $.macro_prefixed_statement),
     ),
 
+    ...preprocIf('_in_closed_statement', $ => $._closed_statement, 0, PREPROC_ALL_BRANCH_FORMS, false),
+
     _closed_statement: $ => choice(
+      prec.dynamic(1, preprocListItem($, '_in_closed_statement', PREPROC_IFDEF)),
       $._closed_statement_leaf,
       alias($._closed_if_statement, $.if_statement),
       alias($._closed_selected_if_statement, $.preproc_selected_if_statement),
