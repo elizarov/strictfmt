@@ -312,7 +312,7 @@ def validate_structural_grammar(grammar_json_path: Path) -> None:
 def validate_generated_parser_indexes(generated: str) -> None:
     state_count = re.search(r"^#define STATE_COUNT (\d+)$", generated, re.MULTILINE)
     actions = re.search(
-        r"static const TSParseActionEntry ts_parse_actions\[\] = \{(?P<body>.*?)^\};",
+        r"static const TSParseActionEntry ts_parse_actions\[\]\s*=\s*\{(?P<body>.*?)^\};",
         generated,
         re.MULTILINE | re.DOTALL,
     )
@@ -371,10 +371,12 @@ def compact_generated_parser(cpp_grammar_dir: Path) -> None:
     symbol_values.update(dict(SYMBOL_VALUE_RE.findall(symbol_enum.group("body"))))
 
     table_start = generated.find("static const uint16_t ts_parse_table")
-    table_end = generated.find("static const TSParseActionEntry ts_parse_actions[]")
-    if table_start < 0 or table_end < 0 or table_start >= table_end:
+    action_table_start = generated.find("static const TSParseActionEntry ts_parse_actions[]")
+    action_table_end = generated.find("\n};", action_table_start)
+    if table_start < 0 or action_table_start <= table_start or action_table_end <= action_table_start:
         fail(f"Cannot compact parser table: generated table boundaries were not found in {parser_path}")
 
+    table_end = action_table_end + len("\n};")
     table = generated[table_start:table_end]
 
     def replace_symbol(match: re.Match[str]) -> str:
