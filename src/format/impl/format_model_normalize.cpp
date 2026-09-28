@@ -719,7 +719,8 @@ std::uint64_t SingleIntroducedDeclarationGroup(const SyntaxNode& node, bool root
     }
     if (!root && (
         SyntaxNodeHasClass(node, SyntaxNodeClass::DeclarationScope) ||
-        SyntaxNodeHasClass(node, SyntaxNodeClass::ConditionalPreprocessorTree)
+        SyntaxNodeHasClass(node, SyntaxNodeClass::ConditionalPreprocessorTree) ||
+        SyntaxNodeHasClass(node, SyntaxNodeClass::PreprocessorSplitList)
     )) {
         return 0;
     }

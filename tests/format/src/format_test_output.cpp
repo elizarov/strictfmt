@@ -9186,3 +9186,12 @@ void DestroyDependent(T* pointer) {
     values[index].T::~T();
     pointer->Outer<T>::Inner::~Inner();
 }
+
+// Type names inside macro arguments do not introduce namespace-scope declarations.
+namespace TaggedMacroArguments {
+
+REGISTER_TYPE(struct Record*, Category::Pointer)
+REGISTER_TYPE(const struct Record*, Category::Pointer)
+void FollowUp();
+
+}
