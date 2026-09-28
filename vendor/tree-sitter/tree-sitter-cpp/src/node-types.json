@@ -5427,11 +5427,23 @@
     "named": true,
     "fields": {},
     "children": {
-      "multiple": false,
+      "multiple": true,
       "required": true,
       "types": [
         {
+          "type": "attribute_declaration",
+          "named": true
+        },
+        {
+          "type": "attribute_specifier",
+          "named": true
+        },
+        {
           "type": "declaration",
+          "named": true
+        },
+        {
+          "type": "declaration_modifier_macro",
           "named": true
         },
         {
@@ -5443,7 +5455,15 @@
           "named": true
         },
         {
+          "type": "ms_declspec_modifier",
+          "named": true
+        },
+        {
           "type": "qualified_identifier",
+          "named": true
+        },
+        {
+          "type": "storage_class_specifier",
           "named": true
         },
         {
@@ -5452,6 +5472,10 @@
         },
         {
           "type": "type_identifier",
+          "named": true
+        },
+        {
+          "type": "type_qualifier",
           "named": true
         }
       ]

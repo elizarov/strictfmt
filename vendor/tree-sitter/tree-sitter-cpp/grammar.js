@@ -320,6 +320,9 @@ module.exports = grammar(C, {
   ],
 
   conflicts: $ => [
+    [$._declaration_specifiers, $._conditional_function_return_type_specifiers, $._macro_qualified_declaration_specifiers, $._constructor_specifiers, $.friend_declaration],
+    [$._declaration_modifiers],
+    [$._declaration_specifiers, $._conditional_function_return_type_specifiers, $._modifier_prefixed_macro_declaration, $._constructor_specifiers, $.friend_declaration],
     [$.preproc_elif_in_expression, $._braced_initializer_clause],
     [$.preproc_elif_in_initializer_list, $.preproc_elif_in_expression],
     [$._preproc_opening_condition, $.preproc_ifdef_in_expression, $.preproc_ifdef_in_closed_statement],
@@ -2530,7 +2533,7 @@ module.exports = grammar(C, {
     pure_virtual_zero: _ => /0/,
 
     friend_declaration: $ => seq(
-      optional('constexpr'),
+      repeat($._declaration_modifiers),
       'friend',
       choice(
         alias($.qualified_type_function_definition, $.function_definition),

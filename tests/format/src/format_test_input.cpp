@@ -5683,3 +5683,10 @@ static int OrdinaryAfterGenerated(int value){return value;}
 
 FORMAT_DECLARATOR_MODIFIER("memory") extern "C" void* ExternalAddress(Control* control){return control;}
 FORMAT_DECLARATOR_MODIFIER extern "C" void ExternalCall();
+
+struct ModifiedFriends{
+inline friend bool operator==(const ModifiedFriends& left,const ModifiedFriends& right){return left.value==right.value;}
+constexpr inline friend int ReadFriend(const ModifiedFriends& item){return item.value;}
+FORMAT_DECLARATOR_MODIFIER friend void VisitFriend(ModifiedFriends& item);
+int value;
+};

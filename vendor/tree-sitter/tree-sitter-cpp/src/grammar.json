@@ -26606,16 +26606,11 @@
       "type": "SEQ",
       "members": [
         {
-          "type": "CHOICE",
-          "members": [
-            {
-              "type": "STRING",
-              "value": "constexpr"
-            },
-            {
-              "type": "BLANK"
-            }
-          ]
+          "type": "REPEAT",
+          "content": {
+            "type": "SYMBOL",
+            "name": "_declaration_modifiers"
+          }
         },
         {
           "type": "STRING",
@@ -41774,6 +41769,23 @@
     }
   ],
   "conflicts": [
+    [
+      "_declaration_specifiers",
+      "_conditional_function_return_type_specifiers",
+      "_macro_qualified_declaration_specifiers",
+      "_constructor_specifiers",
+      "friend_declaration"
+    ],
+    [
+      "_declaration_modifiers"
+    ],
+    [
+      "_declaration_specifiers",
+      "_conditional_function_return_type_specifiers",
+      "_modifier_prefixed_macro_declaration",
+      "_constructor_specifiers",
+      "friend_declaration"
+    ],
     [
       "preproc_elif_in_expression",
       "_braced_initializer_clause"
