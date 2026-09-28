@@ -853,3 +853,18 @@ bool ConditionalMultiLineLogicalFragment(Connection* conn) {
     }
     return false;
 }
+
+// A conditional call branch can supply multiple complete arguments.
+void ConditionalArgumentGroups() {
+    Call(
+        first,
+#if FEATURE
+        Select(left) ? left : right,
+        Build(1),
+#else
+        Fallback(),
+        {1, 2},
+#endif
+        last
+    );
+}

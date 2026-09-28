@@ -17150,15 +17150,45 @@
                 "type": "SEQ",
                 "members": [
                   {
-                    "type": "CHOICE",
+                    "type": "SEQ",
                     "members": [
                       {
-                        "type": "SYMBOL",
-                        "name": "expression"
+                        "type": "CHOICE",
+                        "members": [
+                          {
+                            "type": "SYMBOL",
+                            "name": "expression"
+                          },
+                          {
+                            "type": "SYMBOL",
+                            "name": "initializer_list"
+                          }
+                        ]
                       },
                       {
-                        "type": "SYMBOL",
-                        "name": "initializer_list"
+                        "type": "REPEAT",
+                        "content": {
+                          "type": "SEQ",
+                          "members": [
+                            {
+                              "type": "STRING",
+                              "value": ","
+                            },
+                            {
+                              "type": "CHOICE",
+                              "members": [
+                                {
+                                  "type": "SYMBOL",
+                                  "name": "expression"
+                                },
+                                {
+                                  "type": "SYMBOL",
+                                  "name": "initializer_list"
+                                }
+                              ]
+                            }
+                          ]
+                        }
                       }
                     ]
                   },
@@ -17284,15 +17314,45 @@
                 "type": "SEQ",
                 "members": [
                   {
-                    "type": "CHOICE",
+                    "type": "SEQ",
                     "members": [
                       {
-                        "type": "SYMBOL",
-                        "name": "expression"
+                        "type": "CHOICE",
+                        "members": [
+                          {
+                            "type": "SYMBOL",
+                            "name": "expression"
+                          },
+                          {
+                            "type": "SYMBOL",
+                            "name": "initializer_list"
+                          }
+                        ]
                       },
                       {
-                        "type": "SYMBOL",
-                        "name": "initializer_list"
+                        "type": "REPEAT",
+                        "content": {
+                          "type": "SEQ",
+                          "members": [
+                            {
+                              "type": "STRING",
+                              "value": ","
+                            },
+                            {
+                              "type": "CHOICE",
+                              "members": [
+                                {
+                                  "type": "SYMBOL",
+                                  "name": "expression"
+                                },
+                                {
+                                  "type": "SYMBOL",
+                                  "name": "initializer_list"
+                                }
+                              ]
+                            }
+                          ]
+                        }
                       }
                     ]
                   },
@@ -17366,15 +17426,45 @@
             "type": "SEQ",
             "members": [
               {
-                "type": "CHOICE",
+                "type": "SEQ",
                 "members": [
                   {
-                    "type": "SYMBOL",
-                    "name": "expression"
+                    "type": "CHOICE",
+                    "members": [
+                      {
+                        "type": "SYMBOL",
+                        "name": "expression"
+                      },
+                      {
+                        "type": "SYMBOL",
+                        "name": "initializer_list"
+                      }
+                    ]
                   },
                   {
-                    "type": "SYMBOL",
-                    "name": "initializer_list"
+                    "type": "REPEAT",
+                    "content": {
+                      "type": "SEQ",
+                      "members": [
+                        {
+                          "type": "STRING",
+                          "value": ","
+                        },
+                        {
+                          "type": "CHOICE",
+                          "members": [
+                            {
+                              "type": "SYMBOL",
+                              "name": "expression"
+                            },
+                            {
+                              "type": "SYMBOL",
+                              "name": "initializer_list"
+                            }
+                          ]
+                        }
+                      ]
+                    }
                   }
                 ]
               },
