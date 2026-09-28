@@ -1473,14 +1473,14 @@ module.exports = grammar(C, {
     ),
     ...preprocIf('_in_parameter_list', $ => {
       return seq($._parameter_list_item, optional(','));
-    }, 3, PREPROC_IFDEF, false),
+    }, 3, PREPROC_IFDEF | PREPROC_SHARED_OPENER, false),
     ...preprocIf('_in_parameter_list_leading_comma', $ => {
       return seq(',', $._parameter_list_item, optional(','));
-    }, 4, PREPROC_IFDEF, false),
+    }, 4, PREPROC_IFDEF | PREPROC_SHARED_OPENER, false),
 
     ...preprocIf('_in_template_parameter_list', $ => {
       return seq(optional(','), $._preproc_template_parameter_list_item, optional(','));
-    }, -1, PREPROC_IFDEF, false),
+    }, -1, PREPROC_IFDEF | PREPROC_SHARED_OPENER, false),
 
     ...preprocIf('_in_initializer_list', $ => $._initializer_list_content, 0, PREPROC_IFDEF | PREPROC_ELSE | PREPROC_ELIF, false),
     ...preprocIf(
@@ -1544,14 +1544,14 @@ module.exports = grammar(C, {
       '_in_field_initializer_list',
       $ => seq(commaSep1($.field_initializer), optional(',')),
       2,
-      PREPROC_IFDEF | PREPROC_ELSE,
+      PREPROC_IFDEF | PREPROC_ELSE | PREPROC_SHARED_OPENER,
       false,
     ),
     ...preprocIf(
       '_in_field_initializer_list_leading_comma',
       $ => seq(',', commaSep1($.field_initializer), optional(',')),
       3,
-      PREPROC_IFDEF,
+      PREPROC_IFDEF | PREPROC_SHARED_OPENER,
       false,
     ),
     macro_template_declaration: $ => seq(
@@ -1906,7 +1906,7 @@ module.exports = grammar(C, {
 
     base_class_clause: $ => choice(
       seq(':', $._base_class_list_content),
-      preprocListItem($, '_in_base_class_clause', PREPROC_IFDEF),
+      preprocListItem($, '_in_base_class_clause', PREPROC_IFDEF | PREPROC_SHARED_OPENER),
     ),
 
     _base_class_specifier: $ => seq(
@@ -1929,21 +1929,21 @@ module.exports = grammar(C, {
       seq($._base_class_specifier, ','),
       seq(
         $._base_class_specifier,
-        repeat1(preprocListItem($, '_in_base_class_list_leading_comma', PREPROC_IFDEF)),
+        repeat1(preprocListItem($, '_in_base_class_list_leading_comma', PREPROC_IFDEF | PREPROC_SHARED_OPENER)),
         optional(','),
       ),
-      preprocListItem($, '_in_base_class_list', PREPROC_IFDEF),
+      preprocListItem($, '_in_base_class_list', PREPROC_IFDEF | PREPROC_SHARED_OPENER),
     ),
 
-    ...preprocIf('_in_base_class_list', $ => $._base_class_list_content, 0, PREPROC_ALL_BRANCH_FORMS, false),
+    ...preprocIf('_in_base_class_list', $ => $._base_class_list_content, 0, PREPROC_ALL_BRANCH_FORMS | PREPROC_SHARED_OPENER, false),
     ...preprocIf(
       '_in_base_class_list_leading_comma',
       $ => seq(',', $._base_class_list_content),
       1,
-      PREPROC_ALL_BRANCH_FORMS,
+      PREPROC_ALL_BRANCH_FORMS | PREPROC_SHARED_OPENER,
       false,
     ),
-    ...preprocIf('_in_base_class_clause', $ => $.base_class_clause, 1, PREPROC_ALL_BRANCH_FORMS, false),
+    ...preprocIf('_in_base_class_clause', $ => $.base_class_clause, 1, PREPROC_ALL_BRANCH_FORMS | PREPROC_SHARED_OPENER, false),
 
     enum_specifier: $ => enumSpecifier($, $.enumerator_list),
 
@@ -2067,15 +2067,15 @@ module.exports = grammar(C, {
       optional($._template_parameter_prefix),
       choice(
         seq($._template_parameter_list_item, ','),
-        preprocListItem($, '_in_template_parameter_list', PREPROC_IFDEF),
+        preprocListItem($, '_in_template_parameter_list', PREPROC_IFDEF | PREPROC_SHARED_OPENER),
       ),
     ),
 
     _template_parameter_conditional_tail: $ => choice(
-      preprocListItem($, '_in_template_parameter_list', PREPROC_IFDEF),
+      preprocListItem($, '_in_template_parameter_list', PREPROC_IFDEF | PREPROC_SHARED_OPENER),
       seq($._template_parameter_conditional_tail, ',', $._template_parameter_list_item),
       seq($._template_parameter_conditional_tail,
-        preprocListItem($, '_in_template_parameter_list', PREPROC_IFDEF)),
+        preprocListItem($, '_in_template_parameter_list', PREPROC_IFDEF | PREPROC_SHARED_OPENER)),
     ),
 
     type_parameter_declaration: $ => choice(
@@ -2154,7 +2154,7 @@ module.exports = grammar(C, {
         $._parameter_list_item,
         '_in_parameter_list',
         '_in_parameter_list_leading_comma',
-        PREPROC_IFDEF,
+        PREPROC_IFDEF | PREPROC_SHARED_OPENER,
       ),
       ')',
     ),
@@ -2300,15 +2300,15 @@ module.exports = grammar(C, {
     compound_statement: (_, original) => prec(-1, original),
 
     field_initializer_list: $ => {
-      const preprocItem = preprocListItem($, '_in_field_initializer_list', PREPROC_IFDEF);
-      const leadingPreprocItem = preprocListItem($, '_in_field_initializer_list_leading_comma', PREPROC_IFDEF);
+      const preprocItem = preprocListItem($, '_in_field_initializer_list', PREPROC_IFDEF | PREPROC_SHARED_OPENER);
+      const leadingPreprocItem = preprocListItem($, '_in_field_initializer_list_leading_comma', PREPROC_IFDEF | PREPROC_SHARED_OPENER);
       const tailItem = choice(
         seq(',', $.field_initializer),
         seq(preprocItem, optional($.field_initializer)),
         leadingPreprocItem,
         seq(
           ',',
-          preprocListItem($, '_in_field_initializer_list', PREPROC_IFDEF),
+          preprocListItem($, '_in_field_initializer_list', PREPROC_IFDEF | PREPROC_SHARED_OPENER),
           optional($.field_initializer),
         ),
       );
@@ -2321,11 +2321,11 @@ module.exports = grammar(C, {
           ),
           repeat(tailItem),
         ),
-        preprocListItem($, '_in_field_initializer_clause', PREPROC_IFDEF),
+        preprocListItem($, '_in_field_initializer_clause', PREPROC_IFDEF | PREPROC_SHARED_OPENER),
       );
     },
 
-    ...preprocIf('_in_field_initializer_clause', $ => $.field_initializer_list, 1, PREPROC_ALL_BRANCH_FORMS, false),
+    ...preprocIf('_in_field_initializer_clause', $ => $.field_initializer_list, 1, PREPROC_ALL_BRANCH_FORMS | PREPROC_SHARED_OPENER, false),
 
     field_initializer: $ => prec(1, seq(
       repeat($.field_initializer_prefix_macro),
@@ -4646,14 +4646,14 @@ module.exports = grammar(C, {
       seq(
         repeat1(choice(
           seq($._lambda_capture, ','),
-          preprocListItem($, '_in_lambda_capture_list'),
+          preprocListItem($, '_in_lambda_capture_list', PREPROC_ALL_BRANCH_FORMS | PREPROC_SHARED_OPENER),
         )),
         optional($._lambda_capture),
       ),
       $._lambda_capture,
     ),
 
-    ...preprocIf('_in_lambda_capture_list', $ => optional($._lambda_capture_list_content), 0, PREPROC_ALL_BRANCH_FORMS, false),
+    ...preprocIf('_in_lambda_capture_list', $ => optional($._lambda_capture_list_content), 0, PREPROC_ALL_BRANCH_FORMS | PREPROC_SHARED_OPENER, false),
 
     _lambda_capture_identifier: $ => seq(
       optional('&'),
