@@ -9343,3 +9343,23 @@ __fastcall int ConventionalDefinition(int value) { return value; }
 struct ConventionalMethods {
     __stdcall int Read(int value);
 };
+
+FORMAT_TOKEN_DECLARE()
+FORMAT_TOKEN_DECLARE(const)
+struct TokenDeclarationItems {
+    FORMAT_TOKEN_DECLARE(Value, First, (), ())
+    FORMAT_TOKEN_DECLARE(Value, Second, (), ())
+};
+
+void TokenStatementItems() {
+    if (ready) {
+        FORMAT_TOKEN_CHECK(value);
+    }
+    if (ready) {
+        FORMAT_TOKEN_CHECK(value);
+    }
+    while (ready) {
+        FORMAT_TOKEN_CHECK(value);
+        Consume(value);
+    }
+}

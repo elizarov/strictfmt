@@ -14394,6 +14394,10 @@
         {
           "type": "SYMBOL",
           "name": "_unconfigured_call"
+        },
+        {
+          "type": "SYMBOL",
+          "name": "preprocessing_token_macro_call"
         }
       ]
     },
@@ -14410,50 +14414,59 @@
               "type": "CHOICE",
               "members": [
                 {
+                  "type": "CHOICE",
+                  "members": [
+                    {
+                      "type": "SYMBOL",
+                      "name": "item_macro_identifier"
+                    },
+                    {
+                      "type": "SEQ",
+                      "members": [
+                        {
+                          "type": "FIELD",
+                          "name": "function",
+                          "content": {
+                            "type": "SYMBOL",
+                            "name": "item_call_macro_identifier"
+                          }
+                        },
+                        {
+                          "type": "FIELD",
+                          "name": "arguments",
+                          "content": {
+                            "type": "SYMBOL",
+                            "name": "argument_list"
+                          }
+                        }
+                      ]
+                    },
+                    {
+                      "type": "SEQ",
+                      "members": [
+                        {
+                          "type": "FIELD",
+                          "name": "function",
+                          "content": {
+                            "type": "SYMBOL",
+                            "name": "preprocessor_item_macro_identifier"
+                          }
+                        },
+                        {
+                          "type": "FIELD",
+                          "name": "arguments",
+                          "content": {
+                            "type": "SYMBOL",
+                            "name": "preprocessing_token_argument_list"
+                          }
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
                   "type": "SYMBOL",
-                  "name": "item_macro_identifier"
-                },
-                {
-                  "type": "SEQ",
-                  "members": [
-                    {
-                      "type": "FIELD",
-                      "name": "function",
-                      "content": {
-                        "type": "SYMBOL",
-                        "name": "item_call_macro_identifier"
-                      }
-                    },
-                    {
-                      "type": "FIELD",
-                      "name": "arguments",
-                      "content": {
-                        "type": "SYMBOL",
-                        "name": "argument_list"
-                      }
-                    }
-                  ]
-                },
-                {
-                  "type": "SEQ",
-                  "members": [
-                    {
-                      "type": "FIELD",
-                      "name": "function",
-                      "content": {
-                        "type": "SYMBOL",
-                        "name": "preprocessor_item_macro_identifier"
-                      }
-                    },
-                    {
-                      "type": "FIELD",
-                      "name": "arguments",
-                      "content": {
-                        "type": "SYMBOL",
-                        "name": "preprocessing_token_argument_list"
-                      }
-                    }
-                  ]
+                  "name": "preprocessing_token_macro_call"
                 }
               ]
             },
@@ -14499,25 +14512,8 @@
                   ]
                 },
                 {
-                  "type": "SEQ",
-                  "members": [
-                    {
-                      "type": "FIELD",
-                      "name": "function",
-                      "content": {
-                        "type": "SYMBOL",
-                        "name": "preprocessor_argument_macro_identifier"
-                      }
-                    },
-                    {
-                      "type": "FIELD",
-                      "name": "arguments",
-                      "content": {
-                        "type": "SYMBOL",
-                        "name": "preprocessing_token_argument_list"
-                      }
-                    }
-                  ]
+                  "type": "SYMBOL",
+                  "name": "preprocessing_token_macro_call"
                 },
                 {
                   "type": "SEQ",
@@ -14688,25 +14684,8 @@
                 ]
               },
               {
-                "type": "SEQ",
-                "members": [
-                  {
-                    "type": "FIELD",
-                    "name": "function",
-                    "content": {
-                      "type": "SYMBOL",
-                      "name": "preprocessor_argument_macro_identifier"
-                    }
-                  },
-                  {
-                    "type": "FIELD",
-                    "name": "arguments",
-                    "content": {
-                      "type": "SYMBOL",
-                      "name": "preprocessing_token_argument_list"
-                    }
-                  }
-                ]
+                "type": "SYMBOL",
+                "name": "preprocessing_token_macro_call"
               },
               {
                 "type": "SEQ",
@@ -20597,25 +20576,8 @@
                       ]
                     },
                     {
-                      "type": "SEQ",
-                      "members": [
-                        {
-                          "type": "FIELD",
-                          "name": "function",
-                          "content": {
-                            "type": "SYMBOL",
-                            "name": "preprocessor_argument_macro_identifier"
-                          }
-                        },
-                        {
-                          "type": "FIELD",
-                          "name": "arguments",
-                          "content": {
-                            "type": "SYMBOL",
-                            "name": "preprocessing_token_argument_list"
-                          }
-                        }
-                      ]
+                      "type": "SYMBOL",
+                      "name": "preprocessing_token_macro_call"
                     },
                     {
                       "type": "SEQ",
@@ -41864,6 +41826,23 @@
     }
   ],
   "conflicts": [
+    [
+      "type_specifier",
+      "block_macro_call_line_item"
+    ],
+    [
+      "type_specifier",
+      "expression",
+      "block_macro_call_line_item"
+    ],
+    [
+      "expression",
+      "block_macro_call_line_item"
+    ],
+    [
+      "type_specifier",
+      "_modifier_prefixed_macro_declaration"
+    ],
     [
       "_declaration_modifiers",
       "_declaration_declarator_list"

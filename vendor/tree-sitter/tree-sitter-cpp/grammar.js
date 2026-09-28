@@ -320,6 +320,10 @@ module.exports = grammar(C, {
   ],
 
   conflicts: $ => [
+    [$.type_specifier, $.block_macro_call_line_item],
+    [$.type_specifier, $.expression, $.block_macro_call_line_item],
+    [$.expression, $.block_macro_call_line_item],
+    [$.type_specifier, $._modifier_prefixed_macro_declaration],
     [$._declaration_modifiers, $._declaration_declarator_list],
     [$._declaration_specifiers, $._conditional_function_return_type_specifiers, $._macro_qualified_declaration_specifiers, $._constructor_specifiers, $.friend_declaration],
     [$._declaration_modifiers],
@@ -1255,10 +1259,11 @@ module.exports = grammar(C, {
         optional($._line_break_whitespace),
       ))),
       $._unconfigured_call,
+      $.preprocessing_token_macro_call,
     ),
 
     block_macro_call_statement_item: $ => prec.dynamic(10, prec.right(PREC.CALL + 8, seq(
-      itemMacro($),
+      choice(itemMacro($), $.preprocessing_token_macro_call),
       ';',
     ))),
 
@@ -5075,10 +5080,7 @@ function itemCall($, callee = $._call_identifier) {
       field('function', callee),
       field('arguments', $.argument_list),
     ),
-    seq(
-      field('function', $.preprocessor_argument_macro_identifier),
-      field('arguments', $.preprocessing_token_argument_list),
-    ),
+    $.preprocessing_token_macro_call,
     statementArgumentCall($),
   );
 }
