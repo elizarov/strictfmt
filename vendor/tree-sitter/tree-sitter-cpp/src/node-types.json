@@ -1578,6 +1578,14 @@
           "named": true
         },
         {
+          "type": "preproc_if",
+          "named": true
+        },
+        {
+          "type": "preproc_ifdef",
+          "named": true
+        },
+        {
           "type": "qualified_identifier",
           "named": true
         },
@@ -10393,6 +10401,10 @@
       "required": false,
       "types": [
         {
+          "type": "access_specifier",
+          "named": true
+        },
+        {
           "type": "access_specifier_label",
           "named": true
         },
@@ -10401,7 +10413,15 @@
           "named": true
         },
         {
+          "type": "attribute_declaration",
+          "named": true
+        },
+        {
           "type": "attributed_friend_declaration",
+          "named": true
+        },
+        {
+          "type": "base_class_clause",
           "named": true
         },
         {
@@ -10723,6 +10743,10 @@
       "required": false,
       "types": [
         {
+          "type": "access_specifier",
+          "named": true
+        },
+        {
           "type": "access_specifier_label",
           "named": true
         },
@@ -10740,6 +10764,10 @@
         },
         {
           "type": "attributed_friend_declaration",
+          "named": true
+        },
+        {
+          "type": "base_class_clause",
           "named": true
         },
         {
@@ -11507,6 +11535,10 @@
       "required": false,
       "types": [
         {
+          "type": "access_specifier",
+          "named": true
+        },
+        {
           "type": "access_specifier_label",
           "named": true
         },
@@ -11524,6 +11556,10 @@
         },
         {
           "type": "attributed_friend_declaration",
+          "named": true
+        },
+        {
+          "type": "base_class_clause",
           "named": true
         },
         {
@@ -12171,6 +12207,10 @@
       "required": false,
       "types": [
         {
+          "type": "access_specifier",
+          "named": true
+        },
+        {
           "type": "access_specifier_label",
           "named": true
         },
@@ -12188,6 +12228,10 @@
         },
         {
           "type": "attributed_friend_declaration",
+          "named": true
+        },
+        {
+          "type": "base_class_clause",
           "named": true
         },
         {

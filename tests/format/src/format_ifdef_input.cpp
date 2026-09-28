@@ -840,3 +840,27 @@ asm("first"
 #endif
 "last":::"cc");
 }
+
+struct ConditionalBases:Base
+#if FEATURE
+,public First, protected virtual Second
+#else
+,public Alternative
+#endif
+,Last{};
+struct SelectedBases
+#if FIRST
+:public Base<int>
+#elif SECOND
+:protected Base<long>
+#else
+:private Fallback
+#endif
+{};
+struct ConditionalBaseEntries:
+#if FEATURE
+First,Second,
+#else
+Alternative,
+#endif
+Last{};

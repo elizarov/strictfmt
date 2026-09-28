@@ -318,6 +318,7 @@ module.exports = grammar(C, {
   ],
 
   conflicts: $ => [
+    [$._base_class_list_entry],
     [$._declarator, $._macro_argument_parameter_declaration, $.macro_argument_declaration],
     [$._non_pointer_declarator, $.macro_argument_init_declarator],
     [$._macro_argument_parameter_declaration, $._non_pointer_declarator, $.macro_argument_declaration],
@@ -813,6 +814,7 @@ module.exports = grammar(C, {
 
   // Share field-name and assignment-left reductions instead of duplicating their alternatives.
   inline: ($, original) => original.filter(rule => !['_field_identifier', '_assignment_left_expression'].includes(rule.name)).concat([
+    $._base_class_list_content,
     $._initializer_list_content,
     $._initializer_list_final_item,
     $._enumerator_list_final_item,
@@ -1786,19 +1788,46 @@ module.exports = grammar(C, {
       )),
     ),
 
-    base_class_clause: $ => seq(
-      ':',
-      commaSep1(seq(
-        repeat($.attribute_declaration),
-        optional(choice(
-          $.access_specifier,
-          seq($.access_specifier, optional('virtual')),
-          seq('virtual', optional($.access_specifier)),
-        )),
-        choice($._class_name, $.decltype),
-        optional('...'),
-      )),
+    base_class_clause: $ => choice(
+      seq(':', $._base_class_list_content),
+      preprocListItem($, '_in_base_class_clause', PREPROC_IFDEF),
     ),
+
+    _base_class_specifier: $ => seq(
+      repeat($.attribute_declaration),
+      optional(choice(
+        $.access_specifier,
+        seq($.access_specifier, optional('virtual')),
+        seq('virtual', optional($.access_specifier)),
+      )),
+      choice($._class_name, $.decltype),
+      optional('...'),
+    ),
+
+    _base_class_list_content: $ => choice(
+      seq(repeat1($._base_class_list_entry), optional($._base_class_specifier)),
+      $._base_class_specifier,
+    ),
+
+    _base_class_list_entry: $ => choice(
+      seq($._base_class_specifier, ','),
+      seq(
+        $._base_class_specifier,
+        repeat1(preprocListItem($, '_in_base_class_list_leading_comma', PREPROC_IFDEF)),
+        optional(','),
+      ),
+      preprocListItem($, '_in_base_class_list', PREPROC_IFDEF),
+    ),
+
+    ...preprocIf('_in_base_class_list', $ => $._base_class_list_content, 0, PREPROC_ALL_BRANCH_FORMS, false),
+    ...preprocIf(
+      '_in_base_class_list_leading_comma',
+      $ => seq(',', $._base_class_list_content),
+      1,
+      PREPROC_ALL_BRANCH_FORMS,
+      false,
+    ),
+    ...preprocIf('_in_base_class_clause', $ => $.base_class_clause, 1, PREPROC_ALL_BRANCH_FORMS, false),
 
     enum_specifier: $ => enumSpecifier($, $.enumerator_list),
 
