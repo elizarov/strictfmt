@@ -30,18 +30,6 @@ if (Flush(conn) < 0)
     sendFailed:;
 }
 
-void PreprocessorSelectedBracedIf(Connection* conn, std::string& status) {
-#if FORMAT_USERVER_NEW_MONGO
-        if (HasReadableServer(conn)) {
-#else
-        if (HasReadableServer(const_cast<Connection*>(conn))) {
-#endif
-        status.append("Secondary AVAILABLE");
-        } else {
-        status.append("Secondary UNAVAILABLE");
-        }
-}
-
 void ConditionalArgumentExpressionFragment() {
     Open(
 #ifdef FORMAT_USERVER_FLAG_A

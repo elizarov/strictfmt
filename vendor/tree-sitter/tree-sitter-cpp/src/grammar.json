@@ -293,7 +293,7 @@
         },
         {
           "type": "SYMBOL",
-          "name": "preproc_selected_braced_if_else_statement"
+          "name": "preproc_selected_braced_if_statement"
         },
         {
           "type": "SYMBOL",
@@ -7108,7 +7108,7 @@
         },
         {
           "type": "SYMBOL",
-          "name": "preproc_selected_braced_if_else_statement"
+          "name": "preproc_selected_braced_if_statement"
         },
         {
           "type": "SYMBOL",
@@ -34041,65 +34041,231 @@
         }
       ]
     },
-    "preproc_selected_braced_if_else_statement": {
+    "preproc_selected_braced_if_statement": {
       "type": "PREC_RIGHT",
       "value": 0,
       "content": {
         "type": "SEQ",
         "members": [
           {
-            "type": "SYMBOL",
-            "name": "_preproc_opening_condition"
-          },
-          {
-            "type": "SYMBOL",
-            "name": "_preproc_directive_end"
-          },
-          {
-            "type": "SYMBOL",
-            "name": "_if_header"
-          },
-          {
-            "type": "STRING",
-            "value": "{"
-          },
-          {
-            "type": "SYMBOL",
-            "name": "_preproc_else_line"
-          },
-          {
-            "type": "SYMBOL",
-            "name": "_if_header"
-          },
-          {
-            "type": "STRING",
-            "value": "{"
-          },
-          {
-            "type": "SYMBOL",
-            "name": "_preproc_endif_line"
-          },
-          {
-            "type": "REPEAT",
+            "type": "FIELD",
+            "name": "consequence",
             "content": {
-              "type": "SYMBOL",
-              "name": "_block_item"
+              "type": "ALIAS",
+              "content": {
+                "type": "SYMBOL",
+                "name": "preproc_selected_if_body"
+              },
+              "named": true,
+              "value": "compound_statement"
             }
           },
           {
-            "type": "STRING",
-            "value": "}"
-          },
-          {
-            "type": "STRING",
-            "value": "else"
-          },
-          {
-            "type": "SYMBOL",
-            "name": "compound_statement"
+            "type": "CHOICE",
+            "members": [
+              {
+                "type": "FIELD",
+                "name": "alternative",
+                "content": {
+                  "type": "SYMBOL",
+                  "name": "else_clause"
+                }
+              },
+              {
+                "type": "BLANK"
+              }
+            ]
           }
         ]
       }
+    },
+    "preproc_selected_if_body": {
+      "type": "SEQ",
+      "members": [
+        {
+          "type": "SYMBOL",
+          "name": "preproc_if_prefix"
+        },
+        {
+          "type": "REPEAT",
+          "content": {
+            "type": "SYMBOL",
+            "name": "_block_item"
+          }
+        },
+        {
+          "type": "STRING",
+          "value": "}"
+        }
+      ]
+    },
+    "_selected_if_prefix_branch": {
+      "type": "SEQ",
+      "members": [
+        {
+          "type": "REPEAT",
+          "content": {
+            "type": "SYMBOL",
+            "name": "_block_item"
+          }
+        },
+        {
+          "type": "CHOICE",
+          "members": [
+            {
+              "type": "SYMBOL",
+              "name": "selected_if_prefix"
+            },
+            {
+              "type": "SYMBOL",
+              "name": "preproc_if_prefix"
+            }
+          ]
+        }
+      ]
+    },
+    "selected_if_prefix": {
+      "type": "SEQ",
+      "members": [
+        {
+          "type": "SYMBOL",
+          "name": "_if_header"
+        },
+        {
+          "type": "STRING",
+          "value": "{"
+        }
+      ]
+    },
+    "preproc_if_prefix": {
+      "type": "SEQ",
+      "members": [
+        {
+          "type": "SYMBOL",
+          "name": "_preproc_opening_condition"
+        },
+        {
+          "type": "SYMBOL",
+          "name": "_preproc_directive_end"
+        },
+        {
+          "type": "SYMBOL",
+          "name": "_selected_if_prefix_branch"
+        },
+        {
+          "type": "CHOICE",
+          "members": [
+            {
+              "type": "SYMBOL",
+              "name": "_preproc_if_prefix_alternative"
+            },
+            {
+              "type": "BLANK"
+            }
+          ]
+        },
+        {
+          "type": "ALIAS",
+          "content": {
+            "type": "TOKEN",
+            "content": {
+              "type": "PREC",
+              "value": 1,
+              "content": {
+                "type": "PATTERN",
+                "value": "#[ \\t]*endif"
+              }
+            }
+          },
+          "named": false,
+          "value": "#endif"
+        }
+      ]
+    },
+    "_preproc_if_prefix_alternative": {
+      "type": "CHOICE",
+      "members": [
+        {
+          "type": "ALIAS",
+          "content": {
+            "type": "SYMBOL",
+            "name": "preproc_else_if_prefix"
+          },
+          "named": true,
+          "value": "preproc_else"
+        },
+        {
+          "type": "ALIAS",
+          "content": {
+            "type": "SYMBOL",
+            "name": "preproc_elif_if_prefix"
+          },
+          "named": true,
+          "value": "preproc_elif"
+        }
+      ]
+    },
+    "preproc_else_if_prefix": {
+      "type": "SEQ",
+      "members": [
+        {
+          "type": "SYMBOL",
+          "name": "_preproc_else_line"
+        },
+        {
+          "type": "SYMBOL",
+          "name": "_selected_if_prefix_branch"
+        }
+      ]
+    },
+    "preproc_elif_if_prefix": {
+      "type": "SEQ",
+      "members": [
+        {
+          "type": "ALIAS",
+          "content": {
+            "type": "TOKEN",
+            "content": {
+              "type": "PREC",
+              "value": 1,
+              "content": {
+                "type": "PATTERN",
+                "value": "#[ \\t]*elif[ \\t]+"
+              }
+            }
+          },
+          "named": false,
+          "value": "#elif"
+        },
+        {
+          "type": "FIELD",
+          "name": "condition",
+          "content": {
+            "type": "SYMBOL",
+            "name": "_preproc_expression"
+          }
+        },
+        {
+          "type": "SYMBOL",
+          "name": "_preproc_directive_end"
+        },
+        {
+          "type": "SYMBOL",
+          "name": "_selected_if_prefix_branch"
+        },
+        {
+          "type": "CHOICE",
+          "members": [
+            {
+              "type": "SYMBOL",
+              "name": "_preproc_if_prefix_alternative"
+            },
+            {
+              "type": "BLANK"
+            }
+          ]
+        }
+      ]
     },
     "selected_if_header": {
       "type": "SYMBOL",
@@ -35301,6 +35467,15 @@
           "type": "ALIAS",
           "content": {
             "type": "SYMBOL",
+            "name": "_closed_selected_braced_if_statement"
+          },
+          "named": true,
+          "value": "preproc_selected_braced_if_statement"
+        },
+        {
+          "type": "ALIAS",
+          "content": {
+            "type": "SYMBOL",
             "name": "_closed_while_statement"
           },
           "named": true,
@@ -35456,6 +35631,37 @@
           "content": {
             "type": "SYMBOL",
             "name": "_closed_statement"
+          }
+        },
+        {
+          "type": "FIELD",
+          "name": "alternative",
+          "content": {
+            "type": "ALIAS",
+            "content": {
+              "type": "SYMBOL",
+              "name": "_closed_else_clause"
+            },
+            "named": true,
+            "value": "else_clause"
+          }
+        }
+      ]
+    },
+    "_closed_selected_braced_if_statement": {
+      "type": "SEQ",
+      "members": [
+        {
+          "type": "FIELD",
+          "name": "consequence",
+          "content": {
+            "type": "ALIAS",
+            "content": {
+              "type": "SYMBOL",
+              "name": "preproc_selected_if_body"
+            },
+            "named": true,
+            "value": "compound_statement"
           }
         },
         {

@@ -976,7 +976,7 @@ module.exports = grammar(C, {
       $.preproc_value_declaration,
       $.block_macro_call_line_item,
       $.block_macro_call_statement_item,
-      $.preproc_selected_braced_if_else_statement,
+      $.preproc_selected_braced_if_statement,
       $.preproc_ended_consequence_statement,
       $.declaration,
       $.statement,
@@ -3316,7 +3316,7 @@ module.exports = grammar(C, {
       $._closed_statement_leaf,
       $.preproc_case_label_fragment,
       $.preproc_selected_else_if_statement,
-      $.preproc_selected_braced_if_else_statement,
+      $.preproc_selected_braced_if_statement,
       $.preproc_ended_consequence_statement,
       $.preproc_selected_if_statement,
       $.preproc_if,
@@ -3430,20 +3430,49 @@ module.exports = grammar(C, {
       $._preproc_endif_line,
     ),
 
-    preproc_selected_braced_if_else_statement: $ => prec.right(seq(
-      $._preproc_opening_condition,
-      $._preproc_directive_end,
-      selectedIfHeader($),
-      '{',
-      $._preproc_else_line,
-      selectedIfHeader($),
-      '{',
-      $._preproc_endif_line,
+    preproc_selected_braced_if_statement: $ => prec.right(seq(
+      field('consequence', alias($.preproc_selected_if_body, $.compound_statement)),
+      optional(field('alternative', $.else_clause)),
+    )),
+
+    preproc_selected_if_body: $ => seq(
+      $.preproc_if_prefix,
       repeat($._block_item),
       '}',
-      'else',
-      $.compound_statement,
-    )),
+    ),
+
+    _selected_if_prefix_branch: $ => seq(
+      repeat($._block_item),
+      choice($.selected_if_prefix, $.preproc_if_prefix),
+    ),
+
+    selected_if_prefix: $ => seq($._if_header, '{'),
+
+    preproc_if_prefix: $ => seq(
+      $._preproc_opening_condition,
+      $._preproc_directive_end,
+      $._selected_if_prefix_branch,
+      optional($._preproc_if_prefix_alternative),
+      preprocessor('endif'),
+    ),
+
+    _preproc_if_prefix_alternative: $ => choice(
+      alias($.preproc_else_if_prefix, $.preproc_else),
+      alias($.preproc_elif_if_prefix, $.preproc_elif),
+    ),
+
+    preproc_else_if_prefix: $ => seq(
+      $._preproc_else_line,
+      $._selected_if_prefix_branch,
+    ),
+
+    preproc_elif_if_prefix: $ => seq(
+      preprocessor('elif'),
+      field('condition', $._preproc_expression),
+      $._preproc_directive_end,
+      $._selected_if_prefix_branch,
+      optional($._preproc_if_prefix_alternative),
+    ),
 
     selected_if_header: $ => $._if_header,
 
@@ -3590,6 +3619,7 @@ module.exports = grammar(C, {
       $._closed_statement_leaf,
       alias($._closed_if_statement, $.if_statement),
       alias($._closed_selected_if_statement, $.preproc_selected_if_statement),
+      alias($._closed_selected_braced_if_statement, $.preproc_selected_braced_if_statement),
       alias($._closed_while_statement, $.while_statement),
       alias($._closed_for_statement, $.for_statement),
       alias($._closed_for_range_loop, $.for_range_loop),
@@ -3615,6 +3645,11 @@ module.exports = grammar(C, {
     _closed_selected_if_statement: $ => seq(
       field('condition', $.preproc_selected_if_header),
       field('consequence', $._closed_statement),
+      field('alternative', alias($._closed_else_clause, $.else_clause)),
+    ),
+
+    _closed_selected_braced_if_statement: $ => seq(
+      field('consequence', alias($.preproc_selected_if_body, $.compound_statement)),
       field('alternative', alias($._closed_else_clause, $.else_clause)),
     ),
 

@@ -249,7 +249,13 @@ private:
     int bracketDepth_ = 0;
     std::vector<BraceFrame> braceStack_;
     std::vector<CaseBodyFrame> activeCaseBodies_;
-    std::vector<int> conditionalFunctionIndents_;
+
+    struct ConditionalBlockIndent {
+        const SyntaxNode* body = nullptr;
+        int indent = 0;
+    };
+
+    std::vector<ConditionalBlockIndent> conditionalBlockIndents_;
     std::optional<int> pendingIndentRestoreAfterFlush_;
     std::optional<int> macroContinuationResumeIndent_;
     int macroDefinitionResumeIndent_ = 0;
@@ -299,7 +305,7 @@ private:
         if (token.kind != PrintTokenKind::Known || token.syntaxKind != SyntaxNodeKind::LeftBrace) {
             return false;
         }
-        if (token.inConditionalFunctionHeader) {
+        if (PrintTokenIsConditionalBlockOpeningBrace(token)) {
             return true;
         }
         if (RoleForBrace(token) == BraceRole::Compact || IsCompactSingleStatementFunctionBodyBrace(token)) {
@@ -1271,12 +1277,18 @@ private:
         const bool isInclude = PrintTokenSyntaxHasClass(token, SyntaxNodeClass::IncludeDirective) ||
             SyntaxNodeKindHasClass(lineDirectiveKind, SyntaxNodeClass::IncludeDirective);
         const bool listConditional = layoutTree_->Lists().IsConditionalList(currentTokenIndex_);
-        const bool closesConditionalFunctionHeader = (
+        const SyntaxNode* conditionalHeader = token.node == nullptr ? nullptr : token.node->parent;
+        const SyntaxNode* conditionalBody = conditionalHeader == nullptr ? nullptr : conditionalHeader->parent;
+        const bool closesConditionalBlockHeader = (
             (token.node != nullptr && SyntaxNodeKindHasClass(token.node->kind, SyntaxNodeClass::EndifDirective)) ||
             token.syntaxKind == SyntaxNodeKind::PreprocessorDirectiveEndif ||
             lineDirectiveKind == SyntaxNodeKind::PreprocessorDirectiveEndif
         ) &&
-            token.inConditionalFunctionHeader;
+            token.inConditionalBlockHeader &&
+            conditionalHeader != nullptr &&
+            conditionalBody != nullptr &&
+            SyntaxNodeHasClass(*conditionalHeader, SyntaxNodeClass::ConditionalBlockHeader) &&
+            conditionalBody->kind == SyntaxNodeKind::CompoundStatement;
         if (IsConditionalRhsPreprocessorToken(token)) {
             if (HasBufferedLineText()) {
                 FlushPendingTokens();
@@ -1332,8 +1344,8 @@ private:
             FormatPreprocessorText(token.text, {.payloadIndent = *listItemIndent, .indentWidth = indentWidth_}) : line;
         output_.WriteVerbatim(outputLine);
         NewLine();
-        if (closesConditionalFunctionHeader) {
-            conditionalFunctionIndents_.push_back(indentLevel_);
+        if (closesConditionalBlockHeader) {
+            conditionalBlockIndents_.push_back({conditionalBody, indentLevel_});
             ++indentLevel_;
         }
         if (includeInitializerContinuationIndent) {
@@ -1559,7 +1571,7 @@ private:
         }
         const int crossBlockFallbackBaseIndent = std::max(0, output_.State().pendingIndentLevel.value_or(indentLevel_));
         const bool followedByTrailingComment = rawNext != nullptr && rawNext->kind == PrintTokenKind::TrailingComment;
-        if (token.inConditionalFunctionHeader) {
+        if (PrintTokenIsConditionalBlockOpeningBrace(token)) {
             BufferToken(token);
             if (followedByTrailingComment) {
                 BufferToken(*rawNext);
@@ -1668,19 +1680,20 @@ private:
         }
         if (
             token.parentKind == SyntaxNodeKind::CompoundStatement &&
-            token.grandParentKind == SyntaxNodeKind::FunctionDefinition &&
             token.node != nullptr &&
-            token.node->parent != nullptr &&
-            !HasDirectKnownChild(*token.node->parent, SyntaxNodeKind::LeftBrace) &&
-            !conditionalFunctionIndents_.empty()
+            !conditionalBlockIndents_.empty() &&
+            conditionalBlockIndents_.back().body == token.node->parent
         ) {
             FlushPendingTokens();
             if (output_.State().lineHasText) {
                 NewLine(token.inMacroValue);
             }
-            indentLevel_ = conditionalFunctionIndents_.back();
-            conditionalFunctionIndents_.pop_back();
+            indentLevel_ = conditionalBlockIndents_.back().indent;
+            conditionalBlockIndents_.pop_back();
             BufferToken(token);
+            if (ShouldAttachAfterBlockClose(token, next)) {
+                return;
+            }
             FlushPendingTokens();
             if (rawNext != nullptr && rawNext->kind == PrintTokenKind::TrailingComment) {
                 return;

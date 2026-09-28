@@ -31,7 +31,7 @@ enum PrintTokenAncestryFlag : std::uint16_t {
     InMacroStatementSequence = 1u << 0,
     InLeadingStreamOperatorChain = 1u << 1,
     InConditionalStreamOperatorChain = 1u << 2,
-    InConditionalFunctionHeader = 1u << 3,
+    InConditionalBlockHeader = 1u << 3,
     InBareMacroItem = 1u << 4,
     InTemplateList = 1u << 5,
     InMacroListExpansion = 1u << 6,
@@ -185,8 +185,8 @@ struct TokenContext {
         ancestryFlags |=
             (node.classes & static_cast<std::uint64_t>(SyntaxNodeClass::ConditionalStreamOperatorChain)) != 0 ?
                 InConditionalStreamOperatorChain : 0;
-        ancestryFlags |= (node.classes & static_cast<std::uint64_t>(SyntaxNodeClass::ConditionalFunctionHeader)) != 0 ?
-            InConditionalFunctionHeader : 0;
+        ancestryFlags |= (node.classes & static_cast<std::uint64_t>(SyntaxNodeClass::ConditionalBlockHeader)) != 0 ?
+            InConditionalBlockHeader : 0;
         ancestryFlags |= kind == SyntaxNodeKind::BareMacroItem ? InBareMacroItem : 0;
         ancestryFlags |= kind == SyntaxNodeKind::MacroCallItem ? InMacroCallItem : 0;
         ancestryFlags |= kind == SyntaxNodeKind::MacroModifier ? InMacroModifier : 0;
@@ -229,7 +229,7 @@ PrintToken
     token.inMacroStatementSequence = (context.ancestryFlags & InMacroStatementSequence) != 0;
     token.inLeadingStreamOperatorChain = (context.ancestryFlags & InLeadingStreamOperatorChain) != 0;
     token.inConditionalStreamOperatorChain = (context.ancestryFlags & InConditionalStreamOperatorChain) != 0;
-    token.inConditionalFunctionHeader = (context.ancestryFlags & InConditionalFunctionHeader) != 0;
+    token.inConditionalBlockHeader = (context.ancestryFlags & InConditionalBlockHeader) != 0;
     token.inBareMacroItem = (context.ancestryFlags & InBareMacroItem) != 0;
     token.inMacroCallItem = (context.ancestryFlags & InMacroCallItem) != 0;
     token.inMacroListExpansion = (context.ancestryFlags & InMacroListExpansion) != 0;

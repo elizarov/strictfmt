@@ -565,10 +565,7 @@ bool FormatTokenNeedsSpace(const PrintToken* previous, const PrintToken& current
         return (currentClasses & static_cast<std::uint64_t>(category)) != 0;
     };
 
-    if (
-        cur == SyntaxNodeKind::LeftBrace &&
-        NodeOrAncestorHasClass(current.node, SyntaxNodeClass::ConditionalFunctionHeader)
-    ) {
+    if (PrintTokenIsConditionalBlockOpeningBrace(current)) {
         return true;
     }
 

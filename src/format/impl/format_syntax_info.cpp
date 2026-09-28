@@ -93,7 +93,7 @@ constexpr std::uint64_t kSymbolLocalClasses = Bit(SyntaxNodeClass::OpaqueSource)
     Bit(SyntaxNodeClass::DeclarationModifierPreprocessor) |
     Bit(SyntaxNodeClass::ConditionalRhsPreprocessor) |
     Bit(SyntaxNodeClass::SingleLineTrailingComma) |
-    Bit(SyntaxNodeClass::ConditionalFunctionHeader) |
+    Bit(SyntaxNodeClass::ConditionalBlockHeader) |
     Bit(SyntaxNodeClass::LeadingStreamOperatorChain) |
     Bit(SyntaxNodeClass::ConditionalStreamOperatorChain) |
     Bit(SyntaxNodeClass::DeclarationScope) |
@@ -362,7 +362,15 @@ constexpr auto kSyntaxKindMappings = std::to_array<SyntaxKindMapping>({
         kConditionalPreprocessorOpenClasses | Bit(SyntaxNodeClass::SourceItemScope)
     ),
     Tree(SyntaxNodeKind::PreprocIf, "preproc_unbalanced_else_block", kAtomicPreprocessorClasses),
-    Tree(SyntaxNodeKind::PreprocIf, "preproc_selected_braced_if_else_statement", kAtomicPreprocessorClasses),
+    Tree(SyntaxNodeKind::IfStatement, "preproc_selected_braced_if_statement", Bit(SyntaxNodeClass::IfStatement)),
+    Tree(SyntaxNodeKind::Tree, "selected_if_prefix", Bit(SyntaxNodeClass::ConditionalBlockHeader)),
+    Tree(
+        SyntaxNodeKind::PreprocIf,
+        "preproc_if_prefix",
+        kAllowedPreprocessorContainerClasses |
+            kSupportedPreprocessorPlacementClasses |
+            Bit(SyntaxNodeClass::ConditionalBlockHeader)
+    ),
     Tree(
         SyntaxNodeKind::PreprocIf,
         "preproc_selected_if_header",
@@ -420,12 +428,12 @@ constexpr auto kSyntaxKindMappings = std::to_array<SyntaxKindMapping>({
     Tree(
         SyntaxNodeKind::PreprocIf,
         "preproc_if_in_macro_function_definition_prefix",
-        kSupportedPreprocessorPlacementClasses | Bit(SyntaxNodeClass::ConditionalFunctionHeader)
+        kSupportedPreprocessorPlacementClasses | Bit(SyntaxNodeClass::ConditionalBlockHeader)
     ),
     Tree(
         SyntaxNodeKind::PreprocElse,
         "preproc_else_in_macro_function_definition_prefix",
-        kSupportedPreprocessorPlacementClasses | Bit(SyntaxNodeClass::ConditionalFunctionHeader)
+        kSupportedPreprocessorPlacementClasses | Bit(SyntaxNodeClass::ConditionalBlockHeader)
     ),
     Tree(
         SyntaxNodeKind::PreprocIf,
@@ -482,21 +490,21 @@ constexpr auto kSyntaxKindMappings = std::to_array<SyntaxKindMapping>({
         "preproc_if_in_function_definition_prefix",
         kAllowedPreprocessorContainerClasses |
             kSupportedPreprocessorPlacementClasses |
-            Bit(SyntaxNodeClass::ConditionalFunctionHeader)
+            Bit(SyntaxNodeClass::ConditionalBlockHeader)
     ),
     Tree(
         SyntaxNodeKind::PreprocIfdef,
         "preproc_ifdef_in_function_definition_prefix",
         kAllowedPreprocessorContainerClasses |
             kSupportedPreprocessorPlacementClasses |
-            Bit(SyntaxNodeClass::ConditionalFunctionHeader)
+            Bit(SyntaxNodeClass::ConditionalBlockHeader)
     ),
     Tree(
         SyntaxNodeKind::PreprocElse,
         "preproc_else_in_function_definition_prefix",
         kAllowedPreprocessorContainerClasses |
             kSupportedPreprocessorPlacementClasses |
-            Bit(SyntaxNodeClass::ConditionalFunctionHeader)
+            Bit(SyntaxNodeClass::ConditionalBlockHeader)
     ),
     Tree(
         SyntaxNodeKind::BinaryExpression,

@@ -1429,3 +1429,59 @@ int NestedConditionalElse(bool outer, bool first, bool second) {
         return 4;
     }
 }
+
+int SelectedIfPrefix(int value) {
+#if FIRST
+    int limit = 2;
+    if (value < limit) {
+#elif SECOND
+    if (auto condition = value > 2; condition) {
+#else
+#if NESTED
+    if (value == 1) {
+#else
+    if (value == 0) {
+#endif
+#endif
+        return 1;
+    } else {
+        return 2;
+    }
+}
+int SelectedIfLambda(int value) {
+#if FIRST
+    if ([](int x) { return x > 2; }(value)) {
+#else
+    if (value) {
+#endif
+        return 1;
+    }
+    return 2;
+}
+int NestedSelectedIf(bool outer, bool first, bool second) {
+    if (outer) {
+#ifdef FIRST
+        if (first) {
+#else
+        if (second) {
+#endif
+            return 1;
+        } else {
+            return 2;
+        }
+    } else {
+        return 3;
+    }
+}
+
+void PreprocessorSelectedBracedIf(Connection* conn, std::string& status) {
+#if FORMAT_USERVER_NEW_MONGO
+    if (HasReadableServer(conn)) {
+#else
+    if (HasReadableServer(const_cast<Connection*>(conn))) {
+#endif
+        status.append("Secondary AVAILABLE");
+    } else {
+        status.append("Secondary UNAVAILABLE");
+    }
+}

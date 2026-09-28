@@ -35,7 +35,7 @@ struct PrintToken {
     bool inMacroStatementSequence : 1;
     bool inLeadingStreamOperatorChain : 1;
     bool inConditionalStreamOperatorChain : 1;
-    bool inConditionalFunctionHeader : 1;
+    bool inConditionalBlockHeader : 1;
     bool inBareMacroItem : 1;
     bool inMacroCallItem : 1;
     bool inMacroListExpansion : 1;
@@ -62,6 +62,13 @@ struct PrintToken {
 
 inline bool PrintTokenSyntaxHasClass(const PrintToken& token, SyntaxNodeClass syntaxNodeClass) {
     return (token.syntaxClasses & static_cast<std::uint64_t>(syntaxNodeClass)) != 0;
+}
+
+inline bool PrintTokenIsConditionalBlockOpeningBrace(const PrintToken& token) {
+    return token.syntaxKind == SyntaxNodeKind::LeftBrace &&
+        token.node != nullptr &&
+        token.node->parent != nullptr &&
+        SyntaxNodeHasClass(*token.node->parent, SyntaxNodeClass::ConditionalBlockHeader);
 }
 
 inline bool PrintTokenIsSingleLineTrailingComma(const PrintToken& token) {
