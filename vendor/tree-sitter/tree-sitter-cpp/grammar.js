@@ -1735,11 +1735,11 @@ module.exports = grammar(C, {
       declarationWithSpecifiers($, $._declaration_specifiers),
     ),
 
-    _modifier_prefixed_macro_declaration: $ => prec.dynamic(-1, seq(
+    _modifier_prefixed_macro_declaration: $ => prec.dynamic(-1, prec.right(seq(
       repeat1($._declaration_modifiers),
-      choice(itemCall($), itemMacro($)),
-      ';',
-    )),
+      choice(itemCall($, $._unconfigured_type_call_identifier), itemMacro($)),
+      optional(';'),
+    ))),
 
     _qualified_declaration_type: $ => prec(1, choice(
       alias($.qualified_type_identifier, $.qualified_identifier),
@@ -4983,10 +4983,10 @@ function memberPointerDeclarator($, declarator) {
   )));
 }
 
-function itemCall($) {
+function itemCall($, callee = $._call_identifier) {
   return choice(
     seq(
-      field('function', $._call_identifier),
+      field('function', callee),
       field('arguments', $.argument_list),
     ),
     seq(

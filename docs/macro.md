@@ -283,7 +283,7 @@ Calls also fit type-only positions, including aliases and function parameters.
 
 An isolated identifier can supply a complete namespace or class item, or a template-list fragment, when it cannot form ordinary C++ syntax. Unknown modifiers are also accepted in class, struct, union, and template declaration headers, before constructor specifiers such as `explicit`, after configured declaration modifiers, and after function declarators or alias names. Configuration may still be needed to attach an identifier to the surrounding code.
 
-Calls may supply enumerator names. Enum items may omit separating commas. Calls recognized as enum or braced initializer list fragments occupy separate lines, whether configured or not. Calls can also form statements without a trailing semicolon.
+Calls may supply enumerator names. Enum items may omit separating commas. Calls recognized as enum or braced initializer list fragments occupy separate lines, whether configured or not. Calls can also form statements without a trailing semicolon, or complete declarations after declaration modifiers with or without a semicolon.
 
 A macro call immediately followed by a `{ ... }` body is a statement prefix in statement positions and a function definition in declaration positions, including namespace and class scope. A generated function header may also precede a function try block. A macro invocation may supply the required handlers immediately after a try body; ordinary statements after explicit catch clauses remain separate. The body follows the corresponding statement or function layout rules. An inferred prefix and its block form one statement, including when braces are added to an enclosing control statement:
 

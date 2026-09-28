@@ -5675,3 +5675,8 @@ FLAG_NAME(Second)=FLAG_NAME(First),
 FLAG_NAME(Third)=BuildValue(3),
 Ordinary=4
 };
+
+static GENERATE_GLOBAL(Value,Global,Args())
+bool AfterGeneratedGlobal(){return true;}
+static TYPE_FACTORY(int) ReadGeneratedType(){return 1;}
+static int OrdinaryAfterGenerated(int value){return value;}
