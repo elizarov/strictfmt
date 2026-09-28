@@ -3888,10 +3888,6 @@
           "named": true
         },
         {
-          "type": "preproc_ifdef_in_declaration_modifiers",
-          "named": true
-        },
-        {
           "type": "preprocessing_token_macro_call",
           "named": true
         },
@@ -4836,10 +4832,6 @@
           "named": true
         },
         {
-          "type": "preproc_ifdef_in_declaration_modifiers",
-          "named": true
-        },
-        {
           "type": "preprocessing_token_macro_call",
           "named": true
         },
@@ -5416,10 +5408,6 @@
           "named": true
         },
         {
-          "type": "preproc_ifdef_in_declaration_modifiers",
-          "named": true
-        },
-        {
           "type": "storage_class_specifier",
           "named": true
         },
@@ -5523,10 +5511,6 @@
         },
         {
           "type": "preproc_if_in_declaration_modifiers",
-          "named": true
-        },
-        {
-          "type": "preproc_ifdef_in_declaration_modifiers",
           "named": true
         },
         {
@@ -5917,10 +5901,6 @@
           "named": true
         },
         {
-          "type": "preproc_ifdef_in_declaration_modifiers",
-          "named": true
-        },
-        {
           "type": "preproc_ifdef_in_function_header",
           "named": true
         },
@@ -6116,10 +6096,6 @@
         },
         {
           "type": "preproc_if_in_declaration_modifiers",
-          "named": true
-        },
-        {
-          "type": "preproc_ifdef_in_declaration_modifiers",
           "named": true
         },
         {
@@ -6688,10 +6664,6 @@
         },
         {
           "type": "preproc_if_in_if_constexpr",
-          "named": true
-        },
-        {
-          "type": "preproc_ifdef_in_if_constexpr",
           "named": true
         }
       ]
@@ -7691,10 +7663,6 @@
           "named": true
         },
         {
-          "type": "preproc_ifdef_in_declaration_modifiers",
-          "named": true
-        },
-        {
           "type": "storage_class_specifier",
           "named": true
         },
@@ -8103,10 +8071,6 @@
         },
         {
           "type": "preproc_if_in_declaration_modifiers",
-          "named": true
-        },
-        {
-          "type": "preproc_ifdef_in_declaration_modifiers",
           "named": true
         },
         {
@@ -9876,10 +9840,6 @@
           "named": true
         },
         {
-          "type": "preproc_ifdef_in_declaration_modifiers",
-          "named": true
-        },
-        {
           "type": "primitive_type",
           "named": true
         },
@@ -9997,10 +9957,6 @@
           "named": true
         },
         {
-          "type": "preproc_ifdef_in_declaration_modifiers",
-          "named": true
-        },
-        {
           "type": "storage_class_specifier",
           "named": true
         },
@@ -10112,10 +10068,6 @@
         },
         {
           "type": "preproc_if_in_declaration_modifiers",
-          "named": true
-        },
-        {
-          "type": "preproc_ifdef_in_declaration_modifiers",
           "named": true
         },
         {
@@ -11286,18 +11238,6 @@
           "named": true
         },
         {
-          "type": "preproc_ifdef_in_declaration_modifiers",
-          "named": true
-        },
-        {
-          "type": "preproc_ifdef_in_if_constexpr",
-          "named": true
-        },
-        {
-          "type": "preproc_ifdef_in_template_requires_clause",
-          "named": true
-        },
-        {
           "type": "preproc_include",
           "named": true
         },
@@ -11788,18 +11728,6 @@
           "named": true
         },
         {
-          "type": "preproc_ifdef_in_declaration_modifiers",
-          "named": true
-        },
-        {
-          "type": "preproc_ifdef_in_if_constexpr",
-          "named": true
-        },
-        {
-          "type": "preproc_ifdef_in_template_requires_clause",
-          "named": true
-        },
-        {
           "type": "preproc_include",
           "named": true
         },
@@ -11999,10 +11927,6 @@
         },
         {
           "type": "preproc_ifdef",
-          "named": true
-        },
-        {
-          "type": "preproc_ifdef_in_declaration_modifiers",
           "named": true
         },
         {
@@ -12321,10 +12245,6 @@
         },
         {
           "type": "preproc_if_in_if_constexpr",
-          "named": true
-        },
-        {
-          "type": "preproc_ifdef_in_if_constexpr",
           "named": true
         }
       ]
@@ -13036,10 +12956,6 @@
           "named": true
         },
         {
-          "type": "preproc_ifdef_in_declaration_modifiers",
-          "named": true
-        },
-        {
           "type": "preproc_include",
           "named": true
         },
@@ -13384,7 +13300,7 @@
       },
       "condition": {
         "multiple": false,
-        "required": true,
+        "required": false,
         "types": [
           {
             "type": "binary_expression",
@@ -13439,6 +13355,16 @@
             "named": true
           }
         ]
+      },
+      "name": {
+        "multiple": false,
+        "required": false,
+        "types": [
+          {
+            "type": "identifier",
+            "named": true
+          }
+        ]
       }
     },
     "children": {
@@ -13467,10 +13393,6 @@
         },
         {
           "type": "preproc_if_in_declaration_modifiers",
-          "named": true
-        },
-        {
-          "type": "preproc_ifdef_in_declaration_modifiers",
           "named": true
         },
         {
@@ -13752,10 +13674,6 @@
           "named": true
         },
         {
-          "type": "preproc_ifdef_in_declaration_modifiers",
-          "named": true
-        },
-        {
           "type": "preproc_include",
           "named": true
         },
@@ -13942,10 +13860,6 @@
           "named": true
         },
         {
-          "type": "preproc_ifdef_in_declaration_modifiers",
-          "named": true
-        },
-        {
           "type": "storage_class_specifier",
           "named": true
         },
@@ -13976,7 +13890,7 @@
       },
       "condition": {
         "multiple": false,
-        "required": true,
+        "required": false,
         "types": [
           {
             "type": "binary_expression",
@@ -14031,6 +13945,16 @@
             "named": true
           }
         ]
+      },
+      "name": {
+        "multiple": false,
+        "required": false,
+        "types": [
+          {
+            "type": "identifier",
+            "named": true
+          }
+        ]
       }
     },
     "children": {
@@ -14039,10 +13963,6 @@
       "types": [
         {
           "type": "preproc_if_in_if_constexpr",
-          "named": true
-        },
-        {
-          "type": "preproc_ifdef_in_if_constexpr",
           "named": true
         }
       ]
@@ -14162,7 +14082,7 @@
       },
       "condition": {
         "multiple": false,
-        "required": true,
+        "required": false,
         "types": [
           {
             "type": "binary_expression",
@@ -14217,6 +14137,16 @@
             "named": true
           }
         ]
+      },
+      "name": {
+        "multiple": false,
+        "required": false,
+        "types": [
+          {
+            "type": "identifier",
+            "named": true
+          }
+        ]
       }
     },
     "children": {
@@ -14225,10 +14155,6 @@
       "types": [
         {
           "type": "preproc_if_in_template_requires_clause",
-          "named": true
-        },
-        {
-          "type": "preproc_ifdef_in_template_requires_clause",
           "named": true
         },
         {
@@ -14638,10 +14564,6 @@
           "named": true
         },
         {
-          "type": "preproc_ifdef_in_declaration_modifiers",
-          "named": true
-        },
-        {
           "type": "preproc_include",
           "named": true
         },
@@ -14831,78 +14753,6 @@
     }
   },
   {
-    "type": "preproc_ifdef_in_declaration_modifiers",
-    "named": true,
-    "fields": {
-      "alternative": {
-        "multiple": false,
-        "required": false,
-        "types": [
-          {
-            "type": "preproc_elif",
-            "named": true
-          },
-          {
-            "type": "preproc_else",
-            "named": true
-          }
-        ]
-      },
-      "name": {
-        "multiple": false,
-        "required": true,
-        "types": [
-          {
-            "type": "identifier",
-            "named": true
-          }
-        ]
-      }
-    },
-    "children": {
-      "multiple": true,
-      "required": false,
-      "types": [
-        {
-          "type": "attribute_declaration",
-          "named": true
-        },
-        {
-          "type": "attribute_specifier",
-          "named": true
-        },
-        {
-          "type": "declaration_modifier_macro",
-          "named": true
-        },
-        {
-          "type": "ms_call_modifier",
-          "named": true
-        },
-        {
-          "type": "ms_declspec_modifier",
-          "named": true
-        },
-        {
-          "type": "preproc_if_in_declaration_modifiers",
-          "named": true
-        },
-        {
-          "type": "preproc_ifdef_in_declaration_modifiers",
-          "named": true
-        },
-        {
-          "type": "storage_class_specifier",
-          "named": true
-        },
-        {
-          "type": "type_qualifier",
-          "named": true
-        }
-      ]
-    }
-  },
-  {
     "type": "preproc_ifdef_in_expression",
     "named": true,
     "fields": {
@@ -15074,10 +14924,6 @@
           "named": true
         },
         {
-          "type": "preproc_ifdef_in_declaration_modifiers",
-          "named": true
-        },
-        {
           "type": "preproc_include",
           "named": true
         },
@@ -15216,107 +15062,11 @@
           "named": true
         },
         {
-          "type": "preproc_ifdef_in_declaration_modifiers",
-          "named": true
-        },
-        {
           "type": "storage_class_specifier",
           "named": true
         },
         {
           "type": "type_qualifier",
-          "named": true
-        }
-      ]
-    }
-  },
-  {
-    "type": "preproc_ifdef_in_if_constexpr",
-    "named": true,
-    "fields": {
-      "alternative": {
-        "multiple": false,
-        "required": false,
-        "types": [
-          {
-            "type": "preproc_elif",
-            "named": true
-          },
-          {
-            "type": "preproc_else",
-            "named": true
-          }
-        ]
-      },
-      "name": {
-        "multiple": false,
-        "required": true,
-        "types": [
-          {
-            "type": "identifier",
-            "named": true
-          }
-        ]
-      }
-    },
-    "children": {
-      "multiple": false,
-      "required": false,
-      "types": [
-        {
-          "type": "preproc_if_in_if_constexpr",
-          "named": true
-        },
-        {
-          "type": "preproc_ifdef_in_if_constexpr",
-          "named": true
-        }
-      ]
-    }
-  },
-  {
-    "type": "preproc_ifdef_in_template_requires_clause",
-    "named": true,
-    "fields": {
-      "alternative": {
-        "multiple": false,
-        "required": false,
-        "types": [
-          {
-            "type": "preproc_elif",
-            "named": true
-          },
-          {
-            "type": "preproc_else",
-            "named": true
-          }
-        ]
-      },
-      "name": {
-        "multiple": false,
-        "required": true,
-        "types": [
-          {
-            "type": "identifier",
-            "named": true
-          }
-        ]
-      }
-    },
-    "children": {
-      "multiple": false,
-      "required": true,
-      "types": [
-        {
-          "type": "preproc_if_in_template_requires_clause",
-          "named": true
-        },
-        {
-          "type": "preproc_ifdef_in_template_requires_clause",
-          "named": true
-        },
-        {
-          "type": "requires_clause",
           "named": true
         }
       ]
@@ -15787,10 +15537,6 @@
         },
         {
           "type": "preproc_if_in_if_constexpr",
-          "named": true
-        },
-        {
-          "type": "preproc_ifdef_in_if_constexpr",
           "named": true
         },
         {
@@ -17097,10 +16843,6 @@
           "named": true
         },
         {
-          "type": "preproc_ifdef_in_declaration_modifiers",
-          "named": true
-        },
-        {
           "type": "storage_class_specifier",
           "named": true
         },
@@ -17992,10 +17734,6 @@
           "named": true
         },
         {
-          "type": "preproc_ifdef_in_declaration_modifiers",
-          "named": true
-        },
-        {
           "type": "storage_class_specifier",
           "named": true
         },
@@ -18032,10 +17770,6 @@
         {
           "type": "preproc_if_in_if_constexpr",
           "named": true
-        },
-        {
-          "type": "preproc_ifdef_in_if_constexpr",
-          "named": true
         }
       ]
     }
@@ -18065,10 +17799,6 @@
         },
         {
           "type": "preproc_if_in_if_constexpr",
-          "named": true
-        },
-        {
-          "type": "preproc_ifdef_in_if_constexpr",
           "named": true
         }
       ]
@@ -19308,10 +19038,6 @@
           "named": true
         },
         {
-          "type": "preproc_ifdef_in_template_requires_clause",
-          "named": true
-        },
-        {
           "type": "preproc_value_declaration",
           "named": true
         },
@@ -19435,10 +19161,6 @@
         },
         {
           "type": "preproc_if_in_declaration_modifiers",
-          "named": true
-        },
-        {
-          "type": "preproc_ifdef_in_declaration_modifiers",
           "named": true
         },
         {
@@ -20517,10 +20239,6 @@
           "named": true
         },
         {
-          "type": "preproc_ifdef_in_declaration_modifiers",
-          "named": true
-        },
-        {
           "type": "storage_class_specifier",
           "named": true
         },
@@ -21235,11 +20953,11 @@
   },
   {
     "type": "false",
-    "named": false
+    "named": true
   },
   {
     "type": "false",
-    "named": true
+    "named": false
   },
   {
     "type": "final",
@@ -21543,11 +21261,11 @@
   },
   {
     "type": "true",
-    "named": true
+    "named": false
   },
   {
     "type": "true",
-    "named": false
+    "named": true
   },
   {
     "type": "try",

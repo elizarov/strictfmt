@@ -1885,10 +1885,9 @@ module.exports = grammar(C, {
     _post_type_declaration_modifier: $ => choice(
       $._declaration_modifiers,
       $.preproc_if_in_declaration_modifiers,
-      $.preproc_ifdef_in_declaration_modifiers,
     ),
 
-    ...preprocIf('_in_declaration_modifiers', $ => $._post_type_declaration_modifier),
+    ...preprocIf('_in_declaration_modifiers', $ => $._post_type_declaration_modifier, 0, PREPROC_ALL_BRANCH_FORMS | PREPROC_SHARED_OPENER),
 
     declaration_modifier_macro: $ => prec.right(PREC.CALL + 6, seq(
       $.declaration_modifier_macro_identifier,
@@ -2011,10 +2010,9 @@ module.exports = grammar(C, {
     _template_requires_clause: $ => choice(
       $.requires_clause,
       $.preproc_if_in_template_requires_clause,
-      $.preproc_ifdef_in_template_requires_clause,
     ),
 
-    ...preprocIf('_in_template_requires_clause', $ => $._template_requires_clause, 0, PREPROC_ALL_BRANCH_FORMS, false),
+    ...preprocIf('_in_template_requires_clause', $ => $._template_requires_clause, 0, PREPROC_ALL_BRANCH_FORMS | PREPROC_SHARED_OPENER, false),
 
     _template_declaration_item: $ => choice(
       prec.dynamic(10, alias($.constructor_or_destructor_definition, $.function_definition)),
@@ -3502,10 +3500,9 @@ module.exports = grammar(C, {
     _if_constexpr: $ => choice(
       'constexpr',
       $.preproc_if_in_if_constexpr,
-      $.preproc_ifdef_in_if_constexpr,
     ),
 
-    ...preprocIf('_in_if_constexpr', $ => $._if_constexpr, 0, PREPROC_ALL_BRANCH_FORMS, false),
+    ...preprocIf('_in_if_constexpr', $ => $._if_constexpr, 0, PREPROC_ALL_BRANCH_FORMS | PREPROC_SHARED_OPENER, false),
 
     macro_if_header: $ => prec.right(PREC.CALL + 6, seq(
       $.if_header_macro_identifier,
