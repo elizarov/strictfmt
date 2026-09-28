@@ -750,3 +750,23 @@ struct ConditionalInitializers {
 #endif
         , last_(value) {}
 };
+
+// A directive name must not hide names in its selected function or call.
+#ifdef ENABLE_FIRST_CASE
+TEST(ConditionalNames, First) {
+#else
+TEST(ConditionalNames, Second) {
+#endif
+    Check();
+}
+
+void ConditionalCallNames() {
+    auto value = Wrapper{
+#ifdef ENABLE_LOCATION
+        NewWithLocation<State, Location>(source, value),
+#else
+        New<State>(value),
+#endif
+        GetInvoker<State>()
+    };
+}

@@ -115,7 +115,14 @@ bool IsConditionalPreprocessorHeaderChild(const SyntaxNode& node, size_t index) 
         directive == SyntaxNodeKind::PreprocessorDirectiveElifdef ||
         directive == SyntaxNodeKind::PreprocessorDirectiveElifndef
     ) {
-        return child.isName;
+        // Flattened branch headers may also name functions or macro calls.
+        // Only the first name belongs to an identifier-based directive.
+        for (size_t nameIndex = 1; nameIndex <= index; ++nameIndex) {
+            if (node.children[nameIndex]->isName) {
+                return nameIndex == index;
+            }
+        }
+        return false;
     }
     return false;
 }
