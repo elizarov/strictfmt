@@ -770,3 +770,21 @@ auto conditionalFieldValue = Record{.ready = first
 && second
 #endif
 };
+
+// Initializer alternatives include elif branches.
+auto selectedInitializers = {
+#if LITTLE_ENDIAN
+1,2
+#elif BIG_ENDIAN
+2,1
+#else
+0,0
+#endif
+};
+auto selectedExtraInitializers = {first
+#ifdef FEATURE_A
+,second
+#elif FEATURE_B
+,third,fourth
+#endif
+};

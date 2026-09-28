@@ -1357,12 +1357,12 @@ module.exports = grammar(C, {
       return seq(optional(','), $._preproc_template_parameter_list_item, optional(','));
     }, -1, PREPROC_IFDEF, false),
 
-    ...preprocIf('_in_initializer_list', $ => $._initializer_list_content, 0, PREPROC_IFDEF | PREPROC_ELSE, false),
+    ...preprocIf('_in_initializer_list', $ => $._initializer_list_content, 0, PREPROC_IFDEF | PREPROC_ELSE | PREPROC_ELIF, false),
     ...preprocIf(
       '_in_initializer_list_leading_comma',
       $ => seq(',', $._initializer_list_content),
       1,
-      PREPROC_IFDEF | PREPROC_ELSE,
+      PREPROC_IFDEF | PREPROC_ELSE | PREPROC_ELIF,
       false,
     ),
 
