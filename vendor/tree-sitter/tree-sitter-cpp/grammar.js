@@ -318,6 +318,11 @@ module.exports = grammar(C, {
   ],
 
   conflicts: $ => [
+    [$._preproc_opening_condition, $.preproc_if_in_function_header, $.preproc_if_in_function_return_type],
+    [$._preproc_opening_condition, $.preproc_ifdef_in_function_header, $.preproc_ifdef_in_function_return_type],
+    [$._preproc_opening_condition, $.preproc_if_in_top_level, $.preproc_if_in_function_header, $.preproc_if_in_function_return_type, $.preproc_if_in_function_definition_prefix, $.preproc_guarded_namespace_definition],
+    [$._preproc_opening_condition, $.preproc_ifdef_in_top_level, $.preproc_ifdef_in_function_header, $.preproc_ifdef_in_function_return_type, $.preproc_ifdef_in_function_definition_prefix, $.preproc_guarded_namespace_definition],
+
     [$._base_class_list_entry],
     [$._declarator, $._macro_argument_parameter_declaration, $.macro_argument_declaration],
     [$._non_pointer_declarator, $.macro_argument_init_declarator],
@@ -1588,7 +1593,13 @@ module.exports = grammar(C, {
     function_definition: $ => prec.dynamic(1, prec(1, choice(
       functionDefinitionWithHeader($, functionDefinitionHeader($)),
       functionDefinitionWithHeader($, conditionalFunctionDefinitionHeader($)),
+      functionDefinitionWithHeader($, [choice(
+        $.preproc_if_in_function_header,
+        $.preproc_ifdef_in_function_header,
+      )]),
     ))),
+
+    ...preprocIf('_in_function_header', $ => seq(...functionDefinitionHeader($)), 0, PREPROC_ALL_BRANCH_FORMS, false),
 
     _conditional_function_return_type_specifiers: $ => prec.right(seq(
       repeat($._declaration_modifiers),

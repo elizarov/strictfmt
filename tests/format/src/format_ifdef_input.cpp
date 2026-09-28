@@ -864,3 +864,18 @@ First,Second,
 Alternative,
 #endif
 Last{};
+
+#ifdef WIDE
+static int SelectedHeader(int count,wchar_t** args)
+#else
+static int SelectedHeader(int count,char** args)
+#endif
+{return count;}
+#if FIRST
+void Owner::SelectedHeader(int value)
+#elif SECOND
+void Owner::SelectedHeader(long value)
+#else
+void Owner::SelectedHeader(double value)
+#endif
+{Use(value);}

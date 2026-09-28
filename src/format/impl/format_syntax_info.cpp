@@ -411,6 +411,16 @@ constexpr auto kSyntaxKindMappings = std::to_array<SyntaxKindMapping>({
     ),
     Tree(
         SyntaxNodeKind::PreprocIf,
+        "preproc_if_in_function_header",
+        kAllowedPreprocessorContainerClasses | kSupportedPreprocessorPlacementClasses
+    ),
+    Tree(
+        SyntaxNodeKind::PreprocIfdef,
+        "preproc_ifdef_in_function_header",
+        kAllowedPreprocessorContainerClasses | kSupportedPreprocessorPlacementClasses
+    ),
+    Tree(
+        SyntaxNodeKind::PreprocIf,
         "preproc_if_in_function_definition_prefix",
         kAllowedPreprocessorContainerClasses |
             kSupportedPreprocessorPlacementClasses |

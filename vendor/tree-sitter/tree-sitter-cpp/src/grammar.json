@@ -3637,6 +3637,45 @@
                   }
                 }
               ]
+            },
+            {
+              "type": "SEQ",
+              "members": [
+                {
+                  "type": "CHOICE",
+                  "members": [
+                    {
+                      "type": "SYMBOL",
+                      "name": "preproc_if_in_function_header"
+                    },
+                    {
+                      "type": "SYMBOL",
+                      "name": "preproc_ifdef_in_function_header"
+                    }
+                  ]
+                },
+                {
+                  "type": "FIELD",
+                  "name": "body",
+                  "content": {
+                    "type": "CHOICE",
+                    "members": [
+                      {
+                        "type": "SYMBOL",
+                        "name": "compound_statement"
+                      },
+                      {
+                        "type": "SYMBOL",
+                        "name": "try_statement"
+                      },
+                      {
+                        "type": "SYMBOL",
+                        "name": "delete_method_clause"
+                      }
+                    ]
+                  }
+                }
+              ]
             }
           ]
         }
@@ -19114,6 +19153,452 @@
             },
             "named": true,
             "value": "qualified_identifier"
+          }
+        ]
+      }
+    },
+    "preproc_if_in_function_header": {
+      "type": "PREC",
+      "value": 0,
+      "content": {
+        "type": "SEQ",
+        "members": [
+          {
+            "type": "ALIAS",
+            "content": {
+              "type": "TOKEN",
+              "content": {
+                "type": "PREC",
+                "value": 1,
+                "content": {
+                  "type": "PATTERN",
+                  "value": "#[ \\t]*if[ \\t]+"
+                }
+              }
+            },
+            "named": false,
+            "value": "#if"
+          },
+          {
+            "type": "FIELD",
+            "name": "condition",
+            "content": {
+              "type": "SYMBOL",
+              "name": "_preproc_expression"
+            }
+          },
+          {
+            "type": "SYMBOL",
+            "name": "_preproc_directive_end"
+          },
+          {
+            "type": "SEQ",
+            "members": [
+              {
+                "type": "CHOICE",
+                "members": [
+                  {
+                    "type": "SYMBOL",
+                    "name": "ms_call_modifier"
+                  },
+                  {
+                    "type": "BLANK"
+                  }
+                ]
+              },
+              {
+                "type": "SYMBOL",
+                "name": "_declaration_specifiers"
+              },
+              {
+                "type": "CHOICE",
+                "members": [
+                  {
+                    "type": "SYMBOL",
+                    "name": "ms_call_modifier"
+                  },
+                  {
+                    "type": "BLANK"
+                  }
+                ]
+              },
+              {
+                "type": "FIELD",
+                "name": "declarator",
+                "content": {
+                  "type": "SYMBOL",
+                  "name": "_function_definition_declarator"
+                }
+              }
+            ]
+          },
+          {
+            "type": "FIELD",
+            "name": "alternative",
+            "content": {
+              "type": "CHOICE",
+              "members": [
+                {
+                  "type": "CHOICE",
+                  "members": [
+                    {
+                      "type": "ALIAS",
+                      "content": {
+                        "type": "SYMBOL",
+                        "name": "preproc_else_in_function_header"
+                      },
+                      "named": true,
+                      "value": "preproc_else"
+                    },
+                    {
+                      "type": "ALIAS",
+                      "content": {
+                        "type": "SYMBOL",
+                        "name": "preproc_elif_in_function_header"
+                      },
+                      "named": true,
+                      "value": "preproc_elif"
+                    }
+                  ]
+                },
+                {
+                  "type": "BLANK"
+                }
+              ]
+            }
+          },
+          {
+            "type": "ALIAS",
+            "content": {
+              "type": "TOKEN",
+              "content": {
+                "type": "PREC",
+                "value": 1,
+                "content": {
+                  "type": "PATTERN",
+                  "value": "#[ \\t]*endif"
+                }
+              }
+            },
+            "named": false,
+            "value": "#endif"
+          }
+        ]
+      }
+    },
+    "preproc_ifdef_in_function_header": {
+      "type": "PREC",
+      "value": 0,
+      "content": {
+        "type": "SEQ",
+        "members": [
+          {
+            "type": "CHOICE",
+            "members": [
+              {
+                "type": "ALIAS",
+                "content": {
+                  "type": "TOKEN",
+                  "content": {
+                    "type": "PREC",
+                    "value": 1,
+                    "content": {
+                      "type": "PATTERN",
+                      "value": "#[ \\t]*ifdef[ \\t]+"
+                    }
+                  }
+                },
+                "named": false,
+                "value": "#ifdef"
+              },
+              {
+                "type": "ALIAS",
+                "content": {
+                  "type": "TOKEN",
+                  "content": {
+                    "type": "PREC",
+                    "value": 1,
+                    "content": {
+                      "type": "PATTERN",
+                      "value": "#[ \\t]*ifndef[ \\t]+"
+                    }
+                  }
+                },
+                "named": false,
+                "value": "#ifndef"
+              }
+            ]
+          },
+          {
+            "type": "FIELD",
+            "name": "name",
+            "content": {
+              "type": "SYMBOL",
+              "name": "identifier"
+            }
+          },
+          {
+            "type": "SYMBOL",
+            "name": "_preproc_directive_end"
+          },
+          {
+            "type": "SEQ",
+            "members": [
+              {
+                "type": "CHOICE",
+                "members": [
+                  {
+                    "type": "SYMBOL",
+                    "name": "ms_call_modifier"
+                  },
+                  {
+                    "type": "BLANK"
+                  }
+                ]
+              },
+              {
+                "type": "SYMBOL",
+                "name": "_declaration_specifiers"
+              },
+              {
+                "type": "CHOICE",
+                "members": [
+                  {
+                    "type": "SYMBOL",
+                    "name": "ms_call_modifier"
+                  },
+                  {
+                    "type": "BLANK"
+                  }
+                ]
+              },
+              {
+                "type": "FIELD",
+                "name": "declarator",
+                "content": {
+                  "type": "SYMBOL",
+                  "name": "_function_definition_declarator"
+                }
+              }
+            ]
+          },
+          {
+            "type": "FIELD",
+            "name": "alternative",
+            "content": {
+              "type": "CHOICE",
+              "members": [
+                {
+                  "type": "CHOICE",
+                  "members": [
+                    {
+                      "type": "ALIAS",
+                      "content": {
+                        "type": "SYMBOL",
+                        "name": "preproc_else_in_function_header"
+                      },
+                      "named": true,
+                      "value": "preproc_else"
+                    },
+                    {
+                      "type": "ALIAS",
+                      "content": {
+                        "type": "SYMBOL",
+                        "name": "preproc_elif_in_function_header"
+                      },
+                      "named": true,
+                      "value": "preproc_elif"
+                    }
+                  ]
+                },
+                {
+                  "type": "BLANK"
+                }
+              ]
+            }
+          },
+          {
+            "type": "ALIAS",
+            "content": {
+              "type": "TOKEN",
+              "content": {
+                "type": "PREC",
+                "value": 1,
+                "content": {
+                  "type": "PATTERN",
+                  "value": "#[ \\t]*endif"
+                }
+              }
+            },
+            "named": false,
+            "value": "#endif"
+          }
+        ]
+      }
+    },
+    "preproc_else_in_function_header": {
+      "type": "PREC",
+      "value": 0,
+      "content": {
+        "type": "SEQ",
+        "members": [
+          {
+            "type": "SYMBOL",
+            "name": "_preproc_else_line"
+          },
+          {
+            "type": "SEQ",
+            "members": [
+              {
+                "type": "CHOICE",
+                "members": [
+                  {
+                    "type": "SYMBOL",
+                    "name": "ms_call_modifier"
+                  },
+                  {
+                    "type": "BLANK"
+                  }
+                ]
+              },
+              {
+                "type": "SYMBOL",
+                "name": "_declaration_specifiers"
+              },
+              {
+                "type": "CHOICE",
+                "members": [
+                  {
+                    "type": "SYMBOL",
+                    "name": "ms_call_modifier"
+                  },
+                  {
+                    "type": "BLANK"
+                  }
+                ]
+              },
+              {
+                "type": "FIELD",
+                "name": "declarator",
+                "content": {
+                  "type": "SYMBOL",
+                  "name": "_function_definition_declarator"
+                }
+              }
+            ]
+          }
+        ]
+      }
+    },
+    "preproc_elif_in_function_header": {
+      "type": "PREC",
+      "value": 0,
+      "content": {
+        "type": "SEQ",
+        "members": [
+          {
+            "type": "ALIAS",
+            "content": {
+              "type": "TOKEN",
+              "content": {
+                "type": "PREC",
+                "value": 1,
+                "content": {
+                  "type": "PATTERN",
+                  "value": "#[ \\t]*elif[ \\t]+"
+                }
+              }
+            },
+            "named": false,
+            "value": "#elif"
+          },
+          {
+            "type": "FIELD",
+            "name": "condition",
+            "content": {
+              "type": "SYMBOL",
+              "name": "_preproc_expression"
+            }
+          },
+          {
+            "type": "SYMBOL",
+            "name": "_preproc_directive_end"
+          },
+          {
+            "type": "SEQ",
+            "members": [
+              {
+                "type": "CHOICE",
+                "members": [
+                  {
+                    "type": "SYMBOL",
+                    "name": "ms_call_modifier"
+                  },
+                  {
+                    "type": "BLANK"
+                  }
+                ]
+              },
+              {
+                "type": "SYMBOL",
+                "name": "_declaration_specifiers"
+              },
+              {
+                "type": "CHOICE",
+                "members": [
+                  {
+                    "type": "SYMBOL",
+                    "name": "ms_call_modifier"
+                  },
+                  {
+                    "type": "BLANK"
+                  }
+                ]
+              },
+              {
+                "type": "FIELD",
+                "name": "declarator",
+                "content": {
+                  "type": "SYMBOL",
+                  "name": "_function_definition_declarator"
+                }
+              }
+            ]
+          },
+          {
+            "type": "FIELD",
+            "name": "alternative",
+            "content": {
+              "type": "CHOICE",
+              "members": [
+                {
+                  "type": "CHOICE",
+                  "members": [
+                    {
+                      "type": "ALIAS",
+                      "content": {
+                        "type": "SYMBOL",
+                        "name": "preproc_else_in_function_header"
+                      },
+                      "named": true,
+                      "value": "preproc_else"
+                    },
+                    {
+                      "type": "ALIAS",
+                      "content": {
+                        "type": "SYMBOL",
+                        "name": "preproc_elif_in_function_header"
+                      },
+                      "named": true,
+                      "value": "preproc_elif"
+                    }
+                  ]
+                },
+                {
+                  "type": "BLANK"
+                }
+              ]
+            }
           }
         ]
       }
@@ -40817,6 +41302,32 @@
     }
   ],
   "conflicts": [
+    [
+      "_preproc_opening_condition",
+      "preproc_if_in_function_header",
+      "preproc_if_in_function_return_type"
+    ],
+    [
+      "_preproc_opening_condition",
+      "preproc_ifdef_in_function_header",
+      "preproc_ifdef_in_function_return_type"
+    ],
+    [
+      "_preproc_opening_condition",
+      "preproc_if_in_top_level",
+      "preproc_if_in_function_header",
+      "preproc_if_in_function_return_type",
+      "preproc_if_in_function_definition_prefix",
+      "preproc_guarded_namespace_definition"
+    ],
+    [
+      "_preproc_opening_condition",
+      "preproc_ifdef_in_top_level",
+      "preproc_ifdef_in_function_header",
+      "preproc_ifdef_in_function_return_type",
+      "preproc_ifdef_in_function_definition_prefix",
+      "preproc_guarded_namespace_definition"
+    ],
     [
       "_base_class_list_entry"
     ],
