@@ -1520,6 +1520,12 @@ class FormatCommandTests(unittest.TestCase):
             result.stdout,
         )
 
+    def test_large_argument_list_formats_and_validates(self) -> None:
+        source = "void f() { Call(" + ", ".join("1" for _ in range(100_000)) + "); }\n"
+        result = native_format("--stdin", input_text=source, timeout=30)
+        self.assertEqual(0, result.returncode, msg=result.stderr)
+        self.assertEqual(re.sub(r"\s+", "", source), re.sub(r"\s+", "", result.stdout))
+
     def test_call_argument_structure_is_independent_of_trailing_comma(self) -> None:
         calls = (
             "Invoke(value * factor)",

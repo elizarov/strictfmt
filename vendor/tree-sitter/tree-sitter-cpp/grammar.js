@@ -326,6 +326,9 @@ module.exports = grammar(C, {
   ],
 
   conflicts: $ => [
+    [$.stream_operator_chain_suffix, $.macro_argument_punctuator],
+    [$.preproc_ifdef_in_expression, $._argument_list_item],
+    [$.preproc_if_in_expression, $._argument_list_item],
     [$.elaborated_type_descriptor],
     [$.type_descriptor],
     [$._declaration_specifiers, $.type_descriptor, $._macro_parameter_declaration, $._macro_argument_parameter_declaration, $.macro_argument_declaration],
@@ -1529,7 +1532,7 @@ module.exports = grammar(C, {
 
     ...preprocIf(
       '_in_expression_list',
-      $ => seq(optional(','), commaSep1(choice($.expression, $.initializer_list)), optional(',')),
+      $ => $.argument_sequence,
       2,
       PREPROC_IFDEF | PREPROC_ELSE,
       false,
@@ -4848,14 +4851,13 @@ module.exports = grammar(C, {
         $._argument_list_item,
         seq(repeat1(comment), optional($._argument_list_item)),
       );
-      const directedItem = seq(repeat1(directive), optional(item));
       return choice(
         item,
-        directedItem,
-        seq(optional(item), repeat1(choice(
-          seq(',', optional(item)),
-          directedItem,
-        ))),
+        seq(optional(item), ',', optional($.argument_sequence)),
+        seq(optional(item), directive, optional($.argument_sequence)),
+        // A directive may extend the preceding expression or supply its argument comma.
+        // Keep both paths until the conditional's contents distinguish them.
+        seq($.expression, directive, optional($.argument_sequence)),
       );
     },
 

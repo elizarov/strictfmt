@@ -1132,6 +1132,10 @@
       "required": false,
       "types": [
         {
+          "type": "argument_sequence",
+          "named": true
+        },
+        {
           "type": "attribute_declaration",
           "named": true
         },
@@ -11584,6 +11588,10 @@
           "named": true
         },
         {
+          "type": "argument_sequence",
+          "named": true
+        },
+        {
           "type": "attribute_declaration",
           "named": true
         },
@@ -12657,6 +12665,10 @@
         },
         {
           "type": "alias_declaration",
+          "named": true
+        },
+        {
+          "type": "argument_sequence",
           "named": true
         },
         {
@@ -14279,6 +14291,10 @@
         },
         {
           "type": "alias_declaration",
+          "named": true
+        },
+        {
+          "type": "argument_sequence",
           "named": true
         },
         {

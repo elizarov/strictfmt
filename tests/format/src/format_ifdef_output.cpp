@@ -1531,3 +1531,39 @@ void SelectedForEach(Items items) {
         Save(item);
     }
 }
+
+void ConditionalStringComma() {
+    Call(
+        "prefix"
+#if FEATURE
+        "first",
+#else
+        "second",
+#endif
+        Next()
+    );
+    Call(
+        "common"
+#ifdef OUTER
+#ifdef INNER
+        "nested",
+#else
+        "outer",
+#endif
+#else
+        "fallback",
+#endif
+        Next()
+    );
+}
+
+void ConditionalExpressionArguments() {
+    Consume(
+        Read().Value() + 1
+#if FEATURE
+        , First(),
+        Second()
+#endif
+        , Last()
+    );
+}

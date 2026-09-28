@@ -304,7 +304,8 @@ inline void AppendTsChild(
     uint32_t& previousEnd,
     uint32_t& previousEndRow,
     uint32_t& previousEndColumn,
-    bool& hasPreviousSibling
+    bool& hasPreviousSibling,
+    bool deferFlattening
 ) {
     const TsNodeSyntax childSyntax = GetTsNodeSyntax(child);
     const uint32_t childStart = ts_node_start_byte(child);
@@ -324,7 +325,9 @@ inline void AppendTsChild(
         consumesLineTail &&
         HasTextBeforeCommentOnLine(source, childStart);
     const bool isInlineBlockComment = isBlock && !consumesLineTail;
-    AppendTsNode(model, child, source, parent, childSyntax, isTrailingComment, isInlineBlockComment);
+    if (!deferFlattening) {
+        AppendTsNode(model, child, source, parent, childSyntax, isTrailingComment, isInlineBlockComment);
+    }
     previousEnd = childEnd;
     previousEndRow = childEndRow;
     previousEndColumn = childEndColumn;
@@ -334,53 +337,67 @@ inline void AppendTsChild(
 void AppendTsChildren(
     FormatModel& model, TSNode tsNode, std::string_view source, SyntaxNode& parent, uint32_t childCount
 ) {
-    if (childCount == 0) {
-        return;
-    }
-
-    uint32_t previousEnd = ts_node_start_byte(tsNode);
-    uint32_t previousEndRow = ts_node_start_point(tsNode).row;
-    uint32_t previousEndColumn = ts_node_start_point(tsNode).column;
-    bool hasPreviousSibling = !parent.children.empty();
-    TSTreeCursor cursor = ts_tree_cursor_new(tsNode);
-    ts_tree_cursor_goto_first_child(&cursor);
-    for (uint32_t index = 0; index < childCount; ++index) {
-        TSNode child = ts_tree_cursor_current_node(&cursor);
-        const TSPoint childEndPoint = ts_node_end_point(child);
-        const size_t childBegin = parent.children.size();
-        AppendTsChild(
-            model,
-            child,
-            ts_node_end_byte(child),
-            childEndPoint.row,
-            childEndPoint.column,
-            source,
-            parent,
-            previousEnd,
-            previousEndRow,
-            previousEndColumn,
-            hasPreviousSibling
-        );
-        const char* fieldName = ts_tree_cursor_current_field_name(&cursor);
-        const bool isDeclarator = fieldName != nullptr && std::string_view(fieldName) == "declarator";
-        const bool isType = fieldName != nullptr &&
-            (std::string_view(fieldName) == "type" || std::string_view(fieldName) == "return_type");
-        const bool isCondition = fieldName != nullptr && std::string_view(fieldName) == "condition";
-        const bool isName = fieldName != nullptr && std::string_view(fieldName) == "name";
-        if (isDeclarator || isType || isCondition || isName) {
-            for (size_t childIndex = childBegin; childIndex < parent.children.size(); ++childIndex) {
-                SyntaxNode* childNode = parent.children[childIndex];
-                if (childNode != nullptr && !SyntaxNodeHasClass(*childNode, SyntaxNodeClass::Trivia)) {
-                    childNode->isDeclarator = childNode->isDeclarator || isDeclarator;
-                    childNode->isType = childNode->isType || isType;
-                    childNode->isCondition = childNode->isCondition || isCondition;
-                    childNode->isName = childNode->isName || isName;
+    while (childCount != 0) {
+        uint32_t previousEnd = ts_node_start_byte(tsNode);
+        uint32_t previousEndRow = ts_node_start_point(tsNode).row;
+        uint32_t previousEndColumn = ts_node_start_point(tsNode).column;
+        bool hasPreviousSibling = !parent.children.empty();
+        TSNode flattenedTail = {};
+        TSTreeCursor cursor = ts_tree_cursor_new(tsNode);
+        ts_tree_cursor_goto_first_child(&cursor);
+        for (uint32_t index = 0; index < childCount; ++index) {
+            TSNode child = ts_tree_cursor_current_node(&cursor);
+            const TSPoint childEndPoint = ts_node_end_point(child);
+            const size_t childBegin = parent.children.size();
+            const char* fieldName = ts_tree_cursor_current_field_name(&cursor);
+            // Eliminate tail recursion through transparent list wrappers. Their
+            // children retain this model parent and begin a fresh trivia context.
+            const bool flattenTail = index + 1 == childCount &&
+                fieldName == nullptr &&
+                GetTsNodeSyntax(child).wrapperRole == SyntaxWrapperRole::Flatten;
+            AppendTsChild(
+                model,
+                child,
+                ts_node_end_byte(child),
+                childEndPoint.row,
+                childEndPoint.column,
+                source,
+                parent,
+                previousEnd,
+                previousEndRow,
+                previousEndColumn,
+                hasPreviousSibling,
+                flattenTail
+            );
+            if (flattenTail) {
+                flattenedTail = child;
+                break;
+            }
+            const bool isDeclarator = fieldName != nullptr && std::string_view(fieldName) == "declarator";
+            const bool isType = fieldName != nullptr &&
+                (std::string_view(fieldName) == "type" || std::string_view(fieldName) == "return_type");
+            const bool isCondition = fieldName != nullptr && std::string_view(fieldName) == "condition";
+            const bool isName = fieldName != nullptr && std::string_view(fieldName) == "name";
+            if (isDeclarator || isType || isCondition || isName) {
+                for (size_t childIndex = childBegin; childIndex < parent.children.size(); ++childIndex) {
+                    SyntaxNode* childNode = parent.children[childIndex];
+                    if (childNode != nullptr && !SyntaxNodeHasClass(*childNode, SyntaxNodeClass::Trivia)) {
+                        childNode->isDeclarator = childNode->isDeclarator || isDeclarator;
+                        childNode->isType = childNode->isType || isType;
+                        childNode->isCondition = childNode->isCondition || isCondition;
+                        childNode->isName = childNode->isName || isName;
+                    }
                 }
             }
+            ts_tree_cursor_goto_next_sibling(&cursor);
         }
-        ts_tree_cursor_goto_next_sibling(&cursor);
+        ts_tree_cursor_delete(&cursor);
+        if (ts_node_is_null(flattenedTail)) {
+            return;
+        }
+        tsNode = flattenedTail;
+        childCount = ts_node_child_count(tsNode);
     }
-    ts_tree_cursor_delete(&cursor);
 }
 
 void CollectProblemNodes(TSNode node, std::vector<ProblemNode>& problems) {
