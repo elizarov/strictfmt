@@ -589,6 +589,15 @@ bool FormatTokenNeedsSpace(const PrintToken* previous, const PrintToken& current
         }
         return prev == SyntaxNodeKind::Greater;
     }
+    if (
+        prev == SyntaxNodeKind::Greater &&
+        cur == SyntaxNodeKind::Greater &&
+        previous->parentKind == SyntaxNodeKind::PreprocessingPunctuator &&
+        current.parentKind == SyntaxNodeKind::PreprocessingPunctuator
+    ) {
+        // These are preprocessing tokens rather than C++ template or cast delimiters.
+        return true;
+    }
     if (IsTemplateArgumentExpressionOperator(*previous) || IsTemplateArgumentExpressionOperator(current)) {
         return true;
     }

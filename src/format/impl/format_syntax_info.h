@@ -24,6 +24,7 @@ enum class SyntaxNodeKind : std::uint16_t {
     IncludeRun,
     MacroReplacementList,
     MacroExpressionList,
+    PreprocessingPunctuator,
     Declaration,
     FieldDeclaration,
     AliasDeclaration,

@@ -5183,3 +5183,23 @@ DEFINE_IDENTIFIER(Chunk)
                                  \
         Use(value);              \
     }
+
+// Separate preprocessing angle tokens must not become a shift token after wrapping.
+void RegisterTokens() {
+    FORMAT_TOKEN_REGISTER(
+        1,
+        values,
+        .template Serializer<TMapSerializer<TTupleSerializer<TCookieAndPool,
+        2>,
+        TDefaultSerializer,
+        TUnsortedTag> >()
+    );
+    FORMAT_TOKEN_REGISTER(
+        1,
+        values,
+        .template Serializer<TMapSerializer<TTupleSerializer<TCookieAndPool,
+        2>,
+        TDefaultSerializer,
+        TUnsortedTag >> ()
+    );
+}

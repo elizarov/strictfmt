@@ -331,6 +331,7 @@ constexpr auto kSyntaxKindMappings = std::to_array<SyntaxKindMapping>({
     Tree(SyntaxNodeKind::Tree, "preprocessing_token_macro_call"),
     Tree(SyntaxNodeKind::ArgumentList, "preprocessing_token_argument_list", kPreprocessorSplitListClasses),
     Tree(SyntaxNodeKind::Tree, "preprocessing_token_argument"),
+    Tree(SyntaxNodeKind::PreprocessingPunctuator, "preprocessing_punctuator"),
     Tree(SyntaxNodeKind::Tree, "preprocessing_parenthesized_tokens"),
     Tree(SyntaxNodeKind::Tree, "macro_token_paste_expression"),
     Tree(SyntaxNodeKind::Tree, "macro_preprocessing_token_sequence_argument"),
@@ -1085,6 +1086,8 @@ std::string_view SyntaxNodeKindName(SyntaxNodeKind kind) {
             return "IncludeRun";
         case SyntaxNodeKind::MacroReplacementList:
             return "MacroReplacementList";
+        case SyntaxNodeKind::PreprocessingPunctuator:
+            return "PreprocessingPunctuator";
         case SyntaxNodeKind::MacroExpressionList:
             return "MacroExpressionList";
         case SyntaxNodeKind::Declaration:
