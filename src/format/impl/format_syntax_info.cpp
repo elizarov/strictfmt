@@ -575,7 +575,7 @@ constexpr auto kSyntaxKindMappings = std::to_array<SyntaxKindMapping>({
     Tree(SyntaxNodeKind::NestedRequirement, "nested_requirement"),
     Tree(SyntaxNodeKind::RefQualifier, "ref_qualifier"),
     Tree(SyntaxNodeKind::LambdaExpression, "lambda_expression"),
-    Tree(SyntaxNodeKind::LambdaCaptureSpecifier, "lambda_capture_specifier"),
+    Tree(SyntaxNodeKind::LambdaCaptureSpecifier, "lambda_capture_specifier", kPreprocessorSplitListClasses),
     Tree(SyntaxNodeKind::StructuredBindingDeclarator, "structured_binding_declarator"),
     Tree(SyntaxNodeKind::Tree, "structured_binding_pack_identifier"),
     Tree(SyntaxNodeKind::SpliceSpecifier, "splice_specifier", Bit(SyntaxNodeClass::SemanticDelimitedParent)),

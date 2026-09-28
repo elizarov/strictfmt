@@ -1085,3 +1085,30 @@ constexpr
 #endif
 (false)First();else if(true)Second();
 }
+
+void GuardedCaptures(int first,int second){
+auto capture=[
+#ifdef FIRST
+first,
+#if SECOND
+second,
+#endif
+#elif SECOND
+second,
+#endif
+value=MakeValue()](){return value;};
+auto withDefault=[&,
+#if FIRST
+copy=first,
+#else
+copy=second,
+#endif
+value=MakeValue()](){return value+copy;};
+auto onlyConditional=[
+#if FIRST
+first
+#else
+second
+#endif
+](){Run();};
+}

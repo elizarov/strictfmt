@@ -4532,16 +4532,29 @@ module.exports = grammar(C, {
       '[',
       choice(
         $.lambda_default_capture,
-        commaSep($._lambda_capture),
+        optional($._lambda_capture_list_content),
         seq(
           $.lambda_default_capture,
-          ',', commaSep1($._lambda_capture),
+          ',', $._lambda_capture_list_content,
         ),
       ),
       ']',
     )),
 
     lambda_default_capture: _ => choice('=', '&'),
+
+    _lambda_capture_list_content: $ => choice(
+      seq(
+        repeat1(choice(
+          seq($._lambda_capture, ','),
+          preprocListItem($, '_in_lambda_capture_list'),
+        )),
+        optional($._lambda_capture),
+      ),
+      $._lambda_capture,
+    ),
+
+    ...preprocIf('_in_lambda_capture_list', $ => optional($._lambda_capture_list_content), 0, PREPROC_ALL_BRANCH_FORMS, false),
 
     _lambda_capture_identifier: $ => seq(
       optional('&'),
