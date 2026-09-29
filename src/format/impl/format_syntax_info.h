@@ -39,6 +39,7 @@ enum class SyntaxNodeKind : std::uint16_t {
     DeclarationList,
     NamespaceDefinition,
     LinkageSpecification,
+    GroupingScopeClose,
     EnumSpecifier,
     ClassSpecifier,
     StructSpecifier,

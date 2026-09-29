@@ -408,15 +408,16 @@ constexpr auto kSyntaxKindMappings = std::to_array<SyntaxKindMapping>({
         kAtomicPreprocessorClasses | kSupportedPreprocessorPlacementClasses
     ),
     Tree(
-        SyntaxNodeKind::PreprocIfdef,
-        "conditional_extern_c_open",
-        kAtomicPreprocessorClasses | kSupportedPreprocessorPlacementClasses
+        SyntaxNodeKind::PreprocIf,
+        "preproc_if_in_grouping_open",
+        kConditionalPreprocessorOpenClasses | kSupportedPreprocessorPlacementClasses
     ),
     Tree(
-        SyntaxNodeKind::PreprocIfdef,
-        "conditional_extern_c_close",
-        kAtomicPreprocessorClasses | kSupportedPreprocessorPlacementClasses
+        SyntaxNodeKind::PreprocIf,
+        "preproc_if_in_grouping_close",
+        kConditionalPreprocessorOpenClasses | kSupportedPreprocessorPlacementClasses
     ),
+    Tree(SyntaxNodeKind::GroupingScopeClose, "grouping_scope_close"),
     Tree(SyntaxNodeKind::PreprocIf, "preproc_logical_expression_fragment", kSupportedPreprocessorPlacementClasses),
     Tree(SyntaxNodeKind::PreprocIf, "preproc_logical_tail_expression_fragment", kSupportedPreprocessorPlacementClasses),
     Tree(SyntaxNodeKind::PreprocIf, "preproc_condition_expression", kAtomicPreprocessorClasses),
@@ -1213,6 +1214,8 @@ std::string_view SyntaxNodeKindName(SyntaxNodeKind kind) {
             return "NamespaceDefinition";
         case SyntaxNodeKind::LinkageSpecification:
             return "LinkageSpecification";
+        case SyntaxNodeKind::GroupingScopeClose:
+            return "GroupingScopeClose";
         case SyntaxNodeKind::EnumSpecifier:
             return "EnumSpecifier";
         case SyntaxNodeKind::ClassSpecifier:

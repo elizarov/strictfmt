@@ -703,10 +703,12 @@ if(first)
 // Conditional linkage wrappers accept expression guards as well as ifdef guards.
 #if defined(__cplusplus)
 extern "C" {
+
 #endif
 int ConditionalLinkage();
 
 #if defined(__cplusplus)
+
 }  // extern C
 #endif
 
@@ -1202,6 +1204,7 @@ Wrapper(Value<Second>) -> Wrapper<Second>;
 
 #ifdef __cplusplus
 extern "C" {
+
 #endif
 typedef struct OpaqueString {
     const char* data;
@@ -1214,6 +1217,7 @@ Result WriteInteger(Writer * writer, Integer value);
 Result WriteUnsigned(Writer * writer, Unsigned value);
 
 #ifdef __cplusplus
+
 }
 #endif
 
@@ -1672,4 +1676,67 @@ bool NegatedConditionalMember(Chain& builder) {
         .Ready()
 #endif
         ;
+}
+
+#ifdef __cplusplus
+namespace Outer {
+
+extern "C" {
+
+#endif
+int ReadValue() { return 3; }
+#ifdef __cplusplus
+
+}
+
+}
+#endif
+
+#if FIRST
+namespace Selected {
+
+#if SECOND
+inline namespace Version {
+
+#endif
+extern "C" {
+
+#elif SECOND
+namespace Other {
+
+#else
+namespace Fallback {
+
+#endif
+int SelectedValue() { return 7; }
+#if FIRST
+
+}
+#if SECOND
+
+}
+#endif
+
+}
+#else
+
+}
+#endif
+
+namespace Enclosing {
+
+#ifdef FEATURE
+namespace [[deprecated]] Old {
+
+namespace Nested {
+
+#endif
+int NestedValue() { return 9; }
+#ifdef FEATURE
+
+}
+
+}
+#endif
+
 }

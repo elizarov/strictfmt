@@ -1370,3 +1370,47 @@ bool NegatedConditionalMember(Chain& builder){return !builder
 .Ready()
 #endif
 ;}
+
+#ifdef __cplusplus
+namespace Outer {
+extern "C" {
+#endif
+int ReadValue(){return 3;}
+#ifdef __cplusplus
+}
+}
+#endif
+
+#if FIRST
+namespace Selected {
+#if SECOND
+inline namespace Version {
+#endif
+extern "C" {
+#elif SECOND
+namespace Other {
+#else
+namespace Fallback {
+#endif
+int SelectedValue(){return 7;}
+#if FIRST
+}
+#if SECOND
+}
+#endif
+}
+#else
+}
+#endif
+
+namespace Enclosing {
+#ifdef FEATURE
+namespace [[deprecated]] Old {
+namespace Nested {
+#endif
+int NestedValue(){return 9;}
+#ifdef FEATURE
+}
+}
+#endif
+}

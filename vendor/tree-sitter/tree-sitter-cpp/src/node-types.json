@@ -3300,164 +3300,6 @@
     }
   },
   {
-    "type": "conditional_extern_c_close",
-    "named": true,
-    "fields": {
-      "condition": {
-        "multiple": false,
-        "required": false,
-        "types": [
-          {
-            "type": "binary_expression",
-            "named": true
-          },
-          {
-            "type": "call_expression",
-            "named": true
-          },
-          {
-            "type": "char_literal",
-            "named": true
-          },
-          {
-            "type": "conditional_expression",
-            "named": true
-          },
-          {
-            "type": "identifier",
-            "named": true
-          },
-          {
-            "type": "number_literal",
-            "named": true
-          },
-          {
-            "type": "parenthesized_expression",
-            "named": true
-          },
-          {
-            "type": "preproc_defined",
-            "named": true
-          },
-          {
-            "type": "preproc_scoped_identifier",
-            "named": true
-          },
-          {
-            "type": "raw_string_literal",
-            "named": true
-          },
-          {
-            "type": "string_literal",
-            "named": true
-          },
-          {
-            "type": "system_lib_string",
-            "named": true
-          },
-          {
-            "type": "unary_expression",
-            "named": true
-          }
-        ]
-      },
-      "name": {
-        "multiple": false,
-        "required": false,
-        "types": [
-          {
-            "type": "identifier",
-            "named": true
-          }
-        ]
-      }
-    }
-  },
-  {
-    "type": "conditional_extern_c_open",
-    "named": true,
-    "fields": {
-      "condition": {
-        "multiple": false,
-        "required": false,
-        "types": [
-          {
-            "type": "binary_expression",
-            "named": true
-          },
-          {
-            "type": "call_expression",
-            "named": true
-          },
-          {
-            "type": "char_literal",
-            "named": true
-          },
-          {
-            "type": "conditional_expression",
-            "named": true
-          },
-          {
-            "type": "identifier",
-            "named": true
-          },
-          {
-            "type": "number_literal",
-            "named": true
-          },
-          {
-            "type": "parenthesized_expression",
-            "named": true
-          },
-          {
-            "type": "preproc_defined",
-            "named": true
-          },
-          {
-            "type": "preproc_scoped_identifier",
-            "named": true
-          },
-          {
-            "type": "raw_string_literal",
-            "named": true
-          },
-          {
-            "type": "string_literal",
-            "named": true
-          },
-          {
-            "type": "system_lib_string",
-            "named": true
-          },
-          {
-            "type": "unary_expression",
-            "named": true
-          }
-        ]
-      },
-      "language": {
-        "multiple": false,
-        "required": true,
-        "types": [
-          {
-            "type": "string_literal",
-            "named": true
-          }
-        ]
-      },
-      "name": {
-        "multiple": false,
-        "required": false,
-        "types": [
-          {
-            "type": "identifier",
-            "named": true
-          }
-        ]
-      }
-    }
-  },
-  {
     "type": "constraint_conjunction",
     "named": true,
     "fields": {
@@ -3927,14 +3769,6 @@
           "named": true
         },
         {
-          "type": "conditional_extern_c_close",
-          "named": true
-        },
-        {
-          "type": "conditional_extern_c_open",
-          "named": true
-        },
-        {
           "type": "declaration",
           "named": true
         },
@@ -3992,6 +3826,14 @@
         },
         {
           "type": "preproc_if",
+          "named": true
+        },
+        {
+          "type": "preproc_if_in_grouping_close",
+          "named": true
+        },
+        {
+          "type": "preproc_if_in_grouping_open",
           "named": true
         },
         {
@@ -6548,6 +6390,11 @@
     }
   },
   {
+    "type": "grouping_scope_close",
+    "named": true,
+    "fields": {}
+  },
+  {
     "type": "handle_declarator",
     "named": true,
     "fields": {},
@@ -7028,14 +6875,6 @@
             "named": true
           },
           {
-            "type": "conditional_extern_c_close",
-            "named": true
-          },
-          {
-            "type": "conditional_extern_c_open",
-            "named": true
-          },
-          {
             "type": "declaration",
             "named": true
           },
@@ -7097,6 +6936,14 @@
           },
           {
             "type": "preproc_if",
+            "named": true
+          },
+          {
+            "type": "preproc_if_in_grouping_close",
+            "named": true
+          },
+          {
+            "type": "preproc_if_in_grouping_open",
             "named": true
           },
           {
@@ -9332,14 +9179,6 @@
           "named": true
         },
         {
-          "type": "conditional_extern_c_close",
-          "named": true
-        },
-        {
-          "type": "conditional_extern_c_open",
-          "named": true
-        },
-        {
           "type": "declaration",
           "named": true
         },
@@ -9397,6 +9236,14 @@
         },
         {
           "type": "preproc_if",
+          "named": true
+        },
+        {
+          "type": "preproc_if_in_grouping_close",
+          "named": true
+        },
+        {
+          "type": "preproc_if_in_grouping_open",
           "named": true
         },
         {
@@ -11072,14 +10919,6 @@
           "named": true
         },
         {
-          "type": "conditional_extern_c_close",
-          "named": true
-        },
-        {
-          "type": "conditional_extern_c_open",
-          "named": true
-        },
-        {
           "type": "declaration",
           "named": true
         },
@@ -11129,6 +10968,10 @@
         },
         {
           "type": "function_type_alias_declaration",
+          "named": true
+        },
+        {
+          "type": "grouping_scope_close",
           "named": true
         },
         {
@@ -11221,6 +11064,14 @@
         },
         {
           "type": "preproc_if_in_declaration_modifiers",
+          "named": true
+        },
+        {
+          "type": "preproc_if_in_grouping_close",
+          "named": true
+        },
+        {
+          "type": "preproc_if_in_grouping_open",
           "named": true
         },
         {
@@ -11562,14 +11413,6 @@
           "named": true
         },
         {
-          "type": "conditional_extern_c_close",
-          "named": true
-        },
-        {
-          "type": "conditional_extern_c_open",
-          "named": true
-        },
-        {
           "type": "declaration",
           "named": true
         },
@@ -11627,6 +11470,10 @@
         },
         {
           "type": "function_type_alias_declaration",
+          "named": true
+        },
+        {
+          "type": "grouping_scope_close",
           "named": true
         },
         {
@@ -11715,6 +11562,14 @@
         },
         {
           "type": "preproc_if_in_declaration_modifiers",
+          "named": true
+        },
+        {
+          "type": "preproc_if_in_grouping_close",
+          "named": true
+        },
+        {
+          "type": "preproc_if_in_grouping_open",
           "named": true
         },
         {
@@ -12518,14 +12373,6 @@
           "named": true
         },
         {
-          "type": "conditional_extern_c_close",
-          "named": true
-        },
-        {
-          "type": "conditional_extern_c_open",
-          "named": true
-        },
-        {
           "type": "declaration",
           "named": true
         },
@@ -12583,6 +12430,14 @@
         },
         {
           "type": "preproc_if",
+          "named": true
+        },
+        {
+          "type": "preproc_if_in_grouping_close",
+          "named": true
+        },
+        {
+          "type": "preproc_if_in_grouping_open",
           "named": true
         },
         {
@@ -12802,14 +12657,6 @@
           "named": true
         },
         {
-          "type": "conditional_extern_c_close",
-          "named": true
-        },
-        {
-          "type": "conditional_extern_c_open",
-          "named": true
-        },
-        {
           "type": "declaration",
           "named": true
         },
@@ -12963,6 +12810,14 @@
         },
         {
           "type": "preproc_if_in_declaration_modifiers",
+          "named": true
+        },
+        {
+          "type": "preproc_if_in_grouping_close",
+          "named": true
+        },
+        {
+          "type": "preproc_if_in_grouping_open",
           "named": true
         },
         {
@@ -13881,6 +13736,214 @@
     }
   },
   {
+    "type": "preproc_if_in_grouping_close",
+    "named": true,
+    "fields": {
+      "alternative": {
+        "multiple": false,
+        "required": false,
+        "types": [
+          {
+            "type": "preproc_elif",
+            "named": true
+          },
+          {
+            "type": "preproc_else",
+            "named": true
+          }
+        ]
+      },
+      "condition": {
+        "multiple": false,
+        "required": false,
+        "types": [
+          {
+            "type": "binary_expression",
+            "named": true
+          },
+          {
+            "type": "call_expression",
+            "named": true
+          },
+          {
+            "type": "char_literal",
+            "named": true
+          },
+          {
+            "type": "conditional_expression",
+            "named": true
+          },
+          {
+            "type": "identifier",
+            "named": true
+          },
+          {
+            "type": "number_literal",
+            "named": true
+          },
+          {
+            "type": "parenthesized_expression",
+            "named": true
+          },
+          {
+            "type": "preproc_defined",
+            "named": true
+          },
+          {
+            "type": "preproc_scoped_identifier",
+            "named": true
+          },
+          {
+            "type": "raw_string_literal",
+            "named": true
+          },
+          {
+            "type": "string_literal",
+            "named": true
+          },
+          {
+            "type": "system_lib_string",
+            "named": true
+          },
+          {
+            "type": "unary_expression",
+            "named": true
+          }
+        ]
+      },
+      "name": {
+        "multiple": false,
+        "required": false,
+        "types": [
+          {
+            "type": "identifier",
+            "named": true
+          }
+        ]
+      }
+    },
+    "children": {
+      "multiple": true,
+      "required": true,
+      "types": [
+        {
+          "type": "grouping_scope_close",
+          "named": true
+        },
+        {
+          "type": "preproc_if_in_grouping_close",
+          "named": true
+        }
+      ]
+    }
+  },
+  {
+    "type": "preproc_if_in_grouping_open",
+    "named": true,
+    "fields": {
+      "alternative": {
+        "multiple": false,
+        "required": false,
+        "types": [
+          {
+            "type": "preproc_elif",
+            "named": true
+          },
+          {
+            "type": "preproc_else",
+            "named": true
+          }
+        ]
+      },
+      "condition": {
+        "multiple": false,
+        "required": false,
+        "types": [
+          {
+            "type": "binary_expression",
+            "named": true
+          },
+          {
+            "type": "call_expression",
+            "named": true
+          },
+          {
+            "type": "char_literal",
+            "named": true
+          },
+          {
+            "type": "conditional_expression",
+            "named": true
+          },
+          {
+            "type": "identifier",
+            "named": true
+          },
+          {
+            "type": "number_literal",
+            "named": true
+          },
+          {
+            "type": "parenthesized_expression",
+            "named": true
+          },
+          {
+            "type": "preproc_defined",
+            "named": true
+          },
+          {
+            "type": "preproc_scoped_identifier",
+            "named": true
+          },
+          {
+            "type": "raw_string_literal",
+            "named": true
+          },
+          {
+            "type": "string_literal",
+            "named": true
+          },
+          {
+            "type": "system_lib_string",
+            "named": true
+          },
+          {
+            "type": "unary_expression",
+            "named": true
+          }
+        ]
+      },
+      "name": {
+        "multiple": false,
+        "required": false,
+        "types": [
+          {
+            "type": "identifier",
+            "named": true
+          }
+        ]
+      }
+    },
+    "children": {
+      "multiple": true,
+      "required": true,
+      "types": [
+        {
+          "type": "linkage_specification",
+          "named": true
+        },
+        {
+          "type": "namespace_definition",
+          "named": true
+        },
+        {
+          "type": "preproc_if_in_grouping_open",
+          "named": true
+        }
+      ]
+    }
+  },
+  {
     "type": "preproc_if_in_if_constexpr",
     "named": true,
     "fields": {
@@ -14536,14 +14599,6 @@
           "named": true
         },
         {
-          "type": "conditional_extern_c_close",
-          "named": true
-        },
-        {
-          "type": "conditional_extern_c_open",
-          "named": true
-        },
-        {
           "type": "declaration",
           "named": true
         },
@@ -14649,6 +14704,14 @@
         },
         {
           "type": "preproc_if_in_declaration_modifiers",
+          "named": true
+        },
+        {
+          "type": "preproc_if_in_grouping_close",
+          "named": true
+        },
+        {
+          "type": "preproc_if_in_grouping_open",
           "named": true
         },
         {
@@ -19600,14 +19663,6 @@
           "named": true
         },
         {
-          "type": "conditional_extern_c_close",
-          "named": true
-        },
-        {
-          "type": "conditional_extern_c_open",
-          "named": true
-        },
-        {
           "type": "declaration",
           "named": true
         },
@@ -19665,6 +19720,14 @@
         },
         {
           "type": "preproc_if",
+          "named": true
+        },
+        {
+          "type": "preproc_if_in_grouping_close",
+          "named": true
+        },
+        {
+          "type": "preproc_if_in_grouping_open",
           "named": true
         },
         {
@@ -21333,11 +21396,11 @@
   },
   {
     "type": "true",
-    "named": false
+    "named": true
   },
   {
     "type": "true",
-    "named": true
+    "named": false
   },
   {
     "type": "try",

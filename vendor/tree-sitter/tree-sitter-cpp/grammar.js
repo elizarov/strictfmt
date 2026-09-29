@@ -991,8 +991,8 @@ module.exports = grammar(C, {
       $.preproc_include,
       $.preproc_call,
       $.preproc_using,
-      $.conditional_extern_c_open,
-      $.conditional_extern_c_close,
+      $.preproc_if_in_grouping_open,
+      $.preproc_if_in_grouping_close,
       $.standalone_attribute_preproc_if,
       $.standalone_qualifier_preproc_if,
       $.namespace_definition,
@@ -1621,21 +1621,33 @@ module.exports = grammar(C, {
       $._preproc_directive_end,
     ),
 
-    conditional_extern_c_open: $ => seq(
-      $._preproc_opening_condition,
-      $._preproc_directive_end,
-      'extern',
-      field('language', $.string_literal),
-      '{',
-      $._preproc_endif_line,
+    ...preprocIf('_in_grouping_open', $ => $._grouping_open, 0, PREPROC_ALL_BRANCH_FORMS | PREPROC_SHARED_OPENER, false),
+    ...preprocIf('_in_grouping_close', $ => $._grouping_close, 0, PREPROC_ALL_BRANCH_FORMS | PREPROC_SHARED_OPENER, false),
+
+    _grouping_open: $ => choice(
+      alias($.guarded_namespace_open, $.namespace_definition),
+      alias($.guarded_linkage_open, $.linkage_specification),
+      seq($.preproc_if_in_grouping_open, optional($._grouping_open)),
     ),
 
-    conditional_extern_c_close: $ => seq(
-      $._preproc_opening_condition,
-      $._preproc_directive_end,
-      '}',
-      $._preproc_endif_line,
+    guarded_namespace_open: $ => seq(
+      $._namespace_definition_header,
+      field('body', alias($._grouping_body_open, $.namespace_declaration_list)),
     ),
+
+    guarded_linkage_open: $ => seq(
+      $._linkage_specification_prefix,
+      field('body', alias($._grouping_body_open, $.declaration_list)),
+    ),
+
+    _grouping_body_open: $ => seq('{', optional($._grouping_open)),
+
+    _grouping_close: $ => seq(
+      choice($.grouping_scope_close, $.preproc_if_in_grouping_close),
+      optional($._grouping_close),
+    ),
+
+    grouping_scope_close: _ => '}',
 
     preproc_arg: $ => repeat1(choice($._preprocessing_token, ',')),
 

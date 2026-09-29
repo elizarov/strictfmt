@@ -85,6 +85,7 @@ bool IsLinkageSpecificationDeclarationList(const PrintToken& token) {
 
 bool IsNamespaceLikeBrace(const PrintToken& token) {
     return token.parentKind == SyntaxNodeKind::LinkageSpecification ||
+        token.parentKind == SyntaxNodeKind::GroupingScopeClose ||
         IsNamespaceDefinitionDeclarationList(token) ||
         IsLinkageSpecificationDeclarationList(token);
 }

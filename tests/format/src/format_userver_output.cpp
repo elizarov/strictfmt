@@ -62,11 +62,13 @@ BENCHMARK_DEFINE_F(FormatterBenchmark, Inline)(benchmark::State& state) { UseBen
 
 #ifdef __cplusplus
 extern "C" {
+
 #endif
 
 int FormatUserverExternCValue(int input);
 
 #ifdef __cplusplus
+
 }
 #endif
 
