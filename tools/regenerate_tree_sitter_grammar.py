@@ -355,6 +355,32 @@ def compact_numeric_table_lines(table: str) -> str:
     return "".join(result)
 
 
+def compact_lex_mode_table(generated: str, parser_header: str) -> str:
+    # Positional initializers spell the same two upstream fields more briefly.
+    # Check their order so a future upstream layout change cannot silently alter values.
+    layout = re.search(r"typedef struct\s*\{([^{}]*)\} TSLexMode;", parser_header)
+    if layout is None or re.sub(r"\s+", "", layout[1]) != "uint16_tlex_state;uint16_texternal_lex_state;":
+        fail("Cannot compact lexer modes: unexpected upstream TSLexMode fields")
+    table = re.search(
+        r"static const TSLexMode ts_lex_modes\[STATE_COUNT\]\s*=\s*\{(?P<body>.*?)\n\};",
+        generated,
+        re.DOTALL,
+    )
+    if table is None:
+        fail("Cannot compact lexer modes: table was not found")
+    entry = re.compile(
+        r"\s*\[(\d+)\]\s*=\s*\{\.lex_state\s*=\s*(\d+)"
+        r"(?:,\s*\.external_lex_state\s*=\s*(\d+))?\},"
+    )
+    body = table["body"]
+    compacted = entry.sub(lambda m: f"\n[{m[1]}]={{{m[2]},{m[3] or '0'}}},", body)
+    remaining = entry.sub("", body)
+    remaining = re.sub(r"\s*\[\d+\]\s*=\s*\{\(TSStateId\)\(-1\)\},", "", remaining)
+    if remaining.strip():
+        fail("Cannot compact lexer modes: unexpected table entry")
+    return generated[:table.start("body")] + compacted + generated[table.end("body"):]
+
+
 def compact_generated_parser(cpp_grammar_dir: Path) -> None:
     parser_path = cpp_grammar_dir / "src" / "parser.c"
     parser_header_path = cpp_grammar_dir / "src" / "tree_sitter" / "parser.h"
@@ -364,7 +390,9 @@ def compact_generated_parser(cpp_grammar_dir: Path) -> None:
             fail(f"Cannot compact parser table: {macro} is not an identity macro in {parser_header_path}")
 
     generated = parser_path.read_text(encoding="utf-8")
+    original_size = len(generated)
     validate_generated_parser_indexes(generated)
+    generated = compact_lex_mode_table(generated, parser_header)
     symbol_enum = SYMBOL_ENUM_RE.search(generated)
     if symbol_enum is None:
         fail(f"Cannot compact parser table: symbol enum was not found in {parser_path}")
@@ -402,7 +430,7 @@ def compact_generated_parser(cpp_grammar_dir: Path) -> None:
             f"Compacted generated parser is {parser_size:,} bytes; "
             f"the limit is {MAX_GENERATED_PARSER_BYTES:,} bytes."
         )
-    print(f"Compacted generated parser from {len(generated):,} to {parser_size:,} bytes", flush=True)
+    print(f"Compacted generated parser from {original_size:,} to {parser_size:,} bytes", flush=True)
 
 
 def main() -> int:

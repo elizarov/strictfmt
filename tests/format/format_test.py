@@ -1262,6 +1262,27 @@ class FormatCommandTests(unittest.TestCase):
                     validate(parser_source(state_count, action_index))
                 self.assertIn("16-bit", diagnostic.getvalue())
 
+    def test_lexer_mode_compaction_requires_upstream_field_order(self) -> None:
+        compact = runpy.run_path(str(GRAMMAR_REGENERATOR))["compact_lex_mode_table"]
+        header = "typedef struct { uint16_t lex_state; uint16_t external_lex_state; } TSLexMode;"
+        source = (
+            "static const TSLexMode ts_lex_modes[STATE_COUNT] = {\n"
+            "  [0] = {.lex_state = 12, .external_lex_state = 3},\n"
+            "  [1] = {.lex_state = 9},\n"
+            "  [2] = {(TSStateId)(-1)},\n"
+            "};\n"
+        )
+        result = compact(source, header)
+        self.assertIn("[0]={12,3},", result)
+        self.assertIn("[1]={9,0},", result)
+        self.assertIn("[2] = {(TSStateId)(-1)},", result)
+        incompatible = header.replace("uint16_t lex_state; uint16_t external_lex_state;",
+                                      "uint16_t external_lex_state; uint16_t lex_state;")
+        diagnostic = io.StringIO()
+        with redirect_stderr(diagnostic), self.assertRaises(SystemExit):
+            compact(source, incompatible)
+        self.assertIn("unexpected upstream TSLexMode fields", diagnostic.getvalue())
+
     def test_grammar_has_only_reviewed_lexical_terminals(self) -> None:
         result = subprocess.run(
             [sys.executable, str(GRAMMAR_REGENERATOR), "--validate-structure-only"],
