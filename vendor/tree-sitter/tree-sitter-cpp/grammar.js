@@ -179,6 +179,10 @@ function itemMacro($, requireArguments = false) {
   );
 }
 
+function argumentComment($) {
+  return choice($.comment, alias($.macro_comment_argument, $.comment));
+}
+
 function expressionArgument($) {
   return choice(
     $.tagged_type_argument,
@@ -362,6 +366,18 @@ module.exports = grammar(C, {
   ],
 
   conflicts: $ => [
+    [$.call_expression, $._unconfigured_call_callee, $.selected_call_prefix],
+    [$.selected_call_prefix, $.argument_sequence],
+    [$._preproc_opening_condition, $.preproc_ifdef_in_initializer_list, $.preproc_ifdef_in_call_prefix],
+    [$._preproc_opening_condition, $.preproc_if_in_initializer_list, $.preproc_if_in_call_prefix],
+    [$.preproc_ifdef, $._preproc_opening_condition, $.preproc_ifdef_in_initializer_list, $.preproc_ifdef_in_call_prefix],
+    [$.preproc_if, $._preproc_opening_condition, $.preproc_if_in_initializer_list, $.preproc_if_in_call_prefix],
+    [$._preproc_opening_condition, $.preproc_ifdef_in_function_header, $.preproc_ifdef_in_function_return_type, $.preproc_ifdef_in_call_prefix],
+    [$._preproc_opening_condition, $.preproc_if_in_function_header, $.preproc_if_in_function_return_type, $.preproc_if_in_call_prefix],
+    [$._preproc_opening_condition, $.preproc_ifdef_in_call_prefix],
+    [$._preproc_opening_condition, $.preproc_if_in_call_prefix],
+    [$.preproc_ifdef, $._preproc_opening_condition, $.preproc_ifdef_in_call_prefix],
+    [$.preproc_if, $._preproc_opening_condition, $.preproc_if_in_call_prefix],
     [$.compound_statement, $.if_transition_header, $.conditional_if_body],
     [$.compound_statement, $.if_transition_header],
     [$.compound_statement, $.else_transition_header],
@@ -4578,6 +4594,7 @@ module.exports = grammar(C, {
     )),
 
     call_expression: $ => choice(
+      prec(PREC.CALL, field('arguments', alias($.selected_call_arguments, $.argument_list))),
       prec.dynamic(10, prec.right(PREC.CALL + 8, statementArgumentCall($))),
       prec.dynamic(1, callExpression($, $.expression)),
       prec(PREC.CALL, itemMacro($, true)),
@@ -4597,6 +4614,25 @@ module.exports = grammar(C, {
         )),
         field('arguments', $.argument_list),
       ),
+    ),
+
+    selected_call_arguments: $ => seq(
+      choice($.preproc_if_in_call_prefix, alias($.preproc_ifdef_in_call_prefix, $.preproc_if_in_call_prefix)),
+      optional($.argument_sequence),
+      ')',
+    ),
+    selected_call_prefix: $ => prec(PREC.CALL, seq(field('function', $.expression), '(', repeat(argumentComment($)))),
+
+    ...preprocIf(
+      '_in_call_prefix',
+      $ => choice(
+        $.selected_call_prefix,
+        $.preproc_if_in_call_prefix,
+        alias($.preproc_ifdef_in_call_prefix, $.preproc_if_in_call_prefix),
+      ),
+      0,
+      PREPROC_ALL_BRANCH_FORMS,
+      false,
     ),
 
     _callable_template_function: $ => seq(
@@ -5053,7 +5089,7 @@ module.exports = grammar(C, {
 
     argument_sequence: $ => {
       const directive = preprocListItem($, '_in_expression_list', PREPROC_IFDEF);
-      const comment = choice($.comment, alias($.macro_comment_argument, $.comment));
+      const comment = argumentComment($);
       const item = choice(
         $._argument_list_item,
         seq(repeat1(comment), optional($._argument_list_item)),

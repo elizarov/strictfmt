@@ -17,6 +17,7 @@ bool IsConditionalPreprocessor(const SyntaxNode& node) {
     switch (node.kind) {
         case SyntaxNodeKind::PreprocBlockClose:
         case SyntaxNodeKind::PreprocBlockTransition:
+        case SyntaxNodeKind::PreprocListPrefix:
         case SyntaxNodeKind::PreprocIf:
         case SyntaxNodeKind::PreprocIfdef:
         case SyntaxNodeKind::PreprocElse:

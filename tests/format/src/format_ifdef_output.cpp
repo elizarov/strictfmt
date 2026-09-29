@@ -2358,3 +2358,63 @@ int ConditionalTransitionThenSharedElseIf(int value) {
     }
     return 3;
 }
+
+int First(int value) { return value + 1; }
+int Second(int value) { return value + 2; }
+int Sum(int a, int b) { return a + b; }
+int CallPrefix(int value) {
+    return 10 *
+#if FIRST
+#if EXTRA
+        First(
+#else
+        Second(
+#endif
+#else
+        First(
+#endif
+            value
+        );
+}
+int NestedCallPrefix(int value) {
+    return Sum(
+#if FIRST
+        First(  // selected callee
+#elif EXTRA
+        (Second)(
+#else
+        Second(
+#endif
+            value
+        ),
+        2
+    );
+}
+int LambdaCallPrefix() {
+    return
+#if FIRST
+        [] { return 1; }(
+#else
+        [] { return 2; }(
+#endif
+        );
+}
+int CompleteConditionalCalls(int value) {
+    return
+#if FIRST
+        First(value)
+#else
+        Second(value)
+#endif
+        ;
+}
+
+void Observe(int a, int& b) { b += a; }
+int CompleteCallStatements(int value) {
+#if FIRST
+    Observe(/* nested complete call */ First(value), value);
+#else
+    (void)value;
+#endif
+    return value;
+}

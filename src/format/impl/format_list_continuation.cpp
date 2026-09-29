@@ -117,7 +117,14 @@ struct FormatListContinuation::Impl {
     }
 
     static const SyntaxNode* NearestPreprocessorSplitListAncestor(const PrintToken& token) {
+        const SyntaxNode* selectedList = nullptr;
         for (const SyntaxNode* cursor = token.node; cursor != nullptr; cursor = cursor->parent) {
+            if (cursor->kind == SyntaxNodeKind::PreprocListPrefix) {
+                selectedList = cursor->parent;
+            }
+            if (cursor == selectedList) {
+                continue;
+            }
             if (SyntaxNodeKindHasClass(cursor->kind, SyntaxNodeClass::PreprocessorSplitList)) {
                 return cursor;
             }
@@ -376,6 +383,24 @@ struct FormatListContinuation::Impl {
         preprocessorSplitListContexts_.insert_or_assign(selectedContext.list, selectedContext);
         return selectedContext.itemIndent;
     }
+    void RecordSelectedHeader(const SyntaxNode* list, int headerIndent) {
+        selections_.insert_or_assign(list, Selection{headerIndent + 1, headerIndent});
+    }
+
+    std::optional<int> BeginSelectedList(const SyntaxNode* list, const SyntaxNode* close) {
+        const auto selected = selections_.find(list);
+        if (selected == selections_.end() || close == nullptr) {
+            return std::nullopt;
+        }
+        preprocessorSplitListContexts_.insert_or_assign(list, PreprocessorSplitListContext{
+            .list = list,
+            .closeToken = close,
+            .itemIndent = selected->second.itemIndent,
+            .closeIndent = selected->second.closeIndent,
+        });
+        return selected->second.itemIndent;
+    }
+
     std::optional<int> PreprocessorIndent(const PrintToken& token) const {
         const auto* context = ActivePreprocessorSplitListContextFor(token);
         return context == nullptr ? std::nullopt : std::optional(context->itemIndent);
@@ -462,6 +487,12 @@ const FormatLayoutRegionContext*
     return impl_->PlanPreprocessor(index, pending, itemIndent);
 }
 int FormatListContinuation::ResolvePreprocessor() { return impl_->ResolvePreprocessor(); }
+void FormatListContinuation::RecordSelectedHeader(const SyntaxNode* list, int headerIndent) {
+    impl_->RecordSelectedHeader(list, headerIndent);
+}
+std::optional<int> FormatListContinuation::BeginSelectedList(const SyntaxNode* list, const SyntaxNode* close) {
+    return impl_->BeginSelectedList(list, close);
+}
 std::optional<int> FormatListContinuation::PreprocessorIndent(const PrintToken& token) const {
     return impl_->PreprocessorIndent(token);
 }

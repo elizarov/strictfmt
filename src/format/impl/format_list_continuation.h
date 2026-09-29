@@ -35,6 +35,8 @@ public:
     const FormatLayoutRegionContext*
         PlanPreprocessor(size_t index, std::span<const PrintToken> pending, int itemIndent);
     int ResolvePreprocessor();
+    void RecordSelectedHeader(const SyntaxNode* list, int headerIndent);
+    std::optional<int> BeginSelectedList(const SyntaxNode* list, const SyntaxNode* close);
     std::optional<int> PreprocessorIndent(const PrintToken& token) const;
     bool IsConditionalList(size_t index) const;
 

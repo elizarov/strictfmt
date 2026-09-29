@@ -44,6 +44,8 @@ enum class SyntaxNodeKind : std::uint16_t {
     StatementScopeClose,
     PreprocBlockClose,
     PreprocBlockTransition,
+    PreprocListPrefix,
+    SelectedListHeader,
     IfTransitionHeader,
     ElseTransitionHeader,
     ControlContinuation,

@@ -498,6 +498,7 @@ private:
         if (
             parent == nullptr ||
             !SyntaxNodeKindHasClass(parent->kind, SyntaxNodeClass::PreprocessorSplitList) ||
+            (!parent->children.empty() && parent->children.front()->kind == SyntaxNodeKind::PreprocListPrefix) ||
             (parent->classes & static_cast<std::uint64_t>(SyntaxNodeClass::ContainsListPreprocessor)) == 0
         ) {
             return nullptr;
@@ -861,6 +862,39 @@ private:
                 FlushListItem(*boundary->indent);
             }
         }
+        return true;
+    }
+
+    static const SyntaxNode* SelectedPrefixList(const SyntaxNode* node) {
+        for (
+            const SyntaxNode* parent = node == nullptr ? nullptr : node->parent;
+            parent != nullptr;
+            parent = parent->parent
+        ) {
+            if (SyntaxNodeHasClass(*parent, SyntaxNodeClass::PreprocessorSplitList)) {
+                return parent;
+            }
+        }
+        return nullptr;
+    }
+
+    bool PrintSelectedListHeader(const PrintToken& token, const PrintToken* rawNext) {
+        if (token.node == nullptr || token.parentKind != SyntaxNodeKind::SelectedListHeader) {
+            return false;
+        }
+        const SyntaxNode* list = SelectedPrefixList(token.node->parent);
+        if (list == nullptr) {
+            return false;
+        }
+        BufferToken(token);
+        FlushPendingTokens();
+        layoutTree_->Lists().RecordSelectedHeader(list, CurrentLineIndentLevel());
+        if (rawNext != nullptr && rawNext->kind == PrintTokenKind::TrailingComment) {
+            BufferToken(*rawNext);
+            prebufferedTokenSourceIndices_.insert(rawNext->sourceIndex);
+            FlushPendingTokens();
+        }
+        NewLine(PrintTokenContinuesMacroLine(token, rawNext));
         return true;
     }
 
@@ -1398,6 +1432,23 @@ private:
                 std::optional<int>(CurrentLineIndentLevel() + 1) : std::nullopt;
         layoutTree_->Chains().FinishBoundary(listItemIndent.value_or(indentLevel_));
         const std::optional<int> continuationIndent = DirectiveContinuationIndent(listItemIndent);
+        const SyntaxNode* selectedPrefix = token.node;
+        while (
+            selectedPrefix != nullptr &&
+            SyntaxNodeHasClass(*selectedPrefix, SyntaxNodeClass::ConditionalBranchSeparatorDirective)
+        ) {
+            selectedPrefix = selectedPrefix->parent;
+        }
+        if (selectedPrefix != nullptr && selectedPrefix->kind == SyntaxNodeKind::PreprocListPrefix) {
+            const SyntaxNode* list = SelectedPrefixList(selectedPrefix);
+            if (list != nullptr && !layoutTree_->Lists().SelectedItemIndent(list)) {
+                const int headerIndent = listItemIndent.value_or(
+                    output_.State().lineHasText ? CurrentLineIndentLevel() + 1 :
+                        output_.State().pendingIndentLevel.value_or(indentLevel_)
+                );
+                layoutTree_->Lists().RecordSelectedHeader(list, headerIndent);
+            }
+        }
         if (output_.State().lineHasText) {
             NewLine();
         }
@@ -1408,6 +1459,26 @@ private:
         if (closesConditionalBlockHeader) {
             conditionalBlockIndents_.push_back({conditionalBody, indentLevel_});
             ++indentLevel_;
+        }
+        if (selectedPrefix != nullptr && selectedPrefix->kind == SyntaxNodeKind::PreprocListPrefix) {
+            const SyntaxNode* list = SelectedPrefixList(selectedPrefix);
+            if (
+                list != nullptr &&
+                selectedPrefix->parent == list &&
+                SyntaxNodeKindHasClass(lineDirectiveKind, SyntaxNodeClass::EndifDirective)
+            ) {
+                if (
+                    const auto itemIndent = layoutTree_
+                        ->Lists().BeginSelectedList(list, DirectTokenChild(*list, SyntaxNodeKind::RightParen))
+                ) {
+                    ++parenDepth_;
+                    output_.SetPendingIndent(*itemIndent);
+                    return;
+                }
+            } else if (const auto itemIndent = layoutTree_->Lists().SelectedItemIndent(list)) {
+                output_.SetPendingIndent(*itemIndent - 1);
+                return;
+            }
         }
         if (
             IsConditionalRhsPreprocessorToken(token) &&
@@ -1427,6 +1498,9 @@ private:
     ) {
         switch (token.syntaxKind) {
             case SyntaxNodeKind::LeftParen:
+                if (PrintSelectedListHeader(token, rawNext)) {
+                    return;
+                }
                 if (TryPrintPreprocessorListOpen(token)) {
                     ++parenDepth_;
                     return;

@@ -442,6 +442,8 @@ constexpr auto kSyntaxKindMappings = std::to_array<SyntaxKindMapping>({
     ),
     Tree(SyntaxNodeKind::IfTransitionHeader, "if_transition_header", Bit(SyntaxNodeClass::ControlHeader)),
     Tree(SyntaxNodeKind::ElseTransitionHeader, "else_transition_header", Bit(SyntaxNodeClass::ControlHeader)),
+    Tree(SyntaxNodeKind::PreprocListPrefix, "preproc_if_in_call_prefix", kConditionalPreprocessorOpenClasses),
+    Tree(SyntaxNodeKind::SelectedListHeader, "selected_call_prefix", Bit(SyntaxNodeClass::Expression)),
     Tree(
         SyntaxNodeKind::PreprocBlockClose,
         "preproc_if_in_do_end",
@@ -1268,6 +1270,10 @@ std::string_view SyntaxNodeKindName(SyntaxNodeKind kind) {
             return "PreprocBlockClose";
         case SyntaxNodeKind::PreprocBlockTransition:
             return "PreprocBlockTransition";
+        case SyntaxNodeKind::PreprocListPrefix:
+            return "PreprocListPrefix";
+        case SyntaxNodeKind::SelectedListHeader:
+            return "SelectedListHeader";
         case SyntaxNodeKind::IfTransitionHeader:
             return "IfTransitionHeader";
         case SyntaxNodeKind::ElseTransitionHeader:
