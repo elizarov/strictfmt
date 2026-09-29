@@ -1834,8 +1834,7 @@ module.exports = grammar(C, {
         $.preproc_if_in_function_definition_prefix,
         $.preproc_ifdef_in_function_definition_prefix,
       ),
-      repeat($._block_item),
-      '}',
+      $._compound_statement_tail,
     ),
 
     _function_definition_prefix_branch: $ => seq(
@@ -1878,8 +1877,7 @@ module.exports = grammar(C, {
 
     preproc_selected_macro_function_body: $ => seq(
       $.preproc_if_in_macro_function_definition_prefix,
-      repeat($._block_item),
-      '}',
+      $._compound_statement_tail,
     ),
 
     preproc_if_in_macro_function_definition_prefix: $ => prec(PREC.CALL + 7, seq(
@@ -2387,7 +2385,12 @@ module.exports = grammar(C, {
 
     // Avoid ambiguity between compound statement and initializer list in a construct like:
     //   A b {};
-    compound_statement: (_, original) => prec(-1, original),
+    compound_statement: $ => prec(-1, seq('{', $._compound_statement_tail)),
+
+    _compound_statement_tail: $ => prec(-1, seq(
+      repeat($._block_item),
+      '}',
+    )),
 
     field_initializer_list: $ => {
       const preprocItem = preprocListItem($, '_in_field_initializer_list', PREPROC_IFDEF | PREPROC_SHARED_OPENER);
@@ -3542,8 +3545,7 @@ module.exports = grammar(C, {
 
     preproc_selected_if_body: $ => seq(
       $.preproc_if_prefix,
-      repeat($._block_item),
-      '}',
+      $._compound_statement_tail,
     ),
 
     selected_if_prefix: $ => seq($._if_header, '{'),
@@ -3556,8 +3558,7 @@ module.exports = grammar(C, {
 
     preproc_selected_for_body: $ => seq(
       $.preproc_for_prefix,
-      repeat($._block_item),
-      '}',
+      $._compound_statement_tail,
     ),
 
     selected_for_prefix: $ => seq(choice($._for_header, $._for_range_header, $._for_each_header), '{'),

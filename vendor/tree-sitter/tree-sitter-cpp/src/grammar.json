@@ -5536,15 +5536,8 @@
             "value": "{"
           },
           {
-            "type": "REPEAT",
-            "content": {
-              "type": "SYMBOL",
-              "name": "_block_item"
-            }
-          },
-          {
-            "type": "STRING",
-            "value": "}"
+            "type": "SYMBOL",
+            "name": "_compound_statement_tail"
           }
         ]
       }
@@ -19601,15 +19594,8 @@
           ]
         },
         {
-          "type": "REPEAT",
-          "content": {
-            "type": "SYMBOL",
-            "name": "_block_item"
-          }
-        },
-        {
-          "type": "STRING",
-          "value": "}"
+          "type": "SYMBOL",
+          "name": "_compound_statement_tail"
         }
       ]
     },
@@ -19844,15 +19830,8 @@
           "name": "preproc_if_in_macro_function_definition_prefix"
         },
         {
-          "type": "REPEAT",
-          "content": {
-            "type": "SYMBOL",
-            "name": "_block_item"
-          }
-        },
-        {
-          "type": "STRING",
-          "value": "}"
+          "type": "SYMBOL",
+          "name": "_compound_statement_tail"
         }
       ]
     },
@@ -23807,6 +23786,26 @@
               "type": "SYMBOL",
               "name": "_abstract_declarator"
             }
+          }
+        ]
+      }
+    },
+    "_compound_statement_tail": {
+      "type": "PREC",
+      "value": -1,
+      "content": {
+        "type": "SEQ",
+        "members": [
+          {
+            "type": "REPEAT",
+            "content": {
+              "type": "SYMBOL",
+              "name": "_block_item"
+            }
+          },
+          {
+            "type": "STRING",
+            "value": "}"
           }
         ]
       }
@@ -32029,15 +32028,8 @@
           "name": "preproc_if_prefix"
         },
         {
-          "type": "REPEAT",
-          "content": {
-            "type": "SYMBOL",
-            "name": "_block_item"
-          }
-        },
-        {
-          "type": "STRING",
-          "value": "}"
+          "type": "SYMBOL",
+          "name": "_compound_statement_tail"
         }
       ]
     },
@@ -32235,15 +32227,8 @@
           "name": "preproc_for_prefix"
         },
         {
-          "type": "REPEAT",
-          "content": {
-            "type": "SYMBOL",
-            "name": "_block_item"
-          }
-        },
-        {
-          "type": "STRING",
-          "value": "}"
+          "type": "SYMBOL",
+          "name": "_compound_statement_tail"
         }
       ]
     },
