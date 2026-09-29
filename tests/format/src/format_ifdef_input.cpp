@@ -1414,3 +1414,51 @@ int NestedValue(){return 9;}
 }
 #endif
 }
+
+// A conditional after a selected if body may be a sibling or its guarded else.
+int SelectedIfThenConditional(bool first, bool second) {
+int value=0;
+#if FIRST
+if(first) {
+#else
+if(second) {
+#endif
+++value;
+}
+#if EXTRA
+value+=10;
+#else
+value+=20;
+#endif
+return value;
+}
+
+int SelectedIfWithGuardedElse(bool first, bool second) {
+int value=0;
+#if FIRST
+if(first) {
+#else
+if(second) {
+#endif
+value=1;
+}
+#if EXTRA
+else {value=10;}
+#endif
+return value;
+}
+
+// An ordinary else still binds to the nearest selected if.
+int NestedSelectedIf(bool outer, bool first, bool second) {
+int value=0;
+if(outer)
+#if FIRST
+if(first) {
+#else
+if(second) {
+#endif
+value=1;
+}
+else {value=10;}
+return value;
+}

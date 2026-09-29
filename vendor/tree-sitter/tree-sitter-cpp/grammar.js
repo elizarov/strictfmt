@@ -354,6 +354,8 @@ module.exports = grammar(C, {
   ],
 
   conflicts: $ => [
+    [$.preproc_selected_braced_if_statement, $._closed_selected_braced_if_statement],
+    [$.preproc_selected_braced_if_statement],
     [$.preproc_ended_consequence_statement, $._statement_block],
     [$.parenthesized_expression, $._statement_block, $._argument_list_item],
     [$._statement_block, $.macro_statement_argument_list],
@@ -3538,10 +3540,10 @@ module.exports = grammar(C, {
       $._preproc_endif_line,
     ),
 
-    preproc_selected_braced_if_statement: $ => prec.right(seq(
+    preproc_selected_braced_if_statement: $ => seq(
       field('consequence', alias($.preproc_selected_if_body, $.compound_statement)),
       optional(field('alternative', $.else_clause)),
-    )),
+    ),
 
     preproc_selected_if_body: $ => seq(
       $.preproc_if_prefix,

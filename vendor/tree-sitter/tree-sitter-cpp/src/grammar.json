@@ -31983,42 +31983,38 @@
       ]
     },
     "preproc_selected_braced_if_statement": {
-      "type": "PREC_RIGHT",
-      "value": 0,
-      "content": {
-        "type": "SEQ",
-        "members": [
-          {
-            "type": "FIELD",
-            "name": "consequence",
+      "type": "SEQ",
+      "members": [
+        {
+          "type": "FIELD",
+          "name": "consequence",
+          "content": {
+            "type": "ALIAS",
             "content": {
-              "type": "ALIAS",
+              "type": "SYMBOL",
+              "name": "preproc_selected_if_body"
+            },
+            "named": true,
+            "value": "compound_statement"
+          }
+        },
+        {
+          "type": "CHOICE",
+          "members": [
+            {
+              "type": "FIELD",
+              "name": "alternative",
               "content": {
                 "type": "SYMBOL",
-                "name": "preproc_selected_if_body"
-              },
-              "named": true,
-              "value": "compound_statement"
-            }
-          },
-          {
-            "type": "CHOICE",
-            "members": [
-              {
-                "type": "FIELD",
-                "name": "alternative",
-                "content": {
-                  "type": "SYMBOL",
-                  "name": "else_clause"
-                }
-              },
-              {
-                "type": "BLANK"
+                "name": "else_clause"
               }
-            ]
-          }
-        ]
-      }
+            },
+            {
+              "type": "BLANK"
+            }
+          ]
+        }
+      ]
     },
     "preproc_selected_if_body": {
       "type": "SEQ",
@@ -43572,6 +43568,13 @@
     }
   ],
   "conflicts": [
+    [
+      "preproc_selected_braced_if_statement",
+      "_closed_selected_braced_if_statement"
+    ],
+    [
+      "preproc_selected_braced_if_statement"
+    ],
     [
       "preproc_ended_consequence_statement",
       "_statement_block"
