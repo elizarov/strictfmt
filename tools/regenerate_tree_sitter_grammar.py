@@ -355,6 +355,29 @@ def compact_numeric_table_lines(table: str) -> str:
     return "".join(result)
 
 
+def compact_contiguous_parse_entries(table: str) -> str:
+    # C initializes the next array element implicitly after each initializer.
+    # Keep designators at every gap or backwards jump; remove only redundant ones.
+    entry = re.compile(r"(?:\[(\d+)\]=)?(\d+),")
+
+    def compact_row(row: re.Match[str]) -> str:
+        next_index = 0
+
+        def compact_entry(match: re.Match[str]) -> str:
+            nonlocal next_index
+            index = int(match[1]) if match[1] is not None else next_index
+            prefix = "" if index == next_index else f"[{index}]="
+            next_index = index + 1
+            return prefix + match[2] + ","
+
+        body = entry.sub(compact_entry, row["body"])
+        if entry.sub("", row["body"]).strip():
+            fail("Cannot compact parse table: unexpected row initializer")
+        return row[1] + body + "}"
+
+    return re.sub(r"(\[\d+\]=\{)(?P<body>[^{}]*)(\})", compact_row, table)
+
+
 def compact_lex_mode_table(generated: str, parser_header: str) -> str:
     # Positional initializers spell the same two upstream fields more briefly.
     # Check their order so a future upstream layout change cannot silently alter values.
@@ -420,6 +443,10 @@ def compact_generated_parser(cpp_grammar_dir: Path) -> None:
     table = IDENTITY_TABLE_ENTRY_RE.sub(r"\1", table)
     table = LEADING_INDENT_RE.sub("", table)
     table = table.replace(" = ", "=").replace(", ", ",")
+    small_table_start = table.find("static const uint16_t ts_small_parse_table")
+    if small_table_start < 0:
+        fail("Cannot compact parse table: small table boundary was not found")
+    table = compact_contiguous_parse_entries(table[:small_table_start]) + table[small_table_start:]
     table = compact_numeric_table_lines(table)
     compacted = generated[:table_start] + table + generated[table_end:]
     parser_path.write_bytes(compacted.encode("utf-8"))

@@ -1283,6 +1283,17 @@ class FormatCommandTests(unittest.TestCase):
             compact(source, incompatible)
         self.assertIn("unexpected upstream TSLexMode fields", diagnostic.getvalue())
 
+    def test_parse_table_compaction_preserves_index_gaps_and_jumps(self) -> None:
+        compact = runpy.run_path(str(GRAMMAR_REGENERATOR))["compact_contiguous_parse_entries"]
+        source = "[3]={[4]=9,[5]=8,[2]=7,[3]=6,[8]=1,},[9]={[0]=0,[1]=12,[4]=10,}"
+        expected = "[3]={[4]=9,8,[2]=7,6,[8]=1,},[9]={0,12,[4]=10,}"
+        self.assertEqual(expected, compact(source))
+        self.assertEqual(expected, compact(expected))
+        diagnostic = io.StringIO()
+        with redirect_stderr(diagnostic), self.assertRaises(SystemExit):
+            compact("[0]={[0]=UNKNOWN,}")
+        self.assertIn("unexpected row initializer", diagnostic.getvalue())
+
     def test_grammar_has_only_reviewed_lexical_terminals(self) -> None:
         result = subprocess.run(
             [sys.executable, str(GRAMMAR_REGENERATOR), "--validate-structure-only"],
