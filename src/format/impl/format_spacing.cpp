@@ -750,7 +750,10 @@ bool FormatTokenNeedsSpace(const PrintToken* previous, const PrintToken& current
         return false;
     }
     if (cur == SyntaxNodeKind::LeftBrace) {
-        if (current.parentKind == SyntaxNodeKind::RequirementSeq) {
+        if (
+            current.parentKind == SyntaxNodeKind::RequirementSeq ||
+            SyntaxNodeKindHasClass(current.parentKind, SyntaxNodeClass::ControlHeader)
+        ) {
             return true;
         }
         if (current.parentKind == SyntaxNodeKind::InitializerList) {

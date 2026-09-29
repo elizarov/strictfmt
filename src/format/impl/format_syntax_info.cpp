@@ -341,16 +341,6 @@ constexpr auto kSyntaxKindMappings = std::to_array<SyntaxKindMapping>({
     Tree(SyntaxNodeKind::Tree, "typeid_expression"),
     Tree(SyntaxNodeKind::Tree, "cpp_cast_expression"),
     Tree(SyntaxNodeKind::Tree, "functional_cast_type_specifier"),
-    Tree(
-        SyntaxNodeKind::PreprocIf,
-        "preproc_selected_else_if_statement",
-        kAtomicPreprocessorClasses | kSupportedPreprocessorPlacementClasses
-    ),
-    Tree(
-        SyntaxNodeKind::PreprocIf,
-        "preproc_selected_else_if_clause",
-        kAtomicPreprocessorClasses | kSupportedPreprocessorPlacementClasses
-    ),
     Tree(SyntaxNodeKind::PreprocIf, "preproc_ended_consequence_statement", kAtomicPreprocessorClasses),
     Tree(
         SyntaxNodeKind::PreprocIf,
@@ -445,6 +435,13 @@ constexpr auto kSyntaxKindMappings = std::to_array<SyntaxKindMapping>({
         kConditionalPreprocessorOpenClasses | Bit(SyntaxNodeClass::SourceItemScope)
     ),
     Tree(SyntaxNodeKind::ControlContinuation, "conditional_if_alternative"),
+    Tree(
+        SyntaxNodeKind::PreprocBlockTransition,
+        "preproc_if_in_if_transition",
+        kConditionalPreprocessorOpenClasses | Bit(SyntaxNodeClass::SourceItemScope)
+    ),
+    Tree(SyntaxNodeKind::IfTransitionHeader, "if_transition_header", Bit(SyntaxNodeClass::ControlHeader)),
+    Tree(SyntaxNodeKind::ElseTransitionHeader, "else_transition_header", Bit(SyntaxNodeClass::ControlHeader)),
     Tree(
         SyntaxNodeKind::PreprocBlockClose,
         "preproc_if_in_do_end",
@@ -1269,6 +1266,12 @@ std::string_view SyntaxNodeKindName(SyntaxNodeKind kind) {
             return "StatementScopeClose";
         case SyntaxNodeKind::PreprocBlockClose:
             return "PreprocBlockClose";
+        case SyntaxNodeKind::PreprocBlockTransition:
+            return "PreprocBlockTransition";
+        case SyntaxNodeKind::IfTransitionHeader:
+            return "IfTransitionHeader";
+        case SyntaxNodeKind::ElseTransitionHeader:
+            return "ElseTransitionHeader";
         case SyntaxNodeKind::ControlContinuation:
             return "ControlContinuation";
         case SyntaxNodeKind::MacroClassBegin:

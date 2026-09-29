@@ -302,6 +302,45 @@ bool HasEscapingConditionalItems(const SyntaxNode& node) {
     return last && node.children[*last] != nullptr && HasEscapingConditionalItems(*node.children[*last]);
 }
 
+bool ContainsConditionalElseTransition(const SyntaxNode& node) {
+    if (node.kind == SyntaxNodeKind::ElseTransitionHeader) {
+        return true;
+    }
+    for (const SyntaxNode* child : node.children) {
+        if (child == nullptr) {
+            continue;
+        }
+        if (
+            SyntaxNodeHasClass(*child, SyntaxNodeClass::ConditionalPreprocessorTree) ||
+            child->kind == SyntaxNodeKind::BlockScopeClose ||
+            child->kind == SyntaxNodeKind::ElseTransitionHeader
+        ) {
+            if (ContainsConditionalElseTransition(*child)) {
+                return true;
+            }
+        }
+    }
+    return false;
+}
+
+bool HasConditionalElseBinding(const SyntaxNode& node) {
+    if (!SyntaxNodeHasClass(node, SyntaxNodeClass::IfStatement)) {
+        return false;
+    }
+    bool conditionalConsequence = false;
+    for (const SyntaxNode* child : node.children) {
+        if (child == nullptr) {
+            continue;
+        }
+        if (child->kind == SyntaxNodeKind::CompoundStatement) {
+            conditionalConsequence |= ContainsConditionalElseTransition(*child);
+        } else if (child->kind == SyntaxNodeKind::ElseClause && conditionalConsequence) {
+            return true;
+        }
+    }
+    return false;
+}
+
 void WrapControlBody(FormatModel& model, SyntaxNode& node, size_t childIndex) {
     if (
         childIndex >= node.children.size() ||
@@ -309,7 +348,9 @@ void WrapControlBody(FormatModel& model, SyntaxNode& node, size_t childIndex) {
     ) {
         return;
     }
-    if (node.children[childIndex] != nullptr && HasEscapingConditionalItems(*node.children[childIndex])) {
+    if (node.children[childIndex] != nullptr && (
+        HasEscapingConditionalItems(*node.children[childIndex]) || HasConditionalElseBinding(*node.children[childIndex])
+    )) {
         model.parse.ok = false;
         if (model.parse.error.empty()) {
             model.parse.error = "cannot add braces across conditional scope boundaries";

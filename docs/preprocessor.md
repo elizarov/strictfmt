@@ -30,11 +30,11 @@ This is the closed list of placements that are explicitly supported.
 - **Conditional `if constexpr`**: conditionals may guard `constexpr` between `if` and its condition, including nested groups and `#else` or `#elif` alternatives.
 - **Guarded `if`/`else` prefixes**: conditionals may select an `if`/`else if` chain ending in `else`, with the final body shared after `#endif`. Branches may contain complete statements and declarations before the chain, nested conditional groups, and `#else` or `#elif` alternatives. Braced and unbraced shared bodies are supported; the opening brace may be selected with the prefix.
 - **Conditional block endings**: conditionals may select the closing brace of a shared compound statement. Branches may contain statements and declarations before and after that brace, nested conditional groups, and `#else` or `#elif` alternatives.
+- **Conditional branch transitions**: conditionals may close one `if` branch and open a subsequent `else if` or `else` branch, leaving the final body and closing brace shared. Transitions may repeat, contain nested conditional groups, and have `#else` or `#elif` alternatives.
 - **Conditional `if` endings**: conditionals may select a shared consequence's closing brace together with a complete `else` clause. Branches may contain complete source items, nested conditional groups, and `#else` or `#elif` alternatives.
 - **Conditional `do` endings**: conditionals may select the closing brace and `while` condition of a shared `do` body. Branches may contain complete source items, nested conditional groups, and `#else` or `#elif` alternatives.
 - **Conditional `try` scopes**: conditionals may select `try` and its opening brace, or a shared body's closing brace together with its catch handlers. Branches may contain complete source items, nested conditional groups, and `#else` or `#elif` alternatives. Function and constructor try-block endings use the same handler rules.
 - **Conditional `else` clauses**: a conditional-opener block may select a complete `else` clause, including an `else if` chain. Braced and unbraced bodies, nested conditional groups, and `#else`/`#elif` alternatives are supported.
-- **Conditional `else if` branches**: conditionals may select complete `else if` branches inside an `if`/`else if` chain.
 - **Logical chain links**: a conditional-opener block may select a leading `&&` or `||` link in a shared logical expression, or the complete right operand after a shared `&&`. Operand selection may have an `#else`; `#elif` is unsupported.
 - **Member-access chains**: conditionals may select continuations starting with `.` or `->`, including calls and subscripts. Branches may contain nested conditional groups and `#else` or `#elif` alternatives; the receiver precedes the conditional and further shared links may follow it.
 - **Stream-shift chain links**: conditional-opener blocks with an optional `#else` may select complete leading links in a shared stream-shift chain. These blocks may nest, the receiver must precede the outer conditional, and further shared links and the terminating semicolon may follow it. `#elif` is unsupported in this placement.
@@ -44,7 +44,7 @@ This is the closed list of placements that are explicitly supported.
 - **Include-supplied initializer-list fragments**: local `#include` directives may contribute entries and their separators inside braced initializer lists, including conditional branches and fragments interleaved with ordinary entries.
 - **Local includes**: local `#include` directives may stand where the parser accepts them as complete items.
 
-Enclosing control bodies that require new braces spanning conditionally absent openers or branch-owned following items are rejected.
+Enclosing control bodies are rejected when adding braces would change `else` ownership or span conditionally absent openers or branch-owned following items.
 
 All other places are not supported and may result in parsing errors or produce misformatted output if the parser manages to recover without errors.
 

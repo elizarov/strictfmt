@@ -2287,3 +2287,74 @@ int IfEndFollowing(bool choice) {
 #endif
     return value;
 }
+
+// Conditional branch transitions may share the final body and closing brace.
+int ConditionalIfChain(bool first, bool second, bool third) {
+    int result = 0;
+    if (first) {
+        result = 1;
+#if FIRST
+#if EXTRA
+    } else if (second) {
+        result = 2;
+    } else if (third) {
+        result = 3;
+#else
+    } else if (third) {
+        result = 4;
+#endif
+#elif EXTRA
+    } else if (second || third) {
+        result = 5;
+#endif
+    } else {
+        result = 6;
+    }
+    return result;
+}
+
+int ConditionalElseSharedBody(bool active, bool choice) {
+    int result = 0;
+    if (active) {
+        if (choice) {
+            result = 1;
+#if FIRST
+        } else {
+            result = 2;
+#endif
+            result += 10;
+        }
+    }
+    return result;
+}
+
+int ConditionalElseIfOuter(bool active, bool choice, bool other) {
+    int result = 0;
+    if (active) {
+        if (choice) {
+            result = 1;
+#if FIRST
+        } else if (other) {
+            result = 2;
+#endif
+        } else {
+            result = 3;
+        }
+    } else {
+        result = -1;
+    }
+    return result;
+}
+
+int ConditionalTransitionThenSharedElseIf(int value) {
+    if (value == 0) {
+        return 0;
+#if FIRST
+    } else if (value == 1) {
+        return 1;
+#endif
+    } else if (value == 2) {
+        return 2;
+    }
+    return 3;
+}

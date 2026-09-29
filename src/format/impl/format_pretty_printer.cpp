@@ -63,6 +63,8 @@ BraceRole RoleForBraceParent(SyntaxNodeKind parentKind) {
     switch (parentKind) {
         case SyntaxNodeKind::CompoundStatement:
         case SyntaxNodeKind::BlockScopeClose:
+        case SyntaxNodeKind::IfTransitionHeader:
+        case SyntaxNodeKind::ElseTransitionHeader:
         case SyntaxNodeKind::FieldDeclarationList:
         case SyntaxNodeKind::DeclarationList:
         case SyntaxNodeKind::RequirementSeq:
@@ -451,6 +453,7 @@ private:
             case SyntaxNodeKind::CompoundStatement:
             case SyntaxNodeKind::BlockScopeClose:
             case SyntaxNodeKind::PreprocBlockClose:
+            case SyntaxNodeKind::PreprocBlockTransition:
             case SyntaxNodeKind::CaseStatement:
             case SyntaxNodeKind::MacroConditionalStatement:
             case SyntaxNodeKind::PreprocIf:
@@ -1307,7 +1310,10 @@ private:
         while (owner != nullptr && SyntaxNodeHasClass(*owner, SyntaxNodeClass::ConditionalBranchSeparatorDirective)) {
             owner = owner->parent;
         }
-        if (owner == nullptr || owner->kind != SyntaxNodeKind::PreprocBlockClose) {
+        if (
+            owner == nullptr ||
+            (owner->kind != SyntaxNodeKind::PreprocBlockClose && owner->kind != SyntaxNodeKind::PreprocBlockTransition)
+        ) {
             return;
         }
         if (SyntaxNodeKindHasClass(directiveKind, SyntaxNodeClass::ConditionalOpeningDirective)) {

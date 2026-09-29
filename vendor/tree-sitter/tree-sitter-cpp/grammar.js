@@ -362,6 +362,10 @@ module.exports = grammar(C, {
   ],
 
   conflicts: $ => [
+    [$.compound_statement, $.if_transition_header, $.conditional_if_body],
+    [$.compound_statement, $.if_transition_header],
+    [$.compound_statement, $.else_transition_header],
+    [$._block_item, $._if_transition_branch],
     [$.preproc_else_in_expression, $.preproc_condition_expression],
     [$.preproc_if_in_expression, $.preproc_condition_expression],
     [$.if_statement, $._if_consequence_prefix, $._closed_if_statement],
@@ -433,7 +437,6 @@ module.exports = grammar(C, {
     [$.macro_expansion, $.macro_expression_prefix, $.identifier_call],
     [$.call_expression, $.macro_expansion, $.macro_expression_prefix],
     [$.macro_expression_prefix],
-    [$.macro_conditional_statement, $.preproc_selected_else_if_body_item],
     [$._declaration_declarator_list, $.macro_uninitialized_declaration_fragment],
     [$.type_specifier, $.block_macro_call_line_item],
     [$.type_specifier, $.expression, $.block_macro_call_line_item],
@@ -500,7 +503,6 @@ module.exports = grammar(C, {
     [$._declaration_specifiers, $.macro_prefixed_function_definition, $.macro_prefixed_declaration, $._conditional_function_return_type_specifiers, $._modifier_prefixed_macro_declaration],
     [$._declaration_specifiers, $._conditional_function_return_type_specifiers, $._modifier_prefixed_macro_declaration, $._constructor_specifiers],
     [$.preproc_ended_consequence_statement, $._closed_statement_leaf],
-    [$.preproc_selected_else_if_body_item, $._closed_statement_leaf],
     [$._block_item, $._closed_statement_leaf],
     // A directive after an if may guard its else or start a following source item.
     [$.statement, $._closed_statement],
@@ -948,15 +950,11 @@ module.exports = grammar(C, {
     [$._declaration_modifiers, $.macro_prefixed_function_definition, $.macro_prefixed_declaration],
     [$._declaration_specifiers, $._conditional_function_return_type_specifiers, $._constructor_specifiers],
     [$._declarator, $.macro_declaration_header_fragment],
-    [$.if_statement, $.preproc_selected_else_if_statement],
     [$.statement, $.preproc_ended_consequence_statement],
     [$.preproc_argument_fragment, $.preproc_ifdef_in_expression_list],
     [$._declarator, $.type_specifier, $.class_macro_call],
     [$.storage_class_specifier, $.preproc_declaration_modifier],
     [$.type_specifier, $.preproc_declaration_modifier],
-    [$._block_item, $.preproc_selected_else_if_body_item],
-    [$.statement, $.preproc_selected_else_if_body_item],
-    [$._block_item, $.statement, $.preproc_selected_else_if_body_item],
     [$._top_level_item, $._function_definition_prefix_branch],
   ],
 
@@ -1047,6 +1045,7 @@ module.exports = grammar(C, {
     ),
 
     _block_item: $ => choice(
+      $.preproc_if_in_if_transition,
       $.preproc_unbalanced_else_block,
       prec(2, $.preproc_call),
       $.preproc_value_declaration,
@@ -2398,6 +2397,22 @@ module.exports = grammar(C, {
       repeat($._block_item),
     ),
 
+    ...preprocIf('_in_if_transition', $ => $._if_transition_branch, 0, PREPROC_ALL_BRANCH_FORMS | PREPROC_SHARED_OPENER, false),
+
+    _if_transition_branch: $ => seq(
+      choice(
+        seq(
+          alias($._compound_statement_tail, $.block_scope_close),
+          choice($.if_transition_header, $.else_transition_header),
+        ),
+        seq(repeat($._block_item), $.preproc_if_in_if_transition),
+      ),
+      choice(repeat($._block_item), $._if_transition_branch),
+    ),
+
+    if_transition_header: $ => prec(-1, seq('else', $._if_header, '{')),
+    else_transition_header: $ => prec(-1, seq('else', '{')),
+
     field_initializer_list: $ => {
       const preprocItem = preprocListItem($, '_in_field_initializer_list', PREPROC_IFDEF | PREPROC_SHARED_OPENER);
       const leadingPreprocItem = preprocListItem($, '_in_field_initializer_list_leading_comma', PREPROC_IFDEF | PREPROC_SHARED_OPENER);
@@ -3424,7 +3439,6 @@ module.exports = grammar(C, {
     _non_case_statement: $ => choice(
       $._closed_statement_leaf,
       $.preproc_case_label_fragment,
-      $.preproc_selected_else_if_statement,
       $.preproc_selected_braced_if_statement,
       $.preproc_ended_consequence_statement,
       $.preproc_selected_if_statement,
@@ -3543,7 +3557,7 @@ module.exports = grammar(C, {
       field('consequence', alias($.selected_conditional_if_body, $.compound_statement)),
     ),
 
-    conditional_if_body: $ => seq('{', $._conditional_if_tail),
+    conditional_if_body: $ => prec(-1, seq('{', $._conditional_if_tail)),
     selected_conditional_if_body: $ => seq($.preproc_if_prefix, $._conditional_if_tail),
     _conditional_if_tail: $ => seq(repeat($._block_item), $.preproc_if_in_if_end),
 
@@ -3647,37 +3661,6 @@ module.exports = grammar(C, {
       selectedIfHeader($),
       $._preproc_endif_line,
       field('alternative_consequence', $.statement),
-    )),
-
-    preproc_selected_else_if_statement: $ => prec.right(2, seq(
-      $._if_header,
-      '{',
-      repeat($.preproc_selected_else_if_body_item),
-      $.preproc_selected_else_if_clause,
-    )),
-
-    preproc_selected_else_if_body_item: $ => choice(
-      $.declaration,
-      $.expression_statement,
-      $.return_statement,
-      $.macro_call_item,
-      $.top_level_call_statement,
-    ),
-
-    preproc_selected_else_if_clause: $ => prec(5, seq(
-      $._preproc_opening_line,
-      '}',
-      'else',
-      $.selected_if_header,
-      '{',
-      repeat($.preproc_selected_else_if_body_item),
-      $._preproc_endif_line,
-      '}',
-      'else',
-      $.selected_if_header,
-      '{',
-      repeat($.preproc_selected_else_if_body_item),
-      '}',
     )),
 
     _while_header: $ => seq('while', field('condition', $.condition_clause)),
