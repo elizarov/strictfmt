@@ -223,11 +223,50 @@ SyntaxNode* ExtractBranchLikelihoodAttributes(FormatModel& model, SyntaxNode*& b
     return wrapper;
 }
 
+bool HasEscapingConditionalItems(const SyntaxNode& node);
+
+bool ConditionalEndingHasFollowingItems(const SyntaxNode& node) {
+    bool afterClose = false;
+    for (const SyntaxNode* child : node.children) {
+        if (child == nullptr || SyntaxNodeHasClass(*child, SyntaxNodeClass::Trivia)) {
+            continue;
+        }
+        if (child->kind == SyntaxNodeKind::BlockScopeClose) {
+            afterClose = true;
+            if (HasEscapingConditionalItems(*child)) {
+                return true;
+            }
+        } else if (SyntaxNodeHasClass(*child, SyntaxNodeClass::ConditionalBranchSeparatorDirective)) {
+            if (ConditionalEndingHasFollowingItems(*child)) {
+                return true;
+            }
+        } else if (afterClose) {
+            return true;
+        }
+    }
+    return false;
+}
+
+bool HasEscapingConditionalItems(const SyntaxNode& node) {
+    if (node.kind == SyntaxNodeKind::PreprocBlockClose) {
+        return ConditionalEndingHasFollowingItems(node);
+    }
+    const auto last = PreviousStructuralChildIndex(node.children, node.children.size());
+    return last && HasEscapingConditionalItems(*node.children[*last]);
+}
+
 void WrapControlBody(FormatModel& model, SyntaxNode& node, size_t childIndex) {
     if (
         childIndex >= node.children.size() ||
         (node.children[childIndex] != nullptr && IsBracedControlBody(*node.children[childIndex]))
     ) {
+        return;
+    }
+    if (node.children[childIndex] != nullptr && HasEscapingConditionalItems(*node.children[childIndex])) {
+        model.parse.ok = false;
+        if (model.parse.error.empty()) {
+            model.parse.error = "cannot add braces across conditional block endings with following statements";
+        }
         return;
     }
     SyntaxNode* attributes = ExtractBranchLikelihoodAttributes(model, node.children[childIndex]);
@@ -294,7 +333,7 @@ std::optional<size_t> FindOnlyIfInBraceBlock(const SyntaxNode& node) {
         ) {
             continue;
         }
-        if (IsIfControlBody(*child) && !ifIndex) {
+        if (IsIfControlBody(*child) && !ifIndex && !HasEscapingConditionalItems(*child)) {
             ifIndex = index;
             continue;
         }

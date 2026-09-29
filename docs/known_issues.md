@@ -2,6 +2,12 @@
 
 This document tracks known limitations and planned work.
 
+## Adding control-body braces across conditional endings (CONDITIONAL_BODY_BRACES)
+
+Current behavior: The restriction on enclosing control bodies under [conditional block endings](preprocessor.md#supported-conditional-compilation-and-local-includes) is reported as an error, preserving the input.
+
+Planned work: Place new closing braces in each alternative before the following items, preserving their scope and supporting the resulting shared endings of nested blocks.
+
 ## Conditional leading commas are not supported in all lists (CONDITIONAL_LEADING_COMMAS)
 
 Current behavior: Branch-owned leading separator commas are limited to the list positions specified in [preprocessor.md](preprocessor.md).

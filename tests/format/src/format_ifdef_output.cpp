@@ -1902,3 +1902,37 @@ void ConditionalCloseWithIncludes(bool active) {
     }
 #endif
 }
+
+int ConditionalElseScope(bool first, bool second) {
+    int value = 0;
+    if (first) {
+        value = 100;
+    } else {
+        if (second) {
+#if FIRST
+            value = 1;
+        }
+        value += 10;
+#else
+            value = 2;
+        }
+        value += 20;
+#endif
+    }
+    return value;
+}
+
+int ConditionalOuterWithoutFollowingItems(bool first, bool second) {
+    int value = 0;
+    if (first) {
+        if (second) {
+#if FIRST
+            value = 1;
+        }
+#else
+            value = 2;
+        }
+#endif
+    }
+    return value;
+}
