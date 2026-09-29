@@ -87,41 +87,60 @@ function cppStatements($, base = C.grammar.rules._non_case_statement) {
   );
 }
 
-function cppNonBinaryExpressions($, base) {
+function commonPostfixExpressions($) {
   return choice(
+    $.operator_name,
     $.macro_token_paste_expression,
+    $.macro_expansion,
+    $.preprocessing_token_macro_call,
+    $.call_expression,
+    $.field_expression,
+    $.subscript_expression,
+    alias($.conditional_member_expression, $.field_expression),
+    $.compound_literal_expression,
+    $.parenthesized_expression,
+    $._string,
+    $.suffixed_string_literal,
+    $.user_defined_literal,
+    $.char_literal,
+    $.number_literal,
+    $.true,
+    $.false,
+    $.null,
+    $.this,
+    $.cpp_cast_expression,
+    $.typeid_expression,
+    $.lambda_expression,
+    $.requires_expression,
+    $.fold_expression,
+    $.splice_specifier,
+    $.generic_expression,
+  );
+}
+
+function cppNonBinaryExpressions($, base) {
+  const sharedNames = new Set(commonPostfixExpressions($).members.map(member => member.name));
+  return choice(
+    $._common_postfix_expression,
     alias($.conditional_concatenated_string, $.concatenated_string),
     alias($.delete_array_expression, $.delete_expression),
-    $.macro_expansion,
     $.macro_expression_continuation,
     $.macro_prefixed_expression,
-    alias($.conditional_member_expression, $.field_expression),
     $.preproc_if_in_expression,
     $.preproc_ifdef_in_expression,
-    base,
+    ...base.members.filter(member => !sharedNames.has(member.name)),
     $.reflect_expression,
-    $.splice_specifier,
-    $.preprocessing_token_macro_call,
     $.qualified_address_expression,
     $.throw_expression,
     $.co_await_expression,
-    $.requires_expression,
     $.requires_clause,
     alias($._contextual_identifier, $.identifier),
-    $.suffixed_string_literal,
-    $.operator_name,
     $.template_function,
     $.qualified_identifier,
-    $.typeid_expression,
-    $.cpp_cast_expression,
     $.new_expression,
     $.gcnew_expression,
     $.delete_expression,
-    $.lambda_expression,
     $.parameter_pack_expansion,
-    $.this,
-    $.user_defined_literal,
-    $.fold_expression,
   );
 }
 
@@ -328,6 +347,20 @@ module.exports = grammar(C, {
   ],
 
   conflicts: $ => [
+    [$._class_name, $._common_postfix_expression],
+    [$.type_specifier, $._type_constraint, $._common_postfix_expression],
+    [$.type_specifier, $.sized_type_specifier, $._common_postfix_expression],
+    [$._common_postfix_expression, $._lambda_capture],
+    [$.macro_call_replacement_item, $._common_postfix_expression],
+    [$._macro_list_fragment, $._common_postfix_expression],
+    [$.macro_preprocessing_token_sequence_argument, $._common_postfix_expression],
+    [$.template_function, $._common_postfix_expression],
+    [$.type_specifier, $.block_macro_call_line_item, $._common_postfix_expression],
+    [$.block_macro_call_line_item, $._common_postfix_expression],
+    [$._callable_template_callee, $._common_postfix_expression],
+    [$._common_postfix_expression, $.conditional_concatenated_string],
+    [$.template_type, $.template_function, $._common_postfix_expression],
+    [$.type_specifier, $._common_postfix_expression],
     [$.expression, $._template_argument_expression, $._postfix_expression],
     [$.expression, $._conditional_alternative, $._postfix_expression, $.conditional_concatenated_string],
     [$.expression, $._conditional_alternative, $._postfix_expression],
@@ -4537,37 +4570,16 @@ module.exports = grammar(C, {
     // Member access binds before unary, cast, and binary operators. A
     // conditional boundary must not turn one of those into its receiver.
     _postfix_expression: $ => choice(
+      $._common_postfix_expression,
       $.identifier,
       alias($._contextual_identifier, $.identifier),
-      $.qualified_identifier,
       $.template_function,
-      $.operator_name,
-      $.macro_token_paste_expression,
-      $.macro_expansion,
-      $.preprocessing_token_macro_call,
-      $.call_expression,
-      $.field_expression,
-      $.subscript_expression,
-      alias($.conditional_member_expression, $.field_expression),
-      $.compound_literal_expression,
-      $.parenthesized_expression,
-      $._string,
-      $.suffixed_string_literal,
-      $.user_defined_literal,
-      $.char_literal,
-      $.number_literal,
-      $.true,
-      $.false,
-      $.null,
-      $.this,
-      $.cpp_cast_expression,
-      $.typeid_expression,
-      $.lambda_expression,
-      $.requires_expression,
-      $.fold_expression,
-      $.splice_specifier,
-      $.generic_expression,
+      $.qualified_identifier,
     ),
+
+    // Share postfix values without changing the reductions of bare names. Those
+    // reductions also decide declarations, assignment operands, and template arguments.
+    _common_postfix_expression: $ => commonPostfixExpressions($),
 
     conditional_member_expression: $ => prec.left(PREC.FIELD, seq(
       field('argument', $._postfix_expression),

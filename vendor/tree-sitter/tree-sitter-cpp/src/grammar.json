@@ -7927,7 +7927,7 @@
       "members": [
         {
           "type": "SYMBOL",
-          "name": "macro_token_paste_expression"
+          "name": "_common_postfix_expression"
         },
         {
           "type": "ALIAS",
@@ -7949,24 +7949,11 @@
         },
         {
           "type": "SYMBOL",
-          "name": "macro_expansion"
-        },
-        {
-          "type": "SYMBOL",
           "name": "macro_expression_continuation"
         },
         {
           "type": "SYMBOL",
           "name": "macro_prefixed_expression"
-        },
-        {
-          "type": "ALIAS",
-          "content": {
-            "type": "SYMBOL",
-            "name": "conditional_member_expression"
-          },
-          "named": true,
-          "value": "field_expression"
         },
         {
           "type": "SYMBOL",
@@ -7977,117 +7964,56 @@
           "name": "preproc_ifdef_in_expression"
         },
         {
-          "type": "CHOICE",
-          "members": [
-            {
-              "type": "SYMBOL",
-              "name": "conditional_expression"
-            },
-            {
-              "type": "SYMBOL",
-              "name": "assignment_expression"
-            },
-            {
-              "type": "SYMBOL",
-              "name": "unary_expression"
-            },
-            {
-              "type": "SYMBOL",
-              "name": "update_expression"
-            },
-            {
-              "type": "SYMBOL",
-              "name": "cast_expression"
-            },
-            {
-              "type": "SYMBOL",
-              "name": "pointer_expression"
-            },
-            {
-              "type": "SYMBOL",
-              "name": "sizeof_expression"
-            },
-            {
-              "type": "SYMBOL",
-              "name": "alignof_expression"
-            },
-            {
-              "type": "SYMBOL",
-              "name": "offsetof_expression"
-            },
-            {
-              "type": "SYMBOL",
-              "name": "generic_expression"
-            },
-            {
-              "type": "SYMBOL",
-              "name": "subscript_expression"
-            },
-            {
-              "type": "SYMBOL",
-              "name": "call_expression"
-            },
-            {
-              "type": "SYMBOL",
-              "name": "field_expression"
-            },
-            {
-              "type": "SYMBOL",
-              "name": "compound_literal_expression"
-            },
-            {
-              "type": "SYMBOL",
-              "name": "identifier"
-            },
-            {
-              "type": "SYMBOL",
-              "name": "number_literal"
-            },
-            {
-              "type": "SYMBOL",
-              "name": "_string"
-            },
-            {
-              "type": "SYMBOL",
-              "name": "true"
-            },
-            {
-              "type": "SYMBOL",
-              "name": "false"
-            },
-            {
-              "type": "SYMBOL",
-              "name": "null"
-            },
-            {
-              "type": "SYMBOL",
-              "name": "char_literal"
-            },
-            {
-              "type": "SYMBOL",
-              "name": "parenthesized_expression"
-            },
-            {
-              "type": "SYMBOL",
-              "name": "gnu_asm_expression"
-            },
-            {
-              "type": "SYMBOL",
-              "name": "extension_expression"
-            }
-          ]
+          "type": "SYMBOL",
+          "name": "conditional_expression"
+        },
+        {
+          "type": "SYMBOL",
+          "name": "assignment_expression"
+        },
+        {
+          "type": "SYMBOL",
+          "name": "unary_expression"
+        },
+        {
+          "type": "SYMBOL",
+          "name": "update_expression"
+        },
+        {
+          "type": "SYMBOL",
+          "name": "cast_expression"
+        },
+        {
+          "type": "SYMBOL",
+          "name": "pointer_expression"
+        },
+        {
+          "type": "SYMBOL",
+          "name": "sizeof_expression"
+        },
+        {
+          "type": "SYMBOL",
+          "name": "alignof_expression"
+        },
+        {
+          "type": "SYMBOL",
+          "name": "offsetof_expression"
+        },
+        {
+          "type": "SYMBOL",
+          "name": "identifier"
+        },
+        {
+          "type": "SYMBOL",
+          "name": "gnu_asm_expression"
+        },
+        {
+          "type": "SYMBOL",
+          "name": "extension_expression"
         },
         {
           "type": "SYMBOL",
           "name": "reflect_expression"
-        },
-        {
-          "type": "SYMBOL",
-          "name": "splice_specifier"
-        },
-        {
-          "type": "SYMBOL",
-          "name": "preprocessing_token_macro_call"
         },
         {
           "type": "SYMBOL",
@@ -8100,10 +8026,6 @@
         {
           "type": "SYMBOL",
           "name": "co_await_expression"
-        },
-        {
-          "type": "SYMBOL",
-          "name": "requires_expression"
         },
         {
           "type": "SYMBOL",
@@ -8120,27 +8042,11 @@
         },
         {
           "type": "SYMBOL",
-          "name": "suffixed_string_literal"
-        },
-        {
-          "type": "SYMBOL",
-          "name": "operator_name"
-        },
-        {
-          "type": "SYMBOL",
           "name": "template_function"
         },
         {
           "type": "SYMBOL",
           "name": "qualified_identifier"
-        },
-        {
-          "type": "SYMBOL",
-          "name": "typeid_expression"
-        },
-        {
-          "type": "SYMBOL",
-          "name": "cpp_cast_expression"
         },
         {
           "type": "SYMBOL",
@@ -8156,23 +8062,7 @@
         },
         {
           "type": "SYMBOL",
-          "name": "lambda_expression"
-        },
-        {
-          "type": "SYMBOL",
           "name": "parameter_pack_expansion"
-        },
-        {
-          "type": "SYMBOL",
-          "name": "this"
-        },
-        {
-          "type": "SYMBOL",
-          "name": "user_defined_literal"
-        },
-        {
-          "type": "SYMBOL",
-          "name": "fold_expression"
         }
       ]
     },
@@ -29229,7 +29119,7 @@
         },
         {
           "type": "SYMBOL",
-          "name": "macro_token_paste_expression"
+          "name": "_common_postfix_expression"
         },
         {
           "type": "ALIAS",
@@ -29251,20 +29141,7 @@
         },
         {
           "type": "SYMBOL",
-          "name": "macro_expansion"
-        },
-        {
-          "type": "SYMBOL",
           "name": "macro_prefixed_expression"
-        },
-        {
-          "type": "ALIAS",
-          "content": {
-            "type": "SYMBOL",
-            "name": "conditional_member_expression"
-          },
-          "named": true,
-          "value": "field_expression"
         },
         {
           "type": "SYMBOL",
@@ -29275,117 +29152,56 @@
           "name": "preproc_ifdef_in_expression"
         },
         {
-          "type": "CHOICE",
-          "members": [
-            {
-              "type": "SYMBOL",
-              "name": "conditional_expression"
-            },
-            {
-              "type": "SYMBOL",
-              "name": "assignment_expression"
-            },
-            {
-              "type": "SYMBOL",
-              "name": "unary_expression"
-            },
-            {
-              "type": "SYMBOL",
-              "name": "update_expression"
-            },
-            {
-              "type": "SYMBOL",
-              "name": "cast_expression"
-            },
-            {
-              "type": "SYMBOL",
-              "name": "pointer_expression"
-            },
-            {
-              "type": "SYMBOL",
-              "name": "sizeof_expression"
-            },
-            {
-              "type": "SYMBOL",
-              "name": "alignof_expression"
-            },
-            {
-              "type": "SYMBOL",
-              "name": "offsetof_expression"
-            },
-            {
-              "type": "SYMBOL",
-              "name": "generic_expression"
-            },
-            {
-              "type": "SYMBOL",
-              "name": "subscript_expression"
-            },
-            {
-              "type": "SYMBOL",
-              "name": "call_expression"
-            },
-            {
-              "type": "SYMBOL",
-              "name": "field_expression"
-            },
-            {
-              "type": "SYMBOL",
-              "name": "compound_literal_expression"
-            },
-            {
-              "type": "SYMBOL",
-              "name": "identifier"
-            },
-            {
-              "type": "SYMBOL",
-              "name": "number_literal"
-            },
-            {
-              "type": "SYMBOL",
-              "name": "_string"
-            },
-            {
-              "type": "SYMBOL",
-              "name": "true"
-            },
-            {
-              "type": "SYMBOL",
-              "name": "false"
-            },
-            {
-              "type": "SYMBOL",
-              "name": "null"
-            },
-            {
-              "type": "SYMBOL",
-              "name": "char_literal"
-            },
-            {
-              "type": "SYMBOL",
-              "name": "parenthesized_expression"
-            },
-            {
-              "type": "SYMBOL",
-              "name": "gnu_asm_expression"
-            },
-            {
-              "type": "SYMBOL",
-              "name": "extension_expression"
-            }
-          ]
+          "type": "SYMBOL",
+          "name": "conditional_expression"
+        },
+        {
+          "type": "SYMBOL",
+          "name": "assignment_expression"
+        },
+        {
+          "type": "SYMBOL",
+          "name": "unary_expression"
+        },
+        {
+          "type": "SYMBOL",
+          "name": "update_expression"
+        },
+        {
+          "type": "SYMBOL",
+          "name": "cast_expression"
+        },
+        {
+          "type": "SYMBOL",
+          "name": "pointer_expression"
+        },
+        {
+          "type": "SYMBOL",
+          "name": "sizeof_expression"
+        },
+        {
+          "type": "SYMBOL",
+          "name": "alignof_expression"
+        },
+        {
+          "type": "SYMBOL",
+          "name": "offsetof_expression"
+        },
+        {
+          "type": "SYMBOL",
+          "name": "identifier"
+        },
+        {
+          "type": "SYMBOL",
+          "name": "gnu_asm_expression"
+        },
+        {
+          "type": "SYMBOL",
+          "name": "extension_expression"
         },
         {
           "type": "SYMBOL",
           "name": "reflect_expression"
-        },
-        {
-          "type": "SYMBOL",
-          "name": "splice_specifier"
-        },
-        {
-          "type": "SYMBOL",
-          "name": "preprocessing_token_macro_call"
         },
         {
           "type": "SYMBOL",
@@ -29398,10 +29214,6 @@
         {
           "type": "SYMBOL",
           "name": "co_await_expression"
-        },
-        {
-          "type": "SYMBOL",
-          "name": "requires_expression"
         },
         {
           "type": "SYMBOL",
@@ -29418,22 +29230,6 @@
         },
         {
           "type": "SYMBOL",
-          "name": "suffixed_string_literal"
-        },
-        {
-          "type": "SYMBOL",
-          "name": "operator_name"
-        },
-        {
-          "type": "SYMBOL",
-          "name": "typeid_expression"
-        },
-        {
-          "type": "SYMBOL",
-          "name": "cpp_cast_expression"
-        },
-        {
-          "type": "SYMBOL",
           "name": "new_expression"
         },
         {
@@ -29446,23 +29242,7 @@
         },
         {
           "type": "SYMBOL",
-          "name": "lambda_expression"
-        },
-        {
-          "type": "SYMBOL",
           "name": "parameter_pack_expansion"
-        },
-        {
-          "type": "SYMBOL",
-          "name": "this"
-        },
-        {
-          "type": "SYMBOL",
-          "name": "user_defined_literal"
-        },
-        {
-          "type": "SYMBOL",
-          "name": "fold_expression"
         },
         {
           "type": "ALIAS",
@@ -36343,7 +36123,7 @@
         },
         {
           "type": "SYMBOL",
-          "name": "macro_token_paste_expression"
+          "name": "_common_postfix_expression"
         },
         {
           "type": "ALIAS",
@@ -36365,24 +36145,11 @@
         },
         {
           "type": "SYMBOL",
-          "name": "macro_expansion"
-        },
-        {
-          "type": "SYMBOL",
           "name": "macro_expression_continuation"
         },
         {
           "type": "SYMBOL",
           "name": "macro_prefixed_expression"
-        },
-        {
-          "type": "ALIAS",
-          "content": {
-            "type": "SYMBOL",
-            "name": "conditional_member_expression"
-          },
-          "named": true,
-          "value": "field_expression"
         },
         {
           "type": "SYMBOL",
@@ -36393,113 +36160,52 @@
           "name": "preproc_ifdef_in_expression"
         },
         {
-          "type": "CHOICE",
-          "members": [
-            {
-              "type": "SYMBOL",
-              "name": "conditional_expression"
-            },
-            {
-              "type": "SYMBOL",
-              "name": "unary_expression"
-            },
-            {
-              "type": "SYMBOL",
-              "name": "update_expression"
-            },
-            {
-              "type": "SYMBOL",
-              "name": "cast_expression"
-            },
-            {
-              "type": "SYMBOL",
-              "name": "pointer_expression"
-            },
-            {
-              "type": "SYMBOL",
-              "name": "sizeof_expression"
-            },
-            {
-              "type": "SYMBOL",
-              "name": "alignof_expression"
-            },
-            {
-              "type": "SYMBOL",
-              "name": "offsetof_expression"
-            },
-            {
-              "type": "SYMBOL",
-              "name": "generic_expression"
-            },
-            {
-              "type": "SYMBOL",
-              "name": "subscript_expression"
-            },
-            {
-              "type": "SYMBOL",
-              "name": "call_expression"
-            },
-            {
-              "type": "SYMBOL",
-              "name": "field_expression"
-            },
-            {
-              "type": "SYMBOL",
-              "name": "compound_literal_expression"
-            },
-            {
-              "type": "SYMBOL",
-              "name": "identifier"
-            },
-            {
-              "type": "SYMBOL",
-              "name": "number_literal"
-            },
-            {
-              "type": "SYMBOL",
-              "name": "_string"
-            },
-            {
-              "type": "SYMBOL",
-              "name": "true"
-            },
-            {
-              "type": "SYMBOL",
-              "name": "false"
-            },
-            {
-              "type": "SYMBOL",
-              "name": "null"
-            },
-            {
-              "type": "SYMBOL",
-              "name": "char_literal"
-            },
-            {
-              "type": "SYMBOL",
-              "name": "parenthesized_expression"
-            },
-            {
-              "type": "SYMBOL",
-              "name": "gnu_asm_expression"
-            },
-            {
-              "type": "SYMBOL",
-              "name": "extension_expression"
-            }
-          ]
+          "type": "SYMBOL",
+          "name": "conditional_expression"
+        },
+        {
+          "type": "SYMBOL",
+          "name": "unary_expression"
+        },
+        {
+          "type": "SYMBOL",
+          "name": "update_expression"
+        },
+        {
+          "type": "SYMBOL",
+          "name": "cast_expression"
+        },
+        {
+          "type": "SYMBOL",
+          "name": "pointer_expression"
+        },
+        {
+          "type": "SYMBOL",
+          "name": "sizeof_expression"
+        },
+        {
+          "type": "SYMBOL",
+          "name": "alignof_expression"
+        },
+        {
+          "type": "SYMBOL",
+          "name": "offsetof_expression"
+        },
+        {
+          "type": "SYMBOL",
+          "name": "identifier"
+        },
+        {
+          "type": "SYMBOL",
+          "name": "gnu_asm_expression"
+        },
+        {
+          "type": "SYMBOL",
+          "name": "extension_expression"
         },
         {
           "type": "SYMBOL",
           "name": "reflect_expression"
-        },
-        {
-          "type": "SYMBOL",
-          "name": "splice_specifier"
-        },
-        {
-          "type": "SYMBOL",
-          "name": "preprocessing_token_macro_call"
         },
         {
           "type": "SYMBOL",
@@ -36508,10 +36214,6 @@
         {
           "type": "SYMBOL",
           "name": "co_await_expression"
-        },
-        {
-          "type": "SYMBOL",
-          "name": "requires_expression"
         },
         {
           "type": "SYMBOL",
@@ -36528,27 +36230,11 @@
         },
         {
           "type": "SYMBOL",
-          "name": "suffixed_string_literal"
-        },
-        {
-          "type": "SYMBOL",
-          "name": "operator_name"
-        },
-        {
-          "type": "SYMBOL",
           "name": "template_function"
         },
         {
           "type": "SYMBOL",
           "name": "qualified_identifier"
-        },
-        {
-          "type": "SYMBOL",
-          "name": "typeid_expression"
-        },
-        {
-          "type": "SYMBOL",
-          "name": "cpp_cast_expression"
         },
         {
           "type": "SYMBOL",
@@ -36561,22 +36247,6 @@
         {
           "type": "SYMBOL",
           "name": "delete_expression"
-        },
-        {
-          "type": "SYMBOL",
-          "name": "lambda_expression"
-        },
-        {
-          "type": "SYMBOL",
-          "name": "this"
-        },
-        {
-          "type": "SYMBOL",
-          "name": "user_defined_literal"
-        },
-        {
-          "type": "SYMBOL",
-          "name": "fold_expression"
         }
       ]
     },
@@ -39099,6 +38769,10 @@
       "members": [
         {
           "type": "SYMBOL",
+          "name": "_common_postfix_expression"
+        },
+        {
+          "type": "SYMBOL",
           "name": "identifier"
         },
         {
@@ -39112,12 +38786,17 @@
         },
         {
           "type": "SYMBOL",
-          "name": "qualified_identifier"
+          "name": "template_function"
         },
         {
           "type": "SYMBOL",
-          "name": "template_function"
-        },
+          "name": "qualified_identifier"
+        }
+      ]
+    },
+    "_common_postfix_expression": {
+      "type": "CHOICE",
+      "members": [
         {
           "type": "SYMBOL",
           "name": "operator_name"
@@ -43915,6 +43594,66 @@
     }
   ],
   "conflicts": [
+    [
+      "_class_name",
+      "_common_postfix_expression"
+    ],
+    [
+      "type_specifier",
+      "_type_constraint",
+      "_common_postfix_expression"
+    ],
+    [
+      "type_specifier",
+      "sized_type_specifier",
+      "_common_postfix_expression"
+    ],
+    [
+      "_common_postfix_expression",
+      "_lambda_capture"
+    ],
+    [
+      "macro_call_replacement_item",
+      "_common_postfix_expression"
+    ],
+    [
+      "_macro_list_fragment",
+      "_common_postfix_expression"
+    ],
+    [
+      "macro_preprocessing_token_sequence_argument",
+      "_common_postfix_expression"
+    ],
+    [
+      "template_function",
+      "_common_postfix_expression"
+    ],
+    [
+      "type_specifier",
+      "block_macro_call_line_item",
+      "_common_postfix_expression"
+    ],
+    [
+      "block_macro_call_line_item",
+      "_common_postfix_expression"
+    ],
+    [
+      "_callable_template_callee",
+      "_common_postfix_expression"
+    ],
+    [
+      "_common_postfix_expression",
+      "conditional_concatenated_string"
+    ],
+    [
+      "template_type",
+      "template_function",
+      "_common_postfix_expression"
+    ],
+    [
+      "type_specifier",
+      "_common_postfix_expression"
+    ],
     [
       "expression",
       "_template_argument_expression",
