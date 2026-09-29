@@ -484,11 +484,6 @@ constexpr auto kSyntaxKindMappings = std::to_array<SyntaxKindMapping>({
     ),
     Tree(
         SyntaxNodeKind::PreprocExpression,
-        "preproc_ifdef_in_expression",
-        kConditionalPreprocessorOpenClasses | Bit(SyntaxNodeClass::Expression)
-    ),
-    Tree(
-        SyntaxNodeKind::PreprocExpression,
         "preproc_if_in_member_chain",
         kConditionalPreprocessorOpenClasses | Bit(SyntaxNodeClass::Expression)
     ),

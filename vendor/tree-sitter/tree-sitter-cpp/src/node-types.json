@@ -344,10 +344,6 @@
         "named": true
       },
       {
-        "type": "preproc_ifdef_in_expression",
-        "named": true
-      },
-      {
         "type": "preprocessing_token_macro_call",
         "named": true
       },
@@ -1975,10 +1971,6 @@
           "named": true
         },
         {
-          "type": "preproc_ifdef_in_expression",
-          "named": true
-        },
-        {
           "type": "preprocessing_token_macro_call",
           "named": true
         },
@@ -3280,10 +3272,6 @@
           },
           {
             "type": "preproc_if_in_expression",
-            "named": true
-          },
-          {
-            "type": "preproc_ifdef_in_expression",
             "named": true
           },
           {
@@ -14121,7 +14109,7 @@
       },
       "condition": {
         "multiple": false,
-        "required": true,
+        "required": false,
         "types": [
           {
             "type": "binary_expression",
@@ -14173,6 +14161,16 @@
           },
           {
             "type": "unary_expression",
+            "named": true
+          }
+        ]
+      },
+      "name": {
+        "multiple": false,
+        "required": false,
+        "types": [
+          {
+            "type": "identifier",
             "named": true
           }
         ]
@@ -16240,50 +16238,6 @@
     }
   },
   {
-    "type": "preproc_ifdef_in_expression",
-    "named": true,
-    "fields": {
-      "alternative": {
-        "multiple": false,
-        "required": false,
-        "types": [
-          {
-            "type": "preproc_elif",
-            "named": true
-          },
-          {
-            "type": "preproc_else",
-            "named": true
-          }
-        ]
-      },
-      "name": {
-        "multiple": false,
-        "required": true,
-        "types": [
-          {
-            "type": "identifier",
-            "named": true
-          }
-        ]
-      }
-    },
-    "children": {
-      "multiple": false,
-      "required": true,
-      "types": [
-        {
-          "type": "expression",
-          "named": true
-        },
-        {
-          "type": "initializer_list",
-          "named": true
-        }
-      ]
-    }
-  },
-  {
     "type": "preproc_ifdef_in_function_definition_prefix",
     "named": true,
     "fields": {
@@ -17539,10 +17493,6 @@
           "named": true
         },
         {
-          "type": "preproc_ifdef_in_expression",
-          "named": true
-        },
-        {
           "type": "preprocessing_token_macro_call",
           "named": true
         },
@@ -17786,10 +17736,6 @@
           },
           {
             "type": "preproc_if_in_expression",
-            "named": true
-          },
-          {
-            "type": "preproc_ifdef_in_expression",
             "named": true
           },
           {
@@ -19967,10 +19913,6 @@
             "named": true
           },
           {
-            "type": "preproc_ifdef_in_expression",
-            "named": true
-          },
-          {
             "type": "preprocessing_token_macro_call",
             "named": true
           },
@@ -20392,10 +20334,6 @@
         },
         {
           "type": "preproc_if_in_expression",
-          "named": true
-        },
-        {
-          "type": "preproc_ifdef_in_expression",
           "named": true
         },
         {
@@ -22487,11 +22425,11 @@
   },
   {
     "type": "false",
-    "named": false
+    "named": true
   },
   {
     "type": "false",
-    "named": true
+    "named": false
   },
   {
     "type": "final",
