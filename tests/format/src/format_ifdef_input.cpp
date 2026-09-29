@@ -707,6 +707,56 @@ void ConditionalLogicalCondition() {if (ready
 #endif
 ) Work();}
 
+// Conditional compilation retains ordinary expression and statement indentation.
+bool ConditionalLogicalContexts(bool first, bool second) {
+first
+#if A
+&& second
+#endif
+;
+auto value = first
+#if A
+&& second
+#endif
+;
+for (; first
+#if A
+&& second
+#endif
+;) Work();
+return (first
+#if A
+&& second
+#endif
+);
+}
+bool ConditionalNestedLogicalOperand() {return first &&
+#if A
+second
+#if B
+&& third
+#endif
+#else
+fallback
+#endif
+&& last;}
+bool ConditionalSharedLogicalLinks() {return first
+#if A
+&& second
+#endif
+#if B
+|| third
+#endif
+&& last;}
+bool ConditionalLogicalNestedScope() {if (outer) {return first &&
+#if A
+// selected operand
+second
+#else
+fallback
+#endif
+; } return false;}
+
 // Conditional logical operands in concepts and control conditions.
 template <typename T>
 concept FormatUserverConvertible =

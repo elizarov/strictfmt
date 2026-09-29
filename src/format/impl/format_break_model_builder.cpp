@@ -91,6 +91,42 @@ bool IsBinaryOperatorForNode(const FormatBreakToken& token) {
         printToken.parentKind == SyntaxNodeKind::BinaryExpression;
 }
 
+bool ContinuesConditionalChain(const SyntaxNode& node, SyntaxNodeKind op) {
+    const SyntaxNode* child = &node;
+    const SyntaxNode* parent = child->parent;
+    if (
+        !SyntaxNodeKindHasClass(op, SyntaxNodeClass::ChainOperator) ||
+        parent == nullptr ||
+        !SyntaxNodeHasClass(*parent, SyntaxNodeClass::ConditionalPreprocessorTree)
+    ) {
+        return false;
+    }
+    while (parent != nullptr) {
+        const bool conditional = SyntaxNodeHasClass(*parent, SyntaxNodeClass::ConditionalPreprocessorTree);
+        if (!conditional && parent->kind != SyntaxNodeKind::BinaryExpression) {
+            return false;
+        }
+        for (size_t index = 0; index < parent->children.size(); ++index) {
+            const SyntaxNode* part = parent->children[index];
+            if (part == child) {
+                break;
+            }
+            if (part == nullptr || (conditional && IsConditionalPreprocessorHeaderChild(*parent, index))) {
+                continue;
+            }
+            if (SyntaxNodeHasClass(*part, SyntaxNodeClass::BinaryOperator)) {
+                return part->kind == op;
+            }
+        }
+        if (!conditional) {
+            return false;
+        }
+        child = parent;
+        parent = parent->parent;
+    }
+    return false;
+}
+
 bool IsAssignmentOperatorForNode(const FormatBreakToken& token) {
     const PrintToken& printToken = FormatBreakTokenValue(token);
     return printToken.kind == PrintTokenKind::Known &&
@@ -2631,6 +2667,38 @@ private:
         return false;
     }
 
+    FormatBreakNode* BuildConditionalBinaryExpression(const SyntaxNode& node, int depth) {
+        if (node.kind != SyntaxNodeKind::BinaryExpression) {
+            return nullptr;
+        }
+        for (size_t index = 1; index < node.children.size(); ++index) {
+            const SyntaxNode* child = node.children[index];
+            if (child == nullptr || child->kind != SyntaxNodeKind::PreprocExpression) {
+                continue;
+            }
+            for (const SyntaxNode* part : child->children) {
+                const auto token = part == nullptr ? std::nullopt : TokenForNode(*part);
+                if (
+                    !token || !PrintTokenSyntaxHasClass(FormatBreakTokenValue(*token), SyntaxNodeClass::BinaryOperator)
+                ) {
+                    continue;
+                }
+                // The branch owns the printed operator. Its enclosing expression still owns the
+                // continuation layout, just as it does for an unconditional operator.
+                auto* chain = MakeNode(FormatBreakNodeKind::Chain, depth);
+                chain->chainKind = FormatBreakChainKind::AfterOperator;
+                auto op = *token;
+                op.contextOnly = true;
+                chain->operators = StoreTokens({op});
+                auto* right = BuildSequenceFromChildren(node.children, index, node.children.size(), depth + 1);
+                chain->operands =
+                    StoreNodePointers({BuildSequenceFromChildren(node.children, 0, index, depth + 1), right});
+                return chain;
+            }
+        }
+        return nullptr;
+    }
+
     FormatBreakNode* BuildBinaryOrAssignmentExpression(const SyntaxNode& node, int depth) {
         if (SyntaxNodeHasLocalClass(node, SyntaxNodeClass::LeadingStreamOperatorChain) || (
             SyntaxNodeHasLocalClass(node, SyntaxNodeClass::ConditionalStreamOperatorChain) &&
@@ -2640,7 +2708,7 @@ private:
         }
         const std::optional<size_t> opIndex = DirectOperatorIndex(node);
         if (!opIndex || !node.children[*opIndex]) {
-            return nullptr;
+            return BuildConditionalBinaryExpression(node, depth);
         }
         const std::optional<FormatBreakToken> token = TokenForNode(*node.children[*opIndex]);
         if (!token) {
@@ -2656,6 +2724,7 @@ private:
             chain->declarationValueOwner = &node;
         }
         const SyntaxNodeKind operatorKind = FormatBreakTokenSyntaxKind(*token);
+        chain->flatSplitIndent = ContinuesConditionalChain(node, operatorKind);
         chain->chainKind =
             (operatorKind == SyntaxNodeKind::LessLess || operatorKind == SyntaxNodeKind::GreaterGreater) ?
                 FormatBreakChainKind::StreamBeforeOperator : FormatBreakChainKind::AfterOperator;

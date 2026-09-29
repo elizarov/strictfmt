@@ -462,8 +462,14 @@ constexpr auto kSyntaxKindMappings = std::to_array<SyntaxKindMapping>({
     ),
     Tree(SyntaxNodeKind::MacroClassBegin, "macro_class_begin"),
     Tree(SyntaxNodeKind::MacroClassEnd, "macro_class_end"),
-    Tree(SyntaxNodeKind::PreprocIf, "preproc_logical_expression_fragment", kSupportedPreprocessorPlacementClasses),
-    Tree(SyntaxNodeKind::PreprocIf, "preproc_logical_tail_expression_fragment", kSupportedPreprocessorPlacementClasses),
+    Tree(
+        SyntaxNodeKind::PreprocExpression, "preproc_logical_expression_fragment", kSupportedPreprocessorPlacementClasses
+    ),
+    Tree(
+        SyntaxNodeKind::PreprocExpression,
+        "preproc_logical_tail_expression_fragment",
+        kSupportedPreprocessorPlacementClasses
+    ),
     Tree(SyntaxNodeKind::PreprocIf, "preproc_condition_expression", kAtomicPreprocessorClasses),
     Tree(
         SyntaxNodeKind::PreprocIf,

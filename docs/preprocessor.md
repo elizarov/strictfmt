@@ -54,7 +54,7 @@ Specialized contextual placements do not support `#elifdef` or `#elifndef` alter
 
 ## Formatting rules
 
-- Directive lines stay at column zero. Guarded code keeps the indentation it would have at that source location.
+- Directive lines stay at column zero. Conditional compilation adds no indentation: branch contents and shared code after `#endif` follow the same scope, delimiter, and continuation indentation rules as unconditional code.
 - A branch-owned leading comma stays on the same line as the selected braced initializer, constructor initializer, declaration parameter, or template parameter that follows it.
 - Conditional declaration-prefix modifiers force a break before the rest of the declaration. Comments, attributes, and modifier lines inside the conditional use the indentation of the declaration that follows.
 - Conditional function return types and their shared declarator each start on their own line. Selected return types use the function declaration's indentation.

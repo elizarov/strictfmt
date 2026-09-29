@@ -947,6 +947,23 @@ private:
 
     std::optional<int> DirectiveContinuationIndent(std::optional<int> listIndent = std::nullopt) const {
         if (activeTokens_ != nullptr) {
+            const PrintToken& current = (*activeTokens_)[currentTokenIndex_];
+            if (
+                current.conditionalExpression != nullptr &&
+                PrintTokenSyntaxHasClass(current, SyntaxNodeClass::EndifDirective)
+            ) {
+                // A completed branch cannot lend its operand indentation to syntax outside the conditional.
+                for (size_t index = currentTokenIndex_ + 1; index < activeTokens_->size(); ++index) {
+                    const PrintToken& next = (*activeTokens_)[index];
+                    if (IsCommentToken(next.kind) || next.kind == PrintTokenKind::BlankLine) {
+                        continue;
+                    }
+                    if (const auto continuation = layoutTree_->Chains().ContinuationIndent(next)) {
+                        return continuation;
+                    }
+                    return listIndent.value_or(indentLevel_);
+                }
+            }
             for (size_t index = currentTokenIndex_; index > 0;) {
                 const PrintToken& previous = (*activeTokens_)[--index];
                 if (IsCommentToken(previous.kind) || previous.kind == PrintTokenKind::BlankLine) {

@@ -441,7 +441,7 @@ void NullStatementComment() {
 bool ConditionalChainComment() {
     return first
 #ifndef FEATURE
-    && second
+        && second
 #endif  // FEATURE
-    && true;
+        && true;
 }

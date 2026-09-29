@@ -799,7 +799,7 @@ auto commentedEntries = {
 bool ConditionalLogicalLinks() {
     return first && second
 #ifndef WINDOWS
-    && Matches(value) && CheckZone(zone)
+        && Matches(value) && CheckZone(zone)
 #endif
     ;
 }
@@ -810,7 +810,7 @@ bool ConditionalLogicalOperand() {
 #else
         Fallback(value)
 #endif
-        ;
+    ;
 }
 void ConditionalLogicalCondition() {
     if (
@@ -821,6 +821,71 @@ void ConditionalLogicalCondition() {
     ) {
         Work();
     }
+}
+
+// Conditional compilation retains ordinary expression and statement indentation.
+bool ConditionalLogicalContexts(bool first, bool second) {
+    first
+#if A
+        && second
+#endif
+    ;
+    auto value = first
+#if A
+        && second
+#endif
+    ;
+    for (
+        ;
+        first
+#if A
+            && second
+#endif
+        ;
+    ) {
+        Work();
+    }
+    return (
+        first
+#if A
+        && second
+#endif
+    );
+}
+bool ConditionalNestedLogicalOperand() {
+    return first &&
+#if A
+        second
+#if B
+        && third
+#endif
+#else
+        fallback
+#endif
+        && last;
+}
+bool ConditionalSharedLogicalLinks() {
+    return first
+#if A
+        && second
+#endif
+#if B
+        || third
+#endif
+        && last;
+}
+bool ConditionalLogicalNestedScope() {
+    if (outer) {
+        return first &&
+#if A
+            // selected operand
+            second
+#else
+            fallback
+#endif
+        ;
+    }
+    return false;
 }
 
 // Conditional logical operands in concepts and control conditions.
@@ -834,7 +899,7 @@ concept FormatUserverConvertible = requires(T& value) {
 #else
     true
 #endif
-    ;
+;
 
 bool ConditionalLogicalFragment(int error_code) {
     if (
@@ -898,7 +963,7 @@ auto designatedInitializers = Record{
 auto conditionalFieldValue = Record{
     .ready = first
 #if FEATURE
-    && second
+        && second
 #endif
 };
 
@@ -1074,7 +1139,7 @@ constexpr auto platform =
 #else
     Mode::Default
 #endif
-    ;
+;
 
 void SelectValue() {
     auto builder =
@@ -1090,7 +1155,7 @@ void SelectValue() {
 #else
         2
 #endif
-        ;
+    ;
 }
 
 auto selectedValues =
@@ -1099,7 +1164,7 @@ auto selectedValues =
 #else
     {fallback}
 #endif
-    ;
+;
 
 void ConditionalMemberContinuation() {
 #if FORMAT_USERVER_HAS_STATUS_FACTORY
@@ -1679,7 +1744,7 @@ bool NegatedConditionalMember(Chain& builder) {
 #else
         .Ready()
 #endif
-        ;
+    ;
 }
 
 #ifdef __cplusplus
@@ -2406,7 +2471,7 @@ int CompleteConditionalCalls(int value) {
 #else
         Second(value)
 #endif
-        ;
+    ;
 }
 
 void Observe(int a, int& b) { b += a; }

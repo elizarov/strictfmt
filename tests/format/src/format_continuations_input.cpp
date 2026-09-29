@@ -330,3 +330,26 @@ Text singleText{R"text(
 line
 )text"};
 }
+
+// Conditional operands share continuation indentation only within the same chain.
+namespace ConditionalChainIndentation {
+bool Links() {return first && second
+#if FEATURE
+&& Matches(value) && CheckZone(zone)
+#endif
+;}
+bool Operands() {return first &&
+#if FEATURE
+Matches(value) && CheckZone(zone)
+#else
+Fallback(value) && CheckZone(zone)
+#endif
+;}
+bool DifferentOperators() {return first ||
+#if FEATURE
+Matches(value) && CheckZone(zone)
+#else
+Fallback(value) && CheckZone(zone)
+#endif
+;}
+}
