@@ -1748,3 +1748,38 @@ value+=20;
 #endif
 return value;
 }
+
+// Guarded if/else chains may include the opening brace of their shared final body.
+int SelectedBracedElse(bool choice) {
+int result=0;
+#if FIRST
+if(choice)
+result=1;
+else {
+#endif
+result=2;
+#if FIRST
+}
+#endif
+return result;
+}
+
+int SelectedBracedElseAlternatives(bool outer, bool choice) {
+int result=0;
+if(outer)
+#if FIRST
+#if EXTRA
+if(choice) {result=1;} else {
+#else
+if(choice) {result=2;} else {
+#endif
+#elif EXTRA
+if(choice) {result=3;} else {
+#else
+if(choice) {result=4;} else {
+#endif
+result=5;
+}
+else result=-1;
+return result;
+}

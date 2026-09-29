@@ -83,6 +83,7 @@ function statementBlocks($) {
   return choice(
     $.compound_statement, $.switch_statement, $.try_statement,
     alias($.preproc_selected_try_statement, $.try_statement),
+    alias($.preproc_selected_braced_else_statement, $.preproc_selected_else_statement),
   );
 }
 
@@ -3594,6 +3595,15 @@ module.exports = grammar(C, {
     ),
 
     ...selectedStatementPrefix('else', $ => $.selected_else_prefix),
+
+    preproc_selected_braced_else_statement: $ => seq(
+      field('consequence', alias($.selected_braced_else_body, $.compound_statement)),
+    ),
+
+    selected_braced_else_body: $ => seq($.preproc_braced_else_prefix, $._compound_statement_tail),
+    selected_braced_else_prefix: $ => seq($.selected_else_prefix, '{'),
+
+    ...selectedStatementPrefix('braced_else', $ => $.selected_braced_else_prefix),
 
     selected_if_header: $ => $._if_header,
 

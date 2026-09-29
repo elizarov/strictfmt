@@ -377,6 +377,14 @@ constexpr auto kSyntaxKindMappings = std::to_array<SyntaxKindMapping>({
     ),
     Tree(SyntaxNodeKind::IfStatement, "preproc_selected_else_statement", Bit(SyntaxNodeClass::IfStatement)),
     Tree(SyntaxNodeKind::Tree, "selected_else_prefix"),
+    Tree(SyntaxNodeKind::Tree, "selected_braced_else_prefix", Bit(SyntaxNodeClass::ConditionalBlockHeader)),
+    Tree(
+        SyntaxNodeKind::PreprocIf,
+        "preproc_braced_else_prefix",
+        kAllowedPreprocessorContainerClasses |
+            kSupportedPreprocessorPlacementClasses |
+            Bit(SyntaxNodeClass::ConditionalBlockHeader)
+    ),
     Tree(
         SyntaxNodeKind::PreprocIf,
         "preproc_else_prefix",
