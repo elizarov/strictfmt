@@ -14,3 +14,7 @@
 	path = external/pfr
 	url = git@github.com:elizarov/pfr.git
 	branch = strictfmt
+[submodule "external/ytsaurus"]
+	path = external/ytsaurus
+	url = git@github.com:elizarov/ytsaurus.git
+	branch = strictfmt

@@ -72,9 +72,21 @@ External project checks use
 `assert_external_project_sources_parse_without_warnings_and_format_idempotently`
 in `tests/format/format_test.py`. Each top-level external test points the helper
 at an `external/<name>` submodule with its own `.cpp-format`; the harness copies
-discovered source files to a temporary tree, formats them in place twice, and
+discovered source files and their formatter configurations to a temporary tree,
+formats them in place twice, and
 requires successful parsing, no unsupported-placement warnings, and
-byte-for-byte idempotence after the first pass.
+byte-for-byte idempotence after the first pass. Tests may explicitly add C++
+include files with other suffixes and supply enclosing syntax for source
+fragments; those fragments are checked in synthetic translation units.
+
+The YTsaurus check includes its C++ `.inc` and `.incl` files explicitly because
+those suffixes also contain build-script fragments. Two `.cpp.in` templates are
+valid C++ before substitution and are checked directly. Generated initializer
+and function-body headers use enclosing syntax. The numeric placeholders in
+`protocol_version_variables.h.in` require build-time substitution; Ragel `.rl6`
+and assembly `.S` files are outside the C/C++ formatter's input language.
+The external `.cpp-format-ignore` records dependency exclusions and invalid
+upstream files.
 
 ## File Placement
 

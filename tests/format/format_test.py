@@ -363,12 +363,14 @@ class FormatCommandTests(unittest.TestCase):
     def assert_external_project_sources_parse_without_warnings_and_format_idempotently(
         self,
         name: str,
+        extra_sources: dict[Path, tuple[str, str]] | None = None,
     ) -> None:
         project_root = EXTERNAL_ROOT / name
         if not (project_root / ".cpp-format").exists():
             self.skipTest(f"external/{name} submodule is not initialized")
 
-        source_files = discover_source_files(project_root)
+        extra_sources = extra_sources or {}
+        source_files = [path for path in discover_source_files(project_root) if path not in extra_sources]
         self.assertGreater(len(source_files), 0)
 
         build_dir = TEST_TEMP_ROOT
@@ -382,12 +384,32 @@ class FormatCommandTests(unittest.TestCase):
                 shutil.copyfile(ignore_file, root / ".cpp-format-ignore")
             else:
                 write_empty_ignore(root)
+            config_directories = {
+                parent for relative in source_files + list(extra_sources) for parent in relative.parents
+            }
+            for directory in sorted(config_directories):
+                config = project_root / directory / ".cpp-format"
+                if config.is_file():
+                    copied = root / directory / ".cpp-format"
+                    copied.parent.mkdir(parents=True, exist_ok=True)
+                    shutil.copyfile(config, copied)
             for relative in source_files:
                 copied = root / relative
                 copied.parent.mkdir(parents=True, exist_ok=True)
                 shutil.copyfile(project_root / relative, copied)
 
-            first_result = native_format("-i", "-r", ".", cwd=root)
+            for relative, (prefix, suffix) in extra_sources.items():
+                target = relative
+                if prefix or suffix:
+                    target = Path("__strictfmt_fragments") / relative.with_name(relative.name + ".cpp")
+                copied = root / target
+                copied.parent.mkdir(parents=True, exist_ok=True)
+                copied.write_bytes(prefix.encode() + (project_root / relative).read_bytes() + suffix.encode())
+                source_files.append(target)
+
+            file_list = root / "sources.txt"
+            file_list.write_text("".join(f"{path.as_posix()}\n" for path in source_files), encoding="utf-8")
+            first_result = native_format("-i", "--files", str(file_list), cwd=root)
 
             self.assertEqual(
                 0,
@@ -398,7 +420,7 @@ class FormatCommandTests(unittest.TestCase):
             self.assert_no_unsupported_placement_warnings(first_result)
 
             after_first_pass = read_files(root, source_files)
-            second_result = native_format("-i", "-r", ".", cwd=root)
+            second_result = native_format("-i", "--files", str(file_list), cwd=root)
 
             self.assertEqual(
                 0,
@@ -1071,6 +1093,37 @@ class FormatCommandTests(unittest.TestCase):
 
             self.assertEqual(0, result.returncode, msg=f"stdout:\n{result.stdout}\n\nstderr:\n{result.stderr}")
             self.assertRegex(result.stdout, r"Checked 13 files\. 0/13 LOC will change\. Done in (?:\d+ms|\d+\.\d{3}s)\.\s*$")
+
+    def test_ytsaurus_submodule(self) -> None:
+        project = EXTERNAL_ROOT / "ytsaurus"
+        wrapper = Path("yql/essentials/parser/pg_wrapper")
+        build_lists = {"pg_include_dirs.inc", "pg_kernel_sources.inc", "pg_sources.inc"}
+        extra_sources = {
+            path.relative_to(project): ("", "")
+            for path in (project / wrapper).glob("pg_*.inc")
+            if path.name not in build_lists
+        }
+        for name in ("fields", "repeated_fields"):
+            extra_sources[Path(f"library/cpp/protobuf/json/ut/{name}.incl")] = ("", "")
+        for name in ("build_info", "sandbox"):
+            extra_sources[Path(f"library/cpp/build_info/{name}.cpp.in")] = ("", "")
+        extra_sources[wrapper / "pg_aggs_register.inc"] = ("void Register() {\n", "\n}\n")
+        extra_sources[Path("library/cpp/type_info/tz/is_valid_gen.h")] = ("bool IsValid() {\n", "\n}\n")
+        for relative in (
+            "library/cpp/type_info/tz/tz_gen.h",
+            "library/cpp/hyperloglog/hyperloglog_corrections.inc",
+            "yql/essentials/public/langver/yql_langver_list.inc",
+            "yql/essentials/parser/pg_catalog/columns.generated.h",
+            "yql/essentials/parser/pg_catalog/pg_class.generated.h",
+            "yql/essentials/parser/pg_catalog/pg_collation_icu.generated.h",
+            "yql/essentials/parser/pg_catalog/postgis_procs.h",
+            "yql/essentials/parser/pg_catalog/safe_procs.h",
+            "yql/essentials/parser/pg_catalog/used_procs.h",
+        ):
+            extra_sources[Path(relative)] = ("auto values = {\n", "\n};\n")
+        self.assert_external_project_sources_parse_without_warnings_and_format_idempotently(
+            "ytsaurus", extra_sources
+        )
 
     def test_userver_submodule(self) -> None:
         self.assert_external_project_sources_parse_without_warnings_and_format_idempotently("userver")
