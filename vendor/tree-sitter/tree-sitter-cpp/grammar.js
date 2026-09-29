@@ -83,6 +83,7 @@ function statementBlocks($) {
   return choice(
     $.compound_statement, $.switch_statement, $.try_statement,
     alias($.preproc_selected_try_statement, $.try_statement),
+    alias($.conditional_if_statement, $.if_statement),
     alias($.preproc_selected_braced_else_statement, $.preproc_selected_else_statement),
   );
 }
@@ -3538,6 +3539,31 @@ module.exports = grammar(C, {
       field('consequence', alias($.preproc_selected_if_body, $.compound_statement)),
       optional(field('alternative', $.else_clause)),
     ),
+
+    // A branch-owned else closes its if before any enclosing else can bind.
+    conditional_if_statement: $ => choice(
+      seq($._if_header, field('consequence', alias($.conditional_if_body, $.compound_statement))),
+      field('consequence', alias($.selected_conditional_if_body, $.compound_statement)),
+    ),
+
+    conditional_if_body: $ => seq('{', $._conditional_if_tail),
+    selected_conditional_if_body: $ => seq($.preproc_if_prefix, $._conditional_if_tail),
+    _conditional_if_tail: $ => seq(repeat($._block_item), $.preproc_if_in_if_end),
+
+    ...preprocIf('_in_if_end', $ => $._if_ending_branch, 0, PREPROC_ALL_BRANCH_FORMS | PREPROC_SHARED_OPENER, false),
+
+    _if_ending_branch: $ => seq(
+      choice(
+        seq(
+          alias($._compound_statement_tail, $.block_scope_close),
+          $.conditional_if_alternative,
+        ),
+        alias($._conditional_if_tail, $.block_scope_close),
+      ),
+      repeat($._block_item),
+    ),
+
+    conditional_if_alternative: $ => alias($._closed_else_clause, $.else_clause),
 
     preproc_selected_if_body: $ => seq(
       $.preproc_if_prefix,

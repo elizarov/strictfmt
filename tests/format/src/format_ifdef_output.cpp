@@ -2224,3 +2224,66 @@ int ConditionalInitializerBody(bool active) {
     }
     return value;
 }
+
+// Conditional if endings retain a complete else clause and any following source items.
+int GuardedIfEnd(bool choice) {
+    int value = 0;
+#if FIRST
+    if (choice) {
+#endif
+        value = 1;
+#if FIRST
+    } else {
+        value = 2;
+    }
+#endif
+    return value;
+}
+
+int NestedIfEnd(bool outer, bool choice, bool other) {
+    int value = 0;
+    if (outer) {
+        if (choice) {
+#if FIRST
+#if EXTRA
+            value = 1;
+        } else if (other) {
+            value = 2;
+        } else {
+            value = 3;
+        }
+#else
+            value = 4;
+        } else {
+            value = 5;
+        }
+#endif
+#else
+            value = 6;
+        } else {
+            value = 7;
+        }
+#endif
+    } else {
+        value = -1;
+    }
+    return value;
+}
+
+int IfEndFollowing(bool choice) {
+    int value = 0;
+    if (choice) {
+        value = 1;
+#if FIRST
+    } else {
+        value = 2;
+    }
+    value += 10;
+#else
+    } else {
+        value = 3;
+    }
+    value += 20;
+#endif
+    return value;
+}

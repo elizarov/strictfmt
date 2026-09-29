@@ -441,6 +441,12 @@ constexpr auto kSyntaxKindMappings = std::to_array<SyntaxKindMapping>({
     Tree(SyntaxNodeKind::ControlContinuation, "try_statement_handlers"),
     Tree(
         SyntaxNodeKind::PreprocBlockClose,
+        "preproc_if_in_if_end",
+        kConditionalPreprocessorOpenClasses | Bit(SyntaxNodeClass::SourceItemScope)
+    ),
+    Tree(SyntaxNodeKind::ControlContinuation, "conditional_if_alternative"),
+    Tree(
+        SyntaxNodeKind::PreprocBlockClose,
         "preproc_if_in_do_end",
         kConditionalPreprocessorOpenClasses | Bit(SyntaxNodeClass::SourceItemScope)
     ),
