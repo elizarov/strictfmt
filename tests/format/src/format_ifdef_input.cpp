@@ -1710,3 +1710,41 @@ return value;
 void AssignmentStatementArgument(int& value) {
 EXECUTE_STATEMENT_BODY(value=42;);
 }
+
+// Conditional do-loop endings keep their while condition with the shared body.
+int ConditionalDoEnd(bool active) {
+int value=0;
+if(active)
+do {
+++value;
+#if FIRST
+#if EXTRA
+value+=1;
+} while(value<3);
+#else
+} while(value<2);
+#endif
+#elif EXTRA
+value+=2;
+} while(false);
+#else
+} while(value<4);
+#endif
+else
+value=-1;
+return value;
+}
+
+int ConditionalDoFollowing() {
+int value=0;
+do {
+++value;
+#if FIRST
+} while(value<2);
+value+=10;
+#else
+} while(value<3);
+value+=20;
+#endif
+return value;
+}

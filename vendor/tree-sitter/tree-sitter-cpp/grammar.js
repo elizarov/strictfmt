@@ -361,6 +361,7 @@ module.exports = grammar(C, {
   ],
 
   conflicts: $ => [
+    [$.parenthesized_expression, $.condition_clause],
     [$.init_declarator, $.optional_parameter_declaration],
     [$.parameter_declaration, $._declaration_declarator_list],
     [$._preproc_opening_condition, $.preproc_ifdef_in_function_header, $.preproc_ifdef_in_function_return_type, $.preproc_ifdef_in_expression],
@@ -3659,6 +3660,32 @@ module.exports = grammar(C, {
     )),
 
     _while_header: $ => seq('while', field('condition', $.condition_clause)),
+
+    do_statement: $ => seq(
+      'do',
+      choice(
+        seq(field('body', $.statement), $._do_condition),
+        field('body', alias($.conditional_do_body, $.compound_statement)),
+      ),
+    ),
+
+    _do_condition: $ => seq('while', field('condition', $.parenthesized_expression), ';'),
+
+    conditional_do_body: $ => seq('{', $._conditional_do_tail),
+    _conditional_do_tail: $ => seq(repeat($._block_item), $.preproc_if_in_do_end),
+
+    ...preprocIf('_in_do_end', $ => $._do_ending_branch, 0, PREPROC_ALL_BRANCH_FORMS | PREPROC_SHARED_OPENER, false),
+
+    _do_ending_branch: $ => seq(
+      choice(
+        seq(
+          alias($._compound_statement_tail, $.block_scope_close),
+          alias($._do_condition, $.do_statement_condition),
+        ),
+        alias($._conditional_do_tail, $.block_scope_close),
+      ),
+      repeat($._block_item),
+    ),
 
     while_statement: $ => seq(
       $._while_header,

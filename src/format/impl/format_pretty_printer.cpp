@@ -390,7 +390,8 @@ private:
         ) {
             return true;
         }
-        return next.syntaxKind == SyntaxNodeKind::KeywordWhile && next.parentKind == SyntaxNodeKind::DoStatement;
+        return next.syntaxKind == SyntaxNodeKind::KeywordWhile &&
+            (next.parentKind == SyntaxNodeKind::DoStatement || next.parentKind == SyntaxNodeKind::ControlContinuation);
     }
 
     static bool ClosesDeclaredTypeBody(const PrintToken& token) {
