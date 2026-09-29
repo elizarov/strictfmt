@@ -95,6 +95,7 @@ function cppNonBinaryExpressions($, base) {
     $.macro_expansion,
     $.macro_expression_continuation,
     $.macro_prefixed_expression,
+    alias($.conditional_member_expression, $.field_expression),
     $.preproc_if_in_expression,
     $.preproc_ifdef_in_expression,
     base,
@@ -327,6 +328,19 @@ module.exports = grammar(C, {
   ],
 
   conflicts: $ => [
+    [$.expression, $._template_argument_expression, $._postfix_expression],
+    [$.expression, $._conditional_alternative, $._postfix_expression, $.conditional_concatenated_string],
+    [$.expression, $._conditional_alternative, $._postfix_expression],
+    [$.expression, $._template_argument_value_expression, $._postfix_expression, $.conditional_concatenated_string],
+    [$.type_specifier, $.expression, $._template_argument_value_expression, $._postfix_expression],
+    [$.expression, $._template_argument_value_expression, $._postfix_expression],
+    [$.expression, $.macro_call_replacement_item, $._postfix_expression],
+    [$.type_specifier, $.expression, $._unconfigured_macro_item, $._postfix_expression],
+    [$.expression, $._macro_list_fragment, $._postfix_expression],
+    [$.expression, $._unconfigured_macro_item, $._postfix_expression],
+    [$.expression, $._postfix_expression, $.conditional_concatenated_string],
+    [$.type_specifier, $.expression, $._postfix_expression],
+    [$.expression, $._postfix_expression],
     [$.if_statement, $._if_consequence_prefix],
     [$.stream_operator_chain_suffix, $.macro_argument_punctuator],
     [$.preproc_ifdef_in_expression, $._argument_list_item],
@@ -4518,22 +4532,63 @@ module.exports = grammar(C, {
     _field_identifier: ($, original) => identifierWithPaste($, original, $.field_identifier),
     _type_identifier: ($, original) => identifierWithPaste($, original, $.type_identifier),
 
-    field_expression: $ => seq(
-      prec(PREC.FIELD, seq(
-        field('argument', $.expression),
-        field('operator', choice('.', '->')),
-      )),
-      field('field', choice(
-        $.splice_specifier,
-        prec.dynamic(1, $._field_identifier),
-        alias($.qualified_field_identifier, $.qualified_identifier),
-        $.destructor_name,
-        $.operator_name,
-        alias($.operator_cast_field_identifier, $.operator_cast),
-        $.template_method,
-        alias($.dependent_field_identifier, $.dependent_name),
-      )),
+    field_expression: $ => fieldExpression($, $.expression),
+
+    // Member access binds before unary, cast, and binary operators. A
+    // conditional boundary must not turn one of those into its receiver.
+    _postfix_expression: $ => choice(
+      $.identifier,
+      alias($._contextual_identifier, $.identifier),
+      $.qualified_identifier,
+      $.template_function,
+      $.operator_name,
+      $.macro_token_paste_expression,
+      $.macro_expansion,
+      $.preprocessing_token_macro_call,
+      $.call_expression,
+      $.field_expression,
+      $.subscript_expression,
+      alias($.conditional_member_expression, $.field_expression),
+      $.compound_literal_expression,
+      $.parenthesized_expression,
+      $._string,
+      $.suffixed_string_literal,
+      $.user_defined_literal,
+      $.char_literal,
+      $.number_literal,
+      $.true,
+      $.false,
+      $.null,
+      $.this,
+      $.cpp_cast_expression,
+      $.typeid_expression,
+      $.lambda_expression,
+      $.requires_expression,
+      $.fold_expression,
+      $.splice_specifier,
+      $.generic_expression,
     ),
+
+    conditional_member_expression: $ => prec.left(PREC.FIELD, seq(
+      field('argument', $._postfix_expression),
+      $.preproc_if_in_member_chain,
+    )),
+
+    _member_chain_expression: $ => choice(
+      alias($.member_chain_field_expression, $.field_expression),
+      alias($.member_chain_call_expression, $.call_expression),
+      alias($.member_chain_subscript_expression, $.subscript_expression),
+      $.preproc_if_in_member_chain,
+    ),
+
+    member_chain_field_expression: $ => fieldExpression($, optional($._member_chain_expression)),
+    member_chain_call_expression: $ => callExpression($, $._member_chain_expression),
+    member_chain_subscript_expression: $ => prec(PREC.SUBSCRIPT, seq(
+      field('argument', $._member_chain_expression),
+      field('indices', $.subscript_argument_list),
+    )),
+
+    ...preprocIf('_in_member_chain', $ => $._member_chain_expression, 0, PREPROC_ALL_BRANCH_FORMS | PREPROC_SHARED_OPENER, false),
 
     operator_cast_field_identifier: $ => prec.right(1, seq(
       'operator',
@@ -5357,6 +5412,25 @@ function statementArgumentCall($) {
   return seq(
     field('function', $.statement_argument_macro_identifier),
     field('arguments', $.macro_statement_argument_list),
+  );
+}
+
+function fieldExpression($, receiver) {
+  return seq(
+    prec(PREC.FIELD, seq(
+      field('argument', receiver),
+      field('operator', choice('.', '->')),
+    )),
+    field('field', choice(
+      $.splice_specifier,
+      prec.dynamic(1, $._field_identifier),
+      alias($.qualified_field_identifier, $.qualified_identifier),
+      $.destructor_name,
+      $.operator_name,
+      alias($.operator_cast_field_identifier, $.operator_cast),
+      $.template_method,
+      alias($.dependent_field_identifier, $.dependent_name),
+    )),
   );
 }
 

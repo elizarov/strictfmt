@@ -2225,6 +2225,10 @@
             "named": true
           },
           {
+            "type": "preproc_if_in_member_chain",
+            "named": true
+          },
+          {
             "type": "preprocessor_item_macro_identifier",
             "named": true
           },
@@ -4974,17 +4978,21 @@
     "fields": {
       "argument": {
         "multiple": false,
-        "required": true,
+        "required": false,
         "types": [
           {
             "type": "expression",
+            "named": true
+          },
+          {
+            "type": "preproc_if_in_member_chain",
             "named": true
           }
         ]
       },
       "field": {
         "multiple": false,
-        "required": true,
+        "required": false,
         "types": [
           {
             "type": "dependent_name",
@@ -5026,7 +5034,7 @@
       },
       "operator": {
         "multiple": false,
-        "required": true,
+        "required": false,
         "types": [
           {
             "type": "->",
@@ -5038,6 +5046,16 @@
           }
         ]
       }
+    },
+    "children": {
+      "multiple": false,
+      "required": false,
+      "types": [
+        {
+          "type": "preproc_if_in_member_chain",
+          "named": true
+        }
+      ]
     }
   },
   {
@@ -11210,6 +11228,10 @@
           "named": true
         },
         {
+          "type": "preproc_if_in_member_chain",
+          "named": true
+        },
+        {
           "type": "preproc_if_in_template_requires_clause",
           "named": true
         },
@@ -11697,6 +11719,10 @@
         },
         {
           "type": "preproc_if_in_if_constexpr",
+          "named": true
+        },
+        {
+          "type": "preproc_if_in_member_chain",
           "named": true
         },
         {
@@ -14044,6 +14070,116 @@
           }
         ]
       }
+    }
+  },
+  {
+    "type": "preproc_if_in_member_chain",
+    "named": true,
+    "fields": {
+      "alternative": {
+        "multiple": false,
+        "required": false,
+        "types": [
+          {
+            "type": "preproc_elif",
+            "named": true
+          },
+          {
+            "type": "preproc_else",
+            "named": true
+          }
+        ]
+      },
+      "condition": {
+        "multiple": false,
+        "required": false,
+        "types": [
+          {
+            "type": "binary_expression",
+            "named": true
+          },
+          {
+            "type": "call_expression",
+            "named": true
+          },
+          {
+            "type": "char_literal",
+            "named": true
+          },
+          {
+            "type": "conditional_expression",
+            "named": true
+          },
+          {
+            "type": "identifier",
+            "named": true
+          },
+          {
+            "type": "number_literal",
+            "named": true
+          },
+          {
+            "type": "parenthesized_expression",
+            "named": true
+          },
+          {
+            "type": "preproc_defined",
+            "named": true
+          },
+          {
+            "type": "preproc_scoped_identifier",
+            "named": true
+          },
+          {
+            "type": "raw_string_literal",
+            "named": true
+          },
+          {
+            "type": "string_literal",
+            "named": true
+          },
+          {
+            "type": "system_lib_string",
+            "named": true
+          },
+          {
+            "type": "unary_expression",
+            "named": true
+          }
+        ]
+      },
+      "name": {
+        "multiple": false,
+        "required": false,
+        "types": [
+          {
+            "type": "identifier",
+            "named": true
+          }
+        ]
+      }
+    },
+    "children": {
+      "multiple": false,
+      "required": true,
+      "types": [
+        {
+          "type": "call_expression",
+          "named": true
+        },
+        {
+          "type": "field_expression",
+          "named": true
+        },
+        {
+          "type": "preproc_if_in_member_chain",
+          "named": true
+        },
+        {
+          "type": "subscript_expression",
+          "named": true
+        }
+      ]
     }
   },
   {
@@ -18545,6 +18681,10 @@
         "types": [
           {
             "type": "expression",
+            "named": true
+          },
+          {
+            "type": "preproc_if_in_member_chain",
             "named": true
           }
         ]

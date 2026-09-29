@@ -436,6 +436,11 @@ constexpr auto kSyntaxKindMappings = std::to_array<SyntaxKindMapping>({
         "preproc_ifdef_in_expression",
         kConditionalPreprocessorOpenClasses | Bit(SyntaxNodeClass::Expression)
     ),
+    Tree(
+        SyntaxNodeKind::PreprocExpression,
+        "preproc_if_in_member_chain",
+        kConditionalPreprocessorOpenClasses | Bit(SyntaxNodeClass::Expression)
+    ),
     Tree(SyntaxNodeKind::PreprocIf, "preproc_template_argument_fragment", kAtomicPreprocessorClasses),
     Tree(SyntaxNodeKind::PreprocIfdef, "preproc_argument_fragment", kAtomicPreprocessorClasses),
     Tree(SyntaxNodeKind::PreprocIf, "preproc_if_argument_fragment", kAtomicPreprocessorClasses),

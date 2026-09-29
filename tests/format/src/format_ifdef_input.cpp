@@ -1335,3 +1335,38 @@ if(value==1)result=1;else
 if(value==2){result=2;}else{result=3;}
 else result=4;
 return result;}
+
+int ConditionalMemberChain(Chain& builder){return builder.Arg(1)
+#if FEATURE
+// Adjust the selected argument.
+.Flags(2)
+#endif
+.Build();}
+int NestedConditionalMemberChain(Chain& builder){return builder
+#if FIRST
+.Flags(3)[1]
+#elif SECOND
+#ifdef THIRD
+.Next()->Extra<int>(4)
+#else
+.Extra<int>(5)
+#endif
+#else
+.Flags(6)
+#endif
+.Build();}
+int RepeatedConditionalMemberChain(Chain& builder){return builder.Arg(1)
+#if FIRST
+.Flags(2)
+#endif
+#if SECOND
+.Extra(3)
+#endif
+.Build();}
+bool NegatedConditionalMember(Chain& builder){return !builder
+#if FEATURE
+.Build()
+#else
+.Ready()
+#endif
+;}
