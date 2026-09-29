@@ -751,17 +751,15 @@ bool FormatTokenNeedsSpace(const PrintToken* previous, const PrintToken& current
     }
     if (cur == SyntaxNodeKind::LeftBrace) {
         if (
+            previousHasClass(SyntaxNodeClass::AssignmentOperator) ||
             current.parentKind == SyntaxNodeKind::RequirementSeq ||
             SyntaxNodeKindHasClass(current.parentKind, SyntaxNodeClass::ControlHeader)
         ) {
             return true;
         }
         if (current.parentKind == SyntaxNodeKind::InitializerList) {
-            return previous->kind == PrintTokenKind::Known && (
-                previousHasClass(SyntaxNodeClass::AssignmentOperator) ||
-                prev == SyntaxNodeKind::Comma ||
-                prev == SyntaxNodeKind::Question
-            );
+            return previous->kind == PrintTokenKind::Known &&
+                (prev == SyntaxNodeKind::Comma || prev == SyntaxNodeKind::Question);
         }
         if (
             current.parentKind == SyntaxNodeKind::CompoundStatement ||

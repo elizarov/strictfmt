@@ -1467,11 +1467,15 @@ private:
                 selectedPrefix->parent == list &&
                 SyntaxNodeKindHasClass(lineDirectiveKind, SyntaxNodeClass::EndifDirective)
             ) {
+                const SyntaxNodeKind closeKind = list->kind == SyntaxNodeKind::InitializerList ?
+                    SyntaxNodeKind::RightBrace : SyntaxNodeKind::RightParen;
                 if (
-                    const auto itemIndent = layoutTree_
-                        ->Lists().BeginSelectedList(list, DirectTokenChild(*list, SyntaxNodeKind::RightParen))
+                    const auto itemIndent =
+                        layoutTree_->Lists().BeginSelectedList(list, DirectTokenChild(*list, closeKind))
                 ) {
-                    ++parenDepth_;
+                    if (closeKind == SyntaxNodeKind::RightParen) {
+                        ++parenDepth_;
+                    }
                     output_.SetPendingIndent(*itemIndent);
                     return;
                 }
@@ -1602,6 +1606,9 @@ private:
                 }
                 return;
             case SyntaxNodeKind::LeftBrace:
+                if (PrintSelectedListHeader(token, rawNext)) {
+                    return;
+                }
                 if (TryPrintPreprocessorListOpen(token)) {
                     return;
                 }

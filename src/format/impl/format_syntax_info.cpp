@@ -444,6 +444,8 @@ constexpr auto kSyntaxKindMappings = std::to_array<SyntaxKindMapping>({
     Tree(SyntaxNodeKind::ElseTransitionHeader, "else_transition_header", Bit(SyntaxNodeClass::ControlHeader)),
     Tree(SyntaxNodeKind::PreprocListPrefix, "preproc_if_in_call_prefix", kConditionalPreprocessorOpenClasses),
     Tree(SyntaxNodeKind::SelectedListHeader, "selected_call_prefix", Bit(SyntaxNodeClass::Expression)),
+    Tree(SyntaxNodeKind::PreprocListPrefix, "preproc_if_in_initializer_prefix", kConditionalPreprocessorOpenClasses),
+    Tree(SyntaxNodeKind::SelectedListHeader, "selected_initializer_prefix"),
     Tree(
         SyntaxNodeKind::PreprocBlockClose,
         "preproc_if_in_do_end",

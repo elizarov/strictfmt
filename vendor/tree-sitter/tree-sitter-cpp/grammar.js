@@ -366,11 +366,21 @@ module.exports = grammar(C, {
   ],
 
   conflicts: $ => [
+    [$._field_declarator, $._non_pointer_declarator, $._function_definition_name],
+    [$._field_declarator, $._non_pointer_declarator],
+    [$._field_identifier, $._non_pointer_declarator, $._function_definition_name],
+    [$._field_identifier, $._non_pointer_declarator],
+    [$.preproc_if_in_field_declaration_list, $._field_declaration_list_item, $.standalone_attribute_preproc_if],
+    [$.preproc_if_in_field_declaration_list, $._declaration_modifiers, $.standalone_attribute_preproc_if, $.attributed_friend_declaration],
+    [$.preproc_if_in_field_declaration_list, $._declaration_modifiers, $.standalone_attribute_preproc_if],
+    [$._declaration_declarator_list],
+    [$._preproc_opening_condition, $.preproc_ifdef_in_function_return_type, $.preproc_ifdef_in_constructor_header],
+    [$._preproc_opening_condition, $.preproc_if_in_function_return_type, $.preproc_if_in_constructor_header],
     [$.call_expression, $._unconfigured_call_callee, $.selected_call_prefix],
     [$.selected_call_prefix, $.argument_sequence],
-    [$._preproc_opening_condition, $.preproc_ifdef_in_initializer_list, $.preproc_ifdef_in_call_prefix],
+    [$._preproc_opening_condition, $.preproc_if_in_initializer_list, $.preproc_ifdef_in_call_prefix],
     [$._preproc_opening_condition, $.preproc_if_in_initializer_list, $.preproc_if_in_call_prefix],
-    [$.preproc_ifdef, $._preproc_opening_condition, $.preproc_ifdef_in_initializer_list, $.preproc_ifdef_in_call_prefix],
+    [$.preproc_ifdef, $._preproc_opening_condition, $.preproc_if_in_initializer_list, $.preproc_ifdef_in_call_prefix],
     [$.preproc_if, $._preproc_opening_condition, $.preproc_if_in_initializer_list, $.preproc_if_in_call_prefix],
     [$._preproc_opening_condition, $.preproc_ifdef_in_function_header, $.preproc_ifdef_in_function_return_type, $.preproc_ifdef_in_call_prefix],
     [$._preproc_opening_condition, $.preproc_if_in_function_header, $.preproc_if_in_function_return_type, $.preproc_if_in_call_prefix],
@@ -467,11 +477,10 @@ module.exports = grammar(C, {
     [$._preproc_opening_condition, $.preproc_if_in_expression, $.preproc_if_in_closed_statement],
     [$.preproc_else_in_expression, $._braced_initializer_clause],
     [$.preproc_else_in_initializer_list, $.preproc_else_in_expression],
-    [$.preproc_ifdef_in_initializer_list, $.preproc_if_in_expression],
     [$.preproc_if_in_initializer_list, $.preproc_if_in_expression],
     [$.preproc_if_in_expression, $._braced_initializer_clause],
     [$.expression, $._template_argument_value_expression, $.conditional_concatenated_string],
-    [$.preproc_ifdef, $._preproc_opening_condition, $.preproc_ifdef_in_initializer_list, $.preproc_if_in_expression],
+    [$.preproc_ifdef, $._preproc_opening_condition, $.preproc_if_in_initializer_list, $.preproc_if_in_expression],
     [$.preproc_if, $._preproc_opening_condition, $.preproc_if_in_initializer_list, $.preproc_if_in_expression],
     [$.preproc_ifdef, $._preproc_opening_condition, $.preproc_if_in_expression, $.preproc_if_in_closed_statement],
     [$.preproc_if, $._preproc_opening_condition, $.preproc_if_in_expression, $.preproc_if_in_closed_statement],
@@ -720,9 +729,7 @@ module.exports = grammar(C, {
     [$.macro_source_item_sequence_argument, $.macro_single_statement_argument],
     [$.macro_source_item_sequence_argument, $.macro_single_statement_argument, $._argument_list_item],
     [$.structured_statement_macro_argument, $.macro_source_item_sequence_argument],
-    [$.comma_expression, $.preproc_ifdef_in_initializer_list, $._initializer_list_content],
     [$.comma_expression, $.preproc_if_in_initializer_list, $._initializer_list_content],
-    [$._block_item, $.preproc_ifdef_in_initializer_list],
     [$._block_item, $.preproc_if_in_initializer_list],
     [$._assignment_left_expression, $._conditional_alternative],
     [$.type_specifier, $.expression, $._assignment_left_expression],
@@ -818,17 +825,15 @@ module.exports = grammar(C, {
     [$._preproc_opening_condition, $.preproc_string_literal_fragment],
     [$.preproc_if, $._preproc_opening_condition, $.preproc_if_in_initializer_list],
     [$._preproc_opening_condition, $.preproc_if_in_initializer_list],
-    [$.preproc_ifdef, $._preproc_opening_condition, $.preproc_ifdef_in_initializer_list],
-    [$._preproc_opening_condition, $.preproc_ifdef_in_initializer_list],
+    [$.preproc_ifdef, $._preproc_opening_condition, $.preproc_if_in_initializer_list],
     [$.preproc_ifdef, $._preproc_opening_condition],
     [$._preproc_opening_condition, $.preproc_if_in_function_return_type],
     [$._preproc_opening_condition, $.preproc_ifdef_in_function_return_type],
     [$._preproc_opening_condition, $.preproc_if_in_stream_operator_chain],
     [$._preproc_opening_condition, $.preproc_ifdef_in_stream_operator_chain],
     [$._preproc_opening_condition, $.preproc_if_in_initializer_list, $.preproc_if_in_stream_operator_chain],
-    [$._preproc_opening_condition, $.preproc_ifdef_in_initializer_list, $.preproc_ifdef_in_stream_operator_chain],
+    [$._preproc_opening_condition, $.preproc_if_in_initializer_list, $.preproc_ifdef_in_stream_operator_chain],
     [$._preproc_opening_condition, $.preproc_if_in_field_declaration_list],
-    [$._preproc_opening_condition, $.preproc_ifdef_in_field_declaration_list],
     [$._preproc_opening_condition, $.preproc_if_in_function_definition_prefix],
     [$._preproc_opening_condition, $.preproc_ifdef_in_function_definition_prefix],
     [$._preproc_opening_condition, $.preproc_if_in_macro_function_definition_prefix],
@@ -857,7 +862,6 @@ module.exports = grammar(C, {
     [$._declarator, $.qualified_function_declarator],
     [$.comma_expression, $.initializer_list],
     [$.comma_expression, $.preproc_if_in_initializer_list],
-    [$.comma_expression, $.preproc_ifdef_in_initializer_list],
     [$.expression, $._template_argument_expression],
     [$.type_specifier, $._template_argument_expression],
     [$.type_specifier, $.expression, $._template_argument_expression],
@@ -1565,7 +1569,7 @@ module.exports = grammar(C, {
 
     ...preprocIf('', $ => $._block_item),
     ...preprocIf('_in_top_level', $ => $._top_level_item),
-    ...preprocIf('_in_field_declaration_list', $ => $._field_declaration_list_item, 2),
+    ...preprocIf('_in_field_declaration_list', $ => $._field_declaration_list_item, 2, PREPROC_ALL_BRANCH_FORMS | PREPROC_SHARED_OPENER),
     preproc_enum_entries: $ => seq(
       $._preproc_opening_line,
       optional($._enumerator_list_content),
@@ -1588,7 +1592,7 @@ module.exports = grammar(C, {
       return seq(optional(','), $._preproc_template_parameter_list_item, optional(','));
     }, -1, PREPROC_IFDEF | PREPROC_SHARED_OPENER, false),
 
-    ...preprocIf('_in_initializer_list', $ => $._initializer_list_content, 0, PREPROC_IFDEF | PREPROC_ELSE | PREPROC_ELIF, false),
+    ...preprocIf('_in_initializer_list', $ => $._initializer_list_content, 0, PREPROC_ALL_BRANCH_FORMS | PREPROC_SHARED_OPENER, false),
     ...preprocIf(
       '_in_initializer_list_leading_comma',
       $ => seq(',', $._initializer_list_content),
@@ -1955,6 +1959,7 @@ module.exports = grammar(C, {
     _qualified_type_function_declarator: $ => $._function_definition_declarator,
 
     declaration: $ => choice(
+      selectedInitializerDeclaration($, $._declaration_declarator_list),
       $._modifier_prefixed_macro_declaration,
       declarationWithSpecifiers($, field('type', $._qualified_declaration_type)),
       declarationWithSpecifiers($, $._declaration_specifiers),
@@ -2497,7 +2502,10 @@ module.exports = grammar(C, {
       $.macro_method_declaration,
       alias($.qualified_macro_initialized_field_declaration, $.field_declaration),
       $.static_assert_declaration,
-      prec(-10, choice(...original.members.filter(member => !['preproc_def', 'preproc_function_def'].includes(member.name)))),
+      prec(-10, choice(...original.members.filter(member =>
+        !['preproc_def', 'preproc_function_def'].includes(member.name) &&
+        !(member.type === 'ALIAS' && member.content.name === 'preproc_ifdef_in_field_declaration_list')
+      ))),
       $.attributed_friend_declaration,
       $.template_declaration,
       alias($.operator_cast_definition, $.function_definition),
@@ -2657,6 +2665,7 @@ module.exports = grammar(C, {
     )),
 
     field_declaration: $ => choice(
+      selectedInitializerDeclaration($, $._field_declaration_declarator_list, optional($.attribute_specifier)),
       $._modifier_prefixed_macro_declaration,
       prec(PREC.CALL + 2, seq(
         field('type', $._qualified_declaration_type),
@@ -4303,7 +4312,29 @@ module.exports = grammar(C, {
 
     bitfield_clause: $ => seq(':', $._constant_expression),
 
-    initializer_list: $ => seq('{', optional($._initializer_list_content), '}'),
+    initializer_list: $ => seq('{', $._initializer_list_tail),
+
+    _initializer_list_tail: $ => seq(optional($._initializer_list_content), '}'),
+
+    selected_initializer_list: $ => seq($.preproc_if_in_initializer_prefix, $._initializer_list_tail),
+
+    selected_initializer_prefix: $ => seq(
+      $._declaration_specifiers,
+      optional(seq($._declaration_declarator_list, ',')),
+      field('declarator', $._declarator),
+      optional($.gnu_asm_expression),
+      optional('='),
+      '{',
+      repeat(argumentComment($)),
+    ),
+
+    ...preprocIf(
+      '_in_initializer_prefix',
+      $ => choice($.selected_initializer_prefix, $.preproc_if_in_initializer_prefix),
+      0,
+      PREPROC_ALL_BRANCH_FORMS | PREPROC_SHARED_OPENER,
+      false,
+    ),
 
     _initializer_list_content: $ => choice(
       seq(repeat1($._initializer_list_entry), optional($._initializer_list_final_item)),
@@ -4319,7 +4350,7 @@ module.exports = grammar(C, {
       seq(initializerClause($), ','),
       seq($._macro_initializer_list_fragment, optional(',')),
       $.preproc_include,
-      preprocListItem($, '_in_initializer_list', PREPROC_IFDEF | PREPROC_ELSE),
+      preprocListItem($, '_in_initializer_list', PREPROC_ALL_BRANCH_FORMS | PREPROC_SHARED_OPENER),
     ),
 
     _initializer_list_final_item: $ => initializerClause($),
@@ -5636,6 +5667,15 @@ function declarationDeclaratorList($, declarator) {
     $.init_declarator,
     prec.dynamic(1, seq(repeat1($.declaration_modifier_macro), $.init_declarator)),
   )));
+}
+
+function selectedInitializerDeclaration($, declarators, suffix = optional($.declaration_suffix_preproc_ifdef)) {
+  return seq(
+    alias($.selected_initializer_list, $.initializer_list),
+    optional(seq(',', declarators)),
+    suffix,
+    ';',
+  );
 }
 
 function declarationWithSpecifiers($, specifiers, declarators = $._declaration_declarator_list) {

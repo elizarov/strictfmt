@@ -1990,3 +1990,45 @@ Observe(/* nested complete call */ First(value),value);
 #endif
 return value;
 }
+
+#if FIRST
+const int values[3] = { // chosen extent
+#elif EXTRA
+const int values[4] = {
+#else
+const int values[5] = {
+#endif
+1,
+#if EXTRA
+2,
+#else
+4,
+#endif
+3};
+struct SelectedMembers {
+#if FIRST
+int data[3] {
+#else
+int data[4] = {
+#endif
+1,2,3};
+};
+int SelectedLocal() {
+#if FIRST
+#if EXTRA
+const int* pointers[2] = {
+#else
+const int* pointers[3] {
+#endif
+#else
+const int* pointers[4] = {
+#endif
+&values[0],&values[1]};
+return *pointers[1];
+}
+#if FIRST
+const int first=1, selected[3] = {
+#else
+const int first=2, selected[4] = {
+#endif
+first,2,3}, last=4;
