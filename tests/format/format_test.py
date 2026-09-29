@@ -77,6 +77,8 @@ UNSUPPORTED_OUTPUT_FIXTURE = Path("src") / "format_unsupported_output.cpp"
 UNSUPPORTED_WARNINGS_FIXTURE = Path("src") / "format_unsupported_output.txt"
 CONDITIONAL_SCOPE_ERROR_INPUT_FIXTURE = Path("src") / "format_conditional_scope_error_input.cpp"
 CONDITIONAL_SCOPE_ERROR_OUTPUT_FIXTURE = Path("src") / "format_conditional_scope_error_output.txt"
+CONDITIONAL_TRY_SCOPE_ERROR_INPUT_FIXTURE = Path("src") / "format_conditional_try_scope_error_input.cpp"
+CONDITIONAL_TRY_SCOPE_ERROR_OUTPUT_FIXTURE = Path("src") / "format_conditional_try_scope_error_output.txt"
 ERROR_INPUT_FIXTURE = Path("src") / "format_error_input.cpp"
 ERROR_OUTPUT_FIXTURE = Path("src") / "format_error_output.txt"
 DIRECTIVE_TOKEN_ERROR_INPUT_FIXTURE = Path("src") / "format_directive_token_error_input.cpp"
@@ -607,6 +609,7 @@ class FormatCommandTests(unittest.TestCase):
     def test_error_stdin_reports_expected_parse_errors(self) -> None:
         for source, expected in (
             (ERROR_INPUT_FIXTURE, ERROR_OUTPUT_FIXTURE),
+            (CONDITIONAL_TRY_SCOPE_ERROR_INPUT_FIXTURE, CONDITIONAL_TRY_SCOPE_ERROR_OUTPUT_FIXTURE),
             (CONDITIONAL_SCOPE_ERROR_INPUT_FIXTURE, CONDITIONAL_SCOPE_ERROR_OUTPUT_FIXTURE),
             (DIRECTIVE_TOKEN_ERROR_INPUT_FIXTURE, DIRECTIVE_TOKEN_ERROR_OUTPUT_FIXTURE),
             (TEMPLATE_ANGLE_ERROR_INPUT_FIXTURE, TEMPLATE_ANGLE_ERROR_OUTPUT_FIXTURE),

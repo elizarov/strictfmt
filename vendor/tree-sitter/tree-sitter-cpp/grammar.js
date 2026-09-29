@@ -75,12 +75,19 @@ const PREPROC_ELIF = 1 << 2;
 const PREPROC_SHARED_OPENER = 1 << 3;
 const PREPROC_ALL_BRANCH_FORMS = PREPROC_IFDEF | PREPROC_ELSE | PREPROC_ELIF;
 
+function sharedSymbolNames(rule) {
+  return new Set(rule.members.filter(member => member.type === 'SYMBOL').map(member => member.name));
+}
+
 function statementBlocks($) {
-  return choice($.compound_statement, $.switch_statement, $.try_statement);
+  return choice(
+    $.compound_statement, $.switch_statement, $.try_statement,
+    alias($.preproc_selected_try_statement, $.try_statement),
+  );
 }
 
 function cppStatements($, base = C.grammar.rules._non_case_statement) {
-  const sharedNames = new Set(statementBlocks($).members.map(member => member.name));
+  const sharedNames = sharedSymbolNames(statementBlocks($));
   return choice(
     $._statement_block,
     ...base.members.filter(member => !sharedNames.has(member.name)),
@@ -124,7 +131,7 @@ function commonPostfixExpressions($) {
 }
 
 function cppNonBinaryExpressions($, base) {
-  const sharedNames = new Set(commonPostfixExpressions($).members.map(member => member.name));
+  const sharedNames = sharedSymbolNames(commonPostfixExpressions($));
   return choice(
     $._common_postfix_expression,
     alias($.conditional_concatenated_string, $.concatenated_string),
@@ -354,6 +361,10 @@ module.exports = grammar(C, {
   ],
 
   conflicts: $ => [
+    [$.init_declarator, $.optional_parameter_declaration],
+    [$.parameter_declaration, $._declaration_declarator_list],
+    [$._preproc_opening_condition, $.preproc_ifdef_in_function_header, $.preproc_ifdef_in_function_return_type, $.preproc_ifdef_in_expression],
+    [$._preproc_opening_condition, $.preproc_if_in_function_header, $.preproc_if_in_function_return_type, $.preproc_if_in_expression],
     [$.preproc_selected_braced_if_statement, $._closed_selected_braced_if_statement],
     [$.preproc_selected_braced_if_statement],
     [$.preproc_ended_consequence_statement, $._statement_block],
@@ -2709,8 +2720,7 @@ module.exports = grammar(C, {
     constructor_try_statement: $ => seq(
       'try',
       optional($.field_initializer_list),
-      field('body', $.compound_statement),
-      $._catch_handlers,
+      $._try_body_with_handlers,
     ),
 
     constructor_or_destructor_definition: $ => prec.dynamic(2, prec(PREC.CALL + 2, seq(
@@ -3950,12 +3960,45 @@ module.exports = grammar(C, {
 
     try_statement: $ => prec.right(seq(
       'try',
-      field('body', $.compound_statement),
       choice(
-        $._catch_handlers,
-        seq(repeat($.catch_clause), $.finally_clause),
+        $._try_body_with_handlers,
+        seq(field('body', $.compound_statement), repeat($.catch_clause), $.finally_clause),
       ),
     )),
+
+    preproc_selected_try_statement: $ => choice(
+      seq(field('body', alias($.selected_try_body, $.compound_statement)), $._catch_handlers),
+      field('body', alias($.selected_conditional_try_body, $.compound_statement)),
+    ),
+
+    _try_body_with_handlers: $ => choice(
+      seq(field('body', $.compound_statement), $._catch_handlers),
+      field('body', alias($.conditional_try_body, $.compound_statement)),
+    ),
+
+    conditional_try_body: $ => seq('{', $._conditional_try_tail),
+
+    _conditional_try_tail: $ => seq(repeat($._block_item), $.preproc_if_in_try_end),
+
+    ...preprocIf('_in_try_end', $ => $._try_ending_branch, 0, PREPROC_ALL_BRANCH_FORMS | PREPROC_SHARED_OPENER, false),
+
+    _try_ending_branch: $ => seq(
+      choice(
+        seq(
+          alias($._compound_statement_tail, $.block_scope_close),
+          alias($._catch_handlers, $.try_statement_handlers),
+        ),
+        alias($._conditional_try_tail, $.block_scope_close),
+      ),
+      repeat($._block_item),
+    ),
+
+    selected_try_prefix: $ => seq('try', '{'),
+
+    ...selectedStatementPrefix('try', $ => $.selected_try_prefix),
+
+    selected_try_body: $ => seq($.preproc_try_prefix, $._compound_statement_tail),
+    selected_conditional_try_body: $ => seq($.preproc_try_prefix, $._conditional_try_tail),
 
     _catch_handlers: $ => choice(
       repeat1($.catch_clause),

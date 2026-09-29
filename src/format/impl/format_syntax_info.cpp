@@ -429,6 +429,20 @@ constexpr auto kSyntaxKindMappings = std::to_array<SyntaxKindMapping>({
         kConditionalPreprocessorOpenClasses | Bit(SyntaxNodeClass::SourceItemScope)
     ),
 
+    Tree(
+        SyntaxNodeKind::PreprocBlockClose,
+        "preproc_if_in_try_end",
+        kConditionalPreprocessorOpenClasses | Bit(SyntaxNodeClass::SourceItemScope)
+    ),
+    Tree(SyntaxNodeKind::ControlContinuation, "try_statement_handlers"),
+    Tree(SyntaxNodeKind::Tree, "selected_try_prefix", Bit(SyntaxNodeClass::ConditionalBlockHeader)),
+    Tree(
+        SyntaxNodeKind::PreprocIf,
+        "preproc_try_prefix",
+        kAllowedPreprocessorContainerClasses |
+            kSupportedPreprocessorPlacementClasses |
+            Bit(SyntaxNodeClass::ConditionalBlockHeader)
+    ),
     Tree(SyntaxNodeKind::MacroClassBegin, "macro_class_begin"),
     Tree(SyntaxNodeKind::MacroClassEnd, "macro_class_end"),
     Tree(SyntaxNodeKind::PreprocIf, "preproc_logical_expression_fragment", kSupportedPreprocessorPlacementClasses),
@@ -1235,6 +1249,8 @@ std::string_view SyntaxNodeKindName(SyntaxNodeKind kind) {
             return "BlockScopeClose";
         case SyntaxNodeKind::PreprocBlockClose:
             return "PreprocBlockClose";
+        case SyntaxNodeKind::ControlContinuation:
+            return "ControlContinuation";
         case SyntaxNodeKind::MacroClassBegin:
             return "MacroClassBegin";
         case SyntaxNodeKind::MacroClassEnd:

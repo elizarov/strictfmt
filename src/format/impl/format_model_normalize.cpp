@@ -240,19 +240,59 @@ bool ConditionalEndingHasFollowingItems(const SyntaxNode& node) {
             if (ConditionalEndingHasFollowingItems(*child)) {
                 return true;
             }
-        } else if (afterClose) {
+        } else if (afterClose && child->kind != SyntaxNodeKind::ControlContinuation) {
             return true;
         }
     }
     return false;
 }
 
+bool ConditionalHeaderIsExhaustive(const SyntaxNode& node) {
+    if (
+        SyntaxNodeHasClass(node, SyntaxNodeClass::ConditionalBlockHeader) &&
+        !SyntaxNodeHasClass(node, SyntaxNodeClass::ConditionalPreprocessorTree)
+    ) {
+        return true;
+    }
+    bool hasHeader = false;
+    const SyntaxNode* alternative = nullptr;
+    for (const SyntaxNode* child : node.children) {
+        if (child == nullptr) {
+            continue;
+        }
+        if (SyntaxNodeHasClass(*child, SyntaxNodeClass::ConditionalBlockHeader)) {
+            hasHeader |= ConditionalHeaderIsExhaustive(*child);
+        } else if (child->kind == SyntaxNodeKind::PreprocElse || child->kind == SyntaxNodeKind::PreprocElif) {
+            alternative = child;
+        }
+    }
+    return hasHeader && (
+        node.kind == SyntaxNodeKind::PreprocElse ||
+        (alternative != nullptr && ConditionalHeaderIsExhaustive(*alternative))
+    );
+}
+
+bool ConditionalEndingHasOptionalOpener(const SyntaxNode& node) {
+    const SyntaxNode* body = node.parent;
+    while (body != nullptr && body->kind != SyntaxNodeKind::CompoundStatement) {
+        body = body->parent;
+    }
+    if (body == nullptr) {
+        return false;
+    }
+    const auto first = NextStructuralChildIndex(body->children, 0);
+    return first &&
+        body->children[*first] != nullptr &&
+        SyntaxNodeHasClass(*body->children[*first], SyntaxNodeClass::ConditionalBlockHeader) &&
+        !ConditionalHeaderIsExhaustive(*body->children[*first]);
+}
+
 bool HasEscapingConditionalItems(const SyntaxNode& node) {
     if (node.kind == SyntaxNodeKind::PreprocBlockClose) {
-        return ConditionalEndingHasFollowingItems(node);
+        return ConditionalEndingHasFollowingItems(node) || ConditionalEndingHasOptionalOpener(node);
     }
     const auto last = PreviousStructuralChildIndex(node.children, node.children.size());
-    return last && HasEscapingConditionalItems(*node.children[*last]);
+    return last && node.children[*last] != nullptr && HasEscapingConditionalItems(*node.children[*last]);
 }
 
 void WrapControlBody(FormatModel& model, SyntaxNode& node, size_t childIndex) {
@@ -265,7 +305,7 @@ void WrapControlBody(FormatModel& model, SyntaxNode& node, size_t childIndex) {
     if (node.children[childIndex] != nullptr && HasEscapingConditionalItems(*node.children[childIndex])) {
         model.parse.ok = false;
         if (model.parse.error.empty()) {
-            model.parse.error = "cannot add braces across conditional block endings with following statements";
+            model.parse.error = "cannot add braces across conditional scope boundaries";
         }
         return;
     }

@@ -1936,3 +1936,153 @@ int ConditionalOuterWithoutFollowingItems(bool first, bool second) {
     }
     return value;
 }
+
+// Conditional try scopes preserve their handlers and following statements.
+int GuardedTry(bool fail) {
+    int value = 0;
+#if FIRST
+    try {
+#endif
+        if (fail) {
+            throw 7;
+        }
+        value = 1;
+#if FIRST
+    } catch (int) {
+        value = 2;
+    }
+#endif
+    return value;
+}
+
+int NestedTryEnd(bool fail) {
+    int value = 0;
+    try {
+        if (fail) {
+            throw 7;
+        }
+#if FIRST
+#if EXTRA
+        value = 1;
+    } catch (int) {
+        value = 2;
+    }
+    value += 10;
+#else
+        value = 2;
+    } catch (int) {
+        value = 4;
+    }
+    value += 20;
+#endif
+#else
+        value = 3;
+    } catch (int) {
+        value = 6;
+    }
+    value += 30;
+#endif
+    return value;
+}
+
+int SelectedTryPrefix(bool fail) {
+    int value = 0;
+#if FIRST
+    try {
+#else
+    try {
+#endif
+        if (fail) {
+            throw 7;
+        }
+        value = 1;
+    } catch (int) {
+        value = 2;
+    }
+    return value;
+}
+
+int ConditionalTryInIf(bool active, bool fail) {
+    int value = 0;
+    if (active) {
+        try {
+            if (fail) {
+                throw 7;
+            }
+#if FIRST
+            value = 1;
+        } catch (int) {
+            value = 2;
+        }
+#else
+            value = 3;
+        } catch (int) {
+            value = 4;
+        }
+#endif
+    } else {
+        value = -1;
+    }
+    return value;
+}
+
+struct ConditionalTryObject {
+    int value;
+
+    ConditionalTryObject(bool fail) try : value(1) {
+        if (fail) {
+            throw 7;
+        }
+#if FIRST
+        value = 2;
+    } catch (int) {
+        throw;
+    }
+#else
+        value = 3;
+    } catch (int) {
+        throw;
+    }
+#endif
+};
+
+// A declaration macro before a conditional is not an incomplete function header.
+#define DEFINE_DYNAMIC_ENTRY(name) int name;
+DEFINE_DYNAMIC_ENTRY(firstEntry)
+#if FIRST
+int SelectedFunction();
+#else
+int OtherFunction();
+#endif
+DEFINE_DYNAMIC_ENTRY(secondEntry)
+
+int ExhaustiveSelectedTryInIf(bool active, bool fail) {
+    int value = 0;
+    if (active) {
+#if FIRST
+        try {
+#else
+        try {
+#endif
+            if (fail) {
+                throw 7;
+            }
+            value = 1;
+#if EXTRA
+        } catch (int) {
+            value = 2;
+        }
+#else
+        } catch (int) {
+            value = 3;
+        }
+#endif
+    } else {
+        value = -1;
+    }
+    return value;
+}
+
+// Aliased statement alternatives must not remove anonymous statement-argument productions.
+#define EXECUTE_STATEMENT_BODY(body) body
+void AssignmentStatementArgument(int& value) { EXECUTE_STATEMENT_BODY(value = 42;); }
