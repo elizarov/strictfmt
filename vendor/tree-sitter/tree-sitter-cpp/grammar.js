@@ -1805,7 +1805,7 @@ module.exports = grammar(C, {
       $._preproc_directive_end,
       $._declaration_specifiers,
       field('alternative', alias($.preproc_else_in_function_return_type, $.preproc_else)),
-      preprocessor('endif'),
+      $._preproc_endif_line,
     ),
 
     preproc_ifdef_in_function_return_type: $ => seq(
@@ -1814,7 +1814,7 @@ module.exports = grammar(C, {
       $._preproc_directive_end,
       $._declaration_specifiers,
       field('alternative', alias($.preproc_else_in_function_return_type, $.preproc_else)),
-      preprocessor('endif'),
+      $._preproc_endif_line,
     ),
 
     preproc_else_in_function_return_type: $ => seq(
@@ -1850,7 +1850,7 @@ module.exports = grammar(C, {
       $._preproc_directive_end,
       $._function_definition_prefix_branch,
       field('alternative', $.preproc_else_in_function_definition_prefix),
-      preprocessor('endif'),
+      $._preproc_endif_line,
     ),
 
     preproc_ifdef_in_function_definition_prefix: $ => seq(
@@ -1859,7 +1859,7 @@ module.exports = grammar(C, {
       $._preproc_directive_end,
       $._function_definition_prefix_branch,
       field('alternative', $.preproc_else_in_function_definition_prefix),
-      preprocessor('endif'),
+      $._preproc_endif_line,
     ),
 
     preproc_else_in_function_definition_prefix: $ => seq(
@@ -1887,7 +1887,7 @@ module.exports = grammar(C, {
       $._preproc_directive_end,
       $._macro_function_definition_prefix,
       field('alternative', optional($.preproc_macro_function_definition_prefix_alternative)),
-      preprocessor('endif'),
+      $._preproc_endif_line,
     )),
 
     preproc_macro_function_definition_prefix_alternative: $ =>
@@ -2130,7 +2130,7 @@ module.exports = grammar(C, {
         $.function_suffix_macro,
         $.attribute_specifier,
       )),
-      preprocessor('endif'),
+      $._preproc_endif_line,
     )),
 
     _template_parameter_list_item: $ => choice(
@@ -3231,7 +3231,7 @@ module.exports = grammar(C, {
     _preproc_guarded_namespace_body: $ => seq(
       '{',
       repeat($._top_level_item),
-      preprocessor('endif'),
+      $._preproc_endif_line,
       '}',
     ),
 
@@ -3680,7 +3680,7 @@ module.exports = grammar(C, {
       $._preproc_directive_end,
       $.else_clause,
       optional($._preproc_else_clause_alternative),
-      preprocessor('endif'),
+      $._preproc_endif_line,
     )),
 
     _preproc_else_clause_alternative: $ => choice(
@@ -5628,7 +5628,7 @@ function selectedStatementPrefix(kind, prefix) {
       $._preproc_directive_end,
       $[branch],
       optional($[alternative]),
-      preprocessor('endif'),
+      $._preproc_endif_line,
     ),
     [alternative]: $ => choice(
       alias($[elseBranch], $.preproc_else),
@@ -5700,7 +5700,7 @@ function preprocIf(suffix, content, precedence = 0, forms = PREPROC_ALL_BRANCH_F
         $._preproc_directive_end,
         branchContent($),
         ...alternativeField($),
-        preprocessor('endif'),
+        $._preproc_endif_line,
       ));
       if (suffix === '_in_expression_list') {
         return choice($.preproc_if_argument_fragment, ordinary);
@@ -5717,7 +5717,7 @@ function preprocIf(suffix, content, precedence = 0, forms = PREPROC_ALL_BRANCH_F
         $._preproc_directive_end,
         branchContent($),
         ...alternativeField($),
-        preprocessor('endif'),
+        $._preproc_endif_line,
       ));
       return suffix === '_in_expression_list'
         ? choice($.preproc_argument_fragment, ordinary)

@@ -711,20 +711,8 @@
             }
           },
           {
-            "type": "ALIAS",
-            "content": {
-              "type": "TOKEN",
-              "content": {
-                "type": "PREC",
-                "value": 1,
-                "content": {
-                  "type": "PATTERN",
-                  "value": "#[ \\t]*endif"
-                }
-              }
-            },
-            "named": false,
-            "value": "#endif"
+            "type": "SYMBOL",
+            "name": "_preproc_endif_line"
           }
         ]
       }
@@ -836,20 +824,8 @@
             }
           },
           {
-            "type": "ALIAS",
-            "content": {
-              "type": "TOKEN",
-              "content": {
-                "type": "PREC",
-                "value": 1,
-                "content": {
-                  "type": "PATTERN",
-                  "value": "#[ \\t]*endif"
-                }
-              }
-            },
-            "named": false,
-            "value": "#endif"
+            "type": "SYMBOL",
+            "name": "_preproc_endif_line"
           }
         ]
       }
@@ -1150,20 +1126,8 @@
             }
           },
           {
-            "type": "ALIAS",
-            "content": {
-              "type": "TOKEN",
-              "content": {
-                "type": "PREC",
-                "value": 1,
-                "content": {
-                  "type": "PATTERN",
-                  "value": "#[ \\t]*endif"
-                }
-              }
-            },
-            "named": false,
-            "value": "#endif"
+            "type": "SYMBOL",
+            "name": "_preproc_endif_line"
           }
         ]
       }
@@ -1287,20 +1251,8 @@
             }
           },
           {
-            "type": "ALIAS",
-            "content": {
-              "type": "TOKEN",
-              "content": {
-                "type": "PREC",
-                "value": 1,
-                "content": {
-                  "type": "PATTERN",
-                  "value": "#[ \\t]*endif"
-                }
-              }
-            },
-            "named": false,
-            "value": "#endif"
+            "type": "SYMBOL",
+            "name": "_preproc_endif_line"
           }
         ]
       }
@@ -16018,20 +15970,8 @@
             }
           },
           {
-            "type": "ALIAS",
-            "content": {
-              "type": "TOKEN",
-              "content": {
-                "type": "PREC",
-                "value": 1,
-                "content": {
-                  "type": "PATTERN",
-                  "value": "#[ \\t]*endif"
-                }
-              }
-            },
-            "named": false,
-            "value": "#endif"
+            "type": "SYMBOL",
+            "name": "_preproc_endif_line"
           }
         ]
       }
@@ -16134,20 +16074,8 @@
             }
           },
           {
-            "type": "ALIAS",
-            "content": {
-              "type": "TOKEN",
-              "content": {
-                "type": "PREC",
-                "value": 1,
-                "content": {
-                  "type": "PATTERN",
-                  "value": "#[ \\t]*endif"
-                }
-              }
-            },
-            "named": false,
-            "value": "#endif"
+            "type": "SYMBOL",
+            "name": "_preproc_endif_line"
           }
         ]
       }
@@ -16330,20 +16258,8 @@
             ]
           },
           {
-            "type": "ALIAS",
-            "content": {
-              "type": "TOKEN",
-              "content": {
-                "type": "PREC",
-                "value": 1,
-                "content": {
-                  "type": "PATTERN",
-                  "value": "#[ \\t]*endif"
-                }
-              }
-            },
-            "named": false,
-            "value": "#endif"
+            "type": "SYMBOL",
+            "name": "_preproc_endif_line"
           }
         ]
       }
@@ -16388,20 +16304,8 @@
             ]
           },
           {
-            "type": "ALIAS",
-            "content": {
-              "type": "TOKEN",
-              "content": {
-                "type": "PREC",
-                "value": 1,
-                "content": {
-                  "type": "PATTERN",
-                  "value": "#[ \\t]*endif"
-                }
-              }
-            },
-            "named": false,
-            "value": "#endif"
+            "type": "SYMBOL",
+            "name": "_preproc_endif_line"
           }
         ]
       }
@@ -16454,20 +16358,8 @@
             ]
           },
           {
-            "type": "ALIAS",
-            "content": {
-              "type": "TOKEN",
-              "content": {
-                "type": "PREC",
-                "value": 1,
-                "content": {
-                  "type": "PATTERN",
-                  "value": "#[ \\t]*endif"
-                }
-              }
-            },
-            "named": false,
-            "value": "#endif"
+            "type": "SYMBOL",
+            "name": "_preproc_endif_line"
           }
         ]
       }
@@ -16551,20 +16443,8 @@
             }
           },
           {
-            "type": "ALIAS",
-            "content": {
-              "type": "TOKEN",
-              "content": {
-                "type": "PREC",
-                "value": 1,
-                "content": {
-                  "type": "PATTERN",
-                  "value": "#[ \\t]*endif"
-                }
-              }
-            },
-            "named": false,
-            "value": "#endif"
+            "type": "SYMBOL",
+            "name": "_preproc_endif_line"
           }
         ]
       }
@@ -16664,20 +16544,8 @@
             }
           },
           {
-            "type": "ALIAS",
-            "content": {
-              "type": "TOKEN",
-              "content": {
-                "type": "PREC",
-                "value": 1,
-                "content": {
-                  "type": "PATTERN",
-                  "value": "#[ \\t]*endif"
-                }
-              }
-            },
-            "named": false,
-            "value": "#endif"
+            "type": "SYMBOL",
+            "name": "_preproc_endif_line"
           }
         ]
       }
@@ -16839,20 +16707,8 @@
             }
           },
           {
-            "type": "ALIAS",
-            "content": {
-              "type": "TOKEN",
-              "content": {
-                "type": "PREC",
-                "value": 1,
-                "content": {
-                  "type": "PATTERN",
-                  "value": "#[ \\t]*endif"
-                }
-              }
-            },
-            "named": false,
-            "value": "#endif"
+            "type": "SYMBOL",
+            "name": "_preproc_endif_line"
           }
         ]
       }
@@ -16961,20 +16817,8 @@
             }
           },
           {
-            "type": "ALIAS",
-            "content": {
-              "type": "TOKEN",
-              "content": {
-                "type": "PREC",
-                "value": 1,
-                "content": {
-                  "type": "PATTERN",
-                  "value": "#[ \\t]*endif"
-                }
-              }
-            },
-            "named": false,
-            "value": "#endif"
+            "type": "SYMBOL",
+            "name": "_preproc_endif_line"
           }
         ]
       }
@@ -17131,20 +16975,8 @@
             }
           },
           {
-            "type": "ALIAS",
-            "content": {
-              "type": "TOKEN",
-              "content": {
-                "type": "PREC",
-                "value": 1,
-                "content": {
-                  "type": "PATTERN",
-                  "value": "#[ \\t]*endif"
-                }
-              }
-            },
-            "named": false,
-            "value": "#endif"
+            "type": "SYMBOL",
+            "name": "_preproc_endif_line"
           }
         ]
       }
@@ -17230,20 +17062,8 @@
             }
           },
           {
-            "type": "ALIAS",
-            "content": {
-              "type": "TOKEN",
-              "content": {
-                "type": "PREC",
-                "value": 1,
-                "content": {
-                  "type": "PATTERN",
-                  "value": "#[ \\t]*endif"
-                }
-              }
-            },
-            "named": false,
-            "value": "#endif"
+            "type": "SYMBOL",
+            "name": "_preproc_endif_line"
           }
         ]
       }
@@ -17498,20 +17318,8 @@
                 }
               },
               {
-                "type": "ALIAS",
-                "content": {
-                  "type": "TOKEN",
-                  "content": {
-                    "type": "PREC",
-                    "value": 1,
-                    "content": {
-                      "type": "PATTERN",
-                      "value": "#[ \\t]*endif"
-                    }
-                  }
-                },
-                "named": false,
-                "value": "#endif"
+                "type": "SYMBOL",
+                "name": "_preproc_endif_line"
               }
             ]
           }
@@ -17606,20 +17414,8 @@
                 }
               },
               {
-                "type": "ALIAS",
-                "content": {
-                  "type": "TOKEN",
-                  "content": {
-                    "type": "PREC",
-                    "value": 1,
-                    "content": {
-                      "type": "PATTERN",
-                      "value": "#[ \\t]*endif"
-                    }
-                  }
-                },
-                "named": false,
-                "value": "#endif"
+                "type": "SYMBOL",
+                "name": "_preproc_endif_line"
               }
             ]
           }
@@ -17721,20 +17517,8 @@
             }
           },
           {
-            "type": "ALIAS",
-            "content": {
-              "type": "TOKEN",
-              "content": {
-                "type": "PREC",
-                "value": 1,
-                "content": {
-                  "type": "PATTERN",
-                  "value": "#[ \\t]*endif"
-                }
-              }
-            },
-            "named": false,
-            "value": "#endif"
+            "type": "SYMBOL",
+            "name": "_preproc_endif_line"
           }
         ]
       }
@@ -17855,20 +17639,8 @@
             ]
           },
           {
-            "type": "ALIAS",
-            "content": {
-              "type": "TOKEN",
-              "content": {
-                "type": "PREC",
-                "value": 1,
-                "content": {
-                  "type": "PATTERN",
-                  "value": "#[ \\t]*endif"
-                }
-              }
-            },
-            "named": false,
-            "value": "#endif"
+            "type": "SYMBOL",
+            "name": "_preproc_endif_line"
           }
         ]
       }
@@ -18118,20 +17890,8 @@
             }
           },
           {
-            "type": "ALIAS",
-            "content": {
-              "type": "TOKEN",
-              "content": {
-                "type": "PREC",
-                "value": 1,
-                "content": {
-                  "type": "PATTERN",
-                  "value": "#[ \\t]*endif"
-                }
-              }
-            },
-            "named": false,
-            "value": "#endif"
+            "type": "SYMBOL",
+            "name": "_preproc_endif_line"
           }
         ]
       }
@@ -18259,20 +18019,8 @@
             }
           },
           {
-            "type": "ALIAS",
-            "content": {
-              "type": "TOKEN",
-              "content": {
-                "type": "PREC",
-                "value": 1,
-                "content": {
-                  "type": "PATTERN",
-                  "value": "#[ \\t]*endif"
-                }
-              }
-            },
-            "named": false,
-            "value": "#endif"
+            "type": "SYMBOL",
+            "name": "_preproc_endif_line"
           }
         ]
       }
@@ -18993,20 +18741,8 @@
             }
           },
           {
-            "type": "ALIAS",
-            "content": {
-              "type": "TOKEN",
-              "content": {
-                "type": "PREC",
-                "value": 1,
-                "content": {
-                  "type": "PATTERN",
-                  "value": "#[ \\t]*endif"
-                }
-              }
-            },
-            "named": false,
-            "value": "#endif"
+            "type": "SYMBOL",
+            "name": "_preproc_endif_line"
           }
         ]
       }
@@ -19131,20 +18867,8 @@
             }
           },
           {
-            "type": "ALIAS",
-            "content": {
-              "type": "TOKEN",
-              "content": {
-                "type": "PREC",
-                "value": 1,
-                "content": {
-                  "type": "PATTERN",
-                  "value": "#[ \\t]*endif"
-                }
-              }
-            },
-            "named": false,
-            "value": "#endif"
+            "type": "SYMBOL",
+            "name": "_preproc_endif_line"
           }
         ]
       }
@@ -19363,20 +19087,8 @@
           }
         },
         {
-          "type": "ALIAS",
-          "content": {
-            "type": "TOKEN",
-            "content": {
-              "type": "PREC",
-              "value": 1,
-              "content": {
-                "type": "PATTERN",
-                "value": "#[ \\t]*endif"
-              }
-            }
-          },
-          "named": false,
-          "value": "#endif"
+          "type": "SYMBOL",
+          "name": "_preproc_endif_line"
         }
       ]
     },
@@ -19450,20 +19162,8 @@
           }
         },
         {
-          "type": "ALIAS",
-          "content": {
-            "type": "TOKEN",
-            "content": {
-              "type": "PREC",
-              "value": 1,
-              "content": {
-                "type": "PATTERN",
-                "value": "#[ \\t]*endif"
-              }
-            }
-          },
-          "named": false,
-          "value": "#endif"
+          "type": "SYMBOL",
+          "name": "_preproc_endif_line"
         }
       ]
     },
@@ -19659,20 +19359,8 @@
           }
         },
         {
-          "type": "ALIAS",
-          "content": {
-            "type": "TOKEN",
-            "content": {
-              "type": "PREC",
-              "value": 1,
-              "content": {
-                "type": "PATTERN",
-                "value": "#[ \\t]*endif"
-              }
-            }
-          },
-          "named": false,
-          "value": "#endif"
+          "type": "SYMBOL",
+          "name": "_preproc_endif_line"
         }
       ]
     },
@@ -19741,20 +19429,8 @@
           }
         },
         {
-          "type": "ALIAS",
-          "content": {
-            "type": "TOKEN",
-            "content": {
-              "type": "PREC",
-              "value": 1,
-              "content": {
-                "type": "PATTERN",
-                "value": "#[ \\t]*endif"
-              }
-            }
-          },
-          "named": false,
-          "value": "#endif"
+          "type": "SYMBOL",
+          "name": "_preproc_endif_line"
         }
       ]
     },
@@ -19870,20 +19546,8 @@
             }
           },
           {
-            "type": "ALIAS",
-            "content": {
-              "type": "TOKEN",
-              "content": {
-                "type": "PREC",
-                "value": 1,
-                "content": {
-                  "type": "PATTERN",
-                  "value": "#[ \\t]*endif"
-                }
-              }
-            },
-            "named": false,
-            "value": "#endif"
+            "type": "SYMBOL",
+            "name": "_preproc_endif_line"
           }
         ]
       }
@@ -20707,20 +20371,8 @@
             }
           },
           {
-            "type": "ALIAS",
-            "content": {
-              "type": "TOKEN",
-              "content": {
-                "type": "PREC",
-                "value": 1,
-                "content": {
-                  "type": "PATTERN",
-                  "value": "#[ \\t]*endif"
-                }
-              }
-            },
-            "named": false,
-            "value": "#endif"
+            "type": "SYMBOL",
+            "name": "_preproc_endif_line"
           }
         ]
       }
@@ -21129,20 +20781,8 @@
             }
           },
           {
-            "type": "ALIAS",
-            "content": {
-              "type": "TOKEN",
-              "content": {
-                "type": "PREC",
-                "value": 1,
-                "content": {
-                  "type": "PATTERN",
-                  "value": "#[ \\t]*endif"
-                }
-              }
-            },
-            "named": false,
-            "value": "#endif"
+            "type": "SYMBOL",
+            "name": "_preproc_endif_line"
           }
         ]
       }
@@ -21279,20 +20919,8 @@
             }
           },
           {
-            "type": "ALIAS",
-            "content": {
-              "type": "TOKEN",
-              "content": {
-                "type": "PREC",
-                "value": 1,
-                "content": {
-                  "type": "PATTERN",
-                  "value": "#[ \\t]*endif"
-                }
-              }
-            },
-            "named": false,
-            "value": "#endif"
+            "type": "SYMBOL",
+            "name": "_preproc_endif_line"
           }
         ]
       }
@@ -21438,20 +21066,8 @@
             }
           },
           {
-            "type": "ALIAS",
-            "content": {
-              "type": "TOKEN",
-              "content": {
-                "type": "PREC",
-                "value": 1,
-                "content": {
-                  "type": "PATTERN",
-                  "value": "#[ \\t]*endif"
-                }
-              }
-            },
-            "named": false,
-            "value": "#endif"
+            "type": "SYMBOL",
+            "name": "_preproc_endif_line"
           }
         ]
       }
@@ -21935,20 +21551,8 @@
             }
           },
           {
-            "type": "ALIAS",
-            "content": {
-              "type": "TOKEN",
-              "content": {
-                "type": "PREC",
-                "value": 1,
-                "content": {
-                  "type": "PATTERN",
-                  "value": "#[ \\t]*endif"
-                }
-              }
-            },
-            "named": false,
-            "value": "#endif"
+            "type": "SYMBOL",
+            "name": "_preproc_endif_line"
           }
         ]
       }
@@ -22282,20 +21886,8 @@
             }
           },
           {
-            "type": "ALIAS",
-            "content": {
-              "type": "TOKEN",
-              "content": {
-                "type": "PREC",
-                "value": 1,
-                "content": {
-                  "type": "PATTERN",
-                  "value": "#[ \\t]*endif"
-                }
-              }
-            },
-            "named": false,
-            "value": "#endif"
+            "type": "SYMBOL",
+            "name": "_preproc_endif_line"
           }
         ]
       }
@@ -23417,20 +23009,8 @@
             }
           },
           {
-            "type": "ALIAS",
-            "content": {
-              "type": "TOKEN",
-              "content": {
-                "type": "PREC",
-                "value": 1,
-                "content": {
-                  "type": "PATTERN",
-                  "value": "#[ \\t]*endif"
-                }
-              }
-            },
-            "named": false,
-            "value": "#endif"
+            "type": "SYMBOL",
+            "name": "_preproc_endif_line"
           }
         ]
       }
@@ -23539,20 +23119,8 @@
             }
           },
           {
-            "type": "ALIAS",
-            "content": {
-              "type": "TOKEN",
-              "content": {
-                "type": "PREC",
-                "value": 1,
-                "content": {
-                  "type": "PATTERN",
-                  "value": "#[ \\t]*endif"
-                }
-              }
-            },
-            "named": false,
-            "value": "#endif"
+            "type": "SYMBOL",
+            "name": "_preproc_endif_line"
           }
         ]
       }
@@ -24008,20 +23576,8 @@
             }
           },
           {
-            "type": "ALIAS",
-            "content": {
-              "type": "TOKEN",
-              "content": {
-                "type": "PREC",
-                "value": 1,
-                "content": {
-                  "type": "PATTERN",
-                  "value": "#[ \\t]*endif"
-                }
-              }
-            },
-            "named": false,
-            "value": "#endif"
+            "type": "SYMBOL",
+            "name": "_preproc_endif_line"
           }
         ]
       }
@@ -25642,20 +25198,8 @@
             }
           },
           {
-            "type": "ALIAS",
-            "content": {
-              "type": "TOKEN",
-              "content": {
-                "type": "PREC",
-                "value": 1,
-                "content": {
-                  "type": "PATTERN",
-                  "value": "#[ \\t]*endif"
-                }
-              }
-            },
-            "named": false,
-            "value": "#endif"
+            "type": "SYMBOL",
+            "name": "_preproc_endif_line"
           }
         ]
       }
@@ -25755,20 +25299,8 @@
             }
           },
           {
-            "type": "ALIAS",
-            "content": {
-              "type": "TOKEN",
-              "content": {
-                "type": "PREC",
-                "value": 1,
-                "content": {
-                  "type": "PATTERN",
-                  "value": "#[ \\t]*endif"
-                }
-              }
-            },
-            "named": false,
-            "value": "#endif"
+            "type": "SYMBOL",
+            "name": "_preproc_endif_line"
           }
         ]
       }
@@ -26210,20 +25742,8 @@
             }
           },
           {
-            "type": "ALIAS",
-            "content": {
-              "type": "TOKEN",
-              "content": {
-                "type": "PREC",
-                "value": 1,
-                "content": {
-                  "type": "PATTERN",
-                  "value": "#[ \\t]*endif"
-                }
-              }
-            },
-            "named": false,
-            "value": "#endif"
+            "type": "SYMBOL",
+            "name": "_preproc_endif_line"
           }
         ]
       }
@@ -26323,20 +25843,8 @@
             }
           },
           {
-            "type": "ALIAS",
-            "content": {
-              "type": "TOKEN",
-              "content": {
-                "type": "PREC",
-                "value": 1,
-                "content": {
-                  "type": "PATTERN",
-                  "value": "#[ \\t]*endif"
-                }
-              }
-            },
-            "named": false,
-            "value": "#endif"
+            "type": "SYMBOL",
+            "name": "_preproc_endif_line"
           }
         ]
       }
@@ -27790,20 +27298,8 @@
             }
           },
           {
-            "type": "ALIAS",
-            "content": {
-              "type": "TOKEN",
-              "content": {
-                "type": "PREC",
-                "value": 1,
-                "content": {
-                  "type": "PATTERN",
-                  "value": "#[ \\t]*endif"
-                }
-              }
-            },
-            "named": false,
-            "value": "#endif"
+            "type": "SYMBOL",
+            "name": "_preproc_endif_line"
           }
         ]
       }
@@ -30590,20 +30086,8 @@
           }
         },
         {
-          "type": "ALIAS",
-          "content": {
-            "type": "TOKEN",
-            "content": {
-              "type": "PREC",
-              "value": 1,
-              "content": {
-                "type": "PATTERN",
-                "value": "#[ \\t]*endif"
-              }
-            }
-          },
-          "named": false,
-          "value": "#endif"
+          "type": "SYMBOL",
+          "name": "_preproc_endif_line"
         },
         {
           "type": "STRING",
@@ -32095,20 +31579,8 @@
           ]
         },
         {
-          "type": "ALIAS",
-          "content": {
-            "type": "TOKEN",
-            "content": {
-              "type": "PREC",
-              "value": 1,
-              "content": {
-                "type": "PATTERN",
-                "value": "#[ \\t]*endif"
-              }
-            }
-          },
-          "named": false,
-          "value": "#endif"
+          "type": "SYMBOL",
+          "name": "_preproc_endif_line"
         }
       ]
     },
@@ -32307,20 +31779,8 @@
           ]
         },
         {
-          "type": "ALIAS",
-          "content": {
-            "type": "TOKEN",
-            "content": {
-              "type": "PREC",
-              "value": 1,
-              "content": {
-                "type": "PATTERN",
-                "value": "#[ \\t]*endif"
-              }
-            }
-          },
-          "named": false,
-          "value": "#endif"
+          "type": "SYMBOL",
+          "name": "_preproc_endif_line"
         }
       ]
     },
@@ -32543,20 +32003,8 @@
           ]
         },
         {
-          "type": "ALIAS",
-          "content": {
-            "type": "TOKEN",
-            "content": {
-              "type": "PREC",
-              "value": 1,
-              "content": {
-                "type": "PATTERN",
-                "value": "#[ \\t]*endif"
-              }
-            }
-          },
-          "named": false,
-          "value": "#endif"
+          "type": "SYMBOL",
+          "name": "_preproc_endif_line"
         }
       ]
     },
@@ -32754,20 +32202,8 @@
             }
           },
           {
-            "type": "ALIAS",
-            "content": {
-              "type": "TOKEN",
-              "content": {
-                "type": "PREC",
-                "value": 1,
-                "content": {
-                  "type": "PATTERN",
-                  "value": "#[ \\t]*endif"
-                }
-              }
-            },
-            "named": false,
-            "value": "#endif"
+            "type": "SYMBOL",
+            "name": "_preproc_endif_line"
           }
         ]
       }
@@ -33141,20 +32577,8 @@
             ]
           },
           {
-            "type": "ALIAS",
-            "content": {
-              "type": "TOKEN",
-              "content": {
-                "type": "PREC",
-                "value": 1,
-                "content": {
-                  "type": "PATTERN",
-                  "value": "#[ \\t]*endif"
-                }
-              }
-            },
-            "named": false,
-            "value": "#endif"
+            "type": "SYMBOL",
+            "name": "_preproc_endif_line"
           }
         ]
       }
@@ -33422,20 +32846,8 @@
             }
           },
           {
-            "type": "ALIAS",
-            "content": {
-              "type": "TOKEN",
-              "content": {
-                "type": "PREC",
-                "value": 1,
-                "content": {
-                  "type": "PATTERN",
-                  "value": "#[ \\t]*endif"
-                }
-              }
-            },
-            "named": false,
-            "value": "#endif"
+            "type": "SYMBOL",
+            "name": "_preproc_endif_line"
           }
         ]
       }
@@ -33535,20 +32947,8 @@
             }
           },
           {
-            "type": "ALIAS",
-            "content": {
-              "type": "TOKEN",
-              "content": {
-                "type": "PREC",
-                "value": 1,
-                "content": {
-                  "type": "PATTERN",
-                  "value": "#[ \\t]*endif"
-                }
-              }
-            },
-            "named": false,
-            "value": "#endif"
+            "type": "SYMBOL",
+            "name": "_preproc_endif_line"
           }
         ]
       }
@@ -39198,20 +38598,8 @@
             }
           },
           {
-            "type": "ALIAS",
-            "content": {
-              "type": "TOKEN",
-              "content": {
-                "type": "PREC",
-                "value": 1,
-                "content": {
-                  "type": "PATTERN",
-                  "value": "#[ \\t]*endif"
-                }
-              }
-            },
-            "named": false,
-            "value": "#endif"
+            "type": "SYMBOL",
+            "name": "_preproc_endif_line"
           }
         ]
       }
@@ -39981,20 +39369,8 @@
             }
           },
           {
-            "type": "ALIAS",
-            "content": {
-              "type": "TOKEN",
-              "content": {
-                "type": "PREC",
-                "value": 1,
-                "content": {
-                  "type": "PATTERN",
-                  "value": "#[ \\t]*endif"
-                }
-              }
-            },
-            "named": false,
-            "value": "#endif"
+            "type": "SYMBOL",
+            "name": "_preproc_endif_line"
           }
         ]
       }
