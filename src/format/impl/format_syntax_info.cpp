@@ -48,10 +48,6 @@ constexpr std::uint64_t kDeclarationModifierPreprocessorClasses = kAtomicPreproc
     kSupportedPreprocessorPlacementClasses |
     Bit(SyntaxNodeClass::DeclarationModifierPreprocessor);
 
-constexpr std::uint64_t kConditionalRhsPreprocessorClasses = kAtomicPreprocessorClasses |
-    kSupportedPreprocessorPlacementClasses |
-    Bit(SyntaxNodeClass::ConditionalRhsPreprocessor);
-
 constexpr std::uint64_t kChainBinaryClasses =
     Bit(SyntaxNodeClass::BinaryOperator) | Bit(SyntaxNodeClass::ChainOperator);
 constexpr std::uint64_t kAllowedPreprocessorContainerClasses = Bit(SyntaxNodeClass::AllowedPreprocessorContainer);
@@ -467,7 +463,14 @@ constexpr auto kSyntaxKindMappings = std::to_array<SyntaxKindMapping>({
         "preproc_case_label_fragment",
         kAtomicPreprocessorClasses | kSupportedPreprocessorPlacementClasses
     ),
-    Tree(SyntaxNodeKind::PreprocIf, "preproc_semicolon_initializer", kConditionalRhsPreprocessorClasses),
+    Tree(
+        SyntaxNodeKind::PreprocIf,
+        "preproc_if_in_semicolon_initializer",
+        kConditionalPreprocessorOpenClasses |
+            Bit(SyntaxNodeClass::ConditionalRhsPreprocessor) |
+            Bit(SyntaxNodeClass::SourceItemScope)
+    ),
+    Tree(SyntaxNodeKind::StatementScopeClose, "preproc_semicolon_value"),
     Tree(
         SyntaxNodeKind::PreprocExpression,
         "preproc_if_in_expression",
@@ -1261,6 +1264,8 @@ std::string_view SyntaxNodeKindName(SyntaxNodeKind kind) {
             return "GroupingScopeClose";
         case SyntaxNodeKind::BlockScopeClose:
             return "BlockScopeClose";
+        case SyntaxNodeKind::StatementScopeClose:
+            return "StatementScopeClose";
         case SyntaxNodeKind::PreprocBlockClose:
             return "PreprocBlockClose";
         case SyntaxNodeKind::ControlContinuation:

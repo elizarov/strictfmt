@@ -383,11 +383,15 @@ using ConditionalAlias =
 template <typename T>
 concept ConditionalRhsConcept =
 #if defined(_GLIBCXX_RELEASE) && _GLIBCXX_RELEASE < 13
-    requires(T& v) { std::from_chars(std::declval<const char*>(), std::declval<const char*>(), v); } &&
-    // libstdc++ before 13.1 parse long double incorrectly
-    !std::same_as<T, long double>;
+    requires(T& v) {
+        std::from_chars(std::declval<const char*>(), std::declval<const char*>(), v);
+    } &&
+        // libstdc++ before 13.1 parse long double incorrectly
+        !std::same_as<T, long double>;
 #else
-    requires(T& v) { std::from_chars(std::declval<const char*>(), std::declval<const char*>(), v); };
+    requires(T& v) {
+        std::from_chars(std::declval<const char*>(), std::declval<const char*>(), v);
+    };
 #endif
 
 extern "C" {
@@ -512,9 +516,9 @@ void CommentedConditionalStreams() {
 template <typename T>
 concept ConditionalQualifiedRequirements =
 #if FORMAT_FIRST_REQUIREMENT
-    std::constructible_from<T,const FirstEnvironmentHolder&,const FirstNamespace::FirstDependencies&>;
+    std::constructible_from<T, const FirstEnvironmentHolder&, const FirstNamespace::FirstDependencies&>;
 #else
-    std::constructible_from<T,const SecondEnvironmentHolder&,const SecondNamespace::SecondDependencies&>;
+    std::constructible_from<T, const SecondEnvironmentHolder&, const SecondNamespace::SecondDependencies&>;
 #endif
 
 void ConditionalQualifiedTemplateArguments() {
@@ -2169,4 +2173,54 @@ int SelectedBracedElseAlternatives(bool outer, bool choice) {
         result = -1;
     }
     return result;
+}
+
+// Conditional initializer branches may finish the statement and contain following source items.
+int ConditionalInitializerItems(bool choice) {
+    int total = 0;
+    int value =
+#if FIRST
+#if EXTRA
+        1;
+    if (choice) {
+        total += 10;
+    }
+#else
+        2;
+#endif
+    if (choice) {
+        total += 100;
+    }
+#elif EXTRA
+        3;
+    total += 20;
+#else
+        4;
+#endif
+    value =
+#if EXTRA
+        value + 1;
+    total += 30;
+#else
+        value + 2;
+    if (choice) {
+        total += 40;
+    }
+#endif
+    return value + total;
+}
+
+int ConditionalInitializerBody(bool active) {
+    int value = 0;
+    if (active) {
+        value =
+#if FIRST
+            1;
+#else
+            2;
+#endif
+    } else {
+        value = -1;
+    }
+    return value;
 }

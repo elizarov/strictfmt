@@ -231,7 +231,11 @@ bool ConditionalEndingHasFollowingItems(const SyntaxNode& node) {
         if (child == nullptr || SyntaxNodeHasClass(*child, SyntaxNodeClass::Trivia)) {
             continue;
         }
-        if (child->kind == SyntaxNodeKind::BlockScopeClose) {
+        if (
+            child->kind == SyntaxNodeKind::BlockScopeClose ||
+            child->kind == SyntaxNodeKind::StatementScopeClose ||
+            SyntaxNodeHasClass(*child, SyntaxNodeClass::ConditionalRhsPreprocessor)
+        ) {
             afterClose = true;
             if (HasEscapingConditionalItems(*child)) {
                 return true;
@@ -288,6 +292,9 @@ bool ConditionalEndingHasOptionalOpener(const SyntaxNode& node) {
 }
 
 bool HasEscapingConditionalItems(const SyntaxNode& node) {
+    if (SyntaxNodeHasClass(node, SyntaxNodeClass::ConditionalRhsPreprocessor)) {
+        return ConditionalEndingHasFollowingItems(node);
+    }
     if (node.kind == SyntaxNodeKind::PreprocBlockClose) {
         return ConditionalEndingHasFollowingItems(node) || ConditionalEndingHasOptionalOpener(node);
     }

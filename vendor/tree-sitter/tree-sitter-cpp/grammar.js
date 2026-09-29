@@ -2364,31 +2364,19 @@ module.exports = grammar(C, {
       $._declaration_specifiers,
       field('declarator', $._declarator),
       '=',
-      field('value', $.preproc_semicolon_initializer),
+      field('value', $.preproc_if_in_semicolon_initializer),
     )),
 
     ...preprocIf('_in_expression', $ => choice($.expression, $.initializer_list), 0, PREPROC_ALL_BRANCH_FORMS, false),
 
-    preproc_semicolon_initializer: $ => seq(
-      $._preproc_opening_line,
-      field('consequence', $.preproc_semicolon_value),
-      repeat(field('alternative', $.preproc_semicolon_alternative)),
-      $._preproc_endif_line,
+    ...preprocIf('_in_semicolon_initializer', $ => $._semicolon_initializer_branch, 0, PREPROC_ALL_BRANCH_FORMS | PREPROC_SHARED_OPENER, false),
+
+    _semicolon_initializer_branch: $ => seq(
+      choice($.preproc_semicolon_value, $.preproc_if_in_semicolon_initializer),
+      repeat($._block_item),
     ),
 
-    preproc_semicolon_value: $ => seq(
-      choice($.expression, $.initializer_list),
-      ';',
-    ),
-
-    preproc_semicolon_alternative: $ => seq(
-      choice(
-        seq(preprocessor('elif'), field('condition', $._preproc_expression)),
-        preprocessor('else'),
-      ),
-      $._preproc_directive_end,
-      $.preproc_semicolon_value,
-    ),
+    preproc_semicolon_value: $ => seq(choice($.expression, $.initializer_list), ';'),
 
     operator_cast: $ => prec.right(1, seq(
       'operator',
@@ -3390,7 +3378,7 @@ module.exports = grammar(C, {
       '=',
       choice(
         seq(field('type', $.type_descriptor), ';'),
-        field('type', $.preproc_semicolon_initializer),
+        field('type', $.preproc_if_in_semicolon_initializer),
       ),
     ),
 
@@ -3414,7 +3402,7 @@ module.exports = grammar(C, {
       '=',
       choice(
         seq($.expression, ';'),
-        $.preproc_semicolon_initializer,
+        $.preproc_if_in_semicolon_initializer,
       ),
     ),
 
@@ -3529,7 +3517,7 @@ module.exports = grammar(C, {
     preproc_assignment_statement: $ => prec.right(PREC.ASSIGNMENT, seq(
       field('left', $._assignment_left_expression),
       field('operator', choice(...ASSIGNMENT_OPERATORS)),
-      field('right', $.preproc_semicolon_initializer),
+      field('right', $.preproc_if_in_semicolon_initializer),
     )),
 
     preproc_selected_if_statement: $ => ifStatement(

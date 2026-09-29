@@ -41,6 +41,7 @@ enum class SyntaxNodeKind : std::uint16_t {
     LinkageSpecification,
     GroupingScopeClose,
     BlockScopeClose,
+    StatementScopeClose,
     PreprocBlockClose,
     ControlContinuation,
     MacroClassBegin,

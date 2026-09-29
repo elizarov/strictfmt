@@ -117,8 +117,11 @@ bool IsDeclarationModifierPreprocessorToken(const PrintToken& token) {
 }
 
 bool IsConditionalRhsPreprocessorToken(const PrintToken& token) {
-    return token.node != nullptr &&
-        (token.node->classes & static_cast<std::uint64_t>(SyntaxNodeClass::ConditionalRhsPreprocessor)) != 0;
+    const SyntaxNode* owner = token.node;
+    while (owner != nullptr && SyntaxNodeHasClass(*owner, SyntaxNodeClass::ConditionalBranchSeparatorDirective)) {
+        owner = owner->parent;
+    }
+    return owner != nullptr && SyntaxNodeHasClass(*owner, SyntaxNodeClass::ConditionalRhsPreprocessor);
 }
 
 bool HasDirectDelimiterPair(const SyntaxNode& node, SyntaxNodeKind openKind) {
@@ -1354,20 +1357,6 @@ private:
             conditionalBody != nullptr &&
             SyntaxNodeHasClass(*conditionalHeader, SyntaxNodeClass::ConditionalBlockHeader) &&
             conditionalBody->kind == SyntaxNodeKind::CompoundStatement;
-        if (IsConditionalRhsPreprocessorToken(token)) {
-            if (HasBufferedLineText()) {
-                FlushPendingTokens();
-            }
-            const int continuationIndent = (output_.State().lineHasText ? CurrentLineIndentLevel() : indentLevel_) + 1;
-            if (output_.State().lineHasText) {
-                NewLine();
-            }
-            const std::string outputLine =
-                FormatPreprocessorText(token.text, {.payloadIndent = continuationIndent, .indentWidth = indentWidth_});
-            output_.WriteVerbatim(outputLine);
-            NewLine();
-            return;
-        }
         if (IsDeclarationModifierPreprocessorToken(token)) {
             if (HasBufferedLineText()) {
                 FlushPendingTokens();
@@ -1414,7 +1403,12 @@ private:
             conditionalBlockIndents_.push_back({conditionalBody, indentLevel_});
             ++indentLevel_;
         }
-        if (includeInitializerContinuationIndent) {
+        if (
+            IsConditionalRhsPreprocessorToken(token) &&
+            !SyntaxNodeKindHasClass(lineDirectiveKind, SyntaxNodeClass::EndifDirective)
+        ) {
+            output_.SetPendingIndent(indentLevel_ + 1);
+        } else if (includeInitializerContinuationIndent) {
             output_.SetPendingIndent(*includeInitializerContinuationIndent);
         } else if (continuationIndent) {
             output_.SetPendingIndent(*continuationIndent);

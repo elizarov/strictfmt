@@ -1783,3 +1783,45 @@ result=5;
 else result=-1;
 return result;
 }
+
+// Conditional initializer branches may finish the statement and contain following source items.
+int ConditionalInitializerItems(bool choice) {
+int total=0;
+int value=
+#if FIRST
+#if EXTRA
+1;
+if(choice) total+=10;
+#else
+2;
+#endif
+if(choice) total+=100;
+#elif EXTRA
+3;
+total+=20;
+#else
+4;
+#endif
+value=
+#if EXTRA
+value+1;
+total+=30;
+#else
+value+2;
+if(choice) total+=40;
+#endif
+return value+total;
+}
+
+int ConditionalInitializerBody(bool active) {
+int value=0;
+if(active)
+value=
+#if FIRST
+1;
+#else
+2;
+#endif
+else value=-1;
+return value;
+}
