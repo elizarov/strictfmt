@@ -51,6 +51,9 @@ struct PrintToken {
     bool spacingAncestryKnown : 1;
     bool inMacroModifier : 1;
     bool inConcatenatedString : 1;
+    bool opensClassScopeAfter : 1;
+    bool closesClassScopeBefore : 1;
+    bool endsClassScopeAfter : 1;
     mutable unsigned templateArgumentExpressionOperator : 2;
     const SyntaxNode* node = nullptr;
     const SyntaxNode* declarationScopeItem = nullptr;

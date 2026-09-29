@@ -418,6 +418,8 @@ constexpr auto kSyntaxKindMappings = std::to_array<SyntaxKindMapping>({
         kConditionalPreprocessorOpenClasses | kSupportedPreprocessorPlacementClasses
     ),
     Tree(SyntaxNodeKind::GroupingScopeClose, "grouping_scope_close"),
+    Tree(SyntaxNodeKind::MacroClassBegin, "macro_class_begin"),
+    Tree(SyntaxNodeKind::MacroClassEnd, "macro_class_end"),
     Tree(SyntaxNodeKind::PreprocIf, "preproc_logical_expression_fragment", kSupportedPreprocessorPlacementClasses),
     Tree(SyntaxNodeKind::PreprocIf, "preproc_logical_tail_expression_fragment", kSupportedPreprocessorPlacementClasses),
     Tree(SyntaxNodeKind::PreprocIf, "preproc_condition_expression", kAtomicPreprocessorClasses),
@@ -660,6 +662,8 @@ constexpr auto kSyntaxKindMappings = std::to_array<SyntaxKindMapping>({
     Tree(SyntaxNodeKind::Identifier, "statement_argument_macro_identifier"),
     Tree(SyntaxNodeKind::Identifier, "type_specifier_macro_identifier"),
     Tree(SyntaxNodeKind::Identifier, "namespace_macro_identifier"),
+    Tree(SyntaxNodeKind::Identifier, "class_begin_macro_identifier"),
+    Tree(SyntaxNodeKind::Identifier, "class_end_macro_identifier"),
     Tree(SyntaxNodeKind::Identifier, "if_header_macro_identifier"),
     Tree(SyntaxNodeKind::Identifier, "preprocessor_argument_macro_identifier"),
     Tree(SyntaxNodeKind::Identifier, "field_identifier"),
@@ -1216,6 +1220,10 @@ std::string_view SyntaxNodeKindName(SyntaxNodeKind kind) {
             return "LinkageSpecification";
         case SyntaxNodeKind::GroupingScopeClose:
             return "GroupingScopeClose";
+        case SyntaxNodeKind::MacroClassBegin:
+            return "MacroClassBegin";
+        case SyntaxNodeKind::MacroClassEnd:
+            return "MacroClassEnd";
         case SyntaxNodeKind::EnumSpecifier:
             return "EnumSpecifier";
         case SyntaxNodeKind::ClassSpecifier:

@@ -5240,3 +5240,56 @@ struct GuardedConstruction {
     GuardedConstruction() try : value_(Read()) {}
     CATCH_AND_REPORT("construction failed");
 };
+
+// Class boundary macros expose ordinary members, including nested class scopes.
+FORMAT_CLASS_BEGIN(Scalar, int)  // generated class header
+public:
+    int Read() const { return value_; }
+
+protected:
+    int value_ = 0;
+FORMAT_CLASS_END(Scalar, int)  // generated class terminator
+FORMAT_CLASS_BEGIN_LITERAL
+public:
+    void Run() { Work(); }
+};
+namespace MacroClasses {
+
+template <class T>
+FORMAT_CLASS_BEGIN_TEMPLATE(Wrapper, T)
+public:
+    FORMAT_CLASS_BEGIN(Nested, T)
+    private:
+        T value_;
+    FORMAT_CLASS_END(Nested, T);
+#if ENABLED
+    T Read() const { return value_; }
+#else
+    void Read() {}
+#endif
+FORMAT_CLASS_END_TEMPLATE
+
+void Use() {
+    FORMAT_CLASS_BEGIN(Local, int)
+    public:
+        int Read() const { return 1; }
+    };
+    Local value;
+    Consume(value);
+}
+
+}
+FORMAT_CLASS_BEGIN(
+    WrapperWithADeliberatelyLongGeneratedName, NamespaceWithADeliberatelyLongName::TypeWithADeliberatelyLongName
+)
+public:
+    int Read() const { return 1; }
+FORMAT_CLASS_END(WrapperWithADeliberatelyLongGeneratedName)
+FORMAT_CLASS_BEGIN_EMPTY(Empty)
+FORMAT_CLASS_END_EMPTY(Empty)
+// Scope categories also apply inside structured macro replacements.
+#define FORMAT_GENERATED_CLASS(name)   \
+    FORMAT_CLASS_BEGIN(name, int)      \
+    public:                            \
+        int Read() const { return 1; } \
+    FORMAT_CLASS_END(name)

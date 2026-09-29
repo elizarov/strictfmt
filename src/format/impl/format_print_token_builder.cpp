@@ -321,8 +321,16 @@ void AppendTokens(const SyntaxNode& node, TokenContext context, std::vector<Prin
         return;
     }
     if (nodeKind == SyntaxNodeKind::MacroReplacementList || SyntaxNodeKindHasClass(nodeKind, SyntaxNodeClass::Tree)) {
+        const size_t first = tokens.size();
         for (const SyntaxNode* child : node.children) {
             AppendTokens(*child, context.ForChildren(nodeKind), tokens);
+        }
+        if (tokens.size() > first && nodeKind == SyntaxNodeKind::MacroClassBegin) {
+            tokens.back().opensClassScopeAfter = true;
+        }
+        if (tokens.size() > first && nodeKind == SyntaxNodeKind::MacroClassEnd) {
+            tokens[first].closesClassScopeBefore = true;
+            tokens.back().endsClassScopeAfter = true;
         }
     }
 }

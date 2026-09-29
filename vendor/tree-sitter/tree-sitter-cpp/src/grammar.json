@@ -881,32 +881,8 @@
         "type": "SEQ",
         "members": [
           {
-            "type": "ALIAS",
-            "content": {
-              "type": "TOKEN",
-              "content": {
-                "type": "PREC",
-                "value": 1,
-                "content": {
-                  "type": "PATTERN",
-                  "value": "#[ \\t]*elif[ \\t]+"
-                }
-              }
-            },
-            "named": false,
-            "value": "#elif"
-          },
-          {
-            "type": "FIELD",
-            "name": "condition",
-            "content": {
-              "type": "SYMBOL",
-              "name": "_preproc_expression"
-            }
-          },
-          {
             "type": "SYMBOL",
-            "name": "_preproc_directive_end"
+            "name": "_preproc_elif_line"
           },
           {
             "type": "REPEAT",
@@ -1377,32 +1353,8 @@
         "type": "SEQ",
         "members": [
           {
-            "type": "ALIAS",
-            "content": {
-              "type": "TOKEN",
-              "content": {
-                "type": "PREC",
-                "value": 1,
-                "content": {
-                  "type": "PATTERN",
-                  "value": "#[ \\t]*elif[ \\t]+"
-                }
-              }
-            },
-            "named": false,
-            "value": "#elif"
-          },
-          {
-            "type": "FIELD",
-            "name": "condition",
-            "content": {
-              "type": "SYMBOL",
-              "name": "_preproc_expression"
-            }
-          },
-          {
             "type": "SYMBOL",
-            "name": "_preproc_directive_end"
+            "name": "_preproc_elif_line"
           },
           {
             "type": "CHOICE",
@@ -6297,21 +6249,23 @@
           "value": "{"
         },
         {
-          "type": "REPEAT",
-          "content": {
-            "type": "SYMBOL",
-            "name": "_field_declaration_list_item"
-          }
-        },
-        {
-          "type": "STRING",
-          "value": "}"
+          "type": "SYMBOL",
+          "name": "_field_declaration_list_tail"
         }
       ]
     },
     "_field_declaration_list_item": {
       "type": "CHOICE",
       "members": [
+        {
+          "type": "ALIAS",
+          "content": {
+            "type": "SYMBOL",
+            "name": "macro_class_definition"
+          },
+          "named": true,
+          "value": "class_specifier"
+        },
         {
           "type": "SYMBOL",
           "name": "macro_function_definition"
@@ -7133,70 +7087,61 @@
           "type": "CHOICE",
           "members": [
             {
-              "type": "CHOICE",
-              "members": [
-                {
-                  "type": "SYMBOL",
-                  "name": "case_statement"
-                },
-                {
-                  "type": "SYMBOL",
-                  "name": "attributed_statement"
-                },
-                {
-                  "type": "SYMBOL",
-                  "name": "labeled_statement"
-                },
-                {
-                  "type": "SYMBOL",
-                  "name": "compound_statement"
-                },
-                {
-                  "type": "ALIAS",
-                  "content": {
-                    "type": "SYMBOL",
-                    "name": "_top_level_expression_statement"
-                  },
-                  "named": true,
-                  "value": "expression_statement"
-                },
-                {
-                  "type": "SYMBOL",
-                  "name": "if_statement"
-                },
-                {
-                  "type": "SYMBOL",
-                  "name": "switch_statement"
-                },
-                {
-                  "type": "SYMBOL",
-                  "name": "do_statement"
-                },
-                {
-                  "type": "SYMBOL",
-                  "name": "while_statement"
-                },
-                {
-                  "type": "SYMBOL",
-                  "name": "for_statement"
-                },
-                {
-                  "type": "SYMBOL",
-                  "name": "return_statement"
-                },
-                {
-                  "type": "SYMBOL",
-                  "name": "break_statement"
-                },
-                {
-                  "type": "SYMBOL",
-                  "name": "continue_statement"
-                },
-                {
-                  "type": "SYMBOL",
-                  "name": "goto_statement"
-                }
-              ]
+              "type": "SYMBOL",
+              "name": "_statement_block"
+            },
+            {
+              "type": "SYMBOL",
+              "name": "case_statement"
+            },
+            {
+              "type": "SYMBOL",
+              "name": "attributed_statement"
+            },
+            {
+              "type": "SYMBOL",
+              "name": "labeled_statement"
+            },
+            {
+              "type": "ALIAS",
+              "content": {
+                "type": "SYMBOL",
+                "name": "_top_level_expression_statement"
+              },
+              "named": true,
+              "value": "expression_statement"
+            },
+            {
+              "type": "SYMBOL",
+              "name": "if_statement"
+            },
+            {
+              "type": "SYMBOL",
+              "name": "do_statement"
+            },
+            {
+              "type": "SYMBOL",
+              "name": "while_statement"
+            },
+            {
+              "type": "SYMBOL",
+              "name": "for_statement"
+            },
+            {
+              "type": "SYMBOL",
+              "name": "return_statement"
+            },
+            {
+              "type": "SYMBOL",
+              "name": "break_statement"
+            },
+            {
+              "type": "SYMBOL",
+              "name": "continue_statement"
+            },
+            {
+              "type": "SYMBOL",
+              "name": "goto_statement"
             },
             {
               "type": "SYMBOL",
@@ -7217,10 +7162,6 @@
             {
               "type": "SYMBOL",
               "name": "for_range_loop"
-            },
-            {
-              "type": "SYMBOL",
-              "name": "try_statement"
             }
           ]
         }
@@ -12821,6 +12762,15 @@
           ]
         },
         {
+          "type": "ALIAS",
+          "content": {
+            "type": "SYMBOL",
+            "name": "macro_class_definition"
+          },
+          "named": true,
+          "value": "class_specifier"
+        },
+        {
           "type": "STRING",
           "value": ";"
         }
@@ -13624,69 +13574,60 @@
                     "type": "CHOICE",
                     "members": [
                       {
-                        "type": "CHOICE",
-                        "members": [
-                          {
-                            "type": "SYMBOL",
-                            "name": "attributed_statement"
-                          },
-                          {
-                            "type": "SYMBOL",
-                            "name": "labeled_statement"
-                          },
-                          {
-                            "type": "SYMBOL",
-                            "name": "compound_statement"
-                          },
-                          {
-                            "type": "SYMBOL",
-                            "name": "expression_statement"
-                          },
-                          {
-                            "type": "SYMBOL",
-                            "name": "if_statement"
-                          },
-                          {
-                            "type": "SYMBOL",
-                            "name": "switch_statement"
-                          },
-                          {
-                            "type": "SYMBOL",
-                            "name": "do_statement"
-                          },
-                          {
-                            "type": "SYMBOL",
-                            "name": "while_statement"
-                          },
-                          {
-                            "type": "SYMBOL",
-                            "name": "for_statement"
-                          },
-                          {
-                            "type": "SYMBOL",
-                            "name": "return_statement"
-                          },
-                          {
-                            "type": "SYMBOL",
-                            "name": "break_statement"
-                          },
-                          {
-                            "type": "SYMBOL",
-                            "name": "continue_statement"
-                          },
-                          {
-                            "type": "SYMBOL",
-                            "name": "goto_statement"
-                          },
-                          {
-                            "type": "SYMBOL",
-                            "name": "seh_try_statement"
-                          },
-                          {
-                            "type": "SYMBOL",
-                            "name": "seh_leave_statement"
-                          }
-                        ]
+                        "type": "SYMBOL",
+                        "name": "_statement_block"
+                      },
+                      {
+                        "type": "SYMBOL",
+                        "name": "attributed_statement"
+                      },
+                      {
+                        "type": "SYMBOL",
+                        "name": "labeled_statement"
+                      },
+                      {
+                        "type": "SYMBOL",
+                        "name": "expression_statement"
+                      },
+                      {
+                        "type": "SYMBOL",
+                        "name": "if_statement"
+                      },
+                      {
+                        "type": "SYMBOL",
+                        "name": "do_statement"
+                      },
+                      {
+                        "type": "SYMBOL",
+                        "name": "while_statement"
+                      },
+                      {
+                        "type": "SYMBOL",
+                        "name": "for_statement"
+                      },
+                      {
+                        "type": "SYMBOL",
+                        "name": "return_statement"
+                      },
+                      {
+                        "type": "SYMBOL",
+                        "name": "break_statement"
+                      },
+                      {
+                        "type": "SYMBOL",
+                        "name": "continue_statement"
+                      },
+                      {
+                        "type": "SYMBOL",
+                        "name": "goto_statement"
+                      },
+                      {
+                        "type": "SYMBOL",
+                        "name": "seh_try_statement"
+                      },
+                      {
+                        "type": "SYMBOL",
+                        "name": "seh_leave_statement"
                       },
                       {
                         "type": "SYMBOL",
@@ -13707,10 +13648,6 @@
                       {
                         "type": "SYMBOL",
                         "name": "for_range_loop"
-                      },
-                      {
-                        "type": "SYMBOL",
-                        "name": "try_statement"
                       }
                     ]
                   }
@@ -15487,6 +15424,98 @@
         }
       ]
     },
+    "macro_class_definition": {
+      "type": "FIELD",
+      "name": "body",
+      "content": {
+        "type": "ALIAS",
+        "content": {
+          "type": "SYMBOL",
+          "name": "_macro_class_body"
+        },
+        "named": true,
+        "value": "field_declaration_list"
+      }
+    },
+    "_macro_class_body": {
+      "type": "SEQ",
+      "members": [
+        {
+          "type": "SYMBOL",
+          "name": "macro_class_begin"
+        },
+        {
+          "type": "SYMBOL",
+          "name": "_field_declaration_list_tail"
+        }
+      ]
+    },
+    "macro_class_begin": {
+      "type": "PREC_RIGHT",
+      "value": 0,
+      "content": {
+        "type": "SEQ",
+        "members": [
+          {
+            "type": "FIELD",
+            "name": "name",
+            "content": {
+              "type": "SYMBOL",
+              "name": "class_begin_macro_identifier"
+            }
+          },
+          {
+            "type": "CHOICE",
+            "members": [
+              {
+                "type": "FIELD",
+                "name": "arguments",
+                "content": {
+                  "type": "SYMBOL",
+                  "name": "argument_list"
+                }
+              },
+              {
+                "type": "BLANK"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    "macro_class_end": {
+      "type": "PREC_RIGHT",
+      "value": 0,
+      "content": {
+        "type": "SEQ",
+        "members": [
+          {
+            "type": "FIELD",
+            "name": "name",
+            "content": {
+              "type": "SYMBOL",
+              "name": "class_end_macro_identifier"
+            }
+          },
+          {
+            "type": "CHOICE",
+            "members": [
+              {
+                "type": "FIELD",
+                "name": "arguments",
+                "content": {
+                  "type": "SYMBOL",
+                  "name": "argument_list"
+                }
+              },
+              {
+                "type": "BLANK"
+              }
+            ]
+          }
+        ]
+      }
+    },
     "macro_enum_declaration": {
       "type": "SEQ",
       "members": [
@@ -15744,6 +15773,39 @@
         {
           "type": "SYMBOL",
           "name": "compound_statement"
+        }
+      ]
+    },
+    "_preproc_elif_line": {
+      "type": "SEQ",
+      "members": [
+        {
+          "type": "ALIAS",
+          "content": {
+            "type": "TOKEN",
+            "content": {
+              "type": "PREC",
+              "value": 1,
+              "content": {
+                "type": "PATTERN",
+                "value": "#[ \\t]*elif[ \\t]+"
+              }
+            }
+          },
+          "named": false,
+          "value": "#elif"
+        },
+        {
+          "type": "FIELD",
+          "name": "condition",
+          "content": {
+            "type": "SYMBOL",
+            "name": "_preproc_expression"
+          }
+        },
+        {
+          "type": "SYMBOL",
+          "name": "_preproc_directive_end"
         }
       ]
     },
@@ -16124,32 +16186,8 @@
         "type": "SEQ",
         "members": [
           {
-            "type": "ALIAS",
-            "content": {
-              "type": "TOKEN",
-              "content": {
-                "type": "PREC",
-                "value": 1,
-                "content": {
-                  "type": "PATTERN",
-                  "value": "#[ \\t]*elif[ \\t]+"
-                }
-              }
-            },
-            "named": false,
-            "value": "#elif"
-          },
-          {
-            "type": "FIELD",
-            "name": "condition",
-            "content": {
-              "type": "SYMBOL",
-              "name": "_preproc_expression"
-            }
-          },
-          {
             "type": "SYMBOL",
-            "name": "_preproc_directive_end"
+            "name": "_preproc_elif_line"
           },
           {
             "type": "REPEAT",
@@ -16675,32 +16713,8 @@
         "type": "SEQ",
         "members": [
           {
-            "type": "ALIAS",
-            "content": {
-              "type": "TOKEN",
-              "content": {
-                "type": "PREC",
-                "value": 1,
-                "content": {
-                  "type": "PATTERN",
-                  "value": "#[ \\t]*elif[ \\t]+"
-                }
-              }
-            },
-            "named": false,
-            "value": "#elif"
-          },
-          {
-            "type": "FIELD",
-            "name": "condition",
-            "content": {
-              "type": "SYMBOL",
-              "name": "_preproc_expression"
-            }
-          },
-          {
             "type": "SYMBOL",
-            "name": "_preproc_directive_end"
+            "name": "_preproc_elif_line"
           },
           {
             "type": "SYMBOL",
@@ -17005,32 +17019,8 @@
         "type": "SEQ",
         "members": [
           {
-            "type": "ALIAS",
-            "content": {
-              "type": "TOKEN",
-              "content": {
-                "type": "PREC",
-                "value": 1,
-                "content": {
-                  "type": "PATTERN",
-                  "value": "#[ \\t]*elif[ \\t]+"
-                }
-              }
-            },
-            "named": false,
-            "value": "#elif"
-          },
-          {
-            "type": "FIELD",
-            "name": "condition",
-            "content": {
-              "type": "SYMBOL",
-              "name": "_preproc_expression"
-            }
-          },
-          {
             "type": "SYMBOL",
-            "name": "_preproc_directive_end"
+            "name": "_preproc_elif_line"
           },
           {
             "type": "SEQ",
@@ -18177,32 +18167,8 @@
         "type": "SEQ",
         "members": [
           {
-            "type": "ALIAS",
-            "content": {
-              "type": "TOKEN",
-              "content": {
-                "type": "PREC",
-                "value": 1,
-                "content": {
-                  "type": "PATTERN",
-                  "value": "#[ \\t]*elif[ \\t]+"
-                }
-              }
-            },
-            "named": false,
-            "value": "#elif"
-          },
-          {
-            "type": "FIELD",
-            "name": "condition",
-            "content": {
-              "type": "SYMBOL",
-              "name": "_preproc_expression"
-            }
-          },
-          {
             "type": "SYMBOL",
-            "name": "_preproc_directive_end"
+            "name": "_preproc_elif_line"
           },
           {
             "type": "SYMBOL",
@@ -18342,32 +18308,8 @@
         "type": "SEQ",
         "members": [
           {
-            "type": "ALIAS",
-            "content": {
-              "type": "TOKEN",
-              "content": {
-                "type": "PREC",
-                "value": 1,
-                "content": {
-                  "type": "PATTERN",
-                  "value": "#[ \\t]*elif[ \\t]+"
-                }
-              }
-            },
-            "named": false,
-            "value": "#elif"
-          },
-          {
-            "type": "FIELD",
-            "name": "condition",
-            "content": {
-              "type": "SYMBOL",
-              "name": "_preproc_expression"
-            }
-          },
-          {
             "type": "SYMBOL",
-            "name": "_preproc_directive_end"
+            "name": "_preproc_elif_line"
           },
           {
             "type": "SYMBOL",
@@ -19263,32 +19205,8 @@
         "type": "SEQ",
         "members": [
           {
-            "type": "ALIAS",
-            "content": {
-              "type": "TOKEN",
-              "content": {
-                "type": "PREC",
-                "value": 1,
-                "content": {
-                  "type": "PATTERN",
-                  "value": "#[ \\t]*elif[ \\t]+"
-                }
-              }
-            },
-            "named": false,
-            "value": "#elif"
-          },
-          {
-            "type": "FIELD",
-            "name": "condition",
-            "content": {
-              "type": "SYMBOL",
-              "name": "_preproc_expression"
-            }
-          },
-          {
             "type": "SYMBOL",
-            "name": "_preproc_directive_end"
+            "name": "_preproc_elif_line"
           },
           {
             "type": "SEQ",
@@ -20855,32 +20773,8 @@
         "type": "SEQ",
         "members": [
           {
-            "type": "ALIAS",
-            "content": {
-              "type": "TOKEN",
-              "content": {
-                "type": "PREC",
-                "value": 1,
-                "content": {
-                  "type": "PATTERN",
-                  "value": "#[ \\t]*elif[ \\t]+"
-                }
-              }
-            },
-            "named": false,
-            "value": "#elif"
-          },
-          {
-            "type": "FIELD",
-            "name": "condition",
-            "content": {
-              "type": "SYMBOL",
-              "name": "_preproc_expression"
-            }
-          },
-          {
             "type": "SYMBOL",
-            "name": "_preproc_directive_end"
+            "name": "_preproc_elif_line"
           },
           {
             "type": "REPEAT",
@@ -21298,32 +21192,8 @@
         "type": "SEQ",
         "members": [
           {
-            "type": "ALIAS",
-            "content": {
-              "type": "TOKEN",
-              "content": {
-                "type": "PREC",
-                "value": 1,
-                "content": {
-                  "type": "PATTERN",
-                  "value": "#[ \\t]*elif[ \\t]+"
-                }
-              }
-            },
-            "named": false,
-            "value": "#elif"
-          },
-          {
-            "type": "FIELD",
-            "name": "condition",
-            "content": {
-              "type": "SYMBOL",
-              "name": "_preproc_expression"
-            }
-          },
-          {
             "type": "SYMBOL",
-            "name": "_preproc_directive_end"
+            "name": "_preproc_elif_line"
           },
           {
             "type": "SYMBOL",
@@ -21481,32 +21351,8 @@
         "type": "SEQ",
         "members": [
           {
-            "type": "ALIAS",
-            "content": {
-              "type": "TOKEN",
-              "content": {
-                "type": "PREC",
-                "value": 1,
-                "content": {
-                  "type": "PATTERN",
-                  "value": "#[ \\t]*elif[ \\t]+"
-                }
-              }
-            },
-            "named": false,
-            "value": "#elif"
-          },
-          {
-            "type": "FIELD",
-            "name": "condition",
-            "content": {
-              "type": "SYMBOL",
-              "name": "_preproc_expression"
-            }
-          },
-          {
             "type": "SYMBOL",
-            "name": "_preproc_directive_end"
+            "name": "_preproc_elif_line"
           },
           {
             "type": "SEQ",
@@ -21655,32 +21501,8 @@
         "type": "SEQ",
         "members": [
           {
-            "type": "ALIAS",
-            "content": {
-              "type": "TOKEN",
-              "content": {
-                "type": "PREC",
-                "value": 1,
-                "content": {
-                  "type": "PATTERN",
-                  "value": "#[ \\t]*elif[ \\t]+"
-                }
-              }
-            },
-            "named": false,
-            "value": "#elif"
-          },
-          {
-            "type": "FIELD",
-            "name": "condition",
-            "content": {
-              "type": "SYMBOL",
-              "name": "_preproc_expression"
-            }
-          },
-          {
             "type": "SYMBOL",
-            "name": "_preproc_directive_end"
+            "name": "_preproc_elif_line"
           },
           {
             "type": "SYMBOL",
@@ -22176,32 +21998,8 @@
         "type": "SEQ",
         "members": [
           {
-            "type": "ALIAS",
-            "content": {
-              "type": "TOKEN",
-              "content": {
-                "type": "PREC",
-                "value": 1,
-                "content": {
-                  "type": "PATTERN",
-                  "value": "#[ \\t]*elif[ \\t]+"
-                }
-              }
-            },
-            "named": false,
-            "value": "#elif"
-          },
-          {
-            "type": "FIELD",
-            "name": "condition",
-            "content": {
-              "type": "SYMBOL",
-              "name": "_preproc_expression"
-            }
-          },
-          {
             "type": "SYMBOL",
-            "name": "_preproc_directive_end"
+            "name": "_preproc_elif_line"
           },
           {
             "type": "SYMBOL",
@@ -23813,32 +23611,8 @@
         "type": "SEQ",
         "members": [
           {
-            "type": "ALIAS",
-            "content": {
-              "type": "TOKEN",
-              "content": {
-                "type": "PREC",
-                "value": 1,
-                "content": {
-                  "type": "PATTERN",
-                  "value": "#[ \\t]*elif[ \\t]+"
-                }
-              }
-            },
-            "named": false,
-            "value": "#elif"
-          },
-          {
-            "type": "FIELD",
-            "name": "condition",
-            "content": {
-              "type": "SYMBOL",
-              "name": "_preproc_expression"
-            }
-          },
-          {
             "type": "SYMBOL",
-            "name": "_preproc_directive_end"
+            "name": "_preproc_elif_line"
           },
           {
             "type": "CHOICE",
@@ -24277,32 +24051,8 @@
         "type": "SEQ",
         "members": [
           {
-            "type": "ALIAS",
-            "content": {
-              "type": "TOKEN",
-              "content": {
-                "type": "PREC",
-                "value": 1,
-                "content": {
-                  "type": "PATTERN",
-                  "value": "#[ \\t]*elif[ \\t]+"
-                }
-              }
-            },
-            "named": false,
-            "value": "#elif"
-          },
-          {
-            "type": "FIELD",
-            "name": "condition",
-            "content": {
-              "type": "SYMBOL",
-              "name": "_preproc_expression"
-            }
-          },
-          {
             "type": "SYMBOL",
-            "name": "_preproc_directive_end"
+            "name": "_preproc_elif_line"
           },
           {
             "type": "SYMBOL",
@@ -24412,6 +24162,31 @@
     "field_initializer_prefix_macro": {
       "type": "SYMBOL",
       "name": "macro_call_item"
+    },
+    "_field_declaration_list_tail": {
+      "type": "SEQ",
+      "members": [
+        {
+          "type": "REPEAT",
+          "content": {
+            "type": "SYMBOL",
+            "name": "_field_declaration_list_item"
+          }
+        },
+        {
+          "type": "CHOICE",
+          "members": [
+            {
+              "type": "SYMBOL",
+              "name": "macro_class_end"
+            },
+            {
+              "type": "STRING",
+              "value": "}"
+            }
+          ]
+        }
+      ]
     },
     "standalone_qualifier_preproc_if": {
       "type": "PREC_DYNAMIC",
@@ -26023,32 +25798,8 @@
         "type": "SEQ",
         "members": [
           {
-            "type": "ALIAS",
-            "content": {
-              "type": "TOKEN",
-              "content": {
-                "type": "PREC",
-                "value": 1,
-                "content": {
-                  "type": "PATTERN",
-                  "value": "#[ \\t]*elif[ \\t]+"
-                }
-              }
-            },
-            "named": false,
-            "value": "#elif"
-          },
-          {
-            "type": "FIELD",
-            "name": "condition",
-            "content": {
-              "type": "SYMBOL",
-              "name": "_preproc_expression"
-            }
-          },
-          {
             "type": "SYMBOL",
-            "name": "_preproc_directive_end"
+            "name": "_preproc_elif_line"
           },
           {
             "type": "SYMBOL",
@@ -26615,32 +26366,8 @@
         "type": "SEQ",
         "members": [
           {
-            "type": "ALIAS",
-            "content": {
-              "type": "TOKEN",
-              "content": {
-                "type": "PREC",
-                "value": 1,
-                "content": {
-                  "type": "PATTERN",
-                  "value": "#[ \\t]*elif[ \\t]+"
-                }
-              }
-            },
-            "named": false,
-            "value": "#elif"
-          },
-          {
-            "type": "FIELD",
-            "name": "condition",
-            "content": {
-              "type": "SYMBOL",
-              "name": "_preproc_expression"
-            }
-          },
-          {
             "type": "SYMBOL",
-            "name": "_preproc_directive_end"
+            "name": "_preproc_elif_line"
           },
           {
             "type": "SYMBOL",
@@ -28106,32 +27833,8 @@
         "type": "SEQ",
         "members": [
           {
-            "type": "ALIAS",
-            "content": {
-              "type": "TOKEN",
-              "content": {
-                "type": "PREC",
-                "value": 1,
-                "content": {
-                  "type": "PATTERN",
-                  "value": "#[ \\t]*elif[ \\t]+"
-                }
-              }
-            },
-            "named": false,
-            "value": "#elif"
-          },
-          {
-            "type": "FIELD",
-            "name": "condition",
-            "content": {
-              "type": "SYMBOL",
-              "name": "_preproc_expression"
-            }
-          },
-          {
             "type": "SYMBOL",
-            "name": "_preproc_directive_end"
+            "name": "_preproc_elif_line"
           },
           {
             "type": "SYMBOL",
@@ -33112,32 +32815,8 @@
         "type": "SEQ",
         "members": [
           {
-            "type": "ALIAS",
-            "content": {
-              "type": "TOKEN",
-              "content": {
-                "type": "PREC",
-                "value": 1,
-                "content": {
-                  "type": "PATTERN",
-                  "value": "#[ \\t]*elif[ \\t]+"
-                }
-              }
-            },
-            "named": false,
-            "value": "#elif"
-          },
-          {
-            "type": "FIELD",
-            "name": "condition",
-            "content": {
-              "type": "SYMBOL",
-              "name": "_preproc_expression"
-            }
-          },
-          {
             "type": "SYMBOL",
-            "name": "_preproc_directive_end"
+            "name": "_preproc_elif_line"
           },
           {
             "type": "SYMBOL",
@@ -33584,16 +33263,33 @@
         }
       ]
     },
+    "_statement_block": {
+      "type": "CHOICE",
+      "members": [
+        {
+          "type": "SYMBOL",
+          "name": "compound_statement"
+        },
+        {
+          "type": "SYMBOL",
+          "name": "switch_statement"
+        },
+        {
+          "type": "SYMBOL",
+          "name": "try_statement"
+        }
+      ]
+    },
     "_closed_statement_leaf": {
       "type": "CHOICE",
       "members": [
         {
           "type": "SYMBOL",
-          "name": "preproc_selected_for_statement"
+          "name": "_statement_block"
         },
         {
           "type": "SYMBOL",
-          "name": "compound_statement"
+          "name": "preproc_selected_for_statement"
         },
         {
           "type": "SYMBOL",
@@ -33626,14 +33322,6 @@
         {
           "type": "SYMBOL",
           "name": "do_statement"
-        },
-        {
-          "type": "SYMBOL",
-          "name": "switch_statement"
-        },
-        {
-          "type": "SYMBOL",
-          "name": "try_statement"
         },
         {
           "type": "SYMBOL",
@@ -33908,32 +33596,8 @@
         "type": "SEQ",
         "members": [
           {
-            "type": "ALIAS",
-            "content": {
-              "type": "TOKEN",
-              "content": {
-                "type": "PREC",
-                "value": 1,
-                "content": {
-                  "type": "PATTERN",
-                  "value": "#[ \\t]*elif[ \\t]+"
-                }
-              }
-            },
-            "named": false,
-            "value": "#elif"
-          },
-          {
-            "type": "FIELD",
-            "name": "condition",
-            "content": {
-              "type": "SYMBOL",
-              "name": "_preproc_expression"
-            }
-          },
-          {
             "type": "SYMBOL",
-            "name": "_preproc_directive_end"
+            "name": "_preproc_elif_line"
           },
           {
             "type": "SYMBOL",
@@ -37101,85 +36765,76 @@
                   "type": "CHOICE",
                   "members": [
                     {
-                      "type": "CHOICE",
+                      "type": "SYMBOL",
+                      "name": "_statement_block"
+                    },
+                    {
+                      "type": "SYMBOL",
+                      "name": "attributed_statement"
+                    },
+                    {
+                      "type": "SYMBOL",
+                      "name": "labeled_statement"
+                    },
+                    {
+                      "type": "SYMBOL",
+                      "name": "if_statement"
+                    },
+                    {
+                      "type": "SYMBOL",
+                      "name": "do_statement"
+                    },
+                    {
+                      "type": "SYMBOL",
+                      "name": "while_statement"
+                    },
+                    {
+                      "type": "SYMBOL",
+                      "name": "for_statement"
+                    },
+                    {
+                      "type": "SYMBOL",
+                      "name": "return_statement"
+                    },
+                    {
+                      "type": "SYMBOL",
+                      "name": "break_statement"
+                    },
+                    {
+                      "type": "SYMBOL",
+                      "name": "continue_statement"
+                    },
+                    {
+                      "type": "SYMBOL",
+                      "name": "goto_statement"
+                    },
+                    {
+                      "type": "SYMBOL",
+                      "name": "seh_try_statement"
+                    },
+                    {
+                      "type": "SYMBOL",
+                      "name": "seh_leave_statement"
+                    },
+                    {
+                      "type": "SYMBOL",
+                      "name": "macro_empty_statement_argument"
+                    },
+                    {
+                      "type": "SEQ",
                       "members": [
                         {
-                          "type": "SYMBOL",
-                          "name": "attributed_statement"
+                          "type": "ALIAS",
+                          "content": {
+                            "type": "SYMBOL",
+                            "name": "macro_expression_without_semicolon"
+                          },
+                          "named": true,
+                          "value": "expression_statement"
                         },
                         {
-                          "type": "SYMBOL",
-                          "name": "labeled_statement"
-                        },
-                        {
-                          "type": "SYMBOL",
-                          "name": "compound_statement"
-                        },
-                        {
-                          "type": "SYMBOL",
-                          "name": "if_statement"
-                        },
-                        {
-                          "type": "SYMBOL",
-                          "name": "switch_statement"
-                        },
-                        {
-                          "type": "SYMBOL",
-                          "name": "do_statement"
-                        },
-                        {
-                          "type": "SYMBOL",
-                          "name": "while_statement"
-                        },
-                        {
-                          "type": "SYMBOL",
-                          "name": "for_statement"
-                        },
-                        {
-                          "type": "SYMBOL",
-                          "name": "return_statement"
-                        },
-                        {
-                          "type": "SYMBOL",
-                          "name": "break_statement"
-                        },
-                        {
-                          "type": "SYMBOL",
-                          "name": "continue_statement"
-                        },
-                        {
-                          "type": "SYMBOL",
-                          "name": "goto_statement"
-                        },
-                        {
-                          "type": "SYMBOL",
-                          "name": "seh_try_statement"
-                        },
-                        {
-                          "type": "SYMBOL",
-                          "name": "seh_leave_statement"
-                        },
-                        {
-                          "type": "SYMBOL",
-                          "name": "macro_empty_statement_argument"
-                        },
-                        {
-                          "type": "SEQ",
-                          "members": [
-                            {
-                              "type": "ALIAS",
-                              "content": {
-                                "type": "SYMBOL",
-                                "name": "macro_expression_without_semicolon"
-                              },
-                              "named": true,
-                              "value": "expression_statement"
-                            },
-                            {
-                              "type": "STRING",
-                              "value": ";"
-                            }
-                          ]
+                          "type": "STRING",
+                          "value": ";"
                         }
                       ]
                     },
@@ -37202,10 +36857,6 @@
                     {
                       "type": "SYMBOL",
                       "name": "for_range_loop"
-                    },
-                    {
-                      "type": "SYMBOL",
-                      "name": "try_statement"
                     }
                   ]
                 }
@@ -37584,85 +37235,76 @@
                   "type": "CHOICE",
                   "members": [
                     {
-                      "type": "CHOICE",
+                      "type": "SYMBOL",
+                      "name": "_statement_block"
+                    },
+                    {
+                      "type": "SYMBOL",
+                      "name": "attributed_statement"
+                    },
+                    {
+                      "type": "SYMBOL",
+                      "name": "labeled_statement"
+                    },
+                    {
+                      "type": "SYMBOL",
+                      "name": "if_statement"
+                    },
+                    {
+                      "type": "SYMBOL",
+                      "name": "do_statement"
+                    },
+                    {
+                      "type": "SYMBOL",
+                      "name": "while_statement"
+                    },
+                    {
+                      "type": "SYMBOL",
+                      "name": "for_statement"
+                    },
+                    {
+                      "type": "SYMBOL",
+                      "name": "return_statement"
+                    },
+                    {
+                      "type": "SYMBOL",
+                      "name": "break_statement"
+                    },
+                    {
+                      "type": "SYMBOL",
+                      "name": "continue_statement"
+                    },
+                    {
+                      "type": "SYMBOL",
+                      "name": "goto_statement"
+                    },
+                    {
+                      "type": "SYMBOL",
+                      "name": "seh_try_statement"
+                    },
+                    {
+                      "type": "SYMBOL",
+                      "name": "seh_leave_statement"
+                    },
+                    {
+                      "type": "SYMBOL",
+                      "name": "macro_empty_statement_argument"
+                    },
+                    {
+                      "type": "SEQ",
                       "members": [
                         {
-                          "type": "SYMBOL",
-                          "name": "attributed_statement"
+                          "type": "ALIAS",
+                          "content": {
+                            "type": "SYMBOL",
+                            "name": "macro_expression_without_semicolon"
+                          },
+                          "named": true,
+                          "value": "expression_statement"
                         },
                         {
-                          "type": "SYMBOL",
-                          "name": "labeled_statement"
-                        },
-                        {
-                          "type": "SYMBOL",
-                          "name": "compound_statement"
-                        },
-                        {
-                          "type": "SYMBOL",
-                          "name": "if_statement"
-                        },
-                        {
-                          "type": "SYMBOL",
-                          "name": "switch_statement"
-                        },
-                        {
-                          "type": "SYMBOL",
-                          "name": "do_statement"
-                        },
-                        {
-                          "type": "SYMBOL",
-                          "name": "while_statement"
-                        },
-                        {
-                          "type": "SYMBOL",
-                          "name": "for_statement"
-                        },
-                        {
-                          "type": "SYMBOL",
-                          "name": "return_statement"
-                        },
-                        {
-                          "type": "SYMBOL",
-                          "name": "break_statement"
-                        },
-                        {
-                          "type": "SYMBOL",
-                          "name": "continue_statement"
-                        },
-                        {
-                          "type": "SYMBOL",
-                          "name": "goto_statement"
-                        },
-                        {
-                          "type": "SYMBOL",
-                          "name": "seh_try_statement"
-                        },
-                        {
-                          "type": "SYMBOL",
-                          "name": "seh_leave_statement"
-                        },
-                        {
-                          "type": "SYMBOL",
-                          "name": "macro_empty_statement_argument"
-                        },
-                        {
-                          "type": "SEQ",
-                          "members": [
-                            {
-                              "type": "ALIAS",
-                              "content": {
-                                "type": "SYMBOL",
-                                "name": "macro_expression_without_semicolon"
-                              },
-                              "named": true,
-                              "value": "expression_statement"
-                            },
-                            {
-                              "type": "STRING",
-                              "value": ";"
-                            }
-                          ]
+                          "type": "STRING",
+                          "value": ";"
                         }
                       ]
                     },
@@ -37685,10 +37327,6 @@
                     {
                       "type": "SYMBOL",
                       "name": "for_range_loop"
-                    },
-                    {
-                      "type": "SYMBOL",
-                      "name": "try_statement"
                     }
                   ]
                 }
@@ -37729,6 +37367,10 @@
       "members": [
         {
           "type": "SYMBOL",
+          "name": "_statement_block"
+        },
+        {
+          "type": "SYMBOL",
           "name": "macro_unterminated_control_statement"
         },
         {
@@ -37764,10 +37406,6 @@
         },
         {
           "type": "SYMBOL",
-          "name": "compound_statement"
-        },
-        {
-          "type": "SYMBOL",
           "name": "if_statement"
         },
         {
@@ -37777,14 +37415,6 @@
         {
           "type": "SYMBOL",
           "name": "while_statement"
-        },
-        {
-          "type": "SYMBOL",
-          "name": "switch_statement"
-        },
-        {
-          "type": "SYMBOL",
-          "name": "try_statement"
         },
         {
           "type": "SYMBOL",
@@ -37802,6 +37432,10 @@
       "content": {
         "type": "CHOICE",
         "members": [
+          {
+            "type": "SYMBOL",
+            "name": "_statement_block"
+          },
           {
             "type": "SYMBOL",
             "name": "macro_unterminated_control_statement"
@@ -37839,10 +37473,6 @@
           },
           {
             "type": "SYMBOL",
-            "name": "compound_statement"
-          },
-          {
-            "type": "SYMBOL",
             "name": "if_statement"
           },
           {
@@ -37852,14 +37482,6 @@
           {
             "type": "SYMBOL",
             "name": "while_statement"
-          },
-          {
-            "type": "SYMBOL",
-            "name": "switch_statement"
-          },
-          {
-            "type": "SYMBOL",
-            "name": "try_statement"
           },
           {
             "type": "SYMBOL",
@@ -39637,32 +39259,8 @@
         "type": "SEQ",
         "members": [
           {
-            "type": "ALIAS",
-            "content": {
-              "type": "TOKEN",
-              "content": {
-                "type": "PREC",
-                "value": 1,
-                "content": {
-                  "type": "PATTERN",
-                  "value": "#[ \\t]*elif[ \\t]+"
-                }
-              }
-            },
-            "named": false,
-            "value": "#elif"
-          },
-          {
-            "type": "FIELD",
-            "name": "condition",
-            "content": {
-              "type": "SYMBOL",
-              "name": "_preproc_expression"
-            }
-          },
-          {
             "type": "SYMBOL",
-            "name": "_preproc_directive_end"
+            "name": "_preproc_elif_line"
           },
           {
             "type": "SYMBOL",
@@ -40452,32 +40050,8 @@
         "type": "SEQ",
         "members": [
           {
-            "type": "ALIAS",
-            "content": {
-              "type": "TOKEN",
-              "content": {
-                "type": "PREC",
-                "value": 1,
-                "content": {
-                  "type": "PATTERN",
-                  "value": "#[ \\t]*elif[ \\t]+"
-                }
-              }
-            },
-            "named": false,
-            "value": "#elif"
-          },
-          {
-            "type": "FIELD",
-            "name": "condition",
-            "content": {
-              "type": "SYMBOL",
-              "name": "_preproc_expression"
-            }
-          },
-          {
             "type": "SYMBOL",
-            "name": "_preproc_directive_end"
+            "name": "_preproc_elif_line"
           },
           {
             "type": "CHOICE",
@@ -44014,6 +43588,23 @@
   ],
   "conflicts": [
     [
+      "preproc_ended_consequence_statement",
+      "_statement_block"
+    ],
+    [
+      "parenthesized_expression",
+      "_statement_block",
+      "_argument_list_item"
+    ],
+    [
+      "_statement_block",
+      "macro_statement_argument_list"
+    ],
+    [
+      "_statement_block",
+      "_argument_list_item"
+    ],
+    [
       "_class_name",
       "_common_postfix_expression"
     ],
@@ -46694,6 +46285,14 @@
     {
       "type": "SYMBOL",
       "name": "if_header_macro_identifier"
+    },
+    {
+      "type": "SYMBOL",
+      "name": "class_begin_macro_identifier"
+    },
+    {
+      "type": "SYMBOL",
+      "name": "class_end_macro_identifier"
     },
     {
       "type": "SYMBOL",

@@ -40,6 +40,8 @@ enum class SyntaxNodeKind : std::uint16_t {
     NamespaceDefinition,
     LinkageSpecification,
     GroupingScopeClose,
+    MacroClassBegin,
+    MacroClassEnd,
     EnumSpecifier,
     ClassSpecifier,
     StructSpecifier,

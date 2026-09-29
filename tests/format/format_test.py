@@ -2567,7 +2567,11 @@ class FormatCommandTests(unittest.TestCase):
                 "  TypeSpecifierMacros:\n"
                 "    - PARENT_TYPE\n"
                 "  PreprocessorArgumentMacros:\n"
-                "    - PARENT_PP\n",
+                "    - PARENT_PP\n"
+                "  ClassBeginMacros:\n"
+                "    - PARENT_CLASS_BEGIN\n"
+                "  ClassEndMacros:\n"
+                "    - PARENT_CLASS_END\n",
                 encoding="utf-8",
             )
             (nested / ".cpp-format").write_text(
@@ -2590,7 +2594,11 @@ class FormatCommandTests(unittest.TestCase):
                 "  TypeSpecifierMacros:\n"
                 "    - CHILD_TYPE\n"
                 "  PreprocessorArgumentMacros:\n"
-                "    - CHILD_PP\n",
+                "    - CHILD_PP\n"
+                "  ClassBeginMacros:\n"
+                "    - CHILD_CLASS_BEGIN\n"
+                "  ClassEndMacros:\n"
+                "    - CHILD_CLASS_END\n",
                 encoding="utf-8",
             )
             source = nested / "sample.cpp"
@@ -2598,6 +2606,8 @@ class FormatCommandTests(unittest.TestCase):
                 "int value = 1 PARENT_CONTINUATION CHILD_CONTINUATION(2);\n"
                 "PARENT_PREFIX int ParentDeclaration();\n"
                 "CHILD_PREFIX int ChildDeclaration();\n"
+                "PARENT_CLASS_BEGIN(Parent) public: int Read(){return 1;} PARENT_CLASS_END\n"
+                "CHILD_CLASS_BEGIN(Child) private: int value_; CHILD_CLASS_END(Child)\n"
                 "struct Signatures {\n"
                 "PARENT_METHOD(Result, Parent, (Value* parent));\n"
                 "CHILD_METHOD(Result, Child, (Value&& child));\n"

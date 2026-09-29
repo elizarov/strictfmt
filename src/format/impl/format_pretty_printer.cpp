@@ -214,7 +214,20 @@ public:
             const PrintToken* next = nextIndex < tokens.size() ? &tokens[nextIndex] : nullptr;
             const PrintToken* rawNext = RawNextToken(tokens, index);
             auto tokenScope = output_.TokenScope(tokens[index], layoutTree_->FindOwner(tokens[index].node));
+            if (tokens[index].closesClassScopeBefore) {
+                CloseMacroClassScope(tokens[index]);
+            }
             PrintOne(tokens[index], previous, rawPrevious, next, rawNext);
+            if (tokens[index].opensClassScopeAfter) {
+                OpenMacroClassScope(tokens[index], rawNext);
+            }
+            if (tokens[index].endsClassScopeAfter && (
+                rawNext == nullptr ||
+                (rawNext->kind != PrintTokenKind::TrailingComment && rawNext->syntaxKind != SyntaxNodeKind::Semicolon)
+            )) {
+                FlushPendingTokens();
+                NewLine(PrintTokenContinuesMacroLine(tokens[index], rawNext));
+            }
             if (!IsStructuralTriviaToken(tokens[index])) {
                 previous = &tokens[index];
             }
@@ -1564,6 +1577,34 @@ private:
                 BufferToken(token);
                 return;
         }
+    }
+
+    void CloseMacroClassScope(const PrintToken& token) {
+        FlushPendingTokens();
+        if (output_.State().lineHasText) {
+            NewLine(token.inMacroValue);
+        }
+        if (!braceStack_.empty()) {
+            indentLevel_ = braceStack_.back().indentRestore;
+            braceStack_.pop_back();
+        }
+        output_.SetPendingIndent(std::nullopt);
+    }
+
+    void OpenMacroClassScope(const PrintToken& token, const PrintToken* rawNext) {
+        if (rawNext != nullptr && rawNext->kind == PrintTokenKind::TrailingComment) {
+            BufferToken(*rawNext);
+            prebufferedTokenSourceIndices_.insert(rawNext->sourceIndex);
+        }
+        FlushPendingTokens();
+        braceStack_.push_back({
+            .role = BraceRole::Block,
+            .parenDepth = parenDepth_,
+            .indentRestore = indentLevel_,
+            .closeIndent = indentLevel_,
+        });
+        ++indentLevel_;
+        NewLine(PrintTokenContinuesMacroLine(token, rawNext));
     }
 
     void PrintLeftBrace(const PrintToken& token, const PrintToken* previous, const PrintToken* rawNext) {

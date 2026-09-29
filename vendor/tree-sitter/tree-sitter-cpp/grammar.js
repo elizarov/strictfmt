@@ -75,15 +75,20 @@ const PREPROC_ELIF = 1 << 2;
 const PREPROC_SHARED_OPENER = 1 << 3;
 const PREPROC_ALL_BRANCH_FORMS = PREPROC_IFDEF | PREPROC_ELSE | PREPROC_ELIF;
 
+function statementBlocks($) {
+  return choice($.compound_statement, $.switch_statement, $.try_statement);
+}
+
 function cppStatements($, base = C.grammar.rules._non_case_statement) {
+  const sharedNames = new Set(statementBlocks($).members.map(member => member.name));
   return choice(
-    base,
+    $._statement_block,
+    ...base.members.filter(member => !sharedNames.has(member.name)),
     $.macro_prefixed_statement,
     $.co_return_statement,
     $.co_yield_statement,
     $.for_each_statement,
     $.for_range_loop,
-    $.try_statement,
   );
 }
 
@@ -329,6 +334,8 @@ module.exports = grammar(C, {
     $.expression_prefix_item_macro_identifier,
     $.expression_prefix_item_call_macro_identifier,
     $.if_header_macro_identifier,
+    $.class_begin_macro_identifier,
+    $.class_end_macro_identifier,
     $._preproc_directive_end,
     $._line_break_whitespace,
     $.macro_definition_start,
@@ -347,6 +354,10 @@ module.exports = grammar(C, {
   ],
 
   conflicts: $ => [
+    [$.preproc_ended_consequence_statement, $._statement_block],
+    [$.parenthesized_expression, $._statement_block, $._argument_list_item],
+    [$._statement_block, $.macro_statement_argument_list],
+    [$._statement_block, $._argument_list_item],
     [$._class_name, $._common_postfix_expression],
     [$.type_specifier, $._type_constraint, $._common_postfix_expression],
     [$.type_specifier, $.sized_type_specifier, $._common_postfix_expression],
@@ -1084,6 +1095,7 @@ module.exports = grammar(C, {
 
     _empty_declaration: ($, original) => choice(
       original,
+      alias($.macro_class_definition, $.class_specifier),
       ';',
     ),
 
@@ -1465,6 +1477,23 @@ module.exports = grammar(C, {
       field('body', $.declaration_list),
     ),
 
+    macro_class_definition: $ => field('body', alias($._macro_class_body, $.field_declaration_list)),
+
+    _macro_class_body: $ => seq(
+      $.macro_class_begin,
+      $._field_declaration_list_tail,
+    ),
+
+    macro_class_begin: $ => prec.right(seq(
+      field('name', $.class_begin_macro_identifier),
+      optional(field('arguments', $.argument_list)),
+    )),
+
+    macro_class_end: $ => prec.right(seq(
+      field('name', $.class_end_macro_identifier),
+      optional(field('arguments', $.argument_list)),
+    )),
+
     macro_enum_declaration: $ => seq(
       alias($.macro_enum_specifier, $.enum_specifier),
       ';',
@@ -1489,6 +1518,8 @@ module.exports = grammar(C, {
     ),
 
     // Share directive boundaries while each placement keeps its own branch syntax.
+    _preproc_elif_line: $ => seq(preprocessor('elif'), field('condition', $._preproc_expression), $._preproc_directive_end),
+
     _preproc_else_line: $ => seq(preprocessor('else'), $._preproc_directive_end),
     _preproc_endif_line: $ => seq(preprocessor('endif'), $._preproc_directive_end),
 
@@ -2399,7 +2430,18 @@ module.exports = grammar(C, {
 
     field_initializer_prefix_macro: $ => $.macro_call_item,
 
+    field_declaration_list: $ => seq(
+      '{',
+      $._field_declaration_list_tail,
+    ),
+
+    _field_declaration_list_tail: $ => seq(
+      repeat($._field_declaration_list_item),
+      choice($.macro_class_end, '}'),
+    ),
+
     _field_declaration_list_item: ($, original) => choice(
+      alias($.macro_class_definition, $.class_specifier),
       $.macro_function_definition,
       $.disabled_code_placeholder_field,
       $.access_specifier_label,
@@ -3660,9 +3702,11 @@ module.exports = grammar(C, {
 
     // An else can follow only a body with no unmatched trailing if. This
     // remains true when a directive delays the else beyond parser lookahead.
+    _statement_block: $ => statementBlocks($),
+
     _closed_statement_leaf: $ => choice(
+      $._statement_block,
       $.preproc_selected_for_statement,
-      $.compound_statement,
       $.expression_statement,
       $.return_statement,
       $.co_return_statement,
@@ -3671,8 +3715,6 @@ module.exports = grammar(C, {
       $.continue_statement,
       $.goto_statement,
       $.do_statement,
-      $.switch_statement,
-      $.try_statement,
       $.seh_try_statement,
       $.seh_leave_statement,
       $.disabled_code_placeholder_statement,
@@ -4277,33 +4319,29 @@ module.exports = grammar(C, {
     ]),
 
     macro_call_statement_item: $ => choice(
+      $._statement_block,
       $.macro_unterminated_control_statement,
       $.macro_empty_statement_argument,
       alias($.macro_initialized_declaration_fragment, $.declaration),
       alias($.macro_declaration_without_semicolon, $.declaration),
       alias($.macro_expression_without_semicolon, $.expression_statement),
-      $.compound_statement,
       $.if_statement,
       $.for_statement,
       $.while_statement,
-      $.switch_statement,
-      $.try_statement,
       $.macro_return_statement_argument,
       $.macro_return_argument,
     ),
 
     macro_single_statement_argument: $ => prec.dynamic(1, choice(
+      $._statement_block,
       $.macro_unterminated_control_statement,
       $.macro_empty_statement_argument,
       alias($.macro_uninitialized_declaration_fragment, $.declaration),
       alias($.macro_initialized_declaration_fragment, $.declaration),
       alias($.macro_declaration_without_semicolon, $.declaration),
-      $.compound_statement,
       $.if_statement,
       $.for_statement,
       $.while_statement,
-      $.switch_statement,
-      $.try_statement,
       $.macro_return_statement_argument,
       $.macro_return_argument,
     )),
@@ -5693,9 +5731,7 @@ function preprocIf(suffix, content, precedence = 0, forms = PREPROC_ALL_BRANCH_F
 
   if (forms & PREPROC_ELIF) {
     rules['preproc_elif' + suffix] = $ => prec(precedence, seq(
-      preprocessor('elif'),
-      field('condition', $._preproc_expression),
-      $._preproc_directive_end,
+      $._preproc_elif_line,
       branchContent($),
       ...alternativeField($),
     ));

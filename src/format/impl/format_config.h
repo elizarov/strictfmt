@@ -27,6 +27,8 @@ struct FormatterConfig {
     std::vector<std::string> methodDeclarationMacros;
     std::vector<std::string> itemMacros;
     std::vector<std::string> namespaceMacros;
+    std::vector<std::string> classBeginMacros;
+    std::vector<std::string> classEndMacros;
     std::vector<std::string> statementArgumentMacros;
     std::vector<std::string> typeSpecifierMacros;
     std::vector<std::string> preprocessorArgumentMacros;

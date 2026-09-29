@@ -7,6 +7,7 @@ A macro's syntactic role cannot always be inferred without expansion, so arbitra
 - [DeclarationModifierMacros](#declarationmodifiermacros): annotations within declarations, as in `API_EXPORT int value;`.
 - [StatementArgumentMacros](#statementargumentmacros): a statement or declaration in the first argument, as in `EXPECT_THROW(auto x = Read(), Error)`.
 - [NamespaceMacros](#namespacemacros): a namespace header followed by a declaration body, as in `TEST_SUITE(Name) { ... }`.
+- [ClassBeginMacros / ClassEndMacros](#classbeginmacros--classendmacros): macros supplying a class opening or closing boundary.
 - [ItemMacros](#itemmacros): separate declarations, statements, or list fragments, as in `BEGIN_NAMESPACE`.
 - [MethodDeclarationMacros](#methoddeclarationmacros): method-signature arguments, as in `MOCK_METHOD(void, Save, (T* value))`.
 - [IfHeaderMacros](#ifheadermacros): an `if` header supplied by a macro, as in `IF_READY(condition) Work();`.
@@ -110,6 +111,27 @@ int Helper() { return 1; }
 TEST(Store, ReadsValue) { Check(Helper()); }
 
 }  // TEST_SUITE(Store)
+```
+
+### ClassBeginMacros / ClassEndMacros
+
+`ClassBeginMacros` supplies a class header and opening brace; `ClassEndMacros` supplies its closing brace and declaration terminator. A literal `};` can close a macro-opened class instead. Members between these boundaries use ordinary class syntax and indentation, including access labels, conditional members, and nested classes. Bare macros and calls are supported in namespace, local, and template declarations.
+
+<!-- .cpp-format
+MacroCategories:
+  ClassBeginMacros:
+    - BEGIN_CLASS
+  ClassEndMacros:
+    - END_CLASS
+-->
+```cpp
+BEGIN_CLASS(Store)
+public:
+    int Read() const { return value_; }
+
+private:
+    int value_ = 0;
+END_CLASS(Store)
 ```
 
 ### ItemMacros

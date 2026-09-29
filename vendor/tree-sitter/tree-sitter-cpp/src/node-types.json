@@ -4717,6 +4717,10 @@
           "named": true
         },
         {
+          "type": "class_specifier",
+          "named": true
+        },
+        {
           "type": "declaration",
           "named": true
         },
@@ -4742,6 +4746,14 @@
         },
         {
           "type": "function_type_alias_declaration",
+          "named": true
+        },
+        {
+          "type": "macro_class_begin",
+          "named": true
+        },
+        {
+          "type": "macro_class_end",
           "named": true
         },
         {
@@ -7328,6 +7340,58 @@
           "named": true
         }
       ]
+    }
+  },
+  {
+    "type": "macro_class_begin",
+    "named": true,
+    "fields": {
+      "arguments": {
+        "multiple": false,
+        "required": false,
+        "types": [
+          {
+            "type": "argument_list",
+            "named": true
+          }
+        ]
+      },
+      "name": {
+        "multiple": false,
+        "required": true,
+        "types": [
+          {
+            "type": "class_begin_macro_identifier",
+            "named": true
+          }
+        ]
+      }
+    }
+  },
+  {
+    "type": "macro_class_end",
+    "named": true,
+    "fields": {
+      "arguments": {
+        "multiple": false,
+        "required": false,
+        "types": [
+          {
+            "type": "argument_list",
+            "named": true
+          }
+        ]
+      },
+      "name": {
+        "multiple": false,
+        "required": true,
+        "types": [
+          {
+            "type": "class_end_macro_identifier",
+            "named": true
+          }
+        ]
+      }
     }
   },
   {
@@ -20967,6 +21031,14 @@
     "named": false
   },
   {
+    "type": "class_begin_macro_identifier",
+    "named": true
+  },
+  {
+    "type": "class_end_macro_identifier",
+    "named": true
+  },
+  {
     "type": "co_await",
     "named": false
   },
@@ -21396,11 +21468,11 @@
   },
   {
     "type": "true",
-    "named": true
+    "named": false
   },
   {
     "type": "true",
-    "named": false
+    "named": true
   },
   {
     "type": "try",

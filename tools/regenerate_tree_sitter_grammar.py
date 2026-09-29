@@ -73,6 +73,8 @@ LEXICAL_EXTERNAL_TOKENS = frozenset({
     "statement_argument_macro_identifier",
     "type_specifier_macro_identifier",
     "namespace_macro_identifier",
+    "class_begin_macro_identifier",
+    "class_end_macro_identifier",
 })
 TERMINAL_RULE_TYPES = frozenset({"IMMEDIATE_TOKEN", "PATTERN", "TOKEN"})
 PREPROCESSOR_DIRECTIVE_ARGUMENTS = frozenset({
