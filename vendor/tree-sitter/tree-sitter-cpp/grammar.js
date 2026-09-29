@@ -1511,8 +1511,7 @@ module.exports = grammar(C, {
     ),
 
     preproc_unbalanced_else_block: $ => seq(
-      $._preproc_opening_condition,
-      $._preproc_directive_end,
+      $._preproc_opening_line,
       repeat($._block_item),
       $._preproc_endif_line,
       'else',
@@ -1524,6 +1523,8 @@ module.exports = grammar(C, {
 
     _preproc_else_line: $ => seq(preprocessor('else'), $._preproc_directive_end),
     _preproc_endif_line: $ => seq(preprocessor('endif'), $._preproc_directive_end),
+
+    _preproc_opening_line: $ => seq($._preproc_opening_condition, $._preproc_directive_end),
 
     _preproc_opening_condition: $ => choice(
       seq(
@@ -1540,8 +1541,7 @@ module.exports = grammar(C, {
     ...preprocIf('_in_top_level', $ => $._top_level_item),
     ...preprocIf('_in_field_declaration_list', $ => $._field_declaration_list_item, 2),
     preproc_enum_entries: $ => seq(
-      $._preproc_opening_condition,
-      $._preproc_directive_end,
+      $._preproc_opening_line,
       optional($._enumerator_list_content),
       optional(alias($.preproc_enum_else, $.preproc_else)),
       $._preproc_endif_line,
@@ -1883,8 +1883,7 @@ module.exports = grammar(C, {
     ),
 
     preproc_if_in_macro_function_definition_prefix: $ => prec(PREC.CALL + 7, seq(
-      $._preproc_opening_condition,
-      $._preproc_directive_end,
+      $._preproc_opening_line,
       $._macro_function_definition_prefix,
       field('alternative', optional($.preproc_macro_function_definition_prefix_alternative)),
       $._preproc_endif_line,
@@ -2358,8 +2357,7 @@ module.exports = grammar(C, {
     ...preprocIf('_in_expression', $ => choice($.expression, $.initializer_list), 0, PREPROC_ALL_BRANCH_FORMS, false),
 
     preproc_semicolon_initializer: $ => seq(
-      $._preproc_opening_condition,
-      $._preproc_directive_end,
+      $._preproc_opening_line,
       field('consequence', $.preproc_semicolon_value),
       repeat(field('alternative', $.preproc_semicolon_alternative)),
       $._preproc_endif_line,
@@ -2391,8 +2389,15 @@ module.exports = grammar(C, {
 
     _compound_statement_tail: $ => prec(-1, seq(
       repeat($._block_item),
-      '}',
+      choice('}', $.preproc_if_in_block_close, alias($._case_block_end, $.case_statement)),
     )),
+
+    ...preprocIf('_in_block_close', $ => $._block_close_branch, 0, PREPROC_ALL_BRANCH_FORMS | PREPROC_SHARED_OPENER, false),
+
+    _block_close_branch: $ => seq(
+      alias($._compound_statement_tail, $.block_scope_close),
+      repeat($._block_item),
+    ),
 
     field_initializer_list: $ => {
       const preprocItem = preprocListItem($, '_in_field_initializer_list', PREPROC_IFDEF | PREPROC_SHARED_OPENER);
@@ -2478,8 +2483,7 @@ module.exports = grammar(C, {
     ),
 
     standalone_qualifier_preproc_if: $ => prec.dynamic(10, prec(10, seq(
-      $._preproc_opening_condition,
-      $._preproc_directive_end,
+      $._preproc_opening_line,
       $.preproc_declaration_modifier,
       repeat(seq(
         choice(
@@ -2507,8 +2511,7 @@ module.exports = grammar(C, {
     ),
 
     standalone_attribute_preproc_if: $ => seq(
-      $._preproc_opening_condition,
-      $._preproc_directive_end,
+      $._preproc_opening_line,
       $._standalone_attribute_sequence,
       optional(seq(
         $._preproc_else_line,
@@ -3103,8 +3106,7 @@ module.exports = grammar(C, {
     preproc_template_argument_fragment: $ => $.preproc_template_argument_group,
 
     preproc_template_argument_group: $ => seq(
-      $._preproc_opening_condition,
-      $._preproc_directive_end,
+      $._preproc_opening_line,
       repeat1(seq($._template_argument_list_item, optional(','))),
       optional(seq(
         $._preproc_else_line,
@@ -3478,16 +3480,10 @@ module.exports = grammar(C, {
 
     bare_macro_statement: $ => prec(1, $.item_macro_identifier),
 
-    case_statement: $ => prec.right(seq(
-      choice(seq('case', field('value', $.expression)), 'default'),
-      ':',
-      repeat(choice(
-        $._non_case_statement,
-        $.declaration,
-        $.type_definition,
-        C.grammar.rules._empty_declaration,
-      )),
-    )),
+    case_statement: $ => prec.right(seq(...caseStatementPrefix($))),
+
+    // Keep a conditional block ending available before greedy case-body parsing.
+    _case_block_end: $ => seq(...caseStatementPrefix($), $.preproc_if_in_block_close),
 
     switch_statement: $ => seq(
       'switch',
@@ -3500,8 +3496,7 @@ module.exports = grammar(C, {
     ),
 
     preproc_case_label_fragment: $ => seq(
-      $._preproc_opening_condition,
-      $._preproc_directive_end,
+      $._preproc_opening_line,
       repeat1($.preproc_case_label),
       repeat(seq(
         choice(
@@ -3530,8 +3525,7 @@ module.exports = grammar(C, {
     ),
 
     preproc_selected_if_header: $ => seq(
-      $._preproc_opening_condition,
-      $._preproc_directive_end,
+      $._preproc_opening_line,
       $.selected_if_header,
       optional(seq(
         $._preproc_else_line,
@@ -3614,8 +3608,7 @@ module.exports = grammar(C, {
     )),
 
     preproc_ended_consequence_statement: $ => prec.right(seq(
-      $._preproc_opening_condition,
-      $._preproc_directive_end,
+      $._preproc_opening_line,
       selectedIfHeader($),
       field('consequence', $.compound_statement),
       'else',
@@ -3640,8 +3633,7 @@ module.exports = grammar(C, {
     ),
 
     preproc_selected_else_if_clause: $ => prec(5, seq(
-      $._preproc_opening_condition,
-      $._preproc_directive_end,
+      $._preproc_opening_line,
       '}',
       'else',
       $.selected_if_header,
@@ -3676,8 +3668,7 @@ module.exports = grammar(C, {
     ),
 
     preproc_guarded_else_clause: $ => prec.right(seq(
-      $._preproc_opening_condition,
-      $._preproc_directive_end,
+      $._preproc_opening_line,
       $.else_clause,
       optional($._preproc_else_clause_alternative),
       $._preproc_endif_line,
@@ -3912,8 +3903,7 @@ module.exports = grammar(C, {
     ),
 
     preproc_condition_expression: $ => seq(
-      $._preproc_opening_condition,
-      $._preproc_directive_end,
+      $._preproc_opening_line,
       field('consequence', $.expression),
       optional(seq(
         $._preproc_else_line,
@@ -4976,8 +4966,7 @@ module.exports = grammar(C, {
     },
 
     preproc_logical_expression_fragment: $ => seq(
-      $._preproc_opening_condition,
-      $._preproc_directive_end,
+      $._preproc_opening_line,
       field('operator', choice('||', '&&')),
       field('right', $.expression),
       $._preproc_endif_line,
@@ -5252,8 +5241,7 @@ module.exports = grammar(C, {
     )),
 
     preproc_string_literal_fragment: $ => seq(
-      $._preproc_opening_condition,
-      $._preproc_directive_end,
+      $._preproc_opening_line,
       repeat1($._string),
       repeat(seq(
         choice(
@@ -5624,8 +5612,7 @@ function selectedStatementPrefix(kind, prefix) {
   return {
     [branch]: $ => seq(repeat($._block_item), choice(prefix($), $[group])),
     [group]: $ => seq(
-      $._preproc_opening_condition,
-      $._preproc_directive_end,
+      $._preproc_opening_line,
       $[branch],
       optional($[alternative]),
       $._preproc_endif_line,
@@ -5694,10 +5681,9 @@ function preprocIf(suffix, content, precedence = 0, forms = PREPROC_ALL_BRANCH_F
   const rules = {
     ['preproc_if' + suffix]: $ => {
       const ordinary = prec(precedence, seq(
-        forms & PREPROC_SHARED_OPENER ? $._preproc_opening_condition : seq(
-          preprocessor('if'), field('condition', $._preproc_expression),
+        forms & PREPROC_SHARED_OPENER ? $._preproc_opening_line : seq(
+          preprocessor('if'), field('condition', $._preproc_expression), $._preproc_directive_end,
         ),
-        $._preproc_directive_end,
         branchContent($),
         ...alternativeField($),
         $._preproc_endif_line,
@@ -5791,4 +5777,17 @@ function ifStatement($, header) {
       field('alternative', $.else_clause),
     ),
   );
+}
+
+function caseStatementPrefix($) {
+  return [
+    choice(seq('case', field('value', $.expression)), 'default'),
+    ':',
+    repeat(choice(
+      $._non_case_statement,
+      $.declaration,
+      $.type_definition,
+      C.grammar.rules._empty_declaration,
+    )),
+  ];
 }

@@ -15,6 +15,7 @@ bool IsTrivia(const SyntaxNode& node) { return HasClass(node, SyntaxNodeClass::T
 
 bool IsConditionalPreprocessor(const SyntaxNode& node) {
     switch (node.kind) {
+        case SyntaxNodeKind::PreprocBlockClose:
         case SyntaxNodeKind::PreprocIf:
         case SyntaxNodeKind::PreprocIfdef:
         case SyntaxNodeKind::PreprocElse:

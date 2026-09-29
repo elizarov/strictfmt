@@ -418,6 +418,17 @@ constexpr auto kSyntaxKindMappings = std::to_array<SyntaxKindMapping>({
         kConditionalPreprocessorOpenClasses | kSupportedPreprocessorPlacementClasses
     ),
     Tree(SyntaxNodeKind::GroupingScopeClose, "grouping_scope_close"),
+    Tree(
+        SyntaxNodeKind::BlockScopeClose,
+        "block_scope_close",
+        kAllowedPreprocessorContainerClasses | Bit(SyntaxNodeClass::SourceItemScope)
+    ),
+    Tree(
+        SyntaxNodeKind::PreprocBlockClose,
+        "preproc_if_in_block_close",
+        kConditionalPreprocessorOpenClasses | Bit(SyntaxNodeClass::SourceItemScope)
+    ),
+
     Tree(SyntaxNodeKind::MacroClassBegin, "macro_class_begin"),
     Tree(SyntaxNodeKind::MacroClassEnd, "macro_class_end"),
     Tree(SyntaxNodeKind::PreprocIf, "preproc_logical_expression_fragment", kSupportedPreprocessorPlacementClasses),
@@ -1220,6 +1231,10 @@ std::string_view SyntaxNodeKindName(SyntaxNodeKind kind) {
             return "LinkageSpecification";
         case SyntaxNodeKind::GroupingScopeClose:
             return "GroupingScopeClose";
+        case SyntaxNodeKind::BlockScopeClose:
+            return "BlockScopeClose";
+        case SyntaxNodeKind::PreprocBlockClose:
+            return "PreprocBlockClose";
         case SyntaxNodeKind::MacroClassBegin:
             return "MacroClassBegin";
         case SyntaxNodeKind::MacroClassEnd:

@@ -62,6 +62,7 @@ bool BreakModelHasLayoutChoice(const FormatBreakModel& model) {
 BraceRole RoleForBraceParent(SyntaxNodeKind parentKind) {
     switch (parentKind) {
         case SyntaxNodeKind::CompoundStatement:
+        case SyntaxNodeKind::BlockScopeClose:
         case SyntaxNodeKind::FieldDeclarationList:
         case SyntaxNodeKind::DeclarationList:
         case SyntaxNodeKind::RequirementSeq:
@@ -270,6 +271,17 @@ private:
     };
 
     std::vector<ConditionalBlockIndent> conditionalBlockIndents_;
+
+    struct ConditionalScopeState {
+        const SyntaxNode* owner = nullptr;
+        int indent = 0;
+        int switchDepth = 0;
+        std::vector<BraceFrame> braces;
+        std::vector<CaseBodyFrame> cases;
+        std::vector<ConditionalBlockIndent> conditionalBlocks;
+    };
+
+    std::vector<ConditionalScopeState> conditionalScopeStates_;
     std::optional<int> pendingIndentRestoreAfterFlush_;
     std::optional<int> macroContinuationResumeIndent_;
     int macroDefinitionResumeIndent_ = 0;
@@ -433,6 +445,8 @@ private:
             case SyntaxNodeKind::DeclarationList:
             case SyntaxNodeKind::FieldDeclarationList:
             case SyntaxNodeKind::CompoundStatement:
+            case SyntaxNodeKind::BlockScopeClose:
+            case SyntaxNodeKind::PreprocBlockClose:
             case SyntaxNodeKind::CaseStatement:
             case SyntaxNodeKind::MacroConditionalStatement:
             case SyntaxNodeKind::PreprocIf:
@@ -1284,6 +1298,42 @@ private:
         }
     }
 
+    void UpdateConditionalScopeState(const PrintToken& token, SyntaxNodeKind directiveKind) {
+        const SyntaxNode* owner = token.node;
+        while (owner != nullptr && SyntaxNodeHasClass(*owner, SyntaxNodeClass::ConditionalBranchSeparatorDirective)) {
+            owner = owner->parent;
+        }
+        if (owner == nullptr || owner->kind != SyntaxNodeKind::PreprocBlockClose) {
+            return;
+        }
+        if (SyntaxNodeKindHasClass(directiveKind, SyntaxNodeClass::ConditionalOpeningDirective)) {
+            conditionalScopeStates_.push_back({
+                .owner = owner,
+                .indent = indentLevel_,
+                .switchDepth = switchDepth_,
+                .braces = braceStack_,
+                .cases = activeCaseBodies_,
+                .conditionalBlocks = conditionalBlockIndents_,
+            });
+            return;
+        }
+        if (conditionalScopeStates_.empty() || conditionalScopeStates_.back().owner != owner) {
+            return;
+        }
+        if (SyntaxNodeKindHasClass(directiveKind, SyntaxNodeClass::EndifDirective)) {
+            conditionalScopeStates_.pop_back();
+        } else if (SyntaxNodeKindHasClass(directiveKind, SyntaxNodeClass::ConditionalBranchSeparatorDirective)) {
+            const auto& state = conditionalScopeStates_.back();
+            indentLevel_ = state.indent;
+            switchDepth_ = state.switchDepth;
+            braceStack_ = state.braces;
+            activeCaseBodies_ = state.cases;
+            conditionalBlockIndents_ = state.conditionalBlocks;
+            pendingIndentRestoreAfterFlush_.reset();
+            output_.SetPendingIndent(std::nullopt);
+        }
+    }
+
     void PrintPreprocessor(const PrintToken& token, const PrintToken* next) {
         layoutTree_->Chains().AnalyzeDirective(currentTokenIndex_);
         const std::string line = FormatPreprocessorText(token.text);
@@ -1346,6 +1396,7 @@ private:
         if (!listItemIndent && listConditional) {
             listItemIndent = output_.State().pendingIndentLevel.value_or(indentLevel_ + 1);
         }
+        UpdateConditionalScopeState(token, lineDirectiveKind);
         const std::optional<int> includeInitializerContinuationIndent =
             isInclude && token.parentKind == SyntaxNodeKind::InitDeclarator && output_.State().lineHasText ?
                 std::optional<int>(CurrentLineIndentLevel() + 1) : std::nullopt;
@@ -1699,6 +1750,11 @@ private:
     }
 
     void PrintRightBrace(const PrintToken& token, const PrintToken* next, const PrintToken* rawNext) {
+        const SyntaxNode* block = token.parentKind == SyntaxNodeKind::BlockScopeClose ?
+            NearestAncestor(token, SyntaxNodeKind::CompoundStatement) : (
+                token.node != nullptr && token.parentKind == SyntaxNodeKind::CompoundStatement ? token.node->parent :
+                    nullptr
+            );
         if (!compactRightBraceRoles_.empty()) {
             const BraceRole role = compactRightBraceRoles_.back();
             compactRightBraceRoles_.pop_back();
@@ -1720,12 +1776,7 @@ private:
             }
             return;
         }
-        if (
-            token.parentKind == SyntaxNodeKind::CompoundStatement &&
-            token.node != nullptr &&
-            !conditionalBlockIndents_.empty() &&
-            conditionalBlockIndents_.back().body == token.node->parent
-        ) {
+        if (block != nullptr && !conditionalBlockIndents_.empty() && conditionalBlockIndents_.back().body == block) {
             FlushPendingTokens();
             if (output_.State().lineHasText) {
                 NewLine(token.inMacroValue);
@@ -1795,8 +1846,8 @@ private:
             if (output_.State().lineHasText) {
                 NewLine(token.inMacroValue);
             }
-            const bool isSwitchBody = token.parentKind == SyntaxNodeKind::CompoundStatement &&
-                token.grandParentKind == SyntaxNodeKind::SwitchStatement;
+            const bool isSwitchBody =
+                block != nullptr && block->parent != nullptr && block->parent->kind == SyntaxNodeKind::SwitchStatement;
             if (isSwitchBody) {
                 CloseCaseBodyIndentIfNeeded(token.macroDefinition);
             }

@@ -652,12 +652,12 @@
                   "type": "SYMBOL",
                   "name": "_preproc_expression"
                 }
+              },
+              {
+                "type": "SYMBOL",
+                "name": "_preproc_directive_end"
               }
             ]
-          },
-          {
-            "type": "SYMBOL",
-            "name": "_preproc_directive_end"
           },
           {
             "type": "REPEAT",
@@ -1055,12 +1055,12 @@
                   "type": "SYMBOL",
                   "name": "_preproc_expression"
                 }
+              },
+              {
+                "type": "SYMBOL",
+                "name": "_preproc_directive_end"
               }
             ]
-          },
-          {
-            "type": "SYMBOL",
-            "name": "_preproc_directive_end"
           },
           {
             "type": "CHOICE",
@@ -15694,11 +15694,7 @@
       "members": [
         {
           "type": "SYMBOL",
-          "name": "_preproc_opening_condition"
-        },
-        {
-          "type": "SYMBOL",
-          "name": "_preproc_directive_end"
+          "name": "_preproc_opening_line"
         },
         {
           "type": "REPEAT",
@@ -15797,6 +15793,19 @@
           },
           "named": false,
           "value": "#endif"
+        },
+        {
+          "type": "SYMBOL",
+          "name": "_preproc_directive_end"
+        }
+      ]
+    },
+    "_preproc_opening_line": {
+      "type": "SEQ",
+      "members": [
+        {
+          "type": "SYMBOL",
+          "name": "_preproc_opening_condition"
         },
         {
           "type": "SYMBOL",
@@ -15920,12 +15929,12 @@
                   "type": "SYMBOL",
                   "name": "_preproc_expression"
                 }
+              },
+              {
+                "type": "SYMBOL",
+                "name": "_preproc_directive_end"
               }
             ]
-          },
-          {
-            "type": "SYMBOL",
-            "name": "_preproc_directive_end"
           },
           {
             "type": "REPEAT",
@@ -16160,11 +16169,7 @@
       "members": [
         {
           "type": "SYMBOL",
-          "name": "_preproc_opening_condition"
-        },
-        {
-          "type": "SYMBOL",
-          "name": "_preproc_directive_end"
+          "name": "_preproc_opening_line"
         },
         {
           "type": "CHOICE",
@@ -16230,11 +16235,7 @@
         "members": [
           {
             "type": "SYMBOL",
-            "name": "_preproc_opening_condition"
-          },
-          {
-            "type": "SYMBOL",
-            "name": "_preproc_directive_end"
+            "name": "_preproc_opening_line"
           },
           {
             "type": "SEQ",
@@ -16272,11 +16273,7 @@
         "members": [
           {
             "type": "SYMBOL",
-            "name": "_preproc_opening_condition"
-          },
-          {
-            "type": "SYMBOL",
-            "name": "_preproc_directive_end"
+            "name": "_preproc_opening_line"
           },
           {
             "type": "SEQ",
@@ -16318,11 +16315,7 @@
         "members": [
           {
             "type": "SYMBOL",
-            "name": "_preproc_opening_condition"
-          },
-          {
-            "type": "SYMBOL",
-            "name": "_preproc_directive_end"
+            "name": "_preproc_opening_line"
           },
           {
             "type": "SEQ",
@@ -16396,12 +16389,12 @@
                   "type": "SYMBOL",
                   "name": "_preproc_expression"
                 }
+              },
+              {
+                "type": "SYMBOL",
+                "name": "_preproc_directive_end"
               }
             ]
-          },
-          {
-            "type": "SYMBOL",
-            "name": "_preproc_directive_end"
           },
           {
             "type": "SYMBOL",
@@ -16651,12 +16644,12 @@
                   "type": "SYMBOL",
                   "name": "_preproc_expression"
                 }
+              },
+              {
+                "type": "SYMBOL",
+                "name": "_preproc_directive_end"
               }
             ]
-          },
-          {
-            "type": "SYMBOL",
-            "name": "_preproc_directive_end"
           },
           {
             "type": "SEQ",
@@ -16942,12 +16935,12 @@
                   "type": "SYMBOL",
                   "name": "_preproc_expression"
                 }
+              },
+              {
+                "type": "SYMBOL",
+                "name": "_preproc_directive_end"
               }
             ]
-          },
-          {
-            "type": "SYMBOL",
-            "name": "_preproc_directive_end"
           },
           {
             "type": "SYMBOL",
@@ -17285,12 +17278,12 @@
                       "type": "SYMBOL",
                       "name": "_preproc_expression"
                     }
+                  },
+                  {
+                    "type": "SYMBOL",
+                    "name": "_preproc_directive_end"
                   }
                 ]
-              },
-              {
-                "type": "SYMBOL",
-                "name": "_preproc_directive_end"
               },
               {
                 "type": "SYMBOL",
@@ -17447,11 +17440,7 @@
         "members": [
           {
             "type": "SYMBOL",
-            "name": "_preproc_opening_condition"
-          },
-          {
-            "type": "SYMBOL",
-            "name": "_preproc_directive_end"
+            "name": "_preproc_opening_line"
           },
           {
             "type": "SEQ",
@@ -17586,11 +17575,7 @@
         "members": [
           {
             "type": "SYMBOL",
-            "name": "_preproc_opening_condition"
-          },
-          {
-            "type": "SYMBOL",
-            "name": "_preproc_directive_end"
+            "name": "_preproc_opening_line"
           },
           {
             "type": "SEQ",
@@ -17844,11 +17829,7 @@
         "members": [
           {
             "type": "SYMBOL",
-            "name": "_preproc_opening_condition"
-          },
-          {
-            "type": "SYMBOL",
-            "name": "_preproc_directive_end"
+            "name": "_preproc_opening_line"
           },
           {
             "type": "SYMBOL",
@@ -17973,11 +17954,7 @@
         "members": [
           {
             "type": "SYMBOL",
-            "name": "_preproc_opening_condition"
-          },
-          {
-            "type": "SYMBOL",
-            "name": "_preproc_directive_end"
+            "name": "_preproc_opening_line"
           },
           {
             "type": "SYMBOL",
@@ -18669,12 +18646,12 @@
                   "type": "SYMBOL",
                   "name": "_preproc_expression"
                 }
+              },
+              {
+                "type": "SYMBOL",
+                "name": "_preproc_directive_end"
               }
             ]
-          },
-          {
-            "type": "SYMBOL",
-            "name": "_preproc_directive_end"
           },
           {
             "type": "SEQ",
@@ -19519,11 +19496,7 @@
         "members": [
           {
             "type": "SYMBOL",
-            "name": "_preproc_opening_condition"
-          },
-          {
-            "type": "SYMBOL",
-            "name": "_preproc_directive_end"
+            "name": "_preproc_opening_line"
           },
           {
             "type": "SYMBOL",
@@ -20322,11 +20295,7 @@
         "members": [
           {
             "type": "SYMBOL",
-            "name": "_preproc_opening_condition"
-          },
-          {
-            "type": "SYMBOL",
-            "name": "_preproc_directive_end"
+            "name": "_preproc_opening_line"
           },
           {
             "type": "REPEAT",
@@ -20735,11 +20704,7 @@
         "members": [
           {
             "type": "SYMBOL",
-            "name": "_preproc_opening_condition"
-          },
-          {
-            "type": "SYMBOL",
-            "name": "_preproc_directive_end"
+            "name": "_preproc_opening_line"
           },
           {
             "type": "SYMBOL",
@@ -20864,11 +20829,7 @@
         "members": [
           {
             "type": "SYMBOL",
-            "name": "_preproc_opening_condition"
-          },
-          {
-            "type": "SYMBOL",
-            "name": "_preproc_directive_end"
+            "name": "_preproc_opening_line"
           },
           {
             "type": "SEQ",
@@ -21020,11 +20981,7 @@
         "members": [
           {
             "type": "SYMBOL",
-            "name": "_preproc_opening_condition"
-          },
-          {
-            "type": "SYMBOL",
-            "name": "_preproc_directive_end"
+            "name": "_preproc_opening_line"
           },
           {
             "type": "SYMBOL",
@@ -21505,11 +21462,7 @@
         "members": [
           {
             "type": "SYMBOL",
-            "name": "_preproc_opening_condition"
-          },
-          {
-            "type": "SYMBOL",
-            "name": "_preproc_directive_end"
+            "name": "_preproc_opening_line"
           },
           {
             "type": "SYMBOL",
@@ -22953,12 +22906,12 @@
                   "type": "SYMBOL",
                   "name": "_preproc_expression"
                 }
+              },
+              {
+                "type": "SYMBOL",
+                "name": "_preproc_directive_end"
               }
             ]
-          },
-          {
-            "type": "SYMBOL",
-            "name": "_preproc_directive_end"
           },
           {
             "type": "CHOICE",
@@ -23217,11 +23170,7 @@
       "members": [
         {
           "type": "SYMBOL",
-          "name": "_preproc_opening_condition"
-        },
-        {
-          "type": "SYMBOL",
-          "name": "_preproc_directive_end"
+          "name": "_preproc_opening_line"
         },
         {
           "type": "FIELD",
@@ -23372,11 +23321,175 @@
             }
           },
           {
-            "type": "STRING",
-            "value": "}"
+            "type": "CHOICE",
+            "members": [
+              {
+                "type": "STRING",
+                "value": "}"
+              },
+              {
+                "type": "SYMBOL",
+                "name": "preproc_if_in_block_close"
+              },
+              {
+                "type": "ALIAS",
+                "content": {
+                  "type": "SYMBOL",
+                  "name": "_case_block_end"
+                },
+                "named": true,
+                "value": "case_statement"
+              }
+            ]
           }
         ]
       }
+    },
+    "preproc_if_in_block_close": {
+      "type": "PREC",
+      "value": 0,
+      "content": {
+        "type": "SEQ",
+        "members": [
+          {
+            "type": "SYMBOL",
+            "name": "_preproc_opening_line"
+          },
+          {
+            "type": "SYMBOL",
+            "name": "_block_close_branch"
+          },
+          {
+            "type": "FIELD",
+            "name": "alternative",
+            "content": {
+              "type": "CHOICE",
+              "members": [
+                {
+                  "type": "CHOICE",
+                  "members": [
+                    {
+                      "type": "ALIAS",
+                      "content": {
+                        "type": "SYMBOL",
+                        "name": "preproc_else_in_block_close"
+                      },
+                      "named": true,
+                      "value": "preproc_else"
+                    },
+                    {
+                      "type": "ALIAS",
+                      "content": {
+                        "type": "SYMBOL",
+                        "name": "preproc_elif_in_block_close"
+                      },
+                      "named": true,
+                      "value": "preproc_elif"
+                    }
+                  ]
+                },
+                {
+                  "type": "BLANK"
+                }
+              ]
+            }
+          },
+          {
+            "type": "SYMBOL",
+            "name": "_preproc_endif_line"
+          }
+        ]
+      }
+    },
+    "preproc_else_in_block_close": {
+      "type": "PREC",
+      "value": 0,
+      "content": {
+        "type": "SEQ",
+        "members": [
+          {
+            "type": "SYMBOL",
+            "name": "_preproc_else_line"
+          },
+          {
+            "type": "SYMBOL",
+            "name": "_block_close_branch"
+          }
+        ]
+      }
+    },
+    "preproc_elif_in_block_close": {
+      "type": "PREC",
+      "value": 0,
+      "content": {
+        "type": "SEQ",
+        "members": [
+          {
+            "type": "SYMBOL",
+            "name": "_preproc_elif_line"
+          },
+          {
+            "type": "SYMBOL",
+            "name": "_block_close_branch"
+          },
+          {
+            "type": "FIELD",
+            "name": "alternative",
+            "content": {
+              "type": "CHOICE",
+              "members": [
+                {
+                  "type": "CHOICE",
+                  "members": [
+                    {
+                      "type": "ALIAS",
+                      "content": {
+                        "type": "SYMBOL",
+                        "name": "preproc_else_in_block_close"
+                      },
+                      "named": true,
+                      "value": "preproc_else"
+                    },
+                    {
+                      "type": "ALIAS",
+                      "content": {
+                        "type": "SYMBOL",
+                        "name": "preproc_elif_in_block_close"
+                      },
+                      "named": true,
+                      "value": "preproc_elif"
+                    }
+                  ]
+                },
+                {
+                  "type": "BLANK"
+                }
+              ]
+            }
+          }
+        ]
+      }
+    },
+    "_block_close_branch": {
+      "type": "SEQ",
+      "members": [
+        {
+          "type": "ALIAS",
+          "content": {
+            "type": "SYMBOL",
+            "name": "_compound_statement_tail"
+          },
+          "named": true,
+          "value": "block_scope_close"
+        },
+        {
+          "type": "REPEAT",
+          "content": {
+            "type": "SYMBOL",
+            "name": "_block_item"
+          }
+        }
+      ]
     },
     "field_initializer_list": {
       "type": "CHOICE",
@@ -23530,11 +23643,7 @@
         "members": [
           {
             "type": "SYMBOL",
-            "name": "_preproc_opening_condition"
-          },
-          {
-            "type": "SYMBOL",
-            "name": "_preproc_directive_end"
+            "name": "_preproc_opening_line"
           },
           {
             "type": "SYMBOL",
@@ -23754,11 +23863,7 @@
           "members": [
             {
               "type": "SYMBOL",
-              "name": "_preproc_opening_condition"
-            },
-            {
-              "type": "SYMBOL",
-              "name": "_preproc_directive_end"
+              "name": "_preproc_opening_line"
             },
             {
               "type": "SYMBOL",
@@ -23938,11 +24043,7 @@
       "members": [
         {
           "type": "SYMBOL",
-          "name": "_preproc_opening_condition"
-        },
-        {
-          "type": "SYMBOL",
-          "name": "_preproc_directive_end"
+          "name": "_preproc_opening_line"
         },
         {
           "type": "SYMBOL",
@@ -25151,12 +25252,12 @@
                   "type": "SYMBOL",
                   "name": "_preproc_expression"
                 }
+              },
+              {
+                "type": "SYMBOL",
+                "name": "_preproc_directive_end"
               }
             ]
-          },
-          {
-            "type": "SYMBOL",
-            "name": "_preproc_directive_end"
           },
           {
             "type": "SYMBOL",
@@ -25695,12 +25796,12 @@
                   "type": "SYMBOL",
                   "name": "_preproc_expression"
                 }
+              },
+              {
+                "type": "SYMBOL",
+                "name": "_preproc_directive_end"
               }
             ]
-          },
-          {
-            "type": "SYMBOL",
-            "name": "_preproc_directive_end"
           },
           {
             "type": "SYMBOL",
@@ -27252,11 +27353,7 @@
         "members": [
           {
             "type": "SYMBOL",
-            "name": "_preproc_opening_condition"
-          },
-          {
-            "type": "SYMBOL",
-            "name": "_preproc_directive_end"
+            "name": "_preproc_opening_line"
           },
           {
             "type": "SYMBOL",
@@ -28598,11 +28695,7 @@
       "members": [
         {
           "type": "SYMBOL",
-          "name": "_preproc_opening_condition"
-        },
-        {
-          "type": "SYMBOL",
-          "name": "_preproc_directive_end"
+          "name": "_preproc_opening_line"
         },
         {
           "type": "REPEAT1",
@@ -31151,16 +31244,84 @@
         "name": "item_macro_identifier"
       }
     },
+    "_case_block_end": {
+      "type": "SEQ",
+      "members": [
+        {
+          "type": "CHOICE",
+          "members": [
+            {
+              "type": "SEQ",
+              "members": [
+                {
+                  "type": "STRING",
+                  "value": "case"
+                },
+                {
+                  "type": "FIELD",
+                  "name": "value",
+                  "content": {
+                    "type": "SYMBOL",
+                    "name": "expression"
+                  }
+                }
+              ]
+            },
+            {
+              "type": "STRING",
+              "value": "default"
+            }
+          ]
+        },
+        {
+          "type": "STRING",
+          "value": ":"
+        },
+        {
+          "type": "REPEAT",
+          "content": {
+            "type": "CHOICE",
+            "members": [
+              {
+                "type": "SYMBOL",
+                "name": "_non_case_statement"
+              },
+              {
+                "type": "SYMBOL",
+                "name": "declaration"
+              },
+              {
+                "type": "SYMBOL",
+                "name": "type_definition"
+              },
+              {
+                "type": "SEQ",
+                "members": [
+                  {
+                    "type": "SYMBOL",
+                    "name": "type_specifier"
+                  },
+                  {
+                    "type": "STRING",
+                    "value": ";"
+                  }
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "type": "SYMBOL",
+          "name": "preproc_if_in_block_close"
+        }
+      ]
+    },
     "preproc_case_label_fragment": {
       "type": "SEQ",
       "members": [
         {
           "type": "SYMBOL",
-          "name": "_preproc_opening_condition"
-        },
-        {
-          "type": "SYMBOL",
-          "name": "_preproc_directive_end"
+          "name": "_preproc_opening_line"
         },
         {
           "type": "REPEAT1",
@@ -31429,11 +31590,7 @@
       "members": [
         {
           "type": "SYMBOL",
-          "name": "_preproc_opening_condition"
-        },
-        {
-          "type": "SYMBOL",
-          "name": "_preproc_directive_end"
+          "name": "_preproc_opening_line"
         },
         {
           "type": "SYMBOL",
@@ -31556,11 +31713,7 @@
       "members": [
         {
           "type": "SYMBOL",
-          "name": "_preproc_opening_condition"
-        },
-        {
-          "type": "SYMBOL",
-          "name": "_preproc_directive_end"
+          "name": "_preproc_opening_line"
         },
         {
           "type": "SYMBOL",
@@ -31756,11 +31909,7 @@
       "members": [
         {
           "type": "SYMBOL",
-          "name": "_preproc_opening_condition"
-        },
-        {
-          "type": "SYMBOL",
-          "name": "_preproc_directive_end"
+          "name": "_preproc_opening_line"
         },
         {
           "type": "SYMBOL",
@@ -31980,11 +32129,7 @@
       "members": [
         {
           "type": "SYMBOL",
-          "name": "_preproc_opening_condition"
-        },
-        {
-          "type": "SYMBOL",
-          "name": "_preproc_directive_end"
+          "name": "_preproc_opening_line"
         },
         {
           "type": "SYMBOL",
@@ -32156,11 +32301,7 @@
         "members": [
           {
             "type": "SYMBOL",
-            "name": "_preproc_opening_condition"
-          },
-          {
-            "type": "SYMBOL",
-            "name": "_preproc_directive_end"
+            "name": "_preproc_opening_line"
           },
           {
             "type": "SYMBOL",
@@ -32314,11 +32455,7 @@
         "members": [
           {
             "type": "SYMBOL",
-            "name": "_preproc_opening_condition"
-          },
-          {
-            "type": "SYMBOL",
-            "name": "_preproc_directive_end"
+            "name": "_preproc_opening_line"
           },
           {
             "type": "SYMBOL",
@@ -32416,11 +32553,7 @@
         "members": [
           {
             "type": "SYMBOL",
-            "name": "_preproc_opening_condition"
-          },
-          {
-            "type": "SYMBOL",
-            "name": "_preproc_directive_end"
+            "name": "_preproc_opening_line"
           },
           {
             "type": "STRING",
@@ -32554,11 +32687,7 @@
         "members": [
           {
             "type": "SYMBOL",
-            "name": "_preproc_opening_condition"
-          },
-          {
-            "type": "SYMBOL",
-            "name": "_preproc_directive_end"
+            "name": "_preproc_opening_line"
           },
           {
             "type": "SYMBOL",
@@ -32799,12 +32928,12 @@
                   "type": "SYMBOL",
                   "name": "_preproc_expression"
                 }
+              },
+              {
+                "type": "SYMBOL",
+                "name": "_preproc_directive_end"
               }
             ]
-          },
-          {
-            "type": "SYMBOL",
-            "name": "_preproc_directive_end"
           },
           {
             "type": "SYMBOL",
@@ -33967,11 +34096,7 @@
       "members": [
         {
           "type": "SYMBOL",
-          "name": "_preproc_opening_condition"
-        },
-        {
-          "type": "SYMBOL",
-          "name": "_preproc_directive_end"
+          "name": "_preproc_opening_line"
         },
         {
           "type": "FIELD",
@@ -38552,11 +38677,7 @@
         "members": [
           {
             "type": "SYMBOL",
-            "name": "_preproc_opening_condition"
-          },
-          {
-            "type": "SYMBOL",
-            "name": "_preproc_directive_end"
+            "name": "_preproc_opening_line"
           },
           {
             "type": "SYMBOL",
@@ -39315,11 +39436,7 @@
         "members": [
           {
             "type": "SYMBOL",
-            "name": "_preproc_opening_condition"
-          },
-          {
-            "type": "SYMBOL",
-            "name": "_preproc_directive_end"
+            "name": "_preproc_opening_line"
           },
           {
             "type": "CHOICE",
@@ -40940,11 +41057,7 @@
       "members": [
         {
           "type": "SYMBOL",
-          "name": "_preproc_opening_condition"
-        },
-        {
-          "type": "SYMBOL",
-          "name": "_preproc_directive_end"
+          "name": "_preproc_opening_line"
         },
         {
           "type": "FIELD",
@@ -42684,11 +42797,7 @@
       "members": [
         {
           "type": "SYMBOL",
-          "name": "_preproc_opening_condition"
-        },
-        {
-          "type": "SYMBOL",
-          "name": "_preproc_directive_end"
+          "name": "_preproc_opening_line"
         },
         {
           "type": "REPEAT1",

@@ -1792,3 +1792,113 @@ int NestedSelectedIf(bool outer, bool first, bool second) {
     }
     return value;
 }
+
+// Alternative branches close the same shared block before their following statements.
+int ConditionalClose(bool active) {
+    int value = 0;
+    if (active) {
+#if FIRST
+        value = 1;
+    }
+    value += 10;
+#else
+        value = 2;
+    }
+    value += 20;
+#endif
+    return value;
+}
+
+int NestedConditionalClose(bool active) {
+    int value = 0;
+    if (active) {
+#if FIRST
+#if EXTRA
+        value = 1;
+    }
+    value += 10;
+#else
+        value = 2;
+    }
+    value += 20;
+#endif
+#else
+        value = 3;
+    }
+    value += 30;
+#endif
+    return value;
+}
+
+int SelectedHeaderClose(bool first, bool second) {
+    int value = 0;
+#if FIRST
+    if (first) {
+#else
+    if (second) {
+#endif
+#if EXTRA
+        value = 1;
+    }
+#else
+        value = 2;
+    }
+#endif
+    return value;
+}
+
+int SwitchClose(int key) {
+    int value = 0;
+    switch (key) {
+        case 0:
+            value = 1;
+            break;
+#if FIRST
+        default:
+            value = 2;
+            break;
+    }
+#else
+        default:
+            value = 3;
+            break;
+    }
+#endif
+    return value;
+}
+
+int FunctionClose() {
+#if FIRST
+    return 1;
+}
+#else
+    return 2;
+}
+#endif
+
+int ConditionalLambdaClose() {
+    auto selected = [] {
+#if FIRST
+        return 1;
+    }  // first lambda ending
+#elif EXTRA
+        return 2;
+    }  // second lambda ending
+#else
+        return 3;
+    }
+#endif
+    ;
+    return selected();
+}
+
+void ConditionalCloseWithIncludes(bool active) {
+    if (active) {
+#if FIRST
+#include "selected_body.inc"
+    }
+#else
+#include "fallback_body.inc"
+    }
+#endif
+}
