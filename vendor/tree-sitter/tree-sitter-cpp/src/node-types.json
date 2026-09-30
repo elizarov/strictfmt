@@ -8066,19 +8066,9 @@
     }
   },
   {
-    "type": "macro_method_declaration",
+    "type": "macro_method_argument_list",
     "named": true,
     "fields": {
-      "function": {
-        "multiple": false,
-        "required": true,
-        "types": [
-          {
-            "type": "method_declaration_macro_identifier",
-            "named": true
-          }
-        ]
-      },
       "name": {
         "multiple": false,
         "required": true,
@@ -8115,6 +8105,32 @@
         "types": [
           {
             "type": "macro_method_return_type",
+            "named": true
+          }
+        ]
+      }
+    }
+  },
+  {
+    "type": "macro_method_declaration",
+    "named": true,
+    "fields": {
+      "arguments": {
+        "multiple": false,
+        "required": true,
+        "types": [
+          {
+            "type": "macro_method_argument_list",
+            "named": true
+          }
+        ]
+      },
+      "function": {
+        "multiple": false,
+        "required": true,
+        "types": [
+          {
+            "type": "method_declaration_macro_identifier",
             "named": true
           }
         ]
@@ -8237,11 +8253,87 @@
       "required": true,
       "types": [
         {
+          "type": "macro_parenthesized_parameter_type",
+          "named": true
+        }
+      ]
+    }
+  },
+  {
+    "type": "macro_parenthesized_parameter_type",
+    "named": true,
+    "fields": {
+      "declarator": {
+        "multiple": false,
+        "required": false,
+        "types": [
+          {
+            "type": "_abstract_declarator",
+            "named": true
+          },
+          {
+            "type": "_declarator",
+            "named": true
+          }
+        ]
+      },
+      "type": {
+        "multiple": false,
+        "required": false,
+        "types": [
+          {
+            "type": "type_specifier",
+            "named": true
+          }
+        ]
+      }
+    },
+    "children": {
+      "multiple": true,
+      "required": false,
+      "types": [
+        {
+          "type": "attribute_declaration",
+          "named": true
+        },
+        {
+          "type": "attribute_specifier",
+          "named": true
+        },
+        {
+          "type": "declaration_modifier_macro",
+          "named": true
+        },
+        {
           "type": "macro_parenthesized_parameter_declaration",
           "named": true
         },
         {
+          "type": "macro_parenthesized_parameter_type",
+          "named": true
+        },
+        {
+          "type": "ms_call_modifier",
+          "named": true
+        },
+        {
+          "type": "ms_declspec_modifier",
+          "named": true
+        },
+        {
           "type": "parameter_declaration",
+          "named": true
+        },
+        {
+          "type": "preproc_if_in_declaration_modifiers",
+          "named": true
+        },
+        {
+          "type": "storage_class_specifier",
+          "named": true
+        },
+        {
+          "type": "type_qualifier",
           "named": true
         }
       ]
@@ -10136,7 +10228,7 @@
     "named": true,
     "fields": {
       "declarator": {
-        "multiple": true,
+        "multiple": false,
         "required": false,
         "types": [
           {
@@ -10177,7 +10269,7 @@
           "named": true
         },
         {
-          "type": "macro_parenthesized_parameter_declaration",
+          "type": "macro_parenthesized_parameter_type",
           "named": true
         },
         {
@@ -10186,10 +10278,6 @@
         },
         {
           "type": "ms_declspec_modifier",
-          "named": true
-        },
-        {
-          "type": "parameter_declaration",
           "named": true
         },
         {
@@ -23195,11 +23283,11 @@
   },
   {
     "type": "true",
-    "named": false
+    "named": true
   },
   {
     "type": "true",
-    "named": true
+    "named": false
   },
   {
     "type": "try",

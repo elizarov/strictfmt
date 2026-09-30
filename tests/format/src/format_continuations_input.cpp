@@ -363,3 +363,10 @@ requires (sizeof(FirstValue) > sizeof(SecondValue))
 #endif
 struct Pair { FirstValue first; SecondValue second; };
 }
+
+struct WrappedMethodMacros {
+MOCK_METHOD(Result, Register, (int first, (Map<Key, Value>) second), (override));
+MOCK_METHOD((Map<Key, Value>), Lookup, ((const Key&) key), (const, override));
+MOCK_METHOD(Value, VeryLongMethodName, ());
+MOCK_METHOD(void (*)(int), MakeCallback, (((Map<Key, Value>)) value), (const));
+};

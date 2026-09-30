@@ -641,6 +641,8 @@ constexpr auto kSyntaxKindMappings = std::to_array<SyntaxKindMapping>({
         SyntaxNodeKind::ArgumentList, "argument_list", kPreprocessorSplitListClasses | Bit(SyntaxNodeClass::NamedList)
     ),
     Tree(SyntaxNodeKind::ArgumentList, "macro_parenthesized_argument", kPreprocessorSplitListClasses),
+    Tree(SyntaxNodeKind::ArgumentList, "macro_method_argument_list", kPreprocessorSplitListClasses),
+    Tree(SyntaxNodeKind::ArgumentList, "macro_parenthesized_parameter_type", kPreprocessorSplitListClasses),
     Tree(SyntaxNodeKind::ArgumentList, "macro_statement_argument_list", kPreprocessorSplitListClasses),
     Tree(SyntaxNodeKind::MacroStatementSequence, "macro_statement_sequence_argument"),
     Tree(SyntaxNodeKind::MacroUnterminatedControlStatement, "macro_unterminated_control_statement"),

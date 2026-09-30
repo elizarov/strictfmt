@@ -597,6 +597,7 @@ module.exports = grammar(C, {
     [$.preprocessing_parenthesized_tokens, $.argument_sequence],
     [$.preprocessing_punctuator, $.macro_argument_punctuator, $._unary_left_fold],
     [$.macro_parameter_list, $._macro_parenthesized_parameter_declaration],
+    [$.macro_parameter_list, $._macro_parenthesized_parameter_type],
     [$.parenthesized_expression, $._argument_list_item],
     [$.comma_expression, $._unary_right_fold, $._binary_fold, $._argument_list_item],
     [$.parenthesized_expression, $.macro_statement_sequence_argument, $._argument_list_item],
@@ -2571,6 +2572,11 @@ module.exports = grammar(C, {
 
     macro_method_declaration: $ => seq(
       field('function', $.method_declaration_macro_identifier),
+      field('arguments', $.macro_method_argument_list),
+      ';',
+    ),
+
+    macro_method_argument_list: $ => seq(
       '(',
       field('return_type', $.macro_method_return_type),
       ',',
@@ -2583,7 +2589,6 @@ module.exports = grammar(C, {
       )),
       optional(','),
       ')',
-      ';',
     ),
 
     macro_method_return_type: $ => prec(1, choice(
@@ -2627,18 +2632,26 @@ module.exports = grammar(C, {
     ),
 
     _macro_parenthesized_parameter_declaration: $ => prec.right(seq(
-      '(',
-      choice($._macro_parameter_declaration, $._macro_parenthesized_parameter_declaration),
-      ')',
+      alias($._macro_parenthesized_parameter_type, $.macro_parenthesized_parameter_type),
       optional(field('declarator', $._declarator)),
     )),
 
+    _macro_parenthesized_parameter_type: $ => seq(
+      '(',
+      choice($._macro_parameter_declaration, $._macro_parenthesized_parameter_declaration),
+      ')',
+    ),
+
     macro_parenthesized_parameter_declaration: $ => prec.right(seq(
+      $.macro_parenthesized_parameter_type,
+      optional(field('declarator', $._declarator)),
+    )),
+
+    macro_parenthesized_parameter_type: $ => seq(
       '(',
       choice($.parameter_declaration, $.macro_parenthesized_parameter_declaration),
       ')',
-      optional(field('declarator', $._declarator)),
-    )),
+    ),
 
     macro_qualifier_list: $ => seq(
       '(',

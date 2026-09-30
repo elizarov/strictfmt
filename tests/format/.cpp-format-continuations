@@ -1,2 +1,5 @@
 ColumnLimit: 40
 IndentWidth: 4
+MacroCategories:
+  MethodDeclarationMacros:
+    - MOCK_METHOD
