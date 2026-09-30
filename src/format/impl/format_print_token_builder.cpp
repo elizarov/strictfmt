@@ -155,6 +155,7 @@ struct TokenContext {
     bool inCompactSingleStatementBody = false;
     const SyntaxNode* macroDefinition = nullptr;
     const SyntaxNode* conditionalOperand = nullptr;
+    const SyntaxNode* preprocessingArgument = nullptr;
     bool inMacroValue = false;
     std::uint16_t ancestryFlags = 0;
     const SyntaxNode* declarationScopeItem = nullptr;
@@ -163,6 +164,9 @@ struct TokenContext {
 
     void Enter(const SyntaxNode& node) {
         const SyntaxNodeKind kind = node.kind;
+        if (kind == SyntaxNodeKind::PreprocessingArgument) {
+            preprocessingArgument = &node;
+        }
         if (
             SyntaxNodeKindHasClass(kind, SyntaxNodeClass::SemanticDelimitedParent) ||
             SyntaxNodeKindHasClass(kind, SyntaxNodeClass::CompoundBlock)
@@ -241,6 +245,7 @@ PrintToken
     token.inTemplateDeclarationHeader = context.inTemplateDeclarationHeader;
     token.declarationScopeItem = context.declarationScopeItem;
     token.conditionalOperand = context.conditionalOperand;
+    token.preprocessingArgument = context.preprocessingArgument;
     // Blank lines inherit scope/macro facts, but carry no lexical syntax context.
     if (kind != PrintTokenKind::BlankLine) {
         token.syntaxKind = node.kind;
@@ -258,6 +263,9 @@ void AppendTokens(const SyntaxNode& node, TokenContext context, std::vector<Prin
     context.Enter(node);
     const SyntaxNodeKind nodeKind = node.kind;
     if (nodeKind == SyntaxNodeKind::BlankLine) {
+        if (context.preprocessingArgument != nullptr) {
+            return;
+        }
         tokens.push_back(MakePrintToken(node, PrintTokenKind::BlankLine, context));
         return;
     }
@@ -422,6 +430,39 @@ std::vector<PrintToken> BuildPrintTokens(const FormatModel& model, int tabWidth)
             token.node != nullptr &&
             IsFirstConditionalBranchChild(*token.node);
         token.sourceIndex = static_cast<std::uint32_t>(index);
+        if (
+            token.preprocessingArgument != nullptr &&
+            previous != nullptr &&
+            previous->preprocessingArgument == token.preprocessingArgument &&
+            model.sourceText != nullptr &&
+            previous->node != nullptr &&
+            token.node != nullptr
+        ) {
+            const auto previousOffset = SourceTextOffset(*model.sourceText, previous->node->text);
+            const auto currentOffset = SourceTextOffset(*model.sourceText, token.node->text);
+            if (previousOffset && currentOffset) {
+                size_t offset = *previousOffset + previous->node->text.size();
+                // Line splices disappear before preprocessing tokens are formed.
+                while (offset < *currentOffset) {
+                    if ((*model.sourceText)[offset] == '\\' && offset + 1 < *currentOffset) {
+                        if ((*model.sourceText)[offset + 1] == '\n') {
+                            offset += 2;
+                            continue;
+                        }
+                        if (
+                            (*model.sourceText)[offset + 1] == '\r' &&
+                            offset + 2 < *currentOffset &&
+                            (*model.sourceText)[offset + 2] == '\n'
+                        ) {
+                            offset += 3;
+                            continue;
+                        }
+                    }
+                    token.preprocessingSpaceBefore = true;
+                    break;
+                }
+            }
+        }
         token.spaceBefore = FormatTokenNeedsSpace(previous, token);
         token.spaceBeforeKnown = true;
         previous = &token;

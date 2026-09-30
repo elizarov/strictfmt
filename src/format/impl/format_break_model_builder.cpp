@@ -1048,6 +1048,15 @@ private:
         if (!SyntaxNodeKindHasClass(node.kind, SyntaxNodeClass::Tree)) {
             return nullptr;
         }
+        if (node.kind == SyntaxNodeKind::PreprocessingArgument) {
+            // Keep lexical tokens visible, but never interpret their delimiters,
+            // operators or adjacent strings as ordinary C++ layout constructs.
+            auto* sequence = MakeNode(FormatBreakNodeKind::Sequence, depth);
+            std::vector<FormatBreakNode*> tokens;
+            AppendPreprocessingTokens(node, depth + 1, tokens);
+            sequence->children = StoreNodePointers(tokens);
+            return sequence;
+        }
         if (
             &node != root_ &&
             SyntaxNodeHasClass(node, SyntaxNodeClass::CompoundBlock) &&
@@ -2088,6 +2097,18 @@ private:
         sequenceChildren.insert(sequenceChildren.end(), tailChildren.begin(), tailChildren.end());
         sequence->children = StoreNodePointers(sequenceChildren);
         return sequence;
+    }
+
+    void AppendPreprocessingTokens(const SyntaxNode& node, int depth, std::vector<FormatBreakNode*>& tokens) {
+        if (const auto token = TokenForNode(node)) {
+            tokens.push_back(BuildToken(*token, depth));
+            return;
+        }
+        for (const SyntaxNode* child : node.children) {
+            if (child != nullptr && ContainsSelected(*child)) {
+                AppendPreprocessingTokens(*child, depth, tokens);
+            }
+        }
     }
 
     FormatBreakNode* BuildSequenceFromPointers(const ConstSyntaxChildList& children, int depth) {

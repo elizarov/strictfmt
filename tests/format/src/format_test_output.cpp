@@ -6571,7 +6571,7 @@ FORMAT_TOKEN_ITEM(adjacent, *, )
 FORMAT_TOKEN_WRAPPER(wrapped, =, <> malformed_cpp)
 struct Values {
     FORMAT_TOKEN_ITEM(member, +, (left, right))
-    FORMAT_TOKEN_WRAPPER(other, /,[])
+    FORMAT_TOKEN_WRAPPER(other, /, [])
 };
 
 void Run(bool condition) {
@@ -6586,7 +6586,7 @@ void Run(bool condition) {
         FORMAT_TOKEN_STATEMENT(++, <>);
     }
     for (; condition;) {
-        FORMAT_TOKEN_STATEMENT(/,[])
+        FORMAT_TOKEN_STATEMENT(/, [])
     }
     FORMAT_TOKEN_STATEMENT(, +);
     Consume(local);

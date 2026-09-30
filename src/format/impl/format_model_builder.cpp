@@ -65,6 +65,14 @@ std::string_view TrimLeadingWhitespace(std::string_view value) {
 
 void SetKnownTokenNode(SyntaxNode& node, SyntaxNodeKind token, std::string_view text) {
     node.kind = token;
+    for (const SyntaxNode* parent = node.parent; parent != nullptr; parent = parent->parent) {
+        if (parent->kind == SyntaxNodeKind::PreprocessingArgument) {
+            // Argument spacing depends on original token boundaries, including
+            // punctuation whose spelling otherwise needs no source storage.
+            node.text = text;
+            return;
+        }
+    }
     if (
         text != SyntaxNodeKindTokenText(token) && !SyntaxNodeKindHasClass(token, SyntaxNodeClass::PreprocessorDirective)
     ) {

@@ -1351,6 +1351,10 @@ private:
             return;
         }
         if (token.kind == PrintTokenKind::Known) {
+            if (token.preprocessingArgument != nullptr) {
+                BufferToken(token, rawPrevious);
+                return;
+            }
             PrintKnown(token, previous, next, rawNext);
             return;
         }

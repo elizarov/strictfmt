@@ -8,7 +8,7 @@ struct Interface {
     DECLARE_METHOD(void, Replace, (), (const, ref(&&), override));
 };
 
-void NestedFragments() { TOKENS((, ), ((const, override)), (((int, field)))); }
+void NestedFragments() { TOKENS((,), ((const, override)), (((int, field)))); }
 
 // Standalone expansion items coexist with ordinary declarations.
 BEGIN_NAMESPACE
@@ -152,7 +152,7 @@ void MixedCallTerminators() {
 
 // Explicit roles also disambiguate newly structured replacement fragments.
 #define DECLARE_ACCESSOR(Name) Value Name() ANNOTATION
-#define FORWARD_ARGUMENTS(args) TOKENS(dummy STEP(ARG,, args))
+#define FORWARD_ARGUMENTS(args) TOKENS(dummy STEP(ARG,,args))
 #define EXPAND_ELEMENT(i, element) STEP(i) element
 
 // Alias annotations use the same unknown-modifier fallback as declarations.
@@ -168,9 +168,9 @@ using OlderValue ANNOTATION(reason(Nested(value))) = T;
 
 // Adjacent parenthesized fragments recurse through the common argument grammar.
 void AdjacentParenthesizedFragments() {
-    TOKENS((int, field)(bool, other));
-    TOKENS(((int, field)(bool, other))((Map<Key, Value>, entries)));
-    TOKENS(prefix(int, field) middle(bool, other) suffix);
+    TOKENS((int,field)(bool,other));
+    TOKENS(((int,field)(bool,other))((Map<Key,Value>,entries)));
+    TOKENS(prefix(int,field) middle(bool,other) suffix);
     CHECK_STATEMENT(Value value(input), Error);
     CHECK_STATEMENT(Value value(Convert(data.As<ns::Input>())), Error);
     CHECK_STATEMENT(Value value({{"label", 1, 2, 3}}), Error);
@@ -382,12 +382,12 @@ void TemplateParameterFragments() {
         class,
         typename... T,
         class... U,
-        typename T = Value,
-        template <class> class
+        typename T=Value,
+        template<class> class
     );
     TOKENS(
-        (template <class T> class Container),
-        (typename, class),
+        (template<class T> class Container),
+        (typename,class),
         (((typename... Values))),
     );
 }
@@ -438,21 +438,21 @@ void TypeListCalls() {
 }
 
 // Argument roles also apply when a call supplies a namespace or class item.
-GENERATE_FIELDS((int, id)(bool, enabled))
+GENERATE_FIELDS((int,id)(bool,enabled))
 DEFINE_ACTION(
     Work();
     Finish();,
     Startup
 )
 struct ItemArguments {
-    GENERATE_FIELDS((int, value)(Value, data))
+    GENERATE_FIELDS((int,value)(Value,data))
     DEFINE_ACTION(Work();, OnEvent)
     void Method();
 };
 
 namespace ItemScope {
 
-TOKENS((int, value)(bool, flag))->Label("values");
+TOKENS((int,value)(bool,flag))->Label("values");
 DEFINE_ACTION(
     if (ready) {
         Work();
@@ -463,9 +463,9 @@ DEFINE_ACTION(
 )
 
 }
-#define TOKEN_FIELDS(Name)                           \
-    struct Name {                                    \
-        GENERATE_FIELDS((int, field)(bool, enabled)) \
+#define TOKEN_FIELDS(Name)                         \
+    struct Name {                                  \
+        GENERATE_FIELDS((int,field)(bool,enabled)) \
     }
 
 // Constructor specifiers accept preceding modifiers without configuration.

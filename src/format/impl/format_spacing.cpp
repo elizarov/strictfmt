@@ -457,6 +457,14 @@ bool FormatTokenNeedsSpace(const PrintToken* previous, const PrintToken& current
     if (previous == nullptr) {
         return false;
     }
+    if (current.preprocessingArgument != nullptr) {
+        if (previous->preprocessingArgument == current.preprocessingArgument) {
+            return current.preprocessingSpaceBefore;
+        }
+        if (previous->syntaxKind == SyntaxNodeKind::Comma) {
+            return true;
+        }
+    }
     if (IsBlockCommentToken(current)) {
         if (current.kind == PrintTokenKind::TrailingComment) {
             return true;

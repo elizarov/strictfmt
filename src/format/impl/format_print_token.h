@@ -47,6 +47,7 @@ struct PrintToken {
     bool forcedLeadingPreprocessorListComma : 1;
     bool spaceBefore : 1;
     bool spaceBeforeKnown : 1;
+    bool preprocessingSpaceBefore : 1;
     // Negative ancestry guards; independently constructed tokens use parent traversal.
     bool spacingAncestryKnown : 1;
     bool inMacroModifier : 1;
@@ -59,6 +60,7 @@ struct PrintToken {
     const SyntaxNode* declarationScopeItem = nullptr;
     const SyntaxNode* macroDefinition = nullptr;
     const SyntaxNode* conditionalOperand = nullptr;
+    const SyntaxNode* preprocessingArgument = nullptr;
 
     bool operator==(const PrintToken&) const = default;
 };

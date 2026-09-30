@@ -5192,7 +5192,7 @@ void RegisterTokens() {
         .template Serializer<TMapSerializer<TTupleSerializer<TCookieAndPool,
         2>,
         TDefaultSerializer,
-        TUnsortedTag> >()
+        TUnsortedTag > >()
     );
     FORMAT_TOKEN_REGISTER(
         1,
@@ -5200,7 +5200,7 @@ void RegisterTokens() {
         .template Serializer<TMapSerializer<TTupleSerializer<TCookieAndPool,
         2>,
         TDefaultSerializer,
-        TUnsortedTag >> ()
+        TUnsortedTag>>()
     );
 }
 

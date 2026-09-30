@@ -563,3 +563,21 @@ TEST(Example, CallsHelper) {
 }
 
 }
+
+// Configured preprocessing arguments preserve token adjacency throughout each argument.
+#define FORMAT_USERVER_TOKENS(...) #__VA_ARGS__
+const char* comparison = FORMAT_USERVER_TOKENS(count > 0);
+const char* operators = FORMAT_USERVER_TOKENS(a*b + c > d && e & f);
+const char* nested = FORMAT_USERVER_TOKENS((int * value), (a && b), (Pair<A, B>));
+const char* strings = FORMAT_USERVER_TOKENS("left" "right");
+const char* angles = FORMAT_USERVER_TOKENS((T<U<V>>), (T<U<V> >), (left > > right));
+auto fragments = FORMAT_USERVER_TOKENS(2, field, .SinceVersion(1));
+
+#define FORWARD_TOKENS(x) FORMAT_USERVER_TOKENS(x > 0, (x * x), .Flag())
+auto wideTokens = FORMAT_USERVER_TOKENS(
+    (firstLongValue + secondLongValue > thirdLongValue), .SinceVersion(1), (anotherLongValue + finalLongValue > 0)
+);
+
+const char* spliced = FORMAT_USERVER_TOKENS(value>0);
+const char* braces = FORMAT_USERVER_TOKENS({ }, { int * value; if (ready) { Run(); } });
+const char* blankLines = FORMAT_USERVER_TOKENS({ first(); second(); });
