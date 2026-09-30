@@ -584,7 +584,6 @@ struct RuntimeConfigFieldDescriptor {
 };
 
 bool RuntimeConfigFieldEquals(const RuntimeConfigFieldDescriptor& field, const void* owner, const void* compareOwner);
-// Implemented by generated file build/cmake/generated/config/config_meta.generated.cpp.
 std::span<const RuntimeConfigSectionDescriptor> RuntimeConfigSectionDescriptors();
 
 std::vector<std::string> ParseIndentedStringList(const std::vector<ConfigLine>& lines, size_t& index, int parentIndent)
