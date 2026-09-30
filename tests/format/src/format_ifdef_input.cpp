@@ -1537,6 +1537,68 @@ int NestedValue(){return 9;}
 #endif
 }
 
+// Grouping separators belong outside guards, including consecutive nested guards.
+#if CPP
+#if VERSIONED
+namespace GuardedVersion {
+
+#endif
+
+#elif LEGACY
+#if VERSIONED
+namespace LegacyVersion {
+#endif
+#else
+// No version namespace.
+#endif
+int VersionedValue();
+#if CPP
+
+#if VERSIONED
+
+} // GuardedVersion
+#endif
+#elif LEGACY
+#if VERSIONED
+} // LegacyVersion
+#endif
+#else
+// No version namespace.
+#endif
+
+#if CPP // linkage guard
+extern "C" { // linkage opener
+// Opening guard comment.
+
+#endif // linkage guard end
+// Shared declaration comment.
+int CommentedLinkage();
+#if CPP // closing guard
+
+// Closing guard comment.
+} // linkage close
+#endif
+
+// Complete scopes retain their internal separators inside a whole-item guard.
+#if COMPLETE_SCOPE
+namespace CompleteScope {
+extern "C" {
+int CompleteLinkage();
+}
+}
+#endif
+
+// A guard that also contains declarations is not just a grouping delimiter.
+#if API
+#if CPP
+namespace OptionalApi {
+#endif
+int OptionalValue();
+#if CPP
+}
+#endif
+#endif
+
 // A conditional after a selected if body may be a sibling or its guarded else.
 int SelectedIfThenConditional(bool first, bool second) {
 int value=0;

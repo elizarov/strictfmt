@@ -93,6 +93,27 @@ bool IsNamespaceLikeBrace(const PrintToken& token) {
         IsLinkageSpecificationDeclarationList(token);
 }
 
+SyntaxNodeKind ConditionalDirectiveOwnerKind(const PrintToken& token) {
+    if (token.kind != PrintTokenKind::Preprocessor) {
+        return SyntaxNodeKind::Unknown;
+    }
+    const SyntaxNode* owner = token.node;
+    while (owner != nullptr && SyntaxNodeHasClass(*owner, SyntaxNodeClass::ConditionalBranchSeparatorDirective)) {
+        owner = owner->parent;
+    }
+    return owner == nullptr ? SyntaxNodeKind::Unknown : owner->kind;
+}
+
+bool EndsGroupingOpenBranch(const PrintToken& token) {
+    return ConditionalDirectiveOwnerKind(token) == SyntaxNodeKind::PreprocGroupingOpen &&
+        PrintTokenSyntaxHasClass(token, SyntaxNodeClass::ConditionalBranchSeparatorDirective);
+}
+
+bool StartsGroupingCloseBranch(const PrintToken& token) {
+    return ConditionalDirectiveOwnerKind(token) == SyntaxNodeKind::PreprocGroupingClose &&
+        !PrintTokenSyntaxHasClass(token, SyntaxNodeClass::EndifDirective);
+}
+
 BraceRole RoleForBrace(const PrintToken& token) {
     if (
         token.inCompactSingleStatementBody &&
@@ -1241,10 +1262,29 @@ private:
         if (prebufferedTokenSourceIndices_.erase(token.sourceIndex) != 0) {
             return;
         }
-        if (pendingNamespaceSeparator_ && !token.commentContinuation && token.kind != PrintTokenKind::TrailingComment) {
+        const bool beforeGroupingOpenEnd = next != nullptr && EndsGroupingOpenBranch(*next);
+        if (
+            token.kind == PrintTokenKind::BlankLine &&
+            (beforeGroupingOpenEnd || (previous != nullptr && StartsGroupingCloseBranch(*previous)))
+        ) {
+            return;
+        }
+        if (EndsGroupingOpenBranch(token)) {
+            // Alternative openers share a separator after the complete guard. Nested guards
+            // defer it through consecutive #endif lines, but retain it before another opener.
+            pendingNamespaceSeparator_ = PrintTokenSyntaxHasClass(token, SyntaxNodeClass::EndifDirective);
+        } else if (
+            pendingNamespaceSeparator_ &&
+            !token.commentContinuation &&
+            token.kind != PrintTokenKind::TrailingComment &&
+            !(IsStructuralTriviaToken(token) && beforeGroupingOpenEnd)
+        ) {
             FlushPendingTokens();
             BlankLine(token.inMacroValue);
             pendingNamespaceSeparator_ = false;
+        }
+        if (token.syntaxKind == SyntaxNodeKind::PreprocGroupingClose) {
+            NamespaceSeparatorBefore(token, previous);
         }
         if (const auto boundary = declarationLayout_->BoundaryBefore(currentTokenIndex_)) {
             FlushPendingTokens();
@@ -1651,7 +1691,7 @@ private:
                 if (TryPrintListBoundary(token, FormatListContinuationKind::Block)) {
                     return;
                 }
-                PrintRightBrace(token, next, rawNext);
+                PrintRightBrace(token, previous, next, rawNext);
                 return;
             case SyntaxNodeKind::Semicolon:
                 if (IsRemovableNullTerminator(token, previous)) {
@@ -1858,7 +1898,18 @@ private:
         }
     }
 
-    void PrintRightBrace(const PrintToken& token, const PrintToken* next, const PrintToken* rawNext) {
+    void NamespaceSeparatorBefore(const PrintToken& token, const PrintToken* previous) {
+        // A closing guard carries the first brace's separator. Nested branch starts
+        // and their leading comments stay together; subsequent braces still separate.
+        if (previous == nullptr || !StartsGroupingCloseBranch(*previous)) {
+            FlushPendingTokens();
+            BlankLine(token.inMacroValue);
+        }
+    }
+
+    void PrintRightBrace(
+        const PrintToken& token, const PrintToken* previous, const PrintToken* next, const PrintToken* rawNext
+    ) {
         const SyntaxNode* block = token.parentKind == SyntaxNodeKind::BlockScopeClose ?
             NearestAncestor(token, SyntaxNodeKind::CompoundStatement) : (
                 token.node != nullptr && token.parentKind == SyntaxNodeKind::CompoundStatement ? token.node->parent :
@@ -1932,7 +1983,7 @@ private:
             if (output_.State().lineHasText) {
                 NewLine(token.inMacroValue);
             }
-            BlankLine(token.inMacroValue);
+            NamespaceSeparatorBefore(token, previous);
             BufferToken(token);
             FlushPendingTokens();
             if (rawNext != nullptr && rawNext->kind == PrintTokenKind::TrailingComment) {

@@ -8,6 +8,49 @@
 
 namespace {
 
+std::optional<SyntaxNodeKind> ConditionalGroupingKind(const SyntaxNode& node) {
+    SyntaxNodeKind result = SyntaxNodeKind::Unknown;
+    for (size_t index = 0; index < node.children.size(); ++index) {
+        const SyntaxNode* child = node.children[index];
+        if (
+            child == nullptr ||
+            IsConditionalPreprocessorHeaderChild(node, index) ||
+            SyntaxNodeHasClass(*child, SyntaxNodeClass::Trivia) ||
+            SyntaxNodeHasClass(*child, SyntaxNodeClass::EndifDirective)
+        ) {
+            continue;
+        }
+        std::optional<SyntaxNodeKind> kind = child->kind;
+        if (SyntaxNodeHasClass(*child, SyntaxNodeClass::ConditionalBranchSeparatorDirective)) {
+            kind = ConditionalGroupingKind(*child);
+        } else if (*kind != SyntaxNodeKind::PreprocGroupingOpen && *kind != SyntaxNodeKind::PreprocGroupingClose) {
+            return std::nullopt;
+        }
+        if (!kind || (*kind != SyntaxNodeKind::Unknown && result != SyntaxNodeKind::Unknown && result != *kind)) {
+            return std::nullopt;
+        }
+        if (*kind != SyntaxNodeKind::Unknown) {
+            result = *kind;
+        }
+    }
+    return result;
+}
+
+void NormalizeConditionalGrouping(SyntaxNode& node) {
+    if (
+        !SyntaxNodeHasClass(node, SyntaxNodeClass::ConditionalOpeningDirective) ||
+        !SyntaxNodeHasClass(node, SyntaxNodeClass::SourceItemScope)
+    ) {
+        return;
+    }
+    // Whole-item guards around grouping-only guards are equivalent to the grammar's
+    // dedicated grouping form. Preserve that role through arbitrary nested guards.
+    const auto kind = ConditionalGroupingKind(node);
+    if (kind && *kind != SyntaxNodeKind::Unknown) {
+        node.kind = *kind;
+    }
+}
+
 std::optional<size_t> PreviousNonTriviaChildIndex(const SyntaxChildList& children, size_t before) {
     while (before > 0) {
         --before;
@@ -937,6 +980,7 @@ bool ContainsListPreprocessor(const SyntaxNode& node) {
 }  // namespace
 
 void NormalizeSyntaxNode(FormatModel& model, SyntaxNode& node) {
+    NormalizeConditionalGrouping(node);
     if (
         SyntaxNodeHasClass(node, SyntaxNodeClass::ConditionalPreprocessorTree) &&
         node.children.size() == 1 &&

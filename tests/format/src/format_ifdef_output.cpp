@@ -707,12 +707,11 @@ if(first)
 // Conditional linkage wrappers accept expression guards as well as ifdef guards.
 #if defined(__cplusplus)
 extern "C" {
-
 #endif
+
 int ConditionalLinkage();
 
 #if defined(__cplusplus)
-
 }  // extern C
 #endif
 
@@ -1313,8 +1312,8 @@ Wrapper(Value<Second>) -> Wrapper<Second>;
 
 #ifdef __cplusplus
 extern "C" {
-
 #endif
+
 typedef struct OpaqueString {
     const char* data;
 } OpaqueString;
@@ -1326,7 +1325,6 @@ Result WriteInteger(Writer * writer, Integer value);
 Result WriteUnsigned(Writer * writer, Unsigned value);
 
 #ifdef __cplusplus
-
 }
 #endif
 
@@ -1833,11 +1831,11 @@ bool NegatedConditionalMember(Chain& builder) {
 namespace Outer {
 
 extern "C" {
-
 #endif
-int ReadValue() { return 3; }
-#ifdef __cplusplus
 
+int ReadValue() { return 3; }
+
+#ifdef __cplusplus
 }
 
 }
@@ -1848,29 +1846,26 @@ namespace Selected {
 
 #if SECOND
 inline namespace Version {
-
 #endif
-extern "C" {
 
+extern "C" {
 #elif SECOND
 namespace Other {
-
 #else
 namespace Fallback {
-
 #endif
+
 int SelectedValue() { return 7; }
+
 #if FIRST
-
 }
-#if SECOND
 
+#if SECOND
 }
 #endif
 
 }
 #else
-
 }
 #endif
 
@@ -1880,17 +1875,83 @@ namespace Enclosing {
 namespace [[deprecated]] Old {
 
 namespace Nested {
-
 #endif
+
 int NestedValue() { return 9; }
-#ifdef FEATURE
 
+#ifdef FEATURE
 }
 
 }
 #endif
 
 }
+
+// Grouping separators belong outside guards, including consecutive nested guards.
+#if CPP
+#if VERSIONED
+namespace GuardedVersion {
+#endif
+#elif LEGACY
+#if VERSIONED
+namespace LegacyVersion {
+#endif
+#else
+// No version namespace.
+#endif
+
+int VersionedValue();
+
+#if CPP
+#if VERSIONED
+}  // GuardedVersion
+#endif
+#elif LEGACY
+#if VERSIONED
+}  // LegacyVersion
+#endif
+#else
+// No version namespace.
+#endif
+
+#if CPP  // linkage guard
+extern "C" {  // linkage opener
+// Opening guard comment.
+#endif  // linkage guard end
+
+// Shared declaration comment.
+int CommentedLinkage();
+
+#if CPP  // closing guard
+// Closing guard comment.
+}  // linkage close
+#endif
+
+// Complete scopes retain their internal separators inside a whole-item guard.
+#if COMPLETE_SCOPE
+namespace CompleteScope {
+
+extern "C" {
+
+int CompleteLinkage();
+
+}
+
+}
+#endif
+
+// A guard that also contains declarations is not just a grouping delimiter.
+#if API
+#if CPP
+namespace OptionalApi {
+#endif
+
+int OptionalValue();
+
+#if CPP
+}
+#endif
+#endif
 
 // A conditional after a selected if body may be a sibling or its guarded else.
 int SelectedIfThenConditional(bool first, bool second) {

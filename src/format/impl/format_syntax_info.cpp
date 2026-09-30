@@ -402,14 +402,18 @@ constexpr auto kSyntaxKindMappings = std::to_array<SyntaxKindMapping>({
         kAtomicPreprocessorClasses | kSupportedPreprocessorPlacementClasses
     ),
     Tree(
-        SyntaxNodeKind::PreprocIf,
+        SyntaxNodeKind::PreprocGroupingOpen,
         "preproc_if_in_grouping_open",
-        kConditionalPreprocessorOpenClasses | kSupportedPreprocessorPlacementClasses
+        kConditionalPreprocessorOpenClasses |
+            kSupportedPreprocessorPlacementClasses |
+            Bit(SyntaxNodeClass::SourceItemScope)
     ),
     Tree(
-        SyntaxNodeKind::PreprocIf,
+        SyntaxNodeKind::PreprocGroupingClose,
         "preproc_if_in_grouping_close",
-        kConditionalPreprocessorOpenClasses | kSupportedPreprocessorPlacementClasses
+        kConditionalPreprocessorOpenClasses |
+            kSupportedPreprocessorPlacementClasses |
+            Bit(SyntaxNodeClass::SourceItemScope)
     ),
     Tree(SyntaxNodeKind::GroupingScopeClose, "grouping_scope_close"),
     Tree(
@@ -1270,6 +1274,10 @@ std::string_view SyntaxNodeKindName(SyntaxNodeKind kind) {
             return "LinkageSpecification";
         case SyntaxNodeKind::GroupingScopeClose:
             return "GroupingScopeClose";
+        case SyntaxNodeKind::PreprocGroupingOpen:
+            return "PreprocGroupingOpen";
+        case SyntaxNodeKind::PreprocGroupingClose:
+            return "PreprocGroupingClose";
         case SyntaxNodeKind::BlockScopeClose:
             return "BlockScopeClose";
         case SyntaxNodeKind::StatementScopeClose:
