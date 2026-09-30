@@ -122,16 +122,22 @@ std::optional<std::string> JoinOrdinaryStringLiterals(std::string_view left, std
 
 }  // namespace
 
-FormatAdjacentStrings AnalyzeAdjacentStrings(std::span<const std::string_view> spellings) {
+FormatAdjacentStrings AnalyzeAdjacentStrings(std::span<const FormatStringPart> parts) {
     FormatAdjacentStrings result;
-    result.compactSpellings.reserve(spellings.size());
+    result.compactSpellings.reserve(parts.size());
     size_t compactRunStart = 0;
-    for (size_t index = 0; index < spellings.size(); ++index) {
-        const std::string_view text = spellings[index];
-        if (index + 1 < spellings.size() && EndsWithEscapedLineFragment(text)) {
+    for (size_t index = 0; index < parts.size(); ++index) {
+        const std::string_view text = parts[index].text;
+        if (!parts[index].isComment && index + 1 < parts.size() && EndsWithEscapedLineFragment(text)) {
             result.requiresSplit = true;
         }
-        if (result.compactSpellings.empty()) {
+        if (
+            result.compactSpellings.empty() ||
+            parts[index].isComment ||
+            parts[index - 1].isComment ||
+            !parts[index].startsSourceLine
+        ) {
+            compactRunStart = result.compactSpellings.size();
             result.compactSpellings.emplace_back(text);
             continue;
         }

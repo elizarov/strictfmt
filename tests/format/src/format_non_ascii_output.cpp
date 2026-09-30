@@ -167,3 +167,8 @@ void MultilineStrings() {
 #if ДОСТАВКА  // сообщение é
 int значение;
 #endif  // 𝄞 👩🏽‍💻
+
+// Authored Unicode fragments stay separate.
+void SeparateUnicodeFragments() {
+    Use("e" "́", "👩🏽‍" "💻");
+}

@@ -744,7 +744,7 @@ void TestModelStringStorage() {
     std::string source = "auto values = Build(";
     for (int index = 0; index < 40; ++index) {
         if (index != 0) source += ",";
-        source += "\"part" + std::to_string(index) + "\" \"suffix\"";
+        source += "\"part" + std::to_string(index) + "\"\n\"suffix\"";
     }
     source += ");";
     auto syntax = ParseFormatModel(source, config);

@@ -1285,7 +1285,7 @@ struct OverflowDeclaration {
 
 void FormatOverflowStream() {
     LOG()
-        << "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+        << "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa" /* no-join */
             "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbcccccccccccccccccccc";
 }
 
@@ -2935,36 +2935,36 @@ auto ReturnedLambdaWithSplitOwner() {
 
 const char* ReturnForcedAdjacentString() {
     return
-        "first line\n"
+        "first line\n" /* no-join */
         "second line";
 }
 
 const char* ActiveAdjacentNewlineEscape =
-    "first\n"
+    "first\n" /* no-join */
     "second";
 
 const char* ActiveAdjacentCrLfEscape =
-    "first\r\n"
+    "first\r\n" /* no-join */
     "second";
 
-const char* EscapedAdjacentNewlineText = "first\\nsecond";
-const char* EscapedAdjacentCrLfText = "first\\r\\nsecond";
+const char* EscapedAdjacentNewlineText = "first\\n" "second";
+const char* EscapedAdjacentCrLfText = "first\\r\\n" "second";
 
 Task CoReturnForcedAdjacentString() {
     co_return
-        "first line\n"
+        "first line\n" /* no-join */
         "second line";
 }
 
 void ThrowForcedAdjacentString() {
     throw
-        "first line\n"
+        "first line\n" /* no-join */
         "second line";
 }
 
 Generator CoYieldForcedAdjacentString() {
     co_yield
-        "first line\n"
+        "first line\n" /* no-join */
         "second line";
 }
 
@@ -2987,7 +2987,7 @@ Generator KeywordOwnedCoYieldSpacing() {
 
 void CallForcedAdjacentString() {
     Log(
-        "first line\n"
+        "first line\n" /* no-join */
             "second line"
     );
 }
@@ -4152,8 +4152,8 @@ auto ExpansionCostStringChain() {
     return Log(
         firstLongValue,
         secondLongValue,
-        "This first fragment is part of a longer message. "
-            "This second fragment continues the same message. "
+        "This first fragment is part of a longer message. " /* no-join */
+            "This second fragment continues the same message. " /* no-join */
             "This final fragment completes the message."
     );
 }
@@ -4424,7 +4424,7 @@ struct PreserveBaseListBlankLines :
 void StreamPairsRequireNonLiteralValues() {
     output
         << "message"
-        << "continued message"
+        << "continued " "message"
         << "number="
         << 42
         << "boolean="
@@ -4780,7 +4780,7 @@ void AdditionLiteralPairs() {
         R"(raw=)" + raw +
         "owned="s + owned;
     auto fragments = first +  // first
-        "longer label=" + value +
+        "longer " "label=" + value +
         '\n' + tail;
     auto expressions = first +  // first
         "call=" + Build(value) +
@@ -4876,7 +4876,7 @@ second)"
         << "tail=" << tail;
     auto fragments =
         first +  // first
-            "line\n"
+            "line\n" /* no-join */
             "next" +
             value +
             "tail=" + tail;
@@ -5362,8 +5362,8 @@ void AssignLiterals() {
     Get(u"field"_arg = 6);
     Get(U"field"_arg = 7);
     Get(R"(field)"_arg = 8);
-    Get("firstsecond"_arg = 9);
-    Get("firstsecond"_arg = 10);
+    Get("first" "second"_arg = 9);
+    Get("first"_arg "second" = 10);
     Get(1_arg += 2);
     Get('x'_arg = 11);
 }
@@ -9557,3 +9557,17 @@ void IfHeaderMacroConditions(bool outer, bool ready, bool nested) {
         Fail();
     }
 }
+
+// Adjacent strings retain boundaries authored on the same physical line.
+const char* binaryGrouping = "03000000" "666f6f";
+const char* joinedLines = "firstsecondthird";
+const char* mixedLines = "prefix" "middle1middle2" "suffix";
+auto sameLinePrefix = u8"first" "second";
+auto joinedPrefix = u8"firstsecond";
+auto sameLineSuffix = "first"_tag "second"_tag;
+auto joinedSuffix = "firstsecond"_tag;
+const char* escapeBoundary = "\x1" "a";
+const char* commentedStrings = "first" /* keep fragments */ "second";
+
+void UseStringGrouping() { Use("length" "payload", "firstsecond"); }
+#define STRING_GROUPS "prefix" "middle1middle2" "suffix"

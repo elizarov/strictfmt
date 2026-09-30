@@ -68,7 +68,9 @@ A declaration type and its declarator form an independent outer break node. Gram
 
 An adjacent-string node stores the exact safely joined spellings of its compact ordinary-literal runs. Compact solving
 prices those spellings rather than the original separated tokens, and compact one-line probes use the same widths.
-The split candidate continues to solve and emit the original literal tokens. The layout lowerer consumes the stored
+The split candidate continues to solve and emit the original literal tokens. Solving and lowering share the inserted
+boundary-comment predicate based on parser-recorded source-line starts, and price and emit the same comment token.
+The layout lowerer consumes the stored
 compact spellings only when the compact choice is selected, so it neither repeats escape-boundary analysis nor joins
 tokens across a selected break.
 

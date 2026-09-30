@@ -28,6 +28,11 @@ std::string_view NodeText(TSNode node, std::string_view source) {
     return source.substr(start, end - start);
 }
 
+bool StartsSourceLine(std::string_view source, uint32_t start) {
+    const size_t previous = source.substr(0, start).find_last_not_of(" \t\v\f");
+    return previous == std::string_view::npos || source[previous] == '\r' || source[previous] == '\n';
+}
+
 bool ContainsBlankLine(std::string_view source, uint32_t firstEnd, uint32_t secondStart) {
     if (firstEnd >= secondStart || secondStart > source.size()) {
         return false;
@@ -201,6 +206,7 @@ SyntaxNode*
     node->parent = parent;
     node->depth = parent == nullptr ? 0 : parent->depth + 1;
     node->classes = syntax.classes;
+    node->startsSourceLine = StartsSourceLine(source, ts_node_start_byte(tsNode));
 
     if (syntax.kind == SyntaxNodeKind::UserDefinedLiteral) {
         ValidateLiteralSuffix(model, tsNode, source);

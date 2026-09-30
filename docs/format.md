@@ -68,7 +68,7 @@ void Check(bool a, bool b, bool c) {
 - Remove trailing whitespace from every line.
 - Preserve the source [line-ending style](glossary.md#line-ending-style). For mixed line endings, use the current platform default.
 - Use spaces for indentation and never emit tabs. `IndentWidth` in [config.md](config.md) selects the number of spaces per indentation level.
-- Preserve comments in source order. A trailing comment stays trailing only when it was trailing in source. A standalone comment stays standalone. Treat a trailing block comment before a brace, parenthesis, bracket, or angle list closer or a requires clause as inline.
+- Preserve comments in source order. A trailing comment stays trailing only when it was trailing in source. A standalone comment stays standalone. Treat a trailing block comment between adjacent string literals, or before a brace, parenthesis, bracket, or angle list closer or a requires clause, as inline.
 - Preserve source blank-line separators after declarations, statements, or list items at the same structural level, including before a closing block delimiter, collapsing each run to one line.
 - Do not emit empty lines at the beginning or end of a file or at the beginning of a block.
 - Apply the structured and raw replacement whitespace rules specified in [macro.md](macro.md).
@@ -756,9 +756,13 @@ void Example() {
 
 ## String-Literal Joining
 
-Treat adjacent string literals as a chain with compact and split layouts. In compact layout, join each maximal compatible run of ordinary string literals emitted on one formatted physical line. Original source-line boundaries do not prevent joining. The literals are compatible only when their encoding prefixes and suffixes can be preserved and joining cannot extend an escape. For example, `"\x1" "a"` stays separate.
+Treat adjacent string literals as a chain with compact and split layouts. In compact layout, join compatible ordinary string literals only across original physical line breaks that formatting removes. Preserve every boundary between literals originally adjacent on the same physical line. The literals are compatible only when their encoding prefixes and suffixes can be preserved and joining cannot extend an escape. For example, `"\x1" "a"` stays separate even when originally split across lines.
 
-In split layout, preserve the original literal tokens and do not join across a selected formatted line break.
+```cpp
+const char* encoded = "03000000" "666f6f";
+```
+
+In split layout, preserve the original literal tokens and do not join across a selected formatted line break. When splitting literals originally adjacent on the same physical line, insert `/* no-join */` after the preceding literal. Any intervening comment prevents joining, preserving that boundary on later formatter runs.
 
 A literal ending in escaped `\n` or `\r\n` forces a break before the next literal.
 
@@ -780,6 +784,7 @@ Only spaces and line breaks change, except for:
 - [Control-brace normalization](#control-flow).
 - [Removal of optional null declarations and statements](#optional-null-declarations-and-statements).
 - [String-literal joining](#string-literal-joining).
+- [Boundary comments inserted when splitting same-line string literals](#string-literal-joining).
 
 ## Further reading
 

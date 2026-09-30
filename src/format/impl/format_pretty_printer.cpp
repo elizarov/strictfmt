@@ -541,6 +541,7 @@ private:
         if (
             token.inMacroValue ||
             token.macroDefinition != nullptr ||
+            token.inConcatenatedString ||
             (token.stringLike && previousStringLike) ||
             (!allowFieldInitializerList && token.inFieldInitializerList)
         ) {
@@ -643,7 +644,7 @@ private:
                     return false;
                 }
             }
-            if (token.stringLike && previousStringLike) {
+            if (token.inConcatenatedString || (token.stringLike && previousStringLike)) {
                 return false;
             }
             if (token.spaceBefore && hasText) {

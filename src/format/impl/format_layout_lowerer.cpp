@@ -617,7 +617,10 @@ private:
             return;
         }
         for (size_t index = 0; index < node.operands.size(); ++index) {
-            if (choice == FormatBreakChoice::Split && index > 0) {
+            if (choice == FormatBreakChoice::Split && index > 0 && !FormatBreakStringIsComment(node, index)) {
+                if (FormatBreakStringNeedsNoJoinComment(node, index)) {
+                    WriteBreakToken(FormatBreakStringNoJoinComment());
+                }
                 NewLineWithIndent(continuationIndent);
             }
             LowerBreakNode(*node.operands[index], solution, index == 0 ? baseIndent : continuationIndent);

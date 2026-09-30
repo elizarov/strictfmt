@@ -772,7 +772,16 @@ void NormalizeAttachedTrailingBlockComment(SyntaxNode& node) {
             continue;
         }
         const std::optional<size_t> nextIndex = NextNonTriviaChildIndex(node.children, index + 1);
+        const std::optional<size_t> previousIndex = PreviousNonTriviaChildIndex(node.children, index);
+        const bool betweenStrings = node.kind == SyntaxNodeKind::ConcatenatedString &&
+            previousIndex &&
+            nextIndex &&
+            node.children[*previousIndex] != nullptr &&
+            node.children[*nextIndex] != nullptr &&
+            SyntaxNodeHasClass(*node.children[*previousIndex], SyntaxNodeClass::StringLike) &&
+            SyntaxNodeHasClass(*node.children[*nextIndex], SyntaxNodeClass::StringLike);
         if (nextIndex && node.children[*nextIndex] != nullptr && (
+            betweenStrings ||
             node.children[*nextIndex]->kind == SyntaxNodeKind::RightParen ||
             node.children[*nextIndex]->kind == SyntaxNodeKind::RightBracket || (
                 SyntaxNodeHasClass(node, SyntaxNodeClass::PreprocessorSplitList) && (

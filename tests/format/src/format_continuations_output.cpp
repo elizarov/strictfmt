@@ -940,3 +940,28 @@ struct WrappedMethodMacros {
         (const)
     );
 };
+
+// Split same-line strings keep their boundaries with comments.
+auto wrappedFragments =
+    "123456789012345" /* no-join */
+        "678901234567890123";
+
+auto stringRows =
+    "0123456789" /* no-join */
+        "abcdefghij"
+        "ABCDEFGHIJ" /* no-join */
+        "klmnopqrst";
+
+void StringBoundaryComments() {
+    Use(
+        "123456789012345" /* existing */
+            "678901234567890123"
+    );
+    Use(
+        "123456789012345" /* "quoted" */
+            "678901234567890123"
+    );
+}
+#define MESSAGE                     \
+    "123456789012345" /* no-join */ \
+        "678901234567890123"

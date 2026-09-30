@@ -3266,7 +3266,10 @@ private:
         AddChoice(result, node.id, FormatBreakChoice::Split, indentLevel);
         const int continuationIndent = node.flatSplitIndent ? indentLevel : indentLevel + 1;
         for (size_t index = 0; index < node.operands.size(); ++index) {
-            if (index > 0) {
+            if (index > 0 && !FormatBreakStringIsComment(node, index)) {
+                if (FormatBreakStringNeedsNoJoinComment(node, index)) {
+                    AppendToken(result, FormatBreakStringNoJoinComment());
+                }
                 AppendBreak(result, continuationIndent, node.breakCost);
             }
             NodeResult item =

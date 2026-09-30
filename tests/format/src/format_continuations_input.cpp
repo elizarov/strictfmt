@@ -370,3 +370,14 @@ MOCK_METHOD((Map<Key, Value>), Lookup, ((const Key&) key), (const, override));
 MOCK_METHOD(Value, VeryLongMethodName, ());
 MOCK_METHOD(void (*)(int), MakeCallback, (((Map<Key, Value>)) value), (const));
 };
+
+// Split same-line strings keep their boundaries with comments.
+auto wrappedFragments = "123456789012345" "678901234567890123";
+auto stringRows = "0123456789" "abcdefghij"
+"ABCDEFGHIJ" "klmnopqrst";
+
+void StringBoundaryComments() {
+Use("123456789012345" /* existing */ "678901234567890123");
+Use("123456789012345" /* "quoted" */ "678901234567890123");
+}
+#define MESSAGE "123456789012345" "678901234567890123"

@@ -308,14 +308,23 @@ ThrowError(
 "The operation could not be completed because "
 "the selected calculation is missing"
 );
-Use("first " "second " "third");
-Use(L"wide " "text");
-Use("view " "text"sv);
-Use("\x41" "B");
-Use("\x41" "G");
-Use("\1" "7");
-Use("\123" "7");
-Use(R"(raw)" "tail");
+Use("first "
+"second "
+"third");
+Use(L"wide "
+"text");
+Use("view "
+"text"sv);
+Use("\x41"
+"B");
+Use("\x41"
+"G");
+Use("\1"
+"7");
+Use("\123"
+"7");
+Use(R"(raw)"
+"tail");
 }
 
 void WriteLongTraceStringFragments(TraceLog& trace, const char* adapterName) {
@@ -5808,3 +5817,24 @@ FORMAT_IF_HEADER_IF(outer)FORMAT_IF_HEADER_IF(ready)Run();else Fail();
 FORMAT_IF_HEADER_IF(outer)FORMAT_IF_HEADER_IF(ready)Run();else Fail();else Other();
 FORMAT_IF_HEADER_ALWAYS{Run();}else Fail();
 }
+
+// Adjacent strings retain boundaries authored on the same physical line.
+const char* binaryGrouping = "03000000" "666f6f";
+const char* joinedLines = "first"
+"second"
+"third";
+const char* mixedLines = "prefix" "middle1"
+"middle2" "suffix";
+auto sameLinePrefix = u8"first" "second";
+auto joinedPrefix = u8"first"
+"second";
+auto sameLineSuffix = "first"_tag "second"_tag;
+auto joinedSuffix = "first"_tag
+"second"_tag;
+const char* escapeBoundary = "\x1"
+"a";
+const char* commentedStrings = "first" /* keep fragments */ "second";
+void UseStringGrouping() {Use("length" "payload", "first"
+"second");}
+#define STRING_GROUPS "prefix" "middle1" \
+"middle2" "suffix"

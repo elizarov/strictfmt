@@ -391,6 +391,14 @@ private:
         return token != nullptr && IsStringLike(FormatBreakTokenValue(*token));
     }
 
+    static bool IsInlineStringComment(const FormatBreakNode* node) {
+        const FormatBreakToken* token = FormatBreakNodeToken(node);
+        return token != nullptr &&
+            FormatBreakTokenKind(*token) == PrintTokenKind::Text &&
+            FormatBreakTokenValue(*token).node != nullptr &&
+            SyntaxNodeHasClass(*FormatBreakTokenValue(*token).node, SyntaxNodeClass::Comment);
+    }
+
     static bool IsArgumentList(const FormatBreakNode* node) {
         if (node == nullptr) {
             return false;
@@ -669,8 +677,16 @@ private:
             }
 
             const size_t begin = index;
-            while (index < sequence.children.size() && IsStringTokenChild(sequence.children[index])) {
-                ++index;
+            ++index;
+            while (index < sequence.children.size()) {
+                size_t next = index;
+                while (next < sequence.children.size() && IsInlineStringComment(sequence.children[next])) {
+                    ++next;
+                }
+                if (next == sequence.children.size() || !IsStringTokenChild(sequence.children[next])) {
+                    break;
+                }
+                index = next + 1;
             }
             if (index - begin == 1) {
                 sequence.children[groupedCount++] = sequence.children[begin];
@@ -678,14 +694,17 @@ private:
             }
 
             auto strings = MakeNode(FormatBreakNodeKind::AdjacentStrings, depth + 1);
-            std::vector<std::string_view> spellings;
-            spellings.reserve(index - begin);
+            std::vector<FormatStringPart> parts;
+            parts.reserve(index - begin);
             for (size_t cursor = begin; cursor < index; ++cursor) {
-                spellings.push_back(
-                    FormatTokenText(FormatBreakTokenValue(*FormatBreakNodeToken(sequence.children[cursor])))
-                );
+                const PrintToken& token = FormatBreakTokenValue(*FormatBreakNodeToken(sequence.children[cursor]));
+                parts.push_back({
+                    .text = FormatTokenText(token),
+                    .startsSourceLine = token.node != nullptr && token.node->startsSourceLine,
+                    .isComment = IsInlineStringComment(sequence.children[cursor]),
+                });
             }
-            FormatAdjacentStrings analysis = AnalyzeAdjacentStrings(spellings);
+            FormatAdjacentStrings analysis = AnalyzeAdjacentStrings(parts);
             strings->forceSplit = analysis.requiresSplit;
             model_.stringRuns.push_back(std::move(analysis.compactSpellings));
             strings->compactStringTexts = model_.stringRuns.back();

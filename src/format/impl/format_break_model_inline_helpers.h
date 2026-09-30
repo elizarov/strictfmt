@@ -30,6 +30,27 @@ inline const FormatBreakToken* FormatBreakNodeToken(const FormatBreakNode* node)
     return &node->token;
 }
 
+inline bool FormatBreakStringIsComment(const FormatBreakNode& node, size_t index) {
+    const FormatBreakToken* token = FormatBreakNodeToken(node.operands[index]);
+    return token != nullptr &&
+        FormatBreakTokenValue(*token).node != nullptr &&
+        SyntaxNodeHasClass(*FormatBreakTokenValue(*token).node, SyntaxNodeClass::Comment);
+}
+
+inline bool FormatBreakStringNeedsNoJoinComment(const FormatBreakNode& node, size_t index) {
+    if (index == 0 || FormatBreakStringIsComment(node, index) || FormatBreakStringIsComment(node, index - 1)) {
+        return false;
+    }
+    const FormatBreakToken* token = FormatBreakNodeToken(node.operands[index]);
+    const SyntaxNode* syntax = token == nullptr ? nullptr : FormatBreakTokenValue(*token).node;
+    return syntax != nullptr && !syntax->startsSourceLine;
+}
+
+inline FormatBreakToken FormatBreakStringNoJoinComment() {
+    static const PrintToken token{.kind = PrintTokenKind::Text, .text = "/* no-join */"};
+    return {.token = &token, .spaceBefore = true};
+}
+
 inline bool FormatBreakIsStandaloneCommentItem(const FormatBreakNode& node, size_t index) {
     if (index >= node.items.size()) {
         return false;

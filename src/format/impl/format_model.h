@@ -32,6 +32,7 @@ struct SyntaxNode {
     bool isType = false;
     bool isCondition = false;
     bool isName = false;
+    bool startsSourceLine = false;
     std::uint64_t classes = 0;
     std::string_view text;
     const SyntaxNode* parent = nullptr;
