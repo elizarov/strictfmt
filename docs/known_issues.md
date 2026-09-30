@@ -2,6 +2,59 @@
 
 This document tracks known limitations and planned work.
 
+## Numeric tables lose row grouping (TABULAR_DATA_EXPANSION)
+
+Current behavior: The [list layout rules](format.md#lists) expand flat numeric tables to one element per line when they cannot fit on one line. This obscures rows and columns and greatly lengthens large tables.
+
+Open question: Decide whether to preserve authored table rows or introduce a packing policy for tabular data.
+
+Current formatting (40-column limit):
+
+<!-- .cpp-format
+ColumnLimit: 40
+-->
+```cpp
+const int table[] = {
+    0x00,
+    0x01,
+    0x02,
+    0x03,
+    0x10,
+    0x11,
+    0x12,
+    0x13,
+};
+```
+
+Alternative formatting:
+
+```text
+const int table[] = {
+    0x00, 0x01, 0x02, 0x03,
+    0x10, 0x11, 0x12, 0x13,
+};
+```
+
+## Compact bodies can be hard to scan (DENSE_COMPACT_BODIES)
+
+Current behavior: The [compact-body rule](format.md#declaration-and-control-headers) puts an eligible body beside its header whenever both fit. With a long signature, the action can be hard to spot.
+
+Open question: Decide whether to limit compact bodies to shorter headers or preserve an authored break before the body statement.
+
+Current formatting:
+
+```cpp
+void Save(const Input& input, const Settings& settings) { WriteToDisk(input, settings); }
+```
+
+Alternative formatting:
+
+```text
+void Save(const Input& input, const Settings& settings) {
+    WriteToDisk(input, settings);
+}
+```
+
 ## Adding control-body braces across conditionals (CONDITIONAL_BODY_BRACES)
 
 Current behavior: The restriction on enclosing control bodies under [conditional compilation](preprocessor.md#supported-conditional-compilation-and-local-includes) is reported as an error, preserving the input.
