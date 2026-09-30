@@ -294,18 +294,15 @@ auto count = items.size() +  // items
 
 ### Streams
 
-Stream chains break before shift operators. A compact shifted tail may occupy one continuation line after the receiver. Otherwise insertions split according to [literal pairing](#literal-pairing). Configured manipulators bind to the following value.
+Stream chains break before shift operators. A compact shifted tail may occupy one continuation line after the receiver. Otherwise insertions split according to [literal pairing](#literal-pairing). Configured manipulators follow the [stream DSL rules](dsl.md#stream-manipulators).
 
 <!-- .cpp-format
 ColumnLimit: 45
-StreamShift:
-  ConfigurationMethods:
-    - std::hex
 -->
 ```cpp
 void Print() {
     output
-        << "first=" << std::hex << firstValue
+        << "first=" << firstValue
         << ", second=" << secondValue;
 }
 ```
@@ -313,6 +310,8 @@ void Print() {
 ### Member calls
 
 Member calls have three forms: compact, receiver-separated with one break before the first member operator, or split before every member operator. In the first two forms, all top-level member operators share a physical line: only the receiver or final operand may expand.
+
+Configured builder chains follow the [builder DSL rules](dsl.md#builder-chains).
 
 <!-- .cpp-format
 ColumnLimit: 32

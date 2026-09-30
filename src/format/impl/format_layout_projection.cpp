@@ -97,7 +97,9 @@ private:
                 ) {
                     continue;
                 }
-                node.requiredChainBreakBaseIndent = context_.leadingSeparator->indent - (node.flatSplitIndent ? 0 : 1);
+                const int offset = node.chainKind == FormatBreakChainKind::MemberBeforeOperator ?
+                    FormatBreakMemberStep(node, index).indent : (node.flatSplitIndent ? 0 : 1);
+                node.requiredChainBreakBaseIndent = context_.leadingSeparator->indent - offset;
                 if (
                     node.chainKind == FormatBreakChainKind::AfterOperator ||
                     node.chainKind == FormatBreakChainKind::Ternary
@@ -507,6 +509,7 @@ private:
         std::vector<FormatBreakNode*> operands;
         std::vector<FormatBreakToken> operators;
         std::vector<std::span<const FormatBreakToken>> commentsBeforeOperators;
+        std::vector<FormatBuilderStep> builderSteps;
         for (size_t index = 0; index < source.operands.size(); ++index) {
             auto* operand = Project(*source.operands[index]);
             auto op = index < source.operators.size() ? Token(source.operators[index]) : FormatBreakToken{};
@@ -517,6 +520,9 @@ private:
             operands.push_back(operand == nullptr ? New() : operand);
             if (index < source.operators.size()) {
                 operators.push_back(op);
+                if (!source.builderSteps.empty()) {
+                    builderSteps.push_back(source.builderSteps[index]);
+                }
                 std::vector<FormatBreakToken> comments;
                 if (index < source.commentsBeforeOperators.size()) {
                     for (const auto& comment : source.commentsBeforeOperators[index]) {
@@ -648,6 +654,8 @@ private:
         node->operands = Store(operands);
         node->operators = model_.tokens.Append(operators);
         node->commentsBeforeOperators = model_.commentLists.Append(commentsBeforeOperators);
+        node->builderSteps =
+            model_.builderSteps.Append(std::span(builderSteps).first(std::min(builderSteps.size(), operators.size())));
         model_.hasLayoutChoice = true;
         return node;
     }

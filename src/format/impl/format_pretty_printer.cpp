@@ -224,7 +224,7 @@ public:
         Plan(const std::vector<PrintToken>& tokens, size_t sourceSize, std::span<const SyntaxNode> syntaxNodes)
     {
         activeTokens_ = &tokens;
-        layoutTree_ = std::make_unique<FormatLayoutTree>(tokens, syntaxNodes);
+        layoutTree_ = std::make_unique<FormatLayoutTree>(tokens, syntaxNodes, &config_);
         declarationLayout_ = std::make_unique<FormatDeclarationLayout>(tokens);
         output_.SetTokenCount(tokens.size());
         output_.Reserve(std::max(tokens.size() * 8, sourceSize));
@@ -527,6 +527,11 @@ private:
         return parent;
     }
 
+    bool NeedsBuilderLayout(const PrintToken& token) const {
+        return !config_.builderChains.empty() &&
+            (token.syntaxKind == SyntaxNodeKind::Dot || token.syntaxKind == SyntaxNodeKind::Arrow);
+    }
+
     bool AppendCompactWidthToken(
         const PrintToken& token,
         int& width,
@@ -542,6 +547,7 @@ private:
             token.inMacroValue ||
             token.macroDefinition != nullptr ||
             token.inConcatenatedString ||
+            NeedsBuilderLayout(token) ||
             (token.stringLike && previousStringLike) ||
             (!allowFieldInitializerList && token.inFieldInitializerList)
         ) {
@@ -613,6 +619,9 @@ private:
         bool hasTemplateDeclaredEntity = false;
         const int availableWidth = config_.columnLimit - CurrentColumn();
         for (const PrintToken& token : pendingTokens_) {
+            if (NeedsBuilderLayout(token)) {
+                return false;
+            }
             if (
                 const SyntaxNode* list = ImmediatePreprocessorListParent(token);
                 list != nullptr && SyntaxNodeHasClass(*list, SyntaxNodeClass::PrefixList)

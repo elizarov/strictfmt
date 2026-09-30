@@ -13,6 +13,7 @@
 
 class FormatListContinuation;
 class FormatChainContinuation;
+struct FormatterConfig;
 
 struct FormatLayoutOwner {
     size_t tokenCount = 0;
@@ -34,10 +35,15 @@ struct FormatLayoutRegion {
 // The complete source topology is built once. Complete item models are immutable
 // and materialized on demand; cost regions and their solutions have this same
 // lifetime. Source syntax and the original tokens must outlive the tree. When
-// supplied, syntaxNodes must contain every token node and its ancestors.
+// supplied, syntaxNodes must contain every token node and its ancestors, and
+// config must outlive this tree.
 class FormatLayoutTree {
 public:
-    explicit FormatLayoutTree(std::span<const PrintToken> tokens, std::span<const SyntaxNode> syntaxNodes = {});
+    explicit FormatLayoutTree(
+        std::span<const PrintToken> tokens,
+        std::span<const SyntaxNode> syntaxNodes = {},
+        const FormatterConfig* config = nullptr
+    );
     ~FormatLayoutTree();
 
     void Complete(FormatLayoutProgram program);
@@ -60,6 +66,7 @@ private:
     std::optional<FormatLayoutProgram> program_;
     std::unordered_map<const SyntaxNode*, int> blockIndents_;
     std::span<const PrintToken> tokens_;
+    const FormatterConfig* config_;
     std::vector<FormatLayoutOwner> owners_;
     std::span<const SyntaxNode> syntaxNodes_;
     std::vector<FormatLayoutOwnerId> ownerByNode_;

@@ -62,6 +62,8 @@ OPTIMIZATION_INPUT_FIXTURE = Path("src") / "format_optimization_input.cpp"
 OPTIMIZATION_OUTPUT_FIXTURE = Path("src") / "format_optimization_output.cpp"
 CHAIN_INPUT_FIXTURE = Path("src") / "format_chain_input.cpp"
 CHAIN_OUTPUT_FIXTURE = Path("src") / "format_chain_output.cpp"
+DSL_INPUT_FIXTURE = Path("src") / "format_dsl_input.cpp"
+DSL_OUTPUT_FIXTURE = Path("src") / "format_dsl_output.cpp"
 CONTINUATIONS_INPUT_FIXTURE = Path("src") / "format_continuations_input.cpp"
 CONTINUATIONS_OUTPUT_FIXTURE = Path("src") / "format_continuations_output.cpp"
 FORCED_SEPARATORS_INPUT_FIXTURE = Path("src") / "format_forced_separators_input.cpp"
@@ -94,6 +96,7 @@ MACRO_ROLES_FORMAT_CONFIG = TEST_ROOT / ".cpp-format-macro-roles"
 DEFAULT_FORMAT_CONFIG = TEST_ROOT / ".cpp-format"
 OPTIMIZATION_FORMAT_CONFIG = TEST_ROOT / ".cpp-format-optimization"
 CHAIN_FORMAT_CONFIG = TEST_ROOT / ".cpp-format-chain"
+DSL_FORMAT_CONFIG = TEST_ROOT / ".cpp-format-dsl"
 CONTINUATIONS_FORMAT_CONFIG = TEST_ROOT / ".cpp-format-continuations"
 NON_ASCII_FORMAT_CONFIG = TEST_ROOT / ".cpp-format-non-ascii"
 FORMATTED_GOLDEN_OUTPUTS = (
@@ -104,6 +107,7 @@ FORMATTED_GOLDEN_OUTPUTS = (
     ("preprocessor-eof", PREPROCESSOR_EOF_OUTPUT_FIXTURE, None),
     ("optimization", OPTIMIZATION_OUTPUT_FIXTURE, OPTIMIZATION_FORMAT_CONFIG),
     ("chain", CHAIN_OUTPUT_FIXTURE, CHAIN_FORMAT_CONFIG),
+    ("dsl", DSL_OUTPUT_FIXTURE, DSL_FORMAT_CONFIG),
     ("continuations", CONTINUATIONS_OUTPUT_FIXTURE, CONTINUATIONS_FORMAT_CONFIG),
     ("forced-separators", FORCED_SEPARATORS_OUTPUT_FIXTURE, CONTINUATIONS_FORMAT_CONFIG),
     ("non-ascii", NON_ASCII_OUTPUT_FIXTURE, NON_ASCII_FORMAT_CONFIG),
@@ -510,6 +514,15 @@ class FormatCommandTests(unittest.TestCase):
 
         self.assertEqual(0, result.returncode, msg=f"stdout:\n{result.stdout}\n\nstderr:\n{result.stderr}")
         self.assertEqual(read_fixture(CHAIN_OUTPUT_FIXTURE), result.stdout)
+        self.assert_no_unsupported_placement_warnings(result)
+
+    def test_dsl_stdin_formats_to_expected_output(self) -> None:
+        result = native_format(
+            "--stdin", "--style", str(DSL_FORMAT_CONFIG),
+            input_text=read_fixture(DSL_INPUT_FIXTURE),
+        )
+        self.assertEqual(0, result.returncode, msg=result.stderr)
+        self.assertEqual(read_fixture(DSL_OUTPUT_FIXTURE), result.stdout)
         self.assert_no_unsupported_placement_warnings(result)
 
     def test_continuations_stdin_formats_to_expected_output(self) -> None:
@@ -2635,6 +2648,73 @@ class FormatCommandTests(unittest.TestCase):
                 "}\n",
                 result.stdout,
             )
+
+    def test_builder_profiles_merge_with_parent(self) -> None:
+        TEST_TEMP_ROOT.mkdir(exist_ok=True)
+        with tempfile.TemporaryDirectory(prefix="format_builder_inherit_", dir=TEST_TEMP_ROOT) as temp_dir:
+            root = Path(temp_dir)
+            nested = root / "nested"
+            nested.mkdir()
+            (root / ".cpp-format").write_text(
+                "BuilderChains:\n"
+                "  Shared:\n"
+                "    EntryCalls:\n      - Build\n"
+                "    Scopes:\n      - Open: Outer\n        Close: End\n",
+                encoding="utf-8",
+            )
+            config = nested / ".cpp-format"
+            config.write_text(
+                "Inherit: Parent\n"
+                "BuilderChains:\n"
+                "  Shared:\n"
+                "    EntryCalls:\n      - Make\n      - Build\n"
+                "    Scopes:\n      - Open: Outer\n        Close: End\n"
+                "      - Open: Inner\n        Close: EndInner\n"
+                "    BindToNext:\n      - Key\n",
+                encoding="utf-8",
+            )
+            result = native_format(
+                "--stdin", "--style", str(config),
+                input_text='auto a=Make().Outer().Key("x").Inner().Value(1).EndInner().End();\n'
+                'auto b=Build().Outer().Value(2).End();\n',
+            )
+            self.assertEqual(0, result.returncode, msg=result.stderr)
+            self.assertEqual(
+                'auto a = Make()\n'
+                '    .Outer()\n'
+                '        .Key("x").Inner()\n'
+                '            .Value(1)\n'
+                '        .EndInner()\n'
+                '    .End();\n\n'
+                'auto b = Build()\n'
+                '    .Outer()\n'
+                '        .Value(2)\n'
+                '    .End();\n', result.stdout,
+            )
+
+    def test_invalid_builder_roles_are_rejected(self) -> None:
+        cases = [
+            ("BuilderChains:\n  Test:\n    BindToNext:\n      - Item\n", "requires EntryCalls"),
+            ("BuilderChains:\n  Test:\n    EntryCalls:\n      - Make\n"
+             "    Scopes:\n      - Open: Begin\n", "require Open and Close"),
+            ("BuilderChains:\n  Test:\n    EntryCalls:\n      - Make\n"
+             "    Scopes:\n      - Open: Begin\n        Close: End\n"
+             "      - Open: Begin\n        Close: Finish\n", "multiple closing methods"),
+            ("BuilderChains:\n  Test:\n    EntryCalls:\n      - Make\n"
+             "    Scopes:\n      - Open: Begin\n        Close: End\n"
+             "    BindToNext:\n      - Begin\n", "has a scope role"),
+            ("BuilderChains:\n  One:\n    EntryCalls:\n      - Make\n"
+             "  Two:\n    EntryCalls:\n      - Make\n", "shared by multiple profiles"),
+        ]
+        TEST_TEMP_ROOT.mkdir(exist_ok=True)
+        with tempfile.TemporaryDirectory(prefix="format_builder_invalid_", dir=TEST_TEMP_ROOT) as temp_dir:
+            config = Path(temp_dir) / ".cpp-format"
+            for text, diagnostic in cases:
+                with self.subTest(diagnostic=diagnostic):
+                    config.write_text(text, encoding="utf-8")
+                    result = native_format("--stdin", "--style", str(config), input_text="int value;\n")
+                    self.assertNotEqual(0, result.returncode)
+                    self.assertIn(diagnostic, result.stderr)
 
     def test_style_file_merges_every_macro_category_with_parent(self) -> None:
         build_dir = TEST_TEMP_ROOT

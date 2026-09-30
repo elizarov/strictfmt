@@ -78,6 +78,11 @@ struct FormatBreakListItem {
     bool blankLineBefore = false;
 };
 
+struct FormatBuilderStep {
+    int indent = 1;
+    bool breakBefore = true;
+};
+
 // Projection copies this metadata directly while rebuilding child collections.
 struct FormatBreakNodeData {
     int id = 0;
@@ -136,6 +141,7 @@ struct FormatBreakNode : FormatBreakNodeData {
     std::span<FormatBreakNode*> operands;
     std::span<FormatBreakToken> operators;
     std::span<const std::span<const FormatBreakToken>> commentsBeforeOperators;
+    std::span<const FormatBuilderStep> builderSteps;
     // AdjacentStrings compact spelling by operand. Empty entries are absorbed into the preceding non-empty run.
     std::span<const std::string> compactStringTexts;
 };
@@ -218,16 +224,19 @@ struct FormatBreakModel {
         nodePointers(resource),
         tokens(resource),
         listItems(resource),
-        commentLists(resource) {}
+        commentLists(resource),
+        builderSteps(resource) {}
 
     std::unique_ptr<std::pmr::deque<FormatBreakNode>> nodes;
     FormatBreakArena<FormatBreakNode*> nodePointers;
     FormatBreakArena<FormatBreakToken> tokens;
     FormatBreakArena<FormatBreakListItem, 16> listItems;
     FormatBreakArena<std::span<const FormatBreakToken>, 16> commentLists;
+    FormatBreakArena<FormatBuilderStep, 16> builderSteps;
     std::vector<std::vector<std::string>> stringRuns;
     FormatBreakNode* root = nullptr;
     bool hasLayoutChoice = false;
+    bool hasBuilderChains = false;
     // Projections retain source ids and append fresh ids for synthesized or changed token nodes.
     size_t nodeIdCount = 0;
 

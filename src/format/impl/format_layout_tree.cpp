@@ -7,9 +7,16 @@
 #include "format/impl/format_layout_projection.h"
 #include "format/impl/format_list_continuation.h"
 #include "format/impl/format_chain_continuation.h"
+#include "format/impl/format_config.h"
 
-FormatLayoutTree::FormatLayoutTree(std::span<const PrintToken> tokens, std::span<const SyntaxNode> syntaxNodes) :
-    tokens_(tokens), syntaxNodes_(syntaxNodes), ownerByNode_(syntaxNodes.size()), syntaxWorkspace_(syntaxNodes)
+FormatLayoutTree::FormatLayoutTree(
+    std::span<const PrintToken> tokens, std::span<const SyntaxNode> syntaxNodes, const FormatterConfig* config
+) :
+    tokens_(tokens),
+    config_(config),
+    syntaxNodes_(syntaxNodes),
+    ownerByNode_(syntaxNodes.size()),
+    syntaxWorkspace_(syntaxNodes)
 {
     owners_.reserve((syntaxNodes.empty() ? tokens.size() : syntaxNodes.size()) + 1);
     if (syntaxNodes.empty()) {
@@ -137,7 +144,8 @@ const FormatBreakModel& FormatLayoutTree::CompleteModel(FormatLayoutOwnerId owne
         .emplace(owner, BuildFormatBreakModel(
             tokens_.subspan(item.begin, item.end - item.begin),
             syntaxNodes_.empty() ? nullptr : &syntaxWorkspace_,
-            &modelStorage_
+            &modelStorage_,
+            config_
         ))
         .first
         ->second;
@@ -171,6 +179,16 @@ FormatLayoutRegion&
                 other = owners_[other].parent;
             }
         }
+    }
+    if (
+        config_ != nullptr &&
+        !config_->builderChains.empty() &&
+        region.owner != 0 &&
+        CompleteModel(region.owner).hasBuilderChains
+    ) {
+        // A segment can end before a closing builder call. Classify roles on the
+        // complete source item so every projection sees the same scope stack.
+        common = region.owner;
     }
     region.model = ProjectFormatLayout(
         CompleteModel(common),

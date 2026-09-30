@@ -2,6 +2,7 @@
 #include "format/impl/format_syntax_map.h"
 #include "format/impl/format_syntax_helpers.h"
 #include "format/impl/format_string_literals.h"
+#include "format/impl/format_dsl.h"
 
 #include <algorithm>
 #include <array>
@@ -263,8 +264,11 @@ bool UsesFlatNonCallParenthesisContinuation(const FormatBreakToken& open) {
 class BreakModelBuilder {
 public:
     BreakModelBuilder(
-        std::span<const PrintToken> tokens, FormatBreakWorkspace* workspace, std::pmr::memory_resource* resource
-    ) : model_(resource), selectedTokens_(workspace), sourceTokens_(tokens) {
+        std::span<const PrintToken> tokens,
+        FormatBreakWorkspace* workspace,
+        std::pmr::memory_resource* resource,
+        const FormatterConfig* config
+    ) : model_(resource), selectedTokens_(workspace), sourceTokens_(tokens), config_(config) {
         selectedTokens_.Reserve(tokens.size());
         const PrintToken* previous = nullptr;
         bool firstToken = true;
@@ -317,6 +321,9 @@ public:
                 }
             }
         }
+        if (config_ != nullptr) {
+            ConfigureBuilderChains(model_, *config_);
+        }
         costNormalizer_.Finalize(*model_.root);
         return std::move(model_);
     }
@@ -326,6 +333,7 @@ private:
     const SyntaxNode* root_ = nullptr;
     FormatSyntaxMap<FormatBreakToken> selectedTokens_;
     std::span<const PrintToken> sourceTokens_;
+    const FormatterConfig* config_;
     int nextId_ = 1;
     std::vector<size_t> itemCapacities_;
     FormatBreakCostNormalizer costNormalizer_;
@@ -2268,6 +2276,37 @@ private:
         }
 
         std::vector<FormatBreakToken> commentsBeforeOperator = DetachTrailingStandaloneComments(left);
+        if (left->kind == FormatBreakNodeKind::Sequence && left->children.size() > 1) {
+            auto* prefix = MatchingChain(left->children.front(), FormatBreakChainKind::MemberBeforeOperator);
+            if (
+                prefix != nullptr &&
+                std::all_of(left->children.begin() + 1, left->children.end(), [](const auto* child) {
+                    const auto* token = FormatBreakNodeToken(child);
+                    return (
+                        token != nullptr &&
+                        FormatBreakTokenValue(*token).node != nullptr &&
+                        SyntaxNodeHasClass(*FormatBreakTokenValue(*token).node, SyntaxNodeClass::Comment)
+                    ) || (
+                            child->syntaxOwner != nullptr && (
+                                SyntaxNodeHasClass(*child->syntaxOwner, SyntaxNodeClass::AtomicPreprocessor) ||
+                                SyntaxNodeHasClass(*child->syntaxOwner, SyntaxNodeClass::MacroDefinition)
+                            )
+                        );
+                })
+            ) {
+                auto* suffix = MakeNode(FormatBreakNodeKind::Sequence, depth + 1);
+                std::vector<FormatBreakNode*> children{prefix->operands.back()};
+                children.insert(children.end(), left->children.begin() + 1, left->children.end());
+                suffix->children = StoreNodePointers(children);
+                prefix->operands.back() = suffix;
+                prefix->forceSplit |=
+                    std::any_of(left->children.begin() + 1, left->children.end(), [](const auto* child) {
+                        const auto* token = FormatBreakNodeToken(child);
+                        return token == nullptr || FormatBreakTokenKind(*token) != PrintTokenKind::Text;
+                    });
+                left = prefix;
+            }
+        }
         FormatBreakNode* leftChain = MatchingChain(left, FormatBreakChainKind::MemberBeforeOperator);
         std::vector<FormatBreakNode*> operands;
         std::vector<FormatBreakToken> operators;
@@ -2286,6 +2325,7 @@ private:
 
         auto chain = MakeNode(FormatBreakNodeKind::Chain, depth);
         chain->chainKind = FormatBreakChainKind::MemberBeforeOperator;
+        chain->forceSplit = leftChain != nullptr && leftChain->forceSplit;
         chain->chainPrefersSplitWhenCompactBreaks = std::any_of(
             commentsBeforeOperators.begin(),
             commentsBeforeOperators.end(),
@@ -3269,7 +3309,10 @@ private:
 }  // namespace
 
 FormatBreakModel BuildFormatBreakModel(
-    std::span<const PrintToken> tokens, FormatBreakWorkspace* workspace, std::pmr::memory_resource* resource
+    std::span<const PrintToken> tokens,
+    FormatBreakWorkspace* workspace,
+    std::pmr::memory_resource* resource,
+    const FormatterConfig* config
 ) {
-    return BreakModelBuilder(tokens, workspace, resource).Build();
+    return BreakModelBuilder(tokens, workspace, resource, config).Build();
 }

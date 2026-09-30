@@ -4,6 +4,8 @@
 
 #include "format/impl/format_break_model.h"
 
+struct FormatterConfig;
+
 // Builds a complete structural layout and fixes its break costs before returning.
 // The result owns break nodes but borrows tokens and syntax, which must outlive it.
 // An optional allocation resource must also outlive the result.
@@ -11,5 +13,6 @@
 FormatBreakModel BuildFormatBreakModel(
     std::span<const PrintToken> tokens,
     FormatBreakWorkspace* workspace = nullptr,
-    std::pmr::memory_resource* resource = nullptr
+    std::pmr::memory_resource* resource = nullptr,
+    const FormatterConfig* config = nullptr
 );

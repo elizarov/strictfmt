@@ -10,6 +10,7 @@ References to all docs and their ownership areas; read them only when needed for
 - `docs/build.md`: build scripts and embedding/test options.
 - `docs/command_line.md`: strictfmt executable command-line parameters and behavior.
 - `docs/config.md`: formatter configuration.
+- `docs/dsl.md`: configured DSL roles and formatting for streams and builders.
 - `docs/format.md`: specifies source layout produced by formatter.
 - `docs/glossary.md`: shared terminology used across docs.
 - `docs/known_issues.md`: known limitations and planned work.

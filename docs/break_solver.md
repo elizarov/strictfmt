@@ -1,6 +1,6 @@
 # Break Solver
 
-This document owns developer-facing details of the break solver and its shared cost profile in `src/format/impl/format_break_solver.h|cpp` and `format_value_profile.h|cpp`. [format.md] owns the user-facing layout objective and legality constraints.
+This document owns developer-facing details of the break solver and its shared cost profile in `src/format/impl/format_break_solver.h|cpp` and `format_value_profile.h|cpp`. [format.md] owns the user-facing layout objective and legality constraints; [dsl.md](dsl.md) owns configured DSL layouts.
 
 ## Solver Contract
 
@@ -25,6 +25,10 @@ A packed list's separately evaluated body inherits the opener's charged flag, bu
 The builder retains initial depth in `rawDepth`; `FormatBreakCostNormalizer` materializes the depth adjustments specified in [format.md] in `structuralDepth`. `breakCost` starts at the same depth and every structural-depth shift updates both values. After building the complete model, the normalizer applies the specified subtree discounts from outer subtrees inward. Costs are fixed before solving, so memoization needs no layout-history state, and the emission choices and indentation rules are unchanged.
 
 Qualified-name collection appends into one shared operand/operator accumulator, avoiding repeated copies of nested suffixes.
+
+Configured builder profiles are resolved on complete member chains before projection. Each operator retains its relative indentation and whether it begins a new step. Solving and lowering consume the same metadata; projection retains the corresponding entries, and chain continuation retains their offsets across mandatory boundaries. Compact token probes defer member chains to the model when builder profiles are configured.
+
+Split member chains retain operand alternatives until their following calls have been priced. Bound calls share a line, so choosing a locally compact argument list can otherwise hide a better layout that expands it to fit the following call.
 
 Token selection visits each newly selected ancestor once. Its first already selected ancestor also determines whether the common model root must move upward, so root discovery needs no separate ancestry traversal.
 

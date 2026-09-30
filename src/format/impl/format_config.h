@@ -13,6 +13,20 @@ struct IncludeGroup {
     int priority = 0;
 };
 
+struct BuilderScope {
+    std::string open;
+    std::string close;
+
+    bool operator==(const BuilderScope&) const = default;
+};
+
+struct BuilderChainProfile {
+    std::string name;
+    std::vector<std::string> entryCalls;
+    std::vector<BuilderScope> scopes;
+    std::vector<std::string> bindToNext;
+};
+
 struct FormatterConfig {
     int columnLimit = 120;
     int indentWidth = 4;
@@ -33,6 +47,7 @@ struct FormatterConfig {
     std::vector<std::string> typeSpecifierMacros;
     std::vector<std::string> preprocessorArgumentMacros;
     std::vector<std::string> streamShiftConfigurationMethods;
+    std::vector<BuilderChainProfile> builderChains;
     std::vector<IncludeGroup> includeGroups;
 };
 

@@ -5,6 +5,10 @@
 namespace {
 
 bool IsLeadingNameToken(const FormatBreakToken& token) {
+    const auto* syntax = FormatBreakTokenValue(token).node;
+    if (syntax != nullptr && SyntaxNodeHasClass(*syntax, SyntaxNodeClass::Comment)) {
+        return false;
+    }
     return FormatBreakTokenKind(token) == PrintTokenKind::Text || (
         FormatBreakTokenKind(token) == PrintTokenKind::Known &&
         FormatBreakTokenSyntaxKind(token) == SyntaxNodeKind::ColonColon

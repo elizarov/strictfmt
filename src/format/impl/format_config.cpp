@@ -51,6 +51,7 @@ struct FormatterConfigPatch {
     std::optional<bool> mainIncludeQuote;
     std::array<std::optional<MacroCategoryEntries>, MACRO_CATEGORY_CONFIGS.size()> macroCategories;
     std::optional<std::vector<std::string>> streamShiftConfigurationMethods;
+    std::vector<BuilderChainProfile> builderChains;
     std::optional<std::vector<IncludeGroup>> includeGroups;
 };
 
@@ -282,6 +283,129 @@ void ParseStreamShift(const std::vector<ConfigLine>& lines, size_t& index, Forma
     }
 }
 
+std::vector<BuilderScope> ParseBuilderScopes(const std::vector<ConfigLine>& lines, size_t& index) {
+    std::vector<BuilderScope> scopes;
+    const int parentIndent = lines[index].indent;
+    for (++index; index < lines.size(); ++index) {
+        const ConfigLine& line = lines[index];
+        if (line.indent <= parentIndent) {
+            --index;
+            break;
+        }
+        if (!StartsWith(line.text, "- ")) {
+            continue;
+        }
+        BuilderScope scope;
+        const auto readField = [&scope](std::string_view text) {
+            const auto [key, value] = SplitKeyValue(text);
+            if (key == "Open") {
+                scope.open = UnquoteScalar(value);
+            } else if (key == "Close") {
+                scope.close = UnquoteScalar(value);
+            }
+        };
+        readField(std::string_view(line.text).substr(2));
+        for (++index; index < lines.size(); ++index) {
+            if (lines[index].indent <= line.indent) {
+                --index;
+                break;
+            }
+            readField(lines[index].text);
+        }
+        if (scope.open.empty() || scope.close.empty()) {
+            throw std::runtime_error("BuilderChains.Scopes entries require Open and Close");
+        }
+        scopes.push_back(std::move(scope));
+    }
+    return scopes;
+}
+
+void ParseBuilderChains(const std::vector<ConfigLine>& lines, size_t& index, FormatterConfigPatch& patch) {
+    const int parentIndent = lines[index].indent;
+    for (++index; index < lines.size(); ++index) {
+        const ConfigLine& line = lines[index];
+        if (line.indent <= parentIndent) {
+            --index;
+            break;
+        }
+        const auto [name, value] = SplitKeyValue(line.text);
+        if (!value.empty()) {
+            continue;
+        }
+        BuilderChainProfile profile;
+        profile.name = UnquoteScalar(name);
+        for (++index; index < lines.size(); ++index) {
+            const ConfigLine& child = lines[index];
+            if (child.indent <= line.indent) {
+                --index;
+                break;
+            }
+            const auto [key, value] = SplitKeyValue(child.text);
+            if (!value.empty()) {
+                continue;
+            }
+            if (key == "EntryCalls") {
+                profile.entryCalls = ParseIndentedStringList(lines, index, child.indent);
+            } else if (key == "BindToNext") {
+                profile.bindToNext = ParseIndentedStringList(lines, index, child.indent);
+            } else if (key == "Scopes") {
+                profile.scopes = ParseBuilderScopes(lines, index);
+            }
+        }
+        patch.builderChains.push_back(std::move(profile));
+    }
+}
+
+template <typename Entry>
+void MergeBuilderEntries(std::vector<Entry>& inherited, std::vector<Entry> local) {
+    std::optional<std::vector<Entry>> entries(std::move(local));
+    MergeConfigList(inherited, entries);
+}
+
+void MergeBuilderProfiles(std::vector<BuilderChainProfile>& inherited, std::vector<BuilderChainProfile> local) {
+    for (auto& profile : local) {
+        auto found = std::find_if(inherited.begin(), inherited.end(), [&](const auto& existing) {
+            return existing.name == profile.name;
+        });
+        if (found == inherited.end()) {
+            inherited.push_back({.name = profile.name});
+            found = inherited.end() - 1;
+        }
+        MergeBuilderEntries(found->entryCalls, std::move(profile.entryCalls));
+        MergeBuilderEntries(found->scopes, std::move(profile.scopes));
+        MergeBuilderEntries(found->bindToNext, std::move(profile.bindToNext));
+    }
+    std::map<std::string, std::string> entries;
+    for (const auto& profile : inherited) {
+        if (profile.entryCalls.empty()) {
+            throw std::runtime_error("BuilderChains." + profile.name + " requires EntryCalls");
+        }
+        for (const auto& entry : profile.entryCalls) {
+            if (entry.empty() || !entries.emplace(entry, profile.name).second) {
+                throw std::runtime_error("BuilderChains entry call is empty or shared by multiple profiles: " + entry);
+            }
+        }
+        std::map<std::string, std::string> opens;
+        std::vector<std::string> closes;
+        for (const auto& scope : profile.scopes) {
+            if (!opens.emplace(scope.open, scope.close).second) {
+                throw std::runtime_error("BuilderChains scope opener has multiple closing methods: " + scope.open);
+            }
+            closes.push_back(scope.close);
+        }
+        for (const auto& [open, close] : opens) {
+            if (std::find(closes.begin(), closes.end(), open) != closes.end()) {
+                throw std::runtime_error("BuilderChains method both opens and closes a scope: " + open);
+            }
+        }
+        for (const auto& name : profile.bindToNext) {
+            if (name.empty() || opens.contains(name) || std::find(closes.begin(), closes.end(), name) != closes.end()) {
+                throw std::runtime_error("BuilderChains BindToNext method is empty or has a scope role: " + name);
+            }
+        }
+    }
+}
+
 FormatterConfigPatch ParseFormatterConfigPatch(std::string_view text) {
     FormatterConfigPatch patch;
     const std::vector<ConfigLine> lines = ReadConfigLines(text);
@@ -312,6 +436,8 @@ FormatterConfigPatch ParseFormatterConfigPatch(std::string_view text) {
             ParseMacroCategories(lines, index, patch);
         } else if (key == "StreamShift" && value.empty()) {
             ParseStreamShift(lines, index, patch);
+        } else if (key == "BuilderChains" && value.empty()) {
+            ParseBuilderChains(lines, index, patch);
         }
     }
     return patch;
@@ -337,6 +463,7 @@ FormatterConfig ApplyConfigPatch(FormatterConfig config, FormatterConfigPatch pa
         MergeConfigList(config.*MACRO_CATEGORY_CONFIGS[index].member, patch.macroCategories[index]);
     }
     MergeConfigList(config.streamShiftConfigurationMethods, patch.streamShiftConfigurationMethods);
+    MergeBuilderProfiles(config.builderChains, std::move(patch.builderChains));
     if (patch.includeGroups.has_value()) {
         config.includeGroups = std::move(*patch.includeGroups);
     }

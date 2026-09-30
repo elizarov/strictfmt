@@ -434,7 +434,7 @@ private:
                         return {SolveCallApplicationSplit(node, column, indentLevel, lineHasText)};
                     }
                     if (node.chainKind == FormatBreakChainKind::MemberBeforeOperator) {
-                        return {SolveChainSplitBeforeOperator(node, column, indentLevel, lineHasText)};
+                        return SolveChainSplitBeforeOperatorAlternatives(node, column, indentLevel, lineHasText);
                     }
                     if (node.chainKind == FormatBreakChainKind::Ternary && node.operators.size() > 2) {
                         return SolveTernaryChainSplitAlternatives(node, column, indentLevel, lineHasText);
@@ -491,7 +491,11 @@ private:
                     alternatives.push_back(SolveCallApplicationSplit(node, column, indentLevel, lineHasText));
                 } else if (node.chainKind == FormatBreakChainKind::MemberBeforeOperator) {
                     alternatives.push_back(SolveMemberCompactTail(node, column, indentLevel, lineHasText));
-                    alternatives.push_back(SolveChainSplitBeforeOperator(node, column, indentLevel, lineHasText));
+                    for (NodeResult candidate : SolveChainSplitBeforeOperatorAlternatives(
+                        node, column, indentLevel, lineHasText
+                    )) {
+                        alternatives.push_back(std::move(candidate));
+                    }
                 } else if (node.chainKind == FormatBreakChainKind::Ternary && node.operators.size() > 2) {
                     for (NodeResult candidate : SolveTernaryChainSplitAlternatives(
                         node, column, indentLevel, lineHasText
@@ -2806,29 +2810,51 @@ private:
         return best;
     }
 
-    NodeResult
-        SolveChainSplitBeforeOperator(const FormatBreakNode& node, int column, int indentLevel, bool lineHasText)
-    {
+    NodeResults SolveChainSplitBeforeOperatorAlternatives(
+        const FormatBreakNode& node, int column, int indentLevel, bool lineHasText
+    ) {
         const int splitBaseIndent = node.requiredChainBreakBaseIndent.value_or(indentLevel);
         NodeResult
             result{.valid = true, .endColumn = column, .endIndentLevel = indentLevel, .endLineHasText = lineHasText};
         AddChoice(result, node.id, FormatBreakChoice::Split, splitBaseIndent);
-        if (node.operands.empty()) {
-            return result;
+        NodeResults current{result};
+        for (size_t index = 0; index < node.operands.size(); ++index) {
+            NodeResults next;
+            for (NodeResult prefix : current) {
+                if (index > 0) {
+                    const auto step = FormatBreakMemberStep(node, index - 1);
+                    if (step.breakBefore) {
+                        AppendBreak(prefix, splitBaseIndent + step.indent, node.breakCost);
+                    }
+                    AppendCommentsBeforeChainOperator(node, index - 1, prefix);
+                    AppendToken(prefix, node.operators[index - 1]);
+                }
+                for (const NodeResult& operand : SolveAlternatives(
+                    *node.operands[index], prefix.endColumn, prefix.endIndentLevel, prefix.endLineHasText
+                )) {
+                    NodeResult candidate = prefix;
+                    Merge(candidate, operand);
+                    AddPrunedResult(next, std::move(candidate));
+                }
+            }
+            SortPrunedResults(next);
+            current = std::move(next);
         }
+        return current;
+    }
 
-        NodeResult receiver =
-            Solve(*node.operands.front(), result.endColumn, result.endIndentLevel, result.endLineHasText);
-        Merge(result, receiver);
-        for (size_t index = 0; index < node.operators.size(); ++index) {
-            AppendBreak(result, splitBaseIndent + 1, node.breakCost);
-            AppendCommentsBeforeChainOperator(node, index, result);
-            AppendToken(result, node.operators[index]);
-            NodeResult operand =
-                Solve(*node.operands[index + 1], result.endColumn, result.endIndentLevel, result.endLineHasText);
-            Merge(result, operand);
+    NodeResult
+        SolveChainSplitBeforeOperator(const FormatBreakNode& node, int column, int indentLevel, bool lineHasText)
+    {
+        NodeResult best;
+        for (
+            const auto& candidate : SolveChainSplitBeforeOperatorAlternatives(node, column, indentLevel, lineHasText)
+        ) {
+            if (Better(candidate, best)) {
+                best = candidate;
+            }
         }
-        return result;
+        return best;
     }
 
     NodeResult SolveMemberCompactTail(const FormatBreakNode& node, int column, int indentLevel, bool lineHasText) {

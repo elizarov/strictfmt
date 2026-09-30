@@ -8,7 +8,7 @@ Formatter configuration is intentionally narrow and does not expose style policy
 
 When `--style` is omitted, `strictfmt` searches upward from each formatted file for `.cpp-format`. For a file dump mode, discovery starts at the dumped source file. For `--stdin`, including stdin dump modes, discovery starts at `--stdin-filename` when provided, otherwise at the current working directory. `--style <path>` uses the provided formatter configuration path for every input. Formatting file paths are still checked against the nearest ignore file found by walking upward from each formatted file.
 
-`Inherit: Parent` makes a `.cpp-format` file inherit from the next `.cpp-format` found by searching upward from the formatter configuration file's parent directory. Explicit `--style <path>` formatter configuration files use the same parent search rooted at the explicit file. If no parent `.cpp-format` exists, inheritance starts from built-in defaults. Local scalar keys override inherited scalar keys. Lists of names always merge with inherited entries, retaining exact duplicates once; this applies to every `MacroCategories` category and `StreamShift.ConfigurationMethods`. `IncludeCategories` replaces the inherited list. Nested maps inherit categories that are not specified locally.
+`Inherit: Parent` makes a `.cpp-format` file inherit from the next `.cpp-format` found by searching upward from the formatter configuration file's parent directory. Explicit `--style <path>` formatter configuration files use the same parent search rooted at the explicit file. If no parent `.cpp-format` exists, inheritance starts from built-in defaults. Local scalar keys override inherited scalar keys. Lists of names always merge with inherited entries, retaining exact duplicates once; this applies to every `MacroCategories` category and the [DSL configurations](dsl.md). `IncludeCategories` replaces the inherited list. Nested maps inherit categories that are not specified locally.
 
 ## .cpp-format
 
@@ -24,7 +24,8 @@ Supported top-level keys:
 - `MainIncludeChar`: `Quote` (the default) considers quoted includes for main-header detection; `AngleBracket` considers angle-bracket includes.
 - `IncludeIsMainRegex`: allowed suffix regex for [main-header detection](#main-header-detection). The default is `(Test)?$`.
 - `MacroCategories`: macro and macro-like runtime parser roles. See [macro.md](macro.md) for details.
-- `StreamShift`: stream insertion/extraction configuration.
+- `StreamShift`: [stream-manipulator roles](dsl.md#stream-manipulators).
+- `BuilderChains`: [builder-call profiles](dsl.md#builder-chains).
 
 Example:
 
@@ -72,20 +73,6 @@ StreamShift:
 Only the first include run in files ending with `.c`, `.cc`, `.cpp`, `.c++`, `.cxx`, `.m`, or `.mm` is eligible. The first matching include with a positive or unmatched category receives priority `0`; configured nonpositive priorities are retained, and encountering priority `0` ends the search. Header files do not receive main-header priority.
 
 Matching ignores directories and letter case. Append `IncludeIsMainRegex` to the escaped header stem and search the source stem, not the reverse: by default, `"widget.h"` is a main-header candidate in `widget.cpp` and `widgetTest.cpp`. Suffixes match partially unless anchored: `''` permits any suffix, `'$'` requires an exact stem, and `'(_test)?$'` also accepts `widget_test.cpp`. For compound source extensions, match the basename before the first non-leading dot (`widget.h` with `widget.cu.cc`); an exact full-stem match also accepts compound header names (`widget.proto.h` with `widget.proto.cc`).
-
-### StreamShift
-
-`StreamShift.ConfigurationMethods` lists manipulators that bind to the following shifted value. The formatter keeps the configured manipulator sequence and its value together instead of choosing a break between them.
-
-<!-- .cpp-format
-StreamShift:
-  ConfigurationMethods:
-    - std::boolalpha
-    - std::setw
--->
-```cpp
-auto configured = stream << std::boolalpha << enabled << std::setw(8) << value;
-```
 
 ## .cpp-format-ignore
 

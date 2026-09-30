@@ -1,0 +1,39 @@
+Inherit: Parent
+ColumnLimit: 80
+
+StreamShift:
+  ConfigurationMethods:
+    - std::hex
+    - std::setw
+    - std::boolalpha
+
+BuilderChains:
+  Yql:
+    EntryCalls:
+      - Builder
+      - List
+    Scopes:
+      - Open: List
+        Close: Seal
+      - Open: Callable
+        Close: Seal
+      - Open: Lambda
+        Close: Seal
+      - Open: Apply
+        Close: Seal
+  Yson:
+    EntryCalls:
+      - BuildYsonFluently
+      - BuildYsonStringFluently
+      - NYT::BuildYsonFluently
+      - BeginMap
+      - Item
+    Scopes:
+      - Open: BeginMap
+        Close: EndMap
+      - Open: BeginList
+        Close: EndList
+      - Open: BeginAttributes
+        Close: EndAttributes
+    BindToNext:
+      - Item

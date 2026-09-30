@@ -87,6 +87,7 @@ The writer records those operations as `FormatLayoutProgram` commands and resolv
 - `src/format/impl/format_break_solution.h` owns the materialized layout data shared by solving, lowering, and diagnostics.
 - `src/format/impl/format_value_profile.h|cpp` own the sparse value profile shared by break optimization costs.
 - `src/format/impl/format_config.h|cpp` own formatter configuration, ignore files, upward discovery, inheritance, parsing, and caching.
+- `src/format/impl/format_dsl.h|cpp` own configured builder-call classification and complete-chain nesting and binding metadata.
 - `src/format/impl/format_declaration_layout.h|cpp` own declaration-group scheduling and boundary resolution from the selected output program.
 - `src/format/impl/format_model_text_stats.h` owns optional model-to-text phase timings.
 - `src/format/impl/format_include_sort.h|cpp` own include run normalization, grouping, main-include detection, and sorting.

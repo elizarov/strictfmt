@@ -7,6 +7,10 @@ inline const PrintToken& FormatBreakTokenValue(const FormatBreakToken& token) {
     return token.token == nullptr ? kEmptyToken : *token.token;
 }
 
+inline FormatBuilderStep FormatBreakMemberStep(const FormatBreakNode& node, size_t index) {
+    return index < node.builderSteps.size() ? node.builderSteps[index] : FormatBuilderStep{};
+}
+
 inline PrintTokenKind FormatBreakTokenKind(const FormatBreakToken& token) {
     return token.token == nullptr ? PrintTokenKind::Text : token.token->kind;
 }

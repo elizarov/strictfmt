@@ -36,6 +36,7 @@ Detailed user-level docs:
 
 - [docs/format.md](docs/format.md) specifies the source layout produced by the formatter.
 - [docs/config.md](docs/config.md) specifies formatter configuration and ignore files.
+- [docs/dsl.md](docs/dsl.md) specifies configured stream manipulators and builder-call roles.
 - [docs/command_line.md](docs/command_line.md) specifies the `strictfmt` executable command line.
 - [docs/preprocessor.md](docs/preprocessor.md) describes handling of preprocessor directives and conditional compilation.
 - [docs/syntax_ambiguities.md](docs/syntax_ambiguities.md) explains the treatment of C++ syntax ambiguities.

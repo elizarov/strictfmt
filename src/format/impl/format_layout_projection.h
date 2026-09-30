@@ -13,6 +13,7 @@ struct FormatLayoutChainPlacement {
     std::optional<int> baseIndent;
     bool flatSplitIndent = false;
     bool requiredBreak = false;
+    int indentOffset = 1;
 };
 
 struct FormatLayoutLeadingSeparator {

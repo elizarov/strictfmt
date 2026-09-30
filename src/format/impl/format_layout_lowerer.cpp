@@ -529,10 +529,13 @@ private:
                 return;
             }
             for (size_t index = 0; index < node.operators.size(); ++index) {
-                NewLineWithIndent(splitBaseIndent + 1);
+                const auto step = FormatBreakMemberStep(node, index);
+                if (step.breakBefore) {
+                    NewLineWithIndent(splitBaseIndent + step.indent);
+                }
                 LowerCommentsBeforeChainOperator(node, index);
                 WriteBreakToken(node.operators[index]);
-                LowerBreakNode(*node.operands[index + 1], solution, splitBaseIndent + 1);
+                LowerBreakNode(*node.operands[index + 1], solution, splitBaseIndent + step.indent);
             }
             return;
         }

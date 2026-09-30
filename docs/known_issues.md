@@ -71,6 +71,8 @@ Planned work: Support branch-owned leading separator commas whenever a condition
 
 Current behavior: `// clang-format off` and `// clang-format on` comments remain in the source but do not affect formatting.
 
+Builder DSL nesting and grouping can be expressed through [configured call roles](dsl.md#builder-chains).
+
 Include sorting: An `off` region does not protect include order. Control comments trailing `#include` directives move with the sorted headers and can be reordered, even placing `on` before `off` and changing the region the annotations appear to delimit. Standalone control comments still bound sortable runs like other comments.
 
 Planned work: Decide whether to honor these comments. If strictfmt does not honor them, remove them from formatted source so they do not misleadingly imply that formatting is disabled.

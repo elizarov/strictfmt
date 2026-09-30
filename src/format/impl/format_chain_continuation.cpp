@@ -22,6 +22,7 @@ struct FormatChainContinuation::Impl {
 
     std::unordered_map<const SyntaxNode*, Placement> placements_;
     std::unordered_map<const SyntaxNode*, const SyntaxNode*> requiredChainBreakGroups_;
+    std::unordered_map<const SyntaxNode*, FormatBuilderStep> builderSteps_;
     std::unordered_set<const SyntaxNode*> pendingCrossBlockChainGroups_;
 
     struct ParentLink {
@@ -96,11 +97,14 @@ struct FormatChainContinuation::Impl {
             }
             placement.owner = &node;
             placement.uniform = HasUniformSplitForm(node);
-            for (const FormatBreakToken& token : node.operators) {
+            for (size_t index = 0; index < node.operators.size(); ++index) {
+                const auto& token = node.operators[index];
                 const PrintToken& printToken = FormatBreakTokenValue(token);
                 if (printToken.node != nullptr) {
                     requiredChainBreakGroups_.insert_or_assign(printToken.node, group);
-
+                    if (!node.builderSteps.empty()) {
+                        builderSteps_.insert_or_assign(printToken.node, FormatBreakMemberStep(node, index));
+                    }
                 }
             }
         }
@@ -149,6 +153,10 @@ struct FormatChainContinuation::Impl {
                 ) {
                     const SyntaxNode* group = FormatBreakTokenValue(parent.node->operators.front()).node;
                     requiredChainBreakGroups_.insert_or_assign(block.node, group);
+                    if (!parent.node->builderSteps.empty() && *parent.operand > 0) {
+                        builderSteps_
+                            .insert_or_assign(block.node, FormatBreakMemberStep(*parent.node, *parent.operand - 1));
+                    }
                 }
             }
         }
@@ -262,11 +270,15 @@ struct FormatChainContinuation::Impl {
             return std::nullopt;
         }
         const auto& placement = placements_.at(group->second);
+        const auto builder = builderSteps_.find(token);
         return FormatLayoutChainPlacement{
             .baseIndent = placement.baseIndent,
             .flatSplitIndent = placement.owner->flatSplitIndent,
             .requiredBreak = placement.uniform &&
+                (builder == builderSteps_.end() || builder->second.breakBefore) &&
                 (placement.owner->chainKind != FormatBreakChainKind::Ternary || token->kind == SyntaxNodeKind::Colon),
+            .indentOffset =
+                builder != builderSteps_.end() ? builder->second.indent : (placement.owner->flatSplitIndent ? 0 : 1),
         };
     }
     std::optional<int> ContinuationIndent(const PrintToken& token) const {
@@ -277,7 +289,7 @@ struct FormatChainContinuation::Impl {
         if (!layout || !layout->baseIndent) {
             return std::nullopt;
         }
-        return *layout->baseIndent + (layout->flatSplitIndent ? 0 : 1);
+        return *layout->baseIndent + layout->indentOffset;
     }
     void RecordSelection(const FormatBreakNode& chain, int baseIndent) {
         for (const FormatBreakToken& op : chain.operators) {
