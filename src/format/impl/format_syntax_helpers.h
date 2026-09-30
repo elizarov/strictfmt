@@ -6,6 +6,10 @@ inline bool IsNonTokenPreprocessorDirective(const SyntaxNode& node) {
     return node.kind == SyntaxNodeKind::MacroDefinition || node.kind == SyntaxNodeKind::PreprocCall;
 }
 
+inline bool IsRequiresClause(const SyntaxNode& node) {
+    return node.kind == SyntaxNodeKind::RequiresClause || node.kind == SyntaxNodeKind::PreprocRequiresClause;
+}
+
 inline const SyntaxNode* ParentOutsideConditionalPreprocessor(const SyntaxNode& node) {
     const SyntaxNode* parent = node.parent;
     while (parent != nullptr && SyntaxNodeHasClass(*parent, SyntaxNodeClass::ConditionalPreprocessorTree)) {

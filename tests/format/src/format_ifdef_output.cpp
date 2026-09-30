@@ -1349,7 +1349,7 @@ struct GuardedAttributes {
 
 template <class T>
 #if CONSTRAINTS
-requires requires(T value) {
+    requires requires(T value) {
         value.Method();
         typename T::value_type;
     }
@@ -1359,16 +1359,58 @@ void GuardedRequirement(T value) { value.Method(); }
 template <class T>
 #ifdef CONSTRAINTS
 #if STRICT
-requires Strong<T>
+    requires Strong<T>
 #else
-requires Basic<T>
+    requires Basic<T>
 #endif
 #elif FALLBACK
-requires(sizeof(T) > 1)
+    requires(sizeof(T) > 1)
 #endif
 struct GuardedConstraint {
     T value;
 };
+
+// Selected constraints retain template continuation indentation through comments and nesting.
+struct ConditionalMemberConstraints {
+    template <class T>
+#ifndef DISABLED
+        // Keep the constraint with the template header.
+        requires Strong<T> && Basic<T>
+#endif
+    static T Build(T value) { return value; }
+
+    template <class T>
+#if CONSTRAINTS
+#if EXPRESSIONS
+        requires requires(T value) {
+            value.Method();
+        }
+#else
+        requires Basic<T>
+#endif
+#endif
+    struct Nested {
+        T value;
+    };
+
+    template <class T>
+#if CONSTRAINTS
+        requires Basic<T>
+#endif
+    using Pointer = T*;
+
+    int next;
+};
+
+template <class T>
+#if FIRST
+    requires Strong<T>
+#endif
+template <class U>
+#if SECOND
+    requires Basic<U>
+#endif
+void Outer<T>::Apply(U value) { Use(value); }
 
 void GuardedIfConstexpr() {
     if

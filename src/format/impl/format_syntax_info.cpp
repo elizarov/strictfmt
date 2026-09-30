@@ -524,9 +524,9 @@ constexpr auto kSyntaxKindMappings = std::to_array<SyntaxKindMapping>({
         kAllowedPreprocessorContainerClasses | kSupportedPreprocessorPlacementClasses
     ),
     Tree(
-        SyntaxNodeKind::PreprocIf,
+        SyntaxNodeKind::PreprocRequiresClause,
         "preproc_if_in_template_requires_clause",
-        kAllowedPreprocessorContainerClasses | kSupportedPreprocessorPlacementClasses
+        kConditionalPreprocessorOpenClasses
     ),
     Tree(
         SyntaxNodeKind::PreprocIf,
@@ -1340,6 +1340,8 @@ std::string_view SyntaxNodeKindName(SyntaxNodeKind kind) {
             return "PreprocIfdef";
         case SyntaxNodeKind::PreprocExpression:
             return "PreprocExpression";
+        case SyntaxNodeKind::PreprocRequiresClause:
+            return "PreprocRequiresClause";
         case SyntaxNodeKind::PreprocElse:
             return "PreprocElse";
         case SyntaxNodeKind::PreprocElif:

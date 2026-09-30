@@ -353,3 +353,13 @@ Fallback(value) && CheckZone(zone)
 #endif
 ;}
 }
+
+namespace ConditionalConstraints {
+template<typename FirstValue,typename SecondValue>
+#if CONSTRAINTS
+requires Readable<FirstValue> && Writable<SecondValue>
+#else
+requires (sizeof(FirstValue) > sizeof(SecondValue))
+#endif
+struct Pair { FirstValue first; SecondValue second; };
+}

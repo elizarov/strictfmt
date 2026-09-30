@@ -154,7 +154,7 @@ struct TokenContext {
     bool inRequiresClause = false;
     bool inCompactSingleStatementBody = false;
     const SyntaxNode* macroDefinition = nullptr;
-    const SyntaxNode* conditionalExpression = nullptr;
+    const SyntaxNode* conditionalOperand = nullptr;
     bool inMacroValue = false;
     std::uint16_t ancestryFlags = 0;
     const SyntaxNode* declarationScopeItem = nullptr;
@@ -167,13 +167,13 @@ struct TokenContext {
             SyntaxNodeKindHasClass(kind, SyntaxNodeClass::SemanticDelimitedParent) ||
             SyntaxNodeKindHasClass(kind, SyntaxNodeClass::CompoundBlock)
         ) {
-            conditionalExpression = nullptr;
+            conditionalOperand = nullptr;
         }
-        if (kind == SyntaxNodeKind::PreprocExpression) {
-            conditionalExpression = &node;
+        if (kind == SyntaxNodeKind::PreprocExpression || kind == SyntaxNodeKind::PreprocRequiresClause) {
+            conditionalOperand = &node;
         }
         inTemplateDeclaration |= kind == SyntaxNodeKind::TemplateDeclaration;
-        inRequiresClause |= kind == SyntaxNodeKind::RequiresClause;
+        inRequiresClause |= IsRequiresClause(node);
         inCompactSingleStatementBody = inCompactSingleStatementBody || BodyAllowsCompactSingleStatementForm(node);
         if (macroDefinition == nullptr && SyntaxNodeKindHasClass(kind, SyntaxNodeClass::MacroDefinition)) {
             macroDefinition = &node;
@@ -208,7 +208,7 @@ struct TokenContext {
             inTemplateDeclarationBlock |= SyntaxNodeKindHasClass(kind, SyntaxNodeClass::CompoundBlock);
             inTemplateDeclarationHeader |= kind == SyntaxNodeKind::KeywordTemplate ||
                 kind == SyntaxNodeKind::TemplateParameterList ||
-                kind == SyntaxNodeKind::RequiresClause;
+                IsRequiresClause(node);
         }
     }
 
@@ -240,7 +240,7 @@ PrintToken
     token.inTemplateDeclarationBlock = context.inTemplateDeclarationBlock;
     token.inTemplateDeclarationHeader = context.inTemplateDeclarationHeader;
     token.declarationScopeItem = context.declarationScopeItem;
-    token.conditionalExpression = context.conditionalExpression;
+    token.conditionalOperand = context.conditionalOperand;
     // Blank lines inherit scope/macro facts, but carry no lexical syntax context.
     if (kind != PrintTokenKind::BlankLine) {
         token.syntaxKind = node.kind;

@@ -949,7 +949,7 @@ private:
         if (activeTokens_ != nullptr) {
             const PrintToken& current = (*activeTokens_)[currentTokenIndex_];
             if (
-                current.conditionalExpression != nullptr &&
+                (current.conditionalOperand != nullptr || current.inTemplateDeclarationHeader) &&
                 PrintTokenSyntaxHasClass(current, SyntaxNodeClass::EndifDirective)
             ) {
                 // A completed branch cannot lend its operand indentation to syntax outside the conditional.
@@ -957,6 +957,16 @@ private:
                     const PrintToken& next = (*activeTokens_)[index];
                     if (IsCommentToken(next.kind) || next.kind == PrintTokenKind::BlankLine) {
                         continue;
+                    }
+                    if (current.inTemplateDeclarationHeader) {
+                        if (
+                            !next.inTemplateDeclarationHeader ||
+                            NearestAncestor(next, SyntaxNodeKind::TemplateDeclaration) !=
+                                NearestAncestor(current, SyntaxNodeKind::TemplateDeclaration)
+                        ) {
+                            return indentLevel_;
+                        }
+                        break;
                     }
                     if (const auto continuation = layoutTree_->Chains().ContinuationIndent(next)) {
                         return continuation;

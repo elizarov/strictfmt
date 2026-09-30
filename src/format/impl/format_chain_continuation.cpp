@@ -107,7 +107,7 @@ struct FormatChainContinuation::Impl {
     }
 
     void CollectCrossBlockChainBreaks(const FormatBreakNode& root, const PrintToken& block, bool directive) {
-        const bool conditional = block.conditionalExpression != nullptr ||
+        const bool conditional = block.conditionalOperand != nullptr ||
             PrintTokenSyntaxHasClass(block, SyntaxNodeClass::ConditionalPreprocessorTree) ||
             PrintTokenSyntaxHasClass(block, SyntaxNodeClass::ConditionalPreprocessorDirective);
         auto [entry, inserted] = modelIndexes_.try_emplace(&root);
@@ -133,7 +133,7 @@ struct FormatChainContinuation::Impl {
                 if (
                     directive &&
                     conditional &&
-                    block.conditionalExpression == nullptr &&
+                    block.conditionalOperand == nullptr &&
                     (*parent.operand == 0 || parent.node->chainKind == FormatBreakChainKind::StreamBeforeOperator)
                 ) {
                     // Declaration prefixes do not continue a value; selected stream tails own their layout.
@@ -143,7 +143,7 @@ struct FormatChainContinuation::Impl {
                 if (
                     directive &&
                     !crossesDelimiter &&
-                    (block.conditionalExpression != nullptr || *parent.operand > 0) &&
+                    (block.conditionalOperand != nullptr || *parent.operand > 0) &&
                     parent.node->kind == FormatBreakNodeKind::Chain &&
                     !parent.node->operators.empty()
                 ) {
@@ -204,7 +204,7 @@ struct FormatChainContinuation::Impl {
             return;
         }
         const PrintToken& token = tokens_[currentTokenIndex_];
-        if (directive && token.conditionalExpression == nullptr && !token.structuredPreprocessor && (
+        if (directive && token.conditionalOperand == nullptr && !token.structuredPreprocessor && (
             PrintTokenSyntaxHasClass(token, SyntaxNodeClass::ConditionalPreprocessorTree) ||
             PrintTokenSyntaxHasClass(token, SyntaxNodeClass::ConditionalPreprocessorDirective)
         )) {
@@ -271,8 +271,8 @@ struct FormatChainContinuation::Impl {
     }
     std::optional<int> ContinuationIndent(const PrintToken& token) const {
         auto layout = Lookup(token.node);
-        if (!layout && token.conditionalExpression != nullptr) {
-            layout = Lookup(token.conditionalExpression);
+        if (!layout && token.conditionalOperand != nullptr) {
+            layout = Lookup(token.conditionalOperand);
         }
         if (!layout || !layout->baseIndent) {
             return std::nullopt;

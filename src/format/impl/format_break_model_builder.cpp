@@ -1416,7 +1416,7 @@ private:
         if (
             declarationIndex < node.children.size() &&
             node.children[declarationIndex] != nullptr &&
-            node.children[declarationIndex]->kind == SyntaxNodeKind::RequiresClause
+            IsRequiresClause(*node.children[declarationIndex])
         ) {
             requiresNode = node.children[declarationIndex];
             ++declarationIndex;
@@ -1430,10 +1430,7 @@ private:
         if (introduced != nullptr) {
             std::optional<size_t> introducedRequiresIndex;
             for (size_t index = 0; index < introduced->children.size(); ++index) {
-                if (
-                    introduced->children[index] != nullptr &&
-                    introduced->children[index]->kind == SyntaxNodeKind::RequiresClause
-                ) {
+                if (introduced->children[index] != nullptr && IsRequiresClause(*introduced->children[index])) {
                     introducedRequiresIndex = index;
                     break;
                 }
@@ -1497,7 +1494,7 @@ private:
         if (
             templateTail < templateNode->children.size() &&
             templateNode->children[templateTail] != nullptr &&
-            templateNode->children[templateTail]->kind == SyntaxNodeKind::RequiresClause
+            IsRequiresClause(*templateNode->children[templateTail])
         ) {
             requiresNode = templateNode->children[templateTail];
             ++templateTail;
@@ -1523,8 +1520,7 @@ private:
             std::optional<size_t> introducedRequiresIndex;
             for (size_t childIndex = 0; childIndex < introduced->children.size(); ++childIndex) {
                 if (
-                    introduced->children[childIndex] != nullptr &&
-                    introduced->children[childIndex]->kind == SyntaxNodeKind::RequiresClause
+                    introduced->children[childIndex] != nullptr && IsRequiresClause(*introduced->children[childIndex])
                 ) {
                     introducedRequiresIndex = childIndex;
                     break;
