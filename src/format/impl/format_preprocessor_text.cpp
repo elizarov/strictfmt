@@ -106,6 +106,6 @@ std::string FormatPreprocessorText(std::string_view text, const FormatPreprocess
     const bool hasLineBreak = text.find_first_of("\r\n") != std::string_view::npos;
     return CanonicalizePreprocessorDirectiveLines(
         hasLineBreak ? PreservePreprocessorLines(text, policy.tabWidth) :
-            NormalizeTrailingLineCommentSpacing(CollapseSourceWhitespace(text))
+            NormalizeTrailingLineCommentSpacing(CollapseSourceWhitespace(text, policy.tabWidth))
     );
 }

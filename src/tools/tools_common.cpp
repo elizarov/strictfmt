@@ -234,6 +234,14 @@ std::string NormalizeTrailingLineCommentSpacing(std::string_view line) {
     for (size_t index = 0; index + 1 < line.size(); ++index) {
         const char ch = line[index];
         const char next = line[index + 1];
+        if (!inString && !inChar && ch == '/' && next == '*') {
+            const size_t close = line.find("*/", index + 2);
+            if (close == std::string_view::npos) {
+                break;
+            }
+            index = close + 1;
+            continue;
+        }
         if (ch == '\\' && (inString || inChar)) {
             ++index;
             continue;

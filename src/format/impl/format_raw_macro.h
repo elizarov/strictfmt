@@ -9,7 +9,7 @@ struct RawMacroLayout {
     std::vector<size_t> continuations;
 };
 
-std::string CollapseSourceWhitespace(std::string_view text);
+std::string CollapseSourceWhitespace(std::string_view text, int tabWidth = 4);
 std::string PreserveSourceLines(std::string_view text);
 // Cleans physical line whitespace outside literals, including inside comments.
 std::string NormalizeSourceLineWhitespace(std::string_view text, int tabWidth);

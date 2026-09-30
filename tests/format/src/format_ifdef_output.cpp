@@ -2680,3 +2680,22 @@ const int first = 2, selected[4] = {
     2,
     3
 }, last = 4;
+
+// Preprocessor comments preserve their contents in every directive path.
+#if A
+#else  // left  right
+#endif
+#if A  // first  branch
+#elif B /* second  branch */
+#else /* fallback  branch */  // last  branch
+#endif  // final  comment
+#ifdef FLAG  // guarded  branch
+#endif /* closing  guard */
+#ifndef FLAG /* inverse  guard */
+#else  // an unmatched "  quote
+#endif  // an unmatched '  quote
+#pragma message("https://host  path")  // pragma  comment
+#undef UNUSED  // undef  comment
+#define RAW_COMMENT ) /* raw  block */ token  // raw  tail
+#define RAW_COMMENT_QUOTES ) /* a'  b  c */ token  // trailing  comment
+#define RAW_COMMENT_SLASHES ) /* slash //  inside */ token  // trailing  comment

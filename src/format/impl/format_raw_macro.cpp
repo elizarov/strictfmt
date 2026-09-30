@@ -279,7 +279,9 @@ std::string ReindentRawMacroBody(std::string_view text, int bodyIndentLevel, int
 
 }  // namespace
 
-std::string CollapseSourceWhitespace(std::string_view text) {
+std::string CollapseSourceWhitespace(std::string_view text, int tabWidth) {
+    const std::string normalized = NormalizeSourceLineWhitespace(text, tabWidth);
+    text = normalized;
     std::string result;
     bool pendingSpace = false;
     bool inString = false;
@@ -307,10 +309,20 @@ std::string CollapseSourceWhitespace(std::string_view text) {
         }
         pendingSpace = false;
         if (!inString && !inChar) {
-            const size_t numberEnd = PreprocessingNumberEnd(text, index);
-            if (numberEnd != index) {
-                result.append(text.substr(index, numberEnd - index));
-                index = numberEnd - 1;
+            if (text.substr(index).starts_with("//")) {
+                result.append(text.substr(index));
+                break;
+            }
+            size_t end = PreprocessingNumberEnd(text, index);
+            if (text.substr(index).starts_with("/*")) {
+                const size_t close = text.find("*/", index + 2);
+                end = close == std::string_view::npos ? text.size() : close + 2;
+            } else if (ch == '"') {
+                end = RawStringLiteralEnd(text, index);
+            }
+            if (end != index) {
+                result.append(text.substr(index, end - index));
+                index = end - 1;
                 continue;
             }
         }
@@ -457,7 +469,7 @@ std::string NormalizeRawMacroReplacement(std::string_view text, int bodyIndentLe
             PreservePreprocessorLines(text, tabWidth), bodyIndentLevel, indentWidth, std::max(1, tabWidth)
         );
     }
-    std::string collapsed = NormalizeTrailingLineCommentSpacing(CollapseSourceWhitespace(text));
+    std::string collapsed = NormalizeTrailingLineCommentSpacing(CollapseSourceWhitespace(text, tabWidth));
     if (!collapsed.empty() && StartsWithHorizontalSpace(text)) {
         collapsed.insert(collapsed.begin(), ' ');
     }
