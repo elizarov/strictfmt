@@ -4273,6 +4273,27 @@ void DestroyNested(Item<Item<int>>* value) { value->~Item<Item<int>>(); }
 struct module { ~module() = default; };
 }
 
+// Destructor names have the same leading spacing as other function names.
+namespace DestructorSpecifiers {
+struct InlineDestructor { inline~InlineDestructor() = default; };
+struct ConstexprDestructor { constexpr~ConstexprDestructor() = default; };
+struct VirtualDestructor { inline virtual~VirtualDestructor() = default; };
+struct ReverseSpecifiers { virtual inline~ReverseSpecifiers() = default; };
+struct AnnotatedDestructor { __declspec(noinline)~AnnotatedDestructor(); };
+struct AttributedDestructor { [[deprecated]]~AttributedDestructor(); };
+struct MacroDestructor { FORMAT_ATTRIBUTE_INLINE~MacroDestructor(); };
+struct ExternalDestructor { ~ExternalDestructor(); };
+inline ExternalDestructor::~ExternalDestructor() = default;
+struct UnaryOperators { int operator~() const; };
+void Destroy(InlineDestructor* pointer, InlineDestructor& value) {
+pointer->~InlineDestructor();
+value.~InlineDestructor();
+auto inverse = ~mask;
+auto twice = ~~mask;
+auto overloaded = object.operator~();
+}
+}
+
 namespace ParameterSuffixMacros {
 #define FORMAT_PARAMETER_SUFFIX [[maybe_unused]]
 #define FORMAT_PARAMETER_SUFFIX_CALL(...) [[maybe_unused]]

@@ -421,7 +421,10 @@ bool IsWordLike(const PrintToken& token) {
     if (token.kind == PrintTokenKind::Text) {
         return !token.text.empty() && (IsWordBoundaryChar(token.text.front()) || IsWordBoundaryChar(token.text.back()));
     }
-    return token.kind == PrintTokenKind::Known && PrintTokenSyntaxHasClass(token, SyntaxNodeClass::Keyword);
+    return token.kind == PrintTokenKind::Known && (
+        PrintTokenSyntaxHasClass(token, SyntaxNodeClass::Keyword) ||
+        (token.syntaxKind == SyntaxNodeKind::Tilde && token.parentKind == SyntaxNodeKind::DestructorName)
+    );
 }
 
 bool IsStringLike(const PrintToken& token) { return token.stringLike; }
@@ -678,9 +681,6 @@ bool FormatTokenNeedsSpace(const PrintToken* previous, const PrintToken& current
     }
     if (prev == SyntaxNodeKind::KeywordOperator && cur != SyntaxNodeKind::LeftParen) {
         return KeywordOperatorNeedsSpaceAfter(*previous, current);
-    }
-    if (prev == SyntaxNodeKind::KeywordVirtual && cur == SyntaxNodeKind::Tilde) {
-        return true;
     }
     if (prev == SyntaxNodeKind::KeywordCase && current.parentKind == SyntaxNodeKind::CaseStatement) {
         return true;

@@ -670,6 +670,7 @@ constexpr auto kSyntaxKindMappings = std::to_array<SyntaxKindMapping>({
     Tree(SyntaxNodeKind::FieldDesignator, "field_designator"),
     Tree(SyntaxNodeKind::FieldExpression, "field_expression"),
     Tree(SyntaxNodeKind::TrailingReturnType, "trailing_return_type"),
+    Tree(SyntaxNodeKind::DestructorName, "destructor_name"),
     Tree(SyntaxNodeKind::OperatorName, "operator_name"),
     Tree(SyntaxNodeKind::OperatorCast, "operator_cast"),
     Tree(SyntaxNodeKind::LabeledStatement, "labeled_statement"),
@@ -1444,6 +1445,8 @@ std::string_view SyntaxNodeKindName(SyntaxNodeKind kind) {
             return "FieldExpression";
         case SyntaxNodeKind::TrailingReturnType:
             return "TrailingReturnType";
+        case SyntaxNodeKind::DestructorName:
+            return "DestructorName";
         case SyntaxNodeKind::OperatorName:
             return "OperatorName";
         case SyntaxNodeKind::OperatorCast:

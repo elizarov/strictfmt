@@ -124,6 +124,7 @@ enum class SyntaxNodeKind : std::uint16_t {
     FieldDesignator,
     FieldExpression,
     TrailingReturnType,
+    DestructorName,
     OperatorName,
     OperatorCast,
     LabeledStatement,
