@@ -9,6 +9,10 @@ struct RawMacroLayout {
     std::vector<size_t> continuations;
 };
 
+bool IsFormattingControlComment(std::string_view text);
+// Removes control comments from raw preprocessing text without joining surrounding tokens.
+std::string RemoveFormattingControlComments(std::string_view text);
+
 std::string CollapseSourceWhitespace(std::string_view text, int tabWidth = 4);
 std::string PreserveSourceLines(std::string_view text);
 // Cleans physical line whitespace outside literals, including inside comments.

@@ -2,7 +2,7 @@
 
 ## Overview
 
-`strictfmt` formats one source text at a time. [FormatSourceText](../src/format/format.cpp) parses the source, formats the resulting model, and restores the original line ending style. Optional validation runs the pipeline again on its output to check parsing and idempotence.
+`strictfmt` formats one source text at a time. [FormatSourceText](../src/format/format.cpp) parses the source, formats the resulting model, and restores the original line ending style. Parsing normalizes lone CR line endings to LF without changing byte offsets; output style and change detection use the original input. Optional validation runs the pipeline again on its output to check parsing and idempotence.
 
 Formatting is an interleaved pipeline: the planner projects, solves, and lowers each region before proceeding to the next. A region receives the column, indentation, and owner placements selected for preceding regions. Lowering and emission do not initiate region planning or solving. Final emission starts only after the output program is complete.
 
@@ -93,7 +93,7 @@ The writer records those operations as `FormatLayoutProgram` commands and resolv
 - `src/format/impl/format_include_sort.h|cpp` own include run normalization, grouping, main-include detection, and sorting.
 - `src/format/impl/format_model.h|cpp` own format model storage/construction, parent/depth maintenance, and shared node-dependent compact-body facts.
 - `src/format/impl/format_syntax_info.h|cpp` own node kinds, `SyntaxNodeClass`, canonical spellings, parser-symbol mappings, and immutable syntax metadata; category checks must use `SyntaxNodeClass` helpers, not duplicated `SyntaxNodeKind` lists, with exact kind comparisons reserved for one concrete syntax rule.
-- `src/format/impl/format_model_builder.h|cpp` own conversion from tree-sitter nodes to the format model, source trivia and physical line starts, declarator-field preservation, and opening include-run grouping. Source-range validation also enforces adjacency for split literal tokens, allowing line splices.
+- `src/format/impl/format_model_builder.h|cpp` own conversion from tree-sitter nodes to the format model, source trivia and physical line starts, removal of formatting control comments from syntax and stored directive text, declarator-field preservation, and opening include-run grouping. Source-range validation also enforces adjacency for split literal tokens, allowing line splices.
 - `src/format/impl/format_model_normalize.h|cpp` own bottom-up syntax normalization and materialized semantic facts on formatter-owned nodes.
 - `src/format/impl/format_preprocessor_validation.h|cpp` own preprocessor placement validation.
 - `src/format/impl/format_model_dump.h|cpp` own syntax-tree and break-tree dump command orchestration.
@@ -104,7 +104,7 @@ The writer records those operations as `FormatLayoutProgram` commands and resolv
 - `src/format/impl/format_pretty_printer.h|cpp` own mandatory boundaries, structural indentation, and coordination of region projection, solving, and program construction.
 - `src/format/impl/format_output.h|cpp` own physical text, columns, pending line indentation, macro continuation suffixes, and deferred comment and continuation alignment through a syntax-independent output buffer.
 - `src/format/impl/format_preprocessor_text.h|cpp` own directive text canonicalization and preserved payload indentation.
-- `src/format/impl/format_raw_macro.h|cpp` own raw macro replacement whitespace normalization, identification of alignable continuation suffixes, and the raw preprocessor line-preservation helpers used by the pretty printer.
+- `src/format/impl/format_raw_macro.h|cpp` own raw macro replacement whitespace normalization, shared formatting-control comment recognition and removal from raw preprocessing text, identification of alignable continuation suffixes, and the raw preprocessor line-preservation helpers used by the pretty printer.
 - `src/format/impl/format_string_literals.h|cpp` own safe adjacent-string spelling joins and escaped-newline split requirements.
 - `src/format/impl/format_spacing.h|cpp` own print token text/width accessors, classification, and spacing rules.
 - `src/tools/tools_common.h|cpp` own shared tool helpers for paths, recursive discovery, file lists, source lines, include text, counts, and lightweight string operations.

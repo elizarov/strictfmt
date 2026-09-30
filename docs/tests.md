@@ -126,6 +126,8 @@ and exist only to exercise one command or configuration edge.
 
 ## Golden Fixtures
 
+- `tests/format/src/format_control_comments_input.cpp` -> `tests/format/src/format_control_comments_output.cpp`: clang-format control-comment removal throughout code, directives, structured/raw macros, and sorted include runs; preservation of lookalikes and literal contents.
+
 - `tests/format/src/format_test_input.cpp` ->
   `tests/format/src/format_test_output.cpp`: broad default-configuration
   formatting coverage for ordinary C++ layout core as documented in [format.md].

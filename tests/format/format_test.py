@@ -48,6 +48,8 @@ SOURCE_SUFFIXES = {
 }
 INPUT_FIXTURE = Path("src") / "format_test_input.cpp"
 OUTPUT_FIXTURE = Path("src") / "format_test_output.cpp"
+CONTROL_COMMENTS_INPUT_FIXTURE = Path("src") / "format_control_comments_input.cpp"
+CONTROL_COMMENTS_OUTPUT_FIXTURE = Path("src") / "format_control_comments_output.cpp"
 NESTED_TEMPLATE_CALLS_INPUT_FIXTURE = Path("src") / "format_nested_template_calls_input.cpp"
 NESTED_TEMPLATE_CALLS_OUTPUT_FIXTURE = Path("src") / "format_nested_template_calls_output.cpp"
 PREPROCESSOR_EOF_INPUT_FIXTURE = Path("src") / "format_preprocessor_eof_input.cpp"
@@ -101,6 +103,7 @@ CONTINUATIONS_FORMAT_CONFIG = TEST_ROOT / ".cpp-format-continuations"
 NON_ASCII_FORMAT_CONFIG = TEST_ROOT / ".cpp-format-non-ascii"
 FORMATTED_GOLDEN_OUTPUTS = (
     ("default", OUTPUT_FIXTURE, None),
+    ("control-comments", CONTROL_COMMENTS_OUTPUT_FIXTURE, None),
     ("nested-template-calls", NESTED_TEMPLATE_CALLS_OUTPUT_FIXTURE, None),
     ("macros", MACROS_OUTPUT_FIXTURE, None),
     ("macro-roles", UNCONFIGURED_MACROS_OUTPUT_FIXTURE, MACRO_ROLES_FORMAT_CONFIG),
@@ -445,6 +448,18 @@ class FormatCommandTests(unittest.TestCase):
         self.assertEqual(read_fixture(OUTPUT_FIXTURE), result.stdout)
         self.assert_no_unsupported_placement_warnings(result)
         self.assertRegex(result.stderr, r"Formatted stdin\. [\d,]+/[\d,]+ LOC changed\. Done in (?:\d+ms|\d+\.\d{3}s)\.\s*$")
+
+    def test_control_comments_formats_to_expected_output(self) -> None:
+        source = read_fixture(CONTROL_COMMENTS_INPUT_FIXTURE).encode("utf-8")
+        expected = read_fixture(CONTROL_COMMENTS_OUTPUT_FIXTURE).encode("utf-8")
+        for ending in (b"\n", b"\r\n", b"\r"):
+            with self.subTest(line_ending=ending):
+                result = native_format_bytes(
+                    "--stdin", cwd=TEST_ROOT, input_bytes=source.replace(b"\n", ending),
+                )
+                self.assertEqual(0, result.returncode, msg=result.stderr)
+                self.assertEqual(expected.replace(b"\n", ending), result.stdout)
+                self.assertNotIn(b": warning at ", result.stderr)
 
     def test_preprocessor_eof_formats_to_expected_output(self) -> None:
         result = native_format("--stdin", cwd=TEST_ROOT, input_text=read_fixture(PREPROCESSOR_EOF_INPUT_FIXTURE))

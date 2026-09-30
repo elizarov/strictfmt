@@ -9,6 +9,7 @@
 
 #include "tools/tools_common.h"
 #include "format/impl/format_model_normalize.h"
+#include "format/impl/format_raw_macro.h"
 
 namespace {
 
@@ -199,6 +200,47 @@ void ValidateLiteralSuffix(FormatModel& model, TSNode literal, std::string_view 
     }
 }
 
+void AppendPreprocessorText(std::string& result, TSNode node, std::string_view source) {
+    const std::string_view text = NodeText(node, source);
+    const TsNodeSyntax syntax = GetTsNodeSyntax(node);
+    if (
+        text.find("clang-format") == std::string_view::npos ||
+        TsNodeSyntaxHasClass(syntax, SyntaxNodeClass::LexicalAtom)
+    ) {
+        result.append(text);
+        return;
+    }
+    if (syntax.kind == SyntaxNodeKind::Comment || TsNodeSyntaxHasClass(syntax, SyntaxNodeClass::OpaqueSource)) {
+        result.append(RemoveFormattingControlComments(text));
+        return;
+    }
+    uint32_t copied = ts_node_start_byte(node);
+    for (uint32_t index = 0; index < ts_node_child_count(node); ++index) {
+        const TSNode child = ts_node_child(node, index);
+        result.append(source.substr(copied, ts_node_start_byte(child) - copied));
+        AppendPreprocessorText(result, child, source);
+        copied = ts_node_end_byte(child);
+    }
+    result.append(source.substr(copied, ts_node_end_byte(node) - copied));
+}
+
+std::string_view PreprocessorText(FormatModel& model, TSNode node, std::string_view source) {
+    const std::string_view text = NodeText(node, source);
+    if (text.find("clang-format") == std::string_view::npos) {
+        return text;
+    }
+    // Follow grammar token boundaries, including header-name and literal tokens.
+    // Only opaque macro replacements need a separate lexical scan.
+    std::string cleaned;
+    AppendPreprocessorText(cleaned, node, source);
+    if (cleaned == text) {
+        return text;
+    }
+    auto* stored = static_cast<char*>(model.childStorage->allocate(cleaned.size(), alignof(char)));
+    std::copy(cleaned.begin(), cleaned.end(), stored);
+    return std::string_view(stored, cleaned.size());
+}
+
 SyntaxNode*
     BuildNode(FormatModel& model, TSNode tsNode, std::string_view source, const SyntaxNode* parent, TsNodeSyntax syntax)
 {
@@ -250,7 +292,8 @@ SyntaxNode*
         TsNodeSyntaxHasClass(syntax, SyntaxNodeClass::LexicalAtom)
     ) {
         node->kind = syntax.kind;
-        node->text = NodeText(tsNode, source);
+        node->text = TsNodeSyntaxHasClass(syntax, SyntaxNodeClass::OpaqueSource) ?
+            PreprocessorText(model, tsNode, source) : NodeText(tsNode, source);
         return node;
     }
 
@@ -268,7 +311,7 @@ SyntaxNode*
             return node;
         }
         node->kind = syntax.kind == SyntaxNodeKind::Unknown ? SyntaxNodeKind::LexicalToken : syntax.kind;
-        node->text = text;
+        node->text = node->kind == SyntaxNodeKind::PreprocArg ? PreprocessorText(model, tsNode, source) : text;
         return node;
     }
 
@@ -277,7 +320,7 @@ SyntaxNode*
         TsNodeSyntaxHasClass(syntax, SyntaxNodeClass::AtomicPreprocessor) ||
         SyntaxNodeKindHasClass(node->kind, SyntaxNodeClass::ConditionalPreprocessorTree)
     ) {
-        node->text = NodeText(tsNode, source);
+        node->text = PreprocessorText(model, tsNode, source);
     }
     node->children.reserve(childCount);
     AppendTsChildren(model, tsNode, source, *node, childCount);
@@ -294,6 +337,9 @@ inline void AppendTsNode(
     bool isTrailingComment,
     bool isInlineBlockComment
 ) {
+    if (syntax.kind == SyntaxNodeKind::Comment && IsFormattingControlComment(NodeText(tsNode, source))) {
+        return;
+    }
     if (syntax.wrapperRole == SyntaxWrapperRole::Flatten) {
         AppendTsChildren(model, tsNode, source, parent, ts_node_child_count(tsNode));
         return;

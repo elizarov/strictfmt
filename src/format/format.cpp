@@ -102,8 +102,7 @@ SourceFormatResult
         return result;
     }
     result.warnings = ValidatePreprocessorPlacement(model);
-    result.formatted =
-        WithLineEndings(FormatModelText(config, model, sourcePath), SourceOutputLineEnding(*model.sourceText));
+    result.formatted = WithLineEndings(FormatModelText(config, model, sourcePath), SourceOutputLineEnding(text));
     if (validate) {
         FormatModel verification = ParseFormatModel(result.formatted, config);
         if (!verification.parse.ok) {
@@ -123,6 +122,6 @@ SourceFormatResult
             return result;
         }
     }
-    result.changed = model.sourceText != nullptr && *model.sourceText != result.formatted;
+    result.changed = text != result.formatted;
     return result;
 }

@@ -279,6 +279,76 @@ std::string ReindentRawMacroBody(std::string_view text, int bodyIndentLevel, int
 
 }  // namespace
 
+bool IsFormattingControlComment(std::string_view text) {
+    const size_t end = text.find_last_not_of(" \t\v\f\r\n");
+    text = end == std::string_view::npos ? std::string_view{} : text.substr(0, end + 1);
+    if (text == "/* clang-format off */" || text == "/* clang-format on */") {
+        return true;
+    }
+    for (std::string_view marker : {"// clang-format off", "// clang-format on"}) {
+        if (text.starts_with(marker) && (text.size() == marker.size() || text[marker.size()] == ':')) {
+            return true;
+        }
+    }
+    return false;
+}
+
+std::string RemoveFormattingControlComments(std::string_view text) {
+    std::string result;
+    size_t copied = 0;
+    for (size_t index = 0; index < text.size();) {
+        const bool lineComment = text.substr(index).starts_with("//");
+        const bool blockComment = text.substr(index).starts_with("/*");
+        size_t end = index;
+        if (lineComment) {
+            end = index + 2;
+            while (end < text.size()) {
+                if (text[end] == '\\' && end + 1 < text.size() && IsNewline(text[end + 1])) {
+                    end += text[end + 1] == '\r' && end + 2 < text.size() && text[end + 2] == '\n' ? 3 : 2;
+                } else if (IsNewline(text[end])) {
+                    break;
+                } else {
+                    ++end;
+                }
+            }
+        } else if (blockComment) {
+            const size_t close = text.find("*/", index + 2);
+            end = close == std::string_view::npos ? text.size() : close + 2;
+        } else {
+            end = PreprocessingNumberEnd(text, index);
+            const char quote = text[index];
+            if (end == index && (quote == '"' || quote == '\'')) {
+                end = quote == '"' ? RawStringLiteralEnd(text, index) : index;
+                if (end == index) {
+                    end = index + 1;
+                    while (end < text.size()) {
+                        if (text[end++] == quote) {
+                            break;
+                        }
+                        if (text[end - 1] == '\\' && end < text.size()) {
+                            ++end;
+                        }
+                    }
+                }
+            }
+        }
+        if ((lineComment || blockComment) && IsFormattingControlComment(text.substr(index, end - index))) {
+            result.append(text.substr(copied, index - copied));
+            result.push_back(' ');
+            // Retain line splices so deleting a comment cannot end a macro definition early.
+            for (size_t pos = index; pos < end; ++pos) {
+                if (IsNewline(text[pos]) || (text[pos] == '\\' && pos + 1 < end && IsNewline(text[pos + 1]))) {
+                    result.push_back(text[pos]);
+                }
+            }
+            copied = end;
+        }
+        index = std::max(index + 1, end);
+    }
+    result.append(text.substr(copied));
+    return result;
+}
+
 std::string CollapseSourceWhitespace(std::string_view text, int tabWidth) {
     const std::string normalized = NormalizeSourceLineWhitespace(text, tabWidth);
     text = normalized;

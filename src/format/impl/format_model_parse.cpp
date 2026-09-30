@@ -111,6 +111,14 @@ extern "C" bool strictfmt_tree_sitter_cpp_macro_category_matches(unsigned catego
 FormatModel ParseFormatModel(std::string_view text, const FormatterConfig& config) {
     const ParseConfigScope configScope(config);
     auto sourceText = std::make_unique<std::string>(text);
+    // Tree-sitter and source-layout facts use LF for physical line boundaries.
+    // Normalize lone CR without changing byte offsets; the public formatting
+    // entry point restores the original input's line-ending style.
+    for (size_t index = text.find('\r'); index != std::string_view::npos; index = text.find('\r', index + 1)) {
+        if (index + 1 == text.size() || text[index + 1] != '\n') {
+            (*sourceText)[index] = '\n';
+        }
+    }
     TSParser* parser = ThreadFormatParser();
     if (parser == nullptr) {
         FormatModel model;

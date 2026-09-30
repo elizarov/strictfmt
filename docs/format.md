@@ -68,7 +68,7 @@ void Check(bool a, bool b, bool c) {
 - Remove trailing whitespace from every line.
 - Preserve the source [line-ending style](glossary.md#line-ending-style). For mixed line endings, use the current platform default.
 - Use spaces for indentation and never emit tabs. `IndentWidth` in [config.md](config.md) selects the number of spaces per indentation level.
-- Preserve comments in source order. Keep comments that occupy their own source lines on separate lines.
+- Preserve comments in source order, except for [formatting control comments](#formatting-control-comments). Keep comments that occupy their own source lines on separate lines.
 - Preserve source blank-line separators after declarations, statements, or list items at the same structural level, including before a closing block delimiter, collapsing each run to one line.
 - Do not emit empty lines at the beginning or end of a file or at the beginning of a block.
 - Apply the structured and raw replacement whitespace rules specified in [macro.md](macro.md).
@@ -783,11 +783,35 @@ const char* text =
     "third";
 ```
 
+## Formatting Control Comments
+
+Remove clang-format's `clang-format on` and `clang-format off` control comments, including any explanation. Use [clang-format's marker spellings](https://github.com/llvm/llvm-project/blob/main/clang/lib/Format/Format.cpp) exactly.
+
+strictfmt formats all code consistently. When a class of code does not format well, improve the general rules or add generic configuration, such as [DSL call roles](dsl.md), to support that whole class. One-off exclusions in comments hide formatting problems instead of solving them.
+
+For example, this input:
+
+```text
+// clang-format off: hand-aligned calls
+void Example() { First( 1 ); Second( 2 ); }
+// clang-format on
+```
+
+becomes:
+
+```cpp
+void Example() {
+    First(1);
+    Second(2);
+}
+```
+
 ## Token Preservation
 
 Only spaces and line breaks change, except for:
 
 - [Include sorting](#include-sorting).
+- [Removal of formatting control comments](#formatting-control-comments).
 - [Single-line list formatting](#lists).
 - [Operator/comment reordering](#comments-at-operator-boundaries).
 - [Opening-brace/header-comment reordering](#mandatory-line-breaks).

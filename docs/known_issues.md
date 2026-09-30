@@ -67,16 +67,6 @@ Current behavior: Branch-owned leading separator commas are limited to the list 
 
 Planned work: Support branch-owned leading separator commas whenever a conditional branch follows an existing item in any supported comma-separated list.
 
-## `clang-format` control comments are ignored (IGNORED_FORMAT_COMMENTS)
-
-Current behavior: `// clang-format off` and `// clang-format on` comments remain in the source but do not affect formatting.
-
-Builder DSL nesting and grouping can be expressed through [configured call roles](dsl.md#builder-chains).
-
-Include sorting: An `off` region does not protect include order. Control comments trailing `#include` directives move with the sorted headers and can be reordered, even placing `on` before `off` and changing the region the annotations appear to delimit. Standalone control comments still bound sortable runs like other comments.
-
-Planned work: Decide whether to honor these comments. If strictfmt does not honor them, remove them from formatted source so they do not misleadingly imply that formatting is disabled.
-
 ## Empty branches detach following keywords (EMPTY_BRANCH_ATTACHMENT)
 
 Current behavior: An empty control-flow branch is kept as `{}` and ends its line before a following attachment keyword such as `else` or `catch`.
