@@ -2681,6 +2681,75 @@ const int first = 2, selected[4] = {
     3
 }, last = 4;
 
+// Conditional branches preserve authored blank lines after their directive headers.
+namespace ConditionalBranchBlankLines {
+
+#if FIRST
+
+bool IsEnabled() noexcept { return true; }
+#elif SECOND  // alternate platform
+
+bool IsEnabled() noexcept { return true; }
+#else  // _unix_ && ! _darwin_
+
+bool IsEnabled() noexcept { return false; }
+#endif
+
+void RunBranch() {
+#if FIRST  // primary
+
+    Run();
+#else
+
+    Fallback();
+#endif
+}
+
+struct SelectedFields {
+#ifdef FEATURE
+
+    int primary;
+#elifdef OTHER
+
+    int alternate;
+#elifndef DISABLED  // another alternative
+
+    int fallback;
+#else /* final alternative */
+
+    int last;
+#endif
+};
+
+#ifndef DISABLED
+
+#if NESTED
+
+// This comment belongs to the declaration.
+int nested;
+#else
+
+int unnested;
+#endif
+
+#endif
+
+int values[] = {
+    0,
+#if FIRST
+
+    1,
+#else  // alternate item
+
+    2,
+#endif
+    3
+};
+
+void UnconditionalBody() { Run(); }
+
+}
+
 // Preprocessor comments preserve their contents in every directive path.
 #if A
 #else  // left  right

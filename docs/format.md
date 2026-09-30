@@ -69,7 +69,7 @@ void Check(bool a, bool b, bool c) {
 - Preserve the source [line-ending style](glossary.md#line-ending-style). For mixed line endings, use the current platform default.
 - Use spaces for indentation and never emit tabs. `IndentWidth` in [config.md](config.md) selects the number of spaces per indentation level.
 - Preserve comments in source order, except for [formatting control comments](#formatting-control-comments). Keep comments that occupy their own source lines on separate lines.
-- Preserve source blank-line separators after declarations, statements, or list items at the same structural level, including before a closing block delimiter, collapsing each run to one line.
+- Preserve source blank-line separators after declarations, statements, list items, or preprocessor directives at the same structural level, including before a closing block delimiter, collapsing each run to one line.
 - Do not emit empty lines at the beginning or end of a file or at the beginning of a block.
 - Apply the structured and raw replacement whitespace rules specified in [macro.md](macro.md).
 

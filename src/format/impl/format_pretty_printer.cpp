@@ -1239,7 +1239,10 @@ private:
         }
         const SyntaxNode* previousItem = DirectChildAtLevel(previous->node, level);
         const SyntaxNode* nextItem = DirectChildAtLevel(next->node, level);
-        if (previousItem == nullptr || nextItem == nullptr || previousItem == nextItem) {
+        // A structured directive token represents its branch owner rather than
+        // a child item. Its header is still a boundary at the contents' level.
+        const bool followsBranchHeader = previous->structuredPreprocessor && previous->node == level;
+        if ((!followsBranchHeader && previousItem == nullptr) || nextItem == nullptr || previousItem == nextItem) {
             return false;
         }
         if (previous->kind == PrintTokenKind::Known && (
