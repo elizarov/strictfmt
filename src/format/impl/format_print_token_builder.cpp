@@ -4,6 +4,7 @@
 #include <optional>
 
 #include "format/impl/format_spacing.h"
+#include "format/impl/format_raw_macro.h"
 #include "format/impl/format_syntax_helpers.h"
 #include "util/strings.h"
 
@@ -422,6 +423,20 @@ std::vector<PrintToken> BuildPrintTokens(const FormatModel& model, int tabWidth)
     const PrintToken* previous = nullptr;
     for (size_t index = 0; index < tokens.size(); ++index) {
         PrintToken& token = tokens[index];
+        if (
+            token.node != nullptr &&
+            SyntaxNodeHasClass(*token.node, SyntaxNodeClass::Trivia) &&
+            (token.text.find_first_of("\t\r\n\f\v") != std::string_view::npos || token.text.ends_with(' '))
+        ) {
+            const std::string normalized = NormalizeSourceLineWhitespace(token.text, tabWidth);
+            if (normalized != token.text) {
+                // Keep normalized text in the model arena without changing the original
+                // source spans used for adjacency and comment-continuation detection.
+                auto* stored = static_cast<char*>(model.childStorage->allocate(normalized.size(), alignof(char)));
+                std::copy(normalized.begin(), normalized.end(), stored);
+                token.text = std::string_view(stored, normalized.size());
+            }
+        }
         // The syntax tree is immutable during printing. Cache traits reused by compact checks and break-model
         // construction; they are exact projections of the original token and its ancestry.
         InitializePrintTokenTraits(token);

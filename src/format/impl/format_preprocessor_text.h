@@ -7,6 +7,7 @@
 struct FormatPreprocessorTextPolicy {
     std::optional<int> payloadIndent;
     int indentWidth = 4;
+    int tabWidth = 4;
 };
 
 // Canonicalizes directive spelling and comment spacing in an identified source

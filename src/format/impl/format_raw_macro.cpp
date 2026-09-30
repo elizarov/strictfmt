@@ -4,6 +4,7 @@
 #include <limits>
 
 #include "tools/tools_common.h"
+#include "util/utf8.h"
 
 namespace {
 
@@ -351,8 +352,69 @@ std::string PreserveSourceLines(std::string_view text) {
     return result;
 }
 
-std::string PreservePreprocessorLines(std::string_view text) {
+std::string NormalizeSourceLineWhitespace(std::string_view text, int tabWidth) {
     const std::string normalized = PreserveSourceLines(text);
+    text = normalized;
+    std::string result;
+    result.reserve(text.size());
+    bool blockComment = false;
+    bool lineComment = false;
+    const auto trim = [&] {
+        while (!result.empty() && IsHorizontalSpace(result.back())) {
+            result.pop_back();
+        }
+    };
+    for (size_t index = 0; index < text.size(); ++index) {
+        const char ch = text[index];
+        if (!blockComment && !lineComment) {
+            size_t end = PreprocessingNumberEnd(text, index);
+            if (end == index && (ch == '"' || ch == '\'')) {
+                end = ch == '"' ? RawStringLiteralEnd(text, index) : index;
+                if (end == index) {
+                    end = index + 1;
+                    while (end < text.size()) {
+                        if (text[end++] == ch) {
+                            break;
+                        }
+                        if (text[end - 1] == '\\' && end < text.size()) {
+                            ++end;
+                        }
+                    }
+                }
+            }
+            if (end != index) {
+                result.append(text.substr(index, end - index));
+                index = end - 1;
+                continue;
+            }
+            blockComment = text.substr(index).starts_with("/*");
+            lineComment = text.substr(index).starts_with("//");
+        } else if (blockComment && text.substr(index).starts_with("*/")) {
+            result.append("*/");
+            ++index;
+            blockComment = false;
+            continue;
+        }
+        if (ch == '\n') {
+            trim();
+            lineComment = lineComment && index > 0 && text[index - 1] == '\\';
+        }
+        if (ch == '\t') {
+            const size_t lineStart = result.find_last_of('\n');
+            const int column =
+                Utf8CharacterCount(std::string_view(result).substr(lineStart == std::string::npos ? 0 : lineStart + 1));
+            const int width = std::max(1, tabWidth);
+            result.append(static_cast<size_t>(width - column % width), ' ');
+        } else {
+            result.push_back(ch);
+        }
+    }
+    trim();
+    return result;
+}
+
+std::string PreservePreprocessorLines(std::string_view text, int tabWidth) {
+    const std::string normalized = NormalizeSourceLineWhitespace(text, tabWidth);
     std::string result;
     size_t start = 0;
     while (start <= normalized.size()) {
@@ -388,11 +450,12 @@ std::string NormalizeRawMacroReplacement(std::string_view text, int bodyIndentLe
         }
     }
     if (InspectRawMacroText(text).preserveIndentation) {
-        return PreserveSourceLines(text);
+        return NormalizeSourceLineWhitespace(text, tabWidth);
     }
     if (text.find_first_of("\r\n") != std::string_view::npos) {
-        return
-            ReindentRawMacroBody(PreservePreprocessorLines(text), bodyIndentLevel, indentWidth, std::max(1, tabWidth));
+        return ReindentRawMacroBody(
+            PreservePreprocessorLines(text, tabWidth), bodyIndentLevel, indentWidth, std::max(1, tabWidth)
+        );
     }
     std::string collapsed = NormalizeTrailingLineCommentSpacing(CollapseSourceWhitespace(text));
     if (!collapsed.empty() && StartsWithHorizontalSpace(text)) {

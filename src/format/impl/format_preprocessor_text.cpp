@@ -69,7 +69,7 @@ std::string CanonicalizePreprocessorDirectiveLines(std::string_view text) {
 }
 
 std::string FormatPayloadLines(std::string_view text, const FormatPreprocessorTextPolicy& policy) {
-    const std::string normalized = PreserveSourceLines(text);
+    const std::string normalized = NormalizeSourceLineWhitespace(text, policy.tabWidth);
     std::vector<std::string> lines;
     size_t start = 0;
     while (start <= normalized.size()) {
@@ -105,7 +105,7 @@ std::string FormatPreprocessorText(std::string_view text, const FormatPreprocess
     }
     const bool hasLineBreak = text.find_first_of("\r\n") != std::string_view::npos;
     return CanonicalizePreprocessorDirectiveLines(
-        hasLineBreak ? PreservePreprocessorLines(text) :
+        hasLineBreak ? PreservePreprocessorLines(text, policy.tabWidth) :
             NormalizeTrailingLineCommentSpacing(CollapseSourceWhitespace(text))
     );
 }

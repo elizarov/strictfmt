@@ -1451,7 +1451,7 @@ private:
 
     void PrintPreprocessor(const PrintToken& token, const PrintToken* next) {
         layoutTree_->Chains().AnalyzeDirective(currentTokenIndex_);
-        const std::string line = FormatPreprocessorText(token.text);
+        const std::string line = FormatPreprocessorText(token.text, {.tabWidth = tabWidth_});
         const SyntaxNodeKind lineDirectiveKind = SyntaxNodeKindFromPreprocessorDirectiveLine(line);
         const bool isInclude = PrintTokenSyntaxHasClass(token, SyntaxNodeClass::IncludeDirective) ||
             SyntaxNodeKindHasClass(lineDirectiveKind, SyntaxNodeClass::IncludeDirective);
@@ -1476,8 +1476,9 @@ private:
                 NewLine();
             }
             const int declarationIndent = output_.State().pendingIndentLevel.value_or(indentLevel_);
-            const std::string outputLine =
-                FormatPreprocessorText(token.text, {.payloadIndent = declarationIndent, .indentWidth = indentWidth_});
+            const std::string outputLine = FormatPreprocessorText(
+                token.text, {.payloadIndent = declarationIndent, .indentWidth = indentWidth_, .tabWidth = tabWidth_}
+            );
             output_.WriteVerbatim(outputLine);
             NewLine();
             output_.SetPendingIndent(declarationIndent);
@@ -1523,8 +1524,10 @@ private:
         if (output_.State().lineHasText) {
             NewLine();
         }
-        const std::string outputLine = listConditional && !token.structuredPreprocessor && listItemIndent ?
-            FormatPreprocessorText(token.text, {.payloadIndent = *listItemIndent, .indentWidth = indentWidth_}) : line;
+        const std::string outputLine =
+            listConditional && !token.structuredPreprocessor && listItemIndent ? FormatPreprocessorText(
+                token.text, {.payloadIndent = *listItemIndent, .indentWidth = indentWidth_, .tabWidth = tabWidth_}
+            ) : line;
         output_.WriteVerbatim(outputLine);
         NewLine();
         if (closesConditionalBlockHeader) {

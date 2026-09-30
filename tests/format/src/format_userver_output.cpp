@@ -581,3 +581,25 @@ auto wideTokens = FORMAT_USERVER_TOKENS(
 const char* spliced = FORMAT_USERVER_TOKENS(value>0);
 const char* braces = FORMAT_USERVER_TOKENS({ }, { int * value; if (ready) { Run(); } });
 const char* blankLines = FORMAT_USERVER_TOKENS({ first(); second(); });
+
+// Line hygiene applies to comments and directives, preserving literal bytes.
+#pragma once
+// note
+int hygieneValue;
+/* first
+ * second
+ */
+int hygieneOther;  // trailing
+
+// a    b
+#pragma message("keep 	 inside")
+const char* hygieneRaw = R"(keep 	
+inside 	
+)";
+#pragma message(R"tag(first 	
+second 	
+)tag")
+#define RAW_HYGIENE ) R"tag(first 	
+second 	
+)tag" /* tail
+ end */
