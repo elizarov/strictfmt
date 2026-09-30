@@ -68,7 +68,7 @@ void Check(bool a, bool b, bool c) {
 - Remove trailing whitespace from every line.
 - Preserve the source [line-ending style](glossary.md#line-ending-style). For mixed line endings, use the current platform default.
 - Use spaces for indentation and never emit tabs. `IndentWidth` in [config.md](config.md) selects the number of spaces per indentation level.
-- Preserve comments in source order. A trailing comment stays trailing only when it was trailing in source. A standalone comment stays standalone. Treat a trailing block comment between adjacent string literals, or before a brace, parenthesis, bracket, or angle list closer or a requires clause, as inline.
+- Preserve comments in source order. Keep comments that occupy their own source lines on separate lines.
 - Preserve source blank-line separators after declarations, statements, or list items at the same structural level, including before a closing block delimiter, collapsing each run to one line.
 - Do not emit empty lines at the beginning or end of a file or at the beginning of a block.
 - Apply the structured and raw replacement whitespace rules specified in [macro.md](macro.md).
@@ -416,13 +416,24 @@ const char* messages[] = {
 
 ## Source-Controlled Expansion
 
-A trailing comment on a list item or chain part, or a standalone comment between them, forces split form. A blank line between list items also forces split form. Standalone chain comments align with the following link.
+A `//` comment following a list item or chain part on the same source line, or a standalone comment or a blank line between them, forces split form.
 
 ```cpp
 auto result = call(
     first,  // keep vertical
     second
 );
+```
+
+Indent standalone comments between chain parts at the same level as the following part.
+
+```cpp
+X Build() {
+    return X()
+        .A()
+        // next group
+        .B();
+}
 ```
 
 ## Declaration Groups
