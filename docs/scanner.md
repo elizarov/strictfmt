@@ -48,6 +48,7 @@ The scanner owns these identifier tokens:
 - `class_begin_macro_identifier`
 - `class_end_macro_identifier`
 - `method_declaration_macro_identifier`
+- `item_suffix_macro_identifier`
 - `item_macro_identifier`
 - `item_call_macro_identifier`
 - `preprocessor_item_macro_identifier`

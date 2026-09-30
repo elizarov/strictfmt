@@ -56,7 +56,10 @@ struct FormatDeclarationLayout::Impl {
         for (size_t index = tokens.size(); index-- > 0;) {
             nextDeclarationItemsBySourceIndex_[index] = next;
             const SyntaxNode* item = tokens[index].declarationScopeItem;
-            if (DeclarationGroup(item) != DeclarationGroupKind::None) {
+            if (
+                DeclarationGroup(item) != DeclarationGroupKind::None ||
+                (item != nullptr && item->kind == SyntaxNodeKind::ItemSuffixMacro)
+            ) {
                 next = item;
             }
         }
@@ -154,6 +157,7 @@ struct FormatDeclarationLayout::Impl {
             item->parent == nullptr ||
             token.kind == PrintTokenKind::TrailingComment ||
             token.commentContinuation ||
+            item->kind == SyntaxNodeKind::ItemSuffixMacro ||
             (token.node != nullptr && token.node->kind == SyntaxNodeKind::Semicolon)
         ) {
             return std::nullopt;

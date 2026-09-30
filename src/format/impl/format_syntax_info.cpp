@@ -313,6 +313,7 @@ constexpr auto kSyntaxKindMappings = std::to_array<SyntaxKindMapping>({
     Tree(SyntaxNodeKind::Tree, "macro_arrow_chain"),
     Tree(SyntaxNodeKind::MacroCallItem, "top_level_call_statement"),
     Tree(SyntaxNodeKind::BareMacroItem, "top_level_item_macro"),
+    Tree(SyntaxNodeKind::ItemSuffixMacro, "item_suffix_macro"),
     Tree(SyntaxNodeKind::BareMacroItem, "bare_macro_statement"),
     Tree(SyntaxNodeKind::BareMacroItem, "class_bare_macro_item"),
     Tree(SyntaxNodeKind::MacroCallItem, "block_macro_call_line_item"),
@@ -706,6 +707,7 @@ constexpr auto kSyntaxKindMappings = std::to_array<SyntaxKindMapping>({
     Tree(SyntaxNodeKind::NumberLiteral, "pure_virtual_zero", kNumberLiteralClasses),
     Tree(SyntaxNodeKind::NumberLiteral, "preprocessing_number", kNumberLiteralClasses),
     Tree(SyntaxNodeKind::Identifier, "identifier"),
+    Tree(SyntaxNodeKind::Identifier, "item_suffix_macro_identifier"),
     Tree(SyntaxNodeKind::Identifier, "expression_continuation_macro_identifier"),
     Tree(SyntaxNodeKind::Identifier, "expression_prefix_macro_identifier"),
     Tree(SyntaxNodeKind::Identifier, "expression_prefix_item_macro_identifier"),
@@ -1470,6 +1472,8 @@ std::string_view SyntaxNodeKindName(SyntaxNodeKind kind) {
             return "MacroCallItem";
         case SyntaxNodeKind::MacroExpansion:
             return "MacroExpansion";
+        case SyntaxNodeKind::ItemSuffixMacro:
+            return "ItemSuffixMacro";
         case SyntaxNodeKind::BareMacroItem:
             return "BareMacroItem";
         case SyntaxNodeKind::MacroStatementSequence:

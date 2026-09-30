@@ -4374,3 +4374,65 @@ FORMAT_CLASS_END_EMPTY(Empty)
     public:                            \
         int Read() const { return 1; } \
     FORMAT_CLASS_END(name)
+
+// Configured suffixes stay with the completed item, including in macro replacements.
+#define SAVELOAD(...)             \
+    int operator&(IBinSaver& f) { \
+        f.AddMulti(__VA_ARGS__);  \
+        return 0;                 \
+    } Y_SEMICOLON_GUARD
+
+#define GUARDED_ACCESSOR() int Read() const { return value; } FORMAT_SUFFIX_GUARD
+#define GUARDED_ITEMS() using Value = int; FORMAT_SUFFIX_GUARD
+#define GUARDED_CALL() Run(); FORMAT_SUFFIX_GUARD
+#define GUARD_ONLY() Y_SEMICOLON_GUARD
+
+void GuardedFunction() {
+    First();
+    Second();
+} FORMAT_SUFFIX_GUARD;
+
+int afterGuard = 0;
+
+struct GuardedMethods {
+    void Read() { Run(); } FORMAT_SUFFIX_CHECK(first, Wrap(second, third)) FORMAT_SUFFIX_GUARD;
+
+    int next;
+};
+
+namespace GuardedNamespace {
+
+void Run() {}
+
+} FORMAT_SUFFIX_GUARD;
+
+void GuardedStatements() {
+    if (ready) {
+        First();
+        Second();
+    } FORMAT_SUFFIX_GUARD;
+    Run(); FORMAT_SUFFIX_CHECK(value);
+    Next();
+}
+
+void GuardedComment() { Run(); } /* guard */ FORMAT_SUFFIX_GUARD;
+
+void GuardedTrailingComment() { Run(); }  // Keep the line comment.
+FORMAT_SUFFIX_GUARD;
+
+void GuardWithoutSemicolon() { Run(); } FORMAT_SUFFIX_GUARD
+void FollowingFunction() {}
+
+struct GuardedType {
+    int value;
+}; FORMAT_SUFFIX_GUARD;
+
+int afterType;
+
+FORMAT_CLASS_BEGIN(SuffixedClass)
+    int value;
+FORMAT_CLASS_END(SuffixedClass) FORMAT_SUFFIX_GUARD;
+
+FORMAT_ITEM_DECLARE(Value) FORMAT_SUFFIX_GUARD
+
+void FollowingItem() {}

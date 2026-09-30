@@ -38,6 +38,7 @@ struct PrintToken {
     bool inConditionalStreamOperatorChain : 1;
     bool inConditionalBlockHeader : 1;
     bool inBareMacroItem : 1;
+    bool inItemSuffixMacro : 1;
     bool inMacroCallItem : 1;
     bool inMacroListExpansion : 1;
     bool inTemplateList : 1;

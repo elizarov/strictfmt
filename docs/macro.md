@@ -8,6 +8,7 @@ A macro's syntactic role cannot always be inferred without expansion, so arbitra
 - [StatementArgumentMacros](#statementargumentmacros): a statement or declaration in the first argument, as in `EXPECT_THROW(auto x = Read(), Error)`.
 - [NamespaceMacros](#namespacemacros): a namespace header followed by a declaration body, as in `TEST_SUITE(Name) { ... }`.
 - [ClassBeginMacros / ClassEndMacros](#classbeginmacros--classendmacros): macros supplying a class opening or closing boundary.
+- [ItemSuffixMacros](#itemsuffixmacros): a suffix attached to a complete declaration or statement, as in `void Save() { Write(); } REQUIRE_SEMICOLON`.
 - [ItemMacros](#itemmacros): separate declarations, statements, or list fragments, as in `BEGIN_NAMESPACE`.
 - [MethodDeclarationMacros](#methoddeclarationmacros): method-signature arguments, as in `MOCK_METHOD(void, Save, (T* value))`.
 - [IfHeaderMacros](#ifheadermacros): an `if` header supplied by a macro, as in `IF_READY(condition) Work();`.
@@ -182,6 +183,22 @@ auto values = Pack{
     0,
     ELEMENTS(X)
 };
+```
+
+### ItemSuffixMacros
+
+`ItemSuffixMacros` keeps a bare macro or invocation attached to the preceding complete declaration or statement, after its closing brace or terminator. Several suffixes may follow one another; a terminating semicolon is preserved. Use this for macros that require a semicolon at the eventual use site, including inside macro replacements.
+
+<!-- .cpp-format
+MacroCategories:
+  ItemSuffixMacros:
+    - REQUIRE_SEMICOLON
+-->
+```cpp
+void Save(Archive& archive) {
+    archive.Write();
+    archive.Finish();
+} REQUIRE_SEMICOLON;
 ```
 
 ### MethodDeclarationMacros

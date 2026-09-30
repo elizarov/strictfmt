@@ -49,6 +49,9 @@ MacroCategories:
     - FORMAT_IF_HEADER_*
   StatementPrefixMacros:
     - FORMAT_STATEMENT_PREFIX_*
+  ItemSuffixMacros:
+    - Y_SEMICOLON_GUARD
+    - FORMAT_SUFFIX_*
   ItemMacros:
     - FORMAT_EXPRESSION_PREFIX_ITEMS
     - FORMAT_EXPRESSION_PREFIX_BARE_ITEMS

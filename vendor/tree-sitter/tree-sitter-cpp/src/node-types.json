@@ -2190,6 +2190,10 @@
           "named": true
         },
         {
+          "type": "item_suffix_macro",
+          "named": true
+        },
+        {
           "type": "member_pointer_alias_declaration",
           "named": true
         },
@@ -2895,6 +2899,10 @@
         },
         {
           "type": "function_type_alias_declaration",
+          "named": true
+        },
+        {
+          "type": "item_suffix_macro",
           "named": true
         },
         {
@@ -3927,6 +3935,10 @@
           "named": true
         },
         {
+          "type": "item_suffix_macro",
+          "named": true
+        },
+        {
           "type": "linkage_specification",
           "named": true
         },
@@ -4909,6 +4921,10 @@
         },
         {
           "type": "function_type_alias_declaration",
+          "named": true
+        },
+        {
+          "type": "item_suffix_macro",
           "named": true
         },
         {
@@ -6892,6 +6908,25 @@
     }
   },
   {
+    "type": "item_suffix_macro",
+    "named": true,
+    "fields": {},
+    "children": {
+      "multiple": true,
+      "required": true,
+      "types": [
+        {
+          "type": "argument_list",
+          "named": true
+        },
+        {
+          "type": "item_suffix_macro_identifier",
+          "named": true
+        }
+      ]
+    }
+  },
+  {
     "type": "labeled_statement",
     "named": true,
     "fields": {
@@ -7101,6 +7136,10 @@
           },
           {
             "type": "function_type_alias_declaration",
+            "named": true
+          },
+          {
+            "type": "item_suffix_macro",
             "named": true
           },
           {
@@ -8627,6 +8666,10 @@
           "named": true
         },
         {
+          "type": "item_suffix_macro",
+          "named": true
+        },
+        {
           "type": "labeled_statement",
           "named": true
         },
@@ -9561,6 +9604,10 @@
         },
         {
           "type": "function_type_alias_declaration",
+          "named": true
+        },
+        {
+          "type": "item_suffix_macro",
           "named": true
         },
         {
@@ -10893,6 +10940,10 @@
           "named": true
         },
         {
+          "type": "item_suffix_macro",
+          "named": true
+        },
+        {
           "type": "member_pointer_alias_declaration",
           "named": true
         },
@@ -11536,6 +11587,10 @@
           "named": true
         },
         {
+          "type": "item_suffix_macro",
+          "named": true
+        },
+        {
           "type": "lambda_capture_initializer",
           "named": true
         },
@@ -11840,6 +11895,10 @@
           "named": true
         },
         {
+          "type": "item_suffix_macro",
+          "named": true
+        },
+        {
           "type": "member_pointer_alias_declaration",
           "named": true
         },
@@ -12107,6 +12166,10 @@
         },
         {
           "type": "initializer_pair",
+          "named": true
+        },
+        {
+          "type": "item_suffix_macro",
           "named": true
         },
         {
@@ -12602,6 +12665,10 @@
           "named": true
         },
         {
+          "type": "item_suffix_macro",
+          "named": true
+        },
+        {
           "type": "member_pointer_alias_declaration",
           "named": true
         },
@@ -12886,6 +12953,10 @@
           "named": true
         },
         {
+          "type": "item_suffix_macro",
+          "named": true
+        },
+        {
           "type": "member_pointer_alias_declaration",
           "named": true
         },
@@ -13071,6 +13142,10 @@
         },
         {
           "type": "function_type_alias_declaration",
+          "named": true
+        },
+        {
+          "type": "item_suffix_macro",
           "named": true
         },
         {
@@ -13399,6 +13474,10 @@
         },
         {
           "type": "initializer_pair",
+          "named": true
+        },
+        {
+          "type": "item_suffix_macro",
           "named": true
         },
         {
@@ -13797,6 +13876,10 @@
         },
         {
           "type": "function_type_alias_declaration",
+          "named": true
+        },
+        {
+          "type": "item_suffix_macro",
           "named": true
         },
         {
@@ -14345,6 +14428,10 @@
         },
         {
           "type": "function_type_alias_declaration",
+          "named": true
+        },
+        {
+          "type": "item_suffix_macro",
           "named": true
         },
         {
@@ -15306,6 +15393,10 @@
           "named": true
         },
         {
+          "type": "item_suffix_macro",
+          "named": true
+        },
+        {
           "type": "member_pointer_alias_declaration",
           "named": true
         },
@@ -15485,6 +15576,10 @@
         },
         {
           "type": "if_transition_header",
+          "named": true
+        },
+        {
+          "type": "item_suffix_macro",
           "named": true
         },
         {
@@ -15964,6 +16059,10 @@
           "named": true
         },
         {
+          "type": "item_suffix_macro",
+          "named": true
+        },
+        {
           "type": "member_pointer_alias_declaration",
           "named": true
         },
@@ -16248,6 +16347,10 @@
           "named": true
         },
         {
+          "type": "item_suffix_macro",
+          "named": true
+        },
+        {
           "type": "member_pointer_alias_declaration",
           "named": true
         },
@@ -16405,6 +16508,10 @@
         },
         {
           "type": "function_type_alias_declaration",
+          "named": true
+        },
+        {
+          "type": "item_suffix_macro",
           "named": true
         },
         {
@@ -16587,6 +16694,10 @@
         },
         {
           "type": "initializer_pair",
+          "named": true
+        },
+        {
+          "type": "item_suffix_macro",
           "named": true
         },
         {
@@ -18398,6 +18509,10 @@
           "named": true
         },
         {
+          "type": "item_suffix_macro",
+          "named": true
+        },
+        {
           "type": "member_pointer_alias_declaration",
           "named": true
         },
@@ -18567,6 +18682,10 @@
         },
         {
           "type": "function_type_alias_declaration",
+          "named": true
+        },
+        {
+          "type": "item_suffix_macro",
           "named": true
         },
         {
@@ -21543,6 +21662,10 @@
           "named": true
         },
         {
+          "type": "item_suffix_macro",
+          "named": true
+        },
+        {
           "type": "linkage_specification",
           "named": true
         },
@@ -23039,6 +23162,10 @@
   },
   {
     "type": "item_macro_identifier",
+    "named": true
+  },
+  {
+    "type": "item_suffix_macro_identifier",
     "named": true
   },
   {

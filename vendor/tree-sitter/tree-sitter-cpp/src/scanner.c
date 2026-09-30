@@ -33,6 +33,7 @@ enum TokenType {
     IF_HEADER_MACRO_IDENTIFIER,
     CLASS_BEGIN_MACRO_IDENTIFIER,
     CLASS_END_MACRO_IDENTIFIER,
+    ITEM_SUFFIX_MACRO_IDENTIFIER,
     PREPROC_DIRECTIVE_END,
     LINE_BREAK_WHITESPACE,
     MACRO_DEFINITION_START,
@@ -55,6 +56,7 @@ enum MacroCategory {
     MACRO_CATEGORY_IF_HEADER = 10,
     MACRO_CATEGORY_CLASS_BEGIN = 11,
     MACRO_CATEGORY_CLASS_END = 12,
+    MACRO_CATEGORY_ITEM_SUFFIX = 13,
 };
 
 /// The spec limits raw-string delimiters to 16 chars.
@@ -258,7 +260,8 @@ static bool classify_macro_identifier_token(
     bool allow_expression_prefix_item_call,
     bool allow_if_header,
     bool allow_class_begin,
-    bool allow_class_end
+    bool allow_class_end,
+    bool allow_item_suffix
 ) {
     const bool method_declaration_match =
         allow_method_declaration &&
@@ -291,6 +294,12 @@ static bool classify_macro_identifier_token(
     if (allow_class_end &&
         strictfmt_tree_sitter_cpp_macro_category_matches(MACRO_CATEGORY_CLASS_END, name, length)) {
         lexer->result_symbol = CLASS_END_MACRO_IDENTIFIER;
+        return true;
+    }
+
+    if (allow_item_suffix &&
+        strictfmt_tree_sitter_cpp_macro_category_matches(MACRO_CATEGORY_ITEM_SUFFIX, name, length)) {
+        lexer->result_symbol = ITEM_SUFFIX_MACRO_IDENTIFIER;
         return true;
     }
 
@@ -422,8 +431,9 @@ static bool has_valid_macro_identifier(TSLexer *lexer, const bool *valid_symbols
         valid_symbols[EXPRESSION_PREFIX_ITEM_MACRO_IDENTIFIER],
         valid_symbols[EXPRESSION_PREFIX_ITEM_CALL_MACRO_IDENTIFIER],
         valid_symbols[IF_HEADER_MACRO_IDENTIFIER],
-            valid_symbols[CLASS_BEGIN_MACRO_IDENTIFIER],
-            valid_symbols[CLASS_END_MACRO_IDENTIFIER]
+        valid_symbols[CLASS_BEGIN_MACRO_IDENTIFIER],
+        valid_symbols[CLASS_END_MACRO_IDENTIFIER],
+        valid_symbols[ITEM_SUFFIX_MACRO_IDENTIFIER]
     );
 }
 
@@ -453,7 +463,8 @@ static bool scan_macro_identifier_token(
     bool allow_expression_prefix_item_call,
     bool allow_if_header,
     bool allow_class_begin,
-    bool allow_class_end
+    bool allow_class_end,
+    bool allow_item_suffix
 ) {
     char name[MAX_MACRO_NAME_LENGTH];
     unsigned length = 0;
@@ -488,7 +499,8 @@ static bool scan_macro_identifier_token(
         allow_expression_prefix_item_call,
         allow_if_header,
         allow_class_begin,
-        allow_class_end
+        allow_class_end,
+        allow_item_suffix
     );
 }
 
@@ -925,7 +937,8 @@ bool tree_sitter_cpp_external_scanner_scan(void *payload, TSLexer *lexer, const 
         valid_symbols[EXPRESSION_PREFIX_ITEM_MACRO_IDENTIFIER] ||
         valid_symbols[EXPRESSION_PREFIX_ITEM_CALL_MACRO_IDENTIFIER] ||
         valid_symbols[IF_HEADER_MACRO_IDENTIFIER] ||
-        valid_symbols[CLASS_BEGIN_MACRO_IDENTIFIER] || valid_symbols[CLASS_END_MACRO_IDENTIFIER]) {
+        valid_symbols[CLASS_BEGIN_MACRO_IDENTIFIER] || valid_symbols[CLASS_END_MACRO_IDENTIFIER] ||
+        valid_symbols[ITEM_SUFFIX_MACRO_IDENTIFIER]) {
         skip_external_whitespace(lexer);
     }
 
@@ -954,7 +967,8 @@ bool tree_sitter_cpp_external_scanner_scan(void *payload, TSLexer *lexer, const 
          valid_symbols[EXPRESSION_PREFIX_ITEM_MACRO_IDENTIFIER] ||
          valid_symbols[EXPRESSION_PREFIX_ITEM_CALL_MACRO_IDENTIFIER] ||
          valid_symbols[IF_HEADER_MACRO_IDENTIFIER] ||
-         valid_symbols[CLASS_BEGIN_MACRO_IDENTIFIER] || valid_symbols[CLASS_END_MACRO_IDENTIFIER]) &&
+         valid_symbols[CLASS_BEGIN_MACRO_IDENTIFIER] || valid_symbols[CLASS_END_MACRO_IDENTIFIER] ||
+         valid_symbols[ITEM_SUFFIX_MACRO_IDENTIFIER]) &&
         is_identifier_start(lexer->lookahead)) {
         return scan_macro_identifier_token(
             lexer,
@@ -976,7 +990,8 @@ bool tree_sitter_cpp_external_scanner_scan(void *payload, TSLexer *lexer, const 
             valid_symbols[EXPRESSION_PREFIX_ITEM_CALL_MACRO_IDENTIFIER],
             valid_symbols[IF_HEADER_MACRO_IDENTIFIER],
             valid_symbols[CLASS_BEGIN_MACRO_IDENTIFIER],
-            valid_symbols[CLASS_END_MACRO_IDENTIFIER]
+            valid_symbols[CLASS_END_MACRO_IDENTIFIER],
+            valid_symbols[ITEM_SUFFIX_MACRO_IDENTIFIER]
         );
     }
 

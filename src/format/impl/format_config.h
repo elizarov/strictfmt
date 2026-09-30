@@ -40,6 +40,7 @@ struct FormatterConfig {
     std::vector<std::string> ifHeaderMacros;
     std::vector<std::string> methodDeclarationMacros;
     std::vector<std::string> itemMacros;
+    std::vector<std::string> itemSuffixMacros;
     std::vector<std::string> namespaceMacros;
     std::vector<std::string> classBeginMacros;
     std::vector<std::string> classEndMacros;

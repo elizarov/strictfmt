@@ -158,6 +158,7 @@ struct TokenContext {
     const SyntaxNode* conditionalOperand = nullptr;
     const SyntaxNode* preprocessingArgument = nullptr;
     bool inMacroValue = false;
+    bool inItemSuffixMacro = false;
     std::uint16_t ancestryFlags = 0;
     const SyntaxNode* declarationScopeItem = nullptr;
     bool inTemplateDeclarationBlock = false;
@@ -184,6 +185,7 @@ struct TokenContext {
             macroDefinition = &node;
         }
         inMacroValue |= kind == SyntaxNodeKind::MacroReplacementList;
+        inItemSuffixMacro |= kind == SyntaxNodeKind::ItemSuffixMacro;
         ancestryFlags |= kind == SyntaxNodeKind::MacroStatementSequence ? InMacroStatementSequence : 0;
         ancestryFlags |= (node.classes & static_cast<std::uint64_t>(SyntaxNodeClass::LeadingStreamOperatorChain)) != 0 ?
             InLeadingStreamOperatorChain : 0;
@@ -235,6 +237,7 @@ PrintToken
     token.inLeadingStreamOperatorChain = (context.ancestryFlags & InLeadingStreamOperatorChain) != 0;
     token.inConditionalStreamOperatorChain = (context.ancestryFlags & InConditionalStreamOperatorChain) != 0;
     token.inConditionalBlockHeader = (context.ancestryFlags & InConditionalBlockHeader) != 0;
+    token.inItemSuffixMacro = context.inItemSuffixMacro;
     token.inBareMacroItem = (context.ancestryFlags & InBareMacroItem) != 0;
     token.inMacroCallItem = (context.ancestryFlags & InMacroCallItem) != 0;
     token.inMacroListExpansion = (context.ancestryFlags & InMacroListExpansion) != 0;

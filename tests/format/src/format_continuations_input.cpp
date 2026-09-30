@@ -445,3 +445,10 @@ if (Ready(firstValue, secondValue)) { Run(); }
 #define CONTINUED_COMMENT int value = first + second; /* xx */ \
 int next;
 #define FINAL_COMMENT int value = first + second; /* xx */
+
+// Suffixes participate in the line budget and retain structured arguments.
+int LongAccessorName() { return Read(); }
+GUARD;
+
+void WithSuffixArguments() { First(); Second(); }
+GUARD(first_argument, Build(second_argument, third_argument));

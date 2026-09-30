@@ -1,5 +1,7 @@
 ColumnLimit: 40
 IndentWidth: 4
 MacroCategories:
+  ItemSuffixMacros:
+    - GUARD
   MethodDeclarationMacros:
     - MOCK_METHOD

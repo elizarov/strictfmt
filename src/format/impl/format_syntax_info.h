@@ -138,6 +138,7 @@ enum class SyntaxNodeKind : std::uint16_t {
     MacroCallItem,
     MacroExpansion,
     BareMacroItem,
+    ItemSuffixMacro,
     MacroStatementSequence,
     MacroUnterminatedControlStatement,
     MsCallModifier,

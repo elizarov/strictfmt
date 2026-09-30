@@ -15,6 +15,10 @@
       "type": "CHOICE",
       "members": [
         {
+          "type": "SYMBOL",
+          "name": "item_suffix_macro"
+        },
+        {
           "type": "ALIAS",
           "content": {
             "type": "SYMBOL",
@@ -267,6 +271,10 @@
     "_block_item": {
       "type": "CHOICE",
       "members": [
+        {
+          "type": "SYMBOL",
+          "name": "item_suffix_macro"
+        },
         {
           "type": "SYMBOL",
           "name": "preproc_if_in_if_transition"
@@ -6203,6 +6211,10 @@
     "_field_declaration_list_item": {
       "type": "CHOICE",
       "members": [
+        {
+          "type": "SYMBOL",
+          "name": "item_suffix_macro"
+        },
         {
           "type": "ALIAS",
           "content": {
@@ -13437,6 +13449,10 @@
       "members": [
         {
           "type": "SYMBOL",
+          "name": "item_suffix_macro"
+        },
+        {
+          "type": "SYMBOL",
           "name": "class_bare_macro_item"
         },
         {
@@ -14140,6 +14156,43 @@
       "content": {
         "type": "SYMBOL",
         "name": "identifier"
+      }
+    },
+    "item_suffix_macro": {
+      "type": "PREC_RIGHT",
+      "value": 0,
+      "content": {
+        "type": "SEQ",
+        "members": [
+          {
+            "type": "SYMBOL",
+            "name": "item_suffix_macro_identifier"
+          },
+          {
+            "type": "CHOICE",
+            "members": [
+              {
+                "type": "SYMBOL",
+                "name": "argument_list"
+              },
+              {
+                "type": "BLANK"
+              }
+            ]
+          },
+          {
+            "type": "CHOICE",
+            "members": [
+              {
+                "type": "STRING",
+                "value": ";"
+              },
+              {
+                "type": "BLANK"
+              }
+            ]
+          }
+        ]
       }
     },
     "top_level_item_macro": {
@@ -47508,6 +47561,10 @@
     {
       "type": "SYMBOL",
       "name": "class_end_macro_identifier"
+    },
+    {
+      "type": "SYMBOL",
+      "name": "item_suffix_macro_identifier"
     },
     {
       "type": "SYMBOL",

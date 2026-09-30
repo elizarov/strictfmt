@@ -348,6 +348,7 @@ module.exports = grammar(C, {
     $.if_header_macro_identifier,
     $.class_begin_macro_identifier,
     $.class_end_macro_identifier,
+    $.item_suffix_macro_identifier,
     $._preproc_directive_end,
     $._line_break_whitespace,
     $.macro_definition_start,
@@ -1017,6 +1018,7 @@ module.exports = grammar(C, {
     ),
 
     _top_level_item: ($, original) => choice(
+      $.item_suffix_macro,
       alias($.qualified_type_function_definition, $.function_definition),
       $.preproc_unbalanced_else_block,
       $.preproc_value_declaration,
@@ -1066,6 +1068,7 @@ module.exports = grammar(C, {
     ),
 
     _block_item: $ => choice(
+      $.item_suffix_macro,
       $.preproc_if_in_if_transition,
       $.preproc_unbalanced_else_block,
       prec(2, $.preproc_call),
@@ -1252,6 +1255,7 @@ module.exports = grammar(C, {
     ),
 
     _macro_replacement_declaration_item: $ => choice(
+      $.item_suffix_macro,
       $.class_bare_macro_item,
       alias($._unconfigured_macro_item, $.class_bare_macro_item),
       $._empty_declaration,
@@ -1366,6 +1370,12 @@ module.exports = grammar(C, {
 
     // An isolated identifier may expand to a complete item; prefer complete C++ syntax.
     _unconfigured_macro_item: $ => prec.dynamic(-10, $.identifier),
+
+    item_suffix_macro: $ => prec.right(seq(
+      $.item_suffix_macro_identifier,
+      optional($.argument_list),
+      optional(';'),
+    )),
 
     top_level_item_macro: $ => prec(PREC.CALL + 5, $.item_macro_identifier),
 
@@ -2487,6 +2497,7 @@ module.exports = grammar(C, {
     ),
 
     _field_declaration_list_item: ($, original) => choice(
+      $.item_suffix_macro,
       alias($.macro_class_definition, $.class_specifier),
       $.macro_function_definition,
       $.disabled_code_placeholder_field,

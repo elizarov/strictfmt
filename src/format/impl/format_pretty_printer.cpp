@@ -247,7 +247,7 @@ public:
             if (tokens[index].opensClassScopeAfter) {
                 OpenMacroClassScope(tokens[index], rawNext);
             }
-            if (tokens[index].endsClassScopeAfter && (
+            if (tokens[index].endsClassScopeAfter && !StartsItemSuffix(next) && (
                 rawNext == nullptr ||
                 (rawNext->kind != PrintTokenKind::TrailingComment && rawNext->syntaxKind != SyntaxNodeKind::Semicolon)
             )) {
@@ -426,11 +426,18 @@ private:
             SyntaxNodeKindHasClass(token.grandParentKind, SyntaxNodeClass::DeclaredTypeSpecifier);
     }
 
+    static bool StartsItemSuffix(const PrintToken* token) {
+        return token != nullptr &&
+            token->parentKind == SyntaxNodeKind::ItemSuffixMacro &&
+            token->syntaxKind == SyntaxNodeKind::Identifier;
+    }
+
     static bool ShouldAttachAfterBlockClose(const PrintToken& token, const PrintToken* next) {
         if (next == nullptr) {
             return false;
         }
-        if (ContinuesBlockExpression(token, *next) || ClosesContainingDelimiter(token, *next)) {
+        if (StartsItemSuffix(next) || ContinuesBlockExpression(token, *next) || ClosesContainingDelimiter(token, *next))
+        {
             return true;
         }
         if (next->kind == PrintTokenKind::Known && (
@@ -1113,11 +1120,16 @@ private:
     }
 
     static const SyntaxNode* StructuralMacroItemOwner(const PrintToken& token) {
-        if (!token.inBareMacroItem && !token.inMacroCallItem && !token.inMacroListExpansion) {
+        if (!token.inBareMacroItem && !token.inMacroCallItem && !token.inMacroListExpansion && !token.inItemSuffixMacro)
+        {
             return nullptr;
         }
         for (const SyntaxNode* node = token.node; node != nullptr; node = node->parent) {
-            if (node->kind == SyntaxNodeKind::BareMacroItem || IsStatementPositionMacroCallItem(*node)) {
+            if (
+                node->kind == SyntaxNodeKind::BareMacroItem ||
+                node->kind == SyntaxNodeKind::ItemSuffixMacro ||
+                IsStatementPositionMacroCallItem(*node)
+            ) {
                 return node;
             }
             const SyntaxNode* list = MacroExpansionList(*node);
@@ -1132,6 +1144,7 @@ private:
     void PrepareMacroItemBoundary(const PrintToken* previous, const PrintToken& current) {
         if (
             previous == nullptr ||
+            StartsItemSuffix(&current) ||
             current.kind == PrintTokenKind::TrailingComment ||
             current.syntaxKind == SyntaxNodeKind::Comma ||
             current.syntaxKind == SyntaxNodeKind::Semicolon || (
@@ -1176,7 +1189,8 @@ private:
             token.kind != PrintTokenKind::Known ||
             token.syntaxKind != SyntaxNodeKind::Semicolon ||
             token.node == nullptr ||
-            token.node->parent == nullptr
+            token.node->parent == nullptr ||
+            token.parentKind == SyntaxNodeKind::ItemSuffixMacro
         ) {
             return false;
         }
@@ -1326,6 +1340,7 @@ private:
         if (token.syntaxKind == SyntaxNodeKind::PreprocGroupingClose) {
             NamespaceSeparatorBefore(token, previous);
         }
+        PrepareMacroItemBoundary(rawPrevious, token);
         if (const auto boundary = declarationLayout_->BoundaryBefore(currentTokenIndex_)) {
             FlushPendingTokens({}, token.inMacroValue);
             if (boundary->required) {
@@ -1334,7 +1349,6 @@ private:
                 output_.GroupBoundary(*boundary, token.inMacroValue);
             }
         }
-        PrepareMacroItemBoundary(rawPrevious, token);
         PrepareMacroBoundary(rawPrevious, token);
         layoutTree_->BeginToken(token, pendingIndentRestoreAfterFlush_.value_or(indentLevel_));
         if (token.kind == PrintTokenKind::BlankLine) {
@@ -1753,6 +1767,7 @@ private:
                 if (
                     !token.inCompactSingleStatementBody &&
                     ShouldBreakAfterSemicolon() &&
+                    !StartsItemSuffix(next) &&
                     !(rawNext != nullptr && rawNext->kind == PrintTokenKind::TrailingComment)
                 ) {
                     FlushLine(PrintTokenContinuesMacroLine(token, rawNext));
@@ -2005,6 +2020,9 @@ private:
         }
         if (IsCompactSingleStatementFunctionBodyBrace(token)) {
             BufferToken(token);
+            if (ShouldAttachAfterBlockClose(token, next)) {
+                return;
+            }
             FlushAfterToken(token, rawNext);
             return;
         }
@@ -2031,6 +2049,9 @@ private:
             }
             NamespaceSeparatorBefore(token, previous);
             BufferToken(token);
+            if (StartsItemSuffix(next)) {
+                return;
+            }
             FlushAfterToken(token, rawNext);
             return;
         }

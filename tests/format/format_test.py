@@ -2754,6 +2754,8 @@ class FormatCommandTests(unittest.TestCase):
                 "    - SHARED_METHOD\n"
                 "  ItemMacros:\n"
                 "    - PARENT_SEMILESS\n"
+                "  ItemSuffixMacros:\n"
+                "    - PARENT_SUFFIX\n"
                 "  StatementArgumentMacros:\n"
                 "    - PARENT_STATEMENT\n"
                 "  TypeSpecifierMacros:\n"
@@ -2781,6 +2783,8 @@ class FormatCommandTests(unittest.TestCase):
                 "    - SHARED_METHOD\n"
                 "  ItemMacros:\n"
                 "    - CHILD_SEMILESS\n"
+                "  ItemSuffixMacros:\n"
+                "    - CHILD_SUFFIX\n"
                 "  StatementArgumentMacros:\n"
                 "    - CHILD_STATEMENT\n"
                 "  TypeSpecifierMacros:\n"
@@ -2795,6 +2799,7 @@ class FormatCommandTests(unittest.TestCase):
             )
             source = nested / "sample.cpp"
             source.write_text(
+                "void Guarded() { Run(); } PARENT_SUFFIX CHILD_SUFFIX;\n"
                 "int value = 1 PARENT_CONTINUATION CHILD_CONTINUATION(2);\n"
                 "PARENT_PREFIX int ParentDeclaration();\n"
                 "CHILD_PREFIX int ChildDeclaration();\n"
@@ -2823,6 +2828,7 @@ class FormatCommandTests(unittest.TestCase):
             result = native_format(str(source), cwd=nested)
 
             self.assertEqual(0, result.returncode, msg=f"stdout:\n{result.stdout}\n\nstderr:\n{result.stderr}")
+            self.assertIn("void Guarded() { Run(); } PARENT_SUFFIX CHILD_SUFFIX;", result.stdout)
             self.assertIn("PARENT_METHOD(Result, Parent, (Value* parent));", result.stdout)
             self.assertIn("CHILD_METHOD(Result, Child, (Value&& child));", result.stdout)
             self.assertIn("SHARED_METHOD(Result, Shared, (Value& shared), (ref(&)));", result.stdout)
