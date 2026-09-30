@@ -17,7 +17,8 @@ public:
         const FormatBreakSolution& solution,
         int startColumn,
         int baseIndent,
-        int breakLineSuffixWidth
+        int breakLineSuffixWidth,
+        int finalLineSuffixWidth
     );
 
 private:

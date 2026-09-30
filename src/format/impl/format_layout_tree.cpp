@@ -101,8 +101,7 @@ void FormatLayoutTree::BeginToken(const PrintToken& token, int structuralIndent)
     }
 }
 
-void
-    FormatLayoutTree::ConstrainBodyHeader(FormatLayoutRegionContext& context, std::span<const PrintToken> tokens) const
+void FormatLayoutTree::ConstrainBodyHeader(FormatLayoutRegionContext& context, std::span<const PrintToken> tokens) const
 {
     if (tokens.empty()) {
         return;

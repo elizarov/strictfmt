@@ -381,3 +381,67 @@ Use("123456789012345" /* existing */ "678901234567890123");
 Use("123456789012345" /* "quoted" */ "678901234567890123");
 }
 #define MESSAGE "123456789012345" "678901234567890123"
+
+// An opening-brace comment can wrap without expanding the header.
+void CallObjectSerialize(Value* p) { // highest priority
+Run();
+}
+void MovedHeaderComment(Value* p) // highest priority
+{ Run(); }
+void BlockBraceComment(Value* p) { /* highest priority */
+Run();
+}
+void InlineHeaderComment(Value* p) /* first */ /* second */ { Run(); }
+void InlineBraceComments() { /* first */ /* second */ Run(); }
+void Fits() { // short
+Run();
+}
+struct CommentedBody : Base { // highest priority
+CommentedBody() : Base() { // constructor
+Run();
+}
+void Method(Value* p) const { // highest priority
+Run();
+}
+};
+void CommentedControl() {
+if (ready) { // will be resolved first
+Run();
+} else if (fallback) { // lower priority
+Wait();
+}
+Use([](Value* p) { // highest priority
+Run();
+});
+}
+namespace CommentedNamespace { // highest priority
+void Run();
+}
+extern "C" { // external linkage API
+void Run();
+}
+
+// The brace boundary is outside the header, including its return type.
+void HeaderFitsButBraceDoesNot(Value* p) {
+Check();
+Run();
+}
+void FitsWithoutBrace(Value* parameter) { Run(); }
+void EmptyBodyAtTheWidthLimit(Value* p) {}
+struct FitsWithoutBrace : VeryLongBase2 {
+void MemberFitsWithoutBrace(int pp) {
+Check();
+Run();
+}
+};
+void ControlBraceBoundary() {
+if (Ready(firstValue, secondValue)) { Run(); }
+}
+
+// Mandatory macro boundaries include their continuation suffix in the width.
+#define CONTINUED_BODY void LongName() { RunSomething(); } void G();
+#define FINAL_BODY void LongName() { RunSomething(); }
+#define EXACT_BODY void LongName() { RunSomethin(); } void G();
+#define CONTINUED_COMMENT int value = first + second; /* xx */ \
+int next;
+#define FINAL_COMMENT int value = first + second; /* xx */

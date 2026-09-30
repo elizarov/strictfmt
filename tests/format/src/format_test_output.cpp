@@ -196,8 +196,7 @@ public:
     DialogRedrawScope& operator=(const DialogRedrawScope&) = delete;
 };
 
-__declspec(noinline) bool
-    DashboardController::FinishConfigMutation(DashboardShellHost& shell, bool refreshThemedIcons)
+__declspec(noinline) bool DashboardController::FinishConfigMutation(DashboardShellHost& shell, bool refreshThemedIcons)
 {
     return refreshThemedIcons;
 }
@@ -588,8 +587,7 @@ bool RuntimeConfigFieldEquals(const RuntimeConfigFieldDescriptor& field, const v
 // Implemented by generated file build/cmake/generated/config/config_meta.generated.cpp.
 std::span<const RuntimeConfigSectionDescriptor> RuntimeConfigSectionDescriptors();
 
-std::vector<std::string>
-    ParseIndentedStringList(const std::vector<ConfigLine>& lines, size_t& index, int parentIndent)
+std::vector<std::string> ParseIndentedStringList(const std::vector<ConfigLine>& lines, size_t& index, int parentIndent)
 {
     return {};
 }
@@ -1152,7 +1150,8 @@ template <typename Struct, typename Descriptor, typename Descriptor::Value (Stru
 struct MemberPointerTemplateParameter;
 
 namespace NamespaceWithAnIntentionallyLongNameForSingleQualificationCoverage::
-    NamespaceWithAnIntentionallyLongNameForNestedNamespaceCoverage {
+    NamespaceWithAnIntentionallyLongNameForNestedNamespaceCoverage
+{
 
 void Function();
 
@@ -1275,8 +1274,8 @@ CrossBlockInitializerList::CrossBlockInitializerList(const Dependencies& deps, c
     following_initializer_with_long_name_(deps.following),
     final_initializer_(deps.final) {}
 
-StringColumn::StringColumn(ColumnRef column) :
-    ClickhouseColumn{impl::GetTypedColumn<StringColumn, NativeTyp>(column)} {}
+StringColumn::StringColumn(ColumnRef column) : ClickhouseColumn{impl::GetTypedColumn<StringColumn, NativeTyp>(column)}
+{}
 
 struct OverflowDeclaration {
     FunctionPtr
@@ -3302,16 +3301,16 @@ void AttributedElseIfCollapse(bool first, bool second, bool third) {
 }
 
 void CommentedControlBodyBoundaries(bool first, bool second, int count) {
-    if (first) /* if body */ {
+    if (first) { /* if body */
         Use(first);
-    } else /* else body */ {
+    } else { /* else body */
         Use(second);
     }
     if (first) {
         Use(first);
     } else /* braced else-if */ if (second) {
         Use(second);
-    } else /* nested else body */ {
+    } else { /* nested else body */
         Use(count);
     }
     if (first) {
@@ -3321,7 +3320,7 @@ void CommentedControlBodyBoundaries(bool first, bool second, int count) {
     }
     if (first) {
         Use(first);
-    } else /* unbraced else */ {
+    } else { /* unbraced else */
         Use(second);
     }
     if (first) {
@@ -3344,21 +3343,21 @@ void CommentedControlBodyBoundaries(bool first, bool second, int count) {
     }
     if (first) {
         Use(first);
-    } else /* first */ /* second */ {
+    } else { /* first */ /* second */
         Use(second);
     }
-    while (count > 0) /* while body */ {
+    while (count > 0) { /* while body */
         --count;
     }
-    for (int i = 0; i < count; ++i) /* for body */ {
+    for (int i = 0; i < count; ++i) { /* for body */
         Use(i);
     }
-    do /* do body */ {
+    do { /* do body */
         ++count;
     } /* before while */ while (count < 0);
     do {} /* before empty while */
     while (count < 0);
-    switch (count) /* switch body */ {
+    switch (count) { /* switch body */
         default:
             break;
     }
@@ -3392,7 +3391,7 @@ public /* before access colon */ :
 
 void CommentedCaseLabels(int value) {
     switch (value) {
-        case 1: /* before case block */ {
+        case 1: { /* before case block */
             Use(value);
             break;
         }
@@ -4937,7 +4936,7 @@ struct EmptyMemberBodies {
     EmptyMemberBodies() {}
     ~EmptyMemberBodies() {}
     operator bool() const {}
-    void Commented() {/* empty */}
+    void Commented() { /* empty */}
     void NullOnly() {}
     void NonEmpty() { Work(); }
     void Defaulted() = default;
@@ -5042,6 +5041,14 @@ void Linked();
 void BlockHeaderComment() { /* explanation */
     Work();
 }
+
+struct Serialization {
+    template <class T, typename = decltype(std::declval<T*>()->T::operator&(std::declval<IBinSaver&>()))>
+    void CallObjectSerialize(T* p, NBinSaverInternals::TOverloadPriority<2>)
+    {  // highest priority - will be resolved first if enabled
+        p->T::operator&(*this);
+    }
+};
 
 void StatementBeforeBlock() {
     Work();  // belongs to Work
@@ -5222,7 +5229,9 @@ static_assert(
 
 #define FORMAT_ALIGN_LONG_LINE() \
     void LongMacroLine() {       \
-        Use("This indivisible string literal deliberately exceeds the configured column limit and must not push the other continuation backslashes to the right."); \
+        Use(                     \
+            "This indivisible string literal deliberately exceeds the configured column limit and must not push the other continuation backslashes to the right." \
+        );                       \
         Short();                 \
     }
 #define FORMAT_ALIGN_RAW_STRING()                \
@@ -8853,8 +8862,8 @@ void ExplicitBlocks() {
         Second();
     });
     CHECK(
-        {
-            /* body comment */ Work();
+        { /* body comment */
+            Work();
         },
         Error
     );

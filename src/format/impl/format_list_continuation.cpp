@@ -367,8 +367,7 @@ struct FormatListContinuation::Impl {
         }
         return splitListItemIndent;
     }
-    const FormatLayoutRegionContext*
-        PlanPreprocessor(size_t index, std::span<const PrintToken> pending, int itemIndent)
+    const FormatLayoutRegionContext* PlanPreprocessor(size_t index, std::span<const PrintToken> pending, int itemIndent)
     {
         preprocessorPlan_ = BuildPreprocessorSplitListPlan(index, pending, itemIndent);
         return preprocessorPlan_ ? &preprocessorPlan_->breakContext : nullptr;

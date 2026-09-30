@@ -104,9 +104,8 @@ bool IsConditionalPreprocessorHeaderChild(const SyntaxNode& node, size_t index) 
         return true;
     }
     const SyntaxNodeKind directive = node.children.front()->kind;
-    if (
-        directive == SyntaxNodeKind::PreprocessorDirectiveIf || directive == SyntaxNodeKind::PreprocessorDirectiveElif
-    ) {
+    if (directive == SyntaxNodeKind::PreprocessorDirectiveIf || directive == SyntaxNodeKind::PreprocessorDirectiveElif)
+    {
         return child.isCondition;
     }
     if (

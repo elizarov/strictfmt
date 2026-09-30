@@ -1195,8 +1195,8 @@ private:
                 return header;
             }
         }
-        if (SyntaxNodeHasLocalClass(node, SyntaxNodeClass::DeclaredTypeSpecifier)) {
-            if (auto header = BuildDeclaredTypeBodyHeader(node, depth)) {
+        if (!SyntaxNodeHasLocalClass(node, SyntaxNodeClass::SourceItemScope)) {
+            if (auto header = BuildCompoundBodyHeader(node, depth)) {
                 return header;
             }
         }
@@ -1412,8 +1412,7 @@ private:
         return prefix;
     }
 
-    FormatBreakNode*
-        BuildDetachedTemplateDeclaration(FormatBreakNode* prefix, FormatBreakNode* declaration, int depth)
+    FormatBreakNode* BuildDetachedTemplateDeclaration(FormatBreakNode* prefix, FormatBreakNode* declaration, int depth)
     {
         if (prefix == nullptr || declaration == nullptr) {
             return nullptr;
@@ -1555,9 +1554,8 @@ private:
         if (introduced != nullptr) {
             std::optional<size_t> introducedRequiresIndex;
             for (size_t childIndex = 0; childIndex < introduced->children.size(); ++childIndex) {
-                if (
-                    introduced->children[childIndex] != nullptr && IsRequiresClause(*introduced->children[childIndex])
-                ) {
+                if (introduced->children[childIndex] != nullptr && IsRequiresClause(*introduced->children[childIndex]))
+                {
                     introducedRequiresIndex = childIndex;
                     break;
                 }
@@ -1676,7 +1674,7 @@ private:
         return result;
     }
 
-    FormatBreakNode* BuildDeclaredTypeBodyHeader(const SyntaxNode& node, int depth) {
+    FormatBreakNode* BuildCompoundBodyHeader(const SyntaxNode& node, int depth) {
         std::optional<size_t> bodyIndex;
         for (size_t index = 0; index < node.children.size(); ++index) {
             const SyntaxNode* child = node.children[index];
@@ -2754,9 +2752,8 @@ private:
             }
             for (const SyntaxNode* part : child->children) {
                 const auto token = part == nullptr ? std::nullopt : TokenForNode(*part);
-                if (
-                    !token || !PrintTokenSyntaxHasClass(FormatBreakTokenValue(*token), SyntaxNodeClass::BinaryOperator)
-                ) {
+                if (!token || !PrintTokenSyntaxHasClass(FormatBreakTokenValue(*token), SyntaxNodeClass::BinaryOperator))
+                {
                     continue;
                 }
                 // The branch owns the printed operator. Its enclosing expression still owns the
@@ -2942,8 +2939,7 @@ private:
         return BuildBinaryOrAssignmentExpression(node, depth);
     }
 
-    FormatBreakNode*
-        BuildDelimitedAssignmentItem(const ConstSyntaxChildList& children, int depth, bool typedDeclarator)
+    FormatBreakNode* BuildDelimitedAssignmentItem(const ConstSyntaxChildList& children, int depth, bool typedDeclarator)
     {
         std::optional<size_t> operatorIndex;
         std::optional<FormatBreakToken> op;
@@ -3188,9 +3184,8 @@ private:
         delimited->children = StoreNodePointers({BuildToken(*open, depth + 1), BuildToken(*close, depth + 1)});
 
         if (delimiter == FormatBreakDelimiterKind::Paren) {
-            if (
-                const SyntaxNode* commaExpression = DirectDelimitedCommaExpressionBody(children, openIndex, closeIndex)
-            ) {
+            if (const SyntaxNode* commaExpression = DirectDelimitedCommaExpressionBody(children, openIndex, closeIndex))
+            {
                 if (AppendCommaExpressionListItems(*delimited, *commaExpression, *open, depth, false)) {
                     afterDelimited = closeIndex + 1;
                     return FinishDelimited(delimited);
@@ -3293,9 +3288,8 @@ private:
         delimited->compactRequiresFit = FormatBreakTokenValue(*open).parentKind == SyntaxNodeKind::CompoundStatement;
         delimited->compactRequiresUnbrokenItems = delimited->compactRequiresFit ||
             (FormatBreakTokenValue(*open).parentKind == SyntaxNodeKind::InitializerList && delimited->items.size() > 1);
-        if (
-            !delimited->items.empty() && FormatBreakHasSingleLineTrailingComma(*delimited, delimited->items.size() - 1)
-        ) {
+        if (!delimited->items.empty() && FormatBreakHasSingleLineTrailingComma(*delimited, delimited->items.size() - 1))
+        {
             const PrintToken* comma = delimited->items.back().separator.token;
             delimited->singleLineCloseSpaceBefore = FormatTokenNeedsSpace(
                 comma == sourceTokens_.data() ? nullptr : comma - 1, FormatBreakTokenValue(*close)

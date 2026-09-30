@@ -30,6 +30,7 @@ struct PrintToken {
     bool inCompactSingleStatementBody : 1;
     bool structuredPreprocessor : 1;
     bool inMacroValue : 1;
+    bool macroContinuesAfter : 1;
     bool stringLike : 1;
     bool containsSourceLineBreak : 1;
     bool inMacroStatementSequence : 1;

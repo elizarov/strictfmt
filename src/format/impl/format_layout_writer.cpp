@@ -33,7 +33,10 @@ bool TrailingCommentReturnsToStructuralIndent(const PrintToken& token) {
     ) {
         scope = scope->parent;
     }
-    if (scope != nullptr && SyntaxNodeHasClass(*scope, SyntaxNodeClass::SourceItemScope)) {
+    if (scope != nullptr && (
+        SyntaxNodeHasClass(*scope, SyntaxNodeClass::SourceItemScope) ||
+        scope->kind == SyntaxNodeKind::MacroReplacementList
+    )) {
         return true;
     }
     const SyntaxNode* previous = nullptr;

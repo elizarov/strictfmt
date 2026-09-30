@@ -3255,6 +3255,14 @@ extern "C" // linkage body
 void BlockHeaderComment() /* explanation */
 { Work(); }
 
+struct Serialization {
+template <class T, typename = decltype(std::declval<T*>()->T::operator&(std::declval<IBinSaver&>()))>
+void CallObjectSerialize(T* p, NBinSaverInternals::TOverloadPriority<2>)
+{ // highest priority - will be resolved first if enabled
+p->T::operator&(*this);
+}
+};
+
 void StatementBeforeBlock() {
 Work(); // belongs to Work
 { Next(); }

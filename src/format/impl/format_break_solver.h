@@ -4,7 +4,7 @@
 #include "format/impl/format_config.h"
 
 // Selects an exact layout for one immutable segment at the supplied incoming
-// column/indentation, including any physical suffix on taken breaks. Returns owned
+// column/indentation, including physical suffixes on taken breaks and the final line. Returns owned
 // choices and render bases; candidate state and caches live only for this call.
 FormatBreakSolution SolveFormatBreaks(
     const FormatterConfig& config,
@@ -12,5 +12,6 @@ FormatBreakSolution SolveFormatBreaks(
     int startColumn,
     int indentLevel,
     int indentWidth,
-    int breakLineSuffixWidth
+    int breakLineSuffixWidth,
+    int finalLineSuffixWidth = 0
 );

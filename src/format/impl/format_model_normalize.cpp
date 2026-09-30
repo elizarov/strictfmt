@@ -690,7 +690,8 @@ void NormalizeBlockHeaderComments(SyntaxNode& node) {
         if (
             begin == 0 ||
             begin == index ||
-            node.children[begin]->kind != SyntaxNodeKind::TrailingComment ||
+            !SyntaxNodeHasClass(*node.children[begin], SyntaxNodeClass::Comment) ||
+            node.children[begin]->kind == SyntaxNodeKind::Comment ||
             EndsWithStatementSeparator(*node.children[begin - 1]) ||
             SyntaxNodeHasClass(*node.children[begin - 1], SyntaxNodeClass::CompoundBlock)
         ) {
@@ -766,9 +767,8 @@ void NormalizeMacroReplacementComments(SyntaxNode& node) {
 void NormalizeAttachedTrailingBlockComment(SyntaxNode& node) {
     for (size_t index = 0; index < node.children.size(); ++index) {
         SyntaxNode* comment = node.children[index];
-        if (
-            comment == nullptr || comment->kind != SyntaxNodeKind::TrailingComment || !comment->text.starts_with("/*")
-        ) {
+        if (comment == nullptr || comment->kind != SyntaxNodeKind::TrailingComment || !comment->text.starts_with("/*"))
+        {
             continue;
         }
         const std::optional<size_t> nextIndex = NextNonTriviaChildIndex(node.children, index + 1);

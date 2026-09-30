@@ -445,6 +445,8 @@ std::vector<PrintToken> BuildPrintTokens(const FormatModel& model, int tabWidth)
             token.node != nullptr &&
             IsFirstConditionalBranchChild(*token.node);
         token.sourceIndex = static_cast<std::uint32_t>(index);
+        token.macroContinuesAfter =
+            PrintTokenContinuesMacroLine(token, index + 1 < tokens.size() ? &tokens[index + 1] : nullptr);
         if (
             token.preprocessingArgument != nullptr &&
             previous != nullptr &&

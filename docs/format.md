@@ -78,7 +78,7 @@ void Check(bool a, bool b, bool c) {
 Mandatory line breaks are structural boundaries. The break is always taken before optional wrapping is considered.
 
 - Break between complete statements and declarations, except in eligible compact bodies described under [Declaration And Control Headers](#declaration-and-control-headers).
-- Put block-opening braces at the end of the introducing line, then break. Move intervening trailing header comments after the opening brace, preserving comment order.
+- Normally put block-opening braces at the end of the introducing line, then break. Move intervening inline or trailing header comments after the opening brace, preserving comment order.
 - For a non-empty block, if a multiline header ends at body indentation, put `{` on its own line at the block owner's indentation.
 - Keep an empty code block as `{}` without a body break.
 - Apply the closing-brace attachment rules under [Declaration And Control Headers](#declaration-and-control-headers).
@@ -107,6 +107,7 @@ Optional breaks within a [formatted segment](glossary.md#formatted-segment) occu
 - After semicolons inside control-statement headers.
 - At callable-structure boundaries and between adjacent string literals.
 - After a [value-owning keyword](glossary.md#value-owning-keyword).
+- Before a block-opening brace, at the owner's indentation, with its trailing comment.
 
 ## Lists
 
@@ -648,6 +649,8 @@ Token widths count Unicode [extended grapheme clusters](https://www.unicode.org/
 ### Break Cost
 
 An expansion's raw depth is its construct's structural depth in the formatted segment: zero at the root, increasing by one per nested level. The adjustments that turn raw depth into effective break cost are specified under [Break-Decision Trees](#break-decision-trees).
+
+The break before a block-opening brace is structurally shallower than header breaks, including the break after a function's return type.
 
 Each selected expansion with nonzero effective cost contributes one occurrence to the expansion-depth profile. Cost profiles compare greatest value first: at the greatest value whose occurrence count differs, prefer fewer occurrences. Independent parts combine by adding their counts.
 

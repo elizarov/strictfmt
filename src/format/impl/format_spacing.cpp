@@ -469,7 +469,10 @@ bool FormatTokenNeedsSpace(const PrintToken* previous, const PrintToken& current
         }
     }
     if (IsBlockCommentToken(current)) {
-        if (current.kind == PrintTokenKind::TrailingComment) {
+        if (current.kind == PrintTokenKind::TrailingComment || (
+            previous->syntaxKind == SyntaxNodeKind::LeftBrace &&
+            SyntaxNodeKindHasClass(previous->parentKind, SyntaxNodeClass::CompoundBlock)
+        )) {
             return true;
         }
         return !IsAttributeOpenToken(*previous) && !(

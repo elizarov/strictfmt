@@ -167,9 +167,8 @@ bool HasSeparatedListAncestor(const SyntaxNode* node) {
         cursor != nullptr;
         cursor = cursor->parent
     ) {
-        if (
-            SyntaxNodeHasClass(*cursor, SyntaxNodeClass::SemanticDelimitedParent) || IsSeparatedListContainer(*cursor)
-        ) {
+        if (SyntaxNodeHasClass(*cursor, SyntaxNodeClass::SemanticDelimitedParent) || IsSeparatedListContainer(*cursor))
+        {
             return true;
         }
         // A block owns its statement separators; an outer list must not capture its comments.
@@ -252,8 +251,7 @@ public:
                 rawNext == nullptr ||
                 (rawNext->kind != PrintTokenKind::TrailingComment && rawNext->syntaxKind != SyntaxNodeKind::Semicolon)
             )) {
-                FlushPendingTokens();
-                NewLine(PrintTokenContinuesMacroLine(tokens[index], rawNext));
+                FlushLine(PrintTokenContinuesMacroLine(tokens[index], rawNext));
             }
             if (!IsStructuralTriviaToken(tokens[index])) {
                 previous = &tokens[index];
@@ -751,7 +749,7 @@ private:
         }
     }
 
-    void FlushPendingTokens(const FormatLayoutRegionContext& context = {}) {
+    void FlushPendingTokens(const FormatLayoutRegionContext& context = {}, bool continuesMacroLine = false) {
         if (pendingTokens_.empty()) {
             return;
         }
@@ -792,6 +790,7 @@ private:
         const int baseIndentLevel = output_.State().pendingIndentLevel.value_or(indentLevel_);
         const int startColumn = CurrentColumn();
         const int breakLineSuffixWidth = emittingMacroDefinition ? 2 : 0;
+        const int finalLineSuffixWidth = continuesMacroLine ? 2 : 0;
         FormatLayoutRegion* region = &layoutTree_->AddRegion(pendingTokens_, effectiveContext);
         if (stats_ != nullptr) {
             stats_->breakModel += std::chrono::steady_clock::now() - modelStart;
@@ -802,7 +801,13 @@ private:
             const auto solveStart =
                 stats_ == nullptr ? std::chrono::steady_clock::time_point{} : std::chrono::steady_clock::now();
             region->solution = SolveFormatBreaks(
-                config_, effectiveModel, startColumn, baseIndentLevel, indentWidth_, breakLineSuffixWidth
+                config_,
+                effectiveModel,
+                startColumn,
+                baseIndentLevel,
+                indentWidth_,
+                breakLineSuffixWidth,
+                finalLineSuffixWidth
             );
             if (stats_ != nullptr) {
                 stats_->solve += std::chrono::steady_clock::now() - solveStart;
@@ -810,7 +815,13 @@ private:
         }
         if (breakModelDump_ != nullptr) {
             breakModelDump_->WriteSegment(
-                pendingTokens_, effectiveModel, *effectiveSolution, startColumn, baseIndentLevel, breakLineSuffixWidth
+                pendingTokens_,
+                effectiveModel,
+                *effectiveSolution,
+                startColumn,
+                baseIndentLevel,
+                breakLineSuffixWidth,
+                finalLineSuffixWidth
             );
         }
         if (effectiveModel.root) {
@@ -834,6 +845,19 @@ private:
     }
 
     bool HasBufferedLineText() const { return output_.State().lineHasText || !pendingTokens_.empty(); }
+
+    void FlushLine(bool macroContinuation = false) {
+        FlushPendingTokens({}, macroContinuation);
+        NewLine(macroContinuation);
+    }
+
+    void FlushAfterToken(const PrintToken& token, const PrintToken* rawNext) {
+        if (rawNext != nullptr && rawNext->kind == PrintTokenKind::TrailingComment) {
+            FlushPendingTokens();
+        } else {
+            FlushLine(PrintTokenContinuesMacroLine(token, rawNext));
+        }
+    }
 
     bool HasBufferedCodeText() const {
         return output_.State().lineHasText ||
@@ -865,7 +889,7 @@ private:
         const PrintToken* next = activeTokens_ != nullptr && last.sourceIndex + 1 < activeTokens_->size() ?
             &(*activeTokens_)[last.sourceIndex + 1] : nullptr;
         const bool macroContinuation = PrintTokenContinuesMacroLine(last, next);
-        FlushPendingTokens();
+        FlushPendingTokens({}, macroContinuation);
         if (!itemIndent) {
             itemIndent = layoutTree_->Lists().SelectedItemIndent(list);
         }
@@ -882,7 +906,7 @@ private:
         }
         if (boundary->beforeToken) {
             if (HasBufferedLineText()) {
-                FlushPendingTokens();
+                FlushPendingTokens({}, token.inMacroValue);
             }
             NewLineWithIndent(*boundary->indent, token.inMacroValue);
             BufferToken(token);
@@ -918,7 +942,11 @@ private:
             return false;
         }
         BufferToken(token);
-        FlushPendingTokens();
+        FlushPendingTokens(
+            {},
+            (rawNext == nullptr || rawNext->kind != PrintTokenKind::TrailingComment) &&
+                PrintTokenContinuesMacroLine(token, rawNext)
+        );
         layoutTree_->Lists().RecordSelectedHeader(list, CurrentLineIndentLevel());
         if (rawNext != nullptr && rawNext->kind == PrintTokenKind::TrailingComment) {
             BufferToken(*rawNext);
@@ -1037,8 +1065,7 @@ private:
             previous->macroDefinition != current.macroDefinition
         ) {
             if (HasBufferedLineText()) {
-                FlushPendingTokens();
-                NewLine(false);
+                FlushLine(false);
             }
             if (!activeCaseBodies_.empty() && activeCaseBodies_.back().macroDefinition == previous->macroDefinition) {
                 CloseCaseBodyIndentIfNeeded(previous->macroDefinition);
@@ -1121,7 +1148,7 @@ private:
             return;
         }
         if (HasBufferedLineText()) {
-            FlushPendingTokens();
+            FlushPendingTokens({}, PrintTokenContinuesMacroLine(*previous, &current));
         }
         if (output_.State().lineHasText) {
             NewLineWithIndent(CurrentLineIndentLevel(), PrintTokenContinuesMacroLine(*previous, &current));
@@ -1292,7 +1319,7 @@ private:
             token.kind != PrintTokenKind::TrailingComment &&
             !(IsStructuralTriviaToken(token) && beforeGroupingOpenEnd)
         ) {
-            FlushPendingTokens();
+            FlushPendingTokens({}, token.inMacroValue);
             BlankLine(token.inMacroValue);
             pendingNamespaceSeparator_ = false;
         }
@@ -1300,7 +1327,7 @@ private:
             NamespaceSeparatorBefore(token, previous);
         }
         if (const auto boundary = declarationLayout_->BoundaryBefore(currentTokenIndex_)) {
-            FlushPendingTokens();
+            FlushPendingTokens({}, token.inMacroValue);
             if (boundary->required) {
                 BlankLine(token.inMacroValue);
             } else {
@@ -1317,7 +1344,7 @@ private:
             const PrintToken* sourceNext =
                 rawNext != nullptr && rawNext->kind != PrintTokenKind::BlankLine ? rawNext : next;
             if (ShouldPreserveSourceBlankLine(token, sourcePrevious, sourceNext)) {
-                FlushPendingTokens();
+                FlushPendingTokens({}, token.inMacroValue);
                 const bool continuesSplitList = layoutTree_->Lists().ContinuesList(token);
                 const std::optional<int> pendingIndent =
                     continuesSplitList ? output_.State().pendingIndentLevel : std::nullopt;
@@ -1339,7 +1366,7 @@ private:
                 FlushPendingTokens();
                 return;
             }
-            FlushPendingTokens();
+            FlushPendingTokens({}, token.inMacroValue);
             if (
                 token.kind == PrintTokenKind::Comment &&
                 output_.State().atLineStart &&
@@ -1626,8 +1653,7 @@ private:
                     token.parentKind == SyntaxNodeKind::RequiresClause &&
                     token.grandParentKind == SyntaxNodeKind::TemplateDeclaration
                 ) {
-                    FlushPendingTokens();
-                    NewLine(PrintTokenContinuesMacroLine(token, rawNext));
+                    FlushLine(PrintTokenContinuesMacroLine(token, rawNext));
                 }
                 return;
             case SyntaxNodeKind::LeftBracket:
@@ -1688,8 +1714,7 @@ private:
                         next->syntaxKind == SyntaxNodeKind::KeywordRequires
                     )
                 ) {
-                    FlushPendingTokens();
-                    NewLine(PrintTokenContinuesMacroLine(token, rawNext));
+                    FlushLine(PrintTokenContinuesMacroLine(token, rawNext));
                 }
                 return;
             case SyntaxNodeKind::LeftBrace:
@@ -1720,8 +1745,7 @@ private:
                             output_.ReopenLastLine(true);
                         }
                     } else if (!token.inCompactSingleStatementBody && HasBufferedLineText()) {
-                        FlushPendingTokens();
-                        NewLine(PrintTokenContinuesMacroLine(token, rawNext));
+                        FlushLine(PrintTokenContinuesMacroLine(token, rawNext));
                     }
                     return;
                 }
@@ -1731,8 +1755,7 @@ private:
                     ShouldBreakAfterSemicolon() &&
                     !(rawNext != nullptr && rawNext->kind == PrintTokenKind::TrailingComment)
                 ) {
-                    FlushPendingTokens();
-                    NewLine(PrintTokenContinuesMacroLine(token, rawNext));
+                    FlushLine(PrintTokenContinuesMacroLine(token, rawNext));
                 }
                 return;
             case SyntaxNodeKind::Comma:
@@ -1752,21 +1775,24 @@ private:
                     ParentOutsideConditionalPreprocessor(*token.node)->kind == SyntaxNodeKind::EnumeratorList &&
                     !(rawNext != nullptr && rawNext->kind == PrintTokenKind::TrailingComment)
                 ) {
-                    FlushPendingTokens();
-                    NewLine(PrintTokenContinuesMacroLine(token, rawNext));
+                    FlushLine(PrintTokenContinuesMacroLine(token, rawNext));
                 }
                 return;
             case SyntaxNodeKind::Colon:
                 BufferToken(token);
                 if (token.parentKind == SyntaxNodeKind::CaseStatement) {
-                    FlushPendingTokens();
+                    const bool attachesBlock = next != nullptr &&
+                        next->kind == PrintTokenKind::Known &&
+                        next->syntaxKind == SyntaxNodeKind::LeftBrace;
+                    FlushPendingTokens(
+                        {},
+                        !attachesBlock &&
+                            (rawNext == nullptr || rawNext->kind != PrintTokenKind::TrailingComment) &&
+                            PrintTokenContinuesMacroLine(token, rawNext)
+                    );
                     ++indentLevel_;
                     activeCaseBodies_.push_back({switchDepth_, token.macroDefinition});
-                    if (
-                        next != nullptr &&
-                        next->kind == PrintTokenKind::Known &&
-                        next->syntaxKind == SyntaxNodeKind::LeftBrace
-                    ) {
+                    if (attachesBlock) {
                         return;
                     }
                     if (rawNext != nullptr && rawNext->kind == PrintTokenKind::TrailingComment) {
@@ -1779,10 +1805,7 @@ private:
                     previous->syntaxKind == SyntaxNodeKind::KeywordDefault ||
                     PrintTokenSyntaxHasClass(*previous, SyntaxNodeClass::AccessKeyword)
                 )) {
-                    FlushPendingTokens();
-                    if (rawNext == nullptr || rawNext->kind != PrintTokenKind::TrailingComment) {
-                        NewLine(PrintTokenContinuesMacroLine(token, rawNext));
-                    }
+                    FlushAfterToken(token, rawNext);
                 }
                 return;
             default:
@@ -1800,7 +1823,7 @@ private:
     }
 
     void CloseMacroClassScope(const PrintToken& token) {
-        FlushPendingTokens();
+        FlushPendingTokens({}, token.inMacroValue);
         if (output_.State().lineHasText) {
             NewLine(token.inMacroValue);
         }
@@ -1816,7 +1839,7 @@ private:
             BufferToken(*rawNext);
             prebufferedTokenSourceIndices_.insert(rawNext->sourceIndex);
         }
-        FlushPendingTokens();
+        FlushPendingTokens({}, PrintTokenContinuesMacroLine(token, rawNext));
         braceStack_.push_back({
             .role = BraceRole::Block,
             .parenDepth = parenDepth_,
@@ -1827,19 +1850,33 @@ private:
         NewLine(PrintTokenContinuesMacroLine(token, rawNext));
     }
 
+    bool BufferOpeningBraceComments() {
+        for (size_t offset = 1;; ++offset) {
+            const PrintToken* comment = RawTokenAfterCurrent(offset);
+            if (comment == nullptr || (comment->kind != PrintTokenKind::TrailingComment && !(
+                comment->kind == PrintTokenKind::Text &&
+                comment->node != nullptr &&
+                SyntaxNodeHasClass(*comment->node, SyntaxNodeClass::Comment)
+            ))) {
+                return false;
+            }
+            BufferToken(*comment);
+            prebufferedTokenSourceIndices_.insert(comment->sourceIndex);
+            if (comment->kind == PrintTokenKind::TrailingComment) {
+                return true;
+            }
+        }
+    }
+
     void PrintLeftBrace(const PrintToken& token, const PrintToken* previous, const PrintToken* rawNext) {
         if (IsMandatoryBlockOpen(currentTokenIndex_)) {
             layoutTree_->Chains().AnalyzeBlock(currentTokenIndex_);
         }
         const int crossBlockFallbackBaseIndent = std::max(0, output_.State().pendingIndentLevel.value_or(indentLevel_));
-        const bool followedByTrailingComment = rawNext != nullptr && rawNext->kind == PrintTokenKind::TrailingComment;
         if (PrintTokenIsConditionalBlockOpeningBrace(token)) {
             BufferToken(token);
-            if (followedByTrailingComment) {
-                BufferToken(*rawNext);
-                prebufferedTokenSourceIndices_.insert(rawNext->sourceIndex);
-            }
-            FlushPendingTokens();
+            const bool followedByTrailingComment = BufferOpeningBraceComments();
+            FlushPendingTokens({}, !followedByTrailingComment && PrintTokenContinuesMacroLine(token, rawNext));
             layoutTree_->Chains().FinishBoundary(crossBlockFallbackBaseIndent);
             if (!followedByTrailingComment) {
                 NewLine(PrintTokenContinuesMacroLine(token, rawNext));
@@ -1874,11 +1911,11 @@ private:
         if (role == BraceRole::Compact || IsCompactSingleStatementFunctionBodyBrace(token)) {
             return;
         }
-        if (followedByTrailingComment) {
-            BufferToken(*rawNext);
-            prebufferedTokenSourceIndices_.insert(rawNext->sourceIndex);
-        }
-        FlushPendingTokens(splitListPlan != nullptr ? *splitListPlan : FormatLayoutRegionContext{});
+        const bool followedByTrailingComment = BufferOpeningBraceComments();
+        FlushPendingTokens(
+            splitListPlan != nullptr ? *splitListPlan : FormatLayoutRegionContext{},
+            !followedByTrailingComment && PrintTokenContinuesMacroLine(token, rawNext)
+        );
         const std::optional<int> splitListItemIndent =
             splitListPlan == nullptr ? std::nullopt : layoutTree_->Lists().ResolveBlock();
         layoutTree_->Chains().FinishBoundary(splitListItemIndent.value_or(crossBlockFallbackBaseIndent));
@@ -1888,9 +1925,8 @@ private:
             token.inMacroValue || functionBlock ? indentLevel_ :
                 (output_.State().lineHasText ? CurrentLineIndentLevel() : indentLevel_)
         ));
-        if (
-            token.parentKind == SyntaxNodeKind::RequirementSeq && token.inTemplateDeclaration && token.inRequiresClause
-        ) {
+        if (token.parentKind == SyntaxNodeKind::RequirementSeq && token.inTemplateDeclaration && token.inRequiresClause)
+        {
             openLineIndent = std::max(openLineIndent, indentLevel_ + 1);
         }
         braceStack_.push_back({
@@ -1922,7 +1958,7 @@ private:
         // A closing guard carries the first brace's separator. Nested branch starts
         // and their leading comments stay together; subsequent braces still separate.
         if (previous == nullptr || !StartsGroupingCloseBranch(*previous)) {
-            FlushPendingTokens();
+            FlushPendingTokens({}, token.inMacroValue);
             BlankLine(token.inMacroValue);
         }
     }
@@ -1950,14 +1986,11 @@ private:
             if (followedByAttachmentKeyword) {
                 BufferFollowingAttachedComments();
             }
-            FlushPendingTokens();
-            if (rawNext == nullptr || rawNext->kind != PrintTokenKind::TrailingComment) {
-                NewLine(PrintTokenContinuesMacroLine(token, rawNext));
-            }
+            FlushAfterToken(token, rawNext);
             return;
         }
         if (block != nullptr && !conditionalBlockIndents_.empty() && conditionalBlockIndents_.back().body == block) {
-            FlushPendingTokens();
+            FlushPendingTokens({}, token.inMacroValue);
             if (output_.State().lineHasText) {
                 NewLine(token.inMacroValue);
             }
@@ -1967,19 +2000,12 @@ private:
             if (ShouldAttachAfterBlockClose(token, next)) {
                 return;
             }
-            FlushPendingTokens();
-            if (rawNext != nullptr && rawNext->kind == PrintTokenKind::TrailingComment) {
-                return;
-            }
-            NewLine(PrintTokenContinuesMacroLine(token, rawNext));
+            FlushAfterToken(token, rawNext);
             return;
         }
         if (IsCompactSingleStatementFunctionBodyBrace(token)) {
             BufferToken(token);
-            FlushPendingTokens();
-            if (rawNext == nullptr || rawNext->kind != PrintTokenKind::TrailingComment) {
-                NewLine(PrintTokenContinuesMacroLine(token, rawNext));
-            }
+            FlushAfterToken(token, rawNext);
             return;
         }
         const BraceRole tokenRole = RoleForBrace(token);
@@ -1988,7 +2014,7 @@ private:
             return;
         }
         const BraceRole role = braceStack_.empty() ? tokenRole : braceStack_.back().role;
-        FlushPendingTokens();
+        FlushPendingTokens({}, token.inMacroValue);
         // A non-compact closing brace is positioned by its brace frame, never by a pending
         // declaration or list-item indent left by the preceding construct.
         output_.SetPendingIndent(std::nullopt);
@@ -2005,11 +2031,7 @@ private:
             }
             NamespaceSeparatorBefore(token, previous);
             BufferToken(token);
-            FlushPendingTokens();
-            if (rawNext != nullptr && rawNext->kind == PrintTokenKind::TrailingComment) {
-                return;
-            }
-            NewLine(PrintTokenContinuesMacroLine(token, rawNext));
+            FlushAfterToken(token, rawNext);
             return;
         }
         if (role == BraceRole::CaseBlock) {
@@ -2043,7 +2065,11 @@ private:
             if (ShouldAttachAfterBlockClose(token, next)) {
                 return;
             }
-            FlushPendingTokens();
+            FlushPendingTokens(
+                {},
+                (rawNext == nullptr || rawNext->kind != PrintTokenKind::TrailingComment) &&
+                    PrintTokenContinuesMacroLine(token, rawNext)
+            );
             if (rawNext == nullptr || rawNext->kind != PrintTokenKind::TrailingComment) {
                 NewLine(PrintTokenContinuesMacroLine(token, rawNext));
                 output_.SetPendingIndent(splitListContinuationIndent);

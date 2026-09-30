@@ -163,7 +163,8 @@
 
 // cargo-performer-self-assignment/src/helpers/mock_response.hpp
 #define MOCK_RESPONSE(dependencies, ResponseBodyType)                                                            \
-    const auto handler_path_opt = cargo_performer_self_assignment::helpers::mock_response::ExtractHandlerPath(__FILE__); \
+    const auto handler_path_opt =                                                                                \
+        cargo_performer_self_assignment::helpers::mock_response::ExtractHandlerPath(__FILE__);                   \
     if (handler_path_opt.has_value()) {                                                                          \
         const auto mock = cargo_performer_self_assignment::helpers::mock_response::GetMockResponse(              \
             dependencies, handler_path_opt.value()                                                               \
@@ -2687,23 +2688,24 @@
     inline const ::utils::statistics::MetricTag<p_module> p_variable{mda::metrics::CreateMetricPath(p_tag)};
 
 // market-delivery-actualizer/src/utils/metrics.hpp
-#define I_MDA_GENERATE_BASE_METRIC_STRUCT(p_module, p_seq)                                               \
-    struct p_module {                                                                                    \
-        I_MDA_METRICS_DEFINE_FIELDS(p_seq)                                                               \
-    };                                                                                                   \
-                                                                                                         \
-    [[maybe_unused]] inline void                                                                         \
-        p_module##_DumpMetricImpl(::utils::statistics::Writer& writer, const p_module& stat)             \
-    {                                                                                                    \
-        I_MDA_METRICS_GENERATE_DUMPING(p_seq)                                                            \
-    }                                                                                                    \
-                                                                                                         \
-    [[maybe_unused]] inline void p_module##_ResetMetricImpl(p_module& stat) { I_MDA_METRICS_GENERATE_RESETTING(p_seq) } \
-                                                                                                         \
-    [[maybe_unused]] inline void DumpMetric(::utils::statistics::Writer& writer, const p_module& stat) { \
-        p_module##_DumpMetricImpl(writer, stat);                                                         \
-    }                                                                                                    \
-                                                                                                         \
+#define I_MDA_GENERATE_BASE_METRIC_STRUCT(p_module, p_seq)                                                            \
+    struct p_module {                                                                                                 \
+        I_MDA_METRICS_DEFINE_FIELDS(p_seq)                                                                            \
+    };                                                                                                                \
+                                                                                                                      \
+    [[maybe_unused]] inline void p_module##_DumpMetricImpl(::utils::statistics::Writer& writer, const p_module& stat) \
+    {                                                                                                                 \
+        I_MDA_METRICS_GENERATE_DUMPING(p_seq)                                                                         \
+    }                                                                                                                 \
+                                                                                                                      \
+    [[maybe_unused]] inline void p_module##_ResetMetricImpl(p_module& stat) {                                         \
+        I_MDA_METRICS_GENERATE_RESETTING(p_seq)                                                                       \
+    }                                                                                                                 \
+                                                                                                                      \
+    [[maybe_unused]] inline void DumpMetric(::utils::statistics::Writer& writer, const p_module& stat) {              \
+        p_module##_DumpMetricImpl(writer, stat);                                                                      \
+    }                                                                                                                 \
+                                                                                                                      \
     [[maybe_unused]] inline void ResetMetric(p_module& stat) { p_module##_ResetMetricImpl(stat); }
 
 // market-delivery-actualizer/src/utils/metrics.hpp
@@ -4243,7 +4245,9 @@
 // tests/format/src/format_test_input.cpp
 #define FORMAT_ALIGN_LONG_LINE() \
     void LongMacroLine() {       \
-        Use("This indivisible string literal deliberately exceeds the configured column limit and must not push the other continuation backslashes to the right."); \
+        Use(                     \
+            "This indivisible string literal deliberately exceeds the configured column limit and must not push the other continuation backslashes to the right." \
+        );                       \
         Short();                 \
     }
 

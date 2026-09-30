@@ -94,7 +94,7 @@ Block-chain lookahead skips exact model construction when the suffix after the c
 
 The function-signature candidate that keeps the return type and function name together while splitting the parameter list is legal only when the physical prefix through the parameter opener fits the column limit. A later unavoidable overflow, such as an atomic parameter type, does not make an additional avoidable prefix overflow legal.
 
-Token candidates account for their complete physical rendering. Newlines embedded in token text contribute physical lines and reset the continuation column. Comment tokens also include the mandatory newline emitted after the comment and reset the continuation to the current indentation. A standalone comment between formatter-owned chain links remains in that chain model and is associated with the following link, so both solving and emission use the chain-item indentation. These line transitions participate in the same optimization cost as selected break choices.
+Token candidates account for their complete physical rendering. Newlines embedded in token text contribute physical lines and reset the continuation column. Comment tokens also include their terminating newline and any macro continuation suffix, and reset the continuation to the current indentation. A standalone comment between formatter-owned chain links remains in that chain model and is associated with the following link, so both solving and emission use the chain-item indentation. These line transitions participate in the same optimization cost as selected break choices.
 
 Binary and stream chain construction collects boundary comments before flattening operands and attaches trailing comments to the preceding operand. A trailing operator moved before those comments is emitted in that operand's suffix; its chain entry remains context-only so break ownership is unchanged. Standalone comment prefixes of receiverless stream links are normalized into the following chain node. Reordered adjacency recomputes token spacing before operand construction, so solving and emission consume the same normalized token order.
 
@@ -113,6 +113,8 @@ Single-line list candidates price eligible trailing commas as omitted. When an a
 Owner/value syntax, including value-owning keywords and trailing-return arrows, uses one generic after-owner candidate shape.
 
 A structured macro definition is built as its header owner plus its complete replacement value. Its compact chain candidate is legal only when the whole definition fits on one physical line; all other candidates split after the owner and solve the complete replacement recursively. A replacement parsed as multiple top-level call units is represented by a force-split statement sequence inside that value, so its required unit boundaries compose with the required header boundary without printer inference. The solver's break-line suffix width accounts for text emitted only on taken breaks; structured macros use it for the trailing ` \`, including that physical suffix in overflow cost without making it a break heuristic.
+
+The planner also supplies a final-line suffix when a mandatory region boundary continues a macro. The solver prices that suffix on every root alternative before selecting a layout; the macro's final line has no suffix.
 
 ## Choice Fidelity
 

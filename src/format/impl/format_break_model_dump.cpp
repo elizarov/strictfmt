@@ -313,7 +313,8 @@ void FormatBreakModelDumpWriter::WriteSegment(
     const FormatBreakSolution& solution,
     int startColumn,
     int baseIndent,
-    int breakLineSuffixWidth
+    int breakLineSuffixWidth,
+    int finalLineSuffixWidth
 ) {
     if (output_ == nullptr || model.root == nullptr) {
         return;
@@ -328,6 +329,7 @@ void FormatBreakModelDumpWriter::WriteSegment(
     std::fprintf(output_, "start-column: %d\n", startColumn);
     std::fprintf(output_, "base-indent: %d\n", baseIndent);
     std::fprintf(output_, "break-line-suffix-width: %d\n", breakLineSuffixWidth);
+    std::fprintf(output_, "final-line-suffix-width: %d\n", finalLineSuffixWidth);
     std::fputs("tree:\n", output_);
     WriteNode(output_, *model.root, solution, 1, false);
 }
