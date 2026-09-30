@@ -1210,9 +1210,49 @@ struct SelectedInitializers {
 
 using GuardedCallback = void (*)(Value*)
 #if FEATURE
-noexcept
+    noexcept
 #endif
-;
+    ;
+
+// Guarded type suffixes retain the alias value continuation across nested branches.
+using GuardedFunction = void(Value*)
+#if FEATURE
+    noexcept
+#elif LEGACY
+    throw (Error)
+#endif
+    ;
+
+struct GuardedAliases {
+    using Callback = void (*)(Value*)
+#ifdef SAFE
+#if EXPRESSIONS
+        noexcept(Check<Value>())
+#else
+        noexcept
+#endif
+#else
+        throw (Error)
+#endif
+        ;
+
+    using Member = void (Owner::*)(Value*) const
+#if FEATURE
+        noexcept(Check<Value>())
+#endif
+        ;
+
+    int next;
+};
+
+void LocalGuardedAlias() {
+    using Callback = void (*)(Value*)
+#if FEATURE
+        noexcept
+#endif
+        ;
+    Consume();
+}
 
 struct GuardedExceptions {
     void Execute()

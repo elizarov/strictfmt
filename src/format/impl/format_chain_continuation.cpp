@@ -107,6 +107,9 @@ struct FormatChainContinuation::Impl {
     }
 
     void CollectCrossBlockChainBreaks(const FormatBreakNode& root, const PrintToken& block, bool directive) {
+        const bool conditional = block.conditionalExpression != nullptr ||
+            PrintTokenSyntaxHasClass(block, SyntaxNodeClass::ConditionalPreprocessorTree) ||
+            PrintTokenSyntaxHasClass(block, SyntaxNodeClass::ConditionalPreprocessorDirective);
         auto [entry, inserted] = modelIndexes_.try_emplace(&root);
         auto& index = entry->second;
         if (inserted) {
@@ -116,23 +119,31 @@ struct FormatChainContinuation::Impl {
         if (leaf == index.leaves.end()) {
             return;
         }
+        bool crossesDelimiter = false;
         for (
             auto parent = index.parents.at(leaf->second);
             parent.node != nullptr;
             parent = index.parents.at(parent.node)
         ) {
-            if (
-                directive &&
-                block.conditionalExpression != nullptr &&
-                parent.node->kind == FormatBreakNodeKind::Delimited
-            ) {
+            crossesDelimiter |= parent.node->kind == FormatBreakNodeKind::Delimited;
+            if (directive && conditional && parent.node->kind == FormatBreakNodeKind::Delimited) {
                 break;
             }
             if (parent.operand) {
+                if (
+                    directive &&
+                    conditional &&
+                    block.conditionalExpression == nullptr &&
+                    (*parent.operand == 0 || parent.node->chainKind == FormatBreakChainKind::StreamBeforeOperator)
+                ) {
+                    // Declaration prefixes do not continue a value; selected stream tails own their layout.
+                    continue;
+                }
                 RequireChainBreaks(*parent.node, *parent.operand, directive);
                 if (
                     directive &&
-                    block.conditionalExpression != nullptr &&
+                    !crossesDelimiter &&
+                    (block.conditionalExpression != nullptr || *parent.operand > 0) &&
                     parent.node->kind == FormatBreakNodeKind::Chain &&
                     !parent.node->operators.empty()
                 ) {
@@ -193,13 +204,33 @@ struct FormatChainContinuation::Impl {
             return;
         }
         const PrintToken& token = tokens_[currentTokenIndex_];
-        if (directive && token.conditionalExpression == nullptr && (
+        if (directive && token.conditionalExpression == nullptr && !token.structuredPreprocessor && (
             PrintTokenSyntaxHasClass(token, SyntaxNodeClass::ConditionalPreprocessorTree) ||
             PrintTokenSyntaxHasClass(token, SyntaxNodeClass::ConditionalPreprocessorDirective)
         )) {
+            // Opaque conditional fragments do not expose their operand boundaries.
             return;
         }
         const SyntaxNode* block = directive ? token.node : (token.node == nullptr ? nullptr : token.node->parent);
+        while (
+            directive &&
+            block != nullptr &&
+            block->parent != nullptr &&
+            SyntaxNodeHasClass(*block->parent, SyntaxNodeClass::ConditionalPreprocessorTree)
+        ) {
+            block = block->parent;
+        }
+        if (
+            directive &&
+            block != nullptr &&
+            SyntaxNodeHasClass(*block, SyntaxNodeClass::ConditionalPreprocessorTree) && (
+                SyntaxNodeHasClass(*block, SyntaxNodeClass::ConditionalRhsPreprocessor) ||
+                (block->parent != nullptr && SyntaxNodeHasClass(*block->parent, SyntaxNodeClass::SourceItemScope))
+            )
+        ) {
+            // Whole source items and branch-owned statements resume at their own scope indentation.
+            return;
+        }
         const auto ownerId = tree_.SourceItem(block);
         if (ownerId == 0) {
             return;

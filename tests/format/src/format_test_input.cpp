@@ -5777,6 +5777,26 @@ FORMAT_EXPRESSION_PREFIX_ITEMS(PREFIX_FIELD)
 true;
 }
 
+// Directives retain operand continuations without changing surrounding statement or list indentation.
+void DirectiveAssignmentPrefixes() {if(ready){auto value =
+#define PREFIX_ASSIGNMENT(name) Check(name)&&
+FORMAT_EXPRESSION_PREFIX_ITEMS(PREFIX_ASSIGNMENT)
+#undef PREFIX_ASSIGNMENT
+true;Consume(value);}}
+bool DirectiveReturnOperand(){return
+#pragma fixture
+value;}
+bool DirectiveListPrefixes(){return Check(
+#define PREFIX_ARGUMENT(name) Check(name)&&
+FORMAT_EXPRESSION_PREFIX_ITEMS(PREFIX_ARGUMENT)
+#undef PREFIX_ARGUMENT
+true);}
+void FollowingDirectiveStatement(){
+#define LOCAL_VALUE 1
+auto value = LOCAL_VALUE;
+#undef LOCAL_VALUE
+Consume(value);}
+
 void IfHeaderMacroConditions(bool outer,bool ready,bool nested){
 if(outer)FORMAT_IF_HEADER_IF(ready){Run();}else{Fail();}
 FORMAT_IF_HEADER_IF(ready){Run();}else{Fail();}
