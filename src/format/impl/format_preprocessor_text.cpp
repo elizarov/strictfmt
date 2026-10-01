@@ -4,6 +4,7 @@
 #include <vector>
 
 #include "format/impl/format_model.h"
+#include "format/impl/format_include_sort.h"
 #include "format/impl/format_raw_macro.h"
 #include "tools/tools_common.h"
 #include "util/strings.h"
@@ -16,6 +17,9 @@ bool IsPreprocessorDirectiveNameChar(char ch) {
 
 std::string CanonicalizePreprocessorDirectiveLine(std::string_view line) {
     const SyntaxNodeKind directiveKind = SyntaxNodeKindFromPreprocessorDirectiveLine(line);
+    if (SyntaxNodeKindHasClass(directiveKind, SyntaxNodeClass::IncludeDirective)) {
+        return FormatIncludeLineText(line);
+    }
     if (!SyntaxNodeKindHasClass(directiveKind, SyntaxNodeClass::PreprocessorDirective)) {
         return std::string(line);
     }
@@ -76,7 +80,11 @@ std::string FormatPayloadLines(std::string_view text, const FormatPreprocessorTe
         const size_t end = normalized.find('\n', start);
         const std::string_view rawLine = end == std::string::npos ? std::string_view(normalized).substr(start) :
             std::string_view(normalized).substr(start, end - start);
-        const std::string line = NormalizeTrailingLineCommentSpacing(TrimWhitespaceView(rawLine));
+        const std::string_view trimmed = TrimWhitespaceView(rawLine);
+        const bool include = SyntaxNodeKindHasClass(
+            SyntaxNodeKindFromPreprocessorDirectiveLine(trimmed), SyntaxNodeClass::IncludeDirective
+        );
+        const std::string line = include ? std::string(trimmed) : NormalizeTrailingLineCommentSpacing(trimmed);
         lines.push_back(CanonicalizePreprocessorDirectiveLine(line));
         if (end == std::string::npos) {
             break;
@@ -100,6 +108,9 @@ std::string FormatPayloadLines(std::string_view text, const FormatPreprocessorTe
 }  // namespace
 
 std::string FormatPreprocessorText(std::string_view text, const FormatPreprocessorTextPolicy& policy) {
+    if (SyntaxNodeKindHasClass(SyntaxNodeKindFromPreprocessorDirectiveLine(text), SyntaxNodeClass::IncludeDirective)) {
+        return FormatIncludeLineText(text);
+    }
     if (policy.payloadIndent) {
         return FormatPayloadLines(text, policy);
     }

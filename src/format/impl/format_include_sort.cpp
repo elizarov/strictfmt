@@ -136,12 +136,13 @@ IncludeText ParseIncludeText(std::string_view text) {
 
     std::string line = "#include ";
     line.append(target);
+    const size_t headerEnd = line.size();
     std::string_view suffix = TrimView(rest.substr(target.size()));
     if (!suffix.empty()) {
         line.push_back(' ');
         line.append(suffix);
     }
-    line = NormalizeTrailingLineCommentSpacing(line);
+    line = NormalizeTrailingLineCommentSpacing(line, headerEnd);
     return {.line = std::move(line), .target = std::string(target)};
 }
 
@@ -380,6 +381,8 @@ std::string
 }
 
 }  // namespace
+
+std::string FormatIncludeLineText(std::string_view text) { return ParseIncludeText(text).line; }
 
 std::string FormatIncludeRunText(
     const FormatterConfig& config, const SyntaxNode& includeRun, std::string_view sourcePath, bool isFirstIncludeRun

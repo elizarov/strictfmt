@@ -228,10 +228,10 @@ bool EndsWith(std::string_view value, std::string_view suffix) {
 
 bool Contains(std::string_view value, std::string_view needle) { return value.find(needle) != std::string_view::npos; }
 
-std::string NormalizeTrailingLineCommentSpacing(std::string_view line) {
+std::string NormalizeTrailingLineCommentSpacing(std::string_view line, size_t start) {
     bool inString = false;
     bool inChar = false;
-    for (size_t index = 0; index + 1 < line.size(); ++index) {
+    for (size_t index = start; index + 1 < line.size(); ++index) {
         const char ch = line[index];
         const char next = line[index + 1];
         if (!inString && !inChar && ch == '/' && next == '*') {

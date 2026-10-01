@@ -1,8 +1,13 @@
 #include <algorithm>
+#include <path with  spaces/header.h>  // trailing include comment
+#include <path/"quote//header.h>  // trailing include comment
+#include <path/'quote//header.h>  // trailing include comment
 #include <path/* clang-format off */header>
+#include <path//header.h>  // trailing include comment
 #include <vector>
 
 #include "a.h"
+#include "path//header.h"  // trailing include comment
 #include "z.h"
 
 // Ordinary include boundary.
@@ -56,6 +61,14 @@ const char* raw = R"tag("
     )
 #define RAW_NUMBERS(name) ) 1'000 name
 #define RAW_STRINGS(name) name##suffix "/* clang-format off */" R"(// clang-format on)"
+
+#if FEATURE
+#include <guard//header.h>  // guarded include comment
+#endif
+
+void LocalHeaders() {
+#include <local//header.h>  // local include comment
+}
 
 //clang-format off
 //  clang-format on

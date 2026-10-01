@@ -6,6 +6,11 @@
 #include <algorithm> // clang-format on: done
 #include "a.h"
 #include <path/* clang-format off */header> // clang-format on
+# include <path//header.h>// trailing include comment
+#include <path/'quote//header.h>// trailing include comment
+#include <path/"quote//header.h>// trailing include comment
+#include <path with  spaces/header.h>// trailing include comment
+#include "path//header.h"// trailing include comment
 // Ordinary include boundary.
 #include "second_z.h" // clang-format off:
 #include "second_a.h" /* clang-format off */
@@ -61,6 +66,14 @@ const char* raw = R"tag("
     still part of the comment
 #define RAW_NUMBERS(name) ) 1'000 /* clang-format off */ name
 #define RAW_STRINGS(name) name##suffix "/* clang-format off */" R"(// clang-format on)"
+
+#if FEATURE
+# include <guard//header.h>// guarded include comment
+#endif
+
+void LocalHeaders() {
+# include <local//header.h>// local include comment
+}
 
 //clang-format off
 //  clang-format on

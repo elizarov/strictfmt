@@ -36,7 +36,7 @@ bool DiscoverRecursiveToolFiles(
 bool StartsWith(std::string_view value, std::string_view prefix);
 bool EndsWith(std::string_view value, std::string_view suffix);
 bool Contains(std::string_view value, std::string_view needle);
-std::string NormalizeTrailingLineCommentSpacing(std::string_view line);
+std::string NormalizeTrailingLineCommentSpacing(std::string_view line, size_t start = 0);
 std::vector<std::string> SplitLines(std::string_view text);
 std::vector<std::string> Split(std::string_view text, char delimiter);
 std::string ReplaceAll(std::string value, std::string_view from, std::string_view to);

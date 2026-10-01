@@ -8,6 +8,8 @@ struct FormatterConfig;
 
 struct SyntaxNode;
 
+std::string FormatIncludeLineText(std::string_view text);
+
 std::string FormatIncludeRunText(
     const FormatterConfig& config,
     const SyntaxNode& includeRun,
