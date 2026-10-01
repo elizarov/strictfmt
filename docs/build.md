@@ -130,7 +130,9 @@ complete validation suite used locally.
 `.github/workflows/release.yml` runs for `v<major>.<minor>.<patch>` tag pushes. It
 first runs the complete tests on Linux x86_64, then builds and verifies versioned
 executables on Linux x86_64, Windows x86_64, and macOS arm64 GitHub-hosted
-runners. The executables are packaged as `.tar.gz` or `.zip` archives, collected
+runners. Only the test job checks out external-project submodules; packaging
+builds use the formatter and vendored dependencies in the main repository.
+The executables are packaged as `.tar.gz` or `.zip` archives, collected
 with a `SHA256SUMS` file, and published in a GitHub release. A manual workflow run
 performs the tests and all platform builds without publishing a release; use it
 to validate workflow changes before tagging.

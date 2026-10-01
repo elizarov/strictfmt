@@ -72,8 +72,6 @@ jobs:
     steps:
       - name: Check out sources
         uses: actions/checkout@v6
-        with:
-          submodules: true
 
       - name: Verify Unix runner architecture
         if: runner.os != 'Windows'
