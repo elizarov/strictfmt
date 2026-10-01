@@ -6,6 +6,11 @@ inline bool IsNonTokenPreprocessorDirective(const SyntaxNode& node) {
     return node.kind == SyntaxNodeKind::MacroDefinition || node.kind == SyntaxNodeKind::PreprocCall;
 }
 
+inline bool IsDeclaredTypeBody(SyntaxNodeKind bodyKind, SyntaxNodeKind ownerKind) {
+    return (bodyKind == SyntaxNodeKind::FieldDeclarationList || bodyKind == SyntaxNodeKind::EnumeratorList) &&
+        SyntaxNodeKindHasClass(ownerKind, SyntaxNodeClass::DeclaredTypeSpecifier);
+}
+
 inline bool IsRequiresClause(const SyntaxNode& node) {
     return node.kind == SyntaxNodeKind::RequiresClause || node.kind == SyntaxNodeKind::PreprocRequiresClause;
 }

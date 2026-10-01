@@ -419,11 +419,7 @@ private:
     }
 
     static bool ClosesDeclaredTypeBody(const PrintToken& token) {
-        return (
-            token.parentKind == SyntaxNodeKind::FieldDeclarationList ||
-            token.parentKind == SyntaxNodeKind::EnumeratorList
-        ) &&
-            SyntaxNodeKindHasClass(token.grandParentKind, SyntaxNodeClass::DeclaredTypeSpecifier);
+        return IsDeclaredTypeBody(token.parentKind, token.grandParentKind);
     }
 
     static bool StartsItemSuffix(const PrintToken* token) {

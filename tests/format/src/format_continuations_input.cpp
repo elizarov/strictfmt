@@ -452,3 +452,19 @@ GUARD;
 
 void WithSuffixArguments() { First(); Second(); }
 GUARD(first_argument, Build(second_argument, third_argument));
+
+// Null terminators must not change trailing-comment layout on a later pass.
+struct NullTerminatorComments {
+int Get() { return value; }; // trailing comment
+int Other() { return value; };;; // trailing comment
+int Block() { return value; }; /* trailing block comment */
+};
+int FreeValue() { return value; }; // trailing comment
+void CommentedControl() {
+if (Ready()) { Run(); }; // trailing comment
+{ Run(); };;; // trailing comment
+}
+struct RequiredTerminator {}; // required type terminator
+enum class RequiredEnum { Item }; // required enum terminator
+#define NULL_AFTER_DIRECTIVE { Run(); }
+; // retained after a directive

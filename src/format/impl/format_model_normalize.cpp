@@ -136,6 +136,18 @@ bool IsEmptyStatementNode(const SyntaxNode& node) {
     return content != nullptr && content->kind == SyntaxNodeKind::Semicolon;
 }
 
+const SyntaxNode* LastStructuralToken(const SyntaxNode& node) {
+    const SyntaxNode* last = &node;
+    while (!last->children.empty()) {
+        const auto index = PreviousStructuralChildIndex(last->children, last->children.size());
+        if (!index || last->children[*index] == nullptr) {
+            return nullptr;
+        }
+        last = last->children[*index];
+    }
+    return last;
+}
+
 void NormalizeCommentedNullStatements(SyntaxNode& node) {
     if (!SyntaxNodeHasClass(node, SyntaxNodeClass::SourceItemScope)) {
         return;
@@ -152,12 +164,19 @@ void NormalizeCommentedNullStatements(SyntaxNode& node) {
         if (begin == index || begin == 0) {
             continue;
         }
-        SyntaxNode* previous = node.children[begin - 1];
+        const SyntaxNode* previous = node.children[begin - 1];
+        if (previous == nullptr || SyntaxNodeHasClass(*previous, SyntaxNodeClass::PreprocessorDirective)) {
+            continue;
+        }
+        const SyntaxNode* last = LastStructuralToken(*previous);
+        if (last == nullptr || (last->kind != SyntaxNodeKind::Semicolon && last->kind != SyntaxNodeKind::RightBrace)) {
+            continue;
+        }
         if (
-            previous == nullptr ||
-            previous->children.empty() ||
-            previous->children.back() == nullptr ||
-            previous->children.back()->kind != SyntaxNodeKind::Semicolon
+            last->kind == SyntaxNodeKind::RightBrace &&
+            last->parent != nullptr &&
+            last->parent->parent != nullptr &&
+            IsDeclaredTypeBody(last->parent->kind, last->parent->parent->kind)
         ) {
             continue;
         }
@@ -657,15 +676,8 @@ void NormalizeColonPrefixedListComments(SyntaxNode& node) {
 }
 
 bool EndsWithStatementSeparator(const SyntaxNode& node) {
-    const SyntaxNode* last = &node;
-    while (!last->children.empty()) {
-        const auto index = PreviousStructuralChildIndex(last->children, last->children.size());
-        if (!index || last->children[*index] == nullptr) {
-            return false;
-        }
-        last = last->children[*index];
-    }
-    return last->kind == SyntaxNodeKind::Semicolon;
+    const SyntaxNode* last = LastStructuralToken(node);
+    return last != nullptr && last->kind == SyntaxNodeKind::Semicolon;
 }
 
 void NormalizeBlockHeaderComments(SyntaxNode& node) {
