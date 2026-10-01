@@ -128,6 +128,9 @@ FormatAdjacentStrings AnalyzeAdjacentStrings(std::span<const FormatStringPart> p
     size_t compactRunStart = 0;
     for (size_t index = 0; index < parts.size(); ++index) {
         const std::string_view text = parts[index].text;
+        if (index > 0 && parts[index].blankLineBefore) {
+            result.requiresSplit = true;
+        }
         if (!parts[index].isComment && index + 1 < parts.size() && EndsWithEscapedLineFragment(text)) {
             result.requiresSplit = true;
         }
@@ -135,6 +138,7 @@ FormatAdjacentStrings AnalyzeAdjacentStrings(std::span<const FormatStringPart> p
             result.compactSpellings.empty() ||
             parts[index].isComment ||
             parts[index - 1].isComment ||
+            parts[index].blankLineBefore ||
             !parts[index].startsSourceLine
         ) {
             compactRunStart = result.compactSpellings.size();

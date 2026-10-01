@@ -33,6 +33,7 @@ struct PrintToken {
     bool macroContinuesAfter : 1;
     bool stringLike : 1;
     bool containsSourceLineBreak : 1;
+    bool blankLineBefore : 1;
     bool inMacroStatementSequence : 1;
     bool inLeadingStreamOperatorChain : 1;
     bool inConditionalStreamOperatorChain : 1;

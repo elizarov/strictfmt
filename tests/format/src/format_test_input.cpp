@@ -5866,3 +5866,41 @@ void UseStringGrouping() {Use("length" "payload", "first"
 "second");}
 #define STRING_GROUPS "prefix" "middle1" \
 "middle2" "suffix"
+
+const char* blankSeparated = "left"
+
+"right";
+const char* multipleBlankLines = "first"
+
+
+"last";
+auto prefixedBlank = u8"left"
+
+"right";
+auto suffixedBlank = "left"_tag
+
+"right"_tag;
+auto rawBlank = R"(left)"
+
+R"(right)";
+const char* commentedBlank = "left" /* keep */
+
+"right";
+const char* ReturnBlankStrings() {return "left"
+
+"right";}
+
+void CallBlankStrings() {Use("left"
+
+"right", tail);}
+#define BLANK_STRINGS "left" \
+\
+"right"
+
+void NestedBlankStrings() {Use(Wrap("left"
+
+"right"));}
+auto mixedBlankStrings = "first" "second"
+
+"third"
+"fourth";

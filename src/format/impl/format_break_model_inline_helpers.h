@@ -50,6 +50,11 @@ inline bool FormatBreakStringNeedsNoJoinComment(const FormatBreakNode& node, siz
     return syntax != nullptr && !syntax->startsSourceLine;
 }
 
+inline bool FormatBreakStringHasBlankLineBefore(const FormatBreakNode& node, size_t index) {
+    const FormatBreakToken* token = FormatBreakNodeToken(node.operands[index]);
+    return token != nullptr && FormatBreakTokenValue(*token).blankLineBefore;
+}
+
 inline FormatBreakToken FormatBreakStringNoJoinComment() {
     static const PrintToken token{.kind = PrintTokenKind::Text, .text = "/* no-join */"};
     return {.token = &token, .spaceBefore = true};

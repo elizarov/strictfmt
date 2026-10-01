@@ -624,7 +624,7 @@ private:
                 if (FormatBreakStringNeedsNoJoinComment(node, index)) {
                     WriteBreakToken(FormatBreakStringNoJoinComment());
                 }
-                NewLineWithIndent(continuationIndent);
+                BreakListLine(continuationIndent, FormatBreakStringHasBlankLineBefore(node, index));
             }
             LowerBreakNode(*node.operands[index], solution, index == 0 ? baseIndent : continuationIndent);
         }

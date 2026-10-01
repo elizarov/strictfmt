@@ -9629,4 +9629,72 @@ const char* escapeBoundary = "\x1" "a";
 const char* commentedStrings = "first" /* keep fragments */ "second";
 
 void UseStringGrouping() { Use("length" "payload", "firstsecond"); }
+
 #define STRING_GROUPS "prefix" "middle1middle2" "suffix"
+
+const char* blankSeparated =
+    "left"
+
+    "right";
+
+const char* multipleBlankLines =
+    "first"
+
+    "last";
+
+auto prefixedBlank =
+    u8"left"
+
+    "right";
+
+auto suffixedBlank =
+    "left"_tag
+
+    "right"_tag;
+
+auto rawBlank =
+    R"(left)"
+
+    R"(right)";
+
+const char* commentedBlank =
+    "left" /* keep */
+
+    "right";
+
+const char* ReturnBlankStrings() {
+    return
+        "left"
+
+        "right";
+}
+
+void CallBlankStrings() {
+    Use(
+        "left"
+
+            "right",
+        tail
+    );
+}
+#define BLANK_STRINGS \
+    "left"            \
+                      \
+    "right"
+
+void NestedBlankStrings() {
+    Use(
+        Wrap(
+            "left"
+
+                "right"
+        )
+    );
+}
+
+auto mixedBlankStrings =
+    "first" /* no-join */
+    "second"
+
+    "third"
+    "fourth";

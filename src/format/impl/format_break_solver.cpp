@@ -3300,7 +3300,9 @@ private:
                 if (FormatBreakStringNeedsNoJoinComment(node, index)) {
                     AppendToken(result, FormatBreakStringNoJoinComment());
                 }
-                AppendBreak(result, continuationIndent, node.breakCost);
+                AppendListBreak(
+                    result, continuationIndent, node.breakCost, FormatBreakStringHasBlankLineBefore(node, index)
+                );
             }
             NodeResult item =
                 Solve(*node.operands[index], result.endColumn, result.endIndentLevel, result.endLineHasText);

@@ -709,6 +709,7 @@ private:
                 parts.push_back({
                     .text = FormatTokenText(token),
                     .startsSourceLine = token.node != nullptr && token.node->startsSourceLine,
+                    .blankLineBefore = token.blankLineBefore,
                     .isComment = IsInlineStringComment(sequence.children[cursor]),
                 });
             }
