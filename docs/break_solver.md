@@ -1,5 +1,7 @@
 # Break Solver
 
+**This document has been maintained mostly by AI and has not been reviewed by a human for conciseness and clarity of presentation.**
+
 This document owns developer-facing details of the break solver and its shared cost profile in `src/format/impl/format_break_solver.h|cpp` and `format_value_profile.h|cpp`. [format.md] owns the user-facing layout objective and legality constraints; [dsl.md](dsl.md) owns configured DSL layouts.
 
 ## Solver Contract

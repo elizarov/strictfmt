@@ -1,5 +1,7 @@
 # Architecture
 
+**This document has been maintained mostly by AI and has not been reviewed by a human for conciseness and clarity of presentation. The overview has been reviewed and gives a good bird's-eye view of the human-designed code architecture.**
+
 ## Overview
 
 `strictfmt` formats one source text at a time. [FormatSourceText](../src/format/format.cpp) parses the source, formats the resulting model, and restores the original line ending style. Parsing normalizes lone CR line endings to LF without changing byte offsets; output style and change detection use the original input. Optional validation runs the pipeline again on its output to check parsing and idempotence.

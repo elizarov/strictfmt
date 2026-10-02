@@ -1,5 +1,7 @@
 # Custom Scanner
 
+**This document has been maintained mostly by AI and has not been reviewed by a human for conciseness and clarity of presentation.**
+
 This document owns the architecture of the custom tree-sitter scanner used by `strictfmt`.
 
 ## Purpose

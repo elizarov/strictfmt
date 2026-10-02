@@ -1,5 +1,7 @@
 # Preprocessor
 
+**This document has been maintained mostly by AI and has not been reviewed by a human for conciseness and clarity of presentation.**
+
 This document describes handling of preprocessor directives, conditional compilation, and local includes by `strictfmt`.
 
 The custom scanner owns the lexical distinction between directive-ending line breaks and ordinary line-break whitespace; see [scanner.md](scanner.md).

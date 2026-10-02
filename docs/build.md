@@ -1,5 +1,7 @@
 # Build
 
+**This document has been maintained mostly by AI and has not been reviewed by a human for conciseness and clarity of presentation.**
+
 ## Windows
 
 The Windows build uses CMake with the Visual Studio `cl.exe` toolchain. The build

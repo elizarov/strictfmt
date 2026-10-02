@@ -1,5 +1,7 @@
 # Testing
 
+**This document has been maintained mostly by AI and has not been reviewed by a human for conciseness and clarity of presentation.**
+
 This document owns the general testing strategy and test file placement for `strictfmt`.
 
 ## Strategy
