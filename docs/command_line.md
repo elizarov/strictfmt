@@ -6,12 +6,7 @@ executable.
 ## Usage
 
 ```text
-strictfmt [options] [file...]
-strictfmt --stdin [options]
-strictfmt --dump-syntax-tree <file> [--style <config-file>]
-strictfmt --dump-break-tree <file> [--style <config-file>]
-strictfmt --stdin (--dump-syntax-tree | --dump-break-tree) [--style <config-file>]
-strictfmt --version
+strictfmt [options] [ <file>... | -r <path> | --stdin | --files <path> ]
 ```
 
 Options that take values expect the value as the following argument, for example
@@ -22,11 +17,11 @@ code `0`.
 
 ## Inputs
 
-- `file...` formats the listed source files. In default mode, formatted source is written to stdout. Multiple file outputs are concatenated in input order with no extra separator.
+- `<file>...` formats the listed source files. In default mode, formatted source is written to stdout. Multiple file outputs are concatenated in input order with no extra separator.
+- `-r <path>` and `--recursive <path>` recursively discover supported source files under a directory. The root must exist. Recursive input can be combined with direct file arguments and `--files`.
 - `--stdin` reads one source file from stdin. In default mode it writes formatted text to stdout; with `--diff` or a dump mode it writes that mode's output to stdout. It cannot be combined with direct file arguments, `--files`, `-r`, or `--recursive`. It is also incompatible with `-i`.
 - `--stdin-filename <path>` supplies the source filename for stdin configuration discovery, main-header sorting, and formatting diagnostics/diffs. It requires `--stdin`; the named file need not exist and is never read or modified. Relative paths are resolved from the working directory.
 - `--files <path>` reads input file paths from a newline-delimited file list. Each list line is trimmed, and blank lines are ignored. The listed files are appended to the explicit input list in list order.
-- `-r <path>` and `--recursive <path>` recursively discover supported source files under a directory. The root must exist. Recursive input can be combined with direct file arguments and `--files`.
 
 Recursive discovery includes files with these case-insensitive extensions:
 `.c`, `.cc`, `.cpp`, `.cxx`, `.c++`, `.h`, `.hh`, `.hpp`, `.hxx`, `.h++`,
@@ -44,7 +39,7 @@ specified in [config.md](config.md).
 ## Modes
 
 - Default mode formats input and writes formatted source to stdout. For file inputs and `--stdin`, the final summary is written to stderr so stdout contains only formatted source.
-- `-i` rewrites files in place. It requires at least one file input from `file...`, `--files`, `-r`, or `--recursive`. It is incompatible with `--stdin`, `--dry-run`, and `--diff`.
+- `-i` rewrites files in place. It requires at least one file input from `<file>...`, `--files`, `-r`, or `--recursive`. It is incompatible with `--stdin`, `--dry-run`, and `--diff`.
 - `-n` and `--dry-run` check formatting without writing formatted source or modifying files. The command exits with code `1` when formatting changes are needed. It is incompatible with `--diff`.
 - `--diff` writes a unified diff between the source and formatted text to stdout without modifying files. It uses three context lines, emits changed files in input order, and uses paths relative to the current directory when possible. Its exit codes match `--dry-run`: `1` when formatting changes are needed and `0` when no changes are needed. It is incompatible with `-i` and `--dry-run`.
 - `--dump-syntax-tree <file>` or `--stdin --dump-syntax-tree` prints the normalized syntax tree used by the formatter.
