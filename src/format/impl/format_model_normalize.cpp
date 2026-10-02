@@ -169,7 +169,11 @@ void NormalizeCommentedNullStatements(SyntaxNode& node) {
             continue;
         }
         const SyntaxNode* last = LastStructuralToken(*previous);
-        if (last == nullptr || (last->kind != SyntaxNodeKind::Semicolon && last->kind != SyntaxNodeKind::RightBrace)) {
+        if (last == nullptr || (
+            last->kind != SyntaxNodeKind::Semicolon &&
+            last->kind != SyntaxNodeKind::LeftBrace &&
+            last->kind != SyntaxNodeKind::RightBrace
+        )) {
             continue;
         }
         if (
@@ -181,7 +185,7 @@ void NormalizeCommentedNullStatements(SyntaxNode& node) {
             continue;
         }
         // The intervening null terminators disappear. Include the attached comment
-        // in the preceding statement's layout before choosing its line breaks.
+        // in the preceding statement or opening brace's layout before choosing its line breaks.
         node.children.erase(
             node.children.begin() + static_cast<std::ptrdiff_t>(begin),
             node.children.begin() + static_cast<std::ptrdiff_t>(index)
