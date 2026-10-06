@@ -109,7 +109,9 @@ extern "C" bool strictfmt_tree_sitter_cpp_macro_category_matches(unsigned catego
     return ConfigMacroCategoryMatches(category, std::string_view(text, static_cast<size_t>(length)));
 }
 
-FormatModel ParseFormatModel(std::string_view text, const FormatterConfig& config) {
+FormatModel ParseFormatModel(
+    std::string_view text, const FormatterConfig& config, std::vector<LintDiagnostic>* lint, bool lintOnly
+) {
     const ParseConfigScope configScope(config);
     auto sourceText = std::make_unique<std::string>(text);
     // Tree-sitter and source-layout facts use LF for physical line boundaries.
@@ -136,8 +138,19 @@ FormatModel ParseFormatModel(std::string_view text, const FormatterConfig& confi
         model.parse.error = "parse setup failed";
         return model;
     }
+    const std::unique_ptr<TSTree, decltype(&ts_tree_delete)> ownedTree(tree, ts_tree_delete);
     const TSNode root = ts_tree_root_node(tree);
-    FormatModel model = BuildFormatModel(root, std::move(sourceText));
-    ts_tree_delete(tree);
-    return model;
+    if (!lintOnly && lint == nullptr) {
+        return BuildFormatModel(root, std::move(sourceText));
+    }
+    FormatModel model;
+    model.parse = ValidateParseTree(root);
+    if (model.parse.ok && lint != nullptr && config.lint.Active()) {
+        *lint = LintSyntaxTree(root, *sourceText, config.lint);
+    }
+    if (lintOnly || !model.parse.ok || (lint != nullptr && !lint->empty())) {
+        model.sourceText = std::move(sourceText);
+        return model;
+    }
+    return BuildFormatModel(root, std::move(sourceText));
 }

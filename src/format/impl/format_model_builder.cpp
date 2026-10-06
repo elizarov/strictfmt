@@ -8,6 +8,7 @@
 #include <vector>
 
 #include "tools/tools_common.h"
+#include "syntax/tree_sitter.h"
 #include "format/impl/format_model_normalize.h"
 #include "format/impl/format_raw_macro.h"
 
@@ -19,15 +20,6 @@ struct ProblemNode {
 };
 
 std::string ParseProblemMessage(const ProblemNode& problem);
-
-std::string_view NodeText(TSNode node, std::string_view source) {
-    const uint32_t start = ts_node_start_byte(node);
-    const uint32_t end = ts_node_end_byte(node);
-    if (start > end || end > source.size()) {
-        return {};
-    }
-    return source.substr(start, end - start);
-}
 
 bool StartsSourceLine(std::string_view source, uint32_t start) {
     const size_t previous = source.substr(0, start).find_last_not_of(" \t\v\f");
@@ -635,6 +627,13 @@ ParseResult ParseFailure(TSNode root) {
 
 }  // namespace
 
+ParseResult ValidateParseTree(TSNode root) {
+    if (ts_node_has_error(root) || ts_node_is_missing(root)) {
+        return ParseFailure(root);
+    }
+    return {.ok = true, .error = {}};
+}
+
 FormatModel BuildFormatModel(TSNode root, std::unique_ptr<std::string> sourceText) {
     FormatModel model;
     model.sourceText = std::move(sourceText);
@@ -646,11 +645,7 @@ FormatModel BuildFormatModel(TSNode root, std::unique_ptr<std::string> sourceTex
     const std::string_view source(*model.sourceText);
     model.nodes.reserve(source.size() * 2 + 64);
 
-    const bool hasParseProblems = ts_node_has_error(root) || ts_node_is_missing(root);
-    model.parse.ok = !hasParseProblems;
-    if (hasParseProblems) {
-        model.parse = ParseFailure(root);
-    }
+    model.parse = ValidateParseTree(root);
 
     model.root = BuildNode(model, root, source, nullptr, GetTsNodeSyntax(root));
     GroupOpeningIncludeRuns(model, *model.root);

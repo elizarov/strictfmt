@@ -11,6 +11,7 @@ enum class FormatMode {
     InPlace,
     DryRun,
     Diff,
+    LintOnly,
 };
 
 enum class FormatDumpKind {
@@ -23,6 +24,7 @@ struct FormatOptions {
     FormatMode mode = FormatMode::Stdout;
     bool verbose = false;
     bool validate = false;
+    bool lint = true;
     bool help = false;
     bool version = false;
     bool readStdin = false;

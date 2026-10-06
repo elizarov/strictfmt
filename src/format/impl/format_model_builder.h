@@ -6,4 +6,6 @@
 
 #include "format/impl/format_model.h"
 
+ParseResult ValidateParseTree(TSNode root);
+
 FormatModel BuildFormatModel(TSNode root, std::unique_ptr<std::string> sourceText);

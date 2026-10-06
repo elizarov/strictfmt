@@ -91,14 +91,29 @@ std::string WithLineEndings(std::string text, std::string_view lineEnding) {
 
 }  // namespace
 
-SourceFormatResult
-    FormatSourceText(std::string_view text, const FormatterConfig& config, std::string_view sourcePath, bool validate)
-{
-    FormatModel model = ParseFormatModel(text, config);
+SourceFormatResult FormatSourceText(
+    std::string_view text,
+    const FormatterConfig& config,
+    std::string_view sourcePath,
+    bool validate,
+    bool lint,
+    bool lintOnly
+) {
     SourceFormatResult result;
+    if (lintOnly && (!lint || !config.lint.Active())) {
+        return result;
+    }
+    FormatModel model = ParseFormatModel(text, config, lint && config.lint.Active() ? &result.lint : nullptr, lintOnly);
     if (!model.parse.ok) {
         result.ok = false;
         result.error = model.parse.error.empty() ? "parser setup failed" : model.parse.error;
+        return result;
+    }
+    if (!result.lint.empty()) {
+        result.ok = false;
+        return result;
+    }
+    if (lintOnly) {
         return result;
     }
     result.warnings = ValidatePreprocessorPlacement(model);

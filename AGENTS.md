@@ -9,6 +9,7 @@ References to all docs and their ownership areas; read them only when needed for
 - `docs/break_solver.md`: break solver implementation details and allowed optimization speedups.
 - `docs/build.md`: build scripts and embedding/test options.
 - `docs/command_line.md`: strictfmt executable command-line parameters and behavior.
+- `docs/lint.md`: naming rules, configuration, suppressions, and compatibility semantics.
 - `docs/config.md`: formatter configuration.
 - `docs/dsl.md`: configured DSL roles and formatting for streams and builders.
 - `docs/format.md`: specifies source layout produced by formatter.

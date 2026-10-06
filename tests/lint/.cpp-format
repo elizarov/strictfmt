@@ -1,0 +1,45 @@
+Lint:
+  Naming:
+    Constants:
+      Kinds: Variable
+      Constexpr: true
+      Case: CamelCase
+      Prefix: k
+    StaticConstants:
+      Kinds: Variable
+      Scope: Local
+      Static: true
+      Const: true
+      Case: CamelCase
+      Prefix: k
+    GlobalConstants:
+      Kinds: Variable
+      Scope: Global, Member
+      Const: true
+      Case: CamelCase
+      Prefix: k
+    PrivateFields:
+      Kinds: Field
+      Access: Private
+      Suffix: '_'
+    ProtectedFields:
+      Kinds: Field
+      Access: Protected
+      Suffix: '_'
+    Types:
+      Kinds: Class, Struct, Union, Enum, Concept, Typedef, TypeAlias, TypeTemplateParameter, ValueTemplateParameter, TemplateTemplateParameter
+      Case: CamelCase
+    Enumerators:
+      Kinds: EnumConstant
+      Case: CamelCase
+      Prefix: k
+    Callables:
+      Kinds: Function, Method
+      Case: CamelCase
+      IgnoredRegexp: 'begin|end|hash_value'
+    Objects:
+      Kinds: Variable, Binding, Field, Parameter, ParameterPack, Namespace
+      Case: lower_case
+    Macros:
+      Kinds: Macro
+      Case: UPPER_CASE

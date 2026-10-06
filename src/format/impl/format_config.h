@@ -7,6 +7,8 @@
 #include <string_view>
 #include <vector>
 
+#include "lint/lint_config.h"
+
 struct IncludeGroup {
     std::string name;
     std::regex regex;
@@ -28,6 +30,7 @@ struct BuilderChainProfile {
 };
 
 struct FormatterConfig {
+    LintConfig lint;
     int columnLimit = 120;
     int indentWidth = 4;
     int tabWidth = 4;

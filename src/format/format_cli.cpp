@@ -74,7 +74,8 @@ std::string ReadStdinText() {
 }
 
 bool IsCheckMode(const FormatOptions& options) {
-    return options.mode == FormatMode::DryRun || options.mode == FormatMode::Diff;
+    return
+        options.mode == FormatMode::DryRun || options.mode == FormatMode::Diff || options.mode == FormatMode::LintOnly;
 }
 
 FILE* SummaryStream(const FormatOptions& options) {
@@ -89,6 +90,20 @@ void PrintSourceError(FILE* output, std::string_view file, std::string_view erro
     }
     for (const std::string& line : lines) {
         std::fprintf(output, "%.*s: %s\n", static_cast<int>(file.size()), file.data(), line.c_str());
+    }
+}
+
+void PrintLintDiagnostics(std::string_view file, const std::vector<LintDiagnostic>& diagnostics) {
+    for (const auto& diagnostic : diagnostics) {
+        std::fprintf(
+            stderr,
+            "%.*s:%u:%u: %s\n",
+            static_cast<int>(file.size()),
+            file.data(),
+            diagnostic.line,
+            diagnostic.column,
+            diagnostic.message.c_str()
+        );
     }
 }
 
@@ -278,10 +293,19 @@ int RunFormat(int argc, char** argv) {
             return
                 DumpFormatBreakTreeText(stdinText, *config, sourcePath, stdout, stderr, "strictfmt --dump-break-tree");
         }
-        SourceFormatResult result = FormatSourceText(stdinText, *config, sourcePath, options.validate);
+        SourceFormatResult result = FormatSourceText(
+            stdinText, *config, sourcePath, options.validate, options.lint, options.mode == FormatMode::LintOnly
+        );
+        PrintLintDiagnostics(sourcePath, result.lint);
+        if (!result.lint.empty()) {
+            return 1;
+        }
         if (!result.ok) {
             PrintSourceError(stderr, sourcePath, result.error);
             return 1;
+        }
+        if (options.mode == FormatMode::LintOnly) {
+            return 0;
         }
         PrintSourceWarnings(stderr, sourcePath, result.warnings);
         const FormatDiffResult diff = ComputeFormatDiff(
@@ -312,6 +336,7 @@ int RunFormat(int argc, char** argv) {
 
     bool failed = false;
     int formatErrorCount = 0;
+    int lintErrorCount = 0;
     int changedCount = 0;
     int ignoredCount = 0;
     int processedCount = 0;
@@ -344,7 +369,9 @@ int RunFormat(int argc, char** argv) {
         } else {
             result.hasPending = true;
             result.lineCount = CountSourceLines(*text);
-            result.pending.result = FormatSourceText(*text, *item.config, item.file, options.validate);
+            result.pending.result = FormatSourceText(
+                *text, *item.config, item.file, options.validate, options.lint, options.mode == FormatMode::LintOnly
+            );
             if (result.pending.result.ok && result.pending.result.changed) {
                 FormatDiffResult diff = ComputeFormatDiff(
                     *text,
@@ -438,6 +465,12 @@ int RunFormat(int argc, char** argv) {
         lineCount += completedFormat.lineCount;
         changedLineCount += completedFormat.changedLineCount;
         SourceFormatResult& result = completedFormat.pending.result;
+        PrintLintDiagnostics(file, result.lint);
+        if (!result.lint.empty()) {
+            lintErrorCount += static_cast<int>(result.lint.size());
+            failed = true;
+            continue;
+        }
         if (!result.ok) {
             PrintSourceError(stderr, file, result.error);
             ++formatErrorCount;
@@ -465,6 +498,19 @@ int RunFormat(int argc, char** argv) {
                 std::fwrite(pending.diff.data(), 1, pending.diff.size(), stdout);
             }
         }
+    }
+    if (options.mode == FormatMode::LintOnly) {
+        std::fprintf(
+            summary,
+            "Checked %s files. %s lint diagnostics. Done in %s.\n",
+            FormatCount(processedCount).c_str(),
+            FormatCount(lintErrorCount).c_str(),
+            FormatToolElapsed(std::chrono::steady_clock::now() - start).c_str()
+        );
+        return failed ? 1 : 0;
+    }
+    if (lintErrorCount > 0) {
+        std::fprintf(summary, "%s lint diagnostics.\n", FormatCount(lintErrorCount).c_str());
     }
     const bool checkMode = IsCheckMode(options);
     const bool showChangedFiles = !failed && (!checkMode || changedCount > 0);

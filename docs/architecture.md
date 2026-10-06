@@ -4,44 +4,55 @@
 
 ## Overview
 
-`strictfmt` formats one source text at a time. [FormatSourceText](../src/format/format.cpp) parses the source, formats the resulting model, and restores the original line ending style. Parsing normalizes lone CR line endings to LF without changing byte offsets; output style and change detection use the original input. Optional validation runs the pipeline again on its output to check parsing and idempotence.
+`strictfmt` processes one source text at a time. [FormatSourceText](../src/format/format.cpp) parses the source, runs configured lint checks, builds and formats the normalized format model, and restores the original line ending style. Linting inspects the original tree-sitter tree while it is alive, before formatter normalization, so declarations retain their original structure and source locations. The parser tree is shared with model construction; linting does not require a second parse.
+
+The lint phase is skipped when no rules are enabled or linting is disabled. A lint violation stops that file before model construction. Lint-only execution returns after the checks, without building the format model; with no enabled rules it also skips parsing. See [lint.md](lint.md) for naming semantics and configuration, and [command_line.md](command_line.md) for modes and diagnostics.
+
+Parsing normalizes lone CR line endings to LF without changing byte offsets; output style and change detection use the original input. Optional validation reparses and reformats the output to check idempotence, without rerunning lint.
 
 Formatting is an interleaved pipeline: the planner projects, solves, and lowers each region before proceeding to the next. A region receives the column, indentation, and owner placements selected for preceding regions. Lowering and emission do not initiate region planning or solving. Final emission starts only after the output program is complete.
 
-The diagram shows the current data flow. Solid arrows carry a region's data forward; dashed arrows carry context to later regions, without revisiting earlier choices.
+The diagram shows the current data flow. Solid arrows carry data forward; dashed arrows carry context to later layout regions, without revisiting earlier choices.
 
 ```mermaid
 flowchart TD
-    source[Source and configuration] --> syntax[1. Parse and normalize]
-    syntax --> tokens[2. Build print tokens]
+    source[Source and configuration] --> parsed[1. Parse source with tree-sitter]
+    parsed -->|Lint enabled| lint[2. Check naming on original tree]
+    parsed -->|Lint skipped| syntax[3. Build and normalize format model]
+    lint -->|Formatting with no violations| syntax
+    lint -->|Lint-only or violations| result[Lint result]
+    source -->|Lint-only with no enabled rules| result
+    syntax --> tokens[4. Build print tokens]
     subgraph planning[LayoutPlanner::Plan - interleaved regions]
-        planner[3. Plan boundaries using persistent owners]
-        model[4. Project immutable cost region]
-        solver[5. Select break choices and render bases]
-        lowerer[6. Lower selected layout]
-        record[7. Record commands and measure geometry]
+        planner[5. Plan boundaries using persistent owners]
+        model[6. Project immutable cost region]
+        solver[7. Select break choices and render bases]
+        lowerer[8. Lower selected layout]
+        record[9. Record commands and measure geometry]
         planner --> model --> solver --> lowerer --> record
         planner -->|Mandatory output and proven compact segments| record
         lowerer -.->|Owner placements for later regions| planner
         record -.->|Column and indentation for later regions| planner
     end
     tokens --> planner
-    record -->|After all regions| program[8. Resolve declaration groups and complete program]
-    program --> emitter[9. Replay commands and align output]
+    record -->|After all regions| program[10. Resolve declaration groups and complete program]
+    program --> emitter[11. Replay commands and align output]
     emitter --> text[Formatted text]
 ```
 
 | Stage | Implementing methods | Data produced |
 | --- | --- | --- |
-| 1. Parse and normalize | [ParseFormatModel](../src/format/impl/format_model_parse.cpp), [BuildFormatModel](../src/format/impl/format_model_builder.cpp), [NormalizeSyntaxNode](../src/format/impl/format_model_normalize.cpp) | Formatter-owned `FormatModel`, with normalized syntax and trivia. |
-| 2. Build print tokens | [BuildPrintTokens](../src/format/impl/format_print_token_builder.cpp) | `PrintToken` sequence with source identities, syntax traits, and initial spacing. |
-| 3. Plan boundaries | [LayoutPlanner::Plan, PrintOne, FlushPendingTokens](../src/format/impl/format_pretty_printer.cpp), [FormatLayoutTree::FormatLayoutTree, CompleteModel](../src/format/impl/format_layout_tree.cpp) | Buffered regions and their incoming context, backed by persistent owners and complete item models. |
-| 4. Project region | [FormatLayoutTree::AddRegion](../src/format/impl/format_layout_tree.cpp), [ProjectFormatLayout](../src/format/impl/format_layout_projection.cpp) | Retained region tokens and an immutable `FormatBreakModel`. |
-| 5. Solve | [SolveFormatBreaks](../src/format/impl/format_break_solver.cpp) | Owned `FormatBreakSolution`; no printer or output callback is supplied to the solver. |
-| 6. Lower | [LowerFormatLayout](../src/format/impl/format_layout_lowerer.cpp) | Selected token writes and boundaries through `FormatLayoutWriter`, plus persistent list, chain, and block placements. |
-| 7. Record and measure | [FormatLayoutWriter::WriteToken, BreakLine](../src/format/impl/format_layout_writer.cpp), [FormatLayoutProgramBuilder::Write, WriteComment, NewLine](../src/format/impl/format_layout_program.cpp) | Commands with resolved indentation anchors, measured physical state, and source-token line ranges. |
-| 8. Complete program | [FormatLayoutProgramBuilder::Finish](../src/format/impl/format_layout_program.cpp), [FormatDeclarationLayout::Resolve](../src/format/impl/format_declaration_layout.cpp), [FormatLayoutTree::Complete](../src/format/impl/format_layout_tree.cpp) | Completed `FormatLayoutProgram`, including declaration-group separators. |
-| 9. Emit text | [EmitFormatLayoutProgram](../src/format/impl/format_layout_program.cpp), [FormatOutput::Finish](../src/format/impl/format_output.cpp) | Physical text with final comment and macro-backslash alignment. |
+| 1. Parse | [ParseFormatModel](../src/format/impl/format_model_parse.cpp) | Original tree-sitter tree and source text, retained through linting and model construction. |
+| 2. Lint | [VisitDeclarations](../src/lint/declarations.cpp), [LintSyntaxTree](../src/lint/lint.cpp) | Declaration facts checked against naming rules; diagnostics at input source locations. |
+| 3. Build and normalize | [BuildFormatModel](../src/format/impl/format_model_builder.cpp), [NormalizeSyntaxNode](../src/format/impl/format_model_normalize.cpp) | Formatter-owned `FormatModel`, with normalized syntax and trivia. |
+| 4. Build print tokens | [BuildPrintTokens](../src/format/impl/format_print_token_builder.cpp) | `PrintToken` sequence with source identities, syntax traits, and initial spacing. |
+| 5. Plan boundaries | [LayoutPlanner::Plan, PrintOne, FlushPendingTokens](../src/format/impl/format_pretty_printer.cpp), [FormatLayoutTree::FormatLayoutTree, CompleteModel](../src/format/impl/format_layout_tree.cpp) | Buffered regions and their incoming context, backed by persistent owners and complete item models. |
+| 6. Project region | [FormatLayoutTree::AddRegion](../src/format/impl/format_layout_tree.cpp), [ProjectFormatLayout](../src/format/impl/format_layout_projection.cpp) | Retained region tokens and an immutable `FormatBreakModel`. |
+| 7. Solve | [SolveFormatBreaks](../src/format/impl/format_break_solver.cpp) | Owned `FormatBreakSolution`; no printer or output callback is supplied to the solver. |
+| 8. Lower | [LowerFormatLayout](../src/format/impl/format_layout_lowerer.cpp) | Selected token writes and boundaries through `FormatLayoutWriter`, plus persistent list, chain, and block placements. |
+| 9. Record and measure | [FormatLayoutWriter::WriteToken, BreakLine](../src/format/impl/format_layout_writer.cpp), [FormatLayoutProgramBuilder::Write, WriteComment, NewLine](../src/format/impl/format_layout_program.cpp) | Commands with resolved indentation anchors, measured physical state, and source-token line ranges. |
+| 10. Complete program | [FormatLayoutProgramBuilder::Finish](../src/format/impl/format_layout_program.cpp), [FormatDeclarationLayout::Resolve](../src/format/impl/format_declaration_layout.cpp), [FormatLayoutTree::Complete](../src/format/impl/format_layout_tree.cpp) | Completed `FormatLayoutProgram`, including declaration-group separators. |
+| 11. Emit text | [EmitFormatLayoutProgram](../src/format/impl/format_layout_program.cpp), [FormatOutput::Finish](../src/format/impl/format_output.cpp) | Physical text with final comment and macro-backslash alignment. |
 
 [PrintFormatModel](../src/format/impl/format_pretty_printer.cpp) enforces the final planning/emission boundary: `Plan` returns a `unique_ptr<const FormatLayoutTree>` before `EmitFormatLayoutProgram` is called. Replay consumes only the completed program and output settings. Its syntax pointers are opaque grouping identities; it neither traverses syntax nor consults the solver.
 
@@ -63,8 +74,12 @@ The writer records those operations as `FormatLayoutProgram` commands and resolv
 
 - `src/strictfmt_main.cpp` owns the standalone executable `main` entry point.
 - `src/format/strictfmt_cli.h|cpp` own the embeddable `RunStrictfmtCli(argc, argv)` entry point.
-- `src/format/format.h|cpp` own source text formatting, line ending preservation, and optional output validation.
-- `src/format/format_cli.cpp` owns the end-user formatter command orchestration: streaming input discovery, configuration lookup, ignore filtering, parallel file formatting, output routing, summaries, and exit codes. The discovery thread owns the style cache and publishes immutable configurations to workers. Completed results retain input output order independently of discovery and worker completion order; output and writes wait for discovery and formatting checks to finish.
+- `src/format/format.h|cpp` own source text linting and formatting, line ending preservation, and optional output validation.
+- `src/format/format_cli.cpp` owns the end-user formatter command orchestration: streaming input discovery, configuration lookup, ignore filtering, parallel file processing, output routing, summaries, and exit codes. The discovery thread owns the style cache and publishes immutable configurations to workers. Completed results retain input output order independently of discovery and worker completion order; output and writes wait for discovery, linting, and formatting checks to finish.
+- `src/lint/declarations.h|cpp` extract declaration facts independently of naming policy, including alternative interpretations of ambiguous syntax.
+- `src/lint/lint_config.h|cpp` own declaration selectors and name constraints.
+- `src/lint/lint.h|cpp` apply naming rules and comment suppressions and produce source diagnostics.
+- `src/syntax/tree_sitter.h` shares source slicing, node-field access, and tree traversal helpers between the linter and formatter model builder.
 - `src/format/impl/format_args.h|cpp` own command-line option parsing and usage text.
 - `src/format/impl/format_diff.h|cpp` own greedy line synchronization, changed-line counting, and unified-diff emission for `--diff`. Counting alone skips edit storage and diff rendering; line-position indexes are built only when nearby synchronization fails.
 - `src/format/impl/format_break_cost.h|cpp` own structural prefix-depth adjustments and final break-cost subtree discounts, including the no-discount traversal shortcut.
@@ -99,7 +114,7 @@ The writer records those operations as `FormatLayoutProgram` commands and resolv
 - `src/format/impl/format_model_normalize.h|cpp` own bottom-up syntax normalization and materialized semantic facts on formatter-owned nodes.
 - `src/format/impl/format_preprocessor_validation.h|cpp` own preprocessor placement validation.
 - `src/format/impl/format_model_dump.h|cpp` own syntax-tree and break-tree dump command orchestration.
-- `src/format/impl/format_model_parse.h|cpp` own tree-sitter parser setup, macro-category callbacks, and parse-to-format-model wiring.
+- `src/format/impl/format_model_parse.h|cpp` own tree-sitter parser setup, macro-category callbacks, original-tree lifetime, lint invocation, and parse-to-format-model wiring.
 - `vendor/tree-sitter/tree-sitter-cpp/src/scanner.c` owns custom tree-sitter external tokens, including runtime-configured macro identifiers, raw string delimiter state, and preprocessor directive newline ownership; see [scanner.md](scanner.md).
 - `src/format/impl/format_print_token.h` owns print-token data and borrowed-source metadata.
 - `src/format/impl/format_print_token_builder.h|cpp` own normalized syntax traversal through a private inherited context, centralized print-token construction, ancestry facts, comment continuations, and initial adjacent-source spacing.
@@ -122,14 +137,21 @@ The writer records those operations as `FormatLayoutProgram` commands and resolv
 - `strictfmt_tree_sitter_runtime` owns the vendored static tree-sitter runtime, subject to the upstream-runtime constraint below.
 - `strictfmt_tree_sitter_cpp_grammar` owns the vendored generated C++ grammar and custom scanner; see [scanner.md](scanner.md).
 - `strictfmt_util` owns utility modules shared by CLI and formatter code.
-- `strictfmt_core` owns the formatter core pipeline from source text through formatted source.
+- `strictfmt_core` owns parsing, linting, and the formatter pipeline from source text through formatted source.
 - `strictfmt_cli` owns command-line and embedding support on top of `strictfmt_core`.
 - `strictfmt` owns the standalone executable when `STRICTFMT_BUILD_STANDALONE` is enabled.
-- `strictfmt_tests` owns the custom test runner target backed by `tests/format/format_test.py` when Python is available.
+- `strictfmt_tests` owns the custom test runner target backed by `tests/format/format_test.py` and `tests/lint/lint_test.py` when Python is available.
 - `StrictfmtFormatTests` owns the CTest entry for the formatter test suite when Python is available.
+- `StrictfmtLintTests` owns the CTest entry for the lint test suite when Python is available.
 - `strictfmt_utf8_tests` and `StrictfmtUtf8Tests` own the Unicode utility test executable and its CTest entry.
 - `strictfmt_layout_tests` and `StrictfmtLayoutTests` own the internal layout-contract test executable and its CTest entry.
 - `strictfmt_parallel_tests` and `StrictfmtParallelTests` own streaming work-queue tests and their CTest entry.
+
+`tests/lint/input.cpp` and `output.txt` cover selectors, naming constraints,
+declaration forms, nested scopes, preprocessor branches, and suppressions.
+The adjacent CLI tests cover explicit regex exceptions, opt-out, lint-only
+execution, inheritance, locations, and write behavior;
+see [tests.md](tests.md#lint-tests).
 
 ## Upstream Tree-Sitter Runtime
 

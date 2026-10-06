@@ -43,7 +43,15 @@ constexpr std::array MACRO_CATEGORY_CONFIGS = {
     MacroCategoryConfig{"PreprocessorArgumentMacros", &FormatterConfig::preprocessorArgumentMacros},
 };
 
+struct NamingRulePatch {
+    std::string name;
+    std::vector<std::pair<std::string, std::string>> options;
+};
+
 struct FormatterConfigPatch {
+    bool lintPresent = false;
+    std::optional<bool> lintEnabled;
+    std::vector<NamingRulePatch> naming;
     bool inheritParent = false;
     std::optional<int> columnLimit;
     std::optional<int> indentWidth;
@@ -406,6 +414,86 @@ void MergeBuilderProfiles(std::vector<BuilderChainProfile>& inherited, std::vect
     }
 }
 
+void ParseLintConfig(const std::vector<ConfigLine>& lines, size_t& index, FormatterConfigPatch& patch) {
+    if (patch.lintPresent) {
+        throw std::runtime_error("duplicate Lint configuration");
+    }
+    patch.lintPresent = true;
+    const int rootIndent = lines[index].indent;
+    int lintIndent = -1;
+    int optionIndent = -1;
+    bool namingSeen = false;
+    int namingIndent = -1;
+    int ruleIndent = -1;
+    NamingRulePatch* rule = nullptr;
+    for (++index; index < lines.size(); ++index) {
+        const auto& line = lines[index];
+        if (line.indent <= rootIndent) {
+            --index;
+            break;
+        }
+        const auto [key, value] = SplitKeyValue(line.text);
+        if (lintIndent < 0) {
+            lintIndent = line.indent;
+        }
+        if (namingIndent >= 0 && line.indent > namingIndent) {
+            if (rule == nullptr || line.indent <= ruleIndent) {
+                if (ruleIndent >= 0 && ruleIndent != line.indent) {
+                    throw std::runtime_error("inconsistent lint rule indentation");
+                }
+                optionIndent = -1;
+                if (!value.empty() || key.empty()) {
+                    throw std::runtime_error("Lint.Naming requires named rule maps");
+                }
+                if (std::any_of(patch.naming.begin(), patch.naming.end(), [&](const auto& existing) {
+                    return existing.name == key;
+                })) {
+                    throw std::runtime_error("duplicate lint naming rule: " + key);
+                }
+                patch.naming.push_back({key, {}});
+                rule = &patch.naming.back();
+                ruleIndent = line.indent;
+            } else {
+                if (optionIndent < 0) {
+                    optionIndent = line.indent;
+                }
+                if (optionIndent != line.indent) {
+                    throw std::runtime_error("lint naming options must be scalars");
+                }
+                if (key.empty()) {
+                    throw std::runtime_error("invalid lint naming option");
+                }
+                for (const auto& option : rule->options) {
+                    if (option.first == key) {
+                        throw std::runtime_error("duplicate lint naming option: " + key);
+                    }
+                }
+                rule->options.emplace_back(key, UnquoteScalar(value));
+            }
+        } else {
+            rule = nullptr;
+            namingIndent = -1;
+            if (line.indent != lintIndent) {
+                throw std::runtime_error("inconsistent Lint indentation");
+            }
+            if (key == "Enabled") {
+                if (patch.lintEnabled) {
+                    throw std::runtime_error("duplicate Lint.Enabled");
+                }
+                patch.lintEnabled = ParseLintBoolean(UnquoteScalar(value));
+            } else if (key == "Naming" && value.empty()) {
+                if (namingSeen) {
+                    throw std::runtime_error("duplicate Lint.Naming");
+                }
+                namingSeen = true;
+                namingIndent = line.indent;
+            } else {
+                throw std::runtime_error("unknown lint configuration: " + key);
+            }
+        }
+    }
+}
+
 FormatterConfigPatch ParseFormatterConfigPatch(std::string_view text) {
     FormatterConfigPatch patch;
     const std::vector<ConfigLine> lines = ReadConfigLines(text);
@@ -420,6 +508,11 @@ FormatterConfigPatch ParseFormatterConfigPatch(std::string_view text) {
                 throw std::runtime_error("Inherit must be Parent");
             }
             patch.inheritParent = true;
+        } else if (key == "Lint") {
+            if (!value.empty()) {
+                throw std::runtime_error("Lint requires a map");
+            }
+            ParseLintConfig(lines, index, patch);
         } else if (key == "ColumnLimit") {
             patch.columnLimit = ParseInt(value, key);
         } else if (key == "IndentWidth") {
@@ -444,6 +537,24 @@ FormatterConfigPatch ParseFormatterConfigPatch(std::string_view text) {
 }
 
 FormatterConfig ApplyConfigPatch(FormatterConfig config, FormatterConfigPatch patch) {
+    if (patch.lintEnabled) {
+        config.lint.enabled = *patch.lintEnabled;
+    }
+    for (const auto& entry : patch.naming) {
+        auto rule = std::find_if(config.lint.naming.begin(), config.lint.naming.end(), [&](const auto& value) {
+            return value.name == entry.name;
+        });
+        if (rule == config.lint.naming.end()) {
+            config.lint.naming.push_back({entry.name, {}, {}});
+            rule = std::prev(config.lint.naming.end());
+        }
+        for (const auto& [key, value] : entry.options) {
+            SetNamingRuleOption(*rule, key, value);
+        }
+        if (rule->declarations.kinds == 0) {
+            throw std::runtime_error("lint rule requires Kinds: " + entry.name);
+        }
+    }
     if (patch.columnLimit.has_value()) {
         config.columnLimit = *patch.columnLimit;
     }
@@ -542,7 +653,13 @@ std::optional<FormatterConfig>
         }
     }
 
-    config = ApplyConfigPatch(std::move(config), std::move(patch));
+    try {
+        config = ApplyConfigPatch(std::move(config), std::move(patch));
+    } catch (const std::exception& exception) {
+        error = "invalid formatter config " + absolutePath + ": " + exception.what();
+        loadingStack.pop_back();
+        return std::nullopt;
+    }
     loadingStack.pop_back();
     return config;
 }

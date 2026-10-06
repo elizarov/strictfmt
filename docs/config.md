@@ -16,6 +16,8 @@ The `.cpp-format` file uses the formatter's YAML-like subset: blank lines, `---`
 
 Supported top-level keys:
 
+- `Lint`: optional naming rules and enablement; see [lint.md](lint.md). Unknown keys inside this section are errors.
+
 - `Inherit`: optional `Parent`, enabling parent `.cpp-format` inheritance.
 - `ColumnLimit`: integer target column for formatter-owned wrapping. The default is `120`.
 - `IndentWidth`: integer spaces per indentation level. The default is `4`.

@@ -174,3 +174,12 @@ and exist only to exercise one command or configuration edge.
 - `tests/format/src/format_directive_token_error_input.cpp` ->
   `tests/format/src/format_directive_token_error_output.txt`: directives cannot
   join a literal to a nonadjacent user-defined suffix.
+
+## Lint tests
+
+`tests/lint/lint_test.py` runs the naming golden pair (`input.cpp` and `output.txt`).
+It covers declaration selectors, case patterns, whole-name regex matching, affixes,
+and suppressions. Focused CLI/configuration tests cover explicit regex exceptions,
+rule isolation, inheritance (including replacing or clearing an ignored regex),
+execution modes, and write behavior. Both CTest and `strictfmt_tests` include the
+suite. See [lint.md](lint.md) for the checked behavior.

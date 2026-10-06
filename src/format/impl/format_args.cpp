@@ -56,6 +56,8 @@ std::string_view FormatModeOption(FormatMode mode) {
             return "--dry-run";
         case FormatMode::Diff:
             return "--diff";
+        case FormatMode::LintOnly:
+            return "--lint-only";
     }
     return "format mode";
 }
@@ -91,6 +93,12 @@ std::optional<FormatOptions> ParseFormatArgs(int argc, char** argv, std::string&
             if (!SelectFormatMode(options, FormatMode::Diff, arg, error)) {
                 return std::nullopt;
             }
+        } else if (arg == "--lint-only") {
+            if (!SelectFormatMode(options, FormatMode::LintOnly, arg, error)) {
+                return std::nullopt;
+            }
+        } else if (arg == "--no-lint") {
+            options.lint = false;
         } else if (arg == "-v" || arg == "--verbose") {
             options.verbose = true;
         } else if (arg == "--stdin") {
@@ -153,6 +161,10 @@ std::optional<FormatOptions> ParseFormatArgs(int argc, char** argv, std::string&
         } else {
             options.files.push_back(arg);
         }
+    }
+    if (options.mode == FormatMode::LintOnly && (!options.lint || options.validate)) {
+        error = "--lint-only is incompatible with --no-lint and --validate";
+        return std::nullopt;
     }
     if (options.dumpKind != FormatDumpKind::None) {
         const std::string_view optionName =
@@ -221,6 +233,7 @@ void PrintFormatUsage(FILE* out) {
     std::fprintf(out, "  -i                      Rewrite files in place.\n");
     std::fprintf(out, "  -n, --dry-run           Check formatting and return 1 when formatting changes are needed.\n");
     std::fprintf(out, "  --diff                  Print a unified diff and use the dry-run exit code.\n");
+    std::fprintf(out, "  --lint-only             Check configured lint rules without formatting.\n");
     std::fprintf(out, "  --dump-syntax-tree      Print the parsed syntax tree for debugging to stdout.\n");
     std::fprintf(out, "  --dump-break-tree       Print break-decision trees for debugging to stdout.\n");
     std::fprintf(out, "                          For either dump mode, pass one file or combine it with --stdin.\n");
@@ -231,6 +244,7 @@ void PrintFormatUsage(FILE* out) {
     std::fprintf(out, "                          By default, searches upward from each input for .cpp-format.\n");
     std::fprintf(out, "\n");
     std::fprintf(out, "Other options:\n");
+    std::fprintf(out, "  --no-lint               Skip configured lint checks before formatting.\n");
     std::fprintf(out, "  --validate              Reparse formatted output and check idempotence; fail on errors.\n");
     std::fprintf(out, "  --concurrency <n>       Limit worker threads. Defaults to hardware concurrency.\n");
     std::fprintf(out, "  -v, --verbose           Verbose progress output.\n");
