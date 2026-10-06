@@ -445,10 +445,10 @@ void ParseLintConfig(const std::vector<ConfigLine>& lines, size_t& index, Format
                 if (!value.empty() || key.empty()) {
                     throw std::runtime_error("Lint.Naming requires named rule maps");
                 }
-                if (std::any_of(patch.naming.begin(), patch.naming.end(), [&](const auto& existing) {
-                    return existing.name == key;
-                })) {
-                    throw std::runtime_error("duplicate lint naming rule: " + key);
+                for (const auto& existing : patch.naming) {
+                    if (existing.name == key) {
+                        throw std::runtime_error("duplicate lint naming rule: " + key);
+                    }
                 }
                 patch.naming.push_back({key, {}});
                 rule = &patch.naming.back();
