@@ -9776,3 +9776,16 @@ void OperatorComments() {
             )  //
                 >> end;
 }
+
+const Limit& [[clang::lifetimebound]] GetLimit();
+void Attributes(int& [[maybe_unused]] ref, int* [[maybe_unused]] pointer);
+
+using RefAttribute = int& [[maybe_unused]];
+using PointerAttribute = int* [[maybe_unused]];
+
+struct ReferenceAttributes {
+    int& [[maybe_unused]] ref;
+    int* [[maybe_unused]] pointer;
+
+    int& [[maybe_unused]] Access() { return ref; }
+};

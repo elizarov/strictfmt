@@ -5586,7 +5586,7 @@ function qualifiedIdentifier($, nested, ...extraNames) {
 }
 
 function pointerQualifiers($) {
-  return repeat(choice($.ms_pointer_modifier, $.type_qualifier, $.ms_call_modifier, $.declaration_modifier_macro));
+  return repeat(choice($.ms_pointer_modifier, $.type_qualifier, $.ms_call_modifier, $.declaration_modifier_macro, $.attribute_declaration));
 }
 
 function pointerDeclarator($, declarator) {
@@ -5601,7 +5601,7 @@ function pointerDeclarator($, declarator) {
 function referenceDeclarator($, declarator, preference = 1) {
   return prec.dynamic(preference, prec.right(seq(
     choice('&', '&&', '%'),
-    repeat($.declaration_modifier_macro),
+    repeat(choice($.declaration_modifier_macro, $.attribute_declaration)),
     declarator,
   )));
 }

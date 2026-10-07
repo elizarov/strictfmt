@@ -834,6 +834,10 @@
       "required": false,
       "types": [
         {
+          "type": "attribute_declaration",
+          "named": true
+        },
+        {
           "type": "declaration_modifier_macro",
           "named": true
         },
@@ -895,6 +899,10 @@
       "required": false,
       "types": [
         {
+          "type": "attribute_declaration",
+          "named": true
+        },
+        {
           "type": "declaration_modifier_macro",
           "named": true
         },
@@ -923,6 +931,10 @@
       "types": [
         {
           "type": "_abstract_declarator",
+          "named": true
+        },
+        {
+          "type": "attribute_declaration",
           "named": true
         },
         {
@@ -9363,6 +9375,10 @@
       "required": false,
       "types": [
         {
+          "type": "attribute_declaration",
+          "named": true
+        },
+        {
           "type": "declaration_modifier_macro",
           "named": true
         },
@@ -10537,6 +10553,10 @@
       "required": false,
       "types": [
         {
+          "type": "attribute_declaration",
+          "named": true
+        },
+        {
           "type": "declaration_modifier_macro",
           "named": true
         },
@@ -10608,6 +10628,10 @@
       "multiple": true,
       "required": false,
       "types": [
+        {
+          "type": "attribute_declaration",
+          "named": true
+        },
         {
           "type": "declaration_modifier_macro",
           "named": true
@@ -19271,6 +19295,10 @@
         },
         {
           "type": "_type_declarator",
+          "named": true
+        },
+        {
+          "type": "attribute_declaration",
           "named": true
         },
         {
