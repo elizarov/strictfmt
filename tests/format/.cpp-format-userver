@@ -11,6 +11,8 @@ MainIncludeChar: Quote
 IncludeIsMainRegex: '(Test)?$'
 
 MacroCategories:
+  StatementPrefixMacros:
+    - FORMAT_STATEMENT_PREFIX_*
   NamespaceMacros:
     - FORMAT_TEST_SUITE*
   ExpressionContinuationMacros:
@@ -40,6 +42,7 @@ MacroCategories:
   TypeSpecifierMacros:
     - FORMAT_USERVER_TYPE
   PreprocessorArgumentMacros:
+    - FORMAT_STATEMENT_PREFIX_RAW
     - FORMAT_USERVER_TOKENS
   StatementArgumentMacros:
     - UEXPECT_THROW

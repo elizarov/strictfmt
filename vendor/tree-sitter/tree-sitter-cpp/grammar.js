@@ -368,6 +368,8 @@ module.exports = grammar(C, {
   ],
 
   conflicts: $ => [
+    [$.macro_prefixed_statement, $.preproc_if_in_statement_prefix, $._closed_macro_prefixed_statement],
+    [$.macro_prefixed_statement, $.preproc_if_in_statement_prefix],
     [$._semicolon_initializer, $._common_postfix_expression, $.conditional_concatenated_string],
     [$._field_declarator, $._non_pointer_declarator, $._function_definition_name],
     [$._field_declarator, $._non_pointer_declarator],
@@ -3560,7 +3562,10 @@ module.exports = grammar(C, {
     statement_prefix_macro: $ => prec.right(PREC.CALL + 6, choice(
       seq($.statement_prefix_macro_identifier, optional($.argument_list)),
       seq($.preprocessor_statement_prefix_macro_identifier, $.preprocessing_token_argument_list),
+      $.preproc_if_in_statement_prefix,
     )),
+
+    ...preprocIf('_in_statement_prefix', $ => $.statement_prefix_macro, 0, PREPROC_ALL_BRANCH_FORMS | PREPROC_SHARED_OPENER),
 
     bare_macro_statement: $ => prec(1, $.item_macro_identifier),
 

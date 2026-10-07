@@ -2847,3 +2847,45 @@ const char* ConditionalReturnBody(bool ready) {
     }
     return nullptr;
 }
+
+void ConditionalStatementPrefixes() {
+#if MODE
+    FORMAT_STATEMENT_PREFIX_RAW(omp parallel reduction(+:sum))
+#endif
+    for (int i = 0; i < count; ++i) {
+        Sum(i);
+    }
+    if (ready) {
+#if MODE
+        FORMAT_STATEMENT_PREFIX_RAW(omp single)
+#else
+        FORMAT_STATEMENT_PREFIX_LOOP(items)
+#endif
+        Run();
+    } else {
+        Skip();
+    }
+#if MODE
+    FORMAT_STATEMENT_PREFIX_RAW(omp parallel)
+#if OTHER
+    FORMAT_STATEMENT_PREFIX_RAW(omp single)
+#endif
+#elif OTHER
+    FORMAT_STATEMENT_PREFIX_LOOP(items)
+#else
+    // No prefix is needed.
+#endif
+    {
+        Process();
+    }
+    if (ready) {
+#if MODE
+        FORMAT_STATEMENT_PREFIX_RAW(omp parallel)
+#endif
+        FORMAT_STATEMENT_PREFIX_LOOP(items) {
+            Run();
+        }
+    } else {
+        Skip();
+    }
+}

@@ -682,6 +682,7 @@ constexpr auto kSyntaxKindMappings = std::to_array<SyntaxKindMapping>({
     Tree(SyntaxNodeKind::MacroPrefixedStatement, "macro_prefixed_statement"),
     Tree(SyntaxNodeKind::MacroConditionalStatement, "macro_conditional_statement", Bit(SyntaxNodeClass::IfStatement)),
     Tree(SyntaxNodeKind::MacroModifier, "statement_prefix_macro"),
+    Tree(SyntaxNodeKind::PreprocIf, "preproc_if_in_statement_prefix", kConditionalPreprocessorOpenClasses),
     Tree(SyntaxNodeKind::MacroModifier, "macro_if_header"),
     Tree(SyntaxNodeKind::MacroModifier, "declaration_modifier_macro"),
     Tree(SyntaxNodeKind::Tree, "preproc_declaration_modifier", Bit(SyntaxNodeClass::DeclarationModifierPreprocessor)),
