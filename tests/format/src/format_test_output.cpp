@@ -9854,3 +9854,18 @@ struct InitializerContinuationFields {
 
 Value ReturnInitializerContinuation() { return {1, 2} FORMAT_CONTINUATION_END; }
 void AssignInitializerContinuation(Value& value) { value = {1, 2} FORMAT_CONTINUATION_END; }
+
+template <auto Place, Concept Body = void>
+struct ConstrainedRequest {};
+
+template <Concept T = int*>
+struct ConstrainedPointer {};
+
+template <ns::Concept<double> T = std::vector<int>>
+struct ConstrainedQualified {};
+
+template <Concept = void>
+struct UnnamedConstrained {};
+
+template <typename T = void, int N = 1, auto Value = 2>
+struct OrdinaryDefaults {};

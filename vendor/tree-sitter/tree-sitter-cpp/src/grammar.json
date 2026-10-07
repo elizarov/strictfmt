@@ -17154,6 +17154,15 @@
           "name": "optional_parameter_declaration"
         },
         {
+          "type": "ALIAS",
+          "content": {
+            "type": "SYMBOL",
+            "name": "_type_default_parameter_declaration"
+          },
+          "named": true,
+          "value": "optional_parameter_declaration"
+        },
+        {
           "type": "SYMBOL",
           "name": "variadic_parameter_declaration"
         },
@@ -21850,6 +21859,15 @@
           "name": "optional_parameter_declaration"
         },
         {
+          "type": "ALIAS",
+          "content": {
+            "type": "SYMBOL",
+            "name": "_type_default_parameter_declaration"
+          },
+          "named": true,
+          "value": "optional_parameter_declaration"
+        },
+        {
           "type": "SYMBOL",
           "name": "type_parameter_declaration"
         },
@@ -22350,7 +22368,7 @@
         }
       ]
     },
-    "optional_parameter_declaration": {
+    "_optional_parameter_declaration_prefix": {
       "type": "SEQ",
       "members": [
         {
@@ -22385,6 +22403,15 @@
         {
           "type": "STRING",
           "value": "="
+        }
+      ]
+    },
+    "optional_parameter_declaration": {
+      "type": "SEQ",
+      "members": [
+        {
+          "type": "SYMBOL",
+          "name": "_optional_parameter_declaration_prefix"
         },
         {
           "type": "FIELD",
@@ -22404,6 +22431,27 @@
           }
         }
       ]
+    },
+    "_type_default_parameter_declaration": {
+      "type": "PREC_DYNAMIC",
+      "value": -1,
+      "content": {
+        "type": "SEQ",
+        "members": [
+          {
+            "type": "SYMBOL",
+            "name": "_optional_parameter_declaration_prefix"
+          },
+          {
+            "type": "FIELD",
+            "name": "default_value",
+            "content": {
+              "type": "SYMBOL",
+              "name": "type_descriptor"
+            }
+          }
+        ]
+      }
     },
     "variadic_parameter_declaration": {
       "type": "SEQ",
@@ -45063,6 +45111,10 @@
     [
       "init_declarator",
       "optional_parameter_declaration"
+    ],
+    [
+      "init_declarator",
+      "_optional_parameter_declaration_prefix"
     ],
     [
       "parameter_declaration",

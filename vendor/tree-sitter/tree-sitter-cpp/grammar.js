@@ -400,6 +400,7 @@ module.exports = grammar(C, {
     [$.expression, $.preproc_declaration_modifier],
     [$.parenthesized_expression, $.condition_clause],
     [$.init_declarator, $.optional_parameter_declaration],
+    [$.init_declarator, $._optional_parameter_declaration_prefix],
     [$.parameter_declaration, $._declaration_declarator_list],
     [$._preproc_opening_condition, $.preproc_ifdef_in_function_header, $.preproc_ifdef_in_function_return_type, $.preproc_if_in_expression],
     [$._preproc_opening_condition, $.preproc_if_in_function_header, $.preproc_if_in_function_return_type, $.preproc_if_in_expression],
@@ -1639,6 +1640,7 @@ module.exports = grammar(C, {
       $.preproc_template_type_parameter_item,
       $.parameter_declaration,
       $.optional_parameter_declaration,
+      alias($._type_default_parameter_declaration, $.optional_parameter_declaration),
       $.variadic_parameter_declaration,
       $.variadic_type_parameter_declaration,
       $.optional_type_parameter_declaration,
@@ -2181,6 +2183,7 @@ module.exports = grammar(C, {
     _template_parameter_list_item: $ => choice(
       $.parameter_declaration,
       $.optional_parameter_declaration,
+      alias($._type_default_parameter_declaration, $.optional_parameter_declaration),
       $.type_parameter_declaration,
       $.variadic_parameter_declaration,
       $.variadic_type_parameter_declaration,
@@ -2304,12 +2307,22 @@ module.exports = grammar(C, {
       repeat($.attribute_specifier),
     ),
 
-    optional_parameter_declaration: $ => seq(
+    _optional_parameter_declaration_prefix: $ => seq(
       $._declaration_specifiers,
       field('declarator', optional(choice($._declarator, $._abstract_declarator))),
       '=',
+    ),
+
+    optional_parameter_declaration: $ => seq(
+      $._optional_parameter_declaration_prefix,
       field('default_value', choice($.expression, $._braced_initializer_value)),
     ),
+
+    // Type defaults support constrained parameters; prefer value defaults when both interpretations fit.
+    _type_default_parameter_declaration: $ => prec.dynamic(-1, seq(
+      $._optional_parameter_declaration_prefix,
+      field('default_value', $.type_descriptor),
+    )),
 
     variadic_parameter_declaration: $ => seq(
       $._declaration_specifiers,

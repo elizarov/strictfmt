@@ -10225,6 +10225,10 @@
           {
             "type": "initializer_list",
             "named": true
+          },
+          {
+            "type": "type_descriptor",
+            "named": true
           }
         ]
       },
