@@ -5434,7 +5434,7 @@
                 "members": [
                   {
                     "type": "SYMBOL",
-                    "name": "initializer_list"
+                    "name": "_braced_initializer_value"
                   },
                   {
                     "type": "SYMBOL",
@@ -5468,7 +5468,7 @@
                   },
                   {
                     "type": "SYMBOL",
-                    "name": "initializer_list"
+                    "name": "_braced_initializer_value"
                   }
                 ]
               }
@@ -7719,7 +7719,7 @@
                 },
                 {
                   "type": "SYMBOL",
-                  "name": "initializer_list"
+                  "name": "_braced_initializer_value"
                 },
                 {
                   "type": "STRING",
@@ -8295,7 +8295,7 @@
                 },
                 {
                   "type": "SYMBOL",
-                  "name": "initializer_list"
+                  "name": "_braced_initializer_value"
                 }
               ]
             }
@@ -11316,7 +11316,7 @@
                 "name": "value",
                 "content": {
                   "type": "SYMBOL",
-                  "name": "initializer_list"
+                  "name": "_braced_initializer_value"
                 }
               }
             ]
@@ -13726,7 +13726,7 @@
           "members": [
             {
               "type": "SYMBOL",
-              "name": "initializer_list"
+              "name": "_braced_initializer_value"
             },
             {
               "type": "BLANK"
@@ -14028,7 +14028,7 @@
                           },
                           {
                             "type": "SYMBOL",
-                            "name": "initializer_list"
+                            "name": "_braced_initializer_value"
                           }
                         ]
                       }
@@ -22398,7 +22398,7 @@
               },
               {
                 "type": "SYMBOL",
-                "name": "initializer_list"
+                "name": "_braced_initializer_value"
               }
             ]
           }
@@ -22903,7 +22903,7 @@
               },
               {
                 "type": "SYMBOL",
-                "name": "initializer_list"
+                "name": "_braced_initializer_value"
               }
             ]
           },
@@ -22968,7 +22968,7 @@
               },
               {
                 "type": "SYMBOL",
-                "name": "initializer_list"
+                "name": "_braced_initializer_value"
               }
             ]
           }
@@ -22994,7 +22994,7 @@
               },
               {
                 "type": "SYMBOL",
-                "name": "initializer_list"
+                "name": "_braced_initializer_value"
               }
             ]
           },
@@ -23198,7 +23198,7 @@
             },
             {
               "type": "SYMBOL",
-              "name": "initializer_list"
+              "name": "_braced_initializer_value"
             }
           ]
         },
@@ -23958,7 +23958,7 @@
             "members": [
               {
                 "type": "SYMBOL",
-                "name": "initializer_list"
+                "name": "_braced_initializer_value"
               },
               {
                 "type": "SYMBOL",
@@ -25023,7 +25023,7 @@
                           "name": "default_value",
                           "content": {
                             "type": "SYMBOL",
-                            "name": "initializer_list"
+                            "name": "_braced_initializer_value"
                           }
                         },
                         {
@@ -25045,7 +25045,7 @@
                                   },
                                   {
                                     "type": "SYMBOL",
-                                    "name": "initializer_list"
+                                    "name": "_braced_initializer_value"
                                   }
                                 ]
                               }
@@ -25120,7 +25120,7 @@
                                 "name": "default_value",
                                 "content": {
                                   "type": "SYMBOL",
-                                  "name": "initializer_list"
+                                  "name": "_braced_initializer_value"
                                 }
                               },
                               {
@@ -25142,7 +25142,7 @@
                                         },
                                         {
                                           "type": "SYMBOL",
-                                          "name": "initializer_list"
+                                          "name": "_braced_initializer_value"
                                         }
                                       ]
                                     }
@@ -34419,7 +34419,7 @@
               },
               {
                 "type": "SYMBOL",
-                "name": "initializer_list"
+                "name": "_braced_initializer_value"
               }
             ]
           }
@@ -34875,7 +34875,7 @@
                 "name": "value",
                 "content": {
                   "type": "SYMBOL",
-                  "name": "initializer_list"
+                  "name": "_braced_initializer_value"
                 }
               }
             ]
@@ -37434,12 +37434,55 @@
         }
       ]
     },
-    "_braced_initializer_clause": {
+    "_braced_initializer_value": {
       "type": "CHOICE",
       "members": [
         {
           "type": "SYMBOL",
           "name": "initializer_list"
+        },
+        {
+          "type": "ALIAS",
+          "content": {
+            "type": "SYMBOL",
+            "name": "macro_initializer_continuation"
+          },
+          "named": true,
+          "value": "macro_expression_continuation"
+        }
+      ]
+    },
+    "macro_initializer_continuation": {
+      "type": "PREC_DYNAMIC",
+      "value": 3,
+      "content": {
+        "type": "PREC_LEFT",
+        "value": -2,
+        "content": {
+          "type": "SEQ",
+          "members": [
+            {
+              "type": "FIELD",
+              "name": "argument",
+              "content": {
+                "type": "SYMBOL",
+                "name": "_braced_initializer_value"
+              }
+            },
+            {
+              "type": "SYMBOL",
+              "name": "expression_continuation_macro"
+            }
+          ]
+        }
+      }
+    },
+    "_braced_initializer_clause": {
+      "type": "CHOICE",
+      "members": [
+        {
+          "type": "SYMBOL",
+          "name": "_braced_initializer_value"
         },
         {
           "type": "ALIAS",
@@ -37460,7 +37503,7 @@
           "name": "pattern",
           "content": {
             "type": "SYMBOL",
-            "name": "initializer_list"
+            "name": "_braced_initializer_value"
           }
         },
         {
@@ -38064,7 +38107,7 @@
                       },
                       {
                         "type": "SYMBOL",
-                        "name": "initializer_list"
+                        "name": "_braced_initializer_value"
                       }
                     ]
                   }
@@ -38083,7 +38126,7 @@
                   },
                   {
                     "type": "SYMBOL",
-                    "name": "initializer_list"
+                    "name": "_braced_initializer_value"
                   }
                 ]
               }
@@ -38655,7 +38698,7 @@
                   },
                   {
                     "type": "SYMBOL",
-                    "name": "initializer_list"
+                    "name": "_braced_initializer_value"
                   }
                 ]
               }
@@ -38857,7 +38900,7 @@
                   "members": [
                     {
                       "type": "SYMBOL",
-                      "name": "initializer_list"
+                      "name": "_braced_initializer_value"
                     },
                     {
                       "type": "SYMBOL",
@@ -39176,7 +39219,7 @@
                           },
                           {
                             "type": "SYMBOL",
-                            "name": "initializer_list"
+                            "name": "_braced_initializer_value"
                           }
                         ]
                       },
@@ -39210,7 +39253,7 @@
                     },
                     {
                       "type": "SYMBOL",
-                      "name": "initializer_list"
+                      "name": "_braced_initializer_value"
                     }
                   ]
                 },
@@ -39865,7 +39908,7 @@
                     },
                     {
                       "type": "SYMBOL",
-                      "name": "initializer_list"
+                      "name": "_braced_initializer_value"
                     }
                   ]
                 },
@@ -39927,7 +39970,7 @@
                     },
                     {
                       "type": "SYMBOL",
-                      "name": "initializer_list"
+                      "name": "_braced_initializer_value"
                     }
                   ]
                 },
@@ -41518,7 +41561,7 @@
                         },
                         {
                           "type": "SYMBOL",
-                          "name": "initializer_list"
+                          "name": "_braced_initializer_value"
                         }
                       ]
                     }
@@ -41537,7 +41580,7 @@
                     },
                     {
                       "type": "SYMBOL",
-                      "name": "initializer_list"
+                      "name": "_braced_initializer_value"
                     }
                   ]
                 }
@@ -43412,7 +43455,7 @@
         },
         {
           "type": "SYMBOL",
-          "name": "initializer_list"
+          "name": "_braced_initializer_value"
         }
       ]
     },
@@ -44211,7 +44254,7 @@
               },
               {
                 "type": "SYMBOL",
-                "name": "initializer_list"
+                "name": "_braced_initializer_value"
               }
             ]
           }

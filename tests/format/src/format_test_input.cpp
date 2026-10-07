@@ -6015,3 +6015,16 @@ inline namespace inner {
 struct SharedType {};
 }
 }
+
+DEFINE_TABLE(Table) = {ENTRY(Table, first), ENTRY(Table, second),} FORMAT_CONTINUATION_END(Table);
+auto slots = {1, 2} FORMAT_CONTINUATION_END;
+void InitializerContinuations() {
+auto values = {1, 2} FORMAT_CONTINUATION_END;
+Use({1, 2} FORMAT_CONTINUATION_END);
+}
+struct InitializerContinuationFields {
+Value direct{1, 2} FORMAT_CONTINUATION_END;
+Value assigned = {1, 2} FORMAT_CONTINUATION_END;
+};
+Value ReturnInitializerContinuation() { return {1, 2} FORMAT_CONTINUATION_END; }
+void AssignInitializerContinuation(Value& value) { value = {1, 2} FORMAT_CONTINUATION_END; }

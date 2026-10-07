@@ -5139,6 +5139,10 @@
           "named": true
         },
         {
+          "type": "macro_expression_continuation",
+          "named": true
+        },
+        {
           "type": "macro_token_paste_expression",
           "named": true
         },
@@ -6314,6 +6318,10 @@
           },
           {
             "type": "initializer_list",
+            "named": true
+          },
+          {
+            "type": "macro_expression_continuation",
             "named": true
           }
         ]
@@ -7963,6 +7971,10 @@
           {
             "type": "expression",
             "named": true
+          },
+          {
+            "type": "initializer_list",
+            "named": true
           }
         ]
       }
@@ -8713,6 +8725,10 @@
         },
         {
           "type": "macro_declaration_header_fragment",
+          "named": true
+        },
+        {
+          "type": "macro_expression_continuation",
           "named": true
         },
         {
@@ -9936,6 +9952,10 @@
           },
           {
             "type": "initializer_list",
+            "named": true
+          },
+          {
+            "type": "macro_expression_continuation",
             "named": true
           }
         ]
@@ -19035,6 +19055,10 @@
       "types": [
         {
           "type": "initializer_list",
+          "named": true
+        },
+        {
+          "type": "macro_expression_continuation",
           "named": true
         },
         {

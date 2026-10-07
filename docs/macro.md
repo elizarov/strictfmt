@@ -294,7 +294,7 @@ bool valid = FIELDS(CHECK) true;
 
 ### ExpressionContinuationMacros
 
-`ExpressionContinuationMacros` names fragments appended to an expression, such as operators and operands, a member-call chain, or a supplied call argument list. Several continuations can follow one another. They stay attached to the expression rather than forming separate items.
+`ExpressionContinuationMacros` names fragments appended to an expression or braced initializer, such as operators and operands, a member-call chain, or a supplied call argument list. Several continuations can follow one another. They stay attached to the expression rather than forming separate items.
 
 Without configuration, `MORE_OPTIONS` below becomes a separate namespace item:
 

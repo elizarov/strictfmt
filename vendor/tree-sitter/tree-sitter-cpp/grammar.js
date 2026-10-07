@@ -1293,7 +1293,7 @@ module.exports = grammar(C, {
 
     _macro_replacement_call_unit: $ => seq(
       $.macro_call_replacement_item,
-      optional($.initializer_list),
+      optional($._braced_initializer_value),
     ),
 
     _macro_replacement_call_sequence: $ => prec.right(seq(
@@ -1344,7 +1344,7 @@ module.exports = grammar(C, {
         field('declarator', seq(
           field('name', $.identifier),
           '=',
-          field('default_value', choice($.expression, $.initializer_list)),
+          field('default_value', choice($.expression, $._braced_initializer_value)),
         )),
       )),
     ),
@@ -2308,7 +2308,7 @@ module.exports = grammar(C, {
       $._declaration_specifiers,
       field('declarator', optional(choice($._declarator, $._abstract_declarator))),
       '=',
-      field('default_value', choice($.expression, $.initializer_list)),
+      field('default_value', choice($.expression, $._braced_initializer_value)),
     ),
 
     variadic_parameter_declaration: $ => seq(
@@ -2376,13 +2376,13 @@ module.exports = grammar(C, {
         field('declarator', $._declarator),
         optional($.gnu_asm_expression),
         '=',
-        field('value', choice($.initializer_list, $.expression)),
+        field('value', choice($._braced_initializer_value, $.expression)),
       ),
       seq(
         field('declarator', $._declarator),
         field('value', choice(
           $.argument_list,
-          $.initializer_list,
+          $._braced_initializer_value,
         )),
       ),
       prec(PREC.CALL + 2, seq(
@@ -2400,7 +2400,7 @@ module.exports = grammar(C, {
       field('value', $.preproc_if_in_semicolon_initializer),
     )),
 
-    ...preprocIf('_in_expression', $ => choice($.expression, $.initializer_list), 0, PREPROC_ALL_BRANCH_FORMS | PREPROC_SHARED_OPENER, false),
+    ...preprocIf('_in_expression', $ => choice($.expression, $._braced_initializer_value), 0, PREPROC_ALL_BRANCH_FORMS | PREPROC_SHARED_OPENER, false),
 
     ...preprocIf('_in_semicolon_initializer', $ => $._semicolon_initializer_branch, 0, PREPROC_ALL_BRANCH_FORMS | PREPROC_SHARED_OPENER, false),
 
@@ -2409,7 +2409,7 @@ module.exports = grammar(C, {
       repeat($._block_item),
     ),
 
-    preproc_semicolon_value: $ => seq(choice($.expression, $.initializer_list), ';'),
+    preproc_semicolon_value: $ => seq(choice($.expression, $._braced_initializer_value), ';'),
 
     operator_cast: $ => prec.right(1, seq(
       'operator',
@@ -2484,7 +2484,7 @@ module.exports = grammar(C, {
         $.template_method,
         alias($.qualified_field_identifier, $.qualified_identifier),
       ),
-      choice($.initializer_list, $.argument_list),
+      choice($._braced_initializer_value, $.argument_list),
       optional('...'),
     )),
 
@@ -2716,8 +2716,8 @@ module.exports = grammar(C, {
         field('declarator', $._field_declarator),
         optional($.bitfield_clause),
         optional(choice(
-          field('default_value', $.initializer_list),
-          seq('=', field('default_value', choice($.expression, $.initializer_list))),
+          field('default_value', $._braced_initializer_value),
+          seq('=', field('default_value', choice($.expression, $._braced_initializer_value))),
         )),
       ),
       $.bitfield_clause,
@@ -3930,7 +3930,7 @@ module.exports = grammar(C, {
       ':',
       field('right', choice(
         $.expression,
-        $.initializer_list,
+        $._braced_initializer_value,
       )),
     ),
 
@@ -4017,14 +4017,14 @@ module.exports = grammar(C, {
           '=',
           field('value', $.expression),
         ),
-        field('value', $.initializer_list),
+        field('value', $._braced_initializer_value),
       ),
     )),
 
     return_statement: ($, original) => seq(
       choice(
         original,
-        seq('return', $.initializer_list, ';'),
+        seq('return', $._braced_initializer_value, ';'),
       ),
     ),
 
@@ -4386,13 +4386,20 @@ module.exports = grammar(C, {
 
     _initializer_list_final_item: $ => initializerClause($),
 
-    _braced_initializer_clause: $ => choice(
+    _braced_initializer_value: $ => choice(
       $.initializer_list,
+      alias($.macro_initializer_continuation, $.macro_expression_continuation),
+    ),
+
+    macro_initializer_continuation: $ => macroExpressionContinuation($, $._braced_initializer_value),
+
+    _braced_initializer_clause: $ => choice(
+      $._braced_initializer_value,
       alias($.initializer_list_pack_expansion, $.parameter_pack_expansion),
     ),
 
     initializer_list_pack_expansion: $ => seq(
-      field('pattern', $.initializer_list),
+      field('pattern', $._braced_initializer_value),
       '...',
     ),
 
@@ -4400,7 +4407,7 @@ module.exports = grammar(C, {
       original,
       seq(
         field('designator', $.field_designator),
-        field('value', $.initializer_list),
+        field('value', $._braced_initializer_value),
       ),
     )),
 
@@ -4450,8 +4457,8 @@ module.exports = grammar(C, {
     macro_argument_init_declarator: $ => seq(
       field('declarator', macroArgumentDeclarator($)),
       choice(
-        seq('=', field('value', choice($.expression, $.initializer_list))),
-        field('value', choice($.argument_list, $.initializer_list)),
+        seq('=', field('value', choice($.expression, $._braced_initializer_value))),
+        field('value', choice($.argument_list, $._braced_initializer_value)),
       ),
     ),
 
@@ -4538,7 +4545,7 @@ module.exports = grammar(C, {
       $._declaration_specifiers,
       field('declarator', prec(1, $.identifier)),
       '=',
-      field('default_value', choice($.expression, $.initializer_list)),
+      field('default_value', choice($.expression, $._braced_initializer_value)),
     ))),
 
     macro_declaration_header_fragment: $ => choice(
@@ -4572,7 +4579,7 @@ module.exports = grammar(C, {
         $._declarator,
         optional($.gnu_asm_expression),
         '=',
-        field('value', choice($.initializer_list, $.expression)),
+        field('value', choice($._braced_initializer_value, $.expression)),
       ),
       seq(
         optional($.ms_call_modifier),
@@ -4642,7 +4649,7 @@ module.exports = grammar(C, {
 
     subscript_argument_list: $ => seq(
       '[',
-      commaSepWithPreproc($, choice($.expression, $.initializer_list), '_in_expression_list', 0),
+      commaSepWithPreproc($, choice($.expression, $._braced_initializer_value), '_in_expression_list', 0),
       ']',
     ),
 
@@ -4725,7 +4732,7 @@ module.exports = grammar(C, {
       field('declarator', optional($.new_declarator)),
       field('arguments', optional(choice(
         $.argument_list,
-        $.initializer_list,
+        $._braced_initializer_value,
       ))),
     )),
 
@@ -4735,7 +4742,7 @@ module.exports = grammar(C, {
       field('declarator', optional($.new_declarator)),
       field('arguments', optional(choice(
         $.argument_list,
-        $.initializer_list,
+        $._braced_initializer_value,
       ))),
     )),
 
@@ -4951,8 +4958,8 @@ module.exports = grammar(C, {
       optional('...'),
       field('left', contextualIdentifier($)),
       choice(
-        seq('=', field('right', choice($.expression, $.initializer_list))),
-        field('right', choice($.argument_list, $.initializer_list)),
+        seq('=', field('right', choice($.expression, $._braced_initializer_value))),
+        field('right', choice($.argument_list, $._braced_initializer_value)),
       ),
     )),
 
@@ -5198,7 +5205,7 @@ module.exports = grammar(C, {
 
     primitive_braced_argument: $ => seq(
       choice($.primitive_type, $.sized_type_specifier),
-      $.initializer_list,
+      $._braced_initializer_value,
     ),
 
     preproc_argument_fragment: $ => preprocArgumentFragment($, seq(
@@ -5321,13 +5328,13 @@ module.exports = grammar(C, {
     assignment_expression: $ => prec.right(PREC.ASSIGNMENT, seq(
       field('left', $._assignment_left_expression),
       field('operator', choice(...ASSIGNMENT_OPERATORS)),
-      field('right', choice($.expression, $.initializer_list)),
+      field('right', choice($.expression, $._braced_initializer_value)),
     )),
 
     _assignment_expression_lhs: $ => seq(
       field('left', $.expression),
       field('operator', choice(...ASSIGNMENT_OPERATORS)),
-      field('right', choice($.expression, $.initializer_list)),
+      field('right', choice($.expression, $._braced_initializer_value)),
     ),
 
     // This prevents an ambiguity between fold expressions
