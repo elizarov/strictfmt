@@ -755,6 +755,27 @@ void NormalizeLeadingStreamComments(SyntaxNode& node) {
     }
 }
 
+void NormalizeTemplateConstraintComments(SyntaxNode& node) {
+    if (node.kind != SyntaxNodeKind::TemplateDeclaration) {
+        return;
+    }
+    for (size_t index = 0; index + 1 < node.children.size(); ++index) {
+        SyntaxNode* clause = node.children[index];
+        if (clause == nullptr || clause->kind != SyntaxNodeKind::RequiresClause) {
+            continue;
+        }
+        while (index + 1 < node.children.size()) {
+            SyntaxNode* comment = node.children[index + 1];
+            if (comment == nullptr || comment->kind != SyntaxNodeKind::TrailingComment) {
+                break;
+            }
+            clause->children.push_back(comment);
+            ReparentSyntaxNode(*comment, clause);
+            node.children.erase(node.children.begin() + static_cast<std::ptrdiff_t>(index + 1));
+        }
+    }
+}
+
 // Tree-sitter extras between the complete definition header and its value belong to the replacement list.
 void NormalizeMacroReplacementComments(SyntaxNode& node) {
     if (node.kind != SyntaxNodeKind::MacroDefinition) {
@@ -1057,6 +1078,7 @@ void NormalizeSyntaxNode(FormatModel& model, SyntaxNode& node) {
     NormalizeEmptyCompoundBlock(node);
     NormalizeCommentedNullStatements(node);
     NormalizeColonPrefixedListComments(node);
+    NormalizeTemplateConstraintComments(node);
     NormalizeBlockHeaderComments(node);
     NormalizeLeadingStreamComments(node);
     NormalizeAttachedTrailingBlockComment(node);

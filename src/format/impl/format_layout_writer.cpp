@@ -151,7 +151,11 @@ void FormatLayoutWriter::WriteToken(
             &context_.sourceTokens[printToken.sourceIndex + 1] : nullptr;
         const bool continuesMacro = PrintTokenContinuesMacroLine(printToken, nextToken);
         if (
-            TrailingCommentReturnsToStructuralIndent(printToken) ||
+            TrailingCommentReturnsToStructuralIndent(printToken) || (
+                printToken.inTemplateDeclarationHeader &&
+                nextToken != nullptr &&
+                !nextToken->inTemplateDeclarationHeader
+            ) ||
             (printToken.macroDefinition != nullptr && !continuesMacro)
         ) {
             program_.NewLine(continuesMacro);

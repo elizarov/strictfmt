@@ -9752,3 +9752,14 @@ void ScopedSubscripts() {
     auto copy = State::values[index];
     auto [first, second] = Read();
 }
+
+template <class T>
+    requires Concept<T> &&  // first condition
+        Other<T>  // explains the last constraint
+void ConstrainedComment() { Work(); }
+
+template <class T>
+    requires Concept<T> /* constraint */
+struct ConstrainedClass {
+    T value;
+};
