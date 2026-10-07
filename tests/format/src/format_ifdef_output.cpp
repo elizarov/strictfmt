@@ -677,23 +677,26 @@ void GuardedElseThroughLoops(bool outer, bool inner, bool ready) {
 
 void GuardedElseWithSelectedHeader(bool first, bool second) {
 #if FIRST_MODE
-if(first)
+    if (first)
 #else
-if(second)
+    if (second)
 #endif
-    if (second) {
-        Run();
-    } else {
-        Other();
+    {
+        if (second) {
+            Run();
+        } else {
+            Other();
+        }
     }
     if (first) {
 #if FIRST_MODE
-if(second)
+        if (second)
 #else
-if(first)
+        if (first)
 #endif
-        Run();
-        else {
+        {
+            Run();
+        } else {
             Other();
         }
     }
@@ -2888,4 +2891,68 @@ void ConditionalStatementPrefixes() {
     } else {
         Skip();
     }
+}
+
+void SelectedHeadersWithItems() {
+#if MODE
+    Before();
+    if (first)
+#endif
+    {
+        Run();
+    }
+#if MODE
+    Before();
+    if (first)
+#elif OTHER
+    Before();
+    if (second)
+#else
+    if (third)
+#endif
+    {
+        Run();
+    }
+#if MODE
+    Before();
+#if OTHER
+    if (first)
+#else
+    if (second)
+#endif
+#else
+    Before();
+    if (third)
+#endif
+    {
+        Run();
+    }
+}
+
+void ProtectedSelectedHeaders() {
+    if (first) {
+        Run();
+    } else {
+#if MODE
+        Before();
+        if (second)
+#else
+        if (third)
+#endif
+        {
+            Run();
+        }
+    }
+}
+
+void PreprocessorSelectedIfHeader(Connection* conn) {
+#if FORMAT_USERVER_PIPELINE_STATUS
+    if (conn->pipelineStatus == kPipelineOff)
+#else
+    if (Flush(conn) < 0)
+#endif
+    {
+        goto sendFailed;
+    }
+    sendFailed:;
 }

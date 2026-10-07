@@ -670,6 +670,26 @@ class FormatCommandTests(unittest.TestCase):
             r"Formatted stdin\. [\d,]+/[\d,]+ LOC changed\. Done in (?:\d+ms|\d+\.\d{3}s)\.\s*$",
         )
 
+    def test_conditional_header_items_preserve_enclosing_control_scope(self) -> None:
+        bodies = (
+            "#if MODE\nBefore(); if (inner)\n#else\nif (inner)\n#endif\nRun();\n",
+            "#if MODE\nBefore(); if (inner)\n#else\nif (inner)\n#endif\n{ Run(); }\n",
+            "#if MODE\nBefore(); if (inner) {\n#else\nif (inner) {\n#endif\nRun(); }\n",
+            "#if MODE\nBefore(); if (inner) {\n#else\nif (inner) {\n#endif\nRun(); } else { Skip(); }\n",
+        )
+        for body in bodies:
+            with self.subTest(body=body):
+                result = native_format(
+                    "--stdin", "--style", str(USERVER_FORMAT_CONFIG), cwd=TEST_ROOT,
+                    input_text="void Example() { if (outer)\n" + body + "}\n",
+                )
+                self.assertEqual(1, result.returncode, msg=result.stderr)
+                self.assertEqual("", result.stdout)
+                self.assertEqual(
+                    "<stdin>: cannot add braces across conditional scope boundaries\n",
+                    result.stderr,
+                )
+
     def test_conditional_returns_preserve_enclosing_control_scope(self) -> None:
         for keyword in ("return", "co_return", "co_yield"):
             for prefix in ("", '"prefix "'):

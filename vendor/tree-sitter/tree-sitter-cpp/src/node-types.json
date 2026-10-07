@@ -11828,6 +11828,10 @@
           "named": true
         },
         {
+          "type": "preproc_selected_if_header",
+          "named": true
+        },
+        {
           "type": "preproc_semicolon_value",
           "named": true
         },
@@ -11861,6 +11865,10 @@
         },
         {
           "type": "selected_for_prefix",
+          "named": true
+        },
+        {
+          "type": "selected_if_header",
           "named": true
         },
         {
@@ -12410,6 +12418,10 @@
           "named": true
         },
         {
+          "type": "preproc_selected_if_header",
+          "named": true
+        },
+        {
           "type": "preproc_semicolon_value",
           "named": true
         },
@@ -12443,6 +12455,10 @@
         },
         {
           "type": "selected_for_prefix",
+          "named": true
+        },
+        {
+          "type": "selected_if_header",
           "named": true
         },
         {
@@ -17869,7 +17885,99 @@
       "required": true,
       "types": [
         {
+          "type": "alias_declaration",
+          "named": true
+        },
+        {
+          "type": "declaration",
+          "named": true
+        },
+        {
+          "type": "function_pointer_alias_declaration",
+          "named": true
+        },
+        {
+          "type": "function_type_alias_declaration",
+          "named": true
+        },
+        {
+          "type": "item_suffix_macro",
+          "named": true
+        },
+        {
+          "type": "member_pointer_alias_declaration",
+          "named": true
+        },
+        {
+          "type": "namespace_alias_definition",
+          "named": true
+        },
+        {
+          "type": "preproc_call",
+          "named": true
+        },
+        {
+          "type": "preproc_elif",
+          "named": true
+        },
+        {
+          "type": "preproc_else",
+          "named": true
+        },
+        {
+          "type": "preproc_if_in_if_transition",
+          "named": true
+        },
+        {
+          "type": "preproc_include",
+          "named": true
+        },
+        {
+          "type": "preproc_selected_if_header",
+          "named": true
+        },
+        {
+          "type": "preproc_unbalanced_else_block",
+          "named": true
+        },
+        {
+          "type": "preproc_using",
+          "named": true
+        },
+        {
+          "type": "preproc_value_declaration",
+          "named": true
+        },
+        {
           "type": "selected_if_header",
+          "named": true
+        },
+        {
+          "type": "standalone_attribute_preproc_if",
+          "named": true
+        },
+        {
+          "type": "standalone_qualifier_preproc_if",
+          "named": true
+        },
+        {
+          "type": "statement",
+          "named": true
+        },
+        {
+          "type": "static_assert_declaration",
+          "named": true
+        },
+        {
+          "type": "type_definition",
+          "named": true
+        },
+        {
+          "type": "type_specifier",
+          "named": true
+        },
+        {
+          "type": "using_declaration",
           "named": true
         }
       ]

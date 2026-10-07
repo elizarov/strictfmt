@@ -30,7 +30,7 @@ This is the closed list of placements that are explicitly supported.
 - **Selected call prefixes**: conditionals may select a callee and its opening parenthesis, with the arguments and closing parenthesis shared after `#endif`. Callees use ordinary expression syntax; nested conditional groups and `#else` or `#elif` alternatives are supported.
 - **Selected expression operands**: conditionals may select complete expressions or braced initializers, with optional `#else` or `#elif` alternatives. Shared operators and the terminating semicolon may follow `#endif`.
 - **Values with branch-owned semicolons**: conditionals may select values for variable declarations, assignments, returns (including `co_return` and `co_yield`), alias declarations, and concept definitions. A shared string-literal prefix may precede conditional string fragments in declarations, assignments, and returns. Each branch body must supply its own terminating semicolon; complete source items may follow it. Nested conditionals and `#else` or `#elif` alternatives are supported.
-- **Selected `if` statements**: a single conditional-opener block with an optional `#else` branch may select complete unbraced `if` headers when the following statement starts after the `#endif`.
+- **Selected `if` statements**: conditionals may select complete unbraced `if` headers before a shared statement after `#endif`. Branches may contain complete statements and declarations before the header, nested groups, and `#else` or `#elif` alternatives.
 - **Selected common-body control starts**: conditionals may select `if` headers or `for` headers (classic, range-based, or `for each`) together with their opening `{`, followed by a shared body and closing `}`. Branches may contain complete statements and declarations before the selected header, nested conditional groups, and `#else` or `#elif` alternatives. A selected `if` body may be followed by a shared `else` clause.
 - **Conditional `if constexpr`**: conditionals may guard `constexpr` between `if` and its condition, including nested groups and `#else` or `#elif` alternatives.
 - **Guarded `if`/`else` prefixes**: conditionals may select an `if`/`else if` chain ending in `else`, with the final body shared after `#endif`. Branches may contain complete statements and declarations before the chain, nested conditional groups, and `#else` or `#elif` alternatives. Braced and unbraced shared bodies are supported; the opening brace may be selected with the prefix.
@@ -49,7 +49,7 @@ This is the closed list of placements that are explicitly supported.
 - **Include-supplied initializer-list fragments**: local `#include` directives may contribute entries and their separators inside braced initializer lists, including conditional branches and fragments interleaved with ordinary entries.
 - **Local includes**: local `#include` directives may stand where the parser accepts them as complete items.
 
-Enclosing control bodies are rejected when adding braces would change `else` ownership or span conditionally absent openers or branch-owned following items.
+Enclosing control bodies are rejected when adding braces would change `else` ownership or span conditionally absent openers or branch-local items outside the controlled statement.
 
 All other places are not supported and may result in parsing errors or produce misformatted output if the parser manages to recover without errors.
 

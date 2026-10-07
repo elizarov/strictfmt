@@ -20,16 +20,6 @@ extern int* ConditionalDeclarationSuffix(void)
 #endif
 ;
 
-void PreprocessorSelectedIfHeader(Connection* conn) {
-#if FORMAT_USERVER_PIPELINE_STATUS
-if (conn->pipelineStatus == kPipelineOff)
-#else
-if (Flush(conn) < 0)
-#endif
-    goto sendFailed;
-    sendFailed:;
-}
-
 void ConditionalArgumentExpressionFragment() {
     Open(
 #ifdef FORMAT_USERVER_FLAG_A

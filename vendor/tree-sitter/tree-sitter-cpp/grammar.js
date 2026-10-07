@@ -3615,15 +3615,7 @@ module.exports = grammar(C, {
       $, field('condition', $.preproc_selected_if_header),
     ),
 
-    preproc_selected_if_header: $ => seq(
-      $._preproc_opening_line,
-      $.selected_if_header,
-      optional(seq(
-        $._preproc_else_line,
-        $.selected_if_header,
-      )),
-      $._preproc_endif_line,
-    ),
+    ...selectedStatementPrefix('if_header', $ => $.selected_if_header, 'preproc_selected_if_header'),
 
     preproc_selected_braced_if_statement: $ => seq(
       field('consequence', alias($.preproc_selected_if_body, $.compound_statement)),
@@ -5816,8 +5808,7 @@ function selectedIfHeader($) {
   return $._if_header;
 }
 
-function selectedStatementPrefix(kind, prefix) {
-  const group = 'preproc_' + kind + '_prefix';
+function selectedStatementPrefix(kind, prefix, group = 'preproc_' + kind + '_prefix') {
   const branch = '_selected_' + kind + '_prefix_branch';
   const alternative = '_preproc_' + kind + '_prefix_alternative';
   const elseBranch = 'preproc_else_' + kind + '_prefix';

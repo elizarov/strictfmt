@@ -2413,3 +2413,55 @@ FORMAT_STATEMENT_PREFIX_RAW(omp parallel)
 FORMAT_STATEMENT_PREFIX_LOOP(items) { Run(); }
 else Skip();
 }
+
+void SelectedHeadersWithItems() {
+#if MODE
+Before();
+if (first)
+#endif
+{ Run(); }
+#if MODE
+Before();
+if (first)
+#elif OTHER
+Before();
+if (second)
+#else
+if (third)
+#endif
+Run();
+#if MODE
+Before();
+#if OTHER
+if (first)
+#else
+if (second)
+#endif
+#else
+Before();
+if (third)
+#endif
+{ Run(); }
+}
+
+void ProtectedSelectedHeaders() {
+if (first) { Run(); } else {
+#if MODE
+Before();
+if (second)
+#else
+if (third)
+#endif
+Run();
+}
+}
+
+void PreprocessorSelectedIfHeader(Connection* conn) {
+#if FORMAT_USERVER_PIPELINE_STATUS
+if (conn->pipelineStatus == kPipelineOff)
+#else
+if (Flush(conn) < 0)
+#endif
+    goto sendFailed;
+sendFailed:;
+}

@@ -357,12 +357,61 @@ bool ConditionalEndingHasOptionalOpener(const SyntaxNode& node) {
         !ConditionalHeaderIsExhaustive(*body->children[*first]);
 }
 
+bool ConditionalHeaderHasLeadingItems(const SyntaxNode& node) {
+    if (node.children.empty() || node.children.front() == nullptr) {
+        return false;
+    }
+    for (size_t index = 0; index < node.children.size(); ++index) {
+        const SyntaxNode* child = node.children[index];
+        if (
+            child == nullptr ||
+            SyntaxNodeHasClass(*child, SyntaxNodeClass::Trivia) ||
+            child->kind == SyntaxNodeKind::BlankLine ||
+            SyntaxNodeHasClass(*child, SyntaxNodeClass::EndifDirective) ||
+            SyntaxNodeHasClass(*child, SyntaxNodeClass::MacroDefinition) ||
+            IsConditionalPreprocessorHeaderChild(node, index)
+        ) {
+            continue;
+        }
+        if (child->kind == SyntaxNodeKind::PreprocElse || child->kind == SyntaxNodeKind::PreprocElif || (
+            SyntaxNodeHasClass(*child, SyntaxNodeClass::ConditionalBlockHeader) &&
+            (child->kind == SyntaxNodeKind::PreprocIf || child->kind == SyntaxNodeKind::PreprocIfdef)
+        )) {
+            if (ConditionalHeaderHasLeadingItems(*child)) {
+                return true;
+            }
+        } else if (!SyntaxNodeHasClass(*child, SyntaxNodeClass::ConditionalBlockHeader)) {
+            return true;
+        }
+    }
+    return false;
+}
+
+bool StartsWithConditionalHeaderItems(const SyntaxNode& node) {
+    const SyntaxNode* header = &node;
+    if (node.kind == SyntaxNodeKind::CompoundStatement) {
+        const auto first = NextStructuralChildIndex(node.children, 0);
+        if (!first || node.children[*first] == nullptr) {
+            return false;
+        }
+        header = node.children[*first];
+    }
+    return SyntaxNodeHasClass(*header, SyntaxNodeClass::ConditionalBlockHeader) &&
+        (header->kind == SyntaxNodeKind::PreprocIf || header->kind == SyntaxNodeKind::PreprocIfdef) &&
+        ConditionalHeaderHasLeadingItems(*header);
+}
+
 bool HasEscapingConditionalItems(const SyntaxNode& node) {
     if (SyntaxNodeHasClass(node, SyntaxNodeClass::ConditionalRhsPreprocessor)) {
         return ConditionalEndingHasFollowingItems(node);
     }
     if (node.kind == SyntaxNodeKind::PreprocBlockClose) {
         return ConditionalEndingHasFollowingItems(node) || ConditionalEndingHasOptionalOpener(node);
+    }
+    for (const SyntaxNode* child : node.children) {
+        if (child != nullptr && StartsWithConditionalHeaderItems(*child)) {
+            return true;
+        }
     }
     const auto last = PreviousStructuralChildIndex(node.children, node.children.size());
     return last && node.children[*last] != nullptr && HasEscapingConditionalItems(*node.children[*last]);
