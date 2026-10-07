@@ -7434,34 +7434,8 @@
         "type": "SEQ",
         "members": [
           {
-            "type": "CHOICE",
-            "members": [
-              {
-                "type": "SEQ",
-                "members": [
-                  {
-                    "type": "STRING",
-                    "value": "case"
-                  },
-                  {
-                    "type": "FIELD",
-                    "name": "value",
-                    "content": {
-                      "type": "SYMBOL",
-                      "name": "expression"
-                    }
-                  }
-                ]
-              },
-              {
-                "type": "STRING",
-                "value": "default"
-              }
-            ]
-          },
-          {
-            "type": "STRING",
-            "value": ":"
+            "type": "SYMBOL",
+            "name": "_case_label"
           },
           {
             "type": "REPEAT",
@@ -31525,34 +31499,8 @@
       "type": "SEQ",
       "members": [
         {
-          "type": "CHOICE",
-          "members": [
-            {
-              "type": "SEQ",
-              "members": [
-                {
-                  "type": "STRING",
-                  "value": "case"
-                },
-                {
-                  "type": "FIELD",
-                  "name": "value",
-                  "content": {
-                    "type": "SYMBOL",
-                    "name": "expression"
-                  }
-                }
-              ]
-            },
-            {
-              "type": "STRING",
-              "value": "default"
-            }
-          ]
-        },
-        {
-          "type": "STRING",
-          "value": ":"
+          "type": "SYMBOL",
+          "name": "_case_label"
         },
         {
           "type": "REPEAT",
@@ -31682,40 +31630,69 @@
         }
       ]
     },
-    "preproc_case_label": {
-      "type": "CHOICE",
+    "_case_label": {
+      "type": "SEQ",
       "members": [
         {
-          "type": "SEQ",
+          "type": "CHOICE",
           "members": [
             {
-              "type": "STRING",
-              "value": "case"
+              "type": "SEQ",
+              "members": [
+                {
+                  "type": "STRING",
+                  "value": "case"
+                },
+                {
+                  "type": "FIELD",
+                  "name": "value",
+                  "content": {
+                    "type": "SYMBOL",
+                    "name": "expression"
+                  }
+                },
+                {
+                  "type": "CHOICE",
+                  "members": [
+                    {
+                      "type": "SEQ",
+                      "members": [
+                        {
+                          "type": "STRING",
+                          "value": "..."
+                        },
+                        {
+                          "type": "FIELD",
+                          "name": "end",
+                          "content": {
+                            "type": "SYMBOL",
+                            "name": "expression"
+                          }
+                        }
+                      ]
+                    },
+                    {
+                      "type": "BLANK"
+                    }
+                  ]
+                }
+              ]
             },
             {
-              "type": "SYMBOL",
-              "name": "expression"
-            },
-            {
               "type": "STRING",
-              "value": ":"
+              "value": "default"
             }
           ]
         },
         {
-          "type": "SEQ",
-          "members": [
-            {
-              "type": "STRING",
-              "value": "default"
-            },
-            {
-              "type": "STRING",
-              "value": ":"
-            }
-          ]
+          "type": "STRING",
+          "value": ":"
         }
       ]
+    },
+    "preproc_case_label": {
+      "type": "SYMBOL",
+      "name": "_case_label"
     },
     "preproc_assignment_statement": {
       "type": "PREC_RIGHT",

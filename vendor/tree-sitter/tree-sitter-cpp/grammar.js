@@ -3574,10 +3574,12 @@ module.exports = grammar(C, {
       $._preproc_endif_line,
     ),
 
-    preproc_case_label: $ => choice(
-      seq('case', $.expression, ':'),
-      seq('default', ':'),
+    _case_label: $ => seq(
+      choice(seq('case', field('value', $.expression), optional(seq('...', field('end', $.expression)))), 'default'),
+      ':',
     ),
+
+    preproc_case_label: $ => $._case_label,
 
     preproc_assignment_statement: $ => prec.right(PREC.ASSIGNMENT, seq(
       field('left', $._assignment_left_expression),
@@ -5959,8 +5961,7 @@ function ifStatement($, header) {
 
 function caseStatementPrefix($) {
   return [
-    choice(seq('case', field('value', $.expression)), 'default'),
-    ':',
+    $._case_label,
     repeat(choice(
       $._non_case_statement,
       $.declaration,

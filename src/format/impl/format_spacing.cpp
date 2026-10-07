@@ -101,6 +101,14 @@ const SyntaxNode* NextNonTriviaChild(const SyntaxNode& node, size_t after) {
     return nullptr;
 }
 
+bool IsCaseRangeEllipsis(const PrintToken& token) {
+    if (token.syntaxKind != SyntaxNodeKind::Ellipsis || token.node == nullptr || token.node->parent == nullptr) {
+        return false;
+    }
+    const SyntaxNode* first = NextNonTriviaChild(*token.node->parent, 0);
+    return first != nullptr && first->kind == SyntaxNodeKind::KeywordCase;
+}
+
 bool IsDeclaratorPackEllipsisToken(const PrintToken& token) {
     if (
         token.kind != PrintTokenKind::Known ||
@@ -509,6 +517,9 @@ bool FormatTokenNeedsSpace(const PrintToken* previous, const PrintToken& current
             previous->syntaxKind == SyntaxNodeKind::Question
         );
     }
+    if (IsCaseRangeEllipsis(*previous) || IsCaseRangeEllipsis(current)) {
+        return true;
+    }
     // Adjacent digits and dots form one preprocessing number instead of a number followed by an ellipsis.
     if (previous->syntaxKind == SyntaxNodeKind::NumberLiteral && current.syntaxKind == SyntaxNodeKind::Ellipsis) {
         return true;
@@ -686,7 +697,7 @@ bool FormatTokenNeedsSpace(const PrintToken* previous, const PrintToken& current
     if (prev == SyntaxNodeKind::KeywordOperator && cur != SyntaxNodeKind::LeftParen) {
         return KeywordOperatorNeedsSpaceAfter(*previous, current);
     }
-    if (prev == SyntaxNodeKind::KeywordCase && current.parentKind == SyntaxNodeKind::CaseStatement) {
+    if (prev == SyntaxNodeKind::KeywordCase && previous->parentKind == SyntaxNodeKind::CaseStatement) {
         return true;
     }
     if (prev == SyntaxNodeKind::KeywordRequires && previous->parentKind == SyntaxNodeKind::NestedRequirement) {

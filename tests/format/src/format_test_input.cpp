@@ -5979,3 +5979,18 @@ struct ReferenceAttributes {
     int* [[maybe_unused]] pointer;
     int& [[maybe_unused]] Access() { return ref; }
 };
+
+int CaseRanges(int value) {
+switch(value) {
+case 0 ... 9:return 1;
+case 'a'...'z':return 2;
+case (LOW)...(HIGH):return 3;
+#if RANGE
+case 100 ... 199:
+#else
+case 200 ... 299:
+#endif
+return 4;
+default:return 0;
+}
+}
