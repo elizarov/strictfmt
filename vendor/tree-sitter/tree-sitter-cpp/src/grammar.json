@@ -10311,6 +10311,15 @@
                       "name": "qualified_identifier"
                     },
                     {
+                      "type": "ALIAS",
+                      "content": {
+                        "type": "SYMBOL",
+                        "name": "operator_cast_field_identifier"
+                      },
+                      "named": true,
+                      "value": "operator_cast"
+                    },
+                    {
                       "type": "SYMBOL",
                       "name": "template_function"
                     },
@@ -11078,6 +11087,28 @@
     "parenthesized_expression": {
       "type": "CHOICE",
       "members": [
+        {
+          "type": "SEQ",
+          "members": [
+            {
+              "type": "STRING",
+              "value": "("
+            },
+            {
+              "type": "ALIAS",
+              "content": {
+                "type": "SYMBOL",
+                "name": "operator_cast_field_identifier"
+              },
+              "named": true,
+              "value": "operator_cast"
+            },
+            {
+              "type": "STRING",
+              "value": ")"
+            }
+          ]
+        },
         {
           "type": "PREC",
           "value": 1,

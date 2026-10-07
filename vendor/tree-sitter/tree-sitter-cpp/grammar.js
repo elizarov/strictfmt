@@ -4683,6 +4683,7 @@ module.exports = grammar(C, {
       prec(PREC.CALL, seq(
         field('function', choice(
           $.qualified_identifier,
+          alias($.operator_cast_field_identifier, $.operator_cast),
           $.template_function,
           alias($._callable_template_function, $.template_function),
         )),
@@ -5353,6 +5354,8 @@ module.exports = grammar(C, {
     // This prevents an ambiguity between fold expressions
     // and assignment expressions within parentheses.
     parenthesized_expression: ($, original) => choice(
+      // Conversion-function names may be parenthesized before their call.
+      seq('(', alias($.operator_cast_field_identifier, $.operator_cast), ')'),
       prec(1, seq(
         '(',
         alias($._assignment_expression_lhs, $.assignment_expression),

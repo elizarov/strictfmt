@@ -6034,3 +6034,59 @@ template <Concept T = int*> struct ConstrainedPointer {};
 template <ns::Concept<double> T = std::vector<int>> struct ConstrainedQualified {};
 template <Concept = void> struct UnnamedConstrained {};
 template <typename T = void, int N = 1, auto Value = 2> struct OrdinaryDefaults {};
+
+struct Converter {
+using Number = int;
+operator int() const;
+operator std::string() const;
+operator std::vector<int>() const;
+int Integer() const { return operator int(); }
+std::string Text() const { return operator std::string(); }
+std::vector<int> Values() const { return operator std::vector<int>(); }
+int Alias() const { return operator Number(); }
+int Deduced() const { return operator decltype(0)(); }
+void Explicit(Converter& object) const {
+(void)this->operator int();
+(void)object.operator std::string();
+(void)Converter::operator int();
+(void)(operator int)();
+(void)(this->operator int)();
+(void)(object.operator std::string)();
+(void)&Converter::operator int;
+}
+};
+Converter::operator int() const { return 1; }
+template <class T> struct DependentConverter {
+operator typename T::Value() const;
+typename T::Value Convert() const { return operator typename T::Value(); }
+};
+
+namespace types { template <class T> using optional = std::optional<T>; }
+template <class T> constexpr bool kOptional = false;
+template <class T> using ValueType = T;
+class Constrained { public:
+    template <
+        typename A,
+        typename B,
+        typename C,
+        typename D,
+        typename E,
+        typename = std::enable_if_t<
+                std::is_assignable<types::optional<bool>&, std::decay_t<A>>::value &&
+                (!kOptional<types::optional<bool>> ||
+                 std::is_assignable<
+                     ValueType<types::optional<bool>>&,
+                     ValueType<std::decay_t<B>>>::value) &&
+                std::is_assignable<types::optional<std::string>&, std::decay_t<C>>::value &&
+                (!kOptional<types::optional<std::string>> ||
+                 std::is_assignable<
+                     ValueType<types::optional<std::string>>&,
+                     ValueType<std::decay_t<D>>>::value) &&
+                (!kOptional<types::optional<bool>> ||
+                 std::is_assignable<
+                     ValueType<types::optional<bool>>&,
+                     ValueType<std::decay_t<E>>>::value),
+            void>>
+    explicit Constrained(
+    );
+};

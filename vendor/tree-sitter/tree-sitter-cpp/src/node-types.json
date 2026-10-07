@@ -2336,6 +2336,10 @@
             "named": true
           },
           {
+            "type": "operator_cast",
+            "named": true
+          },
+          {
             "type": "preproc_if_in_member_chain",
             "named": true
           },
@@ -10496,6 +10500,10 @@
         },
         {
           "type": "expression",
+          "named": true
+        },
+        {
+          "type": "operator_cast",
           "named": true
         },
         {
