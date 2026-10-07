@@ -3540,7 +3540,7 @@ module.exports = grammar(C, {
     )),
 
     // A macro-prefixed block may expand to a declaration or expression. Keep
-    // its terminator in the statement, including when it is a control-flow body.
+    // its terminator and configured suffixes inside a control-flow body.
     // Only statement positions infer a prefix from an unconfigured call.
     macro_block_prefixed_statement: $ => prec.right(PREC.CALL + 5, seq(
       choice(
@@ -3549,6 +3549,7 @@ module.exports = grammar(C, {
       ),
       field('body', $.compound_statement),
       optional(';'),
+      repeat($.item_suffix_macro),
     )),
 
     _macro_call_statement_prefix: $ => prec(PREC.CALL + 5, seq(

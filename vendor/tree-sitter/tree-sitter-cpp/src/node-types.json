@@ -8525,9 +8525,13 @@
       }
     },
     "children": {
-      "multiple": false,
+      "multiple": true,
       "required": true,
       "types": [
+        {
+          "type": "item_suffix_macro",
+          "named": true
+        },
         {
           "type": "statement_prefix_macro",
           "named": true

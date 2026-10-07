@@ -9963,3 +9963,37 @@ void RawStatementPrefixes() {
     if (ready) FORMAT_STATEMENT_PREFIX_RAW(omp parallel reduction(+:sum)) { \
         Process();                                                          \
     } else Skip()
+
+void PrefixedSuffixBodies() {
+    if (ready) {
+        FORMAT_UNKNOWN_SCOPE(value) {
+            Run();
+        } FORMAT_SUFFIX_END
+    } else {
+        Skip();
+    }
+    if (ready) {
+        FORMAT_STATEMENT_PREFIX_LOOP(items) FORMAT_STATEMENT_PREFIX_TRY {
+            Run();
+        } FORMAT_SUFFIX_CATCH()
+    } else {
+        Skip();
+    }
+    if (ready) {
+        FORMAT_STATEMENT_PREFIX_TRY {
+            Run();
+        } FORMAT_SUFFIX_CATCH()
+    } else {
+        FORMAT_STATEMENT_PREFIX_TRY {
+            Skip();
+        } FORMAT_SUFFIX_CATCH();
+    }
+    for (auto item : items) {
+        FORMAT_STATEMENT_PREFIX_TRY {
+            Run(item);
+        } FORMAT_SUFFIX_CATCH();
+    }
+    FORMAT_STATEMENT_PREFIX_TRY {
+        Run();
+    } FORMAT_SUFFIX_CATCH() FORMAT_SUFFIX_END;
+}
