@@ -368,6 +368,7 @@ module.exports = grammar(C, {
   ],
 
   conflicts: $ => [
+    [$._semicolon_initializer, $._common_postfix_expression, $.conditional_concatenated_string],
     [$._field_declarator, $._non_pointer_declarator, $._function_definition_name],
     [$._field_declarator, $._non_pointer_declarator],
     [$._field_identifier, $._non_pointer_declarator, $._function_definition_name],
@@ -2411,15 +2412,17 @@ module.exports = grammar(C, {
       $._declaration_specifiers,
       field('declarator', $._declarator),
       '=',
-      field('value', $.preproc_if_in_semicolon_initializer),
+      field('value', $._semicolon_initializer),
     )),
 
     ...preprocIf('_in_expression', $ => choice($.expression, $._braced_initializer_value), 0, PREPROC_ALL_BRANCH_FORMS | PREPROC_SHARED_OPENER, false),
 
     ...preprocIf('_in_semicolon_initializer', $ => $._semicolon_initializer_branch, 0, PREPROC_ALL_BRANCH_FORMS | PREPROC_SHARED_OPENER, false),
 
+    _semicolon_initializer: $ => seq(optional($._string), $.preproc_if_in_semicolon_initializer),
+
     _semicolon_initializer_branch: $ => seq(
-      choice($.preproc_semicolon_value, $.preproc_if_in_semicolon_initializer),
+      choice($.preproc_semicolon_value, $._semicolon_initializer),
       repeat($._block_item),
     ),
 
@@ -3599,7 +3602,7 @@ module.exports = grammar(C, {
     preproc_assignment_statement: $ => prec.right(PREC.ASSIGNMENT, seq(
       field('left', $._assignment_left_expression),
       field('operator', choice(...ASSIGNMENT_OPERATORS)),
-      field('right', $.preproc_if_in_semicolon_initializer),
+      field('right', $._semicolon_initializer),
     )),
 
     preproc_selected_if_statement: $ => ifStatement(
@@ -4039,19 +4042,18 @@ module.exports = grammar(C, {
       choice(
         original,
         seq('return', $._braced_initializer_value, ';'),
+        seq('return', $._semicolon_initializer),
       ),
     ),
 
     co_return_statement: $ => seq(
       'co_return',
-      optional($.expression),
-      ';',
+      choice(seq(optional($.expression), ';'), $._semicolon_initializer),
     ),
 
     co_yield_statement: $ => seq(
       'co_yield',
-      $.expression,
-      ';',
+      choice(seq($.expression, ';'), $._semicolon_initializer),
     ),
 
     throw_expression: $ => prec.right(PREC.UNARY, seq(

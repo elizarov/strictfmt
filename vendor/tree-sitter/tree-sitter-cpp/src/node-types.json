@@ -2759,11 +2759,15 @@
     "named": true,
     "fields": {},
     "children": {
-      "multiple": false,
+      "multiple": true,
       "required": false,
       "types": [
         {
           "type": "expression",
+          "named": true
+        },
+        {
+          "type": "preproc_if_in_semicolon_initializer",
           "named": true
         }
       ]
@@ -2774,11 +2778,15 @@
     "named": true,
     "fields": {},
     "children": {
-      "multiple": false,
+      "multiple": true,
       "required": true,
       "types": [
         {
           "type": "expression",
+          "named": true
+        },
+        {
+          "type": "preproc_if_in_semicolon_initializer",
           "named": true
         }
       ]
@@ -10901,11 +10909,23 @@
         ]
       },
       "right": {
-        "multiple": false,
+        "multiple": true,
         "required": true,
         "types": [
           {
+            "type": "concatenated_string",
+            "named": true
+          },
+          {
             "type": "preproc_if_in_semicolon_initializer",
+            "named": true
+          },
+          {
+            "type": "raw_string_literal",
+            "named": true
+          },
+          {
+            "type": "string_literal",
             "named": true
           }
         ]
@@ -16124,6 +16144,10 @@
           "named": true
         },
         {
+          "type": "concatenated_string",
+          "named": true
+        },
+        {
           "type": "declaration",
           "named": true
         },
@@ -16180,6 +16204,10 @@
           "named": true
         },
         {
+          "type": "raw_string_literal",
+          "named": true
+        },
+        {
           "type": "standalone_attribute_preproc_if",
           "named": true
         },
@@ -16193,6 +16221,10 @@
         },
         {
           "type": "static_assert_declaration",
+          "named": true
+        },
+        {
+          "type": "string_literal",
           "named": true
         },
         {
@@ -18869,11 +18901,23 @@
         ]
       },
       "value": {
-        "multiple": false,
+        "multiple": true,
         "required": true,
         "types": [
           {
+            "type": "concatenated_string",
+            "named": true
+          },
+          {
             "type": "preproc_if_in_semicolon_initializer",
+            "named": true
+          },
+          {
+            "type": "raw_string_literal",
+            "named": true
+          },
+          {
+            "type": "string_literal",
             "named": true
           }
         ]
@@ -19571,7 +19615,7 @@
     "named": true,
     "fields": {},
     "children": {
-      "multiple": false,
+      "multiple": true,
       "required": false,
       "types": [
         {
@@ -19584,6 +19628,10 @@
         },
         {
           "type": "initializer_list",
+          "named": true
+        },
+        {
+          "type": "preproc_if_in_semicolon_initializer",
           "named": true
         }
       ]

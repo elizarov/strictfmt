@@ -670,6 +670,25 @@ class FormatCommandTests(unittest.TestCase):
             r"Formatted stdin\. [\d,]+/[\d,]+ LOC changed\. Done in (?:\d+ms|\d+\.\d{3}s)\.\s*$",
         )
 
+    def test_conditional_returns_preserve_enclosing_control_scope(self) -> None:
+        for keyword in ("return", "co_return", "co_yield"):
+            for prefix in ("", '"prefix "'):
+                with self.subTest(keyword=keyword, prefix=prefix):
+                    source = (
+                        "void Example() { if (ready)\n" + keyword + " " + prefix + "\n"
+                        '#if SELECT\n"one"; Following();\n#else\n"two";\n#endif\n}\n'
+                    )
+                    result = native_format(
+                        "--stdin", "--style", str(USERVER_FORMAT_CONFIG),
+                        cwd=TEST_ROOT, input_text=source,
+                    )
+                    self.assertEqual(1, result.returncode, msg=result.stderr)
+                    self.assertEqual("", result.stdout)
+                    self.assertEqual(
+                        "<stdin>: cannot add braces across conditional scope boundaries\n",
+                        result.stderr,
+                    )
+
     def test_error_stdin_reports_expected_parse_errors(self) -> None:
         for source, expected in (
             (ERROR_INPUT_FIXTURE, ERROR_OUTPUT_FIXTURE),

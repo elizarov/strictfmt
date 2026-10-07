@@ -2768,3 +2768,82 @@ void UnconditionalBody() { Run(); }
 #define RAW_COMMENT ) /* raw  block */ token  // raw  tail
 #define RAW_COMMENT_QUOTES ) /* a'  b  c */ token  // trailing  comment
 #define RAW_COMMENT_SLASHES ) /* slash //  inside */ token  // trailing  comment
+
+const char* first = "prefix "
+#ifdef MODE
+    "one";
+#else
+    "two";
+#endif
+
+const char* second = "first " "second "
+#if MODE
+    "one";
+#elif OTHER
+    "two";
+#else
+    "three";
+#endif
+
+void Assign() {
+    text = "prefix "
+#if MODE
+        "one";
+#else
+        "two";
+#endif
+}
+const char* Return() {
+    return "prefix "
+#if MODE
+        "one";
+#else
+        "two";
+#endif
+}
+
+const char* nested = "outer "
+#if MODE
+    "inner "
+#if OTHER
+    "one";
+#else
+    "two";
+#endif
+#else
+    "three";
+#endif
+
+const char* WithoutPrefix() {
+    return
+#if MODE
+        "one";
+#else
+        "two";
+#endif
+}
+Task ConditionalCoroutine() {
+    co_yield "yield "
+#if MODE
+        "one";
+#else
+        "two";
+#endif
+    co_return "return "
+#if MODE
+        "one";
+#else
+        "two";
+#endif
+}
+const char* ConditionalReturnBody(bool ready) {
+    if (ready) {
+        return "body "
+#if MODE
+            "one";
+#else
+            "two";
+#endif
+    }
+    return nullptr;
+}
