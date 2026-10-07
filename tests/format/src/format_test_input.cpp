@@ -6090,3 +6090,12 @@ class Constrained { public:
     explicit Constrained(
     );
 };
+
+void RawStatementPrefixes() {
+if (ready) FORMAT_STATEMENT_PREFIX_RAW(omp parallel reduction(+:sum)) for (int i=0;i<count;++i) Sum(i); else Skip();
+FORMAT_STATEMENT_PREFIX_RAW(omp atomic) ++counter;
+FORMAT_STATEMENT_PREFIX_RAW { Process(); }
+FORMAT_STATEMENT_PREFIX_RAW(omp parallel) FORMAT_STATEMENT_PREFIX_RAW(omp single) { Process(); }
+FORMAT_STATEMENT_PREFIX_RAW(omp parallel private(value) reduction(max:result)) { Process(); }
+}
+#define RAW_PREFIX_BODY() if (ready) FORMAT_STATEMENT_PREFIX_RAW(omp parallel reduction(+:sum)) { Process(); } else Skip()

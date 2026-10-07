@@ -27,6 +27,7 @@ enum TokenType {
     NAMESPACE_MACRO_IDENTIFIER,
     PREPROCESSOR_ITEM_MACRO_IDENTIFIER,
     PREPROCESSOR_CONTINUATION_MACRO_IDENTIFIER,
+    PREPROCESSOR_STATEMENT_PREFIX_MACRO_IDENTIFIER,
     EXPRESSION_PREFIX_MACRO_IDENTIFIER,
     EXPRESSION_PREFIX_ITEM_MACRO_IDENTIFIER,
     EXPRESSION_PREFIX_ITEM_CALL_MACRO_IDENTIFIER,
@@ -255,6 +256,7 @@ static bool classify_macro_identifier_token(
     bool allow_namespace,
     bool allow_preprocessor_item,
     bool allow_preprocessor_continuation,
+    bool allow_preprocessor_statement_prefix,
     bool allow_expression_prefix,
     bool allow_expression_prefix_item,
     bool allow_expression_prefix_item_call,
@@ -279,7 +281,8 @@ static bool classify_macro_identifier_token(
         (allow_expression_continuation || allow_preprocessor_continuation) &&
         strictfmt_tree_sitter_cpp_macro_category_matches(MACRO_CATEGORY_EXPRESSION_CONTINUATION, name, length);
     const bool preprocessor_argument_match =
-        (allow_preprocessor_argument || allow_preprocessor_item || allow_preprocessor_continuation) &&
+        (allow_preprocessor_argument || allow_preprocessor_item || allow_preprocessor_continuation ||
+         allow_preprocessor_statement_prefix) &&
         strictfmt_tree_sitter_cpp_macro_category_matches(MACRO_CATEGORY_PREPROCESSOR_ARGUMENT, name, length);
     const bool item_match =
         (allow_item || allow_item_call || allow_preprocessor_item ||
@@ -334,10 +337,18 @@ static bool classify_macro_identifier_token(
         return true;
     }
 
-    if (allow_statement_prefix &&
-        strictfmt_tree_sitter_cpp_macro_category_matches(MACRO_CATEGORY_STATEMENT_PREFIX, name, length)) {
-        lexer->result_symbol = STATEMENT_PREFIX_MACRO_IDENTIFIER;
-        return true;
+    const bool statement_prefix_match =
+        (allow_statement_prefix || allow_preprocessor_statement_prefix) &&
+        strictfmt_tree_sitter_cpp_macro_category_matches(MACRO_CATEGORY_STATEMENT_PREFIX, name, length);
+    if (statement_prefix_match) {
+        if (allow_preprocessor_statement_prefix && preprocessor_argument_match && has_following_argument_list(lexer)) {
+            lexer->result_symbol = PREPROCESSOR_STATEMENT_PREFIX_MACRO_IDENTIFIER;
+            return true;
+        }
+        if (allow_statement_prefix) {
+            lexer->result_symbol = STATEMENT_PREFIX_MACRO_IDENTIFIER;
+            return true;
+        }
     }
 
     if (declaration_modifier_match) {
@@ -427,6 +438,7 @@ static bool has_valid_macro_identifier(TSLexer *lexer, const bool *valid_symbols
         valid_symbols[NAMESPACE_MACRO_IDENTIFIER],
         valid_symbols[PREPROCESSOR_ITEM_MACRO_IDENTIFIER],
         valid_symbols[PREPROCESSOR_CONTINUATION_MACRO_IDENTIFIER],
+        valid_symbols[PREPROCESSOR_STATEMENT_PREFIX_MACRO_IDENTIFIER],
         valid_symbols[EXPRESSION_PREFIX_MACRO_IDENTIFIER],
         valid_symbols[EXPRESSION_PREFIX_ITEM_MACRO_IDENTIFIER],
         valid_symbols[EXPRESSION_PREFIX_ITEM_CALL_MACRO_IDENTIFIER],
@@ -458,6 +470,7 @@ static bool scan_macro_identifier_token(
     bool allow_namespace,
     bool allow_preprocessor_item,
     bool allow_preprocessor_continuation,
+    bool allow_preprocessor_statement_prefix,
     bool allow_expression_prefix,
     bool allow_expression_prefix_item,
     bool allow_expression_prefix_item_call,
@@ -494,6 +507,7 @@ static bool scan_macro_identifier_token(
         allow_namespace,
         allow_preprocessor_item,
         allow_preprocessor_continuation,
+        allow_preprocessor_statement_prefix,
         allow_expression_prefix,
         allow_expression_prefix_item,
         allow_expression_prefix_item_call,
@@ -933,6 +947,7 @@ bool tree_sitter_cpp_external_scanner_scan(void *payload, TSLexer *lexer, const 
         valid_symbols[NAMESPACE_MACRO_IDENTIFIER] || valid_symbols[STATEMENT_PREFIX_MACRO_IDENTIFIER] ||
         valid_symbols[PREPROCESSOR_ITEM_MACRO_IDENTIFIER] ||
         valid_symbols[PREPROCESSOR_CONTINUATION_MACRO_IDENTIFIER] ||
+        valid_symbols[PREPROCESSOR_STATEMENT_PREFIX_MACRO_IDENTIFIER] ||
         valid_symbols[EXPRESSION_PREFIX_MACRO_IDENTIFIER] ||
         valid_symbols[EXPRESSION_PREFIX_ITEM_MACRO_IDENTIFIER] ||
         valid_symbols[EXPRESSION_PREFIX_ITEM_CALL_MACRO_IDENTIFIER] ||
@@ -963,6 +978,7 @@ bool tree_sitter_cpp_external_scanner_scan(void *payload, TSLexer *lexer, const 
          valid_symbols[NAMESPACE_MACRO_IDENTIFIER] || valid_symbols[STATEMENT_PREFIX_MACRO_IDENTIFIER] ||
          valid_symbols[PREPROCESSOR_ITEM_MACRO_IDENTIFIER] ||
          valid_symbols[PREPROCESSOR_CONTINUATION_MACRO_IDENTIFIER] ||
+         valid_symbols[PREPROCESSOR_STATEMENT_PREFIX_MACRO_IDENTIFIER] ||
          valid_symbols[EXPRESSION_PREFIX_MACRO_IDENTIFIER] ||
          valid_symbols[EXPRESSION_PREFIX_ITEM_MACRO_IDENTIFIER] ||
          valid_symbols[EXPRESSION_PREFIX_ITEM_CALL_MACRO_IDENTIFIER] ||
@@ -985,6 +1001,7 @@ bool tree_sitter_cpp_external_scanner_scan(void *payload, TSLexer *lexer, const 
             valid_symbols[NAMESPACE_MACRO_IDENTIFIER],
             valid_symbols[PREPROCESSOR_ITEM_MACRO_IDENTIFIER],
             valid_symbols[PREPROCESSOR_CONTINUATION_MACRO_IDENTIFIER],
+            valid_symbols[PREPROCESSOR_STATEMENT_PREFIX_MACRO_IDENTIFIER],
             valid_symbols[EXPRESSION_PREFIX_MACRO_IDENTIFIER],
             valid_symbols[EXPRESSION_PREFIX_ITEM_MACRO_IDENTIFIER],
             valid_symbols[EXPRESSION_PREFIX_ITEM_CALL_MACRO_IDENTIFIER],

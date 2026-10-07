@@ -37,6 +37,7 @@ MacroCategories:
   StatementArgumentMacros:
     - FORMAT_STATEMENT_DECLARATIONS
   PreprocessorArgumentMacros:
+    - FORMAT_STATEMENT_PREFIX_RAW
     - FORMAT_TOKEN_*
   DeclarationModifierMacros:
     - FORMAT_ATTRIBUTE_*

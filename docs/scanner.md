@@ -55,6 +55,7 @@ The scanner owns these identifier tokens:
 - `item_call_macro_identifier`
 - `preprocessor_item_macro_identifier`
 - `preprocessor_continuation_macro_identifier`
+- `preprocessor_statement_prefix_macro_identifier`
 - `statement_argument_macro_identifier`
 - `type_specifier_macro_identifier`
 - `preprocessor_argument_macro_identifier`
@@ -71,7 +72,7 @@ The grammar resolves both alternatives through a shared definition-body reductio
 
 The scanner builds without formatter dependencies by default. The strictfmt build defines `STRICTFMT_RUNTIME_MACRO_CATEGORIES` to enable the use-site category callback; standalone editor parsers use ordinary identifiers.
 
-The scanner classifies identifiers by configured macro category. [macro.md](macro.md) specifies the categories and their supported grammar uses. Combined preprocessing-token identifiers record the argument category together with an item or expression-continuation role. For `PreprocessorArgumentMacros`, the scanner owns only the configured identifier token; the grammar recursively balances the invocation's parentheses and separates its preprocessing-token arguments.
+The scanner classifies identifiers by configured macro category. [macro.md](macro.md) specifies the categories and their supported grammar uses. Combined preprocessing-token identifiers record the argument category together with an item, expression-continuation, or statement-prefix role. For `PreprocessorArgumentMacros`, the scanner owns only the configured identifier token; the grammar recursively balances the invocation's parentheses and separates its preprocessing-token arguments.
 
 ### Token-Paste Prefixes
 

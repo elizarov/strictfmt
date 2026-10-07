@@ -335,7 +335,7 @@ MacroCategories:
 const char* expression = STRINGIZE(a*b);
 ```
 
-The outer argument list can still split across lines, but each argument remains one formatting unit. Only parentheses protect inner commas: `TOKENS(T<X, Y>, NEXT)` has three preprocessing arguments, whereas the default C++ parse keeps `T<X, Y>` together. This category controls arguments; combine it with `ItemMacros` or `ExpressionContinuationMacros` when the invocation also needs that role.
+The outer argument list can still split across lines, but each argument remains one formatting unit. Only parentheses protect inner commas: `TOKENS(T<X, Y>, NEXT)` has three preprocessing arguments, whereas the default C++ parse keeps `T<X, Y>` together. This category controls arguments; combine it with `ItemMacros`, `ExpressionContinuationMacros`, or `StatementPrefixMacros` when the invocation also needs that role.
 
 ### TypeSpecifierMacros
 

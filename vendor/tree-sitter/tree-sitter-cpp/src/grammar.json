@@ -31552,21 +31552,39 @@
       "type": "PREC_RIGHT",
       "value": 21,
       "content": {
-        "type": "SEQ",
+        "type": "CHOICE",
         "members": [
           {
-            "type": "SYMBOL",
-            "name": "statement_prefix_macro_identifier"
-          },
-          {
-            "type": "CHOICE",
+            "type": "SEQ",
             "members": [
               {
                 "type": "SYMBOL",
-                "name": "argument_list"
+                "name": "statement_prefix_macro_identifier"
               },
               {
-                "type": "BLANK"
+                "type": "CHOICE",
+                "members": [
+                  {
+                    "type": "SYMBOL",
+                    "name": "argument_list"
+                  },
+                  {
+                    "type": "BLANK"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "type": "SEQ",
+            "members": [
+              {
+                "type": "SYMBOL",
+                "name": "preprocessor_statement_prefix_macro_identifier"
+              },
+              {
+                "type": "SYMBOL",
+                "name": "preprocessing_token_argument_list"
               }
             ]
           }
@@ -47778,6 +47796,10 @@
     {
       "type": "SYMBOL",
       "name": "preprocessor_continuation_macro_identifier"
+    },
+    {
+      "type": "SYMBOL",
+      "name": "preprocessor_statement_prefix_macro_identifier"
     },
     {
       "type": "SYMBOL",

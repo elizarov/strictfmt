@@ -342,6 +342,7 @@ module.exports = grammar(C, {
     $.namespace_macro_identifier,
     $.preprocessor_item_macro_identifier,
     $.preprocessor_continuation_macro_identifier,
+    $.preprocessor_statement_prefix_macro_identifier,
     $.expression_prefix_macro_identifier,
     $.expression_prefix_item_macro_identifier,
     $.expression_prefix_item_call_macro_identifier,
@@ -3552,9 +3553,9 @@ module.exports = grammar(C, {
       field('arguments', $.argument_list),
     )),
 
-    statement_prefix_macro: $ => prec.right(PREC.CALL + 6, seq(
-      $.statement_prefix_macro_identifier,
-      optional($.argument_list),
+    statement_prefix_macro: $ => prec.right(PREC.CALL + 6, choice(
+      seq($.statement_prefix_macro_identifier, optional($.argument_list)),
+      seq($.preprocessor_statement_prefix_macro_identifier, $.preprocessing_token_argument_list),
     )),
 
     bare_macro_statement: $ => prec(1, $.item_macro_identifier),

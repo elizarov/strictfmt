@@ -20333,6 +20333,14 @@
           "named": true
         },
         {
+          "type": "preprocessing_token_argument_list",
+          "named": true
+        },
+        {
+          "type": "preprocessor_statement_prefix_macro_identifier",
+          "named": true
+        },
+        {
           "type": "statement_prefix_macro_identifier",
           "named": true
         }
@@ -23191,11 +23199,11 @@
   },
   {
     "type": "false",
-    "named": false
+    "named": true
   },
   {
     "type": "false",
-    "named": true
+    "named": false
   },
   {
     "type": "final",
@@ -23370,6 +23378,10 @@
     "named": true
   },
   {
+    "type": "preprocessor_statement_prefix_macro_identifier",
+    "named": true
+  },
+  {
     "type": "primitive_type",
     "named": true
   },
@@ -23503,11 +23515,11 @@
   },
   {
     "type": "true",
-    "named": false
+    "named": true
   },
   {
     "type": "true",
-    "named": true
+    "named": false
   },
   {
     "type": "try",
