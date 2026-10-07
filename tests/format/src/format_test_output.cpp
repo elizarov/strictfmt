@@ -9720,3 +9720,13 @@ void CommentedLeadingNullStatement(bool ignoreCurrentInput) {
         Process();
     }
 }
+
+extern char* encode(__const char* input, __const__ char* salt);
+
+struct Qualifiers {
+    __volatile int first;
+    __volatile__ int second;
+    int* __restrict pointer;
+
+    __const__ int& read() __const;
+};

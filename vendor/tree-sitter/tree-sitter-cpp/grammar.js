@@ -1164,6 +1164,10 @@ module.exports = grammar(C, {
     type_qualifier: ($, original) => choice(
       original,
       'mutable',
+      '__const',
+      '__const__',
+      '__volatile',
+      '__volatile__',
       'constinit',
       'consteval',
     ),

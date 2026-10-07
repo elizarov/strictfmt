@@ -5606,6 +5606,22 @@
         },
         {
           "type": "STRING",
+          "value": "__const"
+        },
+        {
+          "type": "STRING",
+          "value": "__const__"
+        },
+        {
+          "type": "STRING",
+          "value": "__volatile"
+        },
+        {
+          "type": "STRING",
+          "value": "__volatile__"
+        },
+        {
+          "type": "STRING",
           "value": "constinit"
         },
         {
