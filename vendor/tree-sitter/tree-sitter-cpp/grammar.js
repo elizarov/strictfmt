@@ -3300,6 +3300,7 @@ module.exports = grammar(C, {
       '{',
       repeat($._top_level_item),
       $._preproc_endif_line,
+      repeat($._top_level_item),
       '}',
     ),
 

@@ -9808,3 +9808,33 @@ int CaseRanges(int value) {
             return 0;
     }
 }
+
+#if MODE
+int before_namespace;
+namespace demo {
+
+using lib::value;
+#endif
+void Work() {}
+
+}
+#ifdef MODE
+namespace {
+
+int before_endif;
+
+#endif
+void Shared() {}
+
+}
+namespace outer {
+
+#if MODE
+inline namespace inner {
+
+#endif
+struct SharedType {};
+
+}
+
+}

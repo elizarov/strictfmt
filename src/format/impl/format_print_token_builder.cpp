@@ -279,6 +279,12 @@ void AppendTokens(const SyntaxNode& node, TokenContext context, std::vector<Prin
         tokens.push_back(MakePrintToken(node, kind, context, node.text));
         return;
     }
+    if (IsPreprocEndifToken(node)) {
+        PrintToken token = MakePrintToken(node, PrintTokenKind::Preprocessor, context, PreprocEndifLine(node));
+        token.structuredPreprocessor = true;
+        tokens.push_back(token);
+        return;
+    }
     if (IsStandalonePreprocessorBranchToken(node, context.parentKind)) {
         tokens.push_back(MakePrintToken(
             node,

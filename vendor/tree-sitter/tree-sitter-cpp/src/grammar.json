@@ -30434,6 +30434,13 @@
           "name": "_preproc_endif_line"
         },
         {
+          "type": "REPEAT",
+          "content": {
+            "type": "SYMBOL",
+            "name": "_top_level_item"
+          }
+        },
+        {
           "type": "STRING",
           "value": "}"
         }
