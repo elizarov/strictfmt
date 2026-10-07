@@ -4633,7 +4633,7 @@ module.exports = grammar(C, {
     ),
 
     subscript_expression: $ => prec(PREC.SUBSCRIPT, seq(
-      field('argument', $.expression),
+      field('argument', choice($.expression, prec.dynamic(2, $.qualified_identifier))),
       field('indices', $.subscript_argument_list),
     )),
 

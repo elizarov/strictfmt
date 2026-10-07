@@ -9743,3 +9743,12 @@ void DollarIdentifiers() {
 }
 #define DOLLAR_SPLICE $\
 name +
+
+void ScopedSubscripts() {
+    State::values[42] = 100;
+    State::values[index] = value;
+    ::State::values[index][other] += value;
+    State<T>::values[index].Update();
+    auto copy = State::values[index];
+    auto [first, second] = Read();
+}
