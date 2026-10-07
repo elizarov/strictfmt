@@ -5956,3 +5956,16 @@ void ConstrainedComment() { Work(); }
 
 template<class T> requires Concept<T> /* constraint */
 struct ConstrainedClass { T value; };
+
+void OperatorComments(){
+result = start >>
+( //
+left //
+| //
+( //
+right //
+> last //
+) //
+) //
+>> end;
+}

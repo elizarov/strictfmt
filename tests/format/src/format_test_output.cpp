@@ -9763,3 +9763,16 @@ template <class T>
 struct ConstrainedClass {
     T value;
 };
+
+void OperatorComments() {
+    result = start
+        >> (    //
+        left |  //
+            //
+            (       //
+            right   //
+            > last  //
+            )  //
+            )  //
+                >> end;
+}

@@ -2590,10 +2590,19 @@ private:
             suffix.push_back(boundary.token);
             boundary.token.contextOnly = true;
         }
-        const auto standalone = hasReceiver ?
-            std::find_if(boundary.comments.begin(), boundary.comments.end(), [](const FormatBreakToken& comment) {
-                return FormatBreakTokenKind(comment) != PrintTokenKind::TrailingComment;
-            }) : boundary.comments.begin();
+        auto standalone = boundary.comments.begin();
+        if (hasReceiver) {
+            while (
+                standalone != boundary.comments.end() &&
+                FormatBreakTokenKind(*standalone) == PrintTokenKind::TrailingComment
+            ) {
+                const bool endsLine = IsLineCommentToken(FormatBreakTokenValue(*standalone));
+                ++standalone;
+                if (endsLine) {
+                    break;
+                }
+            }
+        }
         suffix.insert(suffix.end(), boundary.comments.begin(), standalone);
         boundary.comments.erase(boundary.comments.begin(), standalone);
         left = ExtendChainOperand(left, suffix, false, depth + 1);
