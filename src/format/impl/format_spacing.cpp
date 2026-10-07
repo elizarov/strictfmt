@@ -222,6 +222,7 @@ bool IsWordBoundaryChar(char ch) {
         (ch >= 'a' && ch <= 'z') ||
         (ch >= '0' && ch <= '9') ||
         ch == '_' ||
+        ch == '$' ||
         static_cast<unsigned char>(ch) >= 0x80;
 }
 

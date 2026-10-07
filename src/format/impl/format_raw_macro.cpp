@@ -19,6 +19,7 @@ bool IsIdentifierCharacter(char ch) {
         (ch >= 'A' && ch <= 'Z') ||
         (ch >= '0' && ch <= '9') ||
         ch == '_' ||
+        ch == '$' ||
         static_cast<unsigned char>(ch) >= 0x80;
 }
 

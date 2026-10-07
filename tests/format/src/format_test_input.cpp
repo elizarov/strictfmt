@@ -5932,3 +5932,10 @@ struct Qualifiers {
     int* __restrict pointer;
     __const__ int& read() __const;
 };
+
+constexpr Value $(int index){return Value(index);}
+Value $name;
+Value name$;
+void DollarIdentifiers(){Value $;Value $other=$;Use($other,name$);}
+#define DOLLAR_SPLICE $\
+name +
