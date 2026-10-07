@@ -487,6 +487,16 @@ class FormatCommandTests(unittest.TestCase):
                 self.assertNotEqual(0, result.returncode)
                 self.assertIn("parse failed", result.stderr)
 
+    def test_raw_string_delimiter_length_limit(self) -> None:
+        for prefix in ("", "L", "u8", "u", "U"):
+            for length in (17, 32):
+                with self.subTest(prefix=prefix, length=length):
+                    delimiter = "a" * length
+                    source = f'auto text = {prefix}R"{delimiter}(text){delimiter}";\n'
+                    result = native_format("--stdin", input_text=source)
+                    self.assertNotEqual(0, result.returncode)
+                    self.assertIn("parse failed", result.stderr)
+
     def test_golden_input_parses_without_errors(self) -> None:
         with copied_fixtures(INPUT_FIXTURE) as fixtures:
             result = native_format(str(fixtures[INPUT_FIXTURE]))

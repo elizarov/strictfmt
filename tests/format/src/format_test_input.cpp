@@ -812,6 +812,20 @@ nested
 )q4"));
 }
 
+void FormatRawStringDelimiterBoundaries() {
+    auto empty=R"(text)";
+    auto fifteen=R"abcdefghijklmno(text)abcdefghijklmno";
+    auto sixteen=R"abcdefghijklmnop(text)abcdefghijklmnop";
+    auto wide=LR"abcdefghijklmnop(text)abcdefghijklmnop";
+    auto utf8=u8R"abcdefghijklmnop(text)abcdefghijklmnop";
+    auto utf16=uR"abcdefghijklmnop(text)abcdefghijklmnop";
+    auto utf32=UR"abcdefghijklmnop(text)abcdefghijklmnop";
+    auto suffix=R"abcdefghijklmnop(text)abcdefghijklmnop"sv;
+    auto multiline=R"abcdefghijklmnop(
+)abcdefghijklmno" is not the closing delimiter
+)abcdefghijklmnop";
+}
+
 void FormatOverflowRawString() {
     EXPECT_EQ(formats::json::FromString(utils::statistics::ToSolomonFormat(GetStorage(),{})),formats::json::FromString(R"(
 aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa

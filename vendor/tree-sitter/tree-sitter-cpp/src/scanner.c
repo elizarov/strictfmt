@@ -677,12 +677,12 @@ static bool scan_raw_string_delimiter(Scanner *scanner, TSLexer *lexer) {
     }
 
     for (;;) {
+        if (lexer->lookahead == '(') {
+            return scanner->delimiter_length > 0;
+        }
         if (scanner->delimiter_length >= MAX_DELIMITER_LENGTH || lexer->eof(lexer) || lexer->lookahead == '\\' ||
             iswspace(lexer->lookahead)) {
             return false;
-        }
-        if (lexer->lookahead == '(') {
-            return scanner->delimiter_length > 0;
         }
         scanner->delimiter[scanner->delimiter_length++] = lexer->lookahead;
         advance(lexer);
