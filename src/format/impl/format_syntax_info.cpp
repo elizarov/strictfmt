@@ -474,14 +474,10 @@ constexpr auto kSyntaxKindMappings = std::to_array<SyntaxKindMapping>({
     Tree(SyntaxNodeKind::MacroClassBegin, "macro_class_begin"),
     Tree(SyntaxNodeKind::MacroClassEnd, "macro_class_end"),
     Tree(
-        SyntaxNodeKind::PreprocExpression, "preproc_logical_expression_fragment", kSupportedPreprocessorPlacementClasses
-    ),
-    Tree(
         SyntaxNodeKind::PreprocExpression,
-        "preproc_logical_tail_expression_fragment",
-        kSupportedPreprocessorPlacementClasses
+        "preproc_if_in_binary_suffix",
+        kConditionalPreprocessorOpenClasses | Bit(SyntaxNodeClass::Expression)
     ),
-    Tree(SyntaxNodeKind::PreprocIf, "preproc_condition_expression", kAtomicPreprocessorClasses),
     Tree(
         SyntaxNodeKind::PreprocIf,
         "preproc_case_label_fragment",
@@ -506,9 +502,8 @@ constexpr auto kSyntaxKindMappings = std::to_array<SyntaxKindMapping>({
         kConditionalPreprocessorOpenClasses | Bit(SyntaxNodeClass::Expression)
     ),
     Tree(SyntaxNodeKind::PreprocIf, "preproc_template_argument_fragment", kAtomicPreprocessorClasses),
-    Tree(SyntaxNodeKind::PreprocIfdef, "preproc_argument_fragment", kAtomicPreprocessorClasses),
-    Tree(SyntaxNodeKind::PreprocIf, "preproc_if_argument_fragment", kAtomicPreprocessorClasses),
-    Tree(SyntaxNodeKind::IncompleteConditionalExpression, "preproc_trailing_argument_expression"),
+    Tree(SyntaxNodeKind::PreprocExpression, "preproc_if_in_binary_prefix", kConditionalPreprocessorOpenClasses),
+    Tree(SyntaxNodeKind::Tree, "preproc_trailing_binary_expression"),
     Tree(
         SyntaxNodeKind::PreprocIf,
         "preproc_string_literal_fragment",
@@ -1374,8 +1369,6 @@ std::string_view SyntaxNodeKindName(SyntaxNodeKind kind) {
             return "PreprocParams";
         case SyntaxNodeKind::PreprocArg:
             return "PreprocArg";
-        case SyntaxNodeKind::IncompleteConditionalExpression:
-            return "IncompleteConditionalExpression";
         case SyntaxNodeKind::RawMacroReplacement:
             return "RawMacroReplacement";
         case SyntaxNodeKind::BinaryExpression:

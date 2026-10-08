@@ -6,32 +6,11 @@
 
 namespace format_unsupported_fixture {
 
-void ExpressionFragment() {
-    constexpr int kOptmask =
-        ARES_OPT_FLAGS | ARES_OPT_TIMEOUTMS | ARES_OPT_TRIES | ARES_OPT_DOMAINS |
-#if ARES_VERSION < 0x011400
-        ARES_OPT_SOCK_STATE_CB |
-#endif
-        ARES_OPT_LOOKUPS;
-}
-
 extern int* ConditionalDeclarationSuffix(void)
 #ifdef FORMAT_USERVER_THROW
     FORMAT_USERVER_THROW
 #endif
     ;
-
-void ConditionalArgumentExpressionFragment() {
-    Open(
-#ifdef FORMAT_USERVER_FLAG_A
-        kFlagA |
-#endif
-#ifdef FORMAT_USERVER_FLAG_B
-        kFlagB |
-#endif
-        kBaseFlag
-    );
-}
 
 void PreprocessorEndedConsequence(Status status, Handle& handle, Handle next_handle) {
 #if FORMAT_USERVER_HAS_PIPELINING

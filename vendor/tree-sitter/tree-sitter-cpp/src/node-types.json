@@ -1654,7 +1654,7 @@
     "fields": {
       "left": {
         "multiple": false,
-        "required": true,
+        "required": false,
         "types": [
           {
             "type": "expression",
@@ -1816,27 +1816,19 @@
       "required": false,
       "types": [
         {
-          "type": "preproc_argument_fragment",
-          "named": true
-        },
-        {
           "type": "preproc_if",
           "named": true
         },
         {
-          "type": "preproc_if_argument_fragment",
+          "type": "preproc_if_in_binary_prefix",
+          "named": true
+        },
+        {
+          "type": "preproc_if_in_binary_suffix",
           "named": true
         },
         {
           "type": "preproc_ifdef",
-          "named": true
-        },
-        {
-          "type": "preproc_logical_expression_fragment",
-          "named": true
-        },
-        {
-          "type": "preproc_logical_tail_expression_fragment",
           "named": true
         },
         {
@@ -3162,10 +3154,6 @@
           },
           {
             "type": "expression",
-            "named": true
-          },
-          {
-            "type": "preproc_condition_expression",
             "named": true
           }
         ]
@@ -10749,42 +10737,6 @@
     }
   },
   {
-    "type": "preproc_argument_fragment",
-    "named": true,
-    "fields": {
-      "alternative": {
-        "multiple": false,
-        "required": false,
-        "types": [
-          {
-            "type": "preproc_trailing_argument_expression",
-            "named": true
-          }
-        ]
-      },
-      "consequence": {
-        "multiple": false,
-        "required": true,
-        "types": [
-          {
-            "type": "preproc_trailing_argument_expression",
-            "named": true
-          }
-        ]
-      },
-      "name": {
-        "multiple": false,
-        "required": true,
-        "types": [
-          {
-            "type": "identifier",
-            "named": true
-          }
-        ]
-      }
-    }
-  },
-  {
     "type": "preproc_assignment_statement",
     "named": true,
     "fields": {
@@ -11249,100 +11201,6 @@
     }
   },
   {
-    "type": "preproc_condition_expression",
-    "named": true,
-    "fields": {
-      "alternative": {
-        "multiple": false,
-        "required": false,
-        "types": [
-          {
-            "type": "expression",
-            "named": true
-          }
-        ]
-      },
-      "condition": {
-        "multiple": false,
-        "required": false,
-        "types": [
-          {
-            "type": "binary_expression",
-            "named": true
-          },
-          {
-            "type": "call_expression",
-            "named": true
-          },
-          {
-            "type": "char_literal",
-            "named": true
-          },
-          {
-            "type": "conditional_expression",
-            "named": true
-          },
-          {
-            "type": "identifier",
-            "named": true
-          },
-          {
-            "type": "number_literal",
-            "named": true
-          },
-          {
-            "type": "parenthesized_expression",
-            "named": true
-          },
-          {
-            "type": "preproc_defined",
-            "named": true
-          },
-          {
-            "type": "preproc_scoped_identifier",
-            "named": true
-          },
-          {
-            "type": "raw_string_literal",
-            "named": true
-          },
-          {
-            "type": "string_literal",
-            "named": true
-          },
-          {
-            "type": "system_lib_string",
-            "named": true
-          },
-          {
-            "type": "unary_expression",
-            "named": true
-          }
-        ]
-      },
-      "consequence": {
-        "multiple": false,
-        "required": true,
-        "types": [
-          {
-            "type": "expression",
-            "named": true
-          }
-        ]
-      },
-      "name": {
-        "multiple": false,
-        "required": false,
-        "types": [
-          {
-            "type": "identifier",
-            "named": true
-          }
-        ]
-      }
-    }
-  },
-  {
     "type": "preproc_declaration_modifier",
     "named": true,
     "fields": {},
@@ -11534,6 +11392,122 @@
           }
         ]
       },
+      "operator": {
+        "multiple": true,
+        "required": false,
+        "types": [
+          {
+            "type": "!=",
+            "named": false
+          },
+          {
+            "type": "%",
+            "named": false
+          },
+          {
+            "type": "&",
+            "named": false
+          },
+          {
+            "type": "&&",
+            "named": false
+          },
+          {
+            "type": "*",
+            "named": false
+          },
+          {
+            "type": "+",
+            "named": false
+          },
+          {
+            "type": "-",
+            "named": false
+          },
+          {
+            "type": "->*",
+            "named": false
+          },
+          {
+            "type": ".*",
+            "named": false
+          },
+          {
+            "type": "/",
+            "named": false
+          },
+          {
+            "type": "<",
+            "named": false
+          },
+          {
+            "type": "<=",
+            "named": false
+          },
+          {
+            "type": "<=>",
+            "named": false
+          },
+          {
+            "type": "==",
+            "named": false
+          },
+          {
+            "type": ">",
+            "named": false
+          },
+          {
+            "type": ">=",
+            "named": false
+          },
+          {
+            "type": "^",
+            "named": false
+          },
+          {
+            "type": "and",
+            "named": false
+          },
+          {
+            "type": "bitand",
+            "named": false
+          },
+          {
+            "type": "bitor",
+            "named": false
+          },
+          {
+            "type": "not_eq",
+            "named": false
+          },
+          {
+            "type": "or",
+            "named": false
+          },
+          {
+            "type": "xor",
+            "named": false
+          },
+          {
+            "type": "|",
+            "named": false
+          },
+          {
+            "type": "||",
+            "named": false
+          }
+        ]
+      },
+      "right": {
+        "multiple": true,
+        "required": false,
+        "types": [
+          {
+            "type": "expression",
+            "named": true
+          }
+        ]
+      },
       "type": {
         "multiple": false,
         "required": false,
@@ -11573,6 +11547,10 @@
         },
         {
           "type": "argument_list",
+          "named": true
+        },
+        {
+          "type": "argument_sequence",
           "named": true
         },
         {
@@ -11772,6 +11750,14 @@
           "named": true
         },
         {
+          "type": "preproc_if_in_binary_prefix",
+          "named": true
+        },
+        {
+          "type": "preproc_if_in_binary_suffix",
+          "named": true
+        },
+        {
           "type": "preproc_if_in_call_prefix",
           "named": true
         },
@@ -11833,6 +11819,10 @@
         },
         {
           "type": "preproc_semicolon_value",
+          "named": true
+        },
+        {
+          "type": "preproc_trailing_binary_expression",
           "named": true
         },
         {
@@ -12116,6 +12106,122 @@
           }
         ]
       },
+      "operator": {
+        "multiple": true,
+        "required": false,
+        "types": [
+          {
+            "type": "!=",
+            "named": false
+          },
+          {
+            "type": "%",
+            "named": false
+          },
+          {
+            "type": "&",
+            "named": false
+          },
+          {
+            "type": "&&",
+            "named": false
+          },
+          {
+            "type": "*",
+            "named": false
+          },
+          {
+            "type": "+",
+            "named": false
+          },
+          {
+            "type": "-",
+            "named": false
+          },
+          {
+            "type": "->*",
+            "named": false
+          },
+          {
+            "type": ".*",
+            "named": false
+          },
+          {
+            "type": "/",
+            "named": false
+          },
+          {
+            "type": "<",
+            "named": false
+          },
+          {
+            "type": "<=",
+            "named": false
+          },
+          {
+            "type": "<=>",
+            "named": false
+          },
+          {
+            "type": "==",
+            "named": false
+          },
+          {
+            "type": ">",
+            "named": false
+          },
+          {
+            "type": ">=",
+            "named": false
+          },
+          {
+            "type": "^",
+            "named": false
+          },
+          {
+            "type": "and",
+            "named": false
+          },
+          {
+            "type": "bitand",
+            "named": false
+          },
+          {
+            "type": "bitor",
+            "named": false
+          },
+          {
+            "type": "not_eq",
+            "named": false
+          },
+          {
+            "type": "or",
+            "named": false
+          },
+          {
+            "type": "xor",
+            "named": false
+          },
+          {
+            "type": "|",
+            "named": false
+          },
+          {
+            "type": "||",
+            "named": false
+          }
+        ]
+      },
+      "right": {
+        "multiple": true,
+        "required": false,
+        "types": [
+          {
+            "type": "expression",
+            "named": true
+          }
+        ]
+      },
       "type": {
         "multiple": false,
         "required": false,
@@ -12362,6 +12468,14 @@
           "named": true
         },
         {
+          "type": "preproc_if_in_binary_prefix",
+          "named": true
+        },
+        {
+          "type": "preproc_if_in_binary_suffix",
+          "named": true
+        },
+        {
           "type": "preproc_if_in_call_prefix",
           "named": true
         },
@@ -12423,6 +12537,10 @@
         },
         {
           "type": "preproc_semicolon_value",
+          "named": true
+        },
+        {
+          "type": "preproc_trailing_binary_expression",
           "named": true
         },
         {
@@ -13690,10 +13808,6 @@
           "named": true
         },
         {
-          "type": "preproc_if_argument_fragment",
-          "named": true
-        },
-        {
           "type": "preproc_if_in_declaration_modifiers",
           "named": true
         },
@@ -13715,6 +13829,10 @@
         },
         {
           "type": "preproc_template_type_parameter_item",
+          "named": true
+        },
+        {
+          "type": "preproc_trailing_binary_expression",
           "named": true
         },
         {
@@ -13809,7 +13927,7 @@
     }
   },
   {
-    "type": "preproc_if_argument_fragment",
+    "type": "preproc_if_in_binary_prefix",
     "named": true,
     "fields": {
       "alternative": {
@@ -13817,14 +13935,18 @@
         "required": false,
         "types": [
           {
-            "type": "preproc_trailing_argument_expression",
+            "type": "preproc_elif",
+            "named": true
+          },
+          {
+            "type": "preproc_else",
             "named": true
           }
         ]
       },
       "condition": {
         "multiple": false,
-        "required": true,
+        "required": false,
         "types": [
           {
             "type": "binary_expression",
@@ -13880,16 +14002,244 @@
           }
         ]
       },
-      "consequence": {
+      "name": {
         "multiple": false,
-        "required": true,
+        "required": false,
         "types": [
           {
-            "type": "preproc_trailing_argument_expression",
+            "type": "identifier",
             "named": true
           }
         ]
       }
+    },
+    "children": {
+      "multiple": true,
+      "required": false,
+      "types": [
+        {
+          "type": "preproc_if_in_binary_prefix",
+          "named": true
+        },
+        {
+          "type": "preproc_trailing_binary_expression",
+          "named": true
+        }
+      ]
+    }
+  },
+  {
+    "type": "preproc_if_in_binary_suffix",
+    "named": true,
+    "fields": {
+      "alternative": {
+        "multiple": false,
+        "required": false,
+        "types": [
+          {
+            "type": "preproc_elif",
+            "named": true
+          },
+          {
+            "type": "preproc_else",
+            "named": true
+          }
+        ]
+      },
+      "condition": {
+        "multiple": false,
+        "required": false,
+        "types": [
+          {
+            "type": "binary_expression",
+            "named": true
+          },
+          {
+            "type": "call_expression",
+            "named": true
+          },
+          {
+            "type": "char_literal",
+            "named": true
+          },
+          {
+            "type": "conditional_expression",
+            "named": true
+          },
+          {
+            "type": "identifier",
+            "named": true
+          },
+          {
+            "type": "number_literal",
+            "named": true
+          },
+          {
+            "type": "parenthesized_expression",
+            "named": true
+          },
+          {
+            "type": "preproc_defined",
+            "named": true
+          },
+          {
+            "type": "preproc_scoped_identifier",
+            "named": true
+          },
+          {
+            "type": "raw_string_literal",
+            "named": true
+          },
+          {
+            "type": "string_literal",
+            "named": true
+          },
+          {
+            "type": "system_lib_string",
+            "named": true
+          },
+          {
+            "type": "unary_expression",
+            "named": true
+          }
+        ]
+      },
+      "name": {
+        "multiple": false,
+        "required": false,
+        "types": [
+          {
+            "type": "identifier",
+            "named": true
+          }
+        ]
+      },
+      "operator": {
+        "multiple": true,
+        "required": false,
+        "types": [
+          {
+            "type": "!=",
+            "named": false
+          },
+          {
+            "type": "%",
+            "named": false
+          },
+          {
+            "type": "&",
+            "named": false
+          },
+          {
+            "type": "&&",
+            "named": false
+          },
+          {
+            "type": "*",
+            "named": false
+          },
+          {
+            "type": "+",
+            "named": false
+          },
+          {
+            "type": "-",
+            "named": false
+          },
+          {
+            "type": "->*",
+            "named": false
+          },
+          {
+            "type": ".*",
+            "named": false
+          },
+          {
+            "type": "/",
+            "named": false
+          },
+          {
+            "type": "<",
+            "named": false
+          },
+          {
+            "type": "<=",
+            "named": false
+          },
+          {
+            "type": "<=>",
+            "named": false
+          },
+          {
+            "type": "==",
+            "named": false
+          },
+          {
+            "type": ">",
+            "named": false
+          },
+          {
+            "type": ">=",
+            "named": false
+          },
+          {
+            "type": "^",
+            "named": false
+          },
+          {
+            "type": "and",
+            "named": false
+          },
+          {
+            "type": "bitand",
+            "named": false
+          },
+          {
+            "type": "bitor",
+            "named": false
+          },
+          {
+            "type": "not_eq",
+            "named": false
+          },
+          {
+            "type": "or",
+            "named": false
+          },
+          {
+            "type": "xor",
+            "named": false
+          },
+          {
+            "type": "|",
+            "named": false
+          },
+          {
+            "type": "||",
+            "named": false
+          }
+        ]
+      },
+      "right": {
+        "multiple": true,
+        "required": false,
+        "types": [
+          {
+            "type": "expression",
+            "named": true
+          }
+        ]
+      }
+    },
+    "children": {
+      "multiple": true,
+      "required": false,
+      "types": [
+        {
+          "type": "preproc_if_in_binary_suffix",
+          "named": true
+        }
+      ]
     }
   },
   {
@@ -16852,7 +17202,7 @@
       },
       "name": {
         "multiple": false,
-        "required": false,
+        "required": true,
         "types": [
           {
             "type": "identifier",
@@ -16968,10 +17318,6 @@
           "named": true
         },
         {
-          "type": "preproc_argument_fragment",
-          "named": true
-        },
-        {
           "type": "preproc_call",
           "named": true
         },
@@ -16997,6 +17343,10 @@
         },
         {
           "type": "preproc_include",
+          "named": true
+        },
+        {
+          "type": "preproc_trailing_binary_expression",
           "named": true
         },
         {
@@ -17466,198 +17816,6 @@
           },
           {
             "type": "system_lib_string",
-            "named": true
-          }
-        ]
-      }
-    }
-  },
-  {
-    "type": "preproc_logical_expression_fragment",
-    "named": true,
-    "fields": {
-      "condition": {
-        "multiple": false,
-        "required": false,
-        "types": [
-          {
-            "type": "binary_expression",
-            "named": true
-          },
-          {
-            "type": "call_expression",
-            "named": true
-          },
-          {
-            "type": "char_literal",
-            "named": true
-          },
-          {
-            "type": "conditional_expression",
-            "named": true
-          },
-          {
-            "type": "identifier",
-            "named": true
-          },
-          {
-            "type": "number_literal",
-            "named": true
-          },
-          {
-            "type": "parenthesized_expression",
-            "named": true
-          },
-          {
-            "type": "preproc_defined",
-            "named": true
-          },
-          {
-            "type": "preproc_scoped_identifier",
-            "named": true
-          },
-          {
-            "type": "raw_string_literal",
-            "named": true
-          },
-          {
-            "type": "string_literal",
-            "named": true
-          },
-          {
-            "type": "system_lib_string",
-            "named": true
-          },
-          {
-            "type": "unary_expression",
-            "named": true
-          }
-        ]
-      },
-      "name": {
-        "multiple": false,
-        "required": false,
-        "types": [
-          {
-            "type": "identifier",
-            "named": true
-          }
-        ]
-      },
-      "operator": {
-        "multiple": false,
-        "required": true,
-        "types": [
-          {
-            "type": "&&",
-            "named": false
-          },
-          {
-            "type": "||",
-            "named": false
-          }
-        ]
-      },
-      "right": {
-        "multiple": false,
-        "required": true,
-        "types": [
-          {
-            "type": "expression",
-            "named": true
-          }
-        ]
-      }
-    }
-  },
-  {
-    "type": "preproc_logical_tail_expression_fragment",
-    "named": true,
-    "fields": {
-      "alternative": {
-        "multiple": false,
-        "required": false,
-        "types": [
-          {
-            "type": "expression",
-            "named": true
-          }
-        ]
-      },
-      "condition": {
-        "multiple": false,
-        "required": false,
-        "types": [
-          {
-            "type": "binary_expression",
-            "named": true
-          },
-          {
-            "type": "call_expression",
-            "named": true
-          },
-          {
-            "type": "char_literal",
-            "named": true
-          },
-          {
-            "type": "conditional_expression",
-            "named": true
-          },
-          {
-            "type": "identifier",
-            "named": true
-          },
-          {
-            "type": "number_literal",
-            "named": true
-          },
-          {
-            "type": "parenthesized_expression",
-            "named": true
-          },
-          {
-            "type": "preproc_defined",
-            "named": true
-          },
-          {
-            "type": "preproc_scoped_identifier",
-            "named": true
-          },
-          {
-            "type": "raw_string_literal",
-            "named": true
-          },
-          {
-            "type": "string_literal",
-            "named": true
-          },
-          {
-            "type": "system_lib_string",
-            "named": true
-          },
-          {
-            "type": "unary_expression",
-            "named": true
-          }
-        ]
-      },
-      "consequence": {
-        "multiple": false,
-        "required": true,
-        "types": [
-          {
-            "type": "expression",
-            "named": true
-          }
-        ]
-      },
-      "name": {
-        "multiple": false,
-        "required": false,
-        "types": [
-          {
-            "type": "identifier",
             "named": true
           }
         ]
@@ -18465,7 +18623,7 @@
     }
   },
   {
-    "type": "preproc_trailing_argument_expression",
+    "type": "preproc_trailing_binary_expression",
     "named": true,
     "fields": {
       "left": {
@@ -18473,215 +18631,7 @@
         "required": true,
         "types": [
           {
-            "type": "alignof_expression",
-            "named": true
-          },
-          {
-            "type": "assignment_expression",
-            "named": true
-          },
-          {
-            "type": "call_expression",
-            "named": true
-          },
-          {
-            "type": "cast_expression",
-            "named": true
-          },
-          {
-            "type": "char_literal",
-            "named": true
-          },
-          {
-            "type": "co_await_expression",
-            "named": true
-          },
-          {
-            "type": "compound_literal_expression",
-            "named": true
-          },
-          {
-            "type": "concatenated_string",
-            "named": true
-          },
-          {
-            "type": "conditional_expression",
-            "named": true
-          },
-          {
-            "type": "cpp_cast_expression",
-            "named": true
-          },
-          {
-            "type": "delete_expression",
-            "named": true
-          },
-          {
-            "type": "extension_expression",
-            "named": true
-          },
-          {
-            "type": "false",
-            "named": true
-          },
-          {
-            "type": "field_expression",
-            "named": true
-          },
-          {
-            "type": "fold_expression",
-            "named": true
-          },
-          {
-            "type": "gcnew_expression",
-            "named": true
-          },
-          {
-            "type": "generic_expression",
-            "named": true
-          },
-          {
-            "type": "gnu_asm_expression",
-            "named": true
-          },
-          {
-            "type": "identifier",
-            "named": true
-          },
-          {
-            "type": "lambda_expression",
-            "named": true
-          },
-          {
-            "type": "macro_expansion",
-            "named": true
-          },
-          {
-            "type": "macro_expression_continuation",
-            "named": true
-          },
-          {
-            "type": "macro_prefixed_expression",
-            "named": true
-          },
-          {
-            "type": "macro_token_paste_expression",
-            "named": true
-          },
-          {
-            "type": "new_expression",
-            "named": true
-          },
-          {
-            "type": "null",
-            "named": true
-          },
-          {
-            "type": "number_literal",
-            "named": true
-          },
-          {
-            "type": "offsetof_expression",
-            "named": true
-          },
-          {
-            "type": "operator_name",
-            "named": true
-          },
-          {
-            "type": "parameter_pack_expansion",
-            "named": true
-          },
-          {
-            "type": "parenthesized_expression",
-            "named": true
-          },
-          {
-            "type": "pointer_expression",
-            "named": true
-          },
-          {
-            "type": "preproc_if_in_expression",
-            "named": true
-          },
-          {
-            "type": "preprocessing_token_macro_call",
-            "named": true
-          },
-          {
-            "type": "qualified_address_expression",
-            "named": true
-          },
-          {
-            "type": "qualified_identifier",
-            "named": true
-          },
-          {
-            "type": "raw_string_literal",
-            "named": true
-          },
-          {
-            "type": "reflect_expression",
-            "named": true
-          },
-          {
-            "type": "requires_clause",
-            "named": true
-          },
-          {
-            "type": "requires_expression",
-            "named": true
-          },
-          {
-            "type": "sizeof_expression",
-            "named": true
-          },
-          {
-            "type": "splice_specifier",
-            "named": true
-          },
-          {
-            "type": "string_literal",
-            "named": true
-          },
-          {
-            "type": "subscript_expression",
-            "named": true
-          },
-          {
-            "type": "suffixed_string_literal",
-            "named": true
-          },
-          {
-            "type": "template_function",
-            "named": true
-          },
-          {
-            "type": "this",
-            "named": true
-          },
-          {
-            "type": "throw_expression",
-            "named": true
-          },
-          {
-            "type": "true",
-            "named": true
-          },
-          {
-            "type": "typeid_expression",
-            "named": true
-          },
-          {
-            "type": "unary_expression",
-            "named": true
-          },
-          {
-            "type": "update_expression",
-            "named": true
-          },
-          {
-            "type": "user_defined_literal",
+            "type": "expression",
             "named": true
           }
         ]
@@ -18690,6 +18640,10 @@
         "multiple": false,
         "required": true,
         "types": [
+          {
+            "type": "!=",
+            "named": false
+          },
           {
             "type": "%",
             "named": false
@@ -18715,11 +18669,43 @@
             "named": false
           },
           {
+            "type": "->*",
+            "named": false
+          },
+          {
+            "type": ".*",
+            "named": false
+          },
+          {
             "type": "/",
             "named": false
           },
           {
+            "type": "<",
+            "named": false
+          },
+          {
             "type": "<<",
+            "named": false
+          },
+          {
+            "type": "<=",
+            "named": false
+          },
+          {
+            "type": "<=>",
+            "named": false
+          },
+          {
+            "type": "==",
+            "named": false
+          },
+          {
+            "type": ">",
+            "named": false
+          },
+          {
+            "type": ">=",
             "named": false
           },
           {
@@ -18728,6 +18714,30 @@
           },
           {
             "type": "^",
+            "named": false
+          },
+          {
+            "type": "and",
+            "named": false
+          },
+          {
+            "type": "bitand",
+            "named": false
+          },
+          {
+            "type": "bitor",
+            "named": false
+          },
+          {
+            "type": "not_eq",
+            "named": false
+          },
+          {
+            "type": "or",
+            "named": false
+          },
+          {
+            "type": "xor",
             "named": false
           },
           {
@@ -23469,11 +23479,11 @@
   },
   {
     "type": "false",
-    "named": false
+    "named": true
   },
   {
     "type": "false",
-    "named": true
+    "named": false
   },
   {
     "type": "final",
@@ -23785,11 +23795,11 @@
   },
   {
     "type": "true",
-    "named": true
+    "named": false
   },
   {
     "type": "true",
-    "named": false
+    "named": true
   },
   {
     "type": "try",

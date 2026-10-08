@@ -38,30 +38,12 @@ bool HasStructuredPreprocessorChildren(const SyntaxNode& node) {
     });
 }
 
-bool HasIncompleteConditionalExpression(const SyntaxNode& node) {
-    if (node.kind == SyntaxNodeKind::IncompleteConditionalExpression) {
-        return true;
-    }
-    return std::any_of(node.children.begin(), node.children.end(), [](const SyntaxNode* child) {
-        return child != nullptr && HasIncompleteConditionalExpression(*child);
-    });
-}
-
 const SyntaxNode* EffectiveParent(const SyntaxNode& node) {
     const SyntaxNode* parent = node.parent;
     while (parent != nullptr && parent->kind == SyntaxNodeKind::IncludeRun) {
         parent = parent->parent;
     }
     return parent;
-}
-
-bool HasAncestorWithClass(const SyntaxNode& node, SyntaxNodeClass syntaxNodeClass) {
-    for (const SyntaxNode* parent = node.parent; parent != nullptr; parent = parent->parent) {
-        if (HasClass(*parent, syntaxNodeClass)) {
-            return true;
-        }
-    }
-    return false;
 }
 
 bool IsSupportedIncludePlacement(const SyntaxNode& node) {
@@ -71,8 +53,7 @@ bool IsSupportedIncludePlacement(const SyntaxNode& node) {
 
 bool IsSupportedConditionalPlacement(const SyntaxNode& node) {
     if (HasClass(node, SyntaxNodeClass::SupportedPreprocessorPlacement)) {
-        return !HasAncestorWithClass(node, SyntaxNodeClass::AllowedListPreprocessorContainer) ||
-            !HasIncompleteConditionalExpression(node);
+        return true;
     }
 
     if (
@@ -89,7 +70,7 @@ bool IsSupportedConditionalPlacement(const SyntaxNode& node) {
     }
 
     if (HasClass(*parent, SyntaxNodeClass::AllowedListPreprocessorContainer)) {
-        return !HasIncompleteConditionalExpression(node);
+        return true;
     }
 
     if (HasClass(*parent, SyntaxNodeClass::AllowedPreprocessorContainer)) {

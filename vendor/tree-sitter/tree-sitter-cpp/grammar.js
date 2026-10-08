@@ -22,6 +22,36 @@ const PREC = Object.assign(C.PREC, {
   THREE_WAY: C.PREC.RELATIONAL + 1,
 });
 
+const BINARY_OPERATORS = [
+  ['.*', PREC.POINTER_TO_MEMBER],
+  ['->*', PREC.POINTER_TO_MEMBER],
+  ['+', PREC.ADD],
+  ['-', PREC.ADD],
+  ['*', PREC.MULTIPLY],
+  ['/', PREC.MULTIPLY],
+  ['%', PREC.MULTIPLY],
+  ['||', PREC.LOGICAL_OR, 2],
+  ['&&', PREC.LOGICAL_AND, 2],
+  ['|', PREC.INCLUSIVE_OR],
+  ['^', PREC.EXCLUSIVE_OR],
+  ['&', PREC.BITWISE_AND],
+  ['==', PREC.EQUAL],
+  ['!=', PREC.EQUAL],
+  ['>', PREC.RELATIONAL, 1],
+  ['>=', PREC.RELATIONAL, 1],
+  ['<=', PREC.RELATIONAL, 1],
+  ['<', PREC.RELATIONAL, 1],
+  ['<<', PREC.SHIFT],
+  ['>>', PREC.SHIFT],
+  ['<=>', PREC.THREE_WAY],
+  ['or', PREC.LOGICAL_OR],
+  ['and', PREC.LOGICAL_AND],
+  ['bitor', PREC.INCLUSIVE_OR],
+  ['xor', PREC.EXCLUSIVE_OR],
+  ['bitand', PREC.BITWISE_AND],
+  ['not_eq', PREC.EQUAL],
+];
+
 const FOLD_OPERATORS = [
   '+', '-', '*', '/', '%',
   '^', '&', '|',
@@ -368,6 +398,14 @@ module.exports = grammar(C, {
   ],
 
   conflicts: $ => [
+    [$.preproc_if_in_lambda_capture_list, $.preproc_if_in_binary_prefix],
+    [$.preproc_else_in_lambda_capture_list, $.preproc_else_in_binary_prefix],
+    [$.preproc_elif_in_lambda_capture_list, $.preproc_elif_in_binary_prefix],
+    [$.preproc_enum_entries, $.preproc_if_in_binary_prefix],
+    [$.preproc_enum_else, $.preproc_else_in_binary_prefix],
+    [$.preproc_if_in_statement_prefix, $.preproc_if_in_binary_prefix],
+    [$.preproc_elif_in_statement_prefix, $.preproc_elif_in_binary_prefix],
+    [$.preproc_else_in_statement_prefix, $.preproc_else_in_binary_prefix],
     [$.macro_prefixed_statement, $.preproc_if_in_statement_prefix, $._closed_macro_prefixed_statement],
     [$.macro_prefixed_statement, $.preproc_if_in_statement_prefix],
     [$._semicolon_initializer, $._common_postfix_expression, $.conditional_concatenated_string],
@@ -397,8 +435,6 @@ module.exports = grammar(C, {
     [$.compound_statement, $.if_transition_header],
     [$.compound_statement, $.else_transition_header],
     [$._block_item, $._if_transition_branch],
-    [$.preproc_else_in_expression, $.preproc_condition_expression],
-    [$.preproc_if_in_expression, $.preproc_condition_expression],
     [$.if_statement, $._if_consequence_prefix, $._closed_if_statement],
     [$._common_postfix_expression, $.preproc_string_literal_fragment],
     [$.expression, $.preproc_declaration_modifier],
@@ -978,7 +1014,6 @@ module.exports = grammar(C, {
     [$._declaration_specifiers, $._conditional_function_return_type_specifiers, $._constructor_specifiers],
     [$._declarator, $.macro_declaration_header_fragment],
     [$.statement, $.preproc_ended_consequence_statement],
-    [$.preproc_argument_fragment, $.preproc_ifdef_in_expression_list],
     [$._declarator, $.type_specifier, $.class_macro_call],
     [$.storage_class_specifier, $.preproc_declaration_modifier],
     [$.type_specifier, $.preproc_declaration_modifier],
@@ -995,7 +1030,6 @@ module.exports = grammar(C, {
     $._enumerator_list_content,
     $._namespace_identifier,
     // Inline aliases share reductions while retaining the public syntax-node names.
-    $.preproc_logical_tail_expression_fragment,
     $.macro_parenthesized_argument,
     $.namespace_declaration_list,
     $.gnu_asm_input_operand,
@@ -1571,6 +1605,12 @@ module.exports = grammar(C, {
     // Share directive boundaries while each placement keeps its own branch syntax.
     _preproc_elif_line: $ => seq(preprocessor('elif'), field('condition', $._preproc_expression), $._preproc_directive_end),
 
+    _preproc_elifdef_line: $ => seq(
+      choice(preprocessor('elifdef'), preprocessor('elifndef')),
+      field('name', $.identifier),
+      $._preproc_directive_end,
+    ),
+
     _preproc_else_line: $ => seq(preprocessor('else'), $._preproc_directive_end),
     _preproc_endif_line: $ => seq(preprocessor('endif'), $._preproc_directive_end),
 
@@ -1665,9 +1705,12 @@ module.exports = grammar(C, {
 
     ...preprocIf(
       '_in_expression_list',
-      $ => $.argument_sequence,
+      $ => optional(choice(
+        $.argument_sequence,
+        $.preproc_trailing_binary_expression,
+      )),
       2,
-      PREPROC_IFDEF | PREPROC_ELSE,
+      PREPROC_ALL_BRANCH_FORMS,
       false,
     ),
 
@@ -2559,12 +2602,7 @@ module.exports = grammar(C, {
       $._preproc_opening_line,
       $.preproc_declaration_modifier,
       repeat(seq(
-        choice(
-          seq(preprocessor('elif'), field('condition', $._preproc_expression)),
-          seq(choice(preprocessor('elifdef'), preprocessor('elifndef')), field('name', $.identifier)),
-          preprocessor('else'),
-        ),
-        $._preproc_directive_end,
+        choice($._preproc_elif_line, $._preproc_elifdef_line, $._preproc_else_line),
         $.preproc_declaration_modifier,
       )),
       $._preproc_endif_line,
@@ -3588,11 +3626,7 @@ module.exports = grammar(C, {
       $._preproc_opening_line,
       repeat1($.preproc_case_label),
       repeat(seq(
-        choice(
-          seq(preprocessor('elif'), field('condition', $._preproc_expression)),
-          preprocessor('else'),
-        ),
-        $._preproc_directive_end,
+        choice($._preproc_elif_line, $._preproc_else_line),
         repeat1($.preproc_case_label),
       )),
       $._preproc_endif_line,
@@ -3797,9 +3831,7 @@ module.exports = grammar(C, {
     ),
 
     preproc_elif_in_else_clause: $ => seq(
-      preprocessor('elif'),
-      field('condition', $._preproc_expression),
-      $._preproc_directive_end,
+      $._preproc_elif_line,
       $.else_clause,
       optional($._preproc_else_clause_alternative),
     ),
@@ -3996,10 +4028,7 @@ module.exports = grammar(C, {
       )),
       seq(
         '(',
-        field('value', choice(
-          $.preproc_condition_expression,
-          alias($.condition_declaration, $.declaration),
-        )),
+        field('value', alias($.condition_declaration, $.declaration)),
         ')',
       ),
       prec.dynamic(-1, seq(
@@ -4012,16 +4041,6 @@ module.exports = grammar(C, {
         )),
         ')',
       )),
-    ),
-
-    preproc_condition_expression: $ => seq(
-      $._preproc_opening_line,
-      field('consequence', $.expression),
-      optional(seq(
-        $._preproc_else_line,
-        field('alternative', $.expression),
-      )),
-      $._preproc_endif_line,
     ),
 
     condition_declaration: $ => prec.dynamic(-1, seq(
@@ -5088,36 +5107,6 @@ module.exports = grammar(C, {
     ),
 
     binary_expression: $ => {
-      const table = [
-        ['.*', PREC.POINTER_TO_MEMBER],
-        ['->*', PREC.POINTER_TO_MEMBER],
-        ['+', PREC.ADD],
-        ['-', PREC.ADD],
-        ['*', PREC.MULTIPLY],
-        ['/', PREC.MULTIPLY],
-        ['%', PREC.MULTIPLY],
-        ['||', PREC.LOGICAL_OR, 2],
-        ['&&', PREC.LOGICAL_AND, 2],
-        ['|', PREC.INCLUSIVE_OR],
-        ['^', PREC.EXCLUSIVE_OR],
-        ['&', PREC.BITWISE_AND],
-        ['==', PREC.EQUAL],
-        ['!=', PREC.EQUAL],
-        ['>', PREC.RELATIONAL, 1],
-        ['>=', PREC.RELATIONAL, 1],
-        ['<=', PREC.RELATIONAL, 1],
-        ['<', PREC.RELATIONAL, 1],
-        ['<<', PREC.SHIFT],
-        ['>>', PREC.SHIFT],
-        ['<=>', PREC.THREE_WAY],
-        ['or', PREC.LOGICAL_OR],
-        ['and', PREC.LOGICAL_AND],
-        ['bitor', PREC.INCLUSIVE_OR],
-        ['xor', PREC.EXCLUSIVE_OR],
-        ['bitand', PREC.BITWISE_AND],
-        ['not_eq', PREC.EQUAL],
-      ];
-
       return choice(
         prec.left(PREC.LOGICAL_OR, seq(
           field('left', $.expression),
@@ -5131,22 +5120,15 @@ module.exports = grammar(C, {
             alias($.preproc_ifdef_in_stream_operator_chain, $.preproc_ifdef),
           )),
         )),
-        prec.left(PREC.INCLUSIVE_OR, seq(
-          field('left', $.expression),
-          field('operator', '|'),
-          choice($.preproc_argument_fragment, $.preproc_if_argument_fragment),
+        prec.right(PREC.LOGICAL_OR, seq(
+          $.preproc_if_in_binary_prefix,
           field('right', $.expression),
         )),
         prec.left(PREC.LOGICAL_OR, seq(
           field('left', $.expression),
-          $.preproc_logical_expression_fragment,
+          $.preproc_if_in_binary_suffix,
         )),
-        prec.left(PREC.LOGICAL_AND, seq(
-          field('left', $.expression),
-          field('operator', '&&'),
-          $.preproc_logical_tail_expression_fragment,
-        )),
-        ...table.map(([operator, precedence, binaryPreference]) => {
+        ...BINARY_OPERATORS.map(([operator, precedence, binaryPreference]) => {
           const rule = prec.left(precedence, seq(
             field('left', $.expression),
             // @ts-ignore
@@ -5159,14 +5141,16 @@ module.exports = grammar(C, {
         }));
     },
 
-    preproc_logical_expression_fragment: $ => seq(
-      $._preproc_opening_line,
-      field('operator', choice('||', '&&')),
-      field('right', $.expression),
-      $._preproc_endif_line,
-    ),
+    ...preprocIf('_in_binary_suffix', $ => choice(
+      $._preproc_leading_binary_expression,
+      $.preproc_if_in_binary_suffix,
+    ), 0, PREPROC_ALL_BRANCH_FORMS | PREPROC_SHARED_OPENER),
 
-    preproc_logical_tail_expression_fragment: $ => alias($.preproc_condition_expression, $.preproc_logical_tail_expression_fragment),
+    _preproc_leading_binary_expression: $ => seq(
+      // Shifts already have their own stream-chain layout and grammar.
+      field('operator', binaryFragmentOperator($, false)),
+      field('right', $.expression),
+    ),
 
     // Calls share one recursive argument grammar, including empty arguments.
     argument_list: $ => seq('(', optional($.argument_sequence), ')'),
@@ -5223,19 +5207,16 @@ module.exports = grammar(C, {
       $._braced_initializer_value,
     ),
 
-    preproc_argument_fragment: $ => preprocArgumentFragment($, seq(
-      choice(preprocessor('ifdef'), preprocessor('ifndef')),
-      field('name', $.identifier),
-    )),
+    ...preprocIf('_in_binary_prefix', $ => choice(
+      $.preproc_trailing_binary_expression,
+      $.preproc_if_in_binary_prefix,
+    ), 0, PREPROC_ALL_BRANCH_FORMS | PREPROC_SHARED_OPENER),
 
-    preproc_if_argument_fragment: $ => preprocArgumentFragment($, seq(
-      preprocessor('if'),
-      field('condition', $._preproc_expression),
-    )),
-
-    preproc_trailing_argument_expression: $ => prec.right(PREC.CALL + 10, seq(
-      field('left', $._expression_not_binary),
-      field('operator', choice('|', '||', '&&', '^', '&', '+', '-', '*', '/', '%', '<<', '>>')),
+    // Reduce a trailing operator only after its complete left operand; ordinary
+    // binary expressions must remain viable until the directive boundary.
+    preproc_trailing_binary_expression: $ => prec.right(seq(
+      field('left', $.expression),
+      field('operator', binaryFragmentOperator($)),
     )),
 
     destructor_name: $ => prec.right(seq('~', choice(contextualIdentifier($), $.template_type))),
@@ -5440,17 +5421,7 @@ module.exports = grammar(C, {
       $._preproc_opening_line,
       repeat1($._string),
       repeat(seq(
-        choice(
-          seq(
-            preprocessor('elif'),
-            field('condition', $._preproc_expression),
-          ),
-          seq(
-            choice(preprocessor('elifdef'), preprocessor('elifndef')),
-            field('name', $.identifier),
-          ),
-        ),
-        $._preproc_directive_end,
+        choice($._preproc_elif_line, $._preproc_elifdef_line),
         repeat1($._string),
       )),
       optional(seq(
@@ -5827,9 +5798,7 @@ function selectedStatementPrefix(kind, prefix, group = 'preproc_' + kind + '_pre
     ),
     [elseBranch]: $ => seq($._preproc_else_line, $[branch]),
     [elifBranch]: $ => seq(
-      preprocessor('elif'),
-      field('condition', $._preproc_expression),
-      $._preproc_directive_end,
+      $._preproc_elif_line,
       $[branch],
       optional($[alternative]),
     ),
@@ -5892,9 +5861,6 @@ function preprocIf(suffix, content, precedence = 0, forms = PREPROC_ALL_BRANCH_F
         ...alternativeField($),
         $._preproc_endif_line,
       ));
-      if (suffix === '_in_expression_list') {
-        return choice($.preproc_if_argument_fragment, ordinary);
-      }
       return ordinary;
     },
   };
@@ -5909,9 +5875,7 @@ function preprocIf(suffix, content, precedence = 0, forms = PREPROC_ALL_BRANCH_F
         ...alternativeField($),
         $._preproc_endif_line,
       ));
-      return suffix === '_in_expression_list'
-        ? choice($.preproc_argument_fragment, ordinary)
-        : ordinary;
+      return ordinary;
     };
   }
 
@@ -5931,9 +5895,7 @@ function preprocIf(suffix, content, precedence = 0, forms = PREPROC_ALL_BRANCH_F
 
     if (suffix === '') {
       rules['preproc_elifdef' + suffix] = $ => prec(precedence, seq(
-        choice(preprocessor('elifdef'), preprocessor('elifndef')),
-        field('name', $.identifier),
-        $._preproc_directive_end,
+        $._preproc_elifdef_line,
         branchContent($),
         ...alternativeField($),
       ));
@@ -5943,17 +5905,10 @@ function preprocIf(suffix, content, precedence = 0, forms = PREPROC_ALL_BRANCH_F
   return rules;
 }
 
-function preprocArgumentFragment($, opening) {
-  return prec.dynamic(20, prec(PREC.CALL + 10, seq(
-    opening,
-    $._preproc_directive_end,
-    field('consequence', $.preproc_trailing_argument_expression),
-    optional(seq(
-      $._preproc_else_line,
-      field('alternative', $.preproc_trailing_argument_expression),
-    )),
-    $._preproc_endif_line,
-  )));
+function binaryFragmentOperator($, includeShifts = true) {
+  return choice(...BINARY_OPERATORS
+    .filter(([operator]) => includeShifts || (operator !== '<<' && operator !== '>>'))
+    .map(([operator]) => operator === '>' ? choice('>', alias($._split_right_angle, '>')) : operator));
 }
 
 function preprocessor(command) {

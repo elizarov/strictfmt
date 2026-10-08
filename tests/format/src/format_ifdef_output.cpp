@@ -2956,3 +2956,161 @@ void PreprocessorSelectedIfHeader(Connection* conn) {
     }
     sendFailed:;
 }
+
+constexpr int A = 1, B = 2, C = 4, D = 8;
+
+int Suffix() {
+    return A | B
+#if MODE
+        | C
+#elif OTHER
+        | D
+#endif
+    ;
+}
+int Prefix() {
+    return
+#if MODE
+        A | B |
+#elif OTHER
+        C |
+#endif
+    D;
+}
+int Middle() {
+    return A |
+#if MODE
+        B | C |
+#endif
+    D;
+}
+bool Logical(int value) {
+    return value == A ||
+#if MODE
+        value == B || value == C ||
+#endif
+    value == D;
+}
+int Nested() {
+    return A
+#if MODE
+        | B
+#if OTHER
+        | C
+#endif
+#endif
+    ;
+}
+int OptionalPrefix() {
+    return
+#if MODE
+        A |
+#endif
+#if OTHER
+        B |
+#endif
+    D;
+}
+
+int ArithmeticLinks(int a, int b, int c) {
+    return a
+#if MODE
+        + b * c
+#elif OTHER
+        - b
+#else
+        + c
+#endif
+    ;
+}
+bool AlternateLinks(bool a, bool b, bool c) {
+    return a
+#if MODE
+        and b
+#else
+        or c
+#endif
+    ;
+}
+int NestedPrefix() {
+    return
+#ifdef FEATURE
+#if OTHER
+        A | B |
+#else
+        C |
+#endif
+#elif MODE
+#endif
+    D;
+}
+int CommentedLinks() {
+    return A |
+#if MODE
+        // First flags.
+        B |  // Include another flag.
+            C |
+#endif
+    D;
+}
+int AcceptFlags(int flags) { return flags; }
+int ArgumentLinks() {
+    return AcceptFlags(
+#ifdef FEATURE
+        A | B |
+#else
+        C |
+#endif
+        D
+    );
+}
+
+int EmptyFirstPrefix() {
+    return
+#if MODE
+#elif OTHER
+        A |
+#else
+        B |
+#endif
+    C;
+}
+int EmptyBranches() {
+    return
+#if MODE
+#else
+#endif
+    D;
+}
+
+#define WITH_BASE_FRAGMENT(prefix) (prefix 8)
+int PartialArgument() {
+    return WITH_BASE_FRAGMENT(
+#if MODE
+        A | B |
+#endif
+    );
+}
+
+void ExpressionFragment() {
+    constexpr int kOptmask = ARES_OPT_FLAGS |
+        ARES_OPT_TIMEOUTMS |
+        ARES_OPT_TRIES |
+        ARES_OPT_DOMAINS |
+#if ARES_VERSION < 0x011400
+        ARES_OPT_SOCK_STATE_CB |
+#endif
+    ARES_OPT_LOOKUPS;
+}
+
+void ConditionalArgumentExpressionFragment() {
+    Open(
+#ifdef FORMAT_USERVER_FLAG_A
+        kFlagA |
+#endif
+#ifdef FORMAT_USERVER_FLAG_B
+        kFlagB |
+#endif
+        kBaseFlag
+    );
+}
