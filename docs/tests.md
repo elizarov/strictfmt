@@ -13,6 +13,8 @@ and streaming work-queue tests.
 The Python runner uses verbose `unittest` output with compact method names, so
 test logs list each test with its pass/fail status instead of dot-only progress.
 Text fixtures and subprocess I/O use UTF-8 independently of the host locale.
+`tests/cli_test_utils.py` uses binary pipes to preserve explicit input line
+endings, then decodes captured output with universal newline handling.
 
 Formatter invocations in the test harness enable `--validate` by default, so
 proposed output must parse and format idempotently before a test can succeed.

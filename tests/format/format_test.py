@@ -14,6 +14,9 @@ from dataclasses import dataclass
 from pathlib import Path
 from unittest import mock
 
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+from cli_test_utils import run_text_command
+
 
 TEST_ROOT = Path(__file__).resolve().parent
 STRICTFMT_ROOT = Path(os.environ.get("STRICTFMT_PROJECT_ROOT", TEST_ROOT.parents[1])).resolve()
@@ -206,16 +209,7 @@ def native_format(
     *args: str, cwd: Path = STRICTFMT_ROOT, input_text: str | None = None, timeout: float | None = None,
     validate: bool = True
 ) -> subprocess.CompletedProcess[str]:
-    return subprocess.run(
-        format_command(args, validate),
-        cwd=cwd,
-        input=input_text,
-        check=False,
-        capture_output=True,
-        text=True,
-        encoding="utf-8",
-        timeout=timeout,
-    )
+    return run_text_command(format_command(args, validate), cwd=cwd, input_text=input_text, timeout=timeout)
 
 
 def native_format_bytes(
@@ -442,6 +436,17 @@ class FormatCommandTests(unittest.TestCase):
             for relative in source_files:
                 if after_first_pass[relative] != after_second_pass[relative]:
                     self.fail(f"{relative} changed on the second formatter pass")
+
+    def test_text_transport_preserves_input_line_endings(self) -> None:
+        for ending in ("\n", "\r\n", "\r"):
+            with self.subTest(ending=repr(ending)):
+                source = "// Ω" + ending + "int café;"
+                result = run_text_command(
+                    [sys.executable, "-c", "import sys; print(sys.stdin.buffer.read().hex())"],
+                    input_text=source,
+                )
+                self.assertEqual(0, result.returncode, result.stderr)
+                self.assertEqual(source.encode("utf-8").hex(), result.stdout.strip())
 
     def test_text_io_uses_utf8_independently_of_system_encoding(self) -> None:
         source = "// Ω 日本語\nint café = 1;\n"
@@ -1449,13 +1454,8 @@ class FormatCommandTests(unittest.TestCase):
         self.assertIn("unexpected row initializer", diagnostic.getvalue())
 
     def test_grammar_has_only_reviewed_lexical_terminals(self) -> None:
-        result = subprocess.run(
-            [sys.executable, str(GRAMMAR_REGENERATOR), "--validate-structure-only"],
-            cwd=STRICTFMT_ROOT,
-            check=False,
-            capture_output=True,
-            text=True,
-            encoding="utf-8",
+        result = run_text_command(
+            [sys.executable, str(GRAMMAR_REGENERATOR), "--validate-structure-only"], cwd=STRICTFMT_ROOT
         )
 
         self.assertEqual(0, result.returncode, msg=f"stdout:\n{result.stdout}\n\nstderr:\n{result.stderr}")

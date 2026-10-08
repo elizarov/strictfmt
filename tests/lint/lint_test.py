@@ -1,10 +1,13 @@
 """CLI contracts and golden diagnostics for naming rules."""
 import os
 import shlex
-import subprocess
+import sys
 import tempfile
 import unittest
 from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+from cli_test_utils import run_text_command
 
 ROOT = Path(__file__).resolve().parent
 PROJECT = Path(os.environ.get('STRICTFMT_PROJECT_ROOT', ROOT.parents[1]))
@@ -14,7 +17,7 @@ EXE += shlex.split(os.environ.get('STRICTFMT_EXE_ARGS', ''))
 
 class LintTests(unittest.TestCase):
     def run_tool(self, *args, text=None):
-        return subprocess.run(EXE + list(args), input=text, encoding="utf-8", text=True, capture_output=True)
+        return run_text_command(EXE + list(args), input_text=text)
 
     def test_golden(self):
         result = self.run_tool('--lint-only', str(ROOT / 'input.cpp'))
