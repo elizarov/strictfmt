@@ -970,7 +970,9 @@ private:
         }
         BufferToken(token);
         FlushPendingTokens();
-        NewLineWithIndent(CurrentLineIndentLevel() + 1);
+        const int listIndent = CurrentLineIndentLevel();
+        layoutTree_->Lists().RecordSelection(token.node, listIndent + 1, listIndent);
+        NewLineWithIndent(listIndent + 1);
         return true;
     }
 

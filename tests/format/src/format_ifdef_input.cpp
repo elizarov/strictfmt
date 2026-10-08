@@ -2591,3 +2591,32 @@ void ConditionalArgumentExpressionFragment() {
         kBaseFlag
     );
 }
+
+void SharedFragmentAssignments(int& value) {
+value = A |
+#if MODE
+B |
+#endif
+// Shared flags.
+C |
+#if OTHER
+D |
+#endif
+~A;
+const int flags =
+#if MODE
+A |
+#else
+B |
+#endif
+(C | D);
+Use(value, flags);
+}
+
+int SharedFragmentArguments() {
+return CombineFlags(A |
+#if MODE
+B |
+#endif
+D, C);
+}

@@ -59,6 +59,11 @@ struct FormatChainContinuation::Impl {
 
     std::unordered_map<const FormatBreakNode*, ModelIndex> modelIndexes_;
 
+    static const SyntaxNode* ChainGroup(const FormatBreakNode& node) {
+        const SyntaxNode* op = FormatBreakTokenValue(node.operators.front()).node;
+        return op == nullptr ? node.syntaxOwner : op;
+    }
+
     static bool HasUniformSplitForm(const FormatBreakNode& node) {
         if (node.kind != FormatBreakNodeKind::Chain || node.operators.empty()) {
             return false;
@@ -89,7 +94,7 @@ struct FormatChainContinuation::Impl {
             !node.operators.empty() &&
             (directive || HasUniformSplitForm(node))
         ) {
-            const SyntaxNode* group = FormatBreakTokenValue(node.operators.front()).node;
+            const SyntaxNode* group = ChainGroup(node);
             pendingCrossBlockChainGroups_.insert(group);
             auto& placement = placements_[group];
             if (placement.owner == &node) {
@@ -151,7 +156,7 @@ struct FormatChainContinuation::Impl {
                     parent.node->kind == FormatBreakNodeKind::Chain &&
                     !parent.node->operators.empty()
                 ) {
-                    const SyntaxNode* group = FormatBreakTokenValue(parent.node->operators.front()).node;
+                    const SyntaxNode* group = ChainGroup(*parent.node);
                     requiredChainBreakGroups_.insert_or_assign(block.node, group);
                     if (!parent.node->builderSteps.empty() && *parent.operand > 0) {
                         builderSteps_
@@ -159,6 +164,42 @@ struct FormatChainContinuation::Impl {
                     }
                 }
             }
+        }
+    }
+
+    void RegisterResumedOperand(const FormatBreakNode& root, const PrintToken& token) {
+        if (token.syntaxKind == SyntaxNodeKind::Semicolon) {
+            return;
+        }
+        const auto& index = modelIndexes_.at(&root);
+        const auto leaf = index.leaves.find(&token);
+        if (leaf == index.leaves.end()) {
+            return;
+        }
+        for (
+            auto parent = index.parents.at(leaf->second);
+            parent.node != nullptr;
+            parent = index.parents.at(parent.node)
+        ) {
+            if (
+                parent.node->kind == FormatBreakNodeKind::PrefixList ||
+                (parent.node->kind == FormatBreakNodeKind::Delimited && parent.node->children.front() != leaf->second)
+            ) {
+                break;
+            }
+            if (!parent.operand || *parent.operand == 0 || parent.node->operators.empty()) {
+                continue;
+            }
+            const auto* group = ChainGroup(*parent.node);
+            const auto placement = placements_.find(group);
+            if (placement == placements_.end() || placement->second.owner != parent.node) {
+                continue;
+            }
+            requiredChainBreakGroups_.try_emplace(token.node, group);
+            if (!parent.node->builderSteps.empty()) {
+                builderSteps_.try_emplace(token.node, FormatBreakMemberStep(*parent.node, *parent.operand - 1));
+            }
+            return;
         }
     }
 
@@ -261,6 +302,21 @@ struct FormatChainContinuation::Impl {
         const FormatBreakModel& model = tree_.CompleteModel(ownerId);
         if (model.root != nullptr) {
             CollectCrossBlockChainBreaks(*model.root, token, directive);
+            if (
+                directive &&
+                token.conditionalOperand != nullptr &&
+                PrintTokenSyntaxHasClass(token, SyntaxNodeClass::EndifDirective)
+            ) {
+                // Shared operands resume the enclosing chain, not the completed branch's local chains.
+                for (size_t index = currentTokenIndex_ + 1; index < end; ++index) {
+                    const auto& next = tokens_[index];
+                    if (IsCommentToken(next.kind) || next.kind == PrintTokenKind::BlankLine) {
+                        continue;
+                    }
+                    RegisterResumedOperand(*model.root, next);
+                    break;
+                }
+            }
         }
     }
 
@@ -292,6 +348,9 @@ struct FormatChainContinuation::Impl {
         return *layout->baseIndent + layout->indentOffset;
     }
     void RecordSelection(const FormatBreakNode& chain, int baseIndent) {
+        if (!chain.operators.empty() && chain.operators.front().token == nullptr) {
+            RecordCrossBlockChainBaseIndents(baseIndent, ChainGroup(chain));
+        }
         for (const FormatBreakToken& op : chain.operators) {
             const auto group = requiredChainBreakGroups_.find(FormatBreakTokenValue(op).node);
             if (group != requiredChainBreakGroups_.end()) {

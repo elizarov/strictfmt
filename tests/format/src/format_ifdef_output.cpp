@@ -2975,21 +2975,21 @@ int Prefix() {
 #elif OTHER
         C |
 #endif
-    D;
+        D;
 }
 int Middle() {
     return A |
 #if MODE
         B | C |
 #endif
-    D;
+        D;
 }
 bool Logical(int value) {
     return value == A ||
 #if MODE
         value == B || value == C ||
 #endif
-    value == D;
+        value == D;
 }
 int Nested() {
     return A
@@ -3009,7 +3009,7 @@ int OptionalPrefix() {
 #if OTHER
         B |
 #endif
-    D;
+        D;
 }
 
 int ArithmeticLinks(int a, int b, int c) {
@@ -3042,7 +3042,7 @@ int NestedPrefix() {
 #endif
 #elif MODE
 #endif
-    D;
+        D;
 }
 int CommentedLinks() {
     return A |
@@ -3051,7 +3051,7 @@ int CommentedLinks() {
         B |  // Include another flag.
             C |
 #endif
-    D;
+        D;
 }
 int AcceptFlags(int flags) { return flags; }
 int ArgumentLinks() {
@@ -3073,14 +3073,14 @@ int EmptyFirstPrefix() {
 #else
         B |
 #endif
-    C;
+        C;
 }
 int EmptyBranches() {
     return
 #if MODE
 #else
 #endif
-    D;
+        D;
 }
 
 #define WITH_BASE_FRAGMENT(prefix) (prefix 8)
@@ -3100,7 +3100,7 @@ void ExpressionFragment() {
 #if ARES_VERSION < 0x011400
         ARES_OPT_SOCK_STATE_CB |
 #endif
-    ARES_OPT_LOOKUPS;
+        ARES_OPT_LOOKUPS;
 }
 
 void ConditionalArgumentExpressionFragment() {
@@ -3112,5 +3112,37 @@ void ConditionalArgumentExpressionFragment() {
         kFlagB |
 #endif
         kBaseFlag
+    );
+}
+
+void SharedFragmentAssignments(int& value) {
+    value = A |
+#if MODE
+        B |
+#endif
+        // Shared flags.
+        C |
+#if OTHER
+        D |
+#endif
+        ~A;
+    const int flags =
+#if MODE
+        A |
+#else
+        B |
+#endif
+        (C | D);
+    Use(value, flags);
+}
+
+int SharedFragmentArguments() {
+    return CombineFlags(
+        A |
+#if MODE
+            B |
+#endif
+            D,
+        C
     );
 }
