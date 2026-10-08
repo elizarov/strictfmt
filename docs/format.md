@@ -210,6 +210,7 @@ second)");
 Binary chain operators are the operators whose usual source meaning is a mostly associative aggregation or a repeated separator sequence. Formatting them as a chain avoids implying that the first operand owns a subordinate "rest of expression" branch.
 
 - Binary chains: `+`, `*`, `&`, `|`, `^`, `&&`/`and`, and `||`/`or`.
+- Assignment chains: successive assignment targets.
 - Comma chains: commas in comma expressions.
 - Stream chains: `<<` and `>>`.
 - Member-call chains: `.` and `->`.
@@ -265,6 +266,23 @@ void Scan() {
     ) {
         Visit(i);
     }
+}
+```
+
+### Assignments
+
+Assignment targets stay on one line or split between every pair, sharing one continuation indent. The final value may wrap independently.
+
+<!-- .cpp-format
+ColumnLimit: 36
+-->
+```cpp
+void Reset() {
+    firstValue =
+        secondValue =
+        thirdValue = 0;
+    a = b = c =
+        firstValue + secondValue;
 }
 ```
 

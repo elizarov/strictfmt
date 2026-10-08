@@ -1694,6 +1694,18 @@ class FormatCommandTests(unittest.TestCase):
             result.stdout,
         )
 
+    def test_long_assignment_chain_formats_and_validates(self) -> None:
+        targets = [f"flags[{index}]" for index in range(80)]
+        source = "void Reset() { " + " = ".join(targets) + " = false; Use(flags[0]); }\n"
+        expected = (
+            "void Reset() {\n    "
+            + " =\n        ".join(targets)
+            + " = false;\n    Use(flags[0]);\n}\n"
+        )
+        result = native_format("--stdin", input_text=source, timeout=10)
+        self.assertEqual(0, result.returncode, msg=result.stderr)
+        self.assertEqual(expected, result.stdout)
+
     def test_large_argument_list_formats_and_validates(self) -> None:
         source = "void f() { Call(" + ", ".join("1" for _ in range(100_000)) + "); }\n"
         result = native_format("--stdin", input_text=source, timeout=30)

@@ -102,6 +102,7 @@ private:
                 node.requiredChainBreakBaseIndent = context_.leadingSeparator->indent - offset;
                 if (
                     node.chainKind == FormatBreakChainKind::AfterOperator ||
+                    node.chainKind == FormatBreakChainKind::AssignmentTargets ||
                     node.chainKind == FormatBreakChainKind::Ternary
                 ) {
                     node.operands[index + 1] = Sequence(
@@ -562,7 +563,10 @@ private:
             suffix.push_back(tail);
             operands.back() = Sequence(suffix, source.rawDepth + 1);
         }
-        if (context_.leadingSeparator && source.chainKind == FormatBreakChainKind::AfterOperator) {
+        if (context_.leadingSeparator && (
+            source.chainKind == FormatBreakChainKind::AfterOperator ||
+            source.chainKind == FormatBreakChainKind::AssignmentTargets
+        )) {
             for (size_t index = 0; index < operators.size(); ++index) {
                 auto& op = operators[index];
                 if (op.token == nullptr || op.token->node != context_.leadingSeparator->token) {

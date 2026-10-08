@@ -96,6 +96,8 @@ std::string_view ChainKindName(FormatBreakChainKind kind) {
     switch (kind) {
         case FormatBreakChainKind::AfterOperator:
             return "after-operator";
+        case FormatBreakChainKind::AssignmentTargets:
+            return "assignment-targets";
         case FormatBreakChainKind::CallApplication:
             return "call-application";
         case FormatBreakChainKind::MemberBeforeOperator:

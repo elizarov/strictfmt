@@ -37,6 +37,7 @@ enum class FormatBreakDelimiterKind : std::uint8_t {
 
 enum class FormatBreakChainKind : std::uint8_t {
     AfterOperator,
+    AssignmentTargets,
     CallApplication,
     MemberBeforeOperator,
     StreamBeforeOperator,

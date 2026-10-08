@@ -665,50 +665,6 @@ void TestSharedProjectionTokens() {
     }
 }
 
-void TestCompleteCostBound() {
-    std::string chain;
-    for (int index = 0; index < 20; ++index) {
-        chain += "flags[" + std::to_string(index) + "]=";
-    }
-    chain += "false";
-    const std::array sources{
-        "bool result=" + chain + ";",
-        "auto result=Choose(" + chain + ", tail);",
-        "auto result=(((" + chain + ")));",
-        "auto result=Choose(" + chain + ", R\"(first\nsecond)\");",
-        "bool result=" + chain + " /* trailing\ncomment */;",
-    };
-    for (const auto& source : sources) {
-        FormatterConfig config;
-        auto syntax = ParseFormatModel(source, config);
-        Check(syntax.parse.ok, "cost-bound fixture parses");
-        const auto tokens = BuildPrintTokens(syntax, config.tabWidth);
-        auto model = BuildFormatBreakModel(tokens);
-        Check(model.NodeIdCount() >= 128, "cost-bound fixture exercises the preliminary search");
-        for (int columnLimit : {20, 40, 80, 120}) {
-            config.columnLimit = columnLimit;
-            for (int indentLevel : {0, 2}) {
-                for (const auto [breakSuffix, finalSuffix] : {std::pair{0, 0}, std::pair{2, 8}}) {
-                    const int startColumn = indentLevel * config.indentWidth;
-                    const auto bounded = SolveFormatBreaks(
-                        config, model, startColumn, indentLevel, config.indentWidth, breakSuffix, finalSuffix, true
-                    );
-                    const auto reference = SolveFormatBreaks(
-                        config, model, startColumn, indentLevel, config.indentWidth, breakSuffix, finalSuffix, false
-                    );
-                    Check(!bounded.choices.empty(), "cost-bound search finds a legal layout");
-                    Check(
-                        bounded.choices == reference.choices && bounded.indentLevels == reference.indentLevels &&
-                        bounded.attachedChainOperators == reference.attachedChainOperators &&
-                        bounded.omittedTrailingCommaNodes == reference.omittedTrailingCommaNodes,
-                        "complete cost bounds preserve the exact choices and stable tie-breaking"
-                    );
-                }
-            }
-        }
-    }
-}
-
 void TestListItemStorage() {
     FormatterConfig config;
     std::string source = "auto result = Build(";
@@ -1141,7 +1097,6 @@ int main() {
         TestSparseLayoutProjection();
         TestRegionOwnerContainment();
         TestSharedProjectionTokens();
-        TestCompleteCostBound();
         TestListItemStorage();
         TestSpacingAncestry();
         TestModelStringStorage();

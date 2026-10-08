@@ -134,3 +134,34 @@ bool ConditionalChainComment() {return first
 && second
 #endif // FEATURE
 && true;}
+
+// Assignment targets wrap together; the final value has its own wrapping choices.
+void AssignmentChains() {
+a = b = c = 0;
+firstTarget = secondTarget = thirdTarget = 0;
+a = b = c = firstLongValue + secondLongValue;
+a = b = c = Build(firstArgument, secondArgument);
+firstTarget = secondTarget = thirdTarget = Build(firstArgument, secondArgument);
+int declaredTarget = firstTarget = secondTarget = thirdTarget = 0;
+Consume(firstTarget = secondTarget = thirdTarget = 0, tail);
+a = (firstTarget = secondTarget = thirdTarget = 0);
+firstTarget += secondTarget -= thirdTarget *= 2;
+values[firstIndex] = values[secondIndex] = values[thirdIndex] = 0;
+a = // first target
+b = c = 0;
+a = b // middle target
+= c = 0;
+a = b = c = // value
+Build(firstArgument, secondArgument);
+a = b =
+// Value starts here.
+Build(firstArgument, secondArgument);
+a = b = c = [] { First(); Second(); }();
+}
+void AssignmentDefault(int value = firstTarget = secondTarget = thirdTarget = 0);
+#define ASSIGN_ALL(a, b, c) a = b = c = Build(firstArgument, secondArgument)
+void AssignmentDirective() {
+firstTarget =
+#define ASSIGNMENT_VALUE 0
+secondTarget = thirdTarget = ASSIGNMENT_VALUE;
+}

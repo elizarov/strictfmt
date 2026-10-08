@@ -101,21 +101,10 @@ struct DelimiterStackPartitionCandidate {
     const DelimiterStackPartitionPath* path = nullptr;
 };
 
-struct FeasibleSearchBudgetExceeded {};
-
 class Solver {
 public:
-    Solver(
-        const FormatterConfig& config,
-        const FormatBreakModel& model,
-        int indentWidth,
-        int breakLineSuffixWidth,
-        bool feasibleOnly = false,
-        std::optional<NodeResult> costBound = std::nullopt
-    ) :
+    Solver(const FormatterConfig& config, const FormatBreakModel& model, int indentWidth, int breakLineSuffixWidth) :
         config_(config),
-        feasibleOnly_(feasibleOnly),
-        costBound_(std::move(costBound)),
         candidateOrder_(config.columnLimit),
         indentWidth_(indentWidth),
         breakLineSuffixWidth_(breakLineSuffixWidth),
@@ -126,14 +115,9 @@ public:
         containsNonSingleStatementBodyHeader_(model.NodeIdCount() + 1, -1) {}
 
     NodeResult Solve(const FormatBreakNode& node, int column, int indentLevel, bool lineHasText) {
-        if (costBound_ && lineHasText && column - config_.columnLimit > MaximumOverflow(*costBound_)) {
-            return {};
-        }
         if (const NodeResult* found = FindMemoizedResult(node.id, column, indentLevel, lineHasText)) {
             return *found;
         }
-
-        CheckFeasibleSearchBudget();
 
         if (std::optional<NodeResult> compact = SolveCompactOneLine(node, column, indentLevel, lineHasText)) {
             StoreMemoizedResult(node.id, column, indentLevel, lineHasText, *compact);
@@ -170,9 +154,6 @@ public:
                 result = SolveAdjacentStrings(node, column, indentLevel, lineHasText);
                 break;
         }
-        if (costBound_ && Better(*costBound_, result)) {
-            result = {};
-        }
         StoreMemoizedResult(node.id, column, indentLevel, lineHasText, result);
         return result;
     }
@@ -200,19 +181,7 @@ private:
         Structural,
     };
 
-    void CheckFeasibleSearchBudget() {
-        if (feasibleOnly_) {
-            if (remainingFeasibleStates_ == 0) {
-                throw FeasibleSearchBudgetExceeded{};
-            }
-            --remainingFeasibleStates_;
-        }
-    }
-
     const FormatterConfig& config_;
-    bool feasibleOnly_;
-    size_t remainingFeasibleStates_ = 1 << 20;
-    std::optional<NodeResult> costBound_;
     FormatCandidateOrder candidateOrder_;
     int indentWidth_ = 4;
     int breakLineSuffixWidth_ = 0;
@@ -260,19 +229,6 @@ private:
         return candidateOrder_.Dominates(left, right);
     }
     void AddPrunedResult(NodeResults& results, NodeResult candidate) const {
-        // Continuation can only increase these costs. Keep equal-cost candidates
-        // so the exact search retains its usual stable tie-breaking.
-        if (!candidate.valid || (costBound_ && Better(*costBound_, candidate))) {
-            return;
-        }
-        if (feasibleOnly_) {
-            if (results.empty()) {
-                results.push_back(std::move(candidate));
-            } else if (Better(candidate, results[0])) {
-                results[0] = std::move(candidate);
-            }
-            return;
-        }
         candidateOrder_.AddPruned(results, std::move(candidate));
     }
     static void SortPrunedResults(NodeResults& results) { FormatCandidateOrder::Sort(results); }
@@ -398,26 +354,6 @@ private:
     std::span<const NodeResult>
         StoreMemoizedAlternatives(int nodeId, int column, int indentLevel, bool lineHasText, NodeResults results)
     {
-        if (feasibleOnly_) {
-            NodeResult best;
-            for (const auto& candidate : results) {
-                if (Better(candidate, best)) {
-                    best = candidate;
-                }
-            }
-            results.clear();
-            if (best.valid) {
-                results.push_back(std::move(best));
-            }
-        } else if (costBound_) {
-            for (auto it = results.begin(); it != results.end();) {
-                if (!it->valid || Better(*costBound_, *it)) {
-                    it = results.erase(it);
-                } else {
-                    ++it;
-                }
-            }
-        }
         // Memoized frontiers never change size. Keep only their live candidates in the solver arena;
         // mutable enumeration retains its inline storage, and recursive solves cannot invalidate these spans.
         AlternativesMemoEntry*& head = alternativesMemoHeads_[static_cast<size_t>(nodeId)];
@@ -439,13 +375,9 @@ private:
     std::span<const NodeResult>
         SolveAlternatives(const FormatBreakNode& node, int column, int indentLevel, bool lineHasText)
     {
-        if (costBound_ && lineHasText && column - config_.columnLimit > MaximumOverflow(*costBound_)) {
-            return {};
-        }
         if (const AlternativesMemoEntry* found = FindMemoizedAlternatives(node.id, column, indentLevel, lineHasText)) {
             return found->results;
         }
-        CheckFeasibleSearchBudget();
         return StoreMemoizedAlternatives(
             node.id, column, indentLevel, lineHasText, EnumerateAlternatives(node, column, indentLevel, lineHasText)
         );
@@ -3481,8 +3413,7 @@ FormatBreakSolution SolveFormatBreaks(
     int indentLevel,
     int indentWidth,
     int breakLineSuffixWidth,
-    int finalLineSuffixWidth,
-    bool useCostBound
+    int finalLineSuffixWidth
 ) {
     FormatBreakSolution solution;
     if (!model.root) {
@@ -3493,27 +3424,7 @@ FormatBreakSolution SolveFormatBreaks(
     std::vector<int> omittedNodes;
     for (;;) {
         const FormatBreakModel& current = commaModel ? *commaModel : model;
-        std::optional<NodeResult> costBound;
-        if (useCostBound && current.NodeIdCount() >= 128) {
-            try {
-                Solver probe(config, current, indentWidth, breakLineSuffixWidth, true);
-                const auto feasible = probe.SolveRegion(
-                    *current.root,
-                    startColumn,
-                    indentLevel,
-                    startColumn > indentLevel * indentWidth,
-                    finalLineSuffixWidth
-                );
-                if (feasible.valid) {
-                    costBound = feasible;
-                    // Only the complete cost survives the probe's choice-history arena.
-                    costBound->choices = nullptr;
-                }
-            } catch (const FeasibleSearchBudgetExceeded&) {
-                // A failed or expensive probe leaves the exact search unbounded.
-            }
-        }
-        Solver solver(config, current, indentWidth, breakLineSuffixWidth, false, costBound);
+        Solver solver(config, current, indentWidth, breakLineSuffixWidth);
         NodeResult result = solver.SolveRegion(
             *current.root, startColumn, indentLevel, startColumn > indentLevel * indentWidth, finalLineSuffixWidth
         );

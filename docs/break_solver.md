@@ -26,7 +26,7 @@ A packed list's separately evaluated body inherits the opener's charged flag, bu
 
 The builder retains initial depth in `rawDepth`; `FormatBreakCostNormalizer` materializes the depth adjustments specified in [format.md] in `structuralDepth`. `breakCost` starts at the same depth and every structural-depth shift updates both values. After building the complete model, the normalizer applies the specified subtree discounts from outer subtrees inward. Costs are fixed before solving, so memoization needs no layout-history state, and the emission choices and indentation rules are unchanged.
 
-Qualified-name collection appends into one shared operand/operator accumulator, avoiding repeated copies of nested suffixes.
+Qualified-name collection appends into one shared operand/operator accumulator, avoiding repeated copies of nested suffixes. Assignment collection walks the right-associative syntax once, building one target chain and a separate final-value boundary.
 
 Configured builder profiles are resolved on complete member chains before projection. Each operator retains its relative indentation and whether it begins a new step. Solving and lowering consume the same metadata; projection retains the corresponding entries, and chain continuation retains their offsets across mandatory boundaries. Compact token probes defer member chains to the model when builder profiles are configured.
 
@@ -155,9 +155,7 @@ When adding a speedup whose proof is not obvious from the code, document the inv
 
 Dominance requires equal continuation state except that the dominating candidate may end at an earlier column. Cost profiles compose by addition, so adding a shared continuation preserves their first differing value. Starting that continuation earlier cannot increase its overflow relative to the dominated candidate. The same argument permits replacing equal-state candidates with the locally better one.
 
-Large models first use a preliminary search that retains one locally best candidate at each frontier to find a legal complete layout. It applies the same layout constraints and suffix pricing, but may fail to find a layout when a discarded alternative was needed later. The probe stops after at most 1,048,576 uncached subproblems. Failure or budget exhaustion leaves the exact search unbounded; success supplies only a complete cost bound, never the output layout.
-
-The exact search rejects a partial candidate only when its cost is strictly worse than that complete bound. Continuation can only add overflow and expansion-profile occurrences and physical lines. An unfinished line's virtual overflow can grow or become a recorded occurrence; completing or restoring a line never removes its paid cost. Thus no continuation can make the rejected candidate win. Equal-cost candidates remain available for the original tie-breaking. The model-size threshold and probe budget affect search work only; contract tests compare the bounded and unbounded searches.
+An exact search may reject a partial candidate whose greatest overflow already exceeds the best complete candidate's greatest overflow. Later layout cannot remove a completed-line occurrence, so that candidate loses at the first optimization tier regardless of its break cost or line count.
 
 For compact and packed-split lists, every non-final item must remain on the body's first physical line. A shared one-line probe checks those items and their separators before recursive enumeration, at each form's own starting column:
 

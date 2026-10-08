@@ -9999,9 +9999,35 @@ void PrefixedSuffixBodies() {
 }
 
 bool ResetFlags(bool* flags) {
-    flags[0] = flags[1] = flags[2] =
-        flags[3] = flags[4] = flags[5] = flags[6] = flags[7] = flags[8] = flags[9] = flags[10] = flags[11] = flags[12] =
-            flags[13] = flags[14] = flags[15] = flags[16] = flags[17] = flags[18] = flags[19] = flags[20] = flags[21] =
-                flags[22] = flags[23] = flags[24] = flags[25] = flags[26] = flags[27] = flags[28] = flags[29] = false;
+    flags[0] =
+        flags[1] =
+        flags[2] =
+        flags[3] =
+        flags[4] =
+        flags[5] =
+        flags[6] =
+        flags[7] =
+        flags[8] =
+        flags[9] =
+        flags[10] =
+        flags[11] =
+        flags[12] =
+        flags[13] =
+        flags[14] =
+        flags[15] =
+        flags[16] =
+        flags[17] =
+        flags[18] =
+        flags[19] =
+        flags[20] =
+        flags[21] =
+        flags[22] =
+        flags[23] =
+        flags[24] =
+        flags[25] =
+        flags[26] =
+        flags[27] =
+        flags[28] =
+        flags[29] = false;
     return flags[0];
 }

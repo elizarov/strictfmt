@@ -70,7 +70,8 @@ struct FormatChainContinuation::Impl {
         }
         if (
             node.chainKind == FormatBreakChainKind::MemberBeforeOperator ||
-            node.chainKind == FormatBreakChainKind::StreamBeforeOperator
+            node.chainKind == FormatBreakChainKind::StreamBeforeOperator ||
+            node.chainKind == FormatBreakChainKind::AssignmentTargets
         ) {
             return true;
         }
