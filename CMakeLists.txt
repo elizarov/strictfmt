@@ -238,18 +238,12 @@ if(Python3_FOUND)
         "STRICTFMT_TEST_TEMP_ROOT=${STRICTFMT_TEST_TEMP_ROOT}"
         "STRICTFMT_EXPECTED_VERSION=${strictfmt_resolved_version}"
     )
-    add_test(NAME StrictfmtFormatTests
-        COMMAND
-            "${Python3_EXECUTABLE}"
-            "${CMAKE_CURRENT_SOURCE_DIR}/tests/format/format_test.py"
+    add_test(NAME StrictfmtTests
+        COMMAND "${Python3_EXECUTABLE}" "${CMAKE_CURRENT_SOURCE_DIR}/tests/test.py"
     )
-    set_tests_properties(StrictfmtFormatTests PROPERTIES
+    set_tests_properties(StrictfmtTests PROPERTIES
         ENVIRONMENT "${strictfmt_format_test_env}"
     )
-    add_test(NAME StrictfmtLintTests
-        COMMAND "${Python3_EXECUTABLE}" "${CMAKE_CURRENT_SOURCE_DIR}/tests/lint/lint_test.py"
-    )
-    set_tests_properties(StrictfmtLintTests PROPERTIES ENVIRONMENT "${strictfmt_format_test_env}")
     add_executable(strictfmt_utf8_tests EXCLUDE_FROM_ALL tests/util/utf8_test.cpp)
     target_link_libraries(strictfmt_utf8_tests PRIVATE strictfmt_util)
     strictfmt_apply_common_options(strictfmt_utf8_tests)
@@ -272,10 +266,7 @@ if(Python3_FOUND)
         COMMAND
             ${CMAKE_COMMAND} -E env ${strictfmt_format_test_env}
             "${Python3_EXECUTABLE}"
-            "${CMAKE_CURRENT_SOURCE_DIR}/tests/format/format_test.py"
-        COMMAND
-            ${CMAKE_COMMAND} -E env ${strictfmt_format_test_env}
-            "${Python3_EXECUTABLE}" "${CMAKE_CURRENT_SOURCE_DIR}/tests/lint/lint_test.py"
+            "${CMAKE_CURRENT_SOURCE_DIR}/tests/test.py"
         VERBATIM
     )
     add_dependencies(strictfmt_tests strictfmt_utf8_tests strictfmt_layout_tests strictfmt_parallel_tests)

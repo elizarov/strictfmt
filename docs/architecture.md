@@ -140,9 +140,8 @@ The writer records those operations as `FormatLayoutProgram` commands and resolv
 - `strictfmt_core` owns parsing, linting, and the formatter pipeline from source text through formatted source.
 - `strictfmt_cli` owns command-line and embedding support on top of `strictfmt_core`.
 - `strictfmt` owns the standalone executable when `STRICTFMT_BUILD_STANDALONE` is enabled.
-- `strictfmt_tests` owns the custom test runner target backed by `tests/format/format_test.py` and `tests/lint/lint_test.py` when Python is available.
-- `StrictfmtFormatTests` owns the CTest entry for the formatter test suite when Python is available.
-- `StrictfmtLintTests` owns the CTest entry for the lint test suite when Python is available.
+- `strictfmt_tests` owns the custom target running native tests and the combined Python suite in `tests/test.py` when Python is available.
+- `StrictfmtTests` owns the CTest entry for the combined formatter and lint suite.
 - `strictfmt_utf8_tests` and `StrictfmtUtf8Tests` own the Unicode utility test executable and its CTest entry.
 - `strictfmt_layout_tests` and `StrictfmtLayoutTests` own the internal layout-contract test executable and its CTest entry.
 - `strictfmt_parallel_tests` and `StrictfmtParallelTests` own streaming work-queue tests and their CTest entry.

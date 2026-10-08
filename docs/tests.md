@@ -6,7 +6,10 @@ This document owns the general testing strategy and test file placement for `str
 
 ## Strategy
 
-Formatter tests are driven by `tests/format/format_test.py` through the `strictfmt_tests` CMake target and the `scripts/test.sh|cmd` wrappers described in [build.md](build.md).
+`tests/test.py` runs the formatter and lint test groups in one Python suite with
+one final report. Both the `strictfmt_tests` CMake target and the `StrictfmtTests`
+CTest entry use this runner; the `scripts/test.sh|cmd` wrappers are described in
+[build.md](build.md).
 The same target runs the UTF-8 utility's [Unicode conformance tests](../vendor/unicode/README.md).
 It also runs focused C++ layout-contract tests for stateful internal interfaces
 and streaming work-queue tests.
@@ -106,8 +109,9 @@ upstream files.
 
 ## File Placement
 
-- `tests/format/format_test.py` owns the Python test harness and individual test
-  cases.
+- `tests/test.py` owns the combined Python runner and report.
+- `tests/format/format_test.py` owns formatter, parser, and CLI tests.
+- `tests/lint/lint_test.py` owns naming-rule and lint CLI tests.
 - `tests/tools/parallel_test.cpp` owns synchronization checks for workers running
   during discovery, concurrency limits, queue draining, and thread failures.
 - `tests/format/layout_test.cpp` owns focused internal layout-contract checks,
@@ -203,9 +207,8 @@ cannot express.
 
 ## Lint tests
 
-`tests/lint/lint_test.py` runs the naming golden pair (`input.cpp` and `output.txt`).
+`tests/lint/lint_test.py` checks the naming golden pair (`input.cpp` and `output.txt`).
 It covers declaration selectors, case patterns, whole-name regex matching, affixes,
 and suppressions. Focused CLI/configuration tests cover explicit regex exceptions,
 rule isolation, inheritance (including replacing or clearing an ignored regex),
-execution modes, and write behavior. Both CTest and `strictfmt_tests` include the
-suite. See [lint.md](lint.md) for the checked behavior.
+execution modes, and write behavior. See [lint.md](lint.md) for the checked behavior.

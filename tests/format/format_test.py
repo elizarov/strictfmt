@@ -302,11 +302,6 @@ def read_files(root: Path, paths: list[Path]) -> dict[Path, bytes]:
     return {path: (root / path).read_bytes() for path in paths}
 
 
-class MethodNameTestResult(unittest.TextTestResult):
-    def getDescription(self, test: unittest.case.TestCase) -> str:
-        return test.id().rsplit(".", maxsplit=1)[-1]
-
-
 @contextmanager
 def copied_fixtures(*paths: Path):
     build_dir = TEST_TEMP_ROOT
@@ -1998,8 +1993,3 @@ class FormatCommandTests(unittest.TestCase):
 
                 self.assertEqual(2, result.returncode, msg=f"stdout:\n{result.stdout}\n\nstderr:\n{result.stderr}")
                 self.assertIn("Usage:", result.stderr)
-
-
-if __name__ == "__main__":
-    runner = unittest.TextTestRunner(verbosity=2, resultclass=MethodNameTestResult)
-    unittest.main(testRunner=runner)

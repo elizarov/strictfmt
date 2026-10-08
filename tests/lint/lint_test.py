@@ -208,7 +208,3 @@ class LintTests(unittest.TestCase):
             self.assertEqual(result.returncode, 1)
             self.assertEqual(good.read_text(encoding="utf-8"), 'int good;')
             self.assertEqual(bad.read_text(encoding="utf-8"), 'int Bad;')
-
-
-if __name__ == '__main__':
-    unittest.main(verbosity=2)
