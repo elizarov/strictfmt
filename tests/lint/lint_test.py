@@ -19,7 +19,7 @@ class LintTests(unittest.TestCase):
     def test_golden(self):
         result = self.run_tool('--lint-only', str(ROOT / 'input.cpp'))
         self.assertEqual(result.returncode, 1, result.stderr)
-        self.assertEqual(result.stderr.replace(str(ROOT / 'input.cpp'), 'input.cpp'), (ROOT / 'output.txt').read_text(encoding="utf-8"))
+        self.assertEqual(result.stderr.replace((ROOT / 'input.cpp').as_posix(), 'input.cpp'), (ROOT / 'output.txt').read_text(encoding="utf-8"))
         self.assertNotIn('namespace BadNamespace', result.stdout)
 
     def test_ignored_regexp_exceptions_inherit_replace_and_clear(self):

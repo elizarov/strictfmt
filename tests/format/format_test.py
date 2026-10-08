@@ -1319,8 +1319,8 @@ class FormatCommandTests(unittest.TestCase):
             result = native_format("--verbose", "--concurrency", "1", str(first), str(second), cwd=root)
 
             self.assertEqual(0, result.returncode, msg=f"stdout:\n{result.stdout}\n\nstderr:\n{result.stderr}")
-            escaped_first = re.escape(str(first.resolve()))
-            escaped_second = re.escape(str(second.resolve()))
+            escaped_first = re.escape(first.resolve().as_posix())
+            escaped_second = re.escape(second.resolve().as_posix())
             self.assertRegex(
                 result.stderr,
                 rf"^\[1/[12]\+?\] Formatting {escaped_first}\n"
