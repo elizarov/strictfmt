@@ -367,6 +367,8 @@ class FormatCommandTests(unittest.TestCase):
         self,
         name: str,
         extra_sources: dict[Path, tuple[str, str]] | None = None,
+        *,
+        golden: bool = False,
     ) -> None:
         project_root = EXTERNAL_ROOT / name
         if not (project_root / ".cpp-format").exists():
@@ -412,7 +414,7 @@ class FormatCommandTests(unittest.TestCase):
 
             file_list = root / "sources.txt"
             file_list.write_text("".join(f"{path.as_posix()}\n" for path in source_files), encoding="utf-8")
-            first_result = native_format("-i", "--files", str(file_list), cwd=root)
+            first_result = native_format("-n" if golden else "-i", "--files", str(file_list), cwd=root)
 
             self.assertEqual(
                 0,
@@ -1223,7 +1225,7 @@ class FormatCommandTests(unittest.TestCase):
         self.assert_external_project_sources_parse_without_warnings_and_format_idempotently("userver")
 
     def test_casedash_submodule(self) -> None:
-        self.assert_external_project_sources_parse_without_warnings_and_format_idempotently("casedash")
+        self.assert_external_project_sources_parse_without_warnings_and_format_idempotently("casedash", golden=True)
 
     def test_googletest_submodule(self) -> None:
         self.assert_external_project_sources_parse_without_warnings_and_format_idempotently("googletest")

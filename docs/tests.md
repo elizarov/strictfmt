@@ -84,6 +84,14 @@ byte-for-byte idempotence after the first pass. Tests may explicitly add C++
 include files with other suffixes and supply enclosing syntax for source
 fragments; those fragments are checked in synthetic translation units.
 
+CaseDash is also a formatting golden: the first pass is a dry run and must
+report no changes to its committed sources. `external/casedash` tracks CaseDash
+`main`, whose Windows CI checks formatting using its embedded strictfmt. When
+formatter output changes, update that dependency and reformat CaseDash, pass its
+Windows CI, and merge to `main` before advancing this fixture. Initialize only
+top-level submodules; CaseDash and strictfmt reference each other as pinned
+dependencies.
+
 The YTsaurus check includes its C++ `.inc` and `.incl` files explicitly because
 those suffixes also contain build-script fragments. Two `.cpp.in` templates are
 valid C++ before substitution and are checked directly. Generated initializer
