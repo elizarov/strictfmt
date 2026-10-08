@@ -155,7 +155,9 @@ When adding a speedup whose proof is not obvious from the code, document the inv
 
 Dominance requires equal continuation state except that the dominating candidate may end at an earlier column. Cost profiles compose by addition, so adding a shared continuation preserves their first differing value. Starting that continuation earlier cannot increase its overflow relative to the dominated candidate. The same argument permits replacing equal-state candidates with the locally better one.
 
-An exact search may reject a partial candidate whose greatest overflow already exceeds the best complete candidate's greatest overflow. Later layout cannot remove a completed-line occurrence, so that candidate loses at the first optimization tier regardless of its break cost or line count.
+Large models first use a preliminary search that retains one locally best candidate at each frontier to find a legal complete layout. It applies the same layout constraints and suffix pricing, but may fail to find a layout when a discarded alternative was needed later. The probe stops after at most 1,048,576 uncached subproblems. Failure or budget exhaustion leaves the exact search unbounded; success supplies only a complete cost bound, never the output layout.
+
+The exact search rejects a partial candidate only when its cost is strictly worse than that complete bound. Continuation can only add overflow and expansion-profile occurrences and physical lines. An unfinished line's virtual overflow can grow or become a recorded occurrence; completing or restoring a line never removes its paid cost. Thus no continuation can make the rejected candidate win. Equal-cost candidates remain available for the original tie-breaking. The model-size threshold and probe budget affect search work only; contract tests compare the bounded and unbounded searches.
 
 For compact and packed-split lists, every non-final item must remain on the body's first physical line. A shared one-line probe checks those items and their separators before recursive enumeration, at each form's own starting column:
 
