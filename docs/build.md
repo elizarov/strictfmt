@@ -2,6 +2,20 @@
 
 **This document has been maintained mostly by AI and has not been reviewed by a human for conciseness and clarity of presentation.**
 
+## External Test Projects
+
+After cloning or pulling, initialize or update the external test fixtures to the
+revisions recorded by strictfmt:
+
+```sh
+git submodule update --init
+```
+
+Build and test scripts use the checked-out fixtures without updating them.
+A stale CaseDash checkout can fail its formatting golden even with a current
+formatter. Do not add `--recursive`: CaseDash embeds strictfmt, which in turn
+uses CaseDash as a test fixture.
+
 ## Windows
 
 The Windows build uses CMake with the Visual Studio `cl.exe` toolchain. The build

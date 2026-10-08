@@ -18,13 +18,16 @@ endings, then decodes captured output with universal newline handling.
 
 Formatter invocations in the test harness enable `--validate` by default, so
 proposed output must parse and format idempotently before a test can succeed.
-Dump commands inspect input directly; only focused tests of the normal execution
-mode opt out of validation.
+Dump commands inspect input directly; the golden runner also checks normal
+execution without validation.
 
 These are end-to-end tests: cases run the built formatter with real command-line
 arguments, formatter configuration, and temporary files when file-system
-behavior matters. Golden fixture pairs cover broad formatter behavior, while
-small inline snippets cover narrow command and configuration edges. Formatted
+behavior matters. Golden input/output pairs own source-formatting examples,
+including individual regressions. A shared runner checks every pair with and without `--validate`;
+control-comment and Unicode fixtures also cover their supported line endings.
+Inline snippets exercise CLI behavior, configuration discovery and inheritance,
+parser structure, or generated stress cases with time limits. Formatted
 golden output fixtures are also reparsed with their owning style and must format
 back to the same text. This idempotence check catches formatter output that
 looks correct once but cannot be accepted as stable input.
@@ -133,11 +136,23 @@ target passes its resolved version to the Python harness, which requires
 - `tests/format/src/` owns golden input, formatted output, and diagnostic output
   fixtures.
 
-Place new reusable golden fixtures under `tests/format/src/`. Place
-single-purpose inline snippets directly in `format_test.py` when they are small
-and exist only to exercise one command or configuration edge.
+Add formatting cases to an existing pair under `tests/format/src/` when its
+configuration and source context match. Create a new pair for a different style
+or a file boundary such as a header prologue or EOF, and register it in
+`GOLDEN_FIXTURES`. Keep inline tests for behavior that a source/output pair alone
+cannot express.
 
 ## Golden Fixtures
+
+- `format_includes_preserve_{pragma,guard}_{input,output}.cpp` and
+  `format_includes_sort_{pragma,guard}_{input,output}.cpp`: opening include runs
+  after `#pragma once` or an include guard, with the matching
+  `.cpp-format-includes-preserve` or `.cpp-format-includes-sort` style.
+- `format_macros_{20,22}_{input,output}.cpp`: macro replacement and header
+  wrapping at narrow column limits, using `.cpp-format-macros-20` and
+  `.cpp-format-macros-22`.
+- `format_validation_{input,output}.cpp`: conditional scope, comment, macro,
+  template, and pack-expansion regressions using `.cpp-format-validation`.
 
 - `tests/format/src/format_control_comments_input.cpp` -> `tests/format/src/format_control_comments_output.cpp`: clang-format control-comment removal throughout code, directives, structured/raw macros, and sorted include runs; preservation of lookalikes and literal contents.
 

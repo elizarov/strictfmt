@@ -561,3 +561,23 @@ auto selectedCallEntries = {
 #endif
     LAST(value)
 };
+
+// Type-specifier macros after horizontal whitespace.
+template <typename T, typename U>
+struct TypeMacroFixture {
+    typedef REMOVE_CV_REF(T) RawT;
+    typedef typename REMOVE_CV_REF(T, U) BoundT;
+    using Address = const REMOVE_CV_REF(T)*;
+};
+
+// Balanced preprocessor argument tokens.
+void PreprocessorArguments() {
+    PP_EXPANSION("+=", PP_CAT(+, =));
+    PP_EXPANSION("comma", PP_HAS_COMMA(, ));
+    PP_EXPANSION("tokens", PP_PARENS(sss() sss));
+    PP_EXPANSION("raw", PP_RAW(R"tag((,))tag"));
+    PP_EXPANSION(PP_ITEM, ~, (int, float));
+    using GeneratedTypes = Test<PP_EXPANSION(PP_ITEM, ~, (int, float))>;
+    PP_EXPANSION(item, );
+    PP_EXPANSION(, );
+}

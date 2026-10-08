@@ -10031,3 +10031,149 @@ bool ResetFlags(bool* flags) {
         flags[29] = false;
     return flags[0];
 }
+
+// Managed C++ reference declarators.
+void f(Object^ handle, Object% tracking, int&& moved, int* pointer) {}
+
+// Directive keyword whitespace.
+#if FOO
+int value;
+#else
+int other;
+#endif
+
+// Trailing commas in enums and compact initializers.
+enum E {
+    A,
+    B
+};
+
+enum F {
+    C,
+    D,
+};
+
+int values[] = {1, 2};
+
+void f() { Use({1, 2}); }
+
+auto long_values = Values{
+    firstValueWithAnExtremelyLongNameForTrailingCommaNormalization,
+    secondValueWithAnExtremelyLongNameForTrailingCommaNormalization
+};
+
+// Atomic directives do not introduce groups.
+#define VALUE 1
+int value;
+#undef VALUE
+#line 200
+int remapped;
+
+// Atomic directives preserve source groups.
+int before;  // attached to previous item
+#pragma first
+// attached to the next pragma
+#pragma second
+
+// attached to the definition
+#define VALUE 1
+#undef VALUE
+#undef OTHER
+#define OTHER 2
+
+int after;
+
+// Atomic directives stay attached to their context.
+void f() {
+#pragma omp parallel for
+    for (int index = 0; index < 4; ++index) {
+        use(index);
+    }
+#define VALUE 1
+    int value;
+#undef VALUE
+}
+
+#line 200
+int remapped;
+#if FLAG
+#pragma second
+int other;
+#undef OTHER
+#endif
+#undef AFTER_CONDITIONAL
+
+// Win32 boolean spellings.
+int false_value = FALSE;
+int true_value = TRUE;
+bool standard_false = false;
+bool standard_true = true;
+
+// Arrow chains after macro calls.
+BENCHMARK(Foo)->Args({1, 2});
+
+// Empty braced values before a ternary colon.
+auto snapshot = preferred ? TreeViewportSnapshot{} : CaptureTreeViewportSnapshot();
+auto text = empty ? std::string{} : value;
+
+// Compact initializers within split expressions.
+const auto matchesDrag = [&](const LayoutEditOverlayOwner& owner) {
+    return owner.childIndex == drag.currentIndex && MatchesLayoutContainerEditKey(
+        LayoutContainerEditKey{owner.key.editCardId, owner.key.nodePath},
+        LayoutContainerEditKey{drag.key.editCardId, drag.key.nodePath}
+    );
+};
+
+bool hits() {
+    return MatchesRegionHit(regions, region, RenderPoint{x, y}) &&
+        MatchesRegionHit(regions, region, RenderPoint{x + 3, y});
+}
+
+// Braces around control bodies.
+void f(int* values, int count) {
+    if (count) {
+        values[0] += 1;
+    } else {
+        values[0] = 0;
+    }
+    if (count == 0) {
+        values[0] = 0;
+    } else if (count == 1) {
+        values[0] = 1;
+    } else {
+        values[0] = 2;
+    }
+    while (count) {
+        --count;
+    }
+    for (int i = 0; i < count; ++i) {
+        values[i] += i;
+    }
+    do {
+        ++count;
+    } while (count < 10);
+    if (count) {
+        return;
+    } else if (count) {
+        return;
+    }
+}
+
+// Lambda arguments and split function parameters.
+struct IncludeGroup {
+    int priority;
+};
+
+void SortIncludeGroups(std::vector<IncludeGroup>& groups) {
+    std::sort(groups.begin(), groups.end(), [](const IncludeGroup& left, const IncludeGroup& right) {
+        return left.priority < right.priority;
+    });
+}
+
+std::set<std::string> RequireSuffixGroup(
+    const std::map<std::string, std::set<std::string>>& suffixGroups,
+    std::string_view configPath,
+    std::string_view groupName
+) {
+    return {};
+}

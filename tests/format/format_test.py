@@ -105,22 +105,36 @@ CHAIN_FORMAT_CONFIG = TEST_ROOT / ".cpp-format-chain"
 DSL_FORMAT_CONFIG = TEST_ROOT / ".cpp-format-dsl"
 CONTINUATIONS_FORMAT_CONFIG = TEST_ROOT / ".cpp-format-continuations"
 NON_ASCII_FORMAT_CONFIG = TEST_ROOT / ".cpp-format-non-ascii"
-FORMATTED_GOLDEN_OUTPUTS = (
-    ("default", OUTPUT_FIXTURE, None),
-    ("control-comments", CONTROL_COMMENTS_OUTPUT_FIXTURE, None),
-    ("nested-template-calls", NESTED_TEMPLATE_CALLS_OUTPUT_FIXTURE, None),
-    ("macros", MACROS_OUTPUT_FIXTURE, None),
-    ("macro-roles", UNCONFIGURED_MACROS_OUTPUT_FIXTURE, MACRO_ROLES_FORMAT_CONFIG),
-    ("preprocessor-eof", PREPROCESSOR_EOF_OUTPUT_FIXTURE, None),
-    ("optimization", OPTIMIZATION_OUTPUT_FIXTURE, OPTIMIZATION_FORMAT_CONFIG),
-    ("chain", CHAIN_OUTPUT_FIXTURE, CHAIN_FORMAT_CONFIG),
-    ("dsl", DSL_OUTPUT_FIXTURE, DSL_FORMAT_CONFIG),
-    ("continuations", CONTINUATIONS_OUTPUT_FIXTURE, CONTINUATIONS_FORMAT_CONFIG),
-    ("forced-separators", FORCED_SEPARATORS_OUTPUT_FIXTURE, CONTINUATIONS_FORMAT_CONFIG),
-    ("non-ascii", NON_ASCII_OUTPUT_FIXTURE, NON_ASCII_FORMAT_CONFIG),
-    ("userver", USERVER_OUTPUT_FIXTURE, USERVER_FORMAT_CONFIG),
-    ("ifdef", IFDEF_OUTPUT_FIXTURE, USERVER_FORMAT_CONFIG),
-    ("unsupported", UNSUPPORTED_OUTPUT_FIXTURE, USERVER_FORMAT_CONFIG),
+GOLDEN_FIXTURES = (
+    ("default", INPUT_FIXTURE, OUTPUT_FIXTURE, None),
+    ("control-comments", CONTROL_COMMENTS_INPUT_FIXTURE, CONTROL_COMMENTS_OUTPUT_FIXTURE, None),
+    ("nested-template-calls", NESTED_TEMPLATE_CALLS_INPUT_FIXTURE, NESTED_TEMPLATE_CALLS_OUTPUT_FIXTURE, None),
+    ("macros", MACROS_INPUT_FIXTURE, MACROS_OUTPUT_FIXTURE, None),
+    ("macro-roles", UNCONFIGURED_MACROS_INPUT_FIXTURE, UNCONFIGURED_MACROS_OUTPUT_FIXTURE, MACRO_ROLES_FORMAT_CONFIG),
+    ("preprocessor-eof", PREPROCESSOR_EOF_INPUT_FIXTURE, PREPROCESSOR_EOF_OUTPUT_FIXTURE, None),
+    ("optimization", OPTIMIZATION_INPUT_FIXTURE, OPTIMIZATION_OUTPUT_FIXTURE, OPTIMIZATION_FORMAT_CONFIG),
+    ("chain", CHAIN_INPUT_FIXTURE, CHAIN_OUTPUT_FIXTURE, CHAIN_FORMAT_CONFIG),
+    ("dsl", DSL_INPUT_FIXTURE, DSL_OUTPUT_FIXTURE, DSL_FORMAT_CONFIG),
+    ("continuations", CONTINUATIONS_INPUT_FIXTURE, CONTINUATIONS_OUTPUT_FIXTURE, CONTINUATIONS_FORMAT_CONFIG),
+    ("forced-separators", FORCED_SEPARATORS_INPUT_FIXTURE, FORCED_SEPARATORS_OUTPUT_FIXTURE, CONTINUATIONS_FORMAT_CONFIG),
+    ("non-ascii", NON_ASCII_INPUT_FIXTURE, NON_ASCII_OUTPUT_FIXTURE, NON_ASCII_FORMAT_CONFIG),
+    ("userver", USERVER_INPUT_FIXTURE, USERVER_OUTPUT_FIXTURE, USERVER_FORMAT_CONFIG),
+    ("ifdef", IFDEF_INPUT_FIXTURE, IFDEF_OUTPUT_FIXTURE, USERVER_FORMAT_CONFIG),
+    ("unsupported", UNSUPPORTED_INPUT_FIXTURE, UNSUPPORTED_OUTPUT_FIXTURE, USERVER_FORMAT_CONFIG),
+    ("includes-preserve-pragma", Path("src/format_includes_preserve_pragma_input.cpp"),
+     Path("src/format_includes_preserve_pragma_output.cpp"), TEST_ROOT / ".cpp-format-includes-preserve"),
+    ("includes-preserve-guard", Path("src/format_includes_preserve_guard_input.cpp"),
+     Path("src/format_includes_preserve_guard_output.cpp"), TEST_ROOT / ".cpp-format-includes-preserve"),
+    ("includes-sort-pragma", Path("src/format_includes_sort_pragma_input.cpp"),
+     Path("src/format_includes_sort_pragma_output.cpp"), TEST_ROOT / ".cpp-format-includes-sort"),
+    ("includes-sort-guard", Path("src/format_includes_sort_guard_input.cpp"),
+     Path("src/format_includes_sort_guard_output.cpp"), TEST_ROOT / ".cpp-format-includes-sort"),
+    ("macros-20", Path("src/format_macros_20_input.cpp"),
+     Path("src/format_macros_20_output.cpp"), TEST_ROOT / ".cpp-format-macros-20"),
+    ("macros-22", Path("src/format_macros_22_input.cpp"),
+     Path("src/format_macros_22_output.cpp"), TEST_ROOT / ".cpp-format-macros-22"),
+    ("validation", Path("src/format_validation_input.cpp"),
+     Path("src/format_validation_output.cpp"), TEST_ROOT / ".cpp-format-validation"),
 )
 
 
@@ -460,32 +474,6 @@ class FormatCommandTests(unittest.TestCase):
         self.assertEqual(0, result.returncode, result.stderr)
         self.assertEqual(source, result.stdout)
 
-    def test_stdin_formats_to_expected_output(self) -> None:
-        result = native_format("--stdin", cwd=TEST_ROOT, input_text=read_fixture(INPUT_FIXTURE))
-
-        self.assertEqual(0, result.returncode, msg=f"stdout:\n{result.stdout}\n\nstderr:\n{result.stderr}")
-        self.assertEqual(read_fixture(OUTPUT_FIXTURE), result.stdout)
-        self.assert_no_unsupported_placement_warnings(result)
-        self.assertRegex(result.stderr, r"Formatted stdin\. [\d,]+/[\d,]+ LOC changed\. Done in (?:\d+ms|\d+\.\d{3}s)\.\s*$")
-
-    def test_control_comments_formats_to_expected_output(self) -> None:
-        source = read_fixture(CONTROL_COMMENTS_INPUT_FIXTURE).encode("utf-8")
-        expected = read_fixture(CONTROL_COMMENTS_OUTPUT_FIXTURE).encode("utf-8")
-        for ending in (b"\n", b"\r\n", b"\r"):
-            with self.subTest(line_ending=ending):
-                result = native_format_bytes(
-                    "--stdin", cwd=TEST_ROOT, input_bytes=source.replace(b"\n", ending),
-                )
-                self.assertEqual(0, result.returncode, msg=result.stderr)
-                self.assertEqual(expected.replace(b"\n", ending), result.stdout)
-                self.assertNotIn(b": warning at ", result.stderr)
-
-    def test_preprocessor_eof_formats_to_expected_output(self) -> None:
-        result = native_format("--stdin", cwd=TEST_ROOT, input_text=read_fixture(PREPROCESSOR_EOF_INPUT_FIXTURE))
-
-        self.assertEqual(0, result.returncode, msg=f"stdout:\n{result.stdout}\n\nstderr:\n{result.stderr}")
-        self.assertEqual(read_fixture(PREPROCESSOR_EOF_OUTPUT_FIXTURE), result.stdout)
-
     def test_preprocessor_directives_at_end_of_input(self) -> None:
         directives = (
             "#", "# /* empty */", "# // empty", "#pragma once", "#include <cstddef>",
@@ -516,105 +504,36 @@ class FormatCommandTests(unittest.TestCase):
                     self.assertNotEqual(0, result.returncode)
                     self.assertIn("parse failed", result.stderr)
 
-    def test_golden_input_parses_without_errors(self) -> None:
-        with copied_fixtures(INPUT_FIXTURE) as fixtures:
-            result = native_format(str(fixtures[INPUT_FIXTURE]))
-
-        self.assertEqual(0, result.returncode, msg=f"stdout:\n{result.stdout}\n\nstderr:\n{result.stderr}")
-        self.assertNotIn("parse failed", result.stderr)
-        self.assert_no_unsupported_placement_warnings(result)
-
-    def test_optimization_stdin_formats_to_expected_output(self) -> None:
-        result = native_format(
-            "--stdin",
-            "--style",
-            str(OPTIMIZATION_FORMAT_CONFIG),
-            cwd=TEST_ROOT,
-            input_text=read_fixture(OPTIMIZATION_INPUT_FIXTURE),
-        )
-
-        self.assertEqual(0, result.returncode, msg=f"stdout:\n{result.stdout}\n\nstderr:\n{result.stderr}")
-        self.assertEqual(read_fixture(OPTIMIZATION_OUTPUT_FIXTURE), result.stdout)
-        self.assert_no_unsupported_placement_warnings(result)
-
-    def test_optimization_golden_input_parses_without_errors(self) -> None:
-        with copied_fixtures(OPTIMIZATION_INPUT_FIXTURE) as fixtures:
-            result = native_format(
-                "--style", str(OPTIMIZATION_FORMAT_CONFIG), str(fixtures[OPTIMIZATION_INPUT_FIXTURE])
-            )
-
-        self.assertEqual(0, result.returncode, msg=f"stdout:\n{result.stdout}\n\nstderr:\n{result.stderr}")
-        self.assertNotIn("parse failed", result.stderr)
-        self.assert_no_unsupported_placement_warnings(result)
-
-    def test_chain_stdin_formats_to_expected_output(self) -> None:
-        result = native_format(
-            "--stdin",
-            "--style",
-            str(CHAIN_FORMAT_CONFIG),
-            cwd=TEST_ROOT,
-            input_text=read_fixture(CHAIN_INPUT_FIXTURE),
-        )
-
-        self.assertEqual(0, result.returncode, msg=f"stdout:\n{result.stdout}\n\nstderr:\n{result.stderr}")
-        self.assertEqual(read_fixture(CHAIN_OUTPUT_FIXTURE), result.stdout)
-        self.assert_no_unsupported_placement_warnings(result)
-
-    def test_dsl_stdin_formats_to_expected_output(self) -> None:
-        result = native_format(
-            "--stdin", "--style", str(DSL_FORMAT_CONFIG),
-            input_text=read_fixture(DSL_INPUT_FIXTURE),
-        )
-        self.assertEqual(0, result.returncode, msg=result.stderr)
-        self.assertEqual(read_fixture(DSL_OUTPUT_FIXTURE), result.stdout)
-        self.assert_no_unsupported_placement_warnings(result)
-
-    def test_continuations_stdin_formats_to_expected_output(self) -> None:
-        result = native_format(
-            "--stdin", "--style", str(CONTINUATIONS_FORMAT_CONFIG),
-            input_text=read_fixture(CONTINUATIONS_INPUT_FIXTURE),
-        )
-        self.assertEqual(0, result.returncode, msg=result.stderr)
-        self.assertEqual(read_fixture(CONTINUATIONS_OUTPUT_FIXTURE), result.stdout)
-        self.assert_no_unsupported_placement_warnings(result)
-
-    def test_forced_separators_stdin_formats_to_expected_output(self) -> None:
-        result = native_format(
-            "--stdin", "--style", str(CONTINUATIONS_FORMAT_CONFIG),
-            input_text=read_fixture(FORCED_SEPARATORS_INPUT_FIXTURE),
-        )
-        self.assertEqual(0, result.returncode, msg=result.stderr)
-        self.assertEqual(read_fixture(FORCED_SEPARATORS_OUTPUT_FIXTURE), result.stdout)
-        self.assert_no_unsupported_placement_warnings(result)
-
-    def test_non_ascii_stdin_formats_to_expected_output(self) -> None:
-        source = read_fixture(NON_ASCII_INPUT_FIXTURE).encode("utf-8")
-        expected = read_fixture(NON_ASCII_OUTPUT_FIXTURE).encode("utf-8")
-        for ending in (b"\n", b"\r\n"):
-            with self.subTest(line_ending=ending):
-                result = native_format_bytes(
-                    "--stdin",
-                    "--style",
-                    str(NON_ASCII_FORMAT_CONFIG),
-                    cwd=TEST_ROOT,
-                    input_bytes=source.replace(b"\n", ending),
-                )
-
-                self.assertEqual(0, result.returncode, msg=result.stderr)
-                self.assertEqual(expected.replace(b"\n", ending), result.stdout)
-                self.assertNotIn(b": warning at ", result.stderr)
-
-    def test_nested_template_calls_format_as_calls(self) -> None:
-        result = native_format(
-            "--stdin", cwd=TEST_ROOT, input_text=read_fixture(NESTED_TEMPLATE_CALLS_INPUT_FIXTURE)
-        )
-
-        self.assertEqual(0, result.returncode, msg=result.stderr)
-        self.assertEqual(read_fixture(NESTED_TEMPLATE_CALLS_OUTPUT_FIXTURE), result.stdout)
-        self.assert_no_unsupported_placement_warnings(result)
+    def test_golden_inputs_format_to_expected_output(self) -> None:
+        for name, source, expected, style in GOLDEN_FIXTURES:
+            args = ["--stdin"]
+            if style is not None:
+                args.extend(("--style", str(style)))
+            endings = {
+                "control-comments": (b"\n", b"\r\n", b"\r"),
+                "non-ascii": (b"\n", b"\r\n"),
+            }.get(name, (b"\n",))
+            for ending in endings:
+                for validate in (False, True):
+                    with self.subTest(name=name, line_ending=ending, validate=validate):
+                        result = native_format_bytes(
+                            *args, cwd=TEST_ROOT, validate=validate,
+                            input_bytes=read_fixture(source).encode("utf-8").replace(b"\n", ending),
+                        )
+                        self.assertEqual(0, result.returncode, msg=result.stderr)
+                        self.assertEqual(
+                            read_fixture(expected).encode("utf-8").replace(b"\n", ending), result.stdout,
+                        )
+                        stderr = result.stderr.decode("utf-8").replace("\r\n", "\n")
+                        warnings = read_fixture(UNSUPPORTED_WARNINGS_FIXTURE) if name == "unsupported" else ""
+                        self.assertRegex(
+                            stderr,
+                            "^" + re.escape(warnings) +
+                            r"Formatted stdin\. [\d,]+/[\d,]+ LOC changed\. Done in (?:\d+ms|\d+\.\d{3}s)\.\s*$",
+                        )
 
     def test_golden_outputs_reparse_and_format_idempotently(self) -> None:
-        for name, fixture, style in FORMATTED_GOLDEN_OUTPUTS:
+        for name, _, fixture, style in GOLDEN_FIXTURES:
             with self.subTest(name=name):
                 args = ["--stdin"]
                 if style is not None:
@@ -627,67 +546,6 @@ class FormatCommandTests(unittest.TestCase):
                 self.assertEqual(expected, result.stdout)
                 if name != "unsupported":
                     self.assert_no_unsupported_placement_warnings(result)
-
-    def test_userver_stdin_formats_to_expected_output(self) -> None:
-        result = native_format(
-            "--stdin",
-            "--style",
-            str(USERVER_FORMAT_CONFIG),
-            cwd=TEST_ROOT,
-            input_text=read_fixture(USERVER_INPUT_FIXTURE),
-        )
-
-        self.assertEqual(0, result.returncode, msg=f"stdout:\n{result.stdout}\n\nstderr:\n{result.stderr}")
-        self.assertEqual(read_fixture(USERVER_OUTPUT_FIXTURE), result.stdout)
-        self.assert_no_unsupported_placement_warnings(result)
-        self.assertRegex(result.stderr, r"Formatted stdin\. [\d,]+/[\d,]+ LOC changed\. Done in (?:\d+ms|\d+\.\d{3}s)\.\s*$")
-
-    def test_userver_golden_input_parses_without_errors(self) -> None:
-        with copied_fixtures(USERVER_INPUT_FIXTURE) as fixtures:
-            result = native_format("--style", str(USERVER_FORMAT_CONFIG), str(fixtures[USERVER_INPUT_FIXTURE]))
-
-        self.assertEqual(0, result.returncode, msg=f"stdout:\n{result.stdout}\n\nstderr:\n{result.stderr}")
-        self.assertNotIn("parse failed", result.stderr)
-        self.assert_no_unsupported_placement_warnings(result)
-
-    def test_ifdef_stdin_formats_to_expected_output(self) -> None:
-        result = native_format(
-            "--stdin",
-            "--style",
-            str(USERVER_FORMAT_CONFIG),
-            cwd=TEST_ROOT,
-            input_text=read_fixture(IFDEF_INPUT_FIXTURE),
-        )
-
-        self.assertEqual(0, result.returncode, msg=f"stdout:\n{result.stdout}\n\nstderr:\n{result.stderr}")
-        self.assertEqual(read_fixture(IFDEF_OUTPUT_FIXTURE), result.stdout)
-        self.assert_no_unsupported_placement_warnings(result)
-        self.assertRegex(result.stderr, r"Formatted stdin\. [\d,]+/[\d,]+ LOC changed\. Done in (?:\d+ms|\d+\.\d{3}s)\.\s*$")
-
-    def test_ifdef_golden_input_parses_without_errors(self) -> None:
-        with copied_fixtures(IFDEF_INPUT_FIXTURE) as fixtures:
-            result = native_format("--style", str(USERVER_FORMAT_CONFIG), str(fixtures[IFDEF_INPUT_FIXTURE]))
-
-        self.assertEqual(0, result.returncode, msg=f"stdout:\n{result.stdout}\n\nstderr:\n{result.stderr}")
-        self.assertNotIn("parse failed", result.stderr)
-        self.assert_no_unsupported_placement_warnings(result)
-
-    def test_unsupported_stdin_formats_to_current_output(self) -> None:
-        result = native_format(
-            "--stdin",
-            "--style",
-            str(USERVER_FORMAT_CONFIG),
-            cwd=TEST_ROOT,
-            input_text=read_fixture(UNSUPPORTED_INPUT_FIXTURE),
-        )
-
-        self.assertEqual(0, result.returncode, msg=f"stdout:\n{result.stdout}\n\nstderr:\n{result.stderr}")
-        self.assertEqual(read_fixture(UNSUPPORTED_OUTPUT_FIXTURE), result.stdout)
-        self.assertRegex(
-            result.stderr,
-            re.escape(read_fixture(UNSUPPORTED_WARNINGS_FIXTURE)) +
-            r"Formatted stdin\. [\d,]+/[\d,]+ LOC changed\. Done in (?:\d+ms|\d+\.\d{3}s)\.\s*$",
-        )
 
     def test_conditional_header_items_preserve_enclosing_control_scope(self) -> None:
         bodies = (
@@ -749,111 +607,6 @@ class FormatCommandTests(unittest.TestCase):
                 self.assertEqual(1, result.returncode, msg=f"stdout:\n{result.stdout}\n\nstderr:\n{result.stderr}")
                 self.assertEqual("", result.stdout)
                 self.assertEqual(read_fixture(expected), result.stderr)
-
-    def test_missing_include_categories_preserves_opening_include_blocks(self) -> None:
-        build_dir = TEST_TEMP_ROOT
-        build_dir.mkdir(exist_ok=True)
-
-        with tempfile.TemporaryDirectory(prefix="format_preserve_includes_", dir=build_dir) as temp_dir:
-            root = Path(temp_dir)
-            config = root / ".cpp-format"
-            config.write_text("---\nColumnLimit: 120\nIndentWidth: 4\nTabWidth: 4\n", encoding="utf-8")
-            cases = [
-                (
-                    "#pragma once\n\n"
-                    "#include <zeta>\n"
-                    "#include <alpha>\n\n"
-                    "#include \"b.h\"\n"
-                    "#include \"a.h\"\n\n"
-                    "int value;\n"
-                ),
-                (
-                    "#ifndef PRESERVE_FIXTURE_HPP\n"
-                    "#define PRESERVE_FIXTURE_HPP\n\n"
-                    "#include <zeta>\n"
-                    "#include <alpha>\n\n"
-                    "#include \"b.h\"\n"
-                    "#include \"a.h\"\n\n"
-                    "int value;\n\n"
-                    "#endif\n"
-                ),
-            ]
-            for text in cases:
-                with self.subTest(text=text.splitlines()[0]):
-                    result = native_format("--stdin", "--style", str(config), input_text=text)
-
-                    self.assertEqual(0, result.returncode, msg=f"stdout:\n{result.stdout}\n\nstderr:\n{result.stderr}")
-                    self.assertEqual(text, result.stdout)
-
-    def test_include_categories_sort_opening_include_blocks(self) -> None:
-        build_dir = TEST_TEMP_ROOT
-        build_dir.mkdir(exist_ok=True)
-
-        with tempfile.TemporaryDirectory(prefix="format_sort_includes_", dir=build_dir) as temp_dir:
-            root = Path(temp_dir)
-            config = root / ".cpp-format"
-            config.write_text(
-                "---\n"
-                "ColumnLimit: 120\n"
-                "IndentWidth: 4\n"
-                "TabWidth: 4\n"
-                "IncludeCategories:\n"
-                "  - Regex: '^<.*>$'\n"
-                "    Priority: 1\n"
-                "  - Regex: '^\".*\"$'\n"
-                "    Priority: 2\n",
-                encoding="utf-8",
-            )
-            cases = [
-                (
-                    "#pragma once",
-                    "#pragma once\n\n"
-                    "#include \"b.h\"\n"
-                    "#include <zeta>\n\n"
-                    "#include \"a.h\"\n"
-                    "#include \"A.h\"\n"
-                    "#include <Zeta>\n"
-                    "#include <alpha>\n\n"
-                    "int value;\n",
-                    "#pragma once\n\n"
-                    "#include <Zeta>\n"
-                    "#include <alpha>\n"
-                    "#include <zeta>\n\n"
-                    "#include \"A.h\"\n"
-                    "#include \"a.h\"\n"
-                    "#include \"b.h\"\n\n"
-                    "int value;\n",
-                ),
-                (
-                    "#ifndef",
-                    "#ifndef SORT_FIXTURE_HPP\n"
-                    "#define SORT_FIXTURE_HPP\n\n"
-                    "#include \"b.h\"\n"
-                    "#include <zeta>\n\n"
-                    "#include \"a.h\"\n"
-                    "#include \"A.h\"\n"
-                    "#include <Zeta>\n"
-                    "#include <alpha>\n\n"
-                    "int value;\n\n"
-                    "#endif\n",
-                    "#ifndef SORT_FIXTURE_HPP\n"
-                    "#define SORT_FIXTURE_HPP\n\n"
-                    "#include <Zeta>\n"
-                    "#include <alpha>\n"
-                    "#include <zeta>\n\n"
-                    "#include \"A.h\"\n"
-                    "#include \"a.h\"\n"
-                    "#include \"b.h\"\n\n"
-                    "int value;\n\n"
-                    "#endif\n",
-                ),
-            ]
-            for name, input_text, expected in cases:
-                with self.subTest(name=name):
-                    result = native_format("--stdin", "--style", str(config), input_text=input_text)
-
-                    self.assertEqual(0, result.returncode, msg=f"stdout:\n{result.stdout}\n\nstderr:\n{result.stderr}")
-                    self.assertEqual(expected, result.stdout)
 
     def test_stdin_filename_preserves_dependent_include_order(self) -> None:
         with tempfile.TemporaryDirectory(prefix="format_stdin_filename_", dir=TEST_TEMP_ROOT) as temp_dir:
@@ -1620,40 +1373,6 @@ class FormatCommandTests(unittest.TestCase):
         self.assertIn("- kind: Error\n", result.stdout)
         self.assertIn("- kind: Missing\n", result.stdout)
 
-    def test_declarator_reference_tokens_include_managed_cpp(self) -> None:
-        result = native_format(
-            "--stdin",
-            input_text="void f(Object ^ handle,Object % tracking,int && moved,int * pointer){}\n",
-        )
-
-        self.assertEqual(0, result.returncode, msg=f"stdout:\n{result.stdout}\n\nstderr:\n{result.stderr}")
-        self.assertEqual(
-            "void f(Object^ handle, Object% tracking, int&& moved, int* pointer) {}\n",
-            result.stdout,
-        )
-
-    def test_preprocessor_directive_whitespace_is_canonicalized(self) -> None:
-        result = native_format(
-            "--stdin",
-            input_text=(
-                "#   if FOO\n"
-                "int value;\n"
-                "#   else\n"
-                "int other;\n"
-                "#   endif\n"
-            ),
-        )
-
-        self.assertEqual(0, result.returncode, msg=f"stdout:\n{result.stdout}\n\nstderr:\n{result.stderr}")
-        self.assertEqual(
-            "#if FOO\n"
-            "int value;\n"
-            "#else\n"
-            "int other;\n"
-            "#endif\n",
-            result.stdout,
-        )
-
     def test_dump_uses_preprocessor_directive_tokens(self) -> None:
         result = native_format(
             "--stdin",
@@ -1672,42 +1391,6 @@ class FormatCommandTests(unittest.TestCase):
         self.assertIn("- kind: PreprocessorDirectiveIf\n", result.stdout)
         self.assertIn("- kind: PreprocessorDirectiveElse\n", result.stdout)
         self.assertIn("- kind: PreprocessorDirectiveEndif\n", result.stdout)
-
-    def test_trailing_commas_are_removed_only_in_single_line_initializers(self) -> None:
-        result = native_format(
-            "--stdin",
-            input_text=(
-                "enum E { A, B };\n"
-                "enum F { C, D, };\n"
-                "int values[] = {1, 2,};\n"
-                "void f(){ Use({1, 2,}); }\n"
-                "auto long_values = Values{firstValueWithAnExtremelyLongNameForTrailingCommaNormalization, "
-                "secondValueWithAnExtremelyLongNameForTrailingCommaNormalization};\n"
-            ),
-        )
-
-        self.assertEqual(0, result.returncode, msg=f"stdout:\n{result.stdout}\n\nstderr:\n{result.stderr}")
-        self.assertEqual(
-            "enum E {\n"
-            "    A,\n"
-            "    B\n"
-            "};\n"
-            "\n"
-            "enum F {\n"
-            "    C,\n"
-            "    D,\n"
-            "};\n"
-            "\n"
-            "int values[] = {1, 2};\n"
-            "\n"
-            "void f() { Use({1, 2}); }\n"
-            "\n"
-            "auto long_values = Values{\n"
-            "    firstValueWithAnExtremelyLongNameForTrailingCommaNormalization,\n"
-            "    secondValueWithAnExtremelyLongNameForTrailingCommaNormalization\n"
-            "};\n",
-            result.stdout,
-        )
 
     def test_long_assignment_chain_formats_and_validates(self) -> None:
         targets = [f"flags[{index}]" for index in range(80)]
@@ -1756,163 +1439,6 @@ class FormatCommandTests(unittest.TestCase):
                 self.assertIn(", );", outputs[1])
                 self.assertEqual(outputs[0], outputs[1].replace(", );", ");"))
 
-    def test_enum_macro_call_final_item_does_not_gain_a_comma(self) -> None:
-        result = native_format(
-            "--stdin",
-            input_text=(
-                "#define DECLARE_ENUM(ItemsMacro) \\\n"
-                "enum G { ItemsMacro(EMIT) };\n"
-            ),
-        )
-
-        self.assertEqual(0, result.returncode, msg=f"stdout:\n{result.stdout}\n\nstderr:\n{result.stderr}")
-        self.assertEqual(
-            "#define DECLARE_ENUM(ItemsMacro) \\\n"
-            "    enum G {                     \\\n"
-            "        ItemsMacro(EMIT)         \\\n"
-            "    };\n",
-            result.stdout,
-        )
-
-    def test_atomic_preprocessor_directives_do_not_create_groups(self) -> None:
-        result = native_format(
-            "--stdin",
-            input_text=(
-                "#define VALUE 1\n"
-                "int value;\n"
-                "#undef VALUE\n"
-                "#line 200\n"
-                "int remapped;\n"
-            ),
-        )
-
-        self.assertEqual(0, result.returncode, msg=f"stdout:\n{result.stdout}\n\nstderr:\n{result.stderr}")
-        self.assertEqual(
-            "#define VALUE 1\n"
-            "int value;\n"
-            "#undef VALUE\n"
-            "#line 200\n"
-            "int remapped;\n",
-            result.stdout,
-        )
-
-    def test_atomic_preprocessor_directives_preserve_source_grouping(self) -> None:
-        result = native_format(
-            "--stdin",
-            input_text=(
-                "int before; // attached to previous item\n"
-                "#pragma first\n"
-                "// attached to the next pragma\n"
-                "#pragma second\n"
-                "\n"
-                "// attached to the definition\n"
-                "#define VALUE 1\n"
-                "#undef VALUE\n"
-                "#undef OTHER\n"
-                "#define OTHER 2\n"
-                "\n"
-                "int after;\n"
-            ),
-        )
-
-        self.assertEqual(0, result.returncode, msg=f"stdout:\n{result.stdout}\n\nstderr:\n{result.stderr}")
-        self.assertEqual(
-            "int before;  // attached to previous item\n"
-            "#pragma first\n"
-            "// attached to the next pragma\n"
-            "#pragma second\n"
-            "\n"
-            "// attached to the definition\n"
-            "#define VALUE 1\n"
-            "#undef VALUE\n"
-            "#undef OTHER\n"
-            "#define OTHER 2\n"
-            "\n"
-            "int after;\n",
-            result.stdout,
-        )
-
-    def test_atomic_preprocessor_directives_stay_attached_to_context(self) -> None:
-        result = native_format(
-            "--stdin",
-            input_text=(
-                "void f(){\n"
-                "#pragma omp parallel for\n"
-                "for(int index=0;index<4;++index){use(index);}\n"
-                "#define VALUE 1\n"
-                "int value;\n"
-                "#undef VALUE\n"
-                "}\n"
-                "#line 200\n"
-                "int remapped;\n"
-                "#if FLAG\n"
-                "#pragma second\n"
-                "int other;\n"
-                "#undef OTHER\n"
-                "#endif\n"
-                "#undef AFTER_CONDITIONAL\n"
-            ),
-        )
-
-        self.assertEqual(0, result.returncode, msg=f"stdout:\n{result.stdout}\n\nstderr:\n{result.stderr}")
-        self.assertEqual(
-            "void f() {\n"
-            "#pragma omp parallel for\n"
-            "    for (int index = 0; index < 4; ++index) {\n"
-            "        use(index);\n"
-            "    }\n"
-            "#define VALUE 1\n"
-            "    int value;\n"
-            "#undef VALUE\n"
-            "}\n"
-            "\n"
-            "#line 200\n"
-            "int remapped;\n"
-            "#if FLAG\n"
-            "#pragma second\n"
-            "int other;\n"
-            "#undef OTHER\n"
-            "#endif\n"
-            "#undef AFTER_CONDITIONAL\n",
-            result.stdout,
-        )
-
-    def test_win32_boolean_macros_preserve_spelling(self) -> None:
-        result = native_format(
-            "--stdin",
-            input_text=(
-                "int false_value=FALSE;\n"
-                "int true_value=TRUE;\n"
-                "bool standard_false=false;\n"
-                "bool standard_true=true;\n"
-            ),
-        )
-
-        self.assertEqual(0, result.returncode, msg=f"stdout:\n{result.stdout}\n\nstderr:\n{result.stderr}")
-        self.assertEqual(
-            "int false_value = FALSE;\n"
-            "int true_value = TRUE;\n"
-            "bool standard_false = false;\n"
-            "bool standard_true = true;\n",
-            result.stdout,
-        )
-
-    def test_macro_decltype_argument_formats_structurally(self) -> None:
-        result = native_format(
-            "--stdin",
-            input_text=(
-                "#define STRICTFMT_LOAD_OPTIONAL(function, name) \\\n"
-                "function=reinterpret_cast<decltype(function)>(GetProcAddress(module_,name))\n"
-            ),
-        )
-
-        self.assertEqual(0, result.returncode, msg=f"stdout:\n{result.stdout}\n\nstderr:\n{result.stderr}")
-        self.assertEqual(
-            "#define STRICTFMT_LOAD_OPTIONAL(function, name) \\\n"
-            "    function = reinterpret_cast<decltype(function)>(GetProcAddress(module_, name))\n",
-            result.stdout,
-        )
-
     def test_structured_macro_definitions_format_replacements(self) -> None:
         source = (
             "#define EMPTY_OBJECT\n"
@@ -1944,140 +1470,6 @@ class FormatCommandTests(unittest.TestCase):
             self.assertNotIn("PreprocFunctionDef", dump.stdout)
             self.assertNotIn("RawMacroReplacement", dump.stdout)
 
-    def test_structured_macro_replacement_call_sequence_splits_by_unit(self) -> None:
-        source = (
-            '#define ONE(X) X(Alpha,"alpha")\n'
-            '#define MANY(X) X(Alpha,"alpha") X(Beta,"beta") X(Gamma,"gamma")\n'
-            "#define DIFFERENT(Y) Produce(Alpha) Consume(Beta)\n"
-        )
-        expected = (
-            '#define ONE(X) X(Alpha, "alpha")\n'
-            "#define MANY(X)       \\\n"
-            '    X(Alpha, "alpha") \\\n'
-            '    X(Beta, "beta")   \\\n'
-            '    X(Gamma, "gamma")\n'
-            "#define DIFFERENT(Y) \\\n"
-            "    Produce(Alpha)   \\\n"
-            "    Consume(Beta)\n"
-        )
-
-        formatted = native_format("--stdin", input_text=source)
-
-        self.assertEqual(0, formatted.returncode, msg=f"stdout:\n{formatted.stdout}\n\nstderr:\n{formatted.stderr}")
-        self.assertEqual(expected, formatted.stdout)
-        idempotent = native_format("--dry-run", "--stdin", input_text=formatted.stdout)
-        self.assertEqual(
-            0,
-            idempotent.returncode,
-            msg=f"stdout:\n{idempotent.stdout}\n\nstderr:\n{idempotent.stderr}",
-        )
-
-    def test_structured_macro_definition_with_templated_struct_body_reparses(self) -> None:
-        expected = (
-            "#define DECLARE_TRAITS(Type)                  \\\n"
-            "    template <>                               \\\n"
-            "    struct Traits<Type> {                     \\\n"
-            "        static constexpr auto value = Type{}; \\\n"
-            "    }\n"
-        )
-        sources = (
-            (
-                "#define DECLARE_TRAITS(Type) \\\n"
-                "    template <> struct Traits<Type>{static constexpr auto value = Type{}; }\n"
-            ),
-            (
-                "#define DECLARE_TRAITS(Type) \\\n"
-                "    template <> \\\n"
-                "    struct Traits<Type>{ \\\n"
-                "        static constexpr auto value = Type{}; }\n"
-            ),
-        )
-
-        for source in sources:
-            with self.subTest(source=source):
-                result = native_format("--stdin", input_text=source)
-
-                self.assertEqual(0, result.returncode, msg=f"stdout:\n{result.stdout}\n\nstderr:\n{result.stderr}")
-                self.assertEqual(expected, result.stdout)
-
-    def test_structured_macro_non_fitting_definition_splits_after_header(self) -> None:
-        build_dir = TEST_TEMP_ROOT
-        build_dir.mkdir(exist_ok=True)
-        with tempfile.TemporaryDirectory(prefix="format_macro_value_solver_", dir=build_dir) as temp_dir:
-            config = Path(temp_dir) / ".cpp-format"
-            config.write_text(
-                "---\n"
-                "ColumnLimit: 22\n"
-                "IndentWidth: 4\n"
-                "TabWidth: 4\n",
-                encoding="utf-8",
-            )
-            source = "#define VALUE Build(first,second,third)\n#define D(v) void f(v)\n"
-            expected = (
-                "#define VALUE   \\\n"
-                "    Build(      \\\n"
-                "        first,  \\\n"
-                "        second, \\\n"
-                "        third   \\\n"
-                "    )\n"
-                "#define D(v) void f(v)\n"
-            )
-
-            formatted = native_format("--stdin", "--style", str(config), input_text=source)
-
-            self.assertEqual(0, formatted.returncode, msg=f"stdout:\n{formatted.stdout}\n\nstderr:\n{formatted.stderr}")
-            self.assertEqual(expected, formatted.stdout)
-            idempotent = native_format(
-                "--dry-run", "--stdin", "--style", str(config), input_text=formatted.stdout
-            )
-            self.assertEqual(
-                0,
-                idempotent.returncode,
-                msg=f"stdout:\n{idempotent.stdout}\n\nstderr:\n{idempotent.stderr}",
-            )
-
-            config.write_text(
-                "---\n"
-                "ColumnLimit: 20\n"
-                "IndentWidth: 4\n"
-                "TabWidth: 4\n",
-                encoding="utf-8",
-            )
-            suffix_constrained = native_format(
-                "--stdin",
-                "--style",
-                str(config),
-                input_text=(
-                    "#define VALUE Build(first,second,third)\n"
-                    "#define EMPTY(first,second,third)\n"
-                ),
-            )
-            self.assertEqual(
-                0,
-                suffix_constrained.returncode,
-                msg=f"stdout:\n{suffix_constrained.stdout}\n\nstderr:\n{suffix_constrained.stderr}",
-            )
-            self.assertEqual(
-                "#define VALUE   \\\n"
-                "    Build(      \\\n"
-                "        first,  \\\n"
-                "        second, \\\n"
-                "        third   \\\n"
-                "    )\n"
-                "#define EMPTY( \\\n"
-                "    first,     \\\n"
-                "    second,    \\\n"
-                "    third      \\\n"
-                ")\n",
-                suffix_constrained.stdout,
-            )
-
-    def test_macro_corpus_formats_to_expected_output(self) -> None:
-        result = native_format("--stdin", cwd=TEST_ROOT, input_text=read_fixture(MACROS_INPUT_FIXTURE))
-        self.assertEqual(0, result.returncode, msg=result.stderr)
-        self.assertEqual(read_fixture(MACROS_OUTPUT_FIXTURE), result.stdout)
-        self.assert_no_unsupported_placement_warnings(result)
-
     def test_macro_corpus_parses_without_configuration(self) -> None:
         role_config = MACRO_ROLES_FORMAT_CONFIG.read_text(encoding="utf-8")
         configurations = {"empty": "MacroCategories: {}\n"}
@@ -2096,15 +1488,6 @@ class FormatCommandTests(unittest.TestCase):
                             "--stdin", "--dump-syntax-tree", "--style", str(config), input_text=read_fixture(fixture)
                         )
                         self.assertEqual(0, result.returncode, msg=result.stderr)
-
-    def test_macro_roles_format_to_expected_output(self) -> None:
-        result = native_format(
-            "--stdin", "--style", str(MACRO_ROLES_FORMAT_CONFIG),
-            input_text=read_fixture(UNCONFIGURED_MACROS_INPUT_FIXTURE),
-        )
-        self.assertEqual(0, result.returncode, msg=result.stderr)
-        self.assertEqual(read_fixture(UNCONFIGURED_MACROS_OUTPUT_FIXTURE), result.stdout)
-        self.assert_no_unsupported_placement_warnings(result)
 
     def test_macro_replacements_choose_structured_or_raw_in_one_parse(self) -> None:
         cases = (
@@ -2205,120 +1588,6 @@ class FormatCommandTests(unittest.TestCase):
             formatted = native_format("--stdin", "--style", str(config), input_text=source)
             self.assertEqual(0, formatted.returncode, msg=formatted.stderr)
 
-    def test_type_specifier_macro_classifies_after_horizontal_whitespace(self) -> None:
-        source = (
-            "template<typename T,typename U>struct TypeMacroFixture{\n"
-            "typedef REMOVE_CV_REF(T) RawT;\n"
-            "typedef typename REMOVE_CV_REF(T,U) BoundT;\n"
-            "using Address=const REMOVE_CV_REF(T)*;\n"
-            "};\n"
-        )
-        build_dir = TEST_TEMP_ROOT
-        build_dir.mkdir(exist_ok=True)
-        with tempfile.TemporaryDirectory(prefix="format_type_macro_", dir=build_dir) as temp_dir:
-            config = Path(temp_dir) / ".cpp-format"
-            config.write_text(
-                "---\n"
-                "ColumnLimit: 120\n"
-                "IndentWidth: 4\n"
-                "TabWidth: 4\n"
-                "MacroCategories:\n"
-                "  TypeSpecifierMacros:\n"
-                "    - REMOVE_CV_REF\n",
-                encoding="utf-8",
-            )
-
-            formatted = native_format("--stdin", "--style", str(config), input_text=source)
-
-            self.assertEqual(0, formatted.returncode, msg=f"stdout:\n{formatted.stdout}\n\nstderr:\n{formatted.stderr}")
-            self.assertEqual(
-                "template <typename T, typename U>\n"
-                "struct TypeMacroFixture {\n"
-                "    typedef REMOVE_CV_REF(T) RawT;\n"
-                "    typedef typename REMOVE_CV_REF(T, U) BoundT;\n"
-                "    using Address = const REMOVE_CV_REF(T)*;\n"
-                "};\n",
-                formatted.stdout,
-            )
-
-    def test_preprocessor_argument_macro_accepts_balanced_token_sequences(self) -> None:
-        source = (
-            "void PreprocessorArguments(){\n"
-            "PP_EXPANSION(\"+=\", PP_CAT(+, =));\n"
-            "PP_EXPANSION(\"comma\", PP_HAS_COMMA(, ));\n"
-            "PP_EXPANSION(\"tokens\", PP_PARENS(sss() sss));\n"
-            "PP_EXPANSION(\"raw\", PP_RAW(R\"tag((,))tag\"));\n"
-            "PP_EXPANSION(PP_ITEM, ~, (int, float));\n"
-            "using GeneratedTypes=Test<PP_EXPANSION(PP_ITEM, ~, (int, float))>;\n"
-            "PP_EXPANSION(item, );\n"
-            "PP_EXPANSION(, );\n"
-            "}\n"
-        )
-        unconfigured = native_format("--stdin", input_text=source)
-
-        self.assertEqual(0, unconfigured.returncode, msg=f"stdout:\n{unconfigured.stdout}\n\nstderr:\n{unconfigured.stderr}")
-
-        build_dir = TEST_TEMP_ROOT
-        build_dir.mkdir(exist_ok=True)
-        with tempfile.TemporaryDirectory(prefix="format_preprocessor_arguments_", dir=build_dir) as temp_dir:
-            config = Path(temp_dir) / ".cpp-format"
-            config.write_text(
-                "---\n"
-                "ColumnLimit: 120\n"
-                "IndentWidth: 4\n"
-                "TabWidth: 4\n"
-                "MacroCategories:\n"
-                "  PreprocessorArgumentMacros:\n"
-                "    - PP_EXPANSION\n",
-                encoding="utf-8",
-            )
-
-            formatted = native_format("--stdin", "--style", str(config), input_text=source)
-
-            self.assertEqual(0, formatted.returncode, msg=f"stdout:\n{formatted.stdout}\n\nstderr:\n{formatted.stderr}")
-            self.assertEqual(
-                "void PreprocessorArguments() {\n"
-                "    PP_EXPANSION(\"+=\", PP_CAT(+, =));\n"
-                "    PP_EXPANSION(\"comma\", PP_HAS_COMMA(, ));\n"
-                "    PP_EXPANSION(\"tokens\", PP_PARENS(sss() sss));\n"
-                "    PP_EXPANSION(\"raw\", PP_RAW(R\"tag((,))tag\"));\n"
-                "    PP_EXPANSION(PP_ITEM, ~, (int, float));\n"
-                "    using GeneratedTypes = Test<PP_EXPANSION(PP_ITEM, ~, (int, float))>;\n"
-                "    PP_EXPANSION(item, );\n"
-                "    PP_EXPANSION(, );\n"
-                "}\n",
-                formatted.stdout,
-            )
-
-            idempotent = native_format("--dry-run", "--stdin", "--style", str(config), input_text=formatted.stdout)
-            self.assertEqual(0, idempotent.returncode, msg=f"stdout:\n{idempotent.stdout}\n\nstderr:\n{idempotent.stderr}")
-
-    def test_macro_arrow_chain_formats_and_reparses(self) -> None:
-        source = "BENCHMARK(Foo)\n    ->Args({1, 2});\n"
-        result = native_format("--stdin", input_text=source)
-        self.assertEqual(0, result.returncode, msg=result.stderr)
-        self.assertEqual("BENCHMARK(Foo)->Args({1, 2});\n", result.stdout)
-
-        second_result = native_format("--stdin", input_text=result.stdout)
-        self.assertEqual(0, second_result.returncode, msg=second_result.stderr)
-        self.assertEqual(result.stdout, second_result.stdout)
-
-    def test_compact_empty_brace_ternary_colon_keeps_space(self) -> None:
-        result = native_format(
-            "--stdin",
-            input_text=(
-                "auto snapshot=preferred?TreeViewportSnapshot{}:CaptureTreeViewportSnapshot();\n"
-                "auto text=empty?std::string{}:value;\n"
-            ),
-        )
-
-        self.assertEqual(0, result.returncode, msg=f"stdout:\n{result.stdout}\n\nstderr:\n{result.stderr}")
-        self.assertEqual(
-            "auto snapshot = preferred ? TreeViewportSnapshot{} : CaptureTreeViewportSnapshot();\n"
-            "auto text = empty ? std::string{} : value;\n",
-            result.stdout,
-        )
-
     def test_nested_list_search_reuses_alternatives(self) -> None:
         depth = 12
         source = "auto value = " + "Value{.first = 1, .second = " * depth + "Leaf{2, 3}" + "}" * depth + ";\n"
@@ -2335,251 +1604,6 @@ class FormatCommandTests(unittest.TestCase):
 
         idempotent = native_format("--stdin", "--dry-run", input_text=formatted.stdout, timeout=10)
         self.assertEqual(0, idempotent.returncode, msg=idempotent.stderr)
-
-    def test_compact_initializer_braces_stay_tight_in_split_context(self) -> None:
-        result = native_format(
-            "--stdin",
-            input_text=(
-                "const auto matchesDrag = [&](const LayoutEditOverlayOwner& owner) {\n"
-                "return owner.childIndex==drag.currentIndex&&\n"
-                "MatchesLayoutContainerEditKey(LayoutContainerEditKey{owner.key.editCardId,owner.key.nodePath},\n"
-                "LayoutContainerEditKey{drag.key.editCardId,drag.key.nodePath});\n"
-                "};\n"
-                "bool hits(){return MatchesRegionHit(regions,region,RenderPoint{x,y})&&\n"
-                "MatchesRegionHit(regions,region,RenderPoint{x+3,y});}\n"
-            ),
-        )
-
-        self.assertEqual(0, result.returncode, msg=f"stdout:\n{result.stdout}\n\nstderr:\n{result.stderr}")
-        self.assertEqual(
-            "const auto matchesDrag = [&](const LayoutEditOverlayOwner& owner) {\n"
-            "    return owner.childIndex == drag.currentIndex && MatchesLayoutContainerEditKey(\n"
-            "        LayoutContainerEditKey{owner.key.editCardId, owner.key.nodePath},\n"
-            "        LayoutContainerEditKey{drag.key.editCardId, drag.key.nodePath}\n"
-            "    );\n"
-            "};\n"
-            "\n"
-            "bool hits() {\n"
-            "    return MatchesRegionHit(regions, region, RenderPoint{x, y}) &&\n"
-            "        MatchesRegionHit(regions, region, RenderPoint{x + 3, y});\n"
-            "}\n",
-            result.stdout,
-        )
-
-    def test_control_body_brace_normalization(self) -> None:
-        result = native_format(
-            "--stdin",
-            input_text=(
-                "void f(int* values,int count){\n"
-                "if(count) values[0]+=1;\n"
-                "else values[0]=0;\n"
-                "if(count==0) values[0]=0;\n"
-                "else if(count==1) values[0]=1;\n"
-                "else values[0]=2;\n"
-                "while(count) --count;\n"
-                "for(int i=0;i<count;++i) values[i]+=i;\n"
-                "do ++count; while(count<10);\n"
-                "if(count) { return; } else { if(count) return; }\n"
-                "}\n"
-            ),
-        )
-
-        self.assertEqual(0, result.returncode, msg=f"stdout:\n{result.stdout}\n\nstderr:\n{result.stderr}")
-        self.assertEqual(
-            "void f(int* values, int count) {\n"
-            "    if (count) {\n"
-            "        values[0] += 1;\n"
-            "    } else {\n"
-            "        values[0] = 0;\n"
-            "    }\n"
-            "    if (count == 0) {\n"
-            "        values[0] = 0;\n"
-            "    } else if (count == 1) {\n"
-            "        values[0] = 1;\n"
-            "    } else {\n"
-            "        values[0] = 2;\n"
-            "    }\n"
-            "    while (count) {\n"
-            "        --count;\n"
-            "    }\n"
-            "    for (int i = 0; i < count; ++i) {\n"
-            "        values[i] += i;\n"
-            "    }\n"
-            "    do {\n"
-            "        ++count;\n"
-            "    } while (count < 10);\n"
-            "    if (count) {\n"
-            "        return;\n"
-            "    } else if (count) {\n"
-            "        return;\n"
-            "    }\n"
-            "}\n",
-            result.stdout,
-        )
-
-    def test_semicolonless_sentinel_is_statement_in_unbraced_switch_case(self) -> None:
-        source = (
-            "void WarningSentinelsAfterUnbracedSwitchCases(){\n"
-            "GTEST_DISABLE_MSC_WARNINGS_PUSH_(4065)\n"
-            "switch(0)\n"
-            "default:\n"
-            "UseDefault();\n"
-            "switch(0)\n"
-            "case 0:\n"
-            "UseCase();\n"
-            "GTEST_DISABLE_MSC_WARNINGS_POP_()\n"
-            "}\n"
-        )
-        expected = (
-            "void WarningSentinelsAfterUnbracedSwitchCases() {\n"
-            "    GTEST_DISABLE_MSC_WARNINGS_PUSH_(4065)\n"
-            "    switch (0) {\n"
-            "        default:\n"
-            "            UseDefault();\n"
-            "            switch (0) {\n"
-            "                case 0:\n"
-            "                    UseCase();\n"
-            "                    GTEST_DISABLE_MSC_WARNINGS_POP_()\n"
-            "            }\n"
-            "    }\n"
-            "}\n"
-        )
-
-        result = native_format("--stdin", "--style", str(USERVER_FORMAT_CONFIG), input_text=source)
-
-        self.assertEqual(0, result.returncode, msg=f"stdout:\n{result.stdout}\n\nstderr:\n{result.stderr}")
-        self.assertEqual(expected, result.stdout)
-        self.assert_no_unsupported_placement_warnings(result)
-
-        second_result = native_format(
-            "--stdin", "--style", str(USERVER_FORMAT_CONFIG), input_text=result.stdout
-        )
-
-        self.assertEqual(
-            0,
-            second_result.returncode,
-            msg=f"stdout:\n{second_result.stdout}\n\nstderr:\n{second_result.stderr}",
-        )
-        self.assertEqual(expected, second_result.stdout)
-
-    def test_lambda_argument_and_split_function_parameters_are_allowed(self) -> None:
-        input_text = (
-            "struct IncludeGroup { int priority; };\n"
-            "void SortIncludeGroups(std::vector<IncludeGroup>& groups) {\n"
-            "    std::sort(groups.begin(), groups.end(), [](const IncludeGroup& left, const IncludeGroup& right) {\n"
-            "        return left.priority < right.priority;\n"
-            "    });\n"
-            "}\n"
-            "\n"
-            "std::set<std::string> RequireSuffixGroup(\n"
-            "    const std::map<std::string, std::set<std::string>>& suffixGroups,\n"
-            "    std::string_view configPath,\n"
-            "    std::string_view groupName\n"
-            ") {\n"
-            "   return {};\n"
-            "}\n"
-        )
-        result = native_format("--stdin", input_text=input_text)
-
-        self.assertEqual(0, result.returncode, msg=f"stdout:\n{result.stdout}\n\nstderr:\n{result.stderr}")
-        self.assertEqual(
-            "struct IncludeGroup {\n"
-            "    int priority;\n"
-            "};\n"
-            "\n"
-            "void SortIncludeGroups(std::vector<IncludeGroup>& groups) {\n"
-            "    std::sort(groups.begin(), groups.end(), [](const IncludeGroup& left, const IncludeGroup& right) {\n"
-            "        return left.priority < right.priority;\n"
-            "    });\n"
-            "}\n"
-            "\n"
-            "std::set<std::string> RequireSuffixGroup(\n"
-            "    const std::map<std::string, std::set<std::string>>& suffixGroups,\n"
-            "    std::string_view configPath,\n"
-            "    std::string_view groupName\n"
-            ") {\n"
-            "    return {};\n"
-            "}\n",
-            result.stdout,
-        )
-
-    def test_validation_regressions(self) -> None:
-        cases = (
-            (
-                "conditional calls",
-                "#if HAS(feature)\nint a;\n#elif CHECK(major, minor)\nint b;\n#else\nint c;\n#endif\n",
-                "#if HAS(feature)\nint a;\n#elif CHECK(major, minor)\nint b;\n#else\nint c;\n#endif\n",
-            ),
-            (
-                "header and body comments with identical text",
-                "#ifdef /* guard */ FEATURE\n/* guard */ int a;\n#endif\n",
-                "#ifdef /* guard */ FEATURE\n/* guard */ int a;\n#endif\n",
-            ),
-            (
-                "leading macro replacement comment",
-                "#define FIELD(data, elem) \\\n    /* annotation */ \\\n    decltype(data::elem) elem;\n",
-                "#define FIELD(data, elem) \\\n    /* annotation */      \\\n    decltype(data::elem) elem;\n",
-            ),
-            (
-                "terminal macro comment before endif",
-                "#if HAS(feature)\n#define FLAG 1 // note\n#endif\nint n;\n",
-                "#if HAS(feature)\n#define FLAG \\\n    1  // note\n#endif\nint n;\n",
-            ),
-            (
-                "packed parameter block comment",
-                "void SomeQuiteLongFunctionName(LongType a, LongType /*b*/);\n",
-                "void SomeQuiteLongFunctionName(\n    LongType a, LongType /*b*/\n);\n",
-            ),
-            (
-                "template header comment",
-                "template <typename T> // element type\nclass Queue;\n",
-                "template <typename T>  // element type\nclass Queue;\n",
-            ),
-            (
-                "number before pack expansion",
-                "template<int... I> void f() { use({ I ? I : 0 ... }); }\n",
-                "template <int... I>\nvoid f() { use({I ? I : 0 ...}); }\n",
-            ),
-            (
-                "macro terminators and standalone comment",
-                "void f(){\n    ITEM(one);\n    ITEM(two); // tail\n    ITEM(three)\n"
-                "    // standalone\n    int a;\n}\n",
-                "void f() {\n    ITEM(one);\n    ITEM(two);  // tail\n    ITEM(three)\n"
-                "    // standalone\n    int a;\n}\n",
-            ),
-            (
-                "partially guarded namespace",
-                "#if FEATURE\nnamespace {\nint x;\n#endif\n}\n",
-                "#if FEATURE\nnamespace {\n\nint x;\n#endif\n\n}\n",
-            ),
-            (
-                "conditional ends before consequence",
-                "void f() {\n#if FEATURE\nif (a) { g(); } else if (b)\n#endif\nh();\n}\n",
-                "void f() {\n#if FEATURE\nif (a) { g(); } else if (b)\n#endif\nh();\n}\n",
-            ),
-            (
-                "conditional ends before else",
-                "void f() {\n#if FEATURE\nif (a) { g(); }\n#endif\nelse { h(); }\n}\n",
-                "void f() {\n#if FEATURE\nif (a) { g(); }\n#endif\nelse { h(); }\n}\n",
-            ),
-        )
-        TEST_TEMP_ROOT.mkdir(exist_ok=True)
-        with tempfile.TemporaryDirectory(prefix="format_validation_", dir=TEST_TEMP_ROOT) as temp_dir:
-            config = Path(temp_dir) / ".cpp-format"
-            config.write_text(
-                "ColumnLimit: 50\nIndentWidth: 4\nMacroCategories:\n  ItemMacros:\n    - ITEM\n",
-                encoding="utf-8",
-            )
-            for name, source, expected in cases:
-                with self.subTest(name=name):
-                    checked = native_format("--stdin", "--style", str(config), input_text=source)
-                    self.assertEqual(0, checked.returncode, msg=checked.stderr)
-                    self.assertEqual(expected, checked.stdout)
-                    # Normal mode emits the same transformation without spending another parse/format pass.
-                    normal = native_format("--stdin", "--style", str(config), input_text=source, validate=False)
-                    self.assertEqual(0, normal.returncode, msg=normal.stderr)
-                    self.assertEqual(expected, normal.stdout)
-
 
     def test_parse_error_rejects_stdout_formatting(self) -> None:
         for validate in (False, True):

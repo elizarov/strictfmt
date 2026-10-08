@@ -592,6 +592,18 @@ const char* blankLines = FORMAT_USERVER_TOKENS({ first();
 
 second(); });
 
+// Semicolonless sentinels in unbraced switch cases.
+void WarningSentinelsAfterUnbracedSwitchCases(){
+GTEST_DISABLE_MSC_WARNINGS_PUSH_(4065)
+switch(0)
+default:
+UseDefault();
+switch(0)
+case 0:
+UseCase();
+GTEST_DISABLE_MSC_WARNINGS_POP_()
+}
+
 // Line hygiene applies to comments and directives, preserving literal bytes.
 #pragma once	
 // note	

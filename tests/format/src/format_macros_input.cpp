@@ -4014,3 +4014,26 @@ FORMAT_SUFFIX_GUARD;
 FORMAT_ITEM_DECLARE(Value)
 FORMAT_SUFFIX_GUARD
 void FollowingItem() {}
+
+// Final enum macro call without an added comma.
+#define DECLARE_ENUM(ItemsMacro) \
+enum G { ItemsMacro(EMIT) };
+
+// A macro argument inside decltype.
+#define STRICTFMT_LOAD_OPTIONAL(function, name) \
+function=reinterpret_cast<decltype(function)>(GetProcAddress(module_,name))
+
+// Macro replacement call sequences.
+#define ONE(X) X(Alpha,"alpha")
+#define MANY(X) X(Alpha,"alpha") X(Beta,"beta") X(Gamma,"gamma")
+#define DIFFERENT(Y) Produce(Alpha) Consume(Beta)
+
+// Template declaration on one replacement line.
+#define DECLARE_TRAITS(Type) \
+    template <> struct Traits<Type>{static constexpr auto value = Type{}; }
+
+// Spliced template declaration.
+#define DECLARE_TRAITS(Type) \
+    template <> \
+    struct Traits<Type>{ \
+        static constexpr auto value = Type{}; }

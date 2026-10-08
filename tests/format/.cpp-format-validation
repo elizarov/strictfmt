@@ -1,0 +1,5 @@
+ColumnLimit: 50
+IndentWidth: 4
+MacroCategories:
+  ItemMacros:
+    - ITEM

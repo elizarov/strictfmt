@@ -6,6 +6,7 @@ MacroCategories:
   MethodDeclarationMacros:
     - DECLARE_METHOD
   PreprocessorArgumentMacros:
+    - PP_EXPANSION
     - GENERATE_FIELDS
     - TOKENS
   DeclarationModifierMacros:
@@ -24,4 +25,5 @@ MacroCategories:
     - TYPE_ITEMS
     - ENUM_ITEMS
   TypeSpecifierMacros:
+    - REMOVE_CV_REF
     - TYPE_OF
