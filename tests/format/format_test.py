@@ -12,6 +12,7 @@ import unittest
 from contextlib import contextmanager, redirect_stderr
 from dataclasses import dataclass
 from pathlib import Path
+from unittest import mock
 
 
 TEST_ROOT = Path(__file__).resolve().parent
@@ -212,6 +213,7 @@ def native_format(
         check=False,
         capture_output=True,
         text=True,
+        encoding="utf-8",
         timeout=timeout,
     )
 
@@ -440,6 +442,16 @@ class FormatCommandTests(unittest.TestCase):
             for relative in source_files:
                 if after_first_pass[relative] != after_second_pass[relative]:
                     self.fail(f"{relative} changed on the second formatter pass")
+
+    def test_text_io_uses_utf8_independently_of_system_encoding(self) -> None:
+        source = "// Ω 日本語\nint café = 1;\n"
+        with (
+            mock.patch("locale.getpreferredencoding", return_value="cp1252"),
+            mock.patch("locale.getencoding", return_value="cp1252", create=True),
+        ):
+            result = native_format("--stdin", input_text=source, timeout=10)
+        self.assertEqual(0, result.returncode, result.stderr)
+        self.assertEqual(source, result.stdout)
 
     def test_stdin_formats_to_expected_output(self) -> None:
         result = native_format("--stdin", cwd=TEST_ROOT, input_text=read_fixture(INPUT_FIXTURE))
@@ -1443,6 +1455,7 @@ class FormatCommandTests(unittest.TestCase):
             check=False,
             capture_output=True,
             text=True,
+            encoding="utf-8",
         )
 
         self.assertEqual(0, result.returncode, msg=f"stdout:\n{result.stdout}\n\nstderr:\n{result.stderr}")
