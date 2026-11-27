@@ -11902,10 +11902,6 @@
           "named": true
         },
         {
-          "type": "stream_operator_chain_suffix",
-          "named": true
-        },
-        {
           "type": "template_declaration",
           "named": true
         },

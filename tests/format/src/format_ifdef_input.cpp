@@ -292,11 +292,6 @@ out<<"always"
 #ifndef FORMAT_STREAM_SKIP_LABEL
 <<"label"
 #endif
-#if FORMAT_STREAM_PLATFORM_A
-<<"platform A"
-#elif FORMAT_STREAM_PLATFORM_B
-<<"platform B"
-#endif
 <<"done";
 in>>value
 #ifdef FORMAT_STREAM_EXTRA_INPUT

@@ -1665,7 +1665,7 @@ module.exports = grammar(C, {
       '_in_stream_operator_chain',
       $ => $._stream_operator_chain_parts,
       0,
-      PREPROC_IFDEF | PREPROC_ELSE | PREPROC_ELIF,
+      PREPROC_IFDEF | PREPROC_ELSE,
       false,
     ),
 

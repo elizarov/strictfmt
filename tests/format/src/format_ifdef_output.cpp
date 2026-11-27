@@ -304,11 +304,6 @@ void ConditionalStreamChains(std::ostream& out, std::istream& in, int value, int
 #ifndef FORMAT_STREAM_SKIP_LABEL
         << "label"
 #endif
-#if FORMAT_STREAM_PLATFORM_A
-        << "platform A"
-#elif FORMAT_STREAM_PLATFORM_B
-        << "platform B"
-#endif
         << "done";
     in
         >> value
