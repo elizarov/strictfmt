@@ -11630,6 +11630,10 @@
           "named": true
         },
         {
+          "type": "field_initializer",
+          "named": true
+        },
+        {
           "type": "field_initializer_list",
           "named": true
         },

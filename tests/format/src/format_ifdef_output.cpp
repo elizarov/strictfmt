@@ -757,6 +757,17 @@ struct ConditionalInitializers {
         , tracker_(value)
 #endif
         , last_(value) {}
+    ConditionalInitializers(int value, int mode) :
+        first_(value)
+#if FAST_TRACKING
+        , tracker_(value, mode)
+#elif SLOW_TRACKING
+        , tracker_(value),
+        slow_(mode)
+#else
+        , tracker_(0)
+#endif
+        , last_(value) {}
 };
 
 // A directive name must not hide names in its selected function or call.

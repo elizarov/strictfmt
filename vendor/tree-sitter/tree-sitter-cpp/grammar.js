@@ -1725,7 +1725,7 @@ module.exports = grammar(C, {
       '_in_field_initializer_list_leading_comma',
       $ => seq(',', commaSep1($.field_initializer), optional(',')),
       3,
-      PREPROC_IFDEF | PREPROC_SHARED_OPENER,
+      PREPROC_ALL_BRANCH_FORMS | PREPROC_SHARED_OPENER,
       false,
     ),
     macro_template_declaration: $ => seq(
