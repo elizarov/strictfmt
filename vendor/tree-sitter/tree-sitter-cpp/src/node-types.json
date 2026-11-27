@@ -11630,6 +11630,10 @@
           "named": true
         },
         {
+          "type": "field_initializer",
+          "named": true
+        },
+        {
           "type": "field_initializer_list",
           "named": true
         },
@@ -11895,6 +11899,10 @@
         },
         {
           "type": "storage_class_specifier",
+          "named": true
+        },
+        {
+          "type": "stream_operator_chain_suffix",
           "named": true
         },
         {

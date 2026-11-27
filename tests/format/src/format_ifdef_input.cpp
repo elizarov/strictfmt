@@ -292,6 +292,11 @@ out<<"always"
 #ifndef FORMAT_STREAM_SKIP_LABEL
 <<"label"
 #endif
+#if FORMAT_STREAM_PLATFORM_A
+<<"platform A"
+#elif FORMAT_STREAM_PLATFORM_B
+<<"platform B"
+#endif
 <<"done";
 in>>value
 #ifdef FORMAT_STREAM_EXTRA_INPUT
@@ -651,6 +656,15 @@ ConditionalInitializers(int value):first_(value)
 ,second_(value)
 #ifdef TRACKING
 ,tracker_(value)
+#endif
+,last_(value){}
+ConditionalInitializers(int value,int mode):first_(value)
+#if FAST_TRACKING
+,tracker_(value,mode)
+#elif SLOW_TRACKING
+,tracker_(value),slow_(mode)
+#else
+,tracker_(0)
 #endif
 ,last_(value){}
 };
